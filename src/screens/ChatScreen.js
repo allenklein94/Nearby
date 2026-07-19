@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';import { supabase } from '../services/supabase';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import ReportBlockModal from '../components/ReportBlockModal';
+import { colors, typography, spacing, radius } from '../theme';
 
 export default function ChatScreen({ route, navigation }) {
   const { matchId } = route.params;
@@ -23,16 +25,9 @@ export default function ChatScreen({ route, navigation }) {
 
   useEffect(() => {
     let pollInterval;
-
     init().then(() => {
-      // Polling fallback: refetch every 3 seconds while this screen is
-      // open. Realtime push is set up too (below), but this guarantees
-      // messages show up even if the live subscription doesn't fire —
-      // simple and robust rather than depending entirely on realtime
-      // infra behaving perfectly.
       pollInterval = setInterval(loadMessages, 3000);
     });
-
     return () => {
       if (pollInterval) clearInterval(pollInterval);
     };
@@ -55,11 +50,12 @@ export default function ChatScreen({ route, navigation }) {
       navigation.setOptions({
         headerShown: true,
         title: other?.display_name || 'Chat',
-        headerStyle: { backgroundColor: '#1a1a2e' },
-        headerTintColor: '#fff',
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.textPrimary,
+        headerShadowVisible: false,
         headerRight: () => (
-          <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: 8 }}>
-            <Text style={{ color: '#e94560', fontSize: 20 }}>⋯</Text>
+          <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+            <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
           </TouchableOpacity>
         ),
       });
@@ -84,7 +80,7 @@ export default function ChatScreen({ route, navigation }) {
     return () => supabase.removeChannel(channel);
   }
 
-async function sendMessage() {
+  async function sendMessage() {
     if (!text.trim()) return;
     const body = text.trim();
 
@@ -116,28 +112,35 @@ async function sendMessage() {
       return;
     }
 
-    // Replace the optimistic placeholder with the real saved row (real
-    // id, exact server timestamp) once the insert confirms.
-    setMessages((prev) =>
-      prev.map((m) => (m.id === optimisticMessage.id ? data : m))
-    );
+    setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList
           ref={listRef}
           data={messages}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ padding: spacing.lg }}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>💬</Text>
+              <Text style={styles.emptyText}>Say hi — you both noticed each other.</Text>
+            </View>
+          }
           renderItem={({ item }) => (
-            <View style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}>
-              <Text style={styles.bubbleText}>{item.body}</Text>
+            <View style={[styles.bubbleRow, item.sender_id === userId ? styles.rowRight : styles.rowLeft]}>
+              <View style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}>
+                <Text style={[styles.bubbleText, item.sender_id === userId && styles.myBubbleText]}>{item.body}</Text>
+              </View>
+              <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
             </View>
           )}
         />
@@ -145,11 +148,16 @@ async function sendMessage() {
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
-            placeholderTextColor="#8888a8"
+            placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
+            multiline
           />
-          <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+          <TouchableOpacity
+            style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
+            onPress={sendMessage}
+            disabled={!text.trim()}
+          >
             <Text style={styles.sendText}>Send</Text>
           </TouchableOpacity>
         </View>
@@ -170,13 +178,44 @@ async function sendMessage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e' },
-  bubble: { maxWidth: '75%', padding: 12, borderRadius: 16, marginBottom: 8 },
-  myBubble: { backgroundColor: '#e94560', alignSelf: 'flex-end' },
-  theirBubble: { backgroundColor: '#2a2a4a', alignSelf: 'flex-start' },
-  bubbleText: { color: '#fff' },
-  inputRow: { flexDirection: 'row', padding: 12, borderTopWidth: 1, borderTopColor: '#2a2a4a' },
-  input: { flex: 1, backgroundColor: '#2a2a4a', borderRadius: 20, color: '#fff', paddingHorizontal: 16, paddingVertical: 10 },
-  sendButton: { justifyContent: 'center', paddingHorizontal: 16 },
-  sendText: { color: '#e94560', fontWeight: '600' },
+  container: { flex: 1, backgroundColor: colors.background },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
+  emptyText: { ...typography.body, color: colors.textTertiary },
+  bubbleRow: { marginBottom: spacing.md, maxWidth: '78%' },
+  rowLeft: { alignSelf: 'flex-start' },
+  rowRight: { alignSelf: 'flex-end' },
+  bubble: { padding: spacing.md, borderRadius: radius.lg },
+  myBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
+  theirBubble: { backgroundColor: colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
+  bubbleText: { color: colors.textPrimary, fontSize: 15, lineHeight: 20 },
+  myBubbleText: { color: '#fff' },
+  timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    color: colors.textPrimary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    maxHeight: 100,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sendButton: {
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginLeft: spacing.sm,
+  },
+  sendButtonDisabled: { opacity: 0.4 },
+  sendText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
 });

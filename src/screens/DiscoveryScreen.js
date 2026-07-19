@@ -4,6 +4,7 @@ import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
+import { colors, typography, spacing, radius, shadow } from '../theme';
 
 export default function DiscoveryScreen({ navigation }) {
   const [nearby, setNearby] = useState([]);
@@ -16,8 +17,6 @@ export default function DiscoveryScreen({ navigation }) {
     const results = await getNearbyMatches();
     setNearby(results);
 
-    // photo_url is a private storage path, not a public URL — resolve
-    // each to a short-lived signed URL for display.
     const urlEntries = await Promise.all(
       results.map(async (item) => {
         const path = item.profiles?.photo_url;
@@ -47,17 +46,25 @@ export default function DiscoveryScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Crossed Paths</Text>
-      <Text style={styles.subheader}>People you've been near recently</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Crossed Paths</Text>
+        <Text style={styles.headerSubtitle}>People you've been near recently</Text>
+      </View>
 
       <FlatList
         data={nearby}
         keyExtractor={(item) => item.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />}
+        contentContainerStyle={{ paddingBottom: spacing.xl }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            No crossed paths yet. Keep the app open while you're out and about.
-          </Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>📍</Text>
+            <Text style={styles.emptyTitle}>Nothing yet</Text>
+            <Text style={styles.emptyText}>
+              Keep the app open while you're out and about — we'll let
+              you know when you cross paths with someone.
+            </Text>
+          </View>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -65,19 +72,21 @@ export default function DiscoveryScreen({ navigation }) {
               source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
               style={styles.avatar}
             />
-            <View style={{ flex: 1 }}>
+            <View style={styles.cardInfo}>
               <Text style={styles.name}>{item.profiles?.display_name}</Text>
               <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
             </View>
-            <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)}>
-              <Text style={styles.noticeButtonText}>Notice</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.moreButton}
-              onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
-            >
-              <Text style={styles.moreButtonText}>⋯</Text>
-            </TouchableOpacity>
+            <View style={styles.cardActions}>
+              <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
+                <Text style={styles.noticeButtonText}>Notice</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.moreButton}
+                onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
+              >
+                <Text style={styles.moreButtonText}>⋯</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       />
@@ -96,19 +105,38 @@ export default function DiscoveryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', paddingHorizontal: 20, paddingTop: 10 },
-  header: { fontSize: 28, fontWeight: '700', color: '#fff' },
-  subheader: { fontSize: 14, color: '#8888a8', marginBottom: 20 },
-  empty: { color: '#8888a8', textAlign: 'center', marginTop: 60, lineHeight: 20 },
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
+  headerTitle: { ...typography.title, color: colors.textPrimary },
+  headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
+  emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
+  emptyTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
+  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
   card: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#2a2a4a',
-    borderRadius: 16, padding: 12, marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
   },
-  avatar: { width: 56, height: 56, borderRadius: 28, marginRight: 12, backgroundColor: '#444' },
-  name: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  bio: { color: '#c9c9e0', fontSize: 13, marginTop: 2 },
-  noticeButton: { backgroundColor: '#e94560', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
-  noticeButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  moreButton: { paddingHorizontal: 10, paddingVertical: 8, marginLeft: 4 },
-  moreButtonText: { color: '#8888a8', fontSize: 18, fontWeight: '700' },
+  avatar: { width: 60, height: 60, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
+  cardInfo: { flex: 1 },
+  name: { ...typography.bodyBold, color: colors.textPrimary },
+  bio: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  cardActions: { alignItems: 'center' },
+  noticeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  noticeButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
 });

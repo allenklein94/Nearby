@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { getOfferings, purchasePackage, restorePurchases } from '../services/purchases';
+import { colors, typography, spacing, radius, shadow } from '../theme';
+
+const FEATURES = [
+  { icon: '👀', text: "See everyone who's noticed you" },
+  { icon: '✨', text: 'Unlimited Notices' },
+  { icon: '📍', text: 'Extended crossed-paths radius' },
+  { icon: '💬', text: 'Weekly AI-suggested icebreaker' },
+];
 
 export default function PaywallScreen({ navigation }) {
   const [offering, setOffering] = useState(null);
@@ -43,28 +51,48 @@ export default function PaywallScreen({ navigation }) {
     }
   }
 
+  const isAnnual = (pkg) => pkg.identifier.toLowerCase().includes('annual') || pkg.identifier.toLowerCase().includes('year');
+
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.badge}>
+        <Text style={styles.badgeText}>✨ PREMIUM</Text>
+      </View>
+
       <Text style={styles.title}>Nearby Premium</Text>
       <Text style={styles.subtitle}>See who's noticed you, and never miss a connection.</Text>
 
-      <View style={styles.feature}><Text style={styles.featureText}>✓ See everyone who's noticed you</Text></View>
-      <View style={styles.feature}><Text style={styles.featureText}>✓ Unlimited Notices</Text></View>
-      <View style={styles.feature}><Text style={styles.featureText}>✓ Extended crossed-paths radius</Text></View>
-      <View style={styles.feature}><Text style={styles.featureText}>✓ Weekly AI-suggested icebreaker</Text></View>
+      <View style={styles.featuresCard}>
+        {FEATURES.map((f, i) => (
+          <View key={f.text} style={[styles.featureRow, i > 0 && styles.featureRowBorder]}>
+            <Text style={styles.featureIcon}>{f.icon}</Text>
+            <Text style={styles.featureText}>{f.text}</Text>
+          </View>
+        ))}
+      </View>
 
       {loading ? (
-        <ActivityIndicator color="#fff" style={{ marginTop: 30 }} />
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
       ) : offering ? (
         offering.availablePackages.map((pkg) => (
-          <TouchableOpacity key={pkg.identifier} style={styles.button} onPress={() => handlePurchase(pkg)}>
-            <Text style={styles.buttonText}>
+          <TouchableOpacity
+            key={pkg.identifier}
+            style={[styles.planButton, isAnnual(pkg) && styles.planButtonFeatured]}
+            onPress={() => handlePurchase(pkg)}
+            activeOpacity={0.85}
+          >
+            {isAnnual(pkg) && (
+              <View style={styles.saveBadge}>
+                <Text style={styles.saveBadgeText}>BEST VALUE</Text>
+              </View>
+            )}
+            <Text style={[styles.planButtonText, isAnnual(pkg) && styles.planButtonTextFeatured]}>
               {pkg.product.title} — {pkg.product.priceString}
             </Text>
           </TouchableOpacity>
         ))
       ) : (
-        <View>
+        <View style={styles.errorCard}>
           <Text style={styles.empty}>
             Offerings not configured yet — set this up in RevenueCat + App Store Connect.
           </Text>
@@ -74,7 +102,7 @@ export default function PaywallScreen({ navigation }) {
         </View>
       )}
 
-      <TouchableOpacity onPress={handleRestore} style={{ marginTop: 16 }}>
+      <TouchableOpacity onPress={handleRestore} style={{ marginTop: spacing.lg }}>
         <Text style={styles.restoreText}>Restore Purchases</Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -82,14 +110,62 @@ export default function PaywallScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', padding: 24, paddingTop: 40 },
-  title: { fontSize: 30, fontWeight: '700', color: '#fff', marginBottom: 8 },
-  subtitle: { color: '#c9c9e0', fontSize: 15, marginBottom: 24 },
-  feature: { marginBottom: 10 },
-  featureText: { color: '#fff', fontSize: 15 },
-  button: { backgroundColor: '#e94560', borderRadius: 30, paddingVertical: 16, alignItems: 'center', marginTop: 12 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  restoreText: { color: '#8888a8', textAlign: 'center', fontSize: 13 },
-  empty: { color: '#8888a8', marginTop: 20, textAlign: 'center', lineHeight: 20 },
-  errorDetail: { color: '#e94560', marginTop: 12, textAlign: 'center', fontSize: 12, fontFamily: 'monospace' },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl },
+  badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryMuted,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    marginBottom: spacing.md,
+  },
+  badgeText: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
+  title: { ...typography.display, color: colors.textPrimary, marginBottom: spacing.xs },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  featuresCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
+  },
+  featureRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
+  featureRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  featureIcon: { fontSize: 20, marginRight: spacing.md },
+  featureText: { ...typography.bodyBold, color: colors.textPrimary, flex: 1 },
+  planButton: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  planButtonFeatured: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    ...shadow.button,
+  },
+  planButtonText: { color: colors.textPrimary, fontWeight: '700', fontSize: 16 },
+  planButtonTextFeatured: { color: '#fff' },
+  saveBadge: {
+    position: 'absolute',
+    top: -10,
+    backgroundColor: colors.success,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  saveBadgeText: { color: '#0a0a0a', fontSize: 10, fontWeight: '800', letterSpacing: 0.5 },
+  restoreText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
+  errorCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    marginTop: spacing.md,
+  },
+  empty: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
+  errorDetail: { color: colors.primary, marginTop: spacing.md, textAlign: 'center', fontSize: 12, fontFamily: 'monospace' },
 });
