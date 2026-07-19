@@ -2,11 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { supabase } from '../services/supabase';
 import { isPremium } from '../services/purchases';
+import { colors, typography, spacing, radius, shadow } from '../theme';
 
-// Note: the RLS policy on `notices` already enforces that a user only
-// gets rows back here if the notice is mutual, or if they're premium.
-// This screen doesn't need extra client-side filtering for that reason —
-// the database is the source of truth for the privacy rule.
 export default function NoticesScreen({ navigation }) {
   const [notices, setNotices] = useState([]);
   const [premium, setPremium] = useState(false);
@@ -29,21 +26,30 @@ export default function NoticesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Notices</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Notices</Text>
+      </View>
 
       {!premium && (
-        <TouchableOpacity style={styles.upsell} onPress={() => navigation.navigate('Paywall')}>
-          <Text style={styles.upsellText}>
-            Unlock Premium to see everyone who's noticed you →
-          </Text>
+        <TouchableOpacity style={styles.upsell} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
+          <Text style={styles.upsellIcon}>✨</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.upsellTitle}>Unlock Premium</Text>
+            <Text style={styles.upsellText}>See everyone who's noticed you</Text>
+          </View>
+          <Text style={styles.upsellArrow}>›</Text>
         </TouchableOpacity>
       )}
 
       <FlatList
         data={notices}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         ListEmptyComponent={
-          <Text style={styles.empty}>No notices yet. Check back after you've been out.</Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>👋</Text>
+            <Text style={styles.emptyText}>No notices yet. Check back after you've been out.</Text>
+          </View>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -56,11 +62,33 @@ export default function NoticesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', paddingHorizontal: 20, paddingTop: 10 },
-  header: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 16 },
-  upsell: { backgroundColor: '#e94560', borderRadius: 12, padding: 14, marginBottom: 16 },
-  upsellText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
-  empty: { color: '#8888a8', textAlign: 'center', marginTop: 60 },
-  card: { backgroundColor: '#2a2a4a', borderRadius: 12, padding: 14, marginBottom: 10 },
-  name: { color: '#fff', fontSize: 15 },
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  headerTitle: { ...typography.title, color: colors.textPrimary },
+  upsell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    ...shadow.button,
+  },
+  upsellIcon: { fontSize: 24, marginRight: spacing.md },
+  upsellTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  upsellText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
+  upsellArrow: { color: '#fff', fontSize: 22, fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
+  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  name: { ...typography.body, color: colors.textPrimary },
 });

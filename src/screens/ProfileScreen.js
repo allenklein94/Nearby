@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
+import { colors, typography, spacing, radius, shadow } from '../theme';
 
 export default function ProfileScreen({ navigation }) {
   const { isAdmin } = useAuth();
@@ -86,9 +87,6 @@ export default function ProfileScreen({ navigation }) {
   }
 
   function confirmDeleteAccountFinal() {
-    // Second, more explicit confirmation — deletion is irreversible and
-    // this is a big enough action to deserve two distinct taps, not one
-    // accidental one.
     Alert.alert(
       'Are you absolutely sure?',
       'Your account and all associated data will be permanently deleted right now.',
@@ -103,9 +101,6 @@ export default function ProfileScreen({ navigation }) {
     setDeleting(true);
     try {
       await deleteAccount();
-      // After this resolves, AuthContext's session listener detects the
-      // sign-out and RootNavigator automatically returns to Onboarding —
-      // no manual navigation needed here.
     } catch (e) {
       setDeleting(false);
       Alert.alert('Deletion failed', e.message);
@@ -114,40 +109,51 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Your Profile</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Your Profile</Text>
+      </View>
 
-      <TouchableOpacity style={styles.photoPicker} onPress={changePhoto} disabled={uploading}>
+      <TouchableOpacity style={styles.photoWrap} onPress={changePhoto} disabled={uploading} activeOpacity={0.85}>
         {photoUrl ? (
           <Image source={{ uri: photoUrl }} style={styles.photoPreview} />
         ) : (
-          <Text style={styles.photoPickerText}>{uploading ? 'Uploading...' : 'Tap to add a photo'}</Text>
+          <Text style={styles.photoPickerText}>{uploading ? 'Uploading...' : 'Tap to\nadd a photo'}</Text>
         )}
+        <View style={styles.photoEditBadge}>
+          <Text style={styles.photoEditBadgeText}>✎</Text>
+        </View>
       </TouchableOpacity>
-      <Text style={styles.verifiedText}>
-        {photoVerified ? 'Photo verified ✓' : 'Photo pending review'}
-      </Text>
+      <View style={styles.verifiedRow}>
+        <View style={[styles.verifiedDot, photoVerified && styles.verifiedDotActive]} />
+        <Text style={styles.verifiedText}>
+          {photoVerified ? 'Photo verified' : 'Photo pending review'}
+        </Text>
+      </View>
 
-      <Text style={styles.label}>Display Name</Text>
-      <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} />
+      <View style={styles.formCard}>
+        <Text style={styles.label}>Display Name</Text>
+        <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} />
 
-      <Text style={styles.label}>Bio</Text>
-      <TextInput
-        style={[styles.input, { height: 100 }]}
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
+        <Text style={styles.label}>Bio</Text>
+        <TextInput
+          style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+          value={bio}
+          onChangeText={setBio}
+          multiline
+          placeholderTextColor={colors.textTertiary}
+        />
+      </View>
 
-      <TouchableOpacity style={styles.button} onPress={save}>
-        <Text style={styles.buttonText}>Save</Text>
+      <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
+        <Text style={styles.buttonText}>Save Changes</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')}>
-        <Text style={styles.premiumButtonText}>Manage Premium</Text>
+      <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
+        <Text style={styles.premiumButtonText}>✨ Manage Premium</Text>
       </TouchableOpacity>
 
       {isAdmin && (
-        <TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminReports')}>
+        <TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminReports')} activeOpacity={0.85}>
           <Text style={styles.adminButtonText}>Review Reports (Admin)</Text>
         </TouchableOpacity>
       )}
@@ -156,11 +162,7 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={confirmDeleteAccount}
-        disabled={deleting}
-      >
+      <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
         <Text style={styles.deleteText}>
           {deleting ? 'Deleting account...' : 'Delete Account'}
         </Text>
@@ -170,25 +172,57 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', padding: 20 },
-  header: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 20 },
-  photoPicker: {
-    backgroundColor: '#2a2a4a', borderRadius: 16, height: 120, width: 120,
-    justifyContent: 'center', alignItems: 'center', overflow: 'hidden', alignSelf: 'center',
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  header: { marginBottom: spacing.lg },
+  headerTitle: { ...typography.title, color: colors.textPrimary },
+  photoWrap: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    height: 110,
+    width: 110,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   photoPreview: { width: '100%', height: '100%' },
-  photoPickerText: { color: '#8888a8', textAlign: 'center', paddingHorizontal: 10, fontSize: 12 },
-  verifiedText: { color: '#8888a8', fontSize: 12, textAlign: 'center', marginTop: 8, marginBottom: 4 },
-  label: { color: '#8888a8', fontSize: 13, marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: '#2a2a4a', color: '#fff', borderRadius: 12, padding: 14 },
-  button: { backgroundColor: '#e94560', borderRadius: 30, paddingVertical: 14, alignItems: 'center', marginTop: 24 },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  premiumButton: { borderColor: '#e94560', borderWidth: 1, borderRadius: 30, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
-  premiumButtonText: { color: '#e94560', fontWeight: '600', fontSize: 16 },
-  adminButton: { backgroundColor: '#2a2a4a', borderRadius: 30, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
-  adminButtonText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  signOutButton: { paddingVertical: 14, alignItems: 'center', marginTop: 12 },
-  signOutText: { color: '#8888a8', fontSize: 14 },
-  deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: '#e94560', fontSize: 13, opacity: 0.8 },
+  photoPickerText: { color: colors.textTertiary, textAlign: 'center', fontSize: 12 },
+  photoEditBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: colors.primary,
+    width: 26,
+    height: 26,
+    borderRadius: radius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoEditBadgeText: { color: '#fff', fontSize: 12 },
+  verifiedRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
+  verifiedDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textTertiary, marginRight: 6 },
+  verifiedDotActive: { backgroundColor: colors.success },
+  verifiedText: { ...typography.caption, color: colors.textTertiary },
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
+  },
+  label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
+  input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  premiumButton: { borderColor: colors.primary, borderWidth: 1.5, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.md },
+  premiumButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  adminButton: { backgroundColor: colors.surface, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.md, borderWidth: 1, borderColor: colors.border },
+  adminButtonText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
+  signOutButton: { paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
+  signOutText: { color: colors.textTertiary, fontSize: 14 },
+  deleteButton: { paddingVertical: spacing.sm, alignItems: 'center' },
+  deleteText: { color: colors.primary, fontSize: 13, opacity: 0.7 },
 });

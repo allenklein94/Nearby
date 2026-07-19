@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { supabase } from '../services/supabase';
+import { colors, typography, spacing, radius } from '../theme';
 
 export default function MatchesScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
@@ -20,22 +21,32 @@ export default function MatchesScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Matches</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Matches</Text>
+      </View>
       <FlatList
         data={matches}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            No matches yet. Matches happen when you both notice each other.
-          </Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>✨</Text>
+            <Text style={styles.emptyText}>
+              No matches yet. Matches happen when you both notice each other.
+            </Text>
+          </View>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.card}
             onPress={() => navigation.navigate('Chat', { matchId: item.id })}
+            activeOpacity={0.85}
           >
-            <Text style={styles.name}>{item.a?.display_name} & {item.b?.display_name}</Text>
-            <Text style={styles.sub}>Tap to start chatting</Text>
+            <View style={styles.cardInfo}>
+              <Text style={styles.name}>{item.a?.display_name} & {item.b?.display_name}</Text>
+              <Text style={styles.sub}>Tap to start chatting</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
       />
@@ -44,10 +55,24 @@ export default function MatchesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', paddingHorizontal: 20, paddingTop: 10 },
-  header: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 16 },
-  empty: { color: '#8888a8', textAlign: 'center', marginTop: 60, lineHeight: 20 },
-  card: { backgroundColor: '#2a2a4a', borderRadius: 12, padding: 14, marginBottom: 10 },
-  name: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  sub: { color: '#8888a8', fontSize: 13, marginTop: 4 },
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  headerTitle: { ...typography.title, color: colors.textPrimary },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
+  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cardInfo: { flex: 1 },
+  name: { ...typography.bodyBold, color: colors.textPrimary },
+  sub: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  chevron: { color: colors.textTertiary, fontSize: 22, fontWeight: '700' },
 });
