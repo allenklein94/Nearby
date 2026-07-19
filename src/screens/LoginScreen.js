@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
+import { colors, typography, spacing, radius, shadow } from '../theme';
 
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
@@ -42,19 +43,21 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Sign in</Text>
+      <Text style={styles.icon}>{otpSent ? '💬' : '📱'}</Text>
+      <Text style={styles.title}>{otpSent ? 'Enter your code' : 'Sign in'}</Text>
+
       {!otpSent ? (
         <>
           <Text style={styles.label}>We'll text you a verification code.</Text>
           <TextInput
             style={styles.input}
             placeholder="(555) 555-5555"
-            placeholderTextColor="#8888a8"
+            placeholderTextColor={colors.textTertiary}
             keyboardType="phone-pad"
             value={phoneInput}
             onChangeText={setPhoneInput}
           />
-          <TouchableOpacity style={styles.button} onPress={sendOtp} disabled={loading}>
+          <TouchableOpacity style={styles.button} onPress={sendOtp} disabled={loading} activeOpacity={0.85}>
             <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Send Code'}</Text>
           </TouchableOpacity>
         </>
@@ -64,15 +67,15 @@ export default function LoginScreen() {
           <TextInput
             style={styles.input}
             placeholder="6-digit code"
-            placeholderTextColor="#8888a8"
+            placeholderTextColor={colors.textTertiary}
             keyboardType="number-pad"
             value={otp}
             onChangeText={setOtp}
           />
-          <TouchableOpacity style={styles.button} onPress={verifyOtp} disabled={loading}>
+          <TouchableOpacity style={styles.button} onPress={verifyOtp} disabled={loading} activeOpacity={0.85}>
             <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setOtpSent(false)} style={{ marginTop: 16 }}>
+          <TouchableOpacity onPress={() => setOtpSent(false)} style={{ marginTop: spacing.md }}>
             <Text style={styles.backText}>Use a different number</Text>
           </TouchableOpacity>
         </>
@@ -82,14 +85,22 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1a1a2e', padding: 24, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 12 },
-  label: { color: '#8888a8', fontSize: 14, marginBottom: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, justifyContent: 'center' },
+  icon: { fontSize: 40, textAlign: 'center', marginBottom: spacing.md },
+  title: { ...typography.title, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.sm },
+  label: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
   input: {
-    backgroundColor: '#2a2a4a', color: '#fff', borderRadius: 12,
-    padding: 16, fontSize: 16, marginBottom: 16,
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontSize: 16,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlign: 'center',
   },
-  button: { backgroundColor: '#e94560', borderRadius: 30, paddingVertical: 16, alignItems: 'center' },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  backText: { color: '#8888a8', fontSize: 13, textAlign: 'center' },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  backText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center' },
 });
