@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Nearby",
+    "slug": "nearby",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.allenklein.nearby",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Nearby uses your approximate location to show you people you've crossed paths with nearby. We never show your exact location to other users.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Nearby checks for crossed paths periodically in the background so you don't miss a connection while your phone is locked. We never show your exact location to other users.",
+        "NSBluetoothAlwaysUsageDescription": "Nearby uses Bluetooth to detect other app users in close physical proximity, without tracking exact location.",
+        "NSCameraUsageDescription": "Nearby needs camera access so you can take a profile photo.",
+        "NSPhotoLibraryUsageDescription": "Nearby needs photo library access so you can choose a profile photo.",
+        "UIBackgroundModes": ["location"]
+      }
+    },
+    "android": {
+      "package": "com.allenklein.nearby",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#e94560"
+        }
+      ],
+      "@sentry/react-native/expo"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bcd5120e-57e9-4c3f-8ee9-4812ade060ba"
+      }
+    }
+  }
+}
