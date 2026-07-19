@@ -49,7 +49,8 @@ export default function ProfileScreen({ navigation }) {
 
     const { error } = await supabase
       .from('profiles')
-      .upsert({ id: userId, display_name: displayName, bio });
+      .update({ display_name: displayName, bio })
+      .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
     Alert.alert('Saved');
   }
