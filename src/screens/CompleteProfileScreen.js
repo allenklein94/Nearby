@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
+import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
 
 const MIN_AGE = 18;
@@ -62,6 +63,11 @@ export default function CompleteProfileScreen() {
         'Agreement required',
         'You must agree to the Terms of Service and Privacy Policy to use Nearby.'
       );
+    }
+
+    const nameCheck = await checkTextModeration(displayName);
+    if (!nameCheck.safe) {
+      return Alert.alert('Display name not allowed', 'Please choose a different display name.');
     }
 
     setSubmitting(true);

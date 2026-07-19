@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
+import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
 
 export default function ProfileScreen({ navigation }) {
@@ -37,6 +38,15 @@ export default function ProfileScreen({ navigation }) {
   }
 
   async function save() {
+    const nameCheck = await checkTextModeration(displayName);
+    if (!nameCheck.safe) {
+      return Alert.alert('Display name not allowed', 'Please revise your display name and try again.');
+    }
+    const bioCheck = await checkTextModeration(bio);
+    if (!bioCheck.safe) {
+      return Alert.alert('Bio not allowed', 'Please revise your bio and try again.');
+    }
+
     const { error } = await supabase
       .from('profiles')
       .upsert({ id: userId, display_name: displayName, bio });

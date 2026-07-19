@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
-import { supabase } from '../services/supabase';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';import { supabase } from '../services/supabase';
+import { checkTextModeration } from '../services/textModeration';
 import ReportBlockModal from '../components/ReportBlockModal';
 
 export default function ChatScreen({ route, navigation }) {
@@ -84,13 +84,18 @@ export default function ChatScreen({ route, navigation }) {
     return () => supabase.removeChannel(channel);
   }
 
-  async function sendMessage() {
+async function sendMessage() {
     if (!text.trim()) return;
     const body = text.trim();
+
+    const moderationResult = await checkTextModeration(body);
+    if (!moderationResult.safe) {
+      Alert.alert('Message not sent', 'This message may violate our community guidelines. Please revise it.');
+      return;
+    }
+
     setText('');
 
-    // Optimistic local append — show it immediately rather than waiting
-    // on realtime or the next poll cycle to echo it back to the sender.
     const optimisticMessage = {
       id: `optimistic-${Date.now()}`,
       match_id: matchId,

@@ -18,7 +18,11 @@
         "NSBluetoothAlwaysUsageDescription": "Nearby uses Bluetooth to detect other app users in close physical proximity, without tracking exact location.",
         "NSCameraUsageDescription": "Nearby needs camera access so you can take a profile photo.",
         "NSPhotoLibraryUsageDescription": "Nearby needs photo library access so you can choose a profile photo.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location",
+          "location"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -28,7 +32,12 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
         "BLUETOOTH",
-        "BLUETOOTH_ADMIN"
+        "BLUETOOTH_ADMIN",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
