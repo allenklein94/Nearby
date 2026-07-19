@@ -1,15 +1,15 @@
 export const colors = {
-  background: '#14141f',
-  surface: '#1e1e30',
-  surfaceElevated: '#262640',
-  primary: '#ff4d6d',
-  primaryMuted: 'rgba(255, 77, 109, 0.15)',
-  textPrimary: '#ffffff',
-  textSecondary: '#a8a8c0',
-  textTertiary: '#6e6e8a',
-  success: '#4ade80',
-  danger: '#ff4d6d',
-  border: 'rgba(255, 255, 255, 0.08)',
+  background: '#FFF8F3',
+  surface: '#FFFFFF',
+  surfaceElevated: '#FFEEE2',
+  primary: '#FF6B5B',
+  primaryMuted: 'rgba(255, 107, 91, 0.12)',
+  textPrimary: '#2D2420',
+  textSecondary: '#6B5D54',
+  textTertiary: '#A69B92',
+  success: '#4CAF7D',
+  danger: '#FF6B5B',
+  border: '#F0E0D4',
 };
 
 export const typography = {
@@ -40,16 +40,16 @@ export const radius = {
 
 export const shadow = {
   card: {
-    shadowColor: '#000',
+    shadowColor: '#D4A88C',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 6,
+    elevation: 4,
   },
   button: {
-    shadowColor: '#ff4d6d',
+    shadowColor: '#FF6B5B',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },

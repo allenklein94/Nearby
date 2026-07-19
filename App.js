@@ -13,7 +13,7 @@ Sentry.init({
 function App() {
   return (
     <AuthProvider>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <RootNavigator />
     </AuthProvider>
   );
