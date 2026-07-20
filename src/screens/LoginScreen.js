@@ -70,3 +70,80 @@ export default function LoginScreen() {
         if (verifyError) return Alert.alert('Error', verifyError.message);
       } catch (e) {
         setLoading(false);
+        Alert.alert('Error', e.message);
+      }
+      return;
+    }
+
+    const { error } = await supabase.auth.verifyOtp({
+      phone: e164Phone,
+      token: otp,
+      type: 'sms',
+    });
+    setLoading(false);
+    if (error) return Alert.alert('Error', error.message);
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.icon}>{otpSent ? '💬' : '📱'}</Text>
+      <Text style={styles.title}>{otpSent ? 'Enter your code' : 'Sign in'}</Text>
+
+      {!otpSent ? (
+        <>
+          <Text style={styles.label}>We'll text you a verification code.</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="(555) 555-5555"
+            placeholderTextColor={colors.textTertiary}
+            keyboardType="phone-pad"
+            value={phoneInput}
+            onChangeText={setPhoneInput}
+          />
+          <TouchableOpacity style={styles.button} onPress={sendOtp} disabled={loading} activeOpacity={0.85}>
+            <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Send Code'}</Text>
+          </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.label}>Enter the code sent to {phoneInput}</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="6-digit code"
+            placeholderTextColor={colors.textTertiary}
+            keyboardType="number-pad"
+            value={otp}
+            onChangeText={setOtp}
+          />
+          <TouchableOpacity style={styles.button} onPress={verifyOtp} disabled={loading} activeOpacity={0.85}>
+            <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setOtpSent(false)} style={{ marginTop: spacing.md }}>
+            <Text style={styles.backText}>Use a different number</Text>
+          </TouchableOpacity>
+        </>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, justifyContent: 'center' },
+  icon: { fontSize: 40, textAlign: 'center', marginBottom: spacing.md },
+  title: { ...typography.title, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.sm },
+  label: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
+  input: {
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    fontSize: 16,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlign: 'center',
+  },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  backText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center' },
+});
