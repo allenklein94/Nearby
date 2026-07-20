@@ -7,11 +7,13 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import { colors, typography, spacing, radius, shadow } from '../theme';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
+import SkeletonCard from '../components/SkeletonCard';
 
 export default function DiscoveryScreen({ navigation }) {
   const posthog = usePostHog();
   const [nearby, setNearby] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
 
@@ -19,6 +21,7 @@ export default function DiscoveryScreen({ navigation }) {
     await reportPresence();
     const results = await getNearbyMatches();
     setNearby(results);
+    setInitialLoading(false);
 
     const urlEntries = await Promise.all(
       results.map(async (item) => {
@@ -56,6 +59,13 @@ async function sendNotice(toUserId) {
         <Text style={styles.headerSubtitle}>People you've been near recently</Text>
       </View>
 
+     {initialLoading ? (
+        <View>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : (
       <FlatList
         data={nearby}
         keyExtractor={(item) => item.id}
@@ -93,8 +103,9 @@ async function sendNotice(toUserId) {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+  )}
       />
+      )}
 
       <ReportBlockModal
         visible={!!reportTarget}
