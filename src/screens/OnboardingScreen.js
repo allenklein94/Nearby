@@ -41,9 +41,7 @@ export default function OnboardingScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.skipButton} onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+    
 
       <ScrollView
         ref={scrollRef}
@@ -62,7 +60,11 @@ export default function OnboardingScreen({ navigation }) {
             <Text style={styles.text}>{slide.text}</Text>
           </View>
         ))}
-      </ScrollView>
+     </ScrollView>
+
+      <TouchableOpacity style={styles.skipButton} onPress={() => navigation.navigate('Login')}>
+        <Text style={styles.skipText}>Skip</Text>
+      </TouchableOpacity>
 
       <View style={styles.footer}>
         <View style={styles.dots}>
