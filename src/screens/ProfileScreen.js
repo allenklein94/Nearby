@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
+import { registerForPushNotifications, disablePushNotifications } from '../services/notifications';
 import { colors, typography, spacing, radius, shadow } from '../theme';
 
 const MAX_EXTRA_PHOTOS = 5;
+
+const INTEREST_OPTIONS = [
+  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
+  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
+  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
+  'Volunteering', 'Meditation', 'Running',
+];
 
 export default function ProfileScreen({ navigation }) {
   const { isAdmin } = useAuth();
@@ -21,6 +29,12 @@ export default function ProfileScreen({ navigation }) {
   const [deleting, setDeleting] = useState(false);
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
+  const [interests, setInterests] = useState([]);
+  const [pronouns, setPronouns] = useState('');
+  const [gender, setGender] = useState('');
+  const [sexualOrientation, setSexualOrientation] = useState('');
+  const [profileHidden, setProfileHidden] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
   useEffect(() => {
     load();
@@ -36,6 +50,12 @@ export default function ProfileScreen({ navigation }) {
       setDisplayName(data.display_name || '');
       setBio(data.bio || '');
       setPhotoVerified(!!data.photo_verified);
+      setInterests(data.interests || []);
+      setPronouns(data.pronouns || '');
+      setGender(data.gender || '');
+      setSexualOrientation(data.sexual_orientation || '');
+      setProfileHidden(!!data.profile_hidden);
+      setNotificationsEnabled(!!data.expo_push_token);
       if (data.photo_url) {
         const url = await getSignedPhotoUrl(data.photo_url);
         setPhotoUrl(url);
@@ -44,6 +64,12 @@ export default function ProfileScreen({ navigation }) {
 
     const extras = await getExtraPhotos(id);
     setExtraPhotos(extras);
+  }
+
+  function toggleInterest(interest) {
+    setInterests((prev) =>
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+    );
   }
 
   async function save() {
@@ -55,10 +81,25 @@ export default function ProfileScreen({ navigation }) {
     if (!bioCheck.safe) {
       return Alert.alert('Bio not allowed', 'Please revise your bio and try again.');
     }
+    for (const [label, value] of [['Pronouns', pronouns], ['Gender', gender], ['Sexual orientation', sexualOrientation]]) {
+      if (value.trim()) {
+        const check = await checkTextModeration(value);
+        if (!check.safe) {
+          return Alert.alert(`${label} not allowed`, `Please revise this field and try again.`);
+        }
+      }
+    }
 
     const { error } = await supabase
       .from('profiles')
-      .update({ display_name: displayName, bio })
+      .update({
+        display_name: displayName,
+        bio,
+        interests,
+        pronouns: pronouns.trim() || null,
+        gender: gender.trim() || null,
+        sexual_orientation: sexualOrientation.trim() || null,
+      })
       .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
     Alert.alert('Saved');
@@ -112,6 +153,29 @@ export default function ProfileScreen({ navigation }) {
         },
       },
     ]);
+  }
+
+  async function toggleHideProfile(value) {
+    setProfileHidden(value);
+    const { error } = await supabase.from('profiles').update({ profile_hidden: value }).eq('id', userId);
+    if (error) {
+      setProfileHidden(!value);
+      Alert.alert('Error', error.message);
+    }
+  }
+
+  async function toggleNotifications(value) {
+    setNotificationsEnabled(value);
+    try {
+      if (value) {
+        await registerForPushNotifications(userId);
+      } else {
+        await disablePushNotifications(userId);
+      }
+    } catch (e) {
+      setNotificationsEnabled(!value);
+      Alert.alert('Error', e.message);
+    }
   }
 
   async function signOut() {
@@ -213,9 +277,82 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
+        <Text style={styles.sectionLabel}>About You (Optional)</Text>
+        <View style={styles.formCard}>
+          <Text style={styles.label}>Pronouns</Text>
+          <TextInput
+            style={styles.input}
+            value={pronouns}
+            onChangeText={setPronouns}
+            placeholder="e.g. she/her, he/him, they/them"
+            placeholderTextColor={colors.textTertiary}
+          />
+
+          <Text style={styles.label}>Gender</Text>
+          <TextInput
+            style={styles.input}
+            value={gender}
+            onChangeText={setGender}
+            placeholder="Optional"
+            placeholderTextColor={colors.textTertiary}
+          />
+
+          <Text style={styles.label}>Sexual Orientation</Text>
+          <TextInput
+            style={styles.input}
+            value={sexualOrientation}
+            onChangeText={setSexualOrientation}
+            placeholder="Optional"
+            placeholderTextColor={colors.textTertiary}
+          />
+        </View>
+
+        <Text style={styles.sectionLabel}>Interests</Text>
+        <View style={styles.chipsWrap}>
+          {INTEREST_OPTIONS.map((interest) => {
+            const selected = interests.includes(interest);
+            return (
+              <TouchableOpacity
+                key={interest}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => toggleInterest(interest)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
           <Text style={styles.buttonText}>Save Changes</Text>
         </TouchableOpacity>
+
+        <View style={styles.settingsCard}>
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Hide my profile</Text>
+              <Text style={styles.settingSubtext}>Temporarily remove yourself from Discovery</Text>
+            </View>
+            <Switch
+              value={profileHidden}
+              onValueChange={toggleHideProfile}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+          <View style={styles.settingDivider} />
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Push notifications</Text>
+              <Text style={styles.settingSubtext}>Get notified about matches and messages</Text>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={toggleNotifications}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+        </View>
 
         <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
           <Text style={styles.premiumButtonText}>✨ Manage Premium</Text>
@@ -275,7 +412,7 @@ const styles = StyleSheet.create({
   verifiedDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textTertiary, marginRight: 6 },
   verifiedDotActive: { backgroundColor: colors.success },
   verifiedText: { ...typography.caption, color: colors.textTertiary },
-  sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xs },
   galleryItem: {
     width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden',
@@ -293,20 +430,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   addPhotoText: { color: colors.textTertiary, fontSize: 28, fontWeight: '300' },
-  helperText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.lg },
+  helperText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.md },
   formCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+  chip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  premiumButton: { borderColor: colors.primary, borderWidth: 1.5, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.md },
+  settingsCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, marginTop: spacing.lg, padding: spacing.md,
+  },
+  settingRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs },
+  settingDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
+  settingLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
+  settingSubtext: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
+  premiumButton: { borderColor: colors.primary, borderWidth: 1.5, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.lg },
   premiumButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   adminButton: { backgroundColor: colors.surface, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.md, borderWidth: 1, borderColor: colors.border },
   adminButtonText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },

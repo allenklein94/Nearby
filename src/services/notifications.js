@@ -11,8 +11,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Call once after login (e.g. from RootNavigator once profileComplete
-// is true). Silently no-ops on simulators, which don't support push.
 export async function registerForPushNotifications(userId) {
   if (!Device.isDevice) {
     console.log('Push notifications require a physical device — skipping on simulator.');
@@ -28,8 +26,6 @@ export async function registerForPushNotifications(userId) {
   }
 
   if (finalStatus !== 'granted') {
-    // Don't nag — respect a decline. In-app notices/matches/messages
-    // still work without push, they just won't show a system alert.
     return;
   }
 
@@ -45,4 +41,8 @@ export async function registerForPushNotifications(userId) {
       lightColor: '#e94560',
     });
   }
+}
+
+export async function disablePushNotifications(userId) {
+  await supabase.from('profiles').update({ expo_push_token: null }).eq('id', userId);
 }
