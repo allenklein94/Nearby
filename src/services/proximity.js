@@ -7,14 +7,6 @@
  * so real-world crossed-paths moments are captured even when the app
  * isn't actively open on screen. The backend (report-presence Edge
  * Function) compares area buckets across users to find matches.
- *
- * This approach — server-side comparison of coarse location buckets —
- * is the same one used by comparable real apps (e.g. Happn), rather
- * than literal Bluetooth broadcast/scan between phones. iOS restricts
- * background Bluetooth peripheral advertising heavily, making raw BLE
- * mutual-discovery between two strangers' phones unreliable and prone
- * to App Store review friction; GPS-based server-side matching avoids
- * that entirely while achieving the same goal.
  */
 
 import * as Location from 'expo-location';
@@ -144,13 +136,15 @@ export async function getNearbyMatches() {
 
   const profileById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]));
 
-  return sightings.map((s) => {
-    const otherUserId = s.user_a === userId ? s.user_b : s.user_a;
-    return {
-      id: s.id,
-      last_seen_at: s.last_seen_at,
-      otherUserId,
-      profiles: profileById[otherUserId] ?? null,
-    };
-  });
+  return sightings
+    .map((s) => {
+      const otherUserId = s.user_a === userId ? s.user_b : s.user_a;
+      return {
+        id: s.id,
+        last_seen_at: s.last_seen_at,
+        otherUserId,
+        profiles: profileById[otherUserId] ?? null,
+      };
+    })
+    .filter((item) => item.profiles !== null);
 }
