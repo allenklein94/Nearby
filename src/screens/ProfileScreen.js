@@ -7,6 +7,7 @@ import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto } fr
 import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
 import { registerForPushNotifications, disablePushNotifications } from '../services/notifications';
+import { BASICS_FIELDS } from '../constants/basicsFields';
 import { colors, typography, spacing, radius, shadow } from '../theme';
 
 const MAX_EXTRA_PHOTOS = 5;
@@ -35,6 +36,7 @@ export default function ProfileScreen({ navigation }) {
   const [sexualOrientation, setSexualOrientation] = useState('');
   const [profileHidden, setProfileHidden] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [basics, setBasics] = useState({});
 
   useEffect(() => {
     load();
@@ -56,6 +58,7 @@ export default function ProfileScreen({ navigation }) {
       setSexualOrientation(data.sexual_orientation || '');
       setProfileHidden(!!data.profile_hidden);
       setNotificationsEnabled(!!data.expo_push_token);
+      setBasics(data.basics || {});
       if (data.photo_url) {
         const url = await getSignedPhotoUrl(data.photo_url);
         setPhotoUrl(url);
@@ -70,6 +73,22 @@ export default function ProfileScreen({ navigation }) {
     setInterests((prev) =>
       prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
     );
+  }
+
+  function setBasicField(key, value) {
+    setBasics((prev) => {
+      const next = { ...prev };
+      if (next[key] === value) {
+        delete next[key]; // tapping the same selected option again clears it
+      } else {
+        next[key] = value;
+      }
+      return next;
+    });
+  }
+
+  function setBasicTextField(key, value) {
+    setBasics((prev) => ({ ...prev, [key]: value }));
   }
 
   async function save() {
@@ -90,6 +109,19 @@ export default function ProfileScreen({ navigation }) {
       }
     }
 
+    // Moderate the free-text Basics fields (height, school, job title,
+    // living in) the same way as every other user-entered text field.
+    const textBasicsFields = BASICS_FIELDS.filter((f) => f.type === 'text');
+    for (const field of textBasicsFields) {
+      const value = basics[field.key];
+      if (value && value.trim()) {
+        const check = await checkTextModeration(value);
+        if (!check.safe) {
+          return Alert.alert(`${field.label} not allowed`, `Please revise this field and try again.`);
+        }
+      }
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -99,6 +131,7 @@ export default function ProfileScreen({ navigation }) {
         pronouns: pronouns.trim() || null,
         gender: gender.trim() || null,
         sexual_orientation: sexualOrientation.trim() || null,
+        basics,
       })
       .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
@@ -307,6 +340,40 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
+        <Text style={styles.sectionLabel}>Basics (Optional)</Text>
+        <View style={styles.formCard}>
+          {BASICS_FIELDS.map((field) => (
+            <View key={field.key} style={styles.basicFieldBlock}>
+              <Text style={styles.label}>{field.label}</Text>
+              {field.type === 'text' ? (
+                <TextInput
+                  style={styles.input}
+                  value={basics[field.key] || ''}
+                  onChangeText={(v) => setBasicTextField(field.key, v)}
+                  placeholder={field.placeholder}
+                  placeholderTextColor={colors.textTertiary}
+                />
+              ) : (
+                <View style={styles.chipsWrap}>
+                  {field.options.map((option) => {
+                    const selected = basics[field.key] === option;
+                    return (
+                      <TouchableOpacity
+                        key={option}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setBasicField(field.key, option)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+
         <Text style={styles.sectionLabel}>Interests</Text>
         <View style={styles.chipsWrap}>
           {INTEREST_OPTIONS.map((interest) => {
@@ -439,6 +506,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     marginBottom: spacing.md,
   },
+  basicFieldBlock: { marginBottom: spacing.sm },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
