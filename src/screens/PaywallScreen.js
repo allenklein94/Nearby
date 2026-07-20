@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { getOfferings, purchasePackage, restorePurchases } from '../services/purchases';
 import { colors, typography, spacing, radius, shadow } from '../theme';
+import { usePostHog } from 'posthog-react-native';
 
 const FEATURES = [
   { icon: '👀', text: "See everyone who's noticed you" },
@@ -11,6 +12,7 @@ const FEATURES = [
 ];
 
 export default function PaywallScreen({ navigation }) {
+  const posthog = usePostHog();
   const [offering, setOffering] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);

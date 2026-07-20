@@ -5,8 +5,10 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { colors, typography, spacing, radius, shadow } from '../theme';
+import { usePostHog } from 'posthog-react-native';
 
 export default function DiscoveryScreen({ navigation }) {
+  const posthog = usePostHog();
   const [nearby, setNearby] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
@@ -32,10 +34,11 @@ export default function DiscoveryScreen({ navigation }) {
     load();
   }, [load]);
 
-  async function sendNotice(toUserId) {
+async function sendNotice(toUserId) {
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
     await supabase.from('notices').insert({ from_user: fromUserId, to_user: toUserId });
+    posthog.capture('notice_sent');
   }
 
   async function onRefresh() {

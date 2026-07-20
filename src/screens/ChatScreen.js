@@ -4,8 +4,10 @@ import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { colors, typography, spacing, radius } from '../theme';
+import { usePostHog } from 'posthog-react-native';
 
 export default function ChatScreen({ route, navigation }) {
+  const posthog = usePostHog();
   const { matchId } = route.params;
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -111,6 +113,8 @@ export default function ChatScreen({ route, navigation }) {
       console.error('sendMessage error', error);
       return;
     }
+
+    posthog.capture('message_sent');
 
     setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
   }

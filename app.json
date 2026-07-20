@@ -55,7 +55,8 @@
           "color": "#e94560"
         }
       ],
-      "@sentry/react-native/expo"
+      "@sentry/react-native/expo",
+      "expo-localization"
     ],
     "extra": {
       "eas": {

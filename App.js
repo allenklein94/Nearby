@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as Sentry from '@sentry/react-native';
+import { PostHogProvider } from 'posthog-react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
@@ -12,10 +13,15 @@ Sentry.init({
 
 function App() {
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <RootNavigator />
-    </AuthProvider>
+    <PostHogProvider
+      apiKey="phc_kEv3UMR6bbSC9Er9aVRarCxjiBVvW8ye2Gae2msUpjem"
+      options={{ host: 'https://us.i.posthog.com' }}
+    >
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </AuthProvider>
+    </PostHogProvider>
   );
 }
 
