@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
-import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto } from '../services/extraPhotos';
+import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
 import { registerForPushNotifications, disablePushNotifications } from '../services/notifications';
@@ -169,8 +169,19 @@ export default function ProfileScreen({ navigation }) {
   }
 
   function confirmDeleteExtraPhoto(photo) {
-    Alert.alert('Remove this photo?', '', [
+    Alert.alert('Photo options', '', [
       { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Set as Main Photo',
+        onPress: async () => {
+          try {
+            await setAsMainPhoto(userId, photo.id);
+            load();
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
       {
         text: 'Remove',
         style: 'destructive',
@@ -292,7 +303,7 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.helperText}>Tap and hold a photo to remove it. Up to {MAX_EXTRA_PHOTOS} additional photos.</Text>
+        <Text style={styles.helperText}>Tap and hold a photo for options — set as main or remove. Up to {MAX_EXTRA_PHOTOS} additional photos.</Text>
 
         <View style={styles.formCard}>
           <Text style={styles.label}>Display Name</Text>

@@ -103,3 +103,48 @@ export async function deleteExtraPhoto(photoId, photoUrl) {
   const { error } = await supabase.from('profile_photos').delete().eq('id', photoId);
   if (error) throw error;
 }
+
+// Swaps a gallery photo into the "main" slot and moves the current main
+// photo into that gallery photo's row — safe now that uploads always
+// use unique, timestamped filenames rather than a fixed one, so no
+// actual file needs to move, only which database row references which
+// path. Both photos keep whatever verification status they already had.
+export async function setAsMainPhoto(userId, extraPhotoId) {
+  const { data: extraPhoto, error: extraError } = await supabase
+    .from('profile_photos')
+    .select('*')
+    .eq('id', extraPhotoId)
+    .single();
+
+  if (extraError || !extraPhoto) throw new Error('Could not find that photo.');
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('photo_url, photo_verified')
+    .eq('id', userId)
+    .single();
+
+  if (profileError) throw profileError;
+
+  const { error: updateProfileError } = await supabase
+    .from('profiles')
+    .update({ photo_url: extraPhoto.photo_url, photo_verified: extraPhoto.photo_verified })
+    .eq('id', userId);
+
+  if (updateProfileError) throw updateProfileError;
+
+  // Only swap the old main photo into the gallery slot if there was
+  // one — a brand new account might not have an existing main photo.
+  if (profile?.photo_url) {
+    const { error: updateExtraError } = await supabase
+      .from('profile_photos')
+      .update({ photo_url: profile.photo_url, photo_verified: profile.photo_verified })
+      .eq('id', extraPhotoId);
+
+    if (updateExtraError) throw updateExtraError;
+  } else {
+    // No previous main photo — just remove this gallery entry since
+    // its photo has moved to become the main one.
+    await supabase.from('profile_photos').delete().eq('id', extraPhotoId);
+  }
+}

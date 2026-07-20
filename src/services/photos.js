@@ -49,11 +49,11 @@ export async function uploadProfilePhoto(userId, asset) {
   }
 
   const bytes = base64ToUint8Array(base64);
-  const path = `${userId}/profile.jpg`;
+  const path = `${userId}/main-${Date.now()}.jpg`;
 
   const { error: uploadError } = await supabase.storage
     .from('profile-photos')
-    .upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
+    .upload(path, bytes, { contentType: 'image/jpeg' });
 
   if (uploadError) throw uploadError;
 
