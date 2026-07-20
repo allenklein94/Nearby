@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
+import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
 import { colors, typography, spacing, radius, shadow } from '../theme';
+
+const MAX_EXTRA_PHOTOS = 5;
 
 export default function ProfileScreen({ navigation }) {
   const { isAdmin } = useAuth();
@@ -16,6 +19,8 @@ export default function ProfileScreen({ navigation }) {
   const [photoVerified, setPhotoVerified] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [extraPhotos, setExtraPhotos] = useState([]);
+  const [uploadingExtra, setUploadingExtra] = useState(false);
 
   useEffect(() => {
     load();
@@ -36,6 +41,9 @@ export default function ProfileScreen({ navigation }) {
         setPhotoUrl(url);
       }
     }
+
+    const extras = await getExtraPhotos(id);
+    setExtraPhotos(extras);
   }
 
   async function save() {
@@ -69,6 +77,41 @@ export default function ProfileScreen({ navigation }) {
       setUploading(false);
       Alert.alert('Upload failed', e.message);
     }
+  }
+
+  async function addExtraPhoto() {
+    if (extraPhotos.length >= MAX_EXTRA_PHOTOS) {
+      return Alert.alert('Limit reached', `You can add up to ${MAX_EXTRA_PHOTOS} additional photos.`);
+    }
+    try {
+      const asset = await pickExtraPhoto();
+      if (!asset) return;
+      setUploadingExtra(true);
+      await uploadExtraPhoto(userId, asset, extraPhotos.length);
+      setUploadingExtra(false);
+      load();
+    } catch (e) {
+      setUploadingExtra(false);
+      Alert.alert('Upload failed', e.message);
+    }
+  }
+
+  function confirmDeleteExtraPhoto(photo) {
+    Alert.alert('Remove this photo?', '', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteExtraPhoto(photo.id, photo.photo_url);
+            load();
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
   }
 
   async function signOut() {
@@ -109,70 +152,97 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your Profile</Text>
-      </View>
-
-      <TouchableOpacity style={styles.photoWrap} onPress={changePhoto} disabled={uploading} activeOpacity={0.85}>
-        {photoUrl ? (
-          <Image source={{ uri: photoUrl }} style={styles.photoPreview} />
-        ) : (
-          <Text style={styles.photoPickerText}>{uploading ? 'Uploading...' : 'Tap to\nadd a photo'}</Text>
-        )}
-        <View style={styles.photoEditBadge}>
-          <Text style={styles.photoEditBadgeText}>✎</Text>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Your Profile</Text>
         </View>
-      </TouchableOpacity>
-      <View style={styles.verifiedRow}>
-        <View style={[styles.verifiedDot, photoVerified && styles.verifiedDotActive]} />
-        <Text style={styles.verifiedText}>
-          {photoVerified ? 'Photo verified' : 'Photo pending review'}
-        </Text>
-      </View>
 
-      <View style={styles.formCard}>
-        <Text style={styles.label}>Display Name</Text>
-        <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} />
-
-        <Text style={styles.label}>Bio</Text>
-        <TextInput
-          style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
-          value={bio}
-          onChangeText={setBio}
-          multiline
-          placeholderTextColor={colors.textTertiary}
-        />
-      </View>
-
-      <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
-        <Text style={styles.buttonText}>Save Changes</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
-        <Text style={styles.premiumButtonText}>✨ Manage Premium</Text>
-      </TouchableOpacity>
-
-      {isAdmin && (
-        <TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminReports')} activeOpacity={0.85}>
-          <Text style={styles.adminButtonText}>Review Reports (Admin)</Text>
+        <TouchableOpacity style={styles.photoWrap} onPress={changePhoto} disabled={uploading} activeOpacity={0.85}>
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.photoPreview} />
+          ) : (
+            <Text style={styles.photoPickerText}>{uploading ? 'Uploading...' : 'Tap to\nadd a photo'}</Text>
+          )}
+          <View style={styles.photoEditBadge}>
+            <Text style={styles.photoEditBadgeText}>✎</Text>
+          </View>
         </TouchableOpacity>
-      )}
+        <View style={styles.verifiedRow}>
+          <View style={[styles.verifiedDot, photoVerified && styles.verifiedDotActive]} />
+          <Text style={styles.verifiedText}>
+            {photoVerified ? 'Main photo verified' : 'Main photo pending review'}
+          </Text>
+        </View>
 
-      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-        <Text style={styles.signOutText}>Sign Out</Text>
-      </TouchableOpacity>
+        <Text style={styles.sectionLabel}>More Photos</Text>
+        <View style={styles.galleryGrid}>
+          {extraPhotos.map((photo) => (
+            <TouchableOpacity
+              key={photo.id}
+              style={styles.galleryItem}
+              onLongPress={() => confirmDeleteExtraPhoto(photo)}
+              activeOpacity={0.85}
+            >
+              {photo.signedUrl && <Image source={{ uri: photo.signedUrl }} style={styles.galleryImage} />}
+              {!photo.photo_verified && (
+                <View style={styles.pendingOverlay}>
+                  <Text style={styles.pendingOverlayText}>Pending</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+          {extraPhotos.length < MAX_EXTRA_PHOTOS && (
+            <TouchableOpacity style={styles.addPhotoButton} onPress={addExtraPhoto} disabled={uploadingExtra} activeOpacity={0.85}>
+              <Text style={styles.addPhotoText}>{uploadingExtra ? '...' : '+'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={styles.helperText}>Tap and hold a photo to remove it. Up to {MAX_EXTRA_PHOTOS} additional photos.</Text>
 
-      <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
-        <Text style={styles.deleteText}>
-          {deleting ? 'Deleting account...' : 'Delete Account'}
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.formCard}>
+          <Text style={styles.label}>Display Name</Text>
+          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} />
+
+          <Text style={styles.label}>Bio</Text>
+          <TextInput
+            style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            placeholderTextColor={colors.textTertiary}
+          />
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
+          <Text style={styles.buttonText}>Save Changes</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
+          <Text style={styles.premiumButtonText}>✨ Manage Premium</Text>
+        </TouchableOpacity>
+
+        {isAdmin && (
+          <TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminReports')} activeOpacity={0.85}>
+            <Text style={styles.adminButtonText}>Review Reports (Admin)</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
+          <Text style={styles.deleteText}>
+            {deleting ? 'Deleting account...' : 'Delete Account'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  container: { flex: 1, backgroundColor: colors.background },
   header: { marginBottom: spacing.lg },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   photoWrap: {
@@ -205,6 +275,25 @@ const styles = StyleSheet.create({
   verifiedDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.textTertiary, marginRight: 6 },
   verifiedDotActive: { backgroundColor: colors.success },
   verifiedText: { ...typography.caption, color: colors.textTertiary },
+  sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xs },
+  galleryItem: {
+    width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+  },
+  galleryImage: { width: '100%', height: '100%' },
+  pendingOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 2,
+  },
+  pendingOverlayText: { color: '#fff', fontSize: 9, textAlign: 'center', fontWeight: '700' },
+  addPhotoButton: {
+    width: 72, height: 72, borderRadius: radius.md,
+    borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  addPhotoText: { color: colors.textTertiary, fontSize: 28, fontWeight: '300' },
+  helperText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.lg },
   formCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
