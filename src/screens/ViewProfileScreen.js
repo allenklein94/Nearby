@@ -76,10 +76,14 @@ export default function ViewProfileScreen({ route }) {
     profile.sexual_orientation && { label: 'Orientation', value: profile.sexual_orientation },
   ].filter(Boolean);
 
-  // Only show Basics fields the person actually filled in — blank
-  // fields are simply omitted, never shown as empty.
+  const filledDetails = BASICS_FIELDS
+    .filter((f) => f.type === 'text')
+    .map((field) => ({ icon: field.icon, value: profile.basics?.[field.key] }))
+    .filter((f) => f.value);
+
   const filledBasics = BASICS_FIELDS
-    .map((field) => ({ label: field.label, value: profile.basics?.[field.key] }))
+    .filter((f) => f.type === 'select')
+    .map((field) => ({ icon: field.icon, value: profile.basics?.[field.key] }))
     .filter((f) => f.value);
 
   return (
@@ -144,14 +148,26 @@ export default function ViewProfileScreen({ route }) {
             </>
           )}
 
+          {filledDetails.length > 0 && (
+            <>
+              <Text style={styles.sectionLabel}>Details</Text>
+              <View style={styles.chipsWrap}>
+                {filledDetails.map((item, i) => (
+                  <View key={i} style={styles.basicChip}>
+                    <Text style={styles.basicChipText}>{item.icon} {item.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+
           {filledBasics.length > 0 && (
             <>
               <Text style={styles.sectionLabel}>Basics</Text>
-              <View style={styles.basicsCard}>
+              <View style={styles.chipsWrap}>
                 {filledBasics.map((item, i) => (
-                  <View key={item.label} style={[styles.basicRow, i > 0 && styles.basicRowBorder]}>
-                    <Text style={styles.basicLabel}>{item.label}</Text>
-                    <Text style={styles.basicValue}>{item.value}</Text>
+                  <View key={i} style={styles.basicChip}>
+                    <Text style={styles.basicChipText}>{item.icon} {item.value}</Text>
                   </View>
                 ))}
               </View>
@@ -186,12 +202,9 @@ const styles = StyleSheet.create({
   dotsRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.sm, gap: 4 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 16 },
-  basicsCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
-    borderColor: colors.border, overflow: 'hidden',
+  basicChip: {
+    backgroundColor: colors.surfaceElevated, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
   },
-  basicRow: { flexDirection: 'row', justifyContent: 'space-between', padding: spacing.md },
-  basicRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  basicLabel: { color: colors.textTertiary, fontSize: 14 },
-  basicValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  basicChipText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
 });

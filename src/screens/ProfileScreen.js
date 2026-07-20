@@ -79,7 +79,7 @@ export default function ProfileScreen({ navigation }) {
     setBasics((prev) => {
       const next = { ...prev };
       if (next[key] === value) {
-        delete next[key]; // tapping the same selected option again clears it
+        delete next[key];
       } else {
         next[key] = value;
       }
@@ -109,8 +109,6 @@ export default function ProfileScreen({ navigation }) {
       }
     }
 
-    // Moderate the free-text Basics fields (height, school, job title,
-    // living in) the same way as every other user-entered text field.
     const textBasicsFields = BASICS_FIELDS.filter((f) => f.type === 'text');
     for (const field of textBasicsFields) {
       const value = basics[field.key];
@@ -340,36 +338,42 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
+        <Text style={styles.sectionLabel}>Details (Optional)</Text>
+        <View style={styles.formCard}>
+          {BASICS_FIELDS.filter((f) => f.type === 'text').map((field) => (
+            <View key={field.key} style={styles.basicFieldBlock}>
+              <Text style={styles.label}>{field.icon} {field.label}</Text>
+              <TextInput
+                style={styles.input}
+                value={basics[field.key] || ''}
+                onChangeText={(v) => setBasicTextField(field.key, v)}
+                placeholder={field.placeholder}
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
+          ))}
+        </View>
+
         <Text style={styles.sectionLabel}>Basics (Optional)</Text>
         <View style={styles.formCard}>
-          {BASICS_FIELDS.map((field) => (
+          {BASICS_FIELDS.filter((f) => f.type === 'select').map((field) => (
             <View key={field.key} style={styles.basicFieldBlock}>
-              <Text style={styles.label}>{field.label}</Text>
-              {field.type === 'text' ? (
-                <TextInput
-                  style={styles.input}
-                  value={basics[field.key] || ''}
-                  onChangeText={(v) => setBasicTextField(field.key, v)}
-                  placeholder={field.placeholder}
-                  placeholderTextColor={colors.textTertiary}
-                />
-              ) : (
-                <View style={styles.chipsWrap}>
-                  {field.options.map((option) => {
-                    const selected = basics[field.key] === option;
-                    return (
-                      <TouchableOpacity
-                        key={option}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => setBasicField(field.key, option)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
+              <Text style={styles.label}>{field.icon} {field.label}</Text>
+              <View style={styles.chipsWrap}>
+                {field.options.map((option) => {
+                  const selected = basics[field.key] === option;
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setBasicField(field.key, option)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           ))}
         </View>
