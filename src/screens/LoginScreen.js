@@ -62,9 +62,8 @@ export default function LoginScreen() {
           return Alert.alert('Error', result.error || 'Invalid code');
         }
 
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          email: result.email,
-          token: result.tokenHash,
+     const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: result.tokenHash,
           type: 'magiclink',
         });
         if (verifyError) return Alert.alert('Error', verifyError.message);
