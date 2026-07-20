@@ -6,6 +6,7 @@ import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../serv
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { deleteAccount } from '../services/account';
+import { requestDataExport } from '../services/dataExport';
 import { registerForPushNotifications, disablePushNotifications } from '../services/notifications';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { colors, typography, spacing, radius, shadow } from '../theme';
@@ -28,6 +29,7 @@ export default function ProfileScreen({ navigation }) {
   const [photoVerified, setPhotoVerified] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const [interests, setInterests] = useState([]);
@@ -222,6 +224,16 @@ export default function ProfileScreen({ navigation }) {
 
   async function signOut() {
     await supabase.auth.signOut();
+  }
+
+  async function handleDataExport() {
+    setExporting(true);
+    try {
+      await requestDataExport();
+    } catch (e) {
+      Alert.alert('Export failed', e.message);
+    }
+    setExporting(false);
   }
 
   function confirmDeleteAccount() {
@@ -445,6 +457,10 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.adminButtonText}>Review Reports (Admin)</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity style={styles.signOutButton} onPress={handleDataExport} disabled={exporting}>
+          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
