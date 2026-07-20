@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions } from 'react-native';
-import { colors, typography, spacing, radius, shadow } from '../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, typography, spacing, radius, shadow } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +15,11 @@ const SLIDES = [
     emoji: '🔔',
     title: 'Send a quiet Notice',
     text: "If you're interested, send a silent \"Notice.\" They're never told unless they notice you back — no rejection, no pressure.",
+  },
+  {
+    emoji: '✨',
+    title: 'Show your personality',
+    text: 'Add multiple photos, your interests, and details like relationship goals or lifestyle preferences — as much or as little as you want to share.',
   },
   {
     emoji: '🔒',
@@ -43,8 +48,6 @@ export default function OnboardingScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-    
-
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -62,7 +65,7 @@ export default function OnboardingScreen({ navigation }) {
             <Text style={styles.text}>{slide.text}</Text>
           </View>
         ))}
-     </ScrollView>
+      </ScrollView>
 
       <TouchableOpacity style={[styles.skipButton, { top: insets.top + spacing.sm }]} onPress={() => navigation.navigate('Login')}>
         <Text style={styles.skipText}>Skip</Text>
