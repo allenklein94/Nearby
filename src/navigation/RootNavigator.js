@@ -15,8 +15,10 @@ import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import ViewProfileScreen from '../screens/ViewProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
 import AdminReportsScreen from '../screens/AdminReportsScreen';
+import { colors } from '../theme';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -59,6 +61,7 @@ export default function RootNavigator() {
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: 'Profile', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
           </>

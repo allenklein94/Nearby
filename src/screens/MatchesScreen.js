@@ -1,22 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { supabase } from '../services/supabase';
+import { getSignedPhotoUrl } from '../services/photos';
 import { colors, typography, spacing, radius } from '../theme';
 
 export default function MatchesScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
+  const [myUserId, setMyUserId] = useState(null);
+  const [photoUrls, setPhotoUrls] = useState({});
 
   useEffect(() => {
     load();
   }, []);
 
   async function load() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    setMyUserId(myId);
+
     const { data, error } = await supabase
       .from('matches')
-      .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(display_name, photo_url), b:profiles!matches_user_b_fkey(display_name, photo_url)')
+      .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(id, display_name, photo_url), b:profiles!matches_user_b_fkey(id, display_name, photo_url)')
       .order('matched_at', { ascending: false });
 
-    if (!error) setMatches(data);
+    if (!error) {
+      setMatches(data);
+
+      const urlEntries = await Promise.all(
+        data.map(async (m) => {
+          const other = m.user_a === myId ? m.b : m.a;
+          if (!other?.photo_url) return [m.id, null];
+          const url = await getSignedPhotoUrl(other.photo_url);
+          return [m.id, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
+    }
   }
 
   return (
@@ -36,19 +55,32 @@ export default function MatchesScreen({ navigation }) {
             </Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('Chat', { matchId: item.id })}
-            activeOpacity={0.85}
-          >
-            <View style={styles.cardInfo}>
-              <Text style={styles.name}>{item.a?.display_name} & {item.b?.display_name}</Text>
-              <Text style={styles.sub}>Tap to start chatting</Text>
+        renderItem={({ item }) => {
+          const other = item.user_a === myUserId ? item.b : item.a;
+          return (
+            <View style={styles.card}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}
+                activeOpacity={0.85}
+              >
+                {photoUrls[item.id] ? (
+                  <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.cardInfo}
+                onPress={() => navigation.navigate('Chat', { matchId: item.id })}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.name}>{other?.display_name}</Text>
+                <Text style={styles.sub}>Tap to start chatting</Text>
+              </TouchableOpacity>
+              <Text style={styles.chevron}>›</Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        )}
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -66,11 +98,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
-    padding: spacing.md,
+    padding: spacing.sm,
     marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
   },
+  avatar: { width: 52, height: 52, borderRadius: radius.md, marginRight: spacing.md },
+  avatarPlaceholder: { backgroundColor: colors.surfaceElevated },
   cardInfo: { flex: 1 },
   name: { ...typography.bodyBold, color: colors.textPrimary },
   sub: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },

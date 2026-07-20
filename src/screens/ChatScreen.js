@@ -52,7 +52,13 @@ export default function ChatScreen({ route, navigation }) {
       setOtherUser(other);
       navigation.setOptions({
         headerShown: true,
-        title: other?.display_name || 'Chat',
+        headerTitle: () => (
+          <TouchableOpacity onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}>
+            <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
+              {other?.display_name || 'Chat'}
+            </Text>
+          </TouchableOpacity>
+        ),
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.textPrimary,
         headerShadowVisible: false,
@@ -158,6 +164,8 @@ export default function ChatScreen({ route, navigation }) {
             value={text}
             onChangeText={setText}
             multiline
+            textAlignVertical="top"
+            keyboardType="default"
           />
           <TouchableOpacity
             style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}

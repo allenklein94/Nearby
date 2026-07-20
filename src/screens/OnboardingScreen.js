@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions } from 'react-native';
 import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +24,7 @@ const SLIDES = [
 ];
 
 export default function OnboardingScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef(null);
 
@@ -62,7 +64,7 @@ export default function OnboardingScreen({ navigation }) {
         ))}
      </ScrollView>
 
-      <TouchableOpacity style={styles.skipButton} onPress={() => navigation.navigate('Login')}>
+      <TouchableOpacity style={[styles.skipButton, { top: insets.top + spacing.sm }]} onPress={() => navigation.navigate('Login')}>
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
 
@@ -85,7 +87,7 @@ export default function OnboardingScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  skipButton: { position: 'absolute', top: spacing.lg, right: spacing.lg, zIndex: 10, padding: spacing.sm },
+  skipButton: { position: 'absolute', right: spacing.lg, zIndex: 10, padding: spacing.sm },
   skipText: { color: colors.textTertiary, fontWeight: '600', fontSize: 14 },
   slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   emojiCircle: {
