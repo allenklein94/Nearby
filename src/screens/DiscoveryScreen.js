@@ -6,6 +6,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { colors, typography, spacing, radius, shadow } from '../theme';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 
 export default function DiscoveryScreen({ navigation }) {
   const posthog = usePostHog();
@@ -35,6 +36,7 @@ export default function DiscoveryScreen({ navigation }) {
   }, [load]);
 
 async function sendNotice(toUserId) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
     await supabase.from('notices').insert({ from_user: fromUserId, to_user: toUserId });

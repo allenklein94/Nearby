@@ -5,6 +5,7 @@ import { checkTextModeration } from '../services/textModeration';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { colors, typography, spacing, radius } from '../theme';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 
 export default function ChatScreen({ route, navigation }) {
   const posthog = usePostHog();
@@ -92,6 +93,7 @@ export default function ChatScreen({ route, navigation }) {
       return;
     }
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setText('');
 
     const optimisticMessage = {
