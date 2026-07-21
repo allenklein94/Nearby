@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Sentry from '@sentry/react-native';
 import { PostHogProvider } from 'posthog-react-native';
 import { AuthProvider } from './src/context/AuthContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
 Sentry.init({
@@ -11,16 +12,23 @@ Sentry.init({
   tracesSampleRate: 0.2,
 });
 
+function StatusBarWithTheme() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} />;
+}
+
 function App() {
   return (
     <PostHogProvider
       apiKey="phc_kEv3UMR6bbSC9Er9aVRarCxjiBVvW8ye2Gae2msUpjem"
       options={{ host: 'https://us.i.posthog.com' }}
     >
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <StatusBarWithTheme />
+          <RootNavigator />
+        </AuthProvider>
+      </ThemeProvider>
     </PostHogProvider>
   );
 }
