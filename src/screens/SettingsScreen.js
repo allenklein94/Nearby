@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
+import { requestDataExport } from '../services/dataExport';
 import { typography, spacing, radius } from '../theme';
 
 const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
@@ -38,6 +39,7 @@ export default function SettingsScreen({ navigation }) {
   const [otpSent, setOtpSent] = useState(false);
   const [e164NewPhone, setE164NewPhone] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     load();
@@ -114,6 +116,16 @@ export default function SettingsScreen({ navigation }) {
     setOtpSent(false);
     setNewPhoneInput('');
     setOtp('');
+  }
+
+  async function handleDataExport() {
+    setExporting(true);
+    try {
+      await requestDataExport();
+    } catch (e) {
+      Alert.alert('Export failed', e.message);
+    }
+    setExporting(false);
   }
 
   async function signOut() {
@@ -335,6 +347,10 @@ export default function SettingsScreen({ navigation }) {
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity style={styles.signOutButton} onPress={handleDataExport} disabled={exporting}>
+          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
