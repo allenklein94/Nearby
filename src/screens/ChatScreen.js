@@ -3,6 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeArea
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { isPremium } from '../services/purchases';
+import { updateBadgeCount } from '../services/notifications';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -37,14 +38,14 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   async function markMessagesAsRead(myId) {
-    // Mark any messages sent TO me (not by me) as read, only if not
-    // already marked — avoids unnecessary writes on every poll.
     await supabase
       .from('messages')
       .update({ read_at: new Date().toISOString() })
       .eq('match_id', matchId)
       .neq('sender_id', myId)
       .is('read_at', null);
+
+    updateBadgeCount(myId);
   }
 
   useEffect(() => {

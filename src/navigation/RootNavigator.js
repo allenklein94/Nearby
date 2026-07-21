@@ -5,7 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { registerForPushNotifications } from '../services/notifications';
+import { registerForPushNotifications, updateBadgeCount } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
 import OnboardingScreen from '../screens/OnboardingScreen';
@@ -48,6 +48,7 @@ export default function RootNavigator() {
       initPurchases(session.user.id);
       registerForPushNotifications(session.user.id);
       startBackgroundPresenceReporting();
+      updateBadgeCount(session.user.id);
     }
   }, [session, profileComplete]);
 
