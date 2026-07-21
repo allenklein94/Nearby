@@ -92,6 +92,8 @@ export default function ViewProfileScreen({ route }) {
     .map((field) => ({ icon: field.icon, value: profile.basics?.[field.key] }))
     .filter((f) => f.value);
 
+  const prompts = profile.prompts || [];
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -140,6 +142,13 @@ export default function ViewProfileScreen({ route }) {
           )}
 
           {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+
+          {prompts.length > 0 && prompts.map((prompt, i) => (
+            <View key={i} style={styles.promptCard}>
+              <Text style={styles.promptQuestion}>{prompt.question}</Text>
+              <Text style={styles.promptAnswer}>{prompt.answer}</Text>
+            </View>
+          ))}
 
           {profile.interests?.length > 0 && (
             <>
@@ -197,6 +206,12 @@ const getStyles = (colors) => StyleSheet.create({
   },
   detailChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  promptCard: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.md,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+  },
+  promptQuestion: { ...typography.caption, color: colors.textTertiary, marginBottom: 4 },
+  promptAnswer: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16, lineHeight: 22 },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   interestChip: {

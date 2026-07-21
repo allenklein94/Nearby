@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -7,9 +7,11 @@ import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../serv
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { BASICS_FIELDS } from '../constants/basicsFields';
+import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { typography, spacing, radius } from '../theme';
 
 const MAX_EXTRA_PHOTOS = 5;
+const MAX_PROMPTS = 3;
 
 const INTEREST_OPTIONS = [
   'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
@@ -35,6 +37,12 @@ export default function ProfileScreen({ navigation }) {
   const [gender, setGender] = useState('');
   const [sexualOrientation, setSexualOrientation] = useState('');
   const [basics, setBasics] = useState({});
+  const [prompts, setPrompts] = useState([]);
+  const [questionPickerVisible, setQuestionPickerVisible] = useState(false);
+  const [editingPromptIndex, setEditingPromptIndex] = useState(null);
+  const [answerModalVisible, setAnswerModalVisible] = useState(false);
+  const [draftQuestion, setDraftQuestion] = useState('');
+  const [draftAnswer, setDraftAnswer] = useState('');
 
   useEffect(() => {
     load();
@@ -55,6 +63,7 @@ export default function ProfileScreen({ navigation }) {
       setGender(data.gender || '');
       setSexualOrientation(data.sexual_orientation || '');
       setBasics(data.basics || {});
+      setPrompts(data.prompts || []);
       if (data.photo_url) {
         const url = await getSignedPhotoUrl(data.photo_url);
         setPhotoUrl(url);
@@ -85,6 +94,58 @@ export default function ProfileScreen({ navigation }) {
 
   function setBasicTextField(key, value) {
     setBasics((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function openAddPrompt() {
+    if (prompts.length >= MAX_PROMPTS) {
+      return Alert.alert('Limit reached', `You can add up to ${MAX_PROMPTS} prompts.`);
+    }
+    setEditingPromptIndex(null);
+    setQuestionPickerVisible(true);
+  }
+
+  function openEditPrompt(index) {
+    setEditingPromptIndex(index);
+    setDraftQuestion(prompts[index].question);
+    setDraftAnswer(prompts[index].answer);
+    setAnswerModalVisible(true);
+  }
+
+  function selectQuestion(question) {
+    setDraftQuestion(question);
+    setDraftAnswer('');
+    setQuestionPickerVisible(false);
+    setAnswerModalVisible(true);
+  }
+
+  async function saveDraftPrompt() {
+    if (!draftAnswer.trim()) {
+      return Alert.alert('Answer required', 'Write a short answer to this prompt.');
+    }
+    const check = await checkTextModeration(draftAnswer);
+    if (!check.safe) {
+      return Alert.alert('Answer not allowed', 'Please revise your answer and try again.');
+    }
+
+    setPrompts((prev) => {
+      const next = [...prev];
+      const entry = { question: draftQuestion, answer: draftAnswer.trim() };
+      if (editingPromptIndex !== null) {
+        next[editingPromptIndex] = entry;
+      } else {
+        next.push(entry);
+      }
+      return next;
+    });
+
+    setAnswerModalVisible(false);
+    setDraftQuestion('');
+    setDraftAnswer('');
+    setEditingPromptIndex(null);
+  }
+
+  function removePrompt(index) {
+    setPrompts((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function save() {
@@ -126,6 +187,7 @@ export default function ProfileScreen({ navigation }) {
         gender: gender.trim() || null,
         sexual_orientation: sexualOrientation.trim() || null,
         basics,
+        prompts,
       })
       .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
@@ -193,6 +255,8 @@ export default function ProfileScreen({ navigation }) {
     ]);
   }
 
+  const usedQuestions = prompts.map((p) => p.question);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -257,6 +321,27 @@ export default function ProfileScreen({ navigation }) {
             multiline
             placeholderTextColor={colors.textTertiary}
           />
+        </View>
+
+        <Text style={styles.sectionLabel}>Prompts</Text>
+        <View style={styles.formCard}>
+          {prompts.map((prompt, index) => (
+            <TouchableOpacity key={index} style={styles.promptCard} onPress={() => openEditPrompt(index)} activeOpacity={0.85}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.promptQuestion}>{prompt.question}</Text>
+                <Text style={styles.promptAnswer}>{prompt.answer}</Text>
+              </View>
+              <TouchableOpacity onPress={() => removePrompt(index)} style={styles.promptRemove}>
+                <Text style={styles.promptRemoveText}>✕</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+          {prompts.length < MAX_PROMPTS && (
+            <TouchableOpacity style={styles.addPromptButton} onPress={openAddPrompt} activeOpacity={0.85}>
+              <Text style={styles.addPromptText}>+ Add a Prompt</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.helperText}>Add up to {MAX_PROMPTS} prompts to show more of your personality.</Text>
         </View>
 
         <Text style={styles.sectionLabel}>About You (Optional)</Text>
@@ -350,6 +435,51 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.buttonText}>{t('profile.save')}</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal visible={questionPickerVisible} animationType="slide" onRequestClose={() => setQuestionPickerVisible(false)}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Choose a Prompt</Text>
+            <TouchableOpacity onPress={() => setQuestionPickerVisible(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={PROMPT_QUESTIONS.filter((q) => !usedQuestions.includes(q))}
+            keyExtractor={(item) => item}
+            contentContainerStyle={{ padding: spacing.lg }}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.questionRow} onPress={() => selectQuestion(item)}>
+                <Text style={styles.questionText}>{item}</Text>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
+
+      <Modal visible={answerModalVisible} animationType="slide" transparent onRequestClose={() => setAnswerModalVisible(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetQuestion}>{draftQuestion}</Text>
+            <TextInput
+              style={[styles.input, { height: 90, textAlignVertical: 'top', marginTop: spacing.md }]}
+              placeholder="Your answer..."
+              placeholderTextColor={colors.textTertiary}
+              value={draftAnswer}
+              onChangeText={setDraftAnswer}
+              multiline
+              autoFocus
+            />
+            <TouchableOpacity style={styles.button} onPress={saveDraftPrompt} activeOpacity={0.85}>
+              <Text style={styles.buttonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setAnswerModalVisible(false)} style={{ marginTop: spacing.md }}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -431,4 +561,30 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  promptCard: {
+    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,
+  },
+  promptQuestion: { ...typography.caption, color: colors.textTertiary, marginBottom: 4 },
+  promptAnswer: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
+  promptRemove: { padding: spacing.xs },
+  promptRemoveText: { color: colors.textTertiary, fontSize: 16 },
+  addPromptButton: {
+    borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed',
+    borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginBottom: spacing.sm,
+  },
+  addPromptText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
+  modalTitle: { ...typography.title, color: colors.textPrimary },
+  modalCancelText: { color: colors.primary, fontWeight: '600', textAlign: 'center' },
+  questionRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
+    marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+  },
+  questionText: { ...typography.body, color: colors.textPrimary, flex: 1 },
+  chevron: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  sheetQuestion: { ...typography.headline, color: colors.textPrimary },
 });

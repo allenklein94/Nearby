@@ -1,0 +1,14 @@
+export const PROMPT_QUESTIONS = [
+  'My simple pleasures are...',
+  'The way to win me over is...',
+  "I'll know it's time to delete this app when...",
+  'A random fact I love is...',
+  "My most controversial opinion is...",
+  "Together, we could...",
+  'The key to my heart is...',
+  "I'm looking for...",
+  'My ideal Sunday looks like...',
+  "Two truths and a lie...",
+  'The best way to ask me out is...',
+  'My love language is...',
+];
