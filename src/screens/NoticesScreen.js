@@ -63,6 +63,7 @@ export default function NoticesScreen({ navigation }) {
       <FlatList
         data={notices}
         keyExtractor={(item) => item.id}
+        numColumns={2}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -71,17 +72,25 @@ export default function NoticesScreen({ navigation }) {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={[styles.card, item.is_super && styles.waveCard]}>
-            {photoUrls[item.id] && (
+          <TouchableOpacity
+            style={[styles.card, item.is_super && styles.waveCard]}
+            onPress={() => navigation.navigate('ViewProfile', { userId: item.from_user })}
+            activeOpacity={0.85}
+          >
+            {photoUrls[item.id] ? (
               <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]} />
             )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>
-                {item.is_super && '👋 '}{item.profiles?.display_name} {t('notices.noticedYou')}
-              </Text>
-              {item.is_super && <Text style={styles.waveLabel}>{t('notices.wave')}</Text>}
+            {item.is_super && (
+              <View style={styles.waveBadge}>
+                <Text style={styles.waveBadgeText}>👋 Wave</Text>
+              </View>
+            )}
+            <View style={styles.cardFooter}>
+              <Text style={styles.name} numberOfLines={1}>{item.profiles?.display_name}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </SafeAreaView>
@@ -106,25 +115,32 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   upsellTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
   upsellText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
   upsellArrow: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%' },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+    flex: 1,
+    margin: spacing.xs,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
+    backgroundColor: colors.surface,
+    aspectRatio: 0.85,
+    ...shadow.card,
   },
   waveCard: {
     borderColor: colors.primary,
-    borderWidth: 1.5,
-    backgroundColor: colors.primaryMuted,
+    borderWidth: 2,
   },
-  avatar: { width: 44, height: 44, borderRadius: radius.sm, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
-  name: { ...typography.body, color: colors.textPrimary },
-  waveLabel: { ...typography.small, color: colors.primary, fontWeight: '700', marginTop: 2 },
+  avatar: { width: '100%', height: '75%', backgroundColor: colors.surfaceElevated },
+  avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
+  waveBadge: {
+    position: 'absolute', top: spacing.xs, left: spacing.xs,
+    backgroundColor: colors.primary, paddingHorizontal: spacing.sm, paddingVertical: 2,
+    borderRadius: radius.full,
+  },
+  waveBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  cardFooter: { padding: spacing.sm, justifyContent: 'center' },
+  name: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
 });
