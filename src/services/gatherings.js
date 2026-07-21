@@ -28,6 +28,9 @@ export async function createGathering({ title, description, interestTag, schedul
 }
 
 export async function getNearbyGatherings() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') return [];
 
@@ -38,6 +41,7 @@ export async function getNearbyGatherings() {
     .from('gatherings')
     .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url)')
     .eq('area', area)
+    .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
 
@@ -76,20 +80,8 @@ export async function expressInterest(gatheringId) {
   if (error) throw error;
 }
 
-export async function approveInterest(interestId, gatheringId, hostId, interestedUserId) {
-  const { data: match, error: matchError } = await supabase
-    .from('matches')
-    .insert({ user_a: hostId, user_b: interestedUserId })
-    .select()
-    .single();
-
-  if (matchError) throw matchError;
-
-  const { error: updateError } = await supabase
-    .from('gathering_interest')
-    .update({ status: 'approved', match_id: match.id })
-    .eq('id', interestId);
-
-  if (updateError) throw updateError;
-  return match;
+export async function approveInterest(interestId) {
+  const { data, error } = await supabase.rpc('approve_gathering_interest', { interest_id: interestId });
+  if (error) throw error;
+  return data;
 }
