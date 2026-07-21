@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 const REVIEWER_PHONE_DIGITS = '5555550199';
 
@@ -13,6 +14,8 @@ function toE164(rawInput) {
 }
 
 export default function LoginScreen() {
+  const { colors, shadow } = useTheme();
+  const styles = getStyles(colors, shadow);
   const [phoneInput, setPhoneInput] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -62,7 +65,7 @@ export default function LoginScreen() {
           return Alert.alert('Error', result.error || 'Invalid code');
         }
 
-     const { error: verifyError } = await supabase.auth.verifyOtp({
+        const { error: verifyError } = await supabase.auth.verifyOtp({
           token_hash: result.tokenHash,
           type: 'magiclink',
         });
@@ -126,7 +129,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, justifyContent: 'center' },
   icon: { fontSize: 40, textAlign: 'center', marginBottom: spacing.md },
   title: { ...typography.title, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.sm },

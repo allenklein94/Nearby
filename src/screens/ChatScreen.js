@@ -6,10 +6,13 @@ import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
-import { colors, typography, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 export default function ChatScreen({ route, navigation }) {
   const { matchId } = route.params;
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const posthog = usePostHog();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -233,7 +236,7 @@ export default function ChatScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },

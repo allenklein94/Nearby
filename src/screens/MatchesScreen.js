@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
-import { colors, typography, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 export default function MatchesScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [matches, setMatches] = useState([]);
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -86,7 +89,7 @@ export default function MatchesScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerTitle: { ...typography.title, color: colors.textPrimary },

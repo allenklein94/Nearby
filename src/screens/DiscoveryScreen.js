@@ -7,9 +7,12 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import SkeletonCard from '../components/SkeletonCard';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 export default function DiscoveryScreen({ navigation }) {
+  const { colors, shadow } = useTheme();
+  const styles = getStyles(colors, shadow);
   const posthog = usePostHog();
   const [nearby, setNearby] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -186,7 +189,7 @@ export default function DiscoveryScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
   headerRow: { flexDirection: 'row', alignItems: 'center' },

@@ -3,9 +3,12 @@ import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 export default function NoticesScreen({ navigation }) {
+  const { colors, shadow } = useTheme();
+  const styles = getStyles(colors, shadow);
   const [notices, setNotices] = useState([]);
   const [premium, setPremium] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -83,7 +86,7 @@ export default function NoticesScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerTitle: { ...typography.title, color: colors.textPrimary },

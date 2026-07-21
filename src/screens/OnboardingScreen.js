@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -29,9 +30,11 @@ const SLIDES = [
 ];
 
 export default function OnboardingScreen({ navigation }) {
+  const { colors, shadow } = useTheme();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef(null);
+  const styles = getStyles(colors, shadow);
 
   function handleScroll(event) {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -88,7 +91,7 @@ export default function OnboardingScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   skipButton: { position: 'absolute', right: spacing.lg, zIndex: 10, padding: spacing.sm },
   skipText: { color: colors.textTertiary, fontWeight: '600', fontSize: 14 },

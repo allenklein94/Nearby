@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
@@ -9,7 +10,7 @@ import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { registerForPushNotifications, disablePushNotifications } from '../services/notifications';
 import { BASICS_FIELDS } from '../constants/basicsFields';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { typography, spacing, radius } from '../theme';
 
 const MAX_EXTRA_PHOTOS = 5;
 
@@ -22,6 +23,8 @@ const INTEREST_OPTIONS = [
 
 export default function ProfileScreen({ navigation }) {
   const { isAdmin } = useAuth();
+  const { colors, shadow } = useTheme();
+  const styles = getStyles(colors, shadow);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [userId, setUserId] = useState(null);
@@ -479,7 +482,7 @@ export default function ProfileScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { marginBottom: spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   settingsGear: { padding: spacing.xs },
