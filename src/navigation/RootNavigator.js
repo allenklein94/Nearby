@@ -4,16 +4,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { registerForPushNotifications } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
-import { colors } from '../theme';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
 import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
+import GatheringsScreen from '../screens/GatheringsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
@@ -21,6 +22,7 @@ import AdminReportsScreen from '../screens/AdminReportsScreen';
 import ViewProfileScreen from '../screens/ViewProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LegalScreen from '../screens/LegalScreen';
+import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -31,6 +33,7 @@ function MainTabs() {
       <Tab.Screen name="Nearby" component={DiscoveryScreen} />
       <Tab.Screen name="Notices" component={NoticesScreen} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
+      <Tab.Screen name="Gatherings" component={GatheringsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -38,6 +41,7 @@ function MainTabs() {
 
 export default function RootNavigator() {
   const { session, loading, profileComplete, profileLoading } = useAuth();
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (session && profileComplete) {
@@ -68,6 +72,7 @@ export default function RootNavigator() {
             <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: 'Profile', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: 'Host a Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
           </>
         )}
       </Stack.Navigator>
