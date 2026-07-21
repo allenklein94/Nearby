@@ -1,20 +1,22 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
-import ReportBlockModal from '../components/ReportBlockModal';
-import { colors, typography, spacing, radius } from '../theme';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
+import ReportBlockModal from '../components/ReportBlockModal';
+import GifPickerModal from '../components/GifPickerModal';
+import { colors, typography, spacing, radius } from '../theme';
 
 export default function ChatScreen({ route, navigation }) {
-  const posthog = usePostHog();
   const { matchId } = route.params;
+  const posthog = usePostHog();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [gifPickerVisible, setGifPickerVisible] = useState(false);
   const listRef = useRef(null);
 
   async function loadMessages() {
@@ -107,6 +109,7 @@ export default function ChatScreen({ route, navigation }) {
       match_id: matchId,
       sender_id: userId,
       body,
+      gif_url: null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMessage]);
@@ -123,7 +126,35 @@ export default function ChatScreen({ route, navigation }) {
     }
 
     posthog.capture('message_sent');
+    setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+  }
 
+  async function sendGif(gifUrl) {
+    setGifPickerVisible(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    const optimisticMessage = {
+      id: `optimistic-${Date.now()}`,
+      match_id: matchId,
+      sender_id: userId,
+      body: null,
+      gif_url: gifUrl,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({ match_id: matchId, sender_id: userId, body: '', gif_url: gifUrl })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('sendGif error', error);
+      return;
+    }
+
+    posthog.capture('gif_sent');
     setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
   }
 
@@ -149,14 +180,21 @@ export default function ChatScreen({ route, navigation }) {
           }
           renderItem={({ item }) => (
             <View style={[styles.bubbleRow, item.sender_id === userId ? styles.rowRight : styles.rowLeft]}>
-              <View style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}>
-                <Text style={[styles.bubbleText, item.sender_id === userId && styles.myBubbleText]}>{item.body}</Text>
-              </View>
+              {item.gif_url ? (
+                <Image source={{ uri: item.gif_url }} style={styles.gifBubble} resizeMode="cover" />
+              ) : (
+                <View style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}>
+                  <Text style={[styles.bubbleText, item.sender_id === userId && styles.myBubbleText]}>{item.body}</Text>
+                </View>
+              )}
               <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
             </View>
           )}
         />
         <View style={styles.inputRow}>
+          <TouchableOpacity style={styles.gifButton} onPress={() => setGifPickerVisible(true)}>
+            <Text style={styles.gifButtonText}>GIF</Text>
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -164,8 +202,6 @@ export default function ChatScreen({ route, navigation }) {
             value={text}
             onChangeText={setText}
             multiline
-            textAlignVertical="top"
-            keyboardType="default"
           />
           <TouchableOpacity
             style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
@@ -176,6 +212,12 @@ export default function ChatScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <GifPickerModal
+        visible={gifPickerVisible}
+        onClose={() => setGifPickerVisible(false)}
+        onSelect={sendGif}
+      />
 
       <ReportBlockModal
         visible={reportModalVisible}
@@ -204,6 +246,7 @@ const styles = StyleSheet.create({
   theirBubble: { backgroundColor: colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
   bubbleText: { color: colors.textPrimary, fontSize: 15, lineHeight: 20 },
   myBubbleText: { color: '#fff' },
+  gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
   inputRow: {
     flexDirection: 'row',
@@ -213,6 +256,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.background,
   },
+  gifButton: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, marginRight: spacing.sm,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  gifButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
   input: {
     flex: 1,
     backgroundColor: colors.surface,
