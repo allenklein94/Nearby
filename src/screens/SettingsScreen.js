@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { deleteAccount } from '../services/account';
 import { typography, spacing, radius } from '../theme';
 
 const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
@@ -16,6 +18,7 @@ function toE164(rawInput) {
 }
 
 export default function SettingsScreen({ navigation }) {
+  const { isAdmin } = useAuth();
   const { colors, shadow, isDark, toggleTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -34,6 +37,7 @@ export default function SettingsScreen({ navigation }) {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [e164NewPhone, setE164NewPhone] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     load();
@@ -110,6 +114,42 @@ export default function SettingsScreen({ navigation }) {
     setOtpSent(false);
     setNewPhoneInput('');
     setOtp('');
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      'Delete your account?',
+      'This permanently deletes your profile, photo, matches, and messages. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Continue', style: 'destructive', onPress: confirmDeleteAccountFinal },
+      ]
+    );
+  }
+
+  function confirmDeleteAccountFinal() {
+    Alert.alert(
+      'Are you absolutely sure?',
+      'Your account and all associated data will be permanently deleted right now.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete My Account', style: 'destructive', onPress: handleDeleteAccount },
+      ]
+    );
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+    } catch (e) {
+      setDeleting(false);
+      Alert.alert('Deletion failed', e.message);
+    }
   }
 
   return (
@@ -288,6 +328,23 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.rowButtonText}>{t('settings.legal')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
+
+        {isAdmin && (
+          <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('AdminReports')} activeOpacity={0.85}>
+            <Text style={styles.rowButtonText}>Review Reports (Admin)</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
+          <Text style={styles.deleteText}>
+            {deleting ? 'Deleting account...' : 'Delete Account'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -330,4 +387,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   rowButtonText: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   chevron: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
+  signOutButton: { paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.sm },
+  signOutText: { color: colors.textTertiary, fontSize: 14 },
+  deleteButton: { paddingVertical: spacing.sm, alignItems: 'center' },
+  deleteText: { color: colors.primary, fontSize: 13, opacity: 0.7 },
 });

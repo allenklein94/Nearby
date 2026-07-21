@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView } from 'react-native';
 import { supabase } from '../services/supabase';
-import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
-import { deleteAccount } from '../services/account';
-import { requestDataExport } from '../services/dataExport';
-import { registerForPushNotifications, disablePushNotifications } from '../services/notifications';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { typography, spacing, radius } from '../theme';
 
@@ -23,7 +19,6 @@ const INTEREST_OPTIONS = [
 ];
 
 export default function ProfileScreen({ navigation }) {
-  const { isAdmin } = useAuth();
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -33,16 +28,12 @@ export default function ProfileScreen({ navigation }) {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [photoVerified, setPhotoVerified] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const [interests, setInterests] = useState([]);
   const [pronouns, setPronouns] = useState('');
   const [gender, setGender] = useState('');
   const [sexualOrientation, setSexualOrientation] = useState('');
-  const [profileHidden, setProfileHidden] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [basics, setBasics] = useState({});
 
   useEffect(() => {
@@ -63,8 +54,6 @@ export default function ProfileScreen({ navigation }) {
       setPronouns(data.pronouns || '');
       setGender(data.gender || '');
       setSexualOrientation(data.sexual_orientation || '');
-      setProfileHidden(!!data.profile_hidden);
-      setNotificationsEnabled(!!data.expo_push_token);
       setBasics(data.basics || {});
       if (data.photo_url) {
         const url = await getSignedPhotoUrl(data.photo_url);
@@ -202,75 +191,6 @@ export default function ProfileScreen({ navigation }) {
         },
       },
     ]);
-  }
-
-  async function toggleHideProfile(value) {
-    setProfileHidden(value);
-    const { error } = await supabase.from('profiles').update({ profile_hidden: value }).eq('id', userId);
-    if (error) {
-      setProfileHidden(!value);
-      Alert.alert('Error', error.message);
-    }
-  }
-
-  async function toggleNotifications(value) {
-    setNotificationsEnabled(value);
-    try {
-      if (value) {
-        await registerForPushNotifications(userId);
-      } else {
-        await disablePushNotifications(userId);
-      }
-    } catch (e) {
-      setNotificationsEnabled(!value);
-      Alert.alert('Error', e.message);
-    }
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-  }
-
-  async function handleDataExport() {
-    setExporting(true);
-    try {
-      await requestDataExport();
-    } catch (e) {
-      Alert.alert('Export failed', e.message);
-    }
-    setExporting(false);
-  }
-
-  function confirmDeleteAccount() {
-    Alert.alert(
-      'Delete your account?',
-      'This permanently deletes your profile, photo, matches, and messages. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Continue', style: 'destructive', onPress: confirmDeleteAccountFinal },
-      ]
-    );
-  }
-
-  function confirmDeleteAccountFinal() {
-    Alert.alert(
-      'Are you absolutely sure?',
-      'Your account and all associated data will be permanently deleted right now.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete My Account', style: 'destructive', onPress: handleDeleteAccount },
-      ]
-    );
-  }
-
-  async function handleDeleteAccount() {
-    setDeleting(true);
-    try {
-      await deleteAccount();
-    } catch (e) {
-      setDeleting(false);
-      Alert.alert('Deletion failed', e.message);
-    }
   }
 
   return (
@@ -429,56 +349,6 @@ export default function ProfileScreen({ navigation }) {
         <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
           <Text style={styles.buttonText}>{t('profile.save')}</Text>
         </TouchableOpacity>
-
-        <View style={styles.settingsCard}>
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('profile.hideProfile')}</Text>
-              <Text style={styles.settingSubtext}>Temporarily remove yourself from Discovery</Text>
-            </View>
-            <Switch
-              value={profileHidden}
-              onValueChange={toggleHideProfile}
-              trackColor={{ true: colors.primary, false: colors.border }}
-            />
-          </View>
-          <View style={styles.settingDivider} />
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('profile.pushNotifications')}</Text>
-              <Text style={styles.settingSubtext}>Get notified about matches and messages</Text>
-            </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={toggleNotifications}
-              trackColor={{ true: colors.primary, false: colors.border }}
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
-          <Text style={styles.premiumButtonText}>✨ {t('profile.managePremium')}</Text>
-        </TouchableOpacity>
-
-        {isAdmin && (
-          <TouchableOpacity style={styles.adminButton} onPress={() => navigation.navigate('AdminReports')} activeOpacity={0.85}>
-            <Text style={styles.adminButtonText}>Review Reports (Admin)</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity style={styles.signOutButton} onPress={handleDataExport} disabled={exporting}>
-          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : t('profile.requestData')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-          <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
-          <Text style={styles.deleteText}>
-            {deleting ? 'Deleting account...' : t('profile.deleteAccount')}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -561,20 +431,4 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  settingsCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
-    borderColor: colors.border, marginTop: spacing.lg, padding: spacing.md,
-  },
-  settingRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs },
-  settingDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.sm },
-  settingLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
-  settingSubtext: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
-  premiumButton: { borderColor: colors.primary, borderWidth: 1.5, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.lg },
-  premiumButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
-  adminButton: { backgroundColor: colors.surface, borderRadius: radius.full, paddingVertical: 15, alignItems: 'center', marginTop: spacing.md, borderWidth: 1, borderColor: colors.border },
-  adminButtonText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
-  signOutButton: { paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
-  signOutText: { color: colors.textTertiary, fontSize: 14 },
-  deleteButton: { paddingVertical: spacing.sm, alignItems: 'center' },
-  deleteText: { color: colors.primary, fontSize: 13, opacity: 0.7 },
 });
