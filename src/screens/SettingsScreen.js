@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { colors, typography, spacing, radius, shadow } from '../theme';
 
@@ -19,6 +19,10 @@ export default function SettingsScreen({ navigation }) {
   const [showMe, setShowMe] = useState('Everyone');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
+
+  const [notifyMatches, setNotifyMatches] = useState(true);
+  const [notifyMessages, setNotifyMessages] = useState(true);
+  const [notifyWaves, setNotifyWaves] = useState(true);
 
   const [changingPhone, setChangingPhone] = useState(false);
   const [newPhoneInput, setNewPhoneInput] = useState('');
@@ -41,6 +45,9 @@ export default function SettingsScreen({ navigation }) {
       setShowMe(data.show_me || 'Everyone');
       setMinAge(String(data.preferred_min_age ?? 18));
       setMaxAge(String(data.preferred_max_age ?? 99));
+      setNotifyMatches(data.notify_matches ?? true);
+      setNotifyMessages(data.notify_messages ?? true);
+      setNotifyWaves(data.notify_waves ?? true);
     }
   }
 
@@ -64,6 +71,15 @@ export default function SettingsScreen({ navigation }) {
 
     if (error) return Alert.alert('Error', error.message);
     Alert.alert('Saved');
+  }
+
+  async function toggleNotifPref(key, value, setter) {
+    setter(value);
+    const { error } = await supabase.from('profiles').update({ [key]: value }).eq('id', userId);
+    if (error) {
+      setter(!value);
+      Alert.alert('Error', error.message);
+    }
   }
 
   async function sendPhoneChangeOtp() {
@@ -95,6 +111,36 @@ export default function SettingsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header}>Settings</Text>
+
+        <Text style={styles.sectionLabel}>Notifications</Text>
+        <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>New Matches</Text>
+            <Switch
+              value={notifyMatches}
+              onValueChange={(v) => toggleNotifPref('notify_matches', v, setNotifyMatches)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Messages</Text>
+            <Switch
+              value={notifyMessages}
+              onValueChange={(v) => toggleNotifPref('notify_messages', v, setNotifyMessages)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Waves</Text>
+            <Switch
+              value={notifyWaves}
+              onValueChange={(v) => toggleNotifPref('notify_waves', v, setNotifyWaves)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+        </View>
 
         <Text style={styles.sectionLabel}>Discovery Preferences</Text>
         <View style={styles.card}>
@@ -200,6 +246,11 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.rowButtonText}>Manage Subscription</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('Legal')} activeOpacity={0.85}>
+          <Text style={styles.rowButtonText}>Legal</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -213,6 +264,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
   },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm },
+  settingLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
+  divider: { height: 1, backgroundColor: colors.border },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

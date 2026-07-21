@@ -20,6 +20,7 @@ import PaywallScreen from '../screens/PaywallScreen';
 import AdminReportsScreen from '../screens/AdminReportsScreen';
 import ViewProfileScreen from '../screens/ViewProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import LegalScreen from '../screens/LegalScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -66,6 +67,7 @@ export default function RootNavigator() {
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
             <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: 'Profile', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
