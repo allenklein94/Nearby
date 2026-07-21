@@ -38,6 +38,14 @@ export default function DiscoveryScreen({ navigation }) {
     load();
   }, [load]);
 
+  function showRadiusInfo() {
+    Alert.alert(
+      'How Crossed Paths works',
+      "You'll show up on someone's Crossed Paths list if you've been within about 35 feet of each other in the last several minutes, with the app open. Your exact location is never shown to anyone.",
+      [{ text: 'Got it' }]
+    );
+  }
+
   async function sendNotice(toUserId, isWave = false) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { data: sessionData } = await supabase.auth.getSession();
@@ -48,10 +56,6 @@ export default function DiscoveryScreen({ navigation }) {
       .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave });
 
     if (insertError) {
-      // Postgres code 23505 = unique constraint violation. A Notice to
-      // this person already exists — treat sending a Wave as an
-      // "upgrade" of that existing row instead of failing outright.
-      // Never downgrade an existing Wave back to a plain Notice.
       if (insertError.code === '23505') {
         const { data: existing } = await supabase
           .from('notices')
@@ -109,7 +113,12 @@ export default function DiscoveryScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Crossed Paths</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Crossed Paths</Text>
+          <TouchableOpacity onPress={showRadiusInfo} style={styles.infoButton}>
+            <Text style={styles.infoButtonText}>ⓘ</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.headerSubtitle}>People you've been near recently</Text>
       </View>
 
@@ -180,7 +189,10 @@ export default function DiscoveryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { ...typography.title, color: colors.textPrimary },
+  infoButton: { marginLeft: spacing.sm, padding: spacing.xs },
+  infoButtonText: { color: colors.textTertiary, fontSize: 18 },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
