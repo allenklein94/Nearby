@@ -9,6 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
+const NEW_HERE_DAYS = 7;
 
 function calculateAge(birthdateString) {
   if (!birthdateString) return null;
@@ -20,6 +21,12 @@ function calculateAge(birthdateString) {
     age--;
   }
   return age;
+}
+
+function isNewHere(createdAt) {
+  if (!createdAt) return false;
+  const daysSinceJoined = (Date.now() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24);
+  return daysSinceJoined <= NEW_HERE_DAYS;
 }
 
 export default function ViewProfileScreen({ route }) {
@@ -75,6 +82,12 @@ export default function ViewProfileScreen({ route }) {
 
   const age = calculateAge(profile.birthdate);
 
+  const badges = [
+    profile.photo_verified && { icon: '✓', label: 'Verified', color: colors.success },
+    profile.is_premium && { icon: '✨', label: 'Premium', color: colors.primary },
+    isNewHere(profile.created_at) && { icon: '🌱', label: 'New Here', color: colors.textSecondary },
+  ].filter(Boolean);
+
   const details = [
     profile.pronouns && { label: 'Pronouns', value: profile.pronouns },
     profile.gender && !profile.gender_hidden && { label: 'Gender', value: profile.gender },
@@ -127,9 +140,21 @@ export default function ViewProfileScreen({ route }) {
         )}
 
         <View style={styles.content}>
-          <Text style={styles.name}>
-            {profile.display_name}{age ? `, ${age}` : ''}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>
+              {profile.display_name}{age ? `, ${age}` : ''}
+            </Text>
+          </View>
+
+          {badges.length > 0 && (
+            <View style={styles.badgesRow}>
+              {badges.map((badge) => (
+                <View key={badge.label} style={[styles.badge, { borderColor: badge.color }]}>
+                  <Text style={[styles.badgeText, { color: badge.color }]}>{badge.icon} {badge.label}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {details.length > 0 && (
             <View style={styles.detailsRow}>
@@ -198,7 +223,14 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   photo: { height: 420, backgroundColor: colors.surfaceElevated },
   content: { padding: spacing.lg },
-  name: { ...typography.display, color: colors.textPrimary, marginBottom: spacing.sm },
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  name: { ...typography.display, color: colors.textPrimary, marginBottom: spacing.xs },
+  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+  badge: {
+    borderWidth: 1, borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 4,
+  },
+  badgeText: { fontSize: 11, fontWeight: '700' },
   detailsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   detailChip: {
     backgroundColor: colors.surfaceElevated, paddingHorizontal: spacing.sm, paddingVertical: 4,
