@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const REVIEWER_PHONE_DIGITS = '5555550199';
@@ -15,6 +16,7 @@ function toE164(rawInput) {
 
 export default function LoginScreen() {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [phoneInput, setPhoneInput] = useState('');
   const [otp, setOtp] = useState('');
@@ -35,7 +37,7 @@ export default function LoginScreen() {
 
     const formatted = toE164(phoneInput);
     if (!formatted) {
-      return Alert.alert('Invalid number', 'Enter a 10-digit US phone number.');
+      return Alert.alert(t('login.invalidNumber'), t('login.invalidNumberMessage'));
     }
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
@@ -89,39 +91,39 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.icon}>{otpSent ? '💬' : '📱'}</Text>
-      <Text style={styles.title}>{otpSent ? 'Enter your code' : 'Sign in'}</Text>
+      <Text style={styles.title}>{otpSent ? t('login.enterCode') : t('login.signIn')}</Text>
 
       {!otpSent ? (
         <>
-          <Text style={styles.label}>We'll text you a verification code.</Text>
+          <Text style={styles.label}>{t('login.textDescription')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="(555) 555-5555"
+            placeholder={t('login.phonePlaceholder')}
             placeholderTextColor={colors.textTertiary}
             keyboardType="phone-pad"
             value={phoneInput}
             onChangeText={setPhoneInput}
           />
           <TouchableOpacity style={styles.button} onPress={sendOtp} disabled={loading} activeOpacity={0.85}>
-            <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Send Code'}</Text>
+            <Text style={styles.buttonText}>{loading ? t('login.sending') : t('login.sendCode')}</Text>
           </TouchableOpacity>
         </>
       ) : (
         <>
-          <Text style={styles.label}>Enter the code sent to {phoneInput}</Text>
+          <Text style={styles.label}>{t('login.enterCode')} {phoneInput}</Text>
           <TextInput
             style={styles.input}
-            placeholder="6-digit code"
+            placeholder={t('login.codePlaceholder')}
             placeholderTextColor={colors.textTertiary}
             keyboardType="number-pad"
             value={otp}
             onChangeText={setOtp}
           />
           <TouchableOpacity style={styles.button} onPress={verifyOtp} disabled={loading} activeOpacity={0.85}>
-            <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify'}</Text>
+            <Text style={styles.buttonText}>{loading ? t('login.verifying') : t('login.verify')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setOtpSent(false)} style={{ marginTop: spacing.md }}>
-            <Text style={styles.backText}>Use a different number</Text>
+            <Text style={styles.backText}>{t('login.differentNumber')}</Text>
           </TouchableOpacity>
         </>
       )}

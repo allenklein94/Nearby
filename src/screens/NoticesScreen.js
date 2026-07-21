@@ -4,10 +4,12 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function NoticesScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [notices, setNotices] = useState([]);
   const [premium, setPremium] = useState(false);
@@ -44,15 +46,15 @@ export default function NoticesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notices</Text>
+        <Text style={styles.headerTitle}>{t('notices.title')}</Text>
       </View>
 
       {!premium && (
         <TouchableOpacity style={styles.upsell} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
           <Text style={styles.upsellIcon}>✨</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.upsellTitle}>Unlock Premium</Text>
-            <Text style={styles.upsellText}>See everyone who's noticed you</Text>
+            <Text style={styles.upsellTitle}>{t('notices.unlockPremium')}</Text>
+            <Text style={styles.upsellText}>{t('notices.unlockPremiumText')}</Text>
           </View>
           <Text style={styles.upsellArrow}>›</Text>
         </TouchableOpacity>
@@ -65,7 +67,7 @@ export default function NoticesScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>👋</Text>
-            <Text style={styles.emptyText}>No notices yet. Check back after you've been out.</Text>
+            <Text style={styles.emptyText}>{t('notices.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -75,9 +77,9 @@ export default function NoticesScreen({ navigation }) {
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>
-                {item.is_super && '👋 '}{item.profiles?.display_name} noticed you
+                {item.is_super && '👋 '}{item.profiles?.display_name} {t('notices.noticedYou')}
               </Text>
-              {item.is_super && <Text style={styles.waveLabel}>Wave</Text>}
+              {item.is_super && <Text style={styles.waveLabel}>{t('notices.wave')}</Text>}
             </View>
           </View>
         )}

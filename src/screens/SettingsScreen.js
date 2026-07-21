@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
@@ -16,6 +17,7 @@ function toE164(rawInput) {
 
 export default function SettingsScreen({ navigation }) {
   const { colors, shadow, isDark, toggleTheme } = useTheme();
+  const { t, language, setLanguage } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [discoveryGender, setDiscoveryGender] = useState('Prefer not to say');
@@ -113,12 +115,12 @@ export default function SettingsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.header}>Settings</Text>
+        <Text style={styles.header}>{t('settings.title')}</Text>
 
-        <Text style={styles.sectionLabel}>Appearance</Text>
+        <Text style={styles.sectionLabel}>{t('settings.appearance')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Dark Mode</Text>
+            <Text style={styles.settingLabel}>{t('settings.darkMode')}</Text>
             <Switch
               value={isDark}
               onValueChange={toggleTheme}
@@ -127,10 +129,30 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Notifications</Text>
+        <Text style={styles.sectionLabel}>{t('settings.language')}</Text>
+        <View style={styles.card}>
+          <View style={styles.chipsWrap}>
+            <TouchableOpacity
+              style={[styles.chip, language === 'en' && styles.chipSelected]}
+              onPress={() => setLanguage('en')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.chipText, language === 'en' && styles.chipTextSelected]}>English</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'es' && styles.chipSelected]}
+              onPress={() => setLanguage('es')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.chipText, language === 'es' && styles.chipTextSelected]}>Español</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>{t('settings.notifications')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>New Matches</Text>
+            <Text style={styles.settingLabel}>{t('settings.newMatches')}</Text>
             <Switch
               value={notifyMatches}
               onValueChange={(v) => toggleNotifPref('notify_matches', v, setNotifyMatches)}
@@ -139,7 +161,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Messages</Text>
+            <Text style={styles.settingLabel}>{t('settings.messages')}</Text>
             <Switch
               value={notifyMessages}
               onValueChange={(v) => toggleNotifPref('notify_messages', v, setNotifyMessages)}
@@ -148,7 +170,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Waves</Text>
+            <Text style={styles.settingLabel}>{t('settings.waves')}</Text>
             <Switch
               value={notifyWaves}
               onValueChange={(v) => toggleNotifPref('notify_waves', v, setNotifyWaves)}
@@ -157,9 +179,9 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>Discovery Preferences</Text>
+        <Text style={styles.sectionLabel}>{t('settings.discoveryPreferences')}</Text>
         <View style={styles.card}>
-          <Text style={styles.label}>Show Me</Text>
+          <Text style={styles.label}>{t('settings.showMe')}</Text>
           <View style={styles.chipsWrap}>
             {SHOW_ME_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -173,7 +195,7 @@ export default function SettingsScreen({ navigation }) {
             ))}
           </View>
 
-          <Text style={styles.label}>Age Range</Text>
+          <Text style={styles.label}>{t('settings.ageRange')}</Text>
           <View style={styles.ageRow}>
             <TextInput
               style={[styles.input, styles.ageInput]}
@@ -218,7 +240,7 @@ export default function SettingsScreen({ navigation }) {
         <View style={styles.card}>
           {!changingPhone ? (
             <TouchableOpacity style={styles.rowButton} onPress={() => setChangingPhone(true)}>
-              <Text style={styles.rowButtonText}>Change Phone Number</Text>
+              <Text style={styles.rowButtonText}>{t('settings.changePhoneNumber')}</Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
           ) : !otpSent ? (
@@ -258,12 +280,12 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
-          <Text style={styles.rowButtonText}>Manage Subscription</Text>
+          <Text style={styles.rowButtonText}>{t('settings.manageSubscription')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('Legal')} activeOpacity={0.85}>
-          <Text style={styles.rowButtonText}>Legal</Text>
+          <Text style={styles.rowButtonText}>{t('settings.legal')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
       </ScrollView>

@@ -3,10 +3,12 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function MatchesScreen({ navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors);
   const [matches, setMatches] = useState([]);
   const [myUserId, setMyUserId] = useState(null);
@@ -44,7 +46,7 @@ export default function MatchesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Matches</Text>
+        <Text style={styles.headerTitle}>{t('matches.title')}</Text>
       </View>
       <FlatList
         data={matches}
@@ -53,9 +55,7 @@ export default function MatchesScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>
-            <Text style={styles.emptyText}>
-              No matches yet. Matches happen when you both notice each other.
-            </Text>
+            <Text style={styles.emptyText}>{t('matches.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -78,7 +78,7 @@ export default function MatchesScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <Text style={styles.name}>{other?.display_name}</Text>
-                <Text style={styles.sub}>Tap to start chatting</Text>
+                <Text style={styles.sub}>{t('matches.tapToChat')}</Text>
               </TouchableOpacity>
               <Text style={styles.chevron}>›</Text>
             </View>

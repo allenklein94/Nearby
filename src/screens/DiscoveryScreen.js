@@ -8,10 +8,12 @@ import SkeletonCard from '../components/SkeletonCard';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function DiscoveryScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const posthog = usePostHog();
   const [nearby, setNearby] = useState([]);
@@ -42,11 +44,7 @@ export default function DiscoveryScreen({ navigation }) {
   }, [load]);
 
   function showRadiusInfo() {
-    Alert.alert(
-      'How Crossed Paths works',
-      "You'll show up on someone's Crossed Paths list if you've been within about 35 feet of each other in the last several minutes, with the app open. Your exact location is never shown to anyone.",
-      [{ text: 'Got it' }]
-    );
+    Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
   }
 
   async function sendNotice(toUserId, isWave = false) {
@@ -117,12 +115,12 @@ export default function DiscoveryScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Crossed Paths</Text>
+          <Text style={styles.headerTitle}>{t('discovery.title')}</Text>
           <TouchableOpacity onPress={showRadiusInfo} style={styles.infoButton}>
             <Text style={styles.infoButtonText}>ⓘ</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.headerSubtitle}>People you've been near recently</Text>
+        <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
       </View>
 
       {initialLoading ? (
@@ -140,11 +138,8 @@ export default function DiscoveryScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>Nothing yet</Text>
-            <Text style={styles.emptyText}>
-              Keep the app open while you're out and about — we'll let
-              you know when you cross paths with someone.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('discovery.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{t('discovery.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -159,10 +154,10 @@ export default function DiscoveryScreen({ navigation }) {
             </View>
             <View style={styles.cardActions}>
               <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
-                <Text style={styles.noticeButtonText}>Notice</Text>
+                <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.waveButton} onPress={() => confirmWave(item.otherUserId)} activeOpacity={0.85}>
-                <Text style={styles.waveButtonText}>👋 Wave</Text>
+                <Text style={styles.waveButtonText}>👋 {t('discovery.wave')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.moreButton}

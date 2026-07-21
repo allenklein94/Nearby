@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
@@ -24,6 +25,7 @@ const INTEREST_OPTIONS = [
 export default function ProfileScreen({ navigation }) {
   const { isAdmin } = useAuth();
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -275,7 +277,7 @@ export default function ProfileScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Your Profile</Text>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.settingsGear}>
             <Text style={styles.settingsGearText}>⚙️</Text>
           </TouchableOpacity>
@@ -324,10 +326,10 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.helperText}>Tap and hold a photo for options — set as main or remove. Up to {MAX_EXTRA_PHOTOS} additional photos.</Text>
 
         <View style={styles.formCard}>
-          <Text style={styles.label}>Display Name</Text>
+          <Text style={styles.label}>{t('profile.displayName')}</Text>
           <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} />
 
-          <Text style={styles.label}>Bio</Text>
+          <Text style={styles.label}>{t('profile.bio')}</Text>
           <TextInput
             style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
             value={bio}
@@ -425,13 +427,13 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
-          <Text style={styles.buttonText}>Save Changes</Text>
+          <Text style={styles.buttonText}>{t('profile.save')}</Text>
         </TouchableOpacity>
 
         <View style={styles.settingsCard}>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Hide my profile</Text>
+              <Text style={styles.settingLabel}>{t('profile.hideProfile')}</Text>
               <Text style={styles.settingSubtext}>Temporarily remove yourself from Discovery</Text>
             </View>
             <Switch
@@ -443,7 +445,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.settingDivider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Push notifications</Text>
+              <Text style={styles.settingLabel}>{t('profile.pushNotifications')}</Text>
               <Text style={styles.settingSubtext}>Get notified about matches and messages</Text>
             </View>
             <Switch
@@ -455,7 +457,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         <TouchableOpacity style={styles.premiumButton} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
-          <Text style={styles.premiumButtonText}>✨ Manage Premium</Text>
+          <Text style={styles.premiumButtonText}>✨ {t('profile.managePremium')}</Text>
         </TouchableOpacity>
 
         {isAdmin && (
@@ -465,16 +467,16 @@ export default function ProfileScreen({ navigation }) {
         )}
 
         <TouchableOpacity style={styles.signOutButton} onPress={handleDataExport} disabled={exporting}>
-          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
+          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : t('profile.requestData')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
           <Text style={styles.deleteText}>
-            {deleting ? 'Deleting account...' : 'Delete Account'}
+            {deleting ? 'Deleting account...' : t('profile.deleteAccount')}
           </Text>
         </TouchableOpacity>
       </ScrollView>

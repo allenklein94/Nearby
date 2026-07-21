@@ -7,11 +7,13 @@ import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function ChatScreen({ route, navigation }) {
   const { matchId } = route.params;
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors);
   const posthog = usePostHog();
   const [messages, setMessages] = useState([]);
@@ -100,7 +102,7 @@ export default function ChatScreen({ route, navigation }) {
 
     const moderationResult = await checkTextModeration(body);
     if (!moderationResult.safe) {
-      Alert.alert('Message not sent', 'This message may violate our community guidelines. Please revise it.');
+      Alert.alert(t('chat.messageBlocked'), t('chat.messageBlockedText'));
       return;
     }
 
@@ -178,7 +180,7 @@ export default function ChatScreen({ route, navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💬</Text>
-              <Text style={styles.emptyText}>Say hi — you both noticed each other.</Text>
+              <Text style={styles.emptyText}>{t('chat.sayHi')}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -200,7 +202,7 @@ export default function ChatScreen({ route, navigation }) {
           </TouchableOpacity>
           <TextInput
             style={styles.input}
-            placeholder="Type a message..."
+            placeholder={t('chat.typePlaceholder')}
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
@@ -211,7 +213,7 @@ export default function ChatScreen({ route, navigation }) {
             onPress={sendMessage}
             disabled={!text.trim()}
           >
-            <Text style={styles.sendText}>Send</Text>
+            <Text style={styles.sendText}>{t('chat.send')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

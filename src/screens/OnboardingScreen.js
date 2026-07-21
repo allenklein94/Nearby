@@ -2,39 +2,25 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
 
-const SLIDES = [
-  {
-    emoji: '👋',
-    title: 'Nearby',
-    text: "You've probably noticed someone nearby you wanted to talk to, but didn't. Nearby gives you a low-pressure way to let them know.",
-  },
-  {
-    emoji: '🔔',
-    title: 'Send a quiet Notice',
-    text: "If you're interested, send a silent \"Notice.\" They're never told unless they notice you back — no rejection, no pressure.",
-  },
-  {
-    emoji: '✨',
-    title: 'Show your personality',
-    text: 'Add multiple photos, your interests, and details like relationship goals or lifestyle preferences — as much or as little as you want to share.',
-  },
-  {
-    emoji: '🔒',
-    title: 'Your privacy comes first',
-    text: 'Your exact location is never shown to anyone. No one can see who you\u2019ve noticed unless it\u2019s mutual.',
-  },
-];
-
 export default function OnboardingScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef(null);
   const styles = getStyles(colors, shadow);
+
+  const SLIDES = [
+    { emoji: '👋', title: t('onboarding.slide1Title'), text: t('onboarding.slide1Text') },
+    { emoji: '🔔', title: t('onboarding.slide2Title'), text: t('onboarding.slide2Text') },
+    { emoji: '✨', title: t('onboarding.slide3Title'), text: t('onboarding.slide3Text') },
+    { emoji: '🔒', title: t('onboarding.slide4Title'), text: t('onboarding.slide4Text') },
+  ];
 
   function handleScroll(event) {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -71,7 +57,7 @@ export default function OnboardingScreen({ navigation }) {
       </ScrollView>
 
       <TouchableOpacity style={[styles.skipButton, { top: insets.top + spacing.sm }]} onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
@@ -83,7 +69,7 @@ export default function OnboardingScreen({ navigation }) {
 
         <TouchableOpacity style={styles.button} onPress={goNext} activeOpacity={0.85}>
           <Text style={styles.buttonText}>
-            {activeIndex === SLIDES.length - 1 ? 'Get Started' : 'Next'}
+            {activeIndex === SLIDES.length - 1 ? t('onboarding.getStarted') : t('onboarding.next')}
           </Text>
         </TouchableOpacity>
       </View>
