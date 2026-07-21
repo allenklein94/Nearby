@@ -79,6 +79,7 @@ export default function ViewProfileScreen({ route }) {
     profile.pronouns && { label: 'Pronouns', value: profile.pronouns },
     profile.gender && !profile.gender_hidden && { label: 'Gender', value: profile.gender },
     profile.sexual_orientation && { label: 'Orientation', value: profile.sexual_orientation },
+    profile.ethnicity && !profile.ethnicity_hidden && { label: 'Ethnicity', value: profile.ethnicity },
   ].filter(Boolean);
 
   const filledDetails = BASICS_FIELDS

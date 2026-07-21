@@ -122,19 +122,16 @@ export async function getNearbyMatches() {
   const userId = sessionData?.session?.user?.id;
   if (!userId) return [];
 
-  // Fetch the viewer's own discovery preferences first — these filter
-  // who shows up for THEM specifically (one-directional, same pattern
-  // Tinder/Hinge/Bumble use: your preferences control your own feed,
-  // not a mutual double-filter).
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences')
     .eq('id', userId)
     .single();
 
   const showMe = myProfile?.show_me ?? 'Everyone';
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
+  const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -165,7 +162,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -187,16 +184,16 @@ export async function getNearbyMatches() {
     })
     .filter((item) => item.profiles !== null)
     .filter((item) => {
-      // Apply the viewer's "Show Me" preference against the other
-      // person's discovery_gender.
       if (showMe !== 'Everyone' && item.profiles.discovery_gender !== showMe) {
         return false;
       }
-      // Apply the viewer's age range preference. If the other person
-      // hasn't set a birthdate for some reason, don't filter them out —
-      // fail open rather than silently hiding profiles over missing data.
       const age = calculateAge(item.profiles.birthdate);
       if (age !== null && (age < minAge || age > maxAge)) {
+        return false;
+      }
+      // Ethnicity preference filter — only applied if the viewer has
+      // selected at least one; an empty list means "show everyone."
+      if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(item.profiles.ethnicity)) {
         return false;
       }
       return true;

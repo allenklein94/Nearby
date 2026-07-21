@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
+import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { typography, spacing, radius } from '../theme';
 
 const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
@@ -29,6 +30,9 @@ export default function SettingsScreen({ navigation }) {
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
   const [genderHidden, setGenderHidden] = useState(false);
+  const [myEthnicity, setMyEthnicity] = useState(null);
+  const [ethnicityHidden, setEthnicityHidden] = useState(false);
+  const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -61,7 +65,16 @@ export default function SettingsScreen({ navigation }) {
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
       setGenderHidden(data.gender_hidden ?? false);
+      setMyEthnicity(data.ethnicity ?? null);
+      setEthnicityHidden(data.ethnicity_hidden ?? false);
+      setEthnicityPreferences(data.ethnicity_preferences ?? []);
     }
+  }
+
+  function toggleEthnicityPreference(option) {
+    setEthnicityPreferences((prev) =>
+      prev.includes(option) ? prev.filter((e) => e !== option) : [...prev, option]
+    );
   }
 
   async function savePreferences() {
@@ -79,6 +92,8 @@ export default function SettingsScreen({ navigation }) {
         show_me: showMe,
         preferred_min_age: minAgeNum,
         preferred_max_age: maxAgeNum,
+        ethnicity: myEthnicity,
+        ethnicity_preferences: ethnicityPreferences,
       })
       .eq('id', userId);
 
@@ -296,6 +311,52 @@ export default function SettingsScreen({ navigation }) {
               trackColor={{ true: colors.primary, false: colors.border }}
             />
           </View>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>My Ethnicity</Text>
+          <View style={styles.chipsWrap}>
+            {ETHNICITY_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, myEthnicity === option && styles.chipSelected]}
+                onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Hide ethnicity from my profile</Text>
+              <Text style={styles.helperText}>Still used for others' filtering, just not shown to others</Text>
+            </View>
+            <Switch
+              value={ethnicityHidden}
+              onValueChange={(v) => toggleNotifPref('ethnicity_hidden', v, setEthnicityHidden)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>Ethnicity Preferences (Optional)</Text>
+          <View style={styles.chipsWrap}>
+            {ETHNICITY_OPTIONS.map((option) => {
+              const selected = ethnicityPreferences.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleEthnicityPreference(option)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>
+            Select any you'd like to see more of. Leave empty to see everyone regardless of ethnicity.
+          </Text>
 
           <TouchableOpacity style={styles.button} onPress={savePreferences} activeOpacity={0.85}>
             <Text style={styles.buttonText}>Save Preferences</Text>
