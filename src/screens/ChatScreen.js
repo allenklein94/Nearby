@@ -36,10 +36,24 @@ export default function ChatScreen({ route, navigation }) {
     setMessages(data || []);
   }
 
+  async function markMessagesAsRead(myId) {
+    // Mark any messages sent TO me (not by me) as read, only if not
+    // already marked — avoids unnecessary writes on every poll.
+    await supabase
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('match_id', matchId)
+      .neq('sender_id', myId)
+      .is('read_at', null);
+  }
+
   useEffect(() => {
     let pollInterval;
-    init().then(() => {
-      pollInterval = setInterval(loadMessages, 3000);
+    init().then((myId) => {
+      pollInterval = setInterval(async () => {
+        await loadMessages();
+        if (myId) await markMessagesAsRead(myId);
+      }, 3000);
     });
     return () => {
       if (pollInterval) clearInterval(pollInterval);
@@ -83,6 +97,7 @@ export default function ChatScreen({ route, navigation }) {
     }
 
     await loadMessages();
+    await markMessagesAsRead(myId);
 
     const channel = supabase
       .channel(`messages:${matchId}`)
@@ -96,9 +111,16 @@ export default function ChatScreen({ route, navigation }) {
           });
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
+        (payload) => {
+          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
+        }
+      )
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return myId;
   }
 
   async function getIcebreaker() {
@@ -151,6 +173,7 @@ export default function ChatScreen({ route, navigation }) {
       sender_id: userId,
       body,
       gif_url: null,
+      read_at: null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMessage]);
@@ -180,6 +203,7 @@ export default function ChatScreen({ route, navigation }) {
       sender_id: userId,
       body: null,
       gif_url: gifUrl,
+      read_at: null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMessage]);
@@ -203,6 +227,8 @@ export default function ChatScreen({ route, navigation }) {
     const d = new Date(iso);
     return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
+
+  const lastMyMessage = [...messages].reverse().find((m) => m.sender_id === userId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -238,6 +264,9 @@ export default function ChatScreen({ route, navigation }) {
                 </View>
               )}
               <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
+              {lastMyMessage?.id === item.id && item.read_at && (
+                <Text style={styles.seenText}>Seen</Text>
+              )}
             </View>
           )}
         />
@@ -305,6 +334,7 @@ const getStyles = (colors) => StyleSheet.create({
   myBubbleText: { color: '#fff' },
   gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
+  seenText: { ...typography.small, color: colors.textTertiary, marginTop: 2, marginHorizontal: 4, fontStyle: 'italic' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
