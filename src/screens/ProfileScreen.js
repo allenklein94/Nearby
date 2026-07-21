@@ -273,6 +273,9 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Your Profile</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.settingsGear}>
+            <Text style={styles.settingsGearText}>⚙️</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.photoWrap} onPress={changePhoto} disabled={uploading} activeOpacity={0.85}>
@@ -478,7 +481,9 @@ export default function ProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { marginBottom: spacing.lg },
+  header: { marginBottom: spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  settingsGear: { padding: spacing.xs },
+  settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   photoWrap: {
     backgroundColor: colors.surface,

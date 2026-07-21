@@ -1,0 +1,242 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView } from 'react-native';
+import { supabase } from '../services/supabase';
+import { colors, typography, spacing, radius, shadow } from '../theme';
+
+const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
+const SHOW_ME_OPTIONS = ['Men', 'Women', 'Everyone'];
+
+function toE164(rawInput) {
+  const digits = rawInput.replace(/\D/g, '');
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  return null;
+}
+
+export default function SettingsScreen({ navigation }) {
+  const [userId, setUserId] = useState(null);
+  const [discoveryGender, setDiscoveryGender] = useState('Prefer not to say');
+  const [showMe, setShowMe] = useState('Everyone');
+  const [minAge, setMinAge] = useState('18');
+  const [maxAge, setMaxAge] = useState('99');
+
+  const [changingPhone, setChangingPhone] = useState(false);
+  const [newPhoneInput, setNewPhoneInput] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [e164NewPhone, setE164NewPhone] = useState('');
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const id = sessionData?.session?.user?.id;
+    setUserId(id);
+
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    if (data) {
+      setDiscoveryGender(data.discovery_gender || 'Prefer not to say');
+      setShowMe(data.show_me || 'Everyone');
+      setMinAge(String(data.preferred_min_age ?? 18));
+      setMaxAge(String(data.preferred_max_age ?? 99));
+    }
+  }
+
+  async function savePreferences() {
+    const minAgeNum = parseInt(minAge, 10);
+    const maxAgeNum = parseInt(maxAge, 10);
+
+    if (isNaN(minAgeNum) || isNaN(maxAgeNum) || minAgeNum < 18 || maxAgeNum < minAgeNum) {
+      return Alert.alert('Invalid range', 'Enter a valid age range (minimum 18).');
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        discovery_gender: discoveryGender,
+        show_me: showMe,
+        preferred_min_age: minAgeNum,
+        preferred_max_age: maxAgeNum,
+      })
+      .eq('id', userId);
+
+    if (error) return Alert.alert('Error', error.message);
+    Alert.alert('Saved');
+  }
+
+  async function sendPhoneChangeOtp() {
+    const formatted = toE164(newPhoneInput);
+    if (!formatted) {
+      return Alert.alert('Invalid number', 'Enter a 10-digit US phone number.');
+    }
+    const { error } = await supabase.auth.updateUser({ phone: formatted });
+    if (error) return Alert.alert('Error', error.message);
+    setE164NewPhone(formatted);
+    setOtpSent(true);
+  }
+
+  async function verifyPhoneChange() {
+    const { error } = await supabase.auth.verifyOtp({
+      phone: e164NewPhone,
+      token: otp,
+      type: 'phone_change',
+    });
+    if (error) return Alert.alert('Error', error.message);
+    Alert.alert('Phone number updated', 'Your new number is now linked to your account.');
+    setChangingPhone(false);
+    setOtpSent(false);
+    setNewPhoneInput('');
+    setOtp('');
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <Text style={styles.header}>Settings</Text>
+
+        <Text style={styles.sectionLabel}>Discovery Preferences</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Show Me</Text>
+          <View style={styles.chipsWrap}>
+            {SHOW_ME_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, showMe === option && styles.chipSelected]}
+                onPress={() => setShowMe(option)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, showMe === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Age Range</Text>
+          <View style={styles.ageRow}>
+            <TextInput
+              style={[styles.input, styles.ageInput]}
+              value={minAge}
+              onChangeText={setMinAge}
+              keyboardType="number-pad"
+              placeholderTextColor={colors.textTertiary}
+            />
+            <Text style={styles.ageDash}>to</Text>
+            <TextInput
+              style={[styles.input, styles.ageInput]}
+              value={maxAge}
+              onChangeText={setMaxAge}
+              keyboardType="number-pad"
+              placeholderTextColor={colors.textTertiary}
+            />
+          </View>
+
+          <Text style={styles.label}>My Gender (for others' preferences)</Text>
+          <View style={styles.chipsWrap}>
+            {GENDER_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, discoveryGender === option && styles.chipSelected]}
+                onPress={() => setDiscoveryGender(option)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, discoveryGender === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.helperText}>
+            This is separate from the "Gender" field on your profile — it's only used to match against other people's "Show Me" preference.
+          </Text>
+
+          <TouchableOpacity style={styles.button} onPress={savePreferences} activeOpacity={0.85}>
+            <Text style={styles.buttonText}>Save Preferences</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionLabel}>Account</Text>
+        <View style={styles.card}>
+          {!changingPhone ? (
+            <TouchableOpacity style={styles.rowButton} onPress={() => setChangingPhone(true)}>
+              <Text style={styles.rowButtonText}>Change Phone Number</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          ) : !otpSent ? (
+            <View>
+              <Text style={styles.label}>New Phone Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="(555) 555-5555"
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="phone-pad"
+                value={newPhoneInput}
+                onChangeText={setNewPhoneInput}
+              />
+              <TouchableOpacity style={styles.button} onPress={sendPhoneChangeOtp} activeOpacity={0.85}>
+                <Text style={styles.buttonText}>Send Verification Code</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setChangingPhone(false)} style={{ marginTop: spacing.sm }}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.label}>Enter the code sent to {newPhoneInput}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="6-digit code"
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="number-pad"
+                value={otp}
+                onChangeText={setOtp}
+              />
+              <TouchableOpacity style={styles.button} onPress={verifyPhoneChange} activeOpacity={0.85}>
+                <Text style={styles.buttonText}>Confirm New Number</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
+          <Text style={styles.rowButtonText}>Manage Subscription</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
+  sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
+  card: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+  },
+  label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
+  input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
+  ageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  ageInput: { flex: 1, textAlign: 'center' },
+  ageDash: { color: colors.textTertiary },
+  helperText: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm, lineHeight: 16 },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
+  buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
+  rowButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rowButtonCard: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+  },
+  rowButtonText: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
+  chevron: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
+});

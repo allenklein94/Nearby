@@ -105,10 +105,36 @@ export async function stopBackgroundPresenceReporting() {
   }
 }
 
+function calculateAge(birthdateString) {
+  if (!birthdateString) return null;
+  const birthdate = new Date(birthdateString);
+  const today = new Date();
+  let age = today.getFullYear() - birthdate.getFullYear();
+  const monthDiff = today.getMonth() - birthdate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export async function getNearbyMatches() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return [];
+
+  // Fetch the viewer's own discovery preferences first — these filter
+  // who shows up for THEM specifically (one-directional, same pattern
+  // Tinder/Hinge/Bumble use: your preferences control your own feed,
+  // not a mutual double-filter).
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('show_me, preferred_min_age, preferred_max_age')
+    .eq('id', userId)
+    .single();
+
+  const showMe = myProfile?.show_me ?? 'Everyone';
+  const minAge = myProfile?.preferred_min_age ?? 18;
+  const maxAge = myProfile?.preferred_max_age ?? 99;
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -122,10 +148,6 @@ export async function getNearbyMatches() {
   }
   if (!sightings || sightings.length === 0) return [];
 
-  // Exclude anyone we've already matched with — once matched, that
-  // connection lives entirely in the Matches tab. There's nothing left
-  // to "notice" about them, and leaving them in Discovery just invites
-  // accidentally re-sending a Notice to someone you're already talking to.
   const { data: existingMatches } = await supabase
     .from('matches')
     .select('user_a, user_b')
@@ -143,7 +165,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -163,5 +185,20 @@ export async function getNearbyMatches() {
         profiles: profileById[otherUserId] ?? null,
       };
     })
-    .filter((item) => item.profiles !== null);
+    .filter((item) => item.profiles !== null)
+    .filter((item) => {
+      // Apply the viewer's "Show Me" preference against the other
+      // person's discovery_gender.
+      if (showMe !== 'Everyone' && item.profiles.discovery_gender !== showMe) {
+        return false;
+      }
+      // Apply the viewer's age range preference. If the other person
+      // hasn't set a birthdate for some reason, don't filter them out —
+      // fail open rather than silently hiding profiles over missing data.
+      const age = calculateAge(item.profiles.birthdate);
+      if (age !== null && (age < minAge || age > maxAge)) {
+        return false;
+      }
+      return true;
+    });
 }
