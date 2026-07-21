@@ -3,12 +3,12 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Refre
 import { getNearbyGatherings, getMyGatherings, expressInterest, approveInterest } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
-import { typography, spacing, radius, shadow as shadowStatic } from '../theme';
+import { typography, spacing, radius } from '../theme';
 
 export default function GatheringsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [tab, setTab] = useState('nearby'); // 'nearby' or 'hosting'
+  const [tab, setTab] = useState('nearby');
   const [nearby, setNearby] = useState([]);
   const [hosting, setHosting] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,9 +53,9 @@ export default function GatheringsScreen({ navigation }) {
     }
   }
 
-  async function handleApprove(interest, gathering) {
+  async function handleApprove(interest) {
     try {
-      await approveInterest(interest.id, gathering.id, gathering.host_id, interest.user_id);
+      await approveInterest(interest.id);
       Alert.alert('Approved!', 'A match was created — you can now chat with them.');
       load();
     } catch (e) {
@@ -136,7 +136,7 @@ export default function GatheringsScreen({ navigation }) {
                   <View key={interest.id} style={styles.interestRow}>
                     <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
                     {interest.status === 'pending' ? (
-                      <TouchableOpacity style={styles.approveButton} onPress={() => handleApprove(interest, item)}>
+                      <TouchableOpacity style={styles.approveButton} onPress={() => handleApprove(interest)}>
                         <Text style={styles.approveButtonText}>Approve</Text>
                       </TouchableOpacity>
                     ) : (
