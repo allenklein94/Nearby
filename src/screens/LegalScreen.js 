@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Linking, ScrollView } from 'react-native';
-import { colors, typography, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
 const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
@@ -21,6 +22,9 @@ const OPEN_SOURCE_LIBRARIES = [
 ];
 
 export default function LegalScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -61,7 +65,7 @@ export default function LegalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: {

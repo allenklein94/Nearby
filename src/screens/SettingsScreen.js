@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
 const SHOW_ME_OPTIONS = ['Men', 'Women', 'Everyone'];
@@ -14,6 +15,8 @@ function toE164(rawInput) {
 }
 
 export default function SettingsScreen({ navigation }) {
+  const { colors, shadow, isDark, toggleTheme } = useTheme();
+  const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [discoveryGender, setDiscoveryGender] = useState('Prefer not to say');
   const [showMe, setShowMe] = useState('Everyone');
@@ -111,6 +114,18 @@ export default function SettingsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header}>Settings</Text>
+
+        <Text style={styles.sectionLabel}>Appearance</Text>
+        <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Dark Mode</Text>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
+        </View>
 
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
@@ -256,7 +271,7 @@ export default function SettingsScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },

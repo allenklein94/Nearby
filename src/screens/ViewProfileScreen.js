@@ -4,7 +4,8 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
 import { BASICS_FIELDS } from '../constants/basicsFields';
-import { colors, typography, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -22,6 +23,8 @@ function calculateAge(birthdateString) {
 
 export default function ViewProfileScreen({ route }) {
   const { userId } = route.params;
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [profile, setProfile] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +182,7 @@ export default function ViewProfileScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   photo: { height: 420, backgroundColor: colors.surfaceElevated },
   content: { padding: spacing.lg },

@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
-import { colors, typography, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 export default function AdminReportsScreen() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +86,7 @@ export default function AdminReportsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerTitle: { ...typography.title, color: colors.textPrimary },

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { getOfferings, purchasePackage, restorePurchases } from '../services/purchases';
-import { colors, typography, spacing, radius, shadow } from '../theme';
-import { usePostHog } from 'posthog-react-native';
+import { useTheme } from '../context/ThemeContext';
+import { typography, spacing, radius } from '../theme';
 
 const FEATURES = [
   { icon: '👀', text: "See everyone who's noticed you" },
@@ -12,7 +12,8 @@ const FEATURES = [
 ];
 
 export default function PaywallScreen({ navigation }) {
-  const posthog = usePostHog();
+  const { colors, shadow } = useTheme();
+  const styles = getStyles(colors, shadow);
   const [offering, setOffering] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -111,7 +112,7 @@ export default function PaywallScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl },
   badge: {
     alignSelf: 'flex-start',

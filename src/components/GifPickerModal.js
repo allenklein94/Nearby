@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, FlatList, Image, ActivityIndicator } from 'react-native';
-import { colors, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, radius } from '../theme';
 
 const GIPHY_API_KEY = 'o5pKU4HMe3qE4mQhC5rxZvSFHRZfombw';
 const RATING = 'pg-13';
 
 export default function GifPickerModal({ visible, onClose, onSelect }) {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const [query, setQuery] = useState('');
   const [gifs, setGifs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -91,7 +94,7 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: 60 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, marginBottom: spacing.sm },
   searchInput: {

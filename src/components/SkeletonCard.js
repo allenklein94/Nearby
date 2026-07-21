@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
-import { colors, spacing, radius } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { spacing, radius } from '../theme';
 
 export default function SkeletonCard() {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const opacity = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
@@ -27,7 +30,7 @@ export default function SkeletonCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
