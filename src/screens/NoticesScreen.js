@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
 import { supabase } from '../services/supabase';
+import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
 import { colors, typography, spacing, radius, shadow } from '../theme';
 
 export default function NoticesScreen({ navigation }) {
   const [notices, setNotices] = useState([]);
   const [premium, setPremium] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState({});
 
   useEffect(() => {
     load();
@@ -18,10 +20,22 @@ export default function NoticesScreen({ navigation }) {
 
     const { data, error } = await supabase
       .from('notices')
-      .select('id, from_user, created_at, profiles!notices_from_user_fkey(display_name, photo_url)')
+      .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url)')
+      .order('is_super', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (!error) setNotices(data);
+    if (!error) {
+      setNotices(data);
+      const urlEntries = await Promise.all(
+        data.map(async (n) => {
+          const path = n.profiles?.photo_url;
+          if (!path) return [n.id, null];
+          const url = await getSignedPhotoUrl(path);
+          return [n.id, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
+    }
   }
 
   return (
@@ -52,8 +66,16 @@ export default function NoticesScreen({ navigation }) {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.name}>{item.profiles?.display_name} noticed you</Text>
+          <View style={[styles.card, item.is_super && styles.waveCard]}>
+            {photoUrls[item.id] && (
+              <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>
+                {item.is_super && '👋 '}{item.profiles?.display_name} noticed you
+              </Text>
+              {item.is_super && <Text style={styles.waveLabel}>Wave</Text>}
+            </View>
           </View>
         )}
       />
@@ -83,6 +105,8 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
   card: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     padding: spacing.md,
@@ -90,5 +114,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  waveCard: {
+    borderColor: colors.primary,
+    borderWidth: 1.5,
+    backgroundColor: colors.primaryMuted,
+  },
+  avatar: { width: 44, height: 44, borderRadius: radius.sm, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
   name: { ...typography.body, color: colors.textPrimary },
+  waveLabel: { ...typography.small, color: colors.primary, fontWeight: '700', marginTop: 2 },
 });

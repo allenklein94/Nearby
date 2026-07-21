@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert } from 'react-native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import SkeletonCard from '../components/SkeletonCard';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
-import SkeletonCard from '../components/SkeletonCard';
+import { colors, typography, spacing, radius, shadow } from '../theme';
 
 export default function DiscoveryScreen({ navigation }) {
   const posthog = usePostHog();
@@ -38,12 +38,35 @@ export default function DiscoveryScreen({ navigation }) {
     load();
   }, [load]);
 
-async function sendNotice(toUserId) {
+  async function sendNotice(toUserId, isWave = false) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
-    await supabase.from('notices').insert({ from_user: fromUserId, to_user: toUserId });
-    posthog.capture('notice_sent');
+
+    const { error } = await supabase
+      .from('notices')
+      .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave });
+
+    if (error) {
+      Alert.alert(isWave ? 'Wave not sent' : 'Notice not sent', error.message);
+      return;
+    }
+
+    posthog.capture(isWave ? 'wave_sent' : 'notice_sent');
+    if (isWave) {
+      Alert.alert('Wave sent! 👋', "They'll be notified right away.");
+    }
+  }
+
+  function confirmWave(toUserId) {
+    Alert.alert(
+      'Send a Wave? 👋',
+      "Unlike a regular Notice, they'll be told right away that you noticed them — before it's mutual. Free users get 1 per week.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Send Wave', onPress: () => sendNotice(toUserId, true) },
+      ]
+    );
   }
 
   async function onRefresh() {
@@ -59,7 +82,7 @@ async function sendNotice(toUserId) {
         <Text style={styles.headerSubtitle}>People you've been near recently</Text>
       </View>
 
-     {initialLoading ? (
+      {initialLoading ? (
         <View>
           <SkeletonCard />
           <SkeletonCard />
@@ -95,6 +118,9 @@ async function sendNotice(toUserId) {
               <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
                 <Text style={styles.noticeButtonText}>Notice</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.waveButton} onPress={() => confirmWave(item.otherUserId)} activeOpacity={0.85}>
+                <Text style={styles.waveButtonText}>👋 Wave</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.moreButton}
                 onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
@@ -103,7 +129,7 @@ async function sendNotice(toUserId) {
               </TouchableOpacity>
             </View>
           </View>
-  )}
+        )}
       />
       )}
 
@@ -145,7 +171,7 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1 },
   name: { ...typography.bodyBold, color: colors.textPrimary },
   bio: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  cardActions: { alignItems: 'center' },
+  cardActions: { alignItems: 'center', gap: spacing.xs },
   noticeButton: {
     backgroundColor: colors.primary,
     borderRadius: radius.full,
@@ -153,6 +179,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   noticeButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  waveButton: {
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  waveButtonText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
 });
