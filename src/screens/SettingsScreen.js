@@ -28,6 +28,7 @@ export default function SettingsScreen({ navigation }) {
   const [showMe, setShowMe] = useState('Everyone');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
+  const [genderHidden, setGenderHidden] = useState(false);
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -59,6 +60,7 @@ export default function SettingsScreen({ navigation }) {
       setNotifyMatches(data.notify_matches ?? true);
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
+      setGenderHidden(data.gender_hidden ?? false);
     }
   }
 
@@ -282,6 +284,18 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.helperText}>
             This is separate from the "Gender" field on your profile — it's only used to match against other people's "Show Me" preference.
           </Text>
+
+          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Hide gender from my profile</Text>
+              <Text style={styles.helperText}>Still used for matching, just not shown to others</Text>
+            </View>
+            <Switch
+              value={genderHidden}
+              onValueChange={(v) => toggleNotifPref('gender_hidden', v, setGenderHidden)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
+          </View>
 
           <TouchableOpacity style={styles.button} onPress={savePreferences} activeOpacity={0.85}>
             <Text style={styles.buttonText}>Save Preferences</Text>
