@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated } from 'react-native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { supabase } from '../services/supabase';
@@ -12,6 +12,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
+const UNDO_WINDOW_SECONDS = 5;
+
 export default function DiscoveryScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -23,6 +25,9 @@ export default function DiscoveryScreen({ navigation }) {
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [onlineStatuses, setOnlineStatuses] = useState({});
+  const [undoState, setUndoState] = useState(null);
+  const undoTimeoutRef = useRef(null);
+  const undoOpacity = useRef(new Animated.Value(0)).current;
 
   const load = useCallback(async () => {
     await reportPresence();
@@ -53,14 +58,41 @@ export default function DiscoveryScreen({ navigation }) {
     Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
   }
 
+  function showUndoBanner(noticeId, isWave) {
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    setUndoState({ noticeId, isWave });
+    Animated.timing(undoOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+
+    undoTimeoutRef.current = setTimeout(() => {
+      Animated.timing(undoOpacity, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+        setUndoState(null);
+      });
+    }, UNDO_WINDOW_SECONDS * 1000);
+  }
+
+  async function handleUndo() {
+    if (!undoState) return;
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+
+    await supabase.from('notices').delete().eq('id', undoState.noticeId);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    Animated.timing(undoOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setUndoState(null);
+    });
+    load();
+  }
+
   async function sendNotice(toUserId, isWave = false) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
 
-    const { error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await supabase
       .from('notices')
-      .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave });
+      .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave })
+      .select()
+      .single();
 
     if (insertError) {
       if (insertError.code === '23505') {
@@ -82,7 +114,7 @@ export default function DiscoveryScreen({ navigation }) {
             return;
           }
           posthog.capture('wave_sent');
-          Alert.alert('Wave sent! 👋', "They'll be notified right away.");
+          showUndoBanner(existing.id, true);
           return;
         }
 
@@ -95,9 +127,7 @@ export default function DiscoveryScreen({ navigation }) {
     }
 
     posthog.capture(isWave ? 'wave_sent' : 'notice_sent');
-    if (isWave) {
-      Alert.alert('Wave sent! 👋', "They'll be notified right away.");
-    }
+    showUndoBanner(inserted.id, isWave);
   }
 
   function confirmWave(toUserId) {
@@ -190,6 +220,15 @@ export default function DiscoveryScreen({ navigation }) {
       />
       )}
 
+      {undoState && (
+        <Animated.View style={[styles.undoBanner, { opacity: undoOpacity }]}>
+          <Text style={styles.undoText}>{undoState.isWave ? 'Wave' : 'Notice'} sent</Text>
+          <TouchableOpacity onPress={handleUndo}>
+            <Text style={styles.undoButton}>Undo</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
       <ReportBlockModal
         visible={!!reportTarget}
         onClose={() => {
@@ -259,4 +298,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderTopWidth: 1, borderTopColor: colors.border,
   },
   sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
+  undoBanner: {
+    position: 'absolute', bottom: spacing.lg, left: spacing.lg, right: spacing.lg,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.textPrimary, borderRadius: radius.full,
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+  },
+  undoText: { color: colors.background, fontSize: 14, fontWeight: '600' },
+  undoButton: { color: colors.primary, fontSize: 14, fontWeight: '700' },
 });
