@@ -122,7 +122,24 @@ export async function getNearbyMatches() {
   }
   if (!sightings || sightings.length === 0) return [];
 
-  const otherUserIds = sightings.map((s) => (s.user_a === userId ? s.user_b : s.user_a));
+  // Exclude anyone we've already matched with — once matched, that
+  // connection lives entirely in the Matches tab. There's nothing left
+  // to "notice" about them, and leaving them in Discovery just invites
+  // accidentally re-sending a Notice to someone you're already talking to.
+  const { data: existingMatches } = await supabase
+    .from('matches')
+    .select('user_a, user_b')
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+
+  const matchedUserIds = new Set(
+    (existingMatches ?? []).map((m) => (m.user_a === userId ? m.user_b : m.user_a))
+  );
+
+  const otherUserIds = sightings
+    .map((s) => (s.user_a === userId ? s.user_b : s.user_a))
+    .filter((id) => !matchedUserIds.has(id));
+
+  if (otherUserIds.length === 0) return [];
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')

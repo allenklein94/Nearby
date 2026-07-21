@@ -43,39 +43,43 @@ export default function DiscoveryScreen({ navigation }) {
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
 
-    // Check for an existing Notice to this person first — the table
-    // only allows one row per sender/recipient pair. If one already
-    // exists, "sending a Wave" means upgrading that existing row
-    // rather than inserting a duplicate (which the database correctly
-    // rejects). Never downgrade an existing Wave back to a plain Notice.
-    const { data: existing } = await supabase
+    const { error: insertError } = await supabase
       .from('notices')
-      .select('id, is_super')
-      .eq('from_user', fromUserId)
-      .eq('to_user', toUserId)
-      .maybeSingle();
+      .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave });
 
-    let error = null;
+    if (insertError) {
+      // Postgres code 23505 = unique constraint violation. A Notice to
+      // this person already exists — treat sending a Wave as an
+      // "upgrade" of that existing row instead of failing outright.
+      // Never downgrade an existing Wave back to a plain Notice.
+      if (insertError.code === '23505') {
+        const { data: existing } = await supabase
+          .from('notices')
+          .select('id, is_super')
+          .eq('from_user', fromUserId)
+          .eq('to_user', toUserId)
+          .maybeSingle();
 
-    if (existing) {
-      if (isWave && !existing.is_super) {
-        ({ error } = await supabase.from('notices').update({ is_super: true }).eq('id', existing.id));
-      } else if (!isWave) {
-        // Already sent something (Notice or Wave) — nothing more to do.
+        if (existing && isWave && !existing.is_super) {
+          const { error: updateError } = await supabase
+            .from('notices')
+            .update({ is_super: true })
+            .eq('id', existing.id);
+
+          if (updateError) {
+            Alert.alert('Wave not sent', updateError.message);
+            return;
+          }
+          posthog.capture('wave_sent');
+          Alert.alert('Wave sent! 👋', "They'll be notified right away.");
+          return;
+        }
+
         Alert.alert('Already sent', "You've already noticed this person.");
         return;
-      } else {
-        Alert.alert('Already sent', "You've already sent them a Wave.");
-        return;
       }
-    } else {
-      ({ error } = await supabase
-        .from('notices')
-        .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave }));
-    }
 
-    if (error) {
-      Alert.alert(isWave ? 'Wave not sent' : 'Notice not sent', error.message);
+      Alert.alert(isWave ? 'Wave not sent' : 'Notice not sent', insertError.message);
       return;
     }
 
