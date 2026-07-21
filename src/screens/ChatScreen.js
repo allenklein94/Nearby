@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator } from 'react-native';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
+import { isPremium } from '../services/purchases';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -22,6 +23,8 @@ export default function ChatScreen({ route, navigation }) {
   const [otherUser, setOtherUser] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
+  const [isUserPremium, setIsUserPremium] = useState(false);
+  const [loadingIcebreaker, setLoadingIcebreaker] = useState(false);
   const listRef = useRef(null);
 
   async function loadMessages() {
@@ -47,6 +50,8 @@ export default function ChatScreen({ route, navigation }) {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     setUserId(myId);
+
+    isPremium().then(setIsUserPremium).catch(() => setIsUserPremium(false));
 
     const { data: match } = await supabase
       .from('matches')
@@ -94,6 +99,37 @@ export default function ChatScreen({ route, navigation }) {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
+  }
+
+  async function getIcebreaker() {
+    setLoadingIcebreaker(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-icebreaker', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ matchId }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Error', result.error || 'Could not generate an icebreaker.');
+        return;
+      }
+
+      Alert.alert('✨ Icebreaker suggestion', result.icebreaker, [
+        { text: 'Dismiss', style: 'cancel' },
+        { text: 'Use This', onPress: () => setText(result.icebreaker) },
+      ]);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setLoadingIcebreaker(false);
   }
 
   async function sendMessage() {
@@ -181,6 +217,15 @@ export default function ChatScreen({ route, navigation }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💬</Text>
               <Text style={styles.emptyText}>{t('chat.sayHi')}</Text>
+              {isUserPremium && (
+                <TouchableOpacity style={styles.icebreakerEmptyButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
+                  {loadingIcebreaker ? (
+                    <ActivityIndicator color={colors.primary} />
+                  ) : (
+                    <Text style={styles.icebreakerEmptyText}>✨ Get an AI icebreaker suggestion</Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           }
           renderItem={({ item }) => (
@@ -197,6 +242,11 @@ export default function ChatScreen({ route, navigation }) {
           )}
         />
         <View style={styles.inputRow}>
+          {isUserPremium && (
+            <TouchableOpacity style={styles.icebreakerButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
+              {loadingIcebreaker ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.icebreakerButtonText}>✨</Text>}
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.gifButton} onPress={() => setGifPickerVisible(true)}>
             <Text style={styles.gifButtonText}>GIF</Text>
           </TouchableOpacity>
@@ -243,6 +293,8 @@ const getStyles = (colors) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary },
+  icebreakerEmptyButton: { marginTop: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary },
+  icebreakerEmptyText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
   bubbleRow: { marginBottom: spacing.md, maxWidth: '78%' },
   rowLeft: { alignSelf: 'flex-start' },
   rowRight: { alignSelf: 'flex-end' },
@@ -261,6 +313,12 @@ const getStyles = (colors) => StyleSheet.create({
     borderTopColor: colors.border,
     backgroundColor: colors.background,
   },
+  icebreakerButton: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, marginRight: spacing.sm,
+    borderWidth: 1, borderColor: colors.primary, minWidth: 36, alignItems: 'center',
+  },
+  icebreakerButtonText: { fontSize: 14 },
   gifButton: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.sm,
     paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, marginRight: spacing.sm,
