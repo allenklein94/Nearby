@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert } from 'react-native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
+import { getOnlineStatuses } from '../services/presenceStatus';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -21,6 +22,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [onlineStatuses, setOnlineStatuses] = useState({});
 
   const load = useCallback(async () => {
     await reportPresence();
@@ -37,6 +39,10 @@ export default function DiscoveryScreen({ navigation }) {
       })
     );
     setPhotoUrls(Object.fromEntries(urlEntries));
+
+    const otherUserIds = results.map((item) => item.otherUserId);
+    const statuses = await getOnlineStatuses(otherUserIds);
+    setOnlineStatuses(statuses);
   }, []);
 
   useEffect(() => {
@@ -145,10 +151,13 @@ export default function DiscoveryScreen({ navigation }) {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardTopRow}>
-              <Image
-                source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
-                style={styles.avatar}
-              />
+              <View>
+                <Image
+                  source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
+                  style={styles.avatar}
+                />
+                {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
+              </View>
               <View style={styles.cardInfo}>
                 <Text style={styles.name}>{item.profiles?.display_name}</Text>
                 <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
@@ -218,6 +227,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 60, height: 60, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
+  onlineDot: {
+    position: 'absolute', bottom: 2, right: spacing.md - 2,
+    width: 14, height: 14, borderRadius: 7,
+    backgroundColor: colors.success, borderWidth: 2, borderColor: colors.surface,
+  },
   cardInfo: { flex: 1 },
   name: { ...typography.bodyBold, color: colors.textPrimary },
   bio: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
