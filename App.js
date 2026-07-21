@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react-native';
 import { PostHogProvider } from 'posthog-react-native';
 import { AuthProvider } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { LanguageProvider } from './src/context/LanguageContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
 Sentry.init({
@@ -24,10 +25,12 @@ function App() {
       options={{ host: 'https://us.i.posthog.com' }}
     >
       <ThemeProvider>
-        <AuthProvider>
-          <StatusBarWithTheme />
-          <RootNavigator />
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <StatusBarWithTheme />
+            <RootNavigator />
+          </AuthProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </PostHogProvider>
   );
