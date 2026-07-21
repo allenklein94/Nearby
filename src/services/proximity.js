@@ -124,7 +124,7 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests')
     .eq('id', userId)
     .single();
 
@@ -132,6 +132,7 @@ export async function getNearbyMatches() {
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
+  const myInterests = myProfile?.interests ?? [];
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -162,7 +163,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -175,11 +176,21 @@ export async function getNearbyMatches() {
   return sightings
     .map((s) => {
       const otherUserId = s.user_a === userId ? s.user_b : s.user_a;
+      const otherProfile = profileById[otherUserId] ?? null;
+
+      // Compute shared interests up front so Discovery can show a
+      // "you both like X" nudge — a lightweight step toward
+      // interest-based connection, not just pure proximity.
+      const sharedInterests = otherProfile
+        ? (otherProfile.interests ?? []).filter((i) => myInterests.includes(i))
+        : [];
+
       return {
         id: s.id,
         last_seen_at: s.last_seen_at,
         otherUserId,
-        profiles: profileById[otherUserId] ?? null,
+        profiles: otherProfile,
+        sharedInterests,
       };
     })
     .filter((item) => item.profiles !== null)
@@ -191,8 +202,6 @@ export async function getNearbyMatches() {
       if (age !== null && (age < minAge || age > maxAge)) {
         return false;
       }
-      // Ethnicity preference filter — only applied if the viewer has
-      // selected at least one; an empty list means "show everyone."
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(item.profiles.ethnicity)) {
         return false;
       }

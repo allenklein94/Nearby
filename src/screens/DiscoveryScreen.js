@@ -144,28 +144,38 @@ export default function DiscoveryScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Image
-              source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
-              style={styles.avatar}
-            />
-            <View style={styles.cardInfo}>
-              <Text style={styles.name}>{item.profiles?.display_name}</Text>
-              <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
+            <View style={styles.cardTopRow}>
+              <Image
+                source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
+                style={styles.avatar}
+              />
+              <View style={styles.cardInfo}>
+                <Text style={styles.name}>{item.profiles?.display_name}</Text>
+                <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
+              </View>
+              <View style={styles.cardActions}>
+                <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
+                  <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.waveButton} onPress={() => confirmWave(item.otherUserId)} activeOpacity={0.85}>
+                  <Text style={styles.waveButtonText}>👋 {t('discovery.wave')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.moreButton}
+                  onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
+                >
+                  <Text style={styles.moreButtonText}>⋯</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
-                <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.waveButton} onPress={() => confirmWave(item.otherUserId)} activeOpacity={0.85}>
-                <Text style={styles.waveButtonText}>👋 {t('discovery.wave')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.moreButton}
-                onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
-              >
-                <Text style={styles.moreButtonText}>⋯</Text>
-              </TouchableOpacity>
-            </View>
+            {item.sharedInterests?.length > 0 && (
+              <View style={styles.sharedRow}>
+                <Text style={styles.sharedText}>
+                  ✨ You both like {item.sharedInterests.slice(0, 3).join(', ')}
+                  {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} more` : ''}
+                </Text>
+              </View>
+            )}
           </View>
         )}
       />
@@ -197,8 +207,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.md,
@@ -208,6 +216,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderColor: colors.border,
     ...shadow.card,
   },
+  cardTopRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 60, height: 60, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
   cardInfo: { flex: 1 },
   name: { ...typography.bodyBold, color: colors.textPrimary },
@@ -231,4 +240,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   waveButtonText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
+  sharedRow: {
+    marginTop: spacing.sm, paddingTop: spacing.sm,
+    borderTopWidth: 1, borderTopColor: colors.border,
+  },
+  sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
 });
