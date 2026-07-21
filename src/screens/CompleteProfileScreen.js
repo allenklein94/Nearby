@@ -5,7 +5,9 @@ import { supabase } from '../services/supabase';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
-import { colors, typography, spacing, radius, shadow } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { typography, spacing, radius } from '../theme';
 
 const MIN_AGE = 18;
 const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
@@ -23,6 +25,9 @@ function calculateAge(birthdate) {
 
 export default function CompleteProfileScreen() {
   const { refreshProfile } = useAuth();
+  const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+  const styles = getStyles(colors);
   const [displayName, setDisplayName] = useState('');
   const [birthdate, setBirthdate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -98,18 +103,18 @@ export default function CompleteProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Complete your profile</Text>
+      <Text style={styles.header}>{t('completeProfile.header')}</Text>
       <View style={styles.badge}>
         <Text style={styles.badgeText}>18+ ONLY</Text>
       </View>
 
-      <Text style={styles.label}>Display Name</Text>
-      <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder="How you'll appear to others" placeholderTextColor={colors.textTertiary} />
+      <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
+      <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder={t('completeProfile.displayNamePlaceholder')} placeholderTextColor={colors.textTertiary} />
 
-      <Text style={styles.label}>Date of Birth</Text>
+      <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
       <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
         <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
-          {birthdate ? birthdate.toLocaleDateString() : 'Tap to select'}
+          {birthdate ? birthdate.toLocaleDateString() : t('completeProfile.tapToSelect')}
         </Text>
       </TouchableOpacity>
       {showPicker && (
@@ -118,7 +123,7 @@ export default function CompleteProfileScreen() {
           mode="date"
           maximumDate={maxSelectableDate}
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          themeVariant="dark"
+          themeVariant={isDark ? 'dark' : 'light'}
           onChange={(event, selectedDate) => {
             setShowPicker(Platform.OS === 'ios');
             if (selectedDate) setBirthdate(selectedDate);
@@ -126,7 +131,7 @@ export default function CompleteProfileScreen() {
         />
       )}
 
-      <Text style={styles.label}>Profile Photo</Text>
+      <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
       <TouchableOpacity style={styles.photoPicker} onPress={choosePhoto} activeOpacity={0.85}>
         {photoAsset ? (
           <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
@@ -134,19 +139,17 @@ export default function CompleteProfileScreen() {
           <Text style={styles.photoPickerText}>📷{'\n'}Tap to choose a photo</Text>
         )}
       </TouchableOpacity>
-      <Text style={styles.helperText}>
-        Every photo is reviewed before your profile becomes visible to anyone else.
-      </Text>
+      <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
 
       <TouchableOpacity style={styles.consentRow} onPress={() => setAgreedToTerms(!agreedToTerms)} activeOpacity={0.7}>
         <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
           {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
         </View>
         <Text style={styles.consentText}>
-          I agree to the{' '}
-          <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>Terms of Service</Text>
-          {' '}and{' '}
-          <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>Privacy Policy</Text>
+          {t('completeProfile.agreeText')}{' '}
+          <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>{t('completeProfile.termsOfService')}</Text>
+          {' '}{t('completeProfile.andText')}{' '}
+          <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>{t('completeProfile.privacyPolicy')}</Text>
         </Text>
       </TouchableOpacity>
 
@@ -156,13 +159,13 @@ export default function CompleteProfileScreen() {
         disabled={submitting}
         activeOpacity={0.85}
       >
-        <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Continue'}</Text>
+        <Text style={styles.buttonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl },
   header: { ...typography.title, color: colors.textPrimary },
   badge: {
@@ -194,7 +197,7 @@ const styles = StyleSheet.create({
   checkmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
   consentText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 19 },
   link: { color: colors.primary, textDecorationLine: 'underline' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

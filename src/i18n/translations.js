@@ -1,50 +1,258 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Localization from 'expo-localization';
-import { translations } from '../i18n/translations';
-
-const LanguageContext = createContext(null);
-const STORAGE_KEY = 'nearby-language-preference';
-
-export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState('en');
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (stored === 'es' || stored === 'en') {
-        setLanguageState(stored);
-      } else {
-        const deviceLang = Localization.getLocales()?.[0]?.languageCode;
-        setLanguageState(deviceLang === 'es' ? 'es' : 'en');
-      }
-      setLoaded(true);
-    });
-  }, []);
-
-  async function setLanguage(lang) {
-    setLanguageState(lang);
-    await AsyncStorage.setItem(STORAGE_KEY, lang);
-  }
-
-  function t(keyPath) {
-    const parts = keyPath.split('.');
-    let value = translations[language];
-    for (const part of parts) {
-      value = value?.[part];
-    }
-    return value ?? keyPath;
-  }
-
-  if (!loaded) return null;
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
-  );
-}
-
-export function useLanguage() {
-  return useContext(LanguageContext);
-}
+export const translations = {
+  en: {
+    onboarding: {
+      slide1Title: 'Nearby',
+      slide1Text: "You've probably noticed someone nearby you wanted to talk to, but didn't. Nearby gives you a low-pressure way to let them know.",
+      slide2Title: 'Send a quiet Notice',
+      slide2Text: "If you're interested, send a silent \"Notice.\" They're never told unless they notice you back — no rejection, no pressure.",
+      slide3Title: 'Show your personality',
+      slide3Text: 'Add multiple photos, your interests, and details like relationship goals or lifestyle preferences — as much or as little as you want to share.',
+      slide4Title: 'Your privacy comes first',
+      slide4Text: "Your exact location is never shown to anyone. No one can see who you've noticed unless it's mutual.",
+      skip: 'Skip',
+      next: 'Next',
+      getStarted: 'Get Started',
+    },
+    login: {
+      signIn: 'Sign in',
+      enterCode: 'Enter your code',
+      textDescription: "We'll text you a verification code.",
+      phonePlaceholder: '(555) 555-5555',
+      sendCode: 'Send Code',
+      sending: 'Sending...',
+      codePlaceholder: '6-digit code',
+      verify: 'Verify',
+      verifying: 'Verifying...',
+      differentNumber: 'Use a different number',
+      invalidNumber: 'Invalid number',
+      invalidNumberMessage: 'Enter a 10-digit US phone number.',
+    },
+    discovery: {
+      title: 'Crossed Paths',
+      subtitle: "People you've been near recently",
+      notice: 'Notice',
+      wave: 'Wave',
+      emptyTitle: 'Nothing yet',
+      emptyText: "Keep the app open while you're out and about — we'll let you know when you cross paths with someone.",
+      radiusInfoTitle: 'How Crossed Paths works',
+      radiusInfoText: "You'll show up on someone's Crossed Paths list if you've been within about 35 feet of each other in the last several minutes, with the app open. Your exact location is never shown to anyone.",
+    },
+    notices: {
+      title: 'Notices',
+      unlockPremium: 'Unlock Premium',
+      unlockPremiumText: "See everyone who's noticed you",
+      emptyText: "No notices yet. Check back after you've been out.",
+      noticedYou: 'noticed you',
+      wave: 'Wave',
+    },
+    matches: {
+      title: 'Matches',
+      emptyText: 'No matches yet. Matches happen when you both notice each other.',
+      tapToChat: 'Tap to start chatting',
+    },
+    chat: {
+      typePlaceholder: 'Type a message...',
+      send: 'Send',
+      sayHi: "Say hi — you both noticed each other.",
+      messageBlocked: 'Message not sent',
+      messageBlockedText: 'This message may violate our community guidelines. Please revise it.',
+    },
+    profile: {
+      title: 'Your Profile',
+      displayName: 'Display Name',
+      bio: 'Bio',
+      save: 'Save Changes',
+      hideProfile: 'Hide my profile',
+      pushNotifications: 'Push notifications',
+      managePremium: 'Manage Premium',
+      requestData: 'Request My Data',
+      signOut: 'Sign Out',
+      deleteAccount: 'Delete Account',
+    },
+    settings: {
+      title: 'Settings',
+      appearance: 'Appearance',
+      darkMode: 'Dark Mode',
+      notifications: 'Notifications',
+      newMatches: 'New Matches',
+      messages: 'Messages',
+      waves: 'Waves',
+      discoveryPreferences: 'Discovery Preferences',
+      showMe: 'Show Me',
+      ageRange: 'Age Range',
+      changePhoneNumber: 'Change Phone Number',
+      manageSubscription: 'Manage Subscription',
+      legal: 'Legal',
+      language: 'Language',
+    },
+    legal: {
+      legalSection: 'Legal',
+      privacyPolicy: 'Privacy Policy',
+      termsOfService: 'Terms of Service',
+      privacyChoices: 'Your Privacy Choices',
+      privacyChoicesText: "We don't sell your personal information or use it for third-party advertising. You can request a copy of your data or delete your account entirely at any time from your Profile tab.",
+      openSourceLicenses: 'Open Source Licenses',
+    },
+    paywall: {
+      badge: 'PREMIUM',
+      title: 'Nearby Premium',
+      subtitle: "See who's noticed you, and never miss a connection.",
+      feature1: "See everyone who's noticed you",
+      feature2: 'Unlimited Notices',
+      feature3: 'Extended crossed-paths radius',
+      feature4: 'Weekly AI-suggested icebreaker',
+      restorePurchases: 'Restore Purchases',
+      bestValue: 'BEST VALUE',
+    },
+    viewProfile: {
+      noPhotos: 'No photos yet',
+      interests: 'Interests',
+      details: 'Details',
+      basics: 'Basics',
+    },
+    completeProfile: {
+      header: 'Complete your profile',
+      subheader: 'Nearby is for adults 18+ only.',
+      displayName: 'Display Name',
+      displayNamePlaceholder: "How you'll appear to others",
+      dateOfBirth: 'Date of Birth',
+      tapToSelect: 'Tap to select',
+      profilePhoto: 'Profile Photo',
+      photoHelper: 'Every photo is reviewed before your profile becomes visible to anyone else.',
+      agreeText: 'I agree to the',
+      andText: 'and',
+      termsOfService: 'Terms of Service',
+      privacyPolicy: 'Privacy Policy',
+      continue: 'Continue',
+      saving: 'Saving...',
+    },
+  },
+  es: {
+    onboarding: {
+      slide1Title: 'Nearby',
+      slide1Text: 'Seguramente has notado a alguien cerca a quien querías hablarle, pero no lo hiciste. Nearby te da una forma discreta de hacérselo saber.',
+      slide2Title: 'Envía un Aviso silencioso',
+      slide2Text: 'Si te interesa, envía un "Aviso" silencioso. Nunca se les informa a menos que también te avisen a ti — sin rechazo, sin presión.',
+      slide3Title: 'Muestra tu personalidad',
+      slide3Text: 'Agrega varias fotos, tus intereses y detalles como objetivos de relación o preferencias de estilo de vida — todo lo que quieras compartir.',
+      slide4Title: 'Tu privacidad es lo primero',
+      slide4Text: 'Tu ubicación exacta nunca se muestra a nadie. Nadie puede ver a quién has avisado a menos que sea mutuo.',
+      skip: 'Omitir',
+      next: 'Siguiente',
+      getStarted: 'Comenzar',
+    },
+    login: {
+      signIn: 'Iniciar sesión',
+      enterCode: 'Ingresa tu código',
+      textDescription: 'Te enviaremos un código de verificación por mensaje de texto.',
+      phonePlaceholder: '(555) 555-5555',
+      sendCode: 'Enviar Código',
+      sending: 'Enviando...',
+      codePlaceholder: 'Código de 6 dígitos',
+      verify: 'Verificar',
+      verifying: 'Verificando...',
+      differentNumber: 'Usar un número diferente',
+      invalidNumber: 'Número inválido',
+      invalidNumberMessage: 'Ingresa un número de teléfono de 10 dígitos de EE. UU.',
+    },
+    discovery: {
+      title: 'Caminos Cruzados',
+      subtitle: 'Personas que has estado cerca recientemente',
+      notice: 'Avisar',
+      wave: 'Saludar',
+      emptyTitle: 'Nada por aquí todavía',
+      emptyText: 'Mantén la app abierta mientras estás fuera — te avisaremos cuando te cruces con alguien.',
+      radiusInfoTitle: 'Cómo funciona Caminos Cruzados',
+      radiusInfoText: 'Aparecerás en la lista de Caminos Cruzados de alguien si has estado a unos 10 metros el uno del otro en los últimos minutos, con la app abierta. Tu ubicación exacta nunca se muestra a nadie.',
+    },
+    notices: {
+      title: 'Avisos',
+      unlockPremium: 'Desbloquear Premium',
+      unlockPremiumText: 'Ve a todos los que te han avisado',
+      emptyText: 'Aún no hay avisos. Vuelve a revisar después de salir.',
+      noticedYou: 'te avisó',
+      wave: 'Saludo',
+    },
+    matches: {
+      title: 'Coincidencias',
+      emptyText: 'Aún no hay coincidencias. Las coincidencias ocurren cuando ambos se avisan mutuamente.',
+      tapToChat: 'Toca para chatear',
+    },
+    chat: {
+      typePlaceholder: 'Escribe un mensaje...',
+      send: 'Enviar',
+      sayHi: 'Saluda — ambos se dieron cuenta el uno del otro.',
+      messageBlocked: 'Mensaje no enviado',
+      messageBlockedText: 'Este mensaje puede violar nuestras normas de comunidad. Por favor revísalo.',
+    },
+    profile: {
+      title: 'Tu Perfil',
+      displayName: 'Nombre',
+      bio: 'Biografía',
+      save: 'Guardar Cambios',
+      hideProfile: 'Ocultar mi perfil',
+      pushNotifications: 'Notificaciones push',
+      managePremium: 'Gestionar Premium',
+      requestData: 'Solicitar Mis Datos',
+      signOut: 'Cerrar Sesión',
+      deleteAccount: 'Eliminar Cuenta',
+    },
+    settings: {
+      title: 'Configuración',
+      appearance: 'Apariencia',
+      darkMode: 'Modo Oscuro',
+      notifications: 'Notificaciones',
+      newMatches: 'Nuevas Coincidencias',
+      messages: 'Mensajes',
+      waves: 'Saludos',
+      discoveryPreferences: 'Preferencias de Descubrimiento',
+      showMe: 'Mostrarme',
+      ageRange: 'Rango de Edad',
+      changePhoneNumber: 'Cambiar Número de Teléfono',
+      manageSubscription: 'Gestionar Suscripción',
+      legal: 'Legal',
+      language: 'Idioma',
+    },
+    legal: {
+      legalSection: 'Legal',
+      privacyPolicy: 'Política de Privacidad',
+      termsOfService: 'Términos de Servicio',
+      privacyChoices: 'Tus Opciones de Privacidad',
+      privacyChoicesText: 'No vendemos tu información personal ni la usamos para publicidad de terceros. Puedes solicitar una copia de tus datos o eliminar tu cuenta por completo en cualquier momento desde tu pestaña de Perfil.',
+      openSourceLicenses: 'Licencias de Código Abierto',
+    },
+    paywall: {
+      badge: 'PREMIUM',
+      title: 'Nearby Premium',
+      subtitle: 'Ve quién te ha avisado, y nunca te pierdas una conexión.',
+      feature1: 'Ve a todos los que te han avisado',
+      feature2: 'Avisos ilimitados',
+      feature3: 'Radio extendido de caminos cruzados',
+      feature4: 'Sugerencia semanal de tema de conversación con IA',
+      restorePurchases: 'Restaurar Compras',
+      bestValue: 'MEJOR VALOR',
+    },
+    viewProfile: {
+      noPhotos: 'Aún no hay fotos',
+      interests: 'Intereses',
+      details: 'Detalles',
+      basics: 'Datos Básicos',
+    },
+    completeProfile: {
+      header: 'Completa tu perfil',
+      subheader: 'Nearby es solo para adultos mayores de 18 años.',
+      displayName: 'Nombre',
+      displayNamePlaceholder: 'Cómo aparecerás ante los demás',
+      dateOfBirth: 'Fecha de Nacimiento',
+      tapToSelect: 'Toca para seleccionar',
+      profilePhoto: 'Foto de Perfil',
+      photoHelper: 'Cada foto es revisada antes de que tu perfil sea visible para los demás.',
+      agreeText: 'Acepto los',
+      andText: 'y la',
+      termsOfService: 'Términos de Servicio',
+      privacyPolicy: 'Política de Privacidad',
+      continue: 'Continuar',
+      saving: 'Guardando...',
+    },
+  },
+};

@@ -5,6 +5,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -24,6 +25,7 @@ function calculateAge(birthdateString) {
 export default function ViewProfileScreen({ route }) {
   const { userId } = route.params;
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors);
   const [profile, setProfile] = useState(null);
   const [photos, setPhotos] = useState([]);
@@ -109,7 +111,7 @@ export default function ViewProfileScreen({ route }) {
           />
         ) : (
           <View style={[styles.photo, { width, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }]}>
-            <Text style={styles.emptyText}>No photos yet</Text>
+            <Text style={styles.emptyText}>{t('viewProfile.noPhotos')}</Text>
           </View>
         )}
 
@@ -140,7 +142,7 @@ export default function ViewProfileScreen({ route }) {
 
           {profile.interests?.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>Interests</Text>
+              <Text style={styles.sectionLabel}>{t('viewProfile.interests')}</Text>
               <View style={styles.chipsWrap}>
                 {profile.interests.map((interest) => (
                   <View key={interest} style={styles.interestChip}>
@@ -153,7 +155,7 @@ export default function ViewProfileScreen({ route }) {
 
           {filledDetails.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>Details</Text>
+              <Text style={styles.sectionLabel}>{t('viewProfile.details')}</Text>
               <View style={styles.chipsWrap}>
                 {filledDetails.map((item, i) => (
                   <View key={i} style={styles.basicChip}>
@@ -166,7 +168,7 @@ export default function ViewProfileScreen({ route }) {
 
           {filledBasics.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>Basics</Text>
+              <Text style={styles.sectionLabel}>{t('viewProfile.basics')}</Text>
               <View style={styles.chipsWrap}>
                 {filledBasics.map((item, i) => (
                   <View key={i} style={styles.basicChip}>

@@ -2,21 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { getOfferings, purchasePackage, restorePurchases } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-
-const FEATURES = [
-  { icon: '👀', text: "See everyone who's noticed you" },
-  { icon: '✨', text: 'Unlimited Notices' },
-  { icon: '📍', text: 'Extended crossed-paths radius' },
-  { icon: '💬', text: 'Weekly AI-suggested icebreaker' },
-];
 
 export default function PaywallScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [offering, setOffering] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  const FEATURES = [
+    { icon: '👀', text: t('paywall.feature1') },
+    { icon: '✨', text: t('paywall.feature2') },
+    { icon: '📍', text: t('paywall.feature3') },
+    { icon: '💬', text: t('paywall.feature4') },
+  ];
 
   useEffect(() => {
     getOfferings()
@@ -59,11 +61,11 @@ export default function PaywallScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.badge}>
-        <Text style={styles.badgeText}>✨ PREMIUM</Text>
+        <Text style={styles.badgeText}>✨ {t('paywall.badge')}</Text>
       </View>
 
-      <Text style={styles.title}>Nearby Premium</Text>
-      <Text style={styles.subtitle}>See who's noticed you, and never miss a connection.</Text>
+      <Text style={styles.title}>{t('paywall.title')}</Text>
+      <Text style={styles.subtitle}>{t('paywall.subtitle')}</Text>
 
       <View style={styles.featuresCard}>
         {FEATURES.map((f, i) => (
@@ -86,7 +88,7 @@ export default function PaywallScreen({ navigation }) {
           >
             {isAnnual(pkg) && (
               <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>BEST VALUE</Text>
+                <Text style={styles.saveBadgeText}>{t('paywall.bestValue')}</Text>
               </View>
             )}
             <Text style={[styles.planButtonText, isAnnual(pkg) && styles.planButtonTextFeatured]}>
@@ -106,7 +108,7 @@ export default function PaywallScreen({ navigation }) {
       )}
 
       <TouchableOpacity onPress={handleRestore} style={{ marginTop: spacing.lg }}>
-        <Text style={styles.restoreText}>Restore Purchases</Text>
+        <Text style={styles.restoreText}>{t('paywall.restorePurchases')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Linking, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
@@ -23,35 +24,31 @@ const OPEN_SOURCE_LIBRARIES = [
 
 export default function LegalScreen() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.sectionLabel}>Legal</Text>
+        <Text style={styles.sectionLabel}>{t('legal.legalSection')}</Text>
         <View style={styles.card}>
           <TouchableOpacity style={styles.row} onPress={() => Linking.openURL(PRIVACY_URL)}>
-            <Text style={styles.rowText}>Privacy Policy</Text>
+            <Text style={styles.rowText}>{t('legal.privacyPolicy')}</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity style={styles.row} onPress={() => Linking.openURL(TERMS_URL)}>
-            <Text style={styles.rowText}>Terms of Service</Text>
+            <Text style={styles.rowText}>{t('legal.termsOfService')}</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel}>Your Privacy Choices</Text>
+        <Text style={styles.sectionLabel}>{t('legal.privacyChoices')}</Text>
         <View style={styles.card}>
-          <Text style={styles.bodyText}>
-            We don't sell your personal information or use it for third-party
-            advertising. You can request a copy of your data or delete your
-            account entirely at any time from your Profile tab. See our
-            Privacy Policy above for full details on your rights.
-          </Text>
+          <Text style={styles.bodyText}>{t('legal.privacyChoicesText')}</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>Open Source Licenses</Text>
+        <Text style={styles.sectionLabel}>{t('legal.openSourceLicenses')}</Text>
         <View style={styles.card}>
           {OPEN_SOURCE_LIBRARIES.map((lib, i) => (
             <View key={lib.name} style={[styles.licenseRow, i > 0 && styles.divider]}>
