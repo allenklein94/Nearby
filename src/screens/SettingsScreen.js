@@ -283,7 +283,7 @@ export default function SettingsScreen({ navigation }) {
             />
           </View>
 
-          <Text style={styles.label}>My Gender (for others' preferences)</Text>
+          <Text style={styles.label}>{t('settings.myGender')}</Text>
           <View style={styles.chipsWrap}>
             {GENDER_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -302,8 +302,8 @@ export default function SettingsScreen({ navigation }) {
 
           <View style={[styles.settingRow, { marginTop: spacing.md }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Hide gender from my profile</Text>
-              <Text style={styles.helperText}>Still used for matching, just not shown to others</Text>
+              <Text style={styles.settingLabel}>{t('settings.hideGender')}</Text>
+              <Text style={styles.helperText}>{t('settings.hideGenderHelper')}</Text>
             </View>
             <Switch
               value={genderHidden}
@@ -312,7 +312,7 @@ export default function SettingsScreen({ navigation }) {
             />
           </View>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>My Ethnicity</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.myEthnicity')}</Text>
           <View style={styles.chipsWrap}>
             {ETHNICITY_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -328,8 +328,8 @@ export default function SettingsScreen({ navigation }) {
 
           <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Hide ethnicity from my profile</Text>
-              <Text style={styles.helperText}>Still used for others' filtering, just not shown to others</Text>
+              <Text style={styles.settingLabel}>{t('settings.hideEthnicity')}</Text>
+              <Text style={styles.helperText}>{t('settings.hideEthnicityHelper')}</Text>
             </View>
             <Switch
               value={ethnicityHidden}
@@ -338,7 +338,7 @@ export default function SettingsScreen({ navigation }) {
             />
           </View>
 
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>Ethnicity Preferences (Optional)</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ethnicityPreferences')}</Text>
           <View style={styles.chipsWrap}>
             {ETHNICITY_OPTIONS.map((option) => {
               const selected = ethnicityPreferences.includes(option);
@@ -354,9 +354,7 @@ export default function SettingsScreen({ navigation }) {
               );
             })}
           </View>
-          <Text style={styles.helperText}>
-            Select any you'd like to see more of. Leave empty to see everyone regardless of ethnicity.
-          </Text>
+          <Text style={styles.helperText}>{t('settings.ethnicityPreferencesHelper')}</Text>
 
           <TouchableOpacity style={styles.button} onPress={savePreferences} activeOpacity={0.85}>
             <Text style={styles.buttonText}>Save Preferences</Text>
