@@ -43,9 +43,36 @@ export default function DiscoveryScreen({ navigation }) {
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
 
-    const { error } = await supabase
+    // Check for an existing Notice to this person first — the table
+    // only allows one row per sender/recipient pair. If one already
+    // exists, "sending a Wave" means upgrading that existing row
+    // rather than inserting a duplicate (which the database correctly
+    // rejects). Never downgrade an existing Wave back to a plain Notice.
+    const { data: existing } = await supabase
       .from('notices')
-      .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave });
+      .select('id, is_super')
+      .eq('from_user', fromUserId)
+      .eq('to_user', toUserId)
+      .maybeSingle();
+
+    let error = null;
+
+    if (existing) {
+      if (isWave && !existing.is_super) {
+        ({ error } = await supabase.from('notices').update({ is_super: true }).eq('id', existing.id));
+      } else if (!isWave) {
+        // Already sent something (Notice or Wave) — nothing more to do.
+        Alert.alert('Already sent', "You've already noticed this person.");
+        return;
+      } else {
+        Alert.alert('Already sent', "You've already sent them a Wave.");
+        return;
+      }
+    } else {
+      ({ error } = await supabase
+        .from('notices')
+        .insert({ from_user: fromUserId, to_user: toUserId, is_super: isWave }));
+    }
 
     if (error) {
       Alert.alert(isWave ? 'Wave not sent' : 'Notice not sent', error.message);
