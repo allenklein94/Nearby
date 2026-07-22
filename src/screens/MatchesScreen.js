@@ -67,8 +67,6 @@ export default function MatchesScreen({ navigation }) {
     const pending = await getPendingCheckIns();
     if (pending.length === 0) return;
 
-    // Only prompt for one at a time — if there are several, the rest
-    // will surface again next time the screen loads.
     const checkin = pending[0];
     const match = checkin.matches;
     const otherName = match ? (match.a?.display_name ?? match.b?.display_name) : 'your date';
@@ -93,7 +91,7 @@ export default function MatchesScreen({ navigation }) {
   function handleSomethingWrong(checkin, otherName) {
     Alert.alert(
       "We're here to help",
-      'If you're in immediate danger, please contact local emergency services right away.',
+      "If you're in immediate danger, please contact local emergency services right away.",
       [
         {
           text: 'Message my check-in contact',

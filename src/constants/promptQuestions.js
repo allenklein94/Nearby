@@ -11,4 +11,8 @@ export const PROMPT_QUESTIONS = [
   "Two truths and a lie...",
   'The best way to ask me out is...',
   'My love language is...',
+  "What's something you've changed your mind about?",
+  'How do you spend a perfect Sunday?',
+  'How do you handle disagreements?',
+  'What are you excited about this year?',
 ];
