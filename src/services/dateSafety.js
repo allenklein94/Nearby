@@ -19,7 +19,10 @@ export async function createCheckIn({ matchId, matchName, scheduledAt }) {
       body: `Checking in on your plans with ${matchName}. Let us know you're safe.`,
       data: { type: 'date_checkin', checkinId: data.id },
     },
-    trigger: { date: new Date(scheduledAt) },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: new Date(scheduledAt),
+    },
   });
 
   return data;
