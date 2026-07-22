@@ -4,10 +4,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { generateCompatibilityReport } from '../services/compatibility';
+import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidenceMode';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
+import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
 import SkeletonCard from '../components/SkeletonCard';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
@@ -30,8 +32,10 @@ export default function DiscoveryScreen({ navigation }) {
   const [onlineStatuses, setOnlineStatuses] = useState({});
   const [undoState, setUndoState] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
+  const [myUserId, setMyUserId] = useState(null);
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
+  const [showConfidenceBanner, setShowConfidenceBanner] = useState(false);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -57,9 +61,13 @@ export default function DiscoveryScreen({ navigation }) {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
+    setMyUserId(myId);
     if (myId) {
       const { data: mine } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
       setMyProfile(mine);
+
+      const offerBreak = await shouldOfferBreak(myId);
+      setShowConfidenceBanner(offerBreak);
     }
   }, []);
 
@@ -68,6 +76,11 @@ export default function DiscoveryScreen({ navigation }) {
       load();
     }, [load])
   );
+
+  async function handleDismissConfidenceBanner() {
+    setShowConfidenceBanner(false);
+    if (myUserId) await dismissBreakSuggestion(myUserId);
+  }
 
   function showRadiusInfo() {
     Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
@@ -185,6 +198,8 @@ export default function DiscoveryScreen({ navigation }) {
         </View>
         <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
       </View>
+
+      {showConfidenceBanner && <ConfidenceModeBanner onDismiss={handleDismissConfidenceBanner} />}
 
       {initialLoading ? (
         <View>
