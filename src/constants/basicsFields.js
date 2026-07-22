@@ -23,4 +23,8 @@ export const BASICS_FIELDS = [
   { key: 'social_energy', label: 'Social Energy', icon: '🔋', type: 'select', options: ['Recharge alone', 'Recharge with people', 'Depends on the day'] },
   { key: 'weekend_style', label: 'Weekend Style', icon: '🌤️', type: 'select', options: ['Homebody', 'Always out and about', 'A mix of both'] },
   { key: 'independence_preference', label: 'Independence', icon: '🧘', type: 'select', options: ['Need lots of space', 'Love togetherness', 'Somewhere in between'] },
+  { key: 'family_closeness', label: 'Family Closeness', icon: '👨‍👩‍👧', type: 'select', options: ['Very close-knit', 'Independent from family', 'Somewhere in between'] },
+  { key: 'holiday_traditions', label: 'Holiday Traditions', icon: '🎄', type: 'text', placeholder: 'e.g. Big family gatherings, quiet at home, travel' },
+  { key: 'cultural_background', label: 'Cultural Values', icon: '🌍', type: 'text', placeholder: 'e.g. traditions or values important to me' },
+  { key: 'relocation_openness', label: 'Open to Relocating', icon: '🧳', type: 'select', options: ['Want to stay local', 'Open to relocating', 'Would love to live abroad'] },
 ];
