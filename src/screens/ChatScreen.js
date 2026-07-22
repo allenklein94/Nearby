@@ -15,6 +15,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const MAX_RECORDING_SECONDS = 60;
+const TYPING_IDLE_MS = 3000;
 
 function VoiceBubble({ audioPath, isMe, colors }) {
   const [sound, setSound] = useState(null);
@@ -101,9 +102,13 @@ export default function ChatScreen({ route, navigation }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [uploadingVoice, setUploadingVoice] = useState(false);
+  const [otherIsTyping, setOtherIsTyping] = useState(false);
   const listRef = useRef(null);
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
+  const typingChannelRef = useRef(null);
+  const typingIdleTimerRef = useRef(null);
+  const otherTypingTimeoutRef = useRef(null);
 
   async function loadMessages() {
     const { data } = await supabase
@@ -136,6 +141,9 @@ export default function ChatScreen({ route, navigation }) {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      if (typingIdleTimerRef.current) clearTimeout(typingIdleTimerRef.current);
+      if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
+      if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current);
     };
   }, []);
 
@@ -199,7 +207,33 @@ export default function ChatScreen({ route, navigation }) {
       )
       .subscribe();
 
+    // Separate lightweight broadcast channel just for typing status —
+    // ephemeral, never written to the database, since "is typing"
+    // doesn't need to persist or survive a reconnect.
+    const typingChannel = supabase
+      .channel(`typing:${matchId}`)
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        if (payload.payload.userId === myId) return;
+        setOtherIsTyping(true);
+        if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
+        otherTypingTimeoutRef.current = setTimeout(() => setOtherIsTyping(false), TYPING_IDLE_MS);
+      })
+      .subscribe();
+    typingChannelRef.current = typingChannel;
+
     return myId;
+  }
+
+  function handleTextChange(value) {
+    setText(value);
+
+    if (typingChannelRef.current && userId) {
+      typingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId },
+      });
+    }
   }
 
   async function handleStartRecording() {
@@ -428,6 +462,14 @@ export default function ChatScreen({ route, navigation }) {
           )}
         />
 
+        {otherIsTyping && !isRecording && (
+          <View style={styles.typingRow}>
+            <View style={styles.typingBubble}>
+              <Text style={styles.typingText}>{otherUser?.display_name} is typing...</Text>
+            </View>
+          </View>
+        )}
+
         {isRecording ? (
           <View style={styles.recordingRow}>
             <View style={styles.recordingIndicator} />
@@ -452,7 +494,7 @@ export default function ChatScreen({ route, navigation }) {
               placeholder={t('chat.typePlaceholder')}
               placeholderTextColor={colors.textTertiary}
               value={text}
-              onChangeText={setText}
+              onChangeText={handleTextChange}
               multiline
             />
             {text.trim() ? (
@@ -506,6 +548,9 @@ const getStyles = (colors) => StyleSheet.create({
   gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
   seenText: { ...typography.small, color: colors.textTertiary, marginTop: 2, marginHorizontal: 4, fontStyle: 'italic' },
+  typingRow: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xs },
+  typingBubble: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, alignSelf: 'flex-start' },
+  typingText: { color: colors.textTertiary, fontSize: 12, fontStyle: 'italic' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
