@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createGathering } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
+import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -57,6 +58,8 @@ export default function CreateGatheringScreen({ navigation }) {
     setSubmitting(false);
   }
 
+  const selectedStyle = interestTag ? categoryStyleFor(interestTag) : null;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -84,16 +87,25 @@ export default function CreateGatheringScreen({ navigation }) {
 
         <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
         <View style={styles.chipsWrap}>
-          {INTEREST_OPTIONS.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={[styles.chip, interestTag === option && styles.chipSelected]}
-              onPress={() => setInterestTag(interestTag === option ? null : option)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.chipText, interestTag === option && styles.chipTextSelected]}>{option}</Text>
-            </TouchableOpacity>
-          ))}
+          {INTEREST_OPTIONS.map((option) => {
+            const style = categoryStyleFor(option);
+            const isSelected = interestTag === option;
+            return (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.chip,
+                  isSelected && { backgroundColor: style.color, borderColor: style.color },
+                ]}
+                onPress={() => setInterestTag(interestTag === option ? null : option)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                  {style.icon} {option}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <Text style={styles.label}>{t('gatherings.whenLabel')}</Text>
@@ -116,7 +128,12 @@ export default function CreateGatheringScreen({ navigation }) {
           />
         )}
 
-        <TouchableOpacity style={styles.button} onPress={submit} disabled={submitting} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[styles.button, selectedStyle && { backgroundColor: selectedStyle.color }]}
+          onPress={submit}
+          disabled={submitting}
+          activeOpacity={0.85}
+        >
           <Text style={styles.buttonText}>{submitting ? t('gatherings.posting') : t('gatherings.postButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -136,7 +153,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
