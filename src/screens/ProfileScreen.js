@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -10,6 +10,10 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { typography, spacing, radius } from '../theme';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 const MAX_EXTRA_PHOTOS = 5;
 const MAX_PROMPTS = 3;
 
@@ -19,6 +23,34 @@ const INTEREST_OPTIONS = [
   'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
   'Volunteering', 'Meditation', 'Running',
 ];
+
+function AccordionField({ field, value, expanded, onToggle, children }) {
+  const { colors } = useTheme();
+  const styles = getAccordionStyles(colors);
+
+  return (
+    <View style={styles.wrap}>
+      <TouchableOpacity style={styles.header} onPress={onToggle} activeOpacity={0.7}>
+        <Text style={styles.headerLabel}>{field.icon} {field.label}</Text>
+        <View style={styles.headerRight}>
+          {value ? <Text style={styles.headerValue} numberOfLines={1}>{value}</Text> : null}
+          <Text style={styles.chevron}>{expanded ? '⌃' : '⌄'}</Text>
+        </View>
+      </TouchableOpacity>
+      {expanded && <View style={styles.body}>{children}</View>}
+    </View>
+  );
+}
+
+const getAccordionStyles = (colors) => StyleSheet.create({
+  wrap: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md },
+  headerLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1, marginLeft: spacing.sm },
+  headerValue: { color: colors.textTertiary, fontSize: 13, flexShrink: 1 },
+  chevron: { color: colors.textTertiary, fontSize: 14 },
+  body: { paddingBottom: spacing.md },
+});
 
 export default function ProfileScreen({ navigation }) {
   const { colors, shadow } = useTheme();
@@ -43,6 +75,7 @@ export default function ProfileScreen({ navigation }) {
   const [answerModalVisible, setAnswerModalVisible] = useState(false);
   const [draftQuestion, setDraftQuestion] = useState('');
   const [draftAnswer, setDraftAnswer] = useState('');
+  const [expandedField, setExpandedField] = useState(null);
 
   useEffect(() => {
     load();
@@ -74,6 +107,11 @@ export default function ProfileScreen({ navigation }) {
     setExtraPhotos(extras);
   }
 
+  function toggleFieldExpanded(key) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedField((prev) => (prev === key ? null : key));
+  }
+
   function toggleInterest(interest) {
     setInterests((prev) =>
       prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
@@ -90,6 +128,8 @@ export default function ProfileScreen({ navigation }) {
       }
       return next;
     });
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedField(null);
   }
 
   function setBasicTextField(key, value) {
@@ -374,27 +414,42 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
+        {/* Details and Basics are now a true accordion — only one field
+            expanded at a time, showing just the current value when
+            collapsed, dramatically shortening what used to be a very
+            long page with every option always visible. */}
         <Text style={styles.sectionLabel}>{t('profile.detailsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'text').map((field) => (
-            <View key={field.key} style={styles.basicFieldBlock}>
-              <Text style={styles.label}>{field.icon} {field.label}</Text>
+            <AccordionField
+              key={field.key}
+              field={field}
+              value={basics[field.key]}
+              expanded={expandedField === field.key}
+              onToggle={() => toggleFieldExpanded(field.key)}
+            >
               <TextInput
                 style={styles.input}
                 value={basics[field.key] || ''}
                 onChangeText={(v) => setBasicTextField(field.key, v)}
                 placeholder={field.placeholder}
                 placeholderTextColor={colors.textTertiary}
+                autoFocus
               />
-            </View>
+            </AccordionField>
           ))}
         </View>
 
         <Text style={styles.sectionLabel}>{t('profile.basicsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'select').map((field) => (
-            <View key={field.key} style={styles.basicFieldBlock}>
-              <Text style={styles.label}>{field.icon} {field.label}</Text>
+            <AccordionField
+              key={field.key}
+              field={field}
+              value={basics[field.key]}
+              expanded={expandedField === field.key}
+              onToggle={() => toggleFieldExpanded(field.key)}
+            >
               <View style={styles.chipsWrap}>
                 {field.options.map((option) => {
                   const selected = basics[field.key] === option;
@@ -410,7 +465,7 @@ export default function ProfileScreen({ navigation }) {
                   );
                 })}
               </View>
-            </View>
+            </AccordionField>
           ))}
         </View>
 
@@ -542,7 +597,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   formCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: spacing.md,

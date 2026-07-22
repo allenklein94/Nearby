@@ -151,7 +151,10 @@ export default function GatheringsScreen({ navigation }) {
                 </View>
               )}
               {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
-              <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+              <View style={styles.metaRow}>
+                <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+                {item.distanceLabel && <Text style={styles.distance}>· {item.distanceLabel}</Text>}
+              </View>
               <TouchableOpacity style={styles.interestButton} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
                 <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
               </TouchableOpacity>
@@ -240,7 +243,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   matchBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
   matchBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '700' },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
-  time: { ...typography.caption, color: colors.primary, fontWeight: '600', marginBottom: spacing.sm },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.sm },
+  time: { ...typography.caption, color: colors.primary, fontWeight: '600' },
+  distance: { ...typography.caption, color: colors.textTertiary },
   interestButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
