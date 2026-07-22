@@ -205,29 +205,35 @@ export default function DiscoveryScreen({ navigation }) {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={styles.cardTopRow}>
-              <View>
-                <Image
-                  source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
-                  style={styles.avatar}
-                />
-                {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
-              </View>
-              <View style={styles.cardInfo}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.name}>{item.profiles?.display_name}</Text>
-                  {item.compatibilityScore !== null && (
-                    <TouchableOpacity
-                      style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
-                      onPress={() => showCompatibilityReport(item)}
-                    >
-                      <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
-                        {item.compatibilityScore}% · Why?
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+              <TouchableOpacity
+                style={styles.tappableProfileArea}
+                onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId })}
+                activeOpacity={0.85}
+              >
+                <View>
+                  <Image
+                    source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
+                    style={styles.avatar}
+                  />
+                  {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
                 </View>
-                <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
-              </View>
+                <View style={styles.cardInfo}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.name}>{item.profiles?.display_name}</Text>
+                    {item.compatibilityScore !== null && (
+                      <TouchableOpacity
+                        style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
+                        onPress={() => showCompatibilityReport(item)}
+                      >
+                        <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
+                          {item.compatibilityScore}% · Why?
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
+                </View>
+              </TouchableOpacity>
               <View style={styles.cardActions}>
                 <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
                   <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
@@ -308,6 +314,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     ...shadow.card,
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'center' },
+  tappableProfileArea: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   avatar: { width: 60, height: 60, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
   onlineDot: {
     position: 'absolute', bottom: 2, right: spacing.md - 2,

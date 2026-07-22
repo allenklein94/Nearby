@@ -3,8 +3,10 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getSeenMatchIds, markMatchesSeen } from '../services/matchCelebration';
-import { getPendingCheckIns, respondToCheckIn, buildShareMessage } from '../services/dateSafety';
+import { getPendingCheckIns, respondToCheckIn } from '../services/dateSafety';
+import { generateCompatibilityReport } from '../services/compatibility';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
+import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -16,19 +18,25 @@ export default function MatchesScreen({ navigation }) {
   const styles = getStyles(colors);
   const [matches, setMatches] = useState([]);
   const [myUserId, setMyUserId] = useState(null);
+  const [myProfile, setMyProfile] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [refreshing, setRefreshing] = useState(false);
   const [celebrationMatch, setCelebrationMatch] = useState(null);
   const [myPhotoUrl, setMyPhotoUrl] = useState(null);
+  const [compatModalReport, setCompatModalReport] = useState(null);
+  const [compatModalName, setCompatModalName] = useState('');
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
 
+    const { data: mine } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
+    setMyProfile(mine);
+
     const { data, error } = await supabase
       .from('matches')
-      .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(id, display_name, photo_url), b:profiles!matches_user_b_fkey(id, display_name, photo_url)')
+      .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics)')
       .order('matched_at', { ascending: false });
 
     if (!error) {
@@ -49,9 +57,9 @@ export default function MatchesScreen({ navigation }) {
       const newMatch = isFirstRunEver ? null : data.find((m) => !seenIds.includes(m.id));
 
       if (newMatch) {
-        const { data: myProfile } = await supabase.from('profiles').select('photo_url').eq('id', myId).single();
-        if (myProfile?.photo_url) {
-          const myUrl = await getSignedPhotoUrl(myProfile.photo_url);
+        const { data: myPhotoProfile } = await supabase.from('profiles').select('photo_url').eq('id', myId).single();
+        if (myPhotoProfile?.photo_url) {
+          const myUrl = await getSignedPhotoUrl(myPhotoProfile.photo_url);
           setMyPhotoUrl(myUrl);
         }
         setCelebrationMatch(newMatch);
@@ -134,6 +142,19 @@ export default function MatchesScreen({ navigation }) {
     }
   }
 
+  function showCompatibilityReport(match) {
+    const other = otherPersonFor(match);
+    const report = generateCompatibilityReport(myProfile, other);
+    setCompatModalReport(report);
+    setCompatModalName(other?.display_name || '');
+  }
+
+  function compatibilityColor(score) {
+    if (score >= 70) return colors.success;
+    if (score >= 40) return colors.primary;
+    return colors.textTertiary;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -152,6 +173,7 @@ export default function MatchesScreen({ navigation }) {
         }
         renderItem={({ item }) => {
           const other = otherPersonFor(item);
+          const report = generateCompatibilityReport(myProfile, other);
           return (
             <View style={styles.card}>
               <TouchableOpacity
@@ -169,7 +191,19 @@ export default function MatchesScreen({ navigation }) {
                 onPress={() => navigation.navigate('Chat', { matchId: item.id })}
                 activeOpacity={0.85}
               >
-                <Text style={styles.name}>{other?.display_name}</Text>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name}>{other?.display_name}</Text>
+                  {report.score !== null && (
+                    <TouchableOpacity
+                      style={[styles.compatBadge, { borderColor: compatibilityColor(report.score) }]}
+                      onPress={() => showCompatibilityReport(item)}
+                    >
+                      <Text style={[styles.compatText, { color: compatibilityColor(report.score) }]}>
+                        {report.score}% · Why?
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <Text style={styles.sub}>{t('matches.tapToChat')}</Text>
               </TouchableOpacity>
               <Text style={styles.chevron}>›</Text>
@@ -185,6 +219,13 @@ export default function MatchesScreen({ navigation }) {
         theirName={celebrationMatch ? otherPersonFor(celebrationMatch)?.display_name : ''}
         onSendMessage={handleSendMessage}
         onDismiss={() => setCelebrationMatch(null)}
+      />
+
+      <CompatibilityReportModal
+        visible={!!compatModalReport}
+        onClose={() => setCompatModalReport(null)}
+        report={compatModalReport}
+        theirName={compatModalName}
       />
     </SafeAreaView>
   );
@@ -210,7 +251,10 @@ const getStyles = (colors) => StyleSheet.create({
   avatar: { width: 52, height: 52, borderRadius: radius.md, marginRight: spacing.md },
   avatarPlaceholder: { backgroundColor: colors.surfaceElevated },
   cardInfo: { flex: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
   name: { ...typography.bodyBold, color: colors.textPrimary },
+  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
+  compatText: { fontSize: 10, fontWeight: '700' },
   sub: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   chevron: { color: colors.textTertiary, fontSize: 22, fontWeight: '700' },
 });
