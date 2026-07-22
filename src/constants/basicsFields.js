@@ -16,4 +16,11 @@ export const BASICS_FIELDS = [
   { key: 'cannabis', label: 'Cannabis', icon: '🌿', type: 'select', options: ['Yes', 'Sometimes', 'No'] },
   { key: 'workout', label: 'Workout', icon: '💪', type: 'select', options: ['Everyday', 'Often', 'Sometimes', 'Never'] },
   { key: 'social_media', label: 'Social Media', icon: '📱', type: 'select', options: ['Very active', 'Sometimes active', 'Prefer not to say', 'Off the grid'] },
+  { key: 'five_year_vision', label: 'In 5 Years, I See Myself', icon: '🧭', type: 'text', placeholder: 'e.g. Settled somewhere warm, running my own business' },
+  { key: 'dream_location', label: 'Dream Place to Live', icon: '🗺️', type: 'text', placeholder: 'e.g. Somewhere near the mountains' },
+  { key: 'skill_to_learn', label: 'Skill I Want to Learn', icon: '🎯', type: 'text', placeholder: 'e.g. Spanish, sailing, cooking' },
+  { key: 'financial_priority', label: 'Financial Priority', icon: '💰', type: 'select', options: ['Saving aggressively', 'Comfortable spending', 'Building wealth', 'Living in the moment', 'Figuring it out'] },
+  { key: 'social_energy', label: 'Social Energy', icon: '🔋', type: 'select', options: ['Recharge alone', 'Recharge with people', 'Depends on the day'] },
+  { key: 'weekend_style', label: 'Weekend Style', icon: '🌤️', type: 'select', options: ['Homebody', 'Always out and about', 'A mix of both'] },
+  { key: 'independence_preference', label: 'Independence', icon: '🧘', type: 'select', options: ['Need lots of space', 'Love togetherness', 'Somewhere in between'] },
 ];
