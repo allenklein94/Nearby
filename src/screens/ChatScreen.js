@@ -17,6 +17,7 @@ import { typography, spacing, radius } from '../theme';
 
 const MAX_RECORDING_SECONDS = 60;
 const TYPING_IDLE_MS = 3000;
+const STALLED_THRESHOLD_DAYS = 3;
 
 function VoiceBubble({ audioPath, isMe, colors }) {
   const [sound, setSound] = useState(null);
@@ -105,6 +106,7 @@ export default function ChatScreen({ route, navigation }) {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
+  const [isStalled, setIsStalled] = useState(false);
   const listRef = useRef(null);
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
@@ -118,6 +120,14 @@ export default function ChatScreen({ route, navigation }) {
       .eq('match_id', matchId)
       .order('created_at', { ascending: true });
     setMessages(data || []);
+
+    if (data && data.length > 0) {
+      const lastMessage = data[data.length - 1];
+      const daysSinceLastMessage = (Date.now() - new Date(lastMessage.created_at).getTime()) / (1000 * 60 * 60 * 24);
+      setIsStalled(daysSinceLastMessage >= STALLED_THRESHOLD_DAYS);
+    } else {
+      setIsStalled(false);
+    }
   }
 
   async function markMessagesAsRead(myId) {
@@ -201,6 +211,7 @@ export default function ChatScreen({ route, navigation }) {
             if (prev.some((m) => m.id === payload.new.id)) return prev;
             return [...prev, payload.new];
           });
+          setIsStalled(false);
         }
       )
       .on(
@@ -284,6 +295,7 @@ export default function ChatScreen({ route, navigation }) {
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, optimisticMessage]);
+      setIsStalled(false);
 
       const { data, error } = await supabase
         .from('messages')
@@ -361,6 +373,7 @@ export default function ChatScreen({ route, navigation }) {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMessage]);
+    setIsStalled(false);
 
     const { data, error } = await supabase
       .from('messages')
@@ -392,6 +405,7 @@ export default function ChatScreen({ route, navigation }) {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMessage]);
+    setIsStalled(false);
 
     const { data, error } = await supabase
       .from('messages')
@@ -463,6 +477,15 @@ export default function ChatScreen({ route, navigation }) {
             </View>
           )}
         />
+
+        {isStalled && messages.length > 0 && isUserPremium && (
+          <View style={styles.stalledBanner}>
+            <Text style={styles.stalledText}>This conversation's gone quiet.</Text>
+            <TouchableOpacity onPress={getIcebreaker} disabled={loadingIcebreaker}>
+              <Text style={styles.stalledLink}>{loadingIcebreaker ? 'Loading...' : 'Get an AI suggestion ✨'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {otherIsTyping && !isRecording && (
           <View style={styles.typingRow}>
@@ -557,6 +580,13 @@ const getStyles = (colors) => StyleSheet.create({
   gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
   seenText: { ...typography.small, color: colors.textTertiary, marginTop: 2, marginHorizontal: 4, fontStyle: 'italic' },
+  stalledBanner: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.surfaceElevated, marginHorizontal: spacing.lg, marginBottom: spacing.sm,
+    padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+  },
+  stalledText: { color: colors.textSecondary, fontSize: 13, flex: 1 },
+  stalledLink: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   typingRow: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xs },
   typingBubble: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, alignSelf: 'flex-start' },
   typingText: { color: colors.textTertiary, fontSize: 12, fontStyle: 'italic' },
