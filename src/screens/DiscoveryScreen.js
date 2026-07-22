@@ -2,9 +2,11 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated } from 'react-native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
+import { generateCompatibilityReport } from '../services/compatibility';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
+import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +28,9 @@ export default function DiscoveryScreen({ navigation }) {
   const [photoUrls, setPhotoUrls] = useState({});
   const [onlineStatuses, setOnlineStatuses] = useState({});
   const [undoState, setUndoState] = useState(null);
+  const [myProfile, setMyProfile] = useState(null);
+  const [compatModalReport, setCompatModalReport] = useState(null);
+  const [compatModalName, setCompatModalName] = useState('');
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -48,6 +53,13 @@ export default function DiscoveryScreen({ navigation }) {
     const otherUserIds = results.map((item) => item.otherUserId);
     const statuses = await getOnlineStatuses(otherUserIds);
     setOnlineStatuses(statuses);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (myId) {
+      const { data: mine } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
+      setMyProfile(mine);
+    }
   }, []);
 
   useEffect(() => {
@@ -56,6 +68,12 @@ export default function DiscoveryScreen({ navigation }) {
 
   function showRadiusInfo() {
     Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
+  }
+
+  function showCompatibilityReport(item) {
+    const report = generateCompatibilityReport(myProfile, item.profiles);
+    setCompatModalReport(report);
+    setCompatModalName(item.profiles?.display_name || '');
   }
 
   function showUndoBanner(noticeId, isWave) {
@@ -198,11 +216,14 @@ export default function DiscoveryScreen({ navigation }) {
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{item.profiles?.display_name}</Text>
                   {item.compatibilityScore !== null && (
-                    <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}>
+                    <TouchableOpacity
+                      style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
+                      onPress={() => showCompatibilityReport(item)}
+                    >
                       <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
-                        {item.compatibilityScore}% Match
+                        {item.compatibilityScore}% · Why?
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                   )}
                 </View>
                 <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
@@ -252,6 +273,13 @@ export default function DiscoveryScreen({ navigation }) {
         }}
         reportedUserId={reportTarget?.id}
         reportedUserName={reportTarget?.name}
+      />
+
+      <CompatibilityReportModal
+        visible={!!compatModalReport}
+        onClose={() => setCompatModalReport(null)}
+        report={compatModalReport}
+        theirName={compatModalName}
       />
     </SafeAreaView>
   );
