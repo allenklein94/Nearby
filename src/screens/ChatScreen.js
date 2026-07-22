@@ -10,6 +10,7 @@ import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
+import DateCheckInModal from '../components/DateCheckInModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -97,6 +98,7 @@ export default function ChatScreen({ route, navigation }) {
   const [otherUser, setOtherUser] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
+  const [checkInModalVisible, setCheckInModalVisible] = useState(false);
   const [isUserPremium, setIsUserPremium] = useState(false);
   const [loadingIcebreaker, setLoadingIcebreaker] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -107,7 +109,6 @@ export default function ChatScreen({ route, navigation }) {
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const typingChannelRef = useRef(null);
-  const typingIdleTimerRef = useRef(null);
   const otherTypingTimeoutRef = useRef(null);
 
   async function loadMessages() {
@@ -141,7 +142,6 @@ export default function ChatScreen({ route, navigation }) {
     return () => {
       if (pollInterval) clearInterval(pollInterval);
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      if (typingIdleTimerRef.current) clearTimeout(typingIdleTimerRef.current);
       if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
       if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current);
     };
@@ -176,9 +176,14 @@ export default function ChatScreen({ route, navigation }) {
         headerTintColor: colors.textPrimary,
         headerShadowVisible: false,
         headerRight: () => (
-          <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
-            <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => setCheckInModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+              <Text style={{ fontSize: 18 }}>🛡️</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+              <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
+            </TouchableOpacity>
+          </View>
         ),
       });
     }
@@ -207,9 +212,6 @@ export default function ChatScreen({ route, navigation }) {
       )
       .subscribe();
 
-    // Separate lightweight broadcast channel just for typing status —
-    // ephemeral, never written to the database, since "is typing"
-    // doesn't need to persist or survive a reconnect.
     const typingChannel = supabase
       .channel(`typing:${matchId}`)
       .on('broadcast', { event: 'typing' }, (payload) => {
@@ -514,6 +516,13 @@ export default function ChatScreen({ route, navigation }) {
         visible={gifPickerVisible}
         onClose={() => setGifPickerVisible(false)}
         onSelect={sendGif}
+      />
+
+      <DateCheckInModal
+        visible={checkInModalVisible}
+        onClose={() => setCheckInModalVisible(false)}
+        matchId={matchId}
+        matchName={otherUser?.display_name || 'this person'}
       />
 
       <ReportBlockModal
