@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
 import { checkTextModeration } from '../services/textModeration';
+import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -16,6 +17,24 @@ export default function SharedPlaylistScreen({ route }) {
 
   useEffect(() => {
     load();
+
+    // Live updates so both people see additions instantly, matching
+    // how Chat already behaves — no need to leave and reopen this
+    // screen to see what the other person just added.
+    const channel = supabase
+      .channel(`playlist:${matchId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'shared_playlist_items', filter: `match_id=eq.${matchId}` },
+        () => {
+          load();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   async function load() {
