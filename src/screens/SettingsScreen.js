@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
+import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { typography, spacing, radius } from '../theme';
 
 const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
@@ -33,6 +34,7 @@ export default function SettingsScreen({ navigation }) {
   const [myEthnicity, setMyEthnicity] = useState(null);
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
+  const [relationshipIntention, setRelationshipIntention] = useState(null);
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -68,6 +70,7 @@ export default function SettingsScreen({ navigation }) {
       setMyEthnicity(data.ethnicity ?? null);
       setEthnicityHidden(data.ethnicity_hidden ?? false);
       setEthnicityPreferences(data.ethnicity_preferences ?? []);
+      setRelationshipIntention(data.relationship_intention ?? null);
     }
   }
 
@@ -75,6 +78,15 @@ export default function SettingsScreen({ navigation }) {
     setEthnicityPreferences((prev) =>
       prev.includes(option) ? prev.filter((e) => e !== option) : [...prev, option]
     );
+  }
+
+  async function saveIntention(value) {
+    const newValue = relationshipIntention === value ? null : value;
+    setRelationshipIntention(newValue);
+    const { error } = await supabase.from('profiles').update({ relationship_intention: newValue }).eq('id', userId);
+    if (error) {
+      Alert.alert('Error', error.message);
+    }
   }
 
   async function savePreferences() {
@@ -185,6 +197,27 @@ export default function SettingsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header}>{t('settings.title')}</Text>
+
+        <Text style={styles.sectionLabel}>Looking For</Text>
+        <View style={styles.card}>
+          <View style={styles.chipsWrap}>
+            {INTENTION_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.chip, relationshipIntention === option.value && styles.chipSelected]}
+                onPress={() => saveIntention(option.value)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, relationshipIntention === option.value && styles.chipTextSelected]}>
+                  {option.icon} {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.helperText}>
+            Shown on your profile. How often you change this is visible too — it's meant to keep expectations honest, for you and everyone you match with.
+          </Text>
+        </View>
 
         <Text style={styles.sectionLabel}>{t('settings.appearance')}</Text>
         <View style={styles.card}>

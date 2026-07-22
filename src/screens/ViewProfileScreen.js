@@ -4,6 +4,8 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
 import { calculateCompatibility } from '../services/compatibility';
+import { getRecentIntentionChangeCount } from '../services/intentionHistory';
+import { intentionLabel } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,6 +13,7 @@ import { typography, spacing, radius } from '../theme';
 
 const { width } = Dimensions.get('window');
 const NEW_HERE_DAYS = 7;
+const FREQUENT_CHANGE_THRESHOLD = 3;
 
 function calculateAge(birthdateString) {
   if (!birthdateString) return null;
@@ -40,6 +43,7 @@ export default function ViewProfileScreen({ route }) {
   const [loading, setLoading] = useState(true);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [compatibilityScore, setCompatibilityScore] = useState(null);
+  const [intentionChangeCount, setIntentionChangeCount] = useState(0);
 
   useEffect(() => {
     load();
@@ -64,6 +68,11 @@ export default function ViewProfileScreen({ route }) {
     setProfile(data);
     setPhotos(allPhotos);
     setLoading(false);
+
+    if (data?.relationship_intention) {
+      const count = await getRecentIntentionChangeCount(userId);
+      setIntentionChangeCount(count);
+    }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
@@ -122,6 +131,8 @@ export default function ViewProfileScreen({ route }) {
     return colors.textTertiary;
   }
 
+  const intentionText = intentionLabel(profile.relationship_intention);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -167,6 +178,17 @@ export default function ViewProfileScreen({ route }) {
               </View>
             )}
           </View>
+
+          {intentionText && (
+            <View style={styles.intentionCard}>
+              <Text style={styles.intentionText}>Looking for: {intentionText}</Text>
+              {intentionChangeCount >= FREQUENT_CHANGE_THRESHOLD && (
+                <Text style={styles.intentionChangeText}>
+                  Changed {intentionChangeCount}x in the last 30 days
+                </Text>
+              )}
+            </View>
+          )}
 
           {badges.length > 0 && (
             <View style={styles.badgesRow}>
@@ -249,6 +271,12 @@ const getStyles = (colors) => StyleSheet.create({
   name: { ...typography.display, color: colors.textPrimary, marginBottom: spacing.xs },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4, marginBottom: spacing.xs },
   compatText: { fontSize: 12, fontWeight: '700' },
+  intentionCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, padding: spacing.sm,
+    marginBottom: spacing.md, alignSelf: 'flex-start',
+  },
+  intentionText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  intentionChangeText: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
   badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   badge: {
     borderWidth: 1, borderRadius: radius.full,
