@@ -101,7 +101,7 @@ export default function GatheringsScreen({ navigation }) {
             </View>
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
+            <View style={[styles.card, item.matchesYourInterests && styles.matchCard]}>
               <View style={styles.cardTopRow}>
                 {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} />}
                 <View style={{ flex: 1 }}>
@@ -115,6 +115,11 @@ export default function GatheringsScreen({ navigation }) {
                   <Text style={styles.moreButtonText}>⋯</Text>
                 </TouchableOpacity>
               </View>
+              {item.matchesYourInterests && (
+                <View style={styles.matchBadge}>
+                  <Text style={styles.matchBadgeText}>✨ Matches your interests</Text>
+                </View>
+              )}
               {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
               <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
               <TouchableOpacity style={styles.interestButton} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
@@ -195,12 +200,15 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
+  matchCard: { borderColor: colors.primary, borderWidth: 1.5 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   hostAvatar: { width: 40, height: 40, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   title: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   hostName: { ...typography.small, color: colors.textTertiary },
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
+  matchBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
+  matchBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '700' },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   time: { ...typography.caption, color: colors.primary, fontWeight: '600', marginBottom: spacing.sm },
   interestButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
