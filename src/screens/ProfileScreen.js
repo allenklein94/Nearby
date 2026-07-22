@@ -76,6 +76,7 @@ export default function ProfileScreen({ navigation }) {
   const [draftQuestion, setDraftQuestion] = useState('');
   const [draftAnswer, setDraftAnswer] = useState('');
   const [expandedField, setExpandedField] = useState(null);
+  const [loadingStrengths, setLoadingStrengths] = useState(false);
 
   useEffect(() => {
     load();
@@ -105,6 +106,34 @@ export default function ProfileScreen({ navigation }) {
 
     const extras = await getExtraPhotos(id);
     setExtraPhotos(extras);
+  }
+
+  async function showStrengths() {
+    setLoadingStrengths(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-strengths', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Error', result.error || 'Could not generate this right now.');
+        setLoadingStrengths(false);
+        return;
+      }
+
+      Alert.alert('✨ A note for you', result.summary, [{ text: 'Thanks' }]);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setLoadingStrengths(false);
   }
 
   function toggleFieldExpanded(key) {
@@ -414,10 +443,6 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
-        {/* Details and Basics are now a true accordion — only one field
-            expanded at a time, showing just the current value when
-            collapsed, dramatically shortening what used to be a very
-            long page with every option always visible. */}
         <Text style={styles.sectionLabel}>{t('profile.detailsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'text').map((field) => (
@@ -485,6 +510,10 @@ export default function ProfileScreen({ navigation }) {
             );
           })}
         </View>
+
+        <TouchableOpacity style={styles.strengthsButton} onPress={showStrengths} disabled={loadingStrengths} activeOpacity={0.85}>
+          <Text style={styles.strengthsButtonText}>{loadingStrengths ? 'Thinking...' : '✨ Why someone would be lucky to date you'}</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
           <Text style={styles.buttonText}>{t('profile.save')}</Text>
@@ -616,6 +645,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  strengthsButton: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginTop: spacing.lg, borderWidth: 1, borderColor: colors.primary,
+  },
+  strengthsButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   promptCard: {
     flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.surfaceElevated,
     borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,

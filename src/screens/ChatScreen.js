@@ -7,6 +7,7 @@ import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
 import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
 import { unmatch } from '../services/matchActions';
+import { randomExperiment } from '../constants/relationshipExperiments';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -188,11 +189,8 @@ export default function ChatScreen({ route, navigation }) {
         headerShadowVisible: false,
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={() => navigation.navigate('TripPlanning', { matchId, matchName: other?.display_name })} style={{ paddingHorizontal: spacing.sm }}>
-              <Text style={{ fontSize: 18 }}>🧳</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('SharedPlaylist', { matchId, matchName: other?.display_name })} style={{ paddingHorizontal: spacing.sm }}>
-              <Text style={{ fontSize: 18 }}>🎵</Text>
+            <TouchableOpacity onPress={showTogetherMenu} style={{ paddingHorizontal: spacing.sm }}>
+              <Text style={{ fontSize: 18 }}>🎯</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setCheckInModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
               <Text style={{ fontSize: 18 }}>🛡️</Text>
@@ -242,6 +240,24 @@ export default function ChatScreen({ route, navigation }) {
     typingChannelRef.current = typingChannel;
 
     return myId;
+  }
+
+  function showTogetherMenu() {
+    Alert.alert(
+      'Do Something Together',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: '🎵 Shared Playlist', onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
+        { text: '🧳 Plan a Trip', onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
+        { text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
+        { text: '💡 Suggest an Activity', onPress: showRandomExperiment },
+      ]
+    );
+  }
+
+  function showRandomExperiment() {
+    Alert.alert('💡 Try This Together', randomExperiment(), [{ text: 'OK' }]);
   }
 
   function showChatOptions() {
