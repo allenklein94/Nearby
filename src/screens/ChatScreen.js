@@ -187,6 +187,9 @@ export default function ChatScreen({ route, navigation }) {
         headerShadowVisible: false,
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => navigation.navigate('SharedPlaylist', { matchId, matchName: other?.display_name })} style={{ paddingHorizontal: spacing.sm }}>
+              <Text style={{ fontSize: 18 }}>🎵</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => setCheckInModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
               <Text style={{ fontSize: 18 }}>🛡️</Text>
             </TouchableOpacity>

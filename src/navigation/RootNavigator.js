@@ -27,6 +27,7 @@ import ViewProfileScreen from '../screens/ViewProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LegalScreen from '../screens/LegalScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
+import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -59,10 +60,7 @@ const profileIconStyles = StyleSheet.create({
   image: {},
 });
 
-// A tab bar button that gives a small spring "bounce" on tap, matching
-// the tactile feel Bumble's tab bar has — purely a press animation,
-// doesn't change navigation behavior at all.
-function BouncyTabButton({ children, onPress, accessibilityState }) {
+function BouncyTabButton({ children, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   function handlePress(event) {
@@ -169,6 +167,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: 'Host a Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: 'Shared Playlist', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
