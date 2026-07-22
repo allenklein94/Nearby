@@ -6,6 +6,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
 import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
+import { unmatch } from '../services/matchActions';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -193,7 +194,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity onPress={() => setCheckInModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
               <Text style={{ fontSize: 18 }}>🛡️</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+            <TouchableOpacity onPress={showChatOptions} style={{ paddingHorizontal: spacing.sm }}>
               <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
             </TouchableOpacity>
           </View>
@@ -238,6 +239,40 @@ export default function ChatScreen({ route, navigation }) {
     typingChannelRef.current = typingChannel;
 
     return myId;
+  }
+
+  function showChatOptions() {
+    Alert.alert(
+      'Chat Options',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Unmatch', style: 'destructive', onPress: confirmUnmatch },
+        { text: 'Report or Block', onPress: () => setReportModalVisible(true) },
+      ]
+    );
+  }
+
+  function confirmUnmatch() {
+    Alert.alert(
+      `Unmatch with ${otherUser?.display_name || 'this person'}?`,
+      "This ends your match and removes this conversation. They won't be notified, and you can still Report or Block them separately if needed.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Unmatch',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await unmatch(matchId);
+              navigation.goBack();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function handleTextChange(value) {

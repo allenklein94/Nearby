@@ -34,7 +34,7 @@ export default function SettingsScreen({ navigation }) {
   const [myEthnicity, setMyEthnicity] = useState(null);
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
-  const [relationshipIntention, setRelationshipIntention] = useState(null);
+  const [relationshipIntention, setRelationshipIntention] = useState([]);
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -70,7 +70,7 @@ export default function SettingsScreen({ navigation }) {
       setMyEthnicity(data.ethnicity ?? null);
       setEthnicityHidden(data.ethnicity_hidden ?? false);
       setEthnicityPreferences(data.ethnicity_preferences ?? []);
-      setRelationshipIntention(data.relationship_intention ?? null);
+      setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
     }
   }
 
@@ -80,10 +80,13 @@ export default function SettingsScreen({ navigation }) {
     );
   }
 
-  async function saveIntention(value) {
-    const newValue = relationshipIntention === value ? null : value;
+  async function toggleIntention(value) {
+    const current = Array.isArray(relationshipIntention) ? relationshipIntention : [];
+    const newValue = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
     setRelationshipIntention(newValue);
-    const { error } = await supabase.from('profiles').update({ relationship_intention: newValue }).eq('id', userId);
+    const { error } = await supabase.from('profiles').update({ relationship_intention: newValue.length > 0 ? newValue : null }).eq('id', userId);
     if (error) {
       Alert.alert('Error', error.message);
     }
@@ -201,21 +204,24 @@ export default function SettingsScreen({ navigation }) {
         <Text style={styles.sectionLabel}>Looking For</Text>
         <View style={styles.card}>
           <View style={styles.chipsWrap}>
-            {INTENTION_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[styles.chip, relationshipIntention === option.value && styles.chipSelected]}
-                onPress={() => saveIntention(option.value)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.chipText, relationshipIntention === option.value && styles.chipTextSelected]}>
-                  {option.icon} {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {INTENTION_OPTIONS.map((option) => {
+              const selected = (Array.isArray(relationshipIntention) ? relationshipIntention : []).includes(option.value);
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleIntention(option.value)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                    {option.icon} {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <Text style={styles.helperText}>
-            Shown on your profile. How often you change this is visible too — it's meant to keep expectations honest, for you and everyone you match with.
+            Select as many as apply. Shown on your profile. How often you change this is visible too — it's meant to keep expectations honest, for you and everyone you match with.
           </Text>
         </View>
 

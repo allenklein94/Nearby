@@ -1,19 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = 'nearby-seen-match-ids';
+function storageKeyFor(userId) {
+  return `nearby-seen-match-ids-${userId}`;
+}
 
-export async function getSeenMatchIds() {
+export async function getSeenMatchIds(userId) {
   try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
+    const stored = await AsyncStorage.getItem(storageKeyFor(userId));
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
   }
 }
 
-export async function markMatchesSeen(matchIds) {
+export async function markMatchesSeen(userId, matchIds) {
   try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(matchIds));
+    await AsyncStorage.setItem(storageKeyFor(userId), JSON.stringify(matchIds));
   } catch (e) {
     console.error('markMatchesSeen error', e);
   }

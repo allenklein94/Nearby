@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -53,7 +53,7 @@ export default function MatchesScreen({ navigation }) {
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
 
-      const seenIds = await getSeenMatchIds();
+      const seenIds = await getSeenMatchIds(myId);
       const isFirstRunEver = seenIds.length === 0 && data.length > 0;
       const newMatch = isFirstRunEver ? null : data.find((m) => !seenIds.includes(m.id));
 
@@ -66,7 +66,7 @@ export default function MatchesScreen({ navigation }) {
         setCelebrationMatch(newMatch);
       }
 
-      await markMatchesSeen(data.map((m) => m.id));
+      await markMatchesSeen(myId, data.map((m) => m.id));
     }
 
     await checkPendingCheckIns();
@@ -121,12 +121,6 @@ export default function MatchesScreen({ navigation }) {
     );
   }
 
-  // Tab screens stay mounted in the background in React Navigation —
-  // a plain useEffect only fires once, the first time this screen is
-  // created. useFocusEffect instead fires every time someone actually
-  // switches to this tab, which is what makes a newly created match
-  // (e.g. from approving a Gathering interest) show up without needing
-  // a manual pull-to-refresh.
   useFocusEffect(
     useCallback(() => {
       load();
