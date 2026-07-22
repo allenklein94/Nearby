@@ -36,13 +36,19 @@ export const typography = {
   small: { fontSize: 12, fontWeight: '400' },
 };
 
+// Tightened from the original scale (xs:4 sm:8 md:16 lg:24 xl:32
+// xxl:48) — real user testing flagged noticeably more empty space
+// than competitor apps. Since every screen consistently uses these
+// tokens rather than hardcoded values, this one change cascades
+// cleanly across the whole app instead of needing dozens of
+// individual screen edits.
 export const spacing = {
   xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  sm: 6,
+  md: 12,
+  lg: 18,
+  xl: 24,
+  xxl: 36,
 };
 
 export const radius = {

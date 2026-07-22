@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Linking } from 'react-native';
 import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
@@ -18,9 +18,6 @@ export default function SharedPlaylistScreen({ route }) {
   useEffect(() => {
     load();
 
-    // Live updates so both people see additions instantly, matching
-    // how Chat already behaves — no need to leave and reopen this
-    // screen to see what the other person just added.
     const channel = supabase
       .channel(`playlist:${matchId}`)
       .on(
@@ -87,13 +84,25 @@ export default function SharedPlaylistScreen({ route }) {
             <Text style={styles.emptyText}>No songs added yet. Be the first!</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.songTitle}>{item.song_title}</Text>
-            {item.artist ? <Text style={styles.artist}>{item.artist}</Text> : null}
-            <Text style={styles.addedBy}>Added by {item.profiles?.display_name}</Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const query = encodeURIComponent(`${item.song_title} ${item.artist || ''}`.trim());
+          return (
+            <View style={styles.card}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.songTitle}>{item.song_title}</Text>
+                {item.artist ? <Text style={styles.artist}>{item.artist}</Text> : null}
+                <Text style={styles.addedBy}>Added by {item.profiles?.display_name}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.spotifyButton}
+                onPress={() => Linking.openURL(`https://open.spotify.com/search/${query}`)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.spotifyButtonText}>🎧 Open</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
       />
 
       <View style={styles.addRow}>
@@ -128,12 +137,15 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary },
   card: {
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
     marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
   songTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   artist: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   addedBy: { color: colors.textTertiary, fontSize: 11, marginTop: spacing.xs },
+  spotifyButton: { backgroundColor: '#1DB954', borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  spotifyButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   addRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
   addButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginHorizontal: spacing.lg, marginBottom: spacing.lg, ...shadow.button },
