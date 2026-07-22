@@ -28,6 +28,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import LegalScreen from '../screens/LegalScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
+import TripPlanningScreen from '../screens/TripPlanningScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -168,6 +169,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: 'Host a Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: 'Shared Playlist', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: 'Plan a Trip', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
