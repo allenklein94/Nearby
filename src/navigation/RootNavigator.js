@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Image, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -59,6 +59,34 @@ const profileIconStyles = StyleSheet.create({
   image: {},
 });
 
+// A tab bar button that gives a small spring "bounce" on tap, matching
+// the tactile feel Bumble's tab bar has — purely a press animation,
+// doesn't change navigation behavior at all.
+function BouncyTabButton({ children, onPress, accessibilityState }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  function handlePress(event) {
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 0.8, speed: 50, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1.15, speed: 20, bounciness: 12, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, speed: 20, bounciness: 8, useNativeDriver: true }),
+    ]).start();
+    onPress(event);
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={1}
+      style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        {children}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 function MainTabs() {
   const { colors } = useTheme();
   const [myPhotoUrl, setMyPhotoUrl] = useState(null);
@@ -86,6 +114,7 @@ function MainTabs() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
+        tabBarButton: (props) => <BouncyTabButton {...props} />,
         tabBarIcon: ({ focused, size }) => {
           if (route.name === 'Profile') {
             return <ProfileTabIcon focused={focused} size={size} colors={colors} photoUrl={myPhotoUrl} />;
