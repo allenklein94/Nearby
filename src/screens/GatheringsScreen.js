@@ -5,10 +5,12 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function GatheringsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [tab, setTab] = useState('nearby');
   const [nearby, setNearby] = useState([]);
@@ -39,9 +41,6 @@ export default function GatheringsScreen({ navigation }) {
   useEffect(() => {
     load();
 
-    // Live updates for interest expressions and approvals on gatherings
-    // you're hosting — same pattern as Chat and Shared Playlist, so a
-    // new interested person appears without needing to pull to refresh.
     let channel;
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -99,18 +98,18 @@ export default function GatheringsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Happening Nearby</Text>
+        <Text style={styles.headerTitle}>{t('gatherings.title')}</Text>
         <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('CreateGathering')}>
-          <Text style={styles.createButtonText}>+ Host</Text>
+          <Text style={styles.createButtonText}>{t('gatherings.hostButton')}</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.tabRow}>
         <TouchableOpacity style={[styles.tab, tab === 'nearby' && styles.tabActive]} onPress={() => setTab('nearby')}>
-          <Text style={[styles.tabText, tab === 'nearby' && styles.tabTextActive]}>Nearby</Text>
+          <Text style={[styles.tabText, tab === 'nearby' && styles.tabTextActive]}>{t('gatherings.nearbyTab')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, tab === 'hosting' && styles.tabActive]} onPress={() => setTab('hosting')}>
-          <Text style={[styles.tabText, tab === 'hosting' && styles.tabTextActive]}>Hosting</Text>
+          <Text style={[styles.tabText, tab === 'hosting' && styles.tabTextActive]}>{t('gatherings.hostingTab')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -123,7 +122,7 @@ export default function GatheringsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>Nothing happening nearby yet. Be the first to host something!</Text>
+              <Text style={styles.emptyText}>{t('gatherings.emptyNearby')}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -132,7 +131,7 @@ export default function GatheringsScreen({ navigation }) {
                 {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} />}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.hostName}>Hosted by {item.host?.display_name}</Text>
+                  <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.moreButton}
@@ -143,13 +142,13 @@ export default function GatheringsScreen({ navigation }) {
               </View>
               {item.matchesYourInterests && (
                 <View style={styles.matchBadge}>
-                  <Text style={styles.matchBadgeText}>✨ Matches your interests</Text>
+                  <Text style={styles.matchBadgeText}>{t('gatherings.matchesInterests')}</Text>
                 </View>
               )}
               {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
               <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
               <TouchableOpacity style={styles.interestButton} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
-                <Text style={styles.interestButtonText}>I'm Interested</Text>
+                <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -163,7 +162,7 @@ export default function GatheringsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
-              <Text style={styles.emptyText}>You're not hosting anything yet.</Text>
+              <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
             </View>
           }
           renderItem={({ item }) => (
@@ -176,15 +175,15 @@ export default function GatheringsScreen({ navigation }) {
                     <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
                     {interest.status === 'pending' ? (
                       <TouchableOpacity style={styles.approveButton} onPress={() => handleApprove(interest)}>
-                        <Text style={styles.approveButtonText}>Approve</Text>
+                        <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
                       </TouchableOpacity>
                     ) : (
-                      <Text style={styles.approvedLabel}>Approved ✓</Text>
+                      <Text style={styles.approvedLabel}>{t('gatherings.approved')}</Text>
                     )}
                   </View>
                 ))
               ) : (
-                <Text style={styles.noInterestText}>No one has expressed interest yet.</Text>
+                <Text style={styles.noInterestText}>{t('gatherings.noInterestYet')}</Text>
               )}
             </View>
           )}

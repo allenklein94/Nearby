@@ -246,8 +246,8 @@ export default function DiscoveryScreen({ navigation }) {
             {item.sharedInterests?.length > 0 && (
               <View style={styles.sharedRow}>
                 <Text style={styles.sharedText}>
-                  ✨ You both like {item.sharedInterests.slice(0, 3).join(', ')}
-                  {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} more` : ''}
+                  ✨ {t('discovery.youBothLike')} {item.sharedInterests.slice(0, 3).join(', ')}
+                  {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} ${t('discovery.moreCount')}` : ''}
                 </Text>
               </View>
             )}

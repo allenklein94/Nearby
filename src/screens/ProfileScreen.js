@@ -284,7 +284,7 @@ export default function ProfileScreen({ navigation }) {
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>More Photos</Text>
+        <Text style={styles.sectionLabel}>{t('profile.morePhotos')}</Text>
         <View style={styles.galleryGrid}>
           {extraPhotos.map((photo) => (
             <TouchableOpacity
@@ -323,7 +323,7 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
-        <Text style={styles.sectionLabel}>Prompts</Text>
+        <Text style={styles.sectionLabel}>{t('profile.prompts')}</Text>
         <View style={styles.formCard}>
           {prompts.map((prompt, index) => (
             <TouchableOpacity key={index} style={styles.promptCard} onPress={() => openEditPrompt(index)} activeOpacity={0.85}>
@@ -338,43 +338,43 @@ export default function ProfileScreen({ navigation }) {
           ))}
           {prompts.length < MAX_PROMPTS && (
             <TouchableOpacity style={styles.addPromptButton} onPress={openAddPrompt} activeOpacity={0.85}>
-              <Text style={styles.addPromptText}>+ Add a Prompt</Text>
+              <Text style={styles.addPromptText}>{t('profile.addPrompt')}</Text>
             </TouchableOpacity>
           )}
           <Text style={styles.helperText}>Add up to {MAX_PROMPTS} prompts to show more of your personality.</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>About You (Optional)</Text>
+        <Text style={styles.sectionLabel}>{t('profile.aboutYou')}</Text>
         <View style={styles.formCard}>
-          <Text style={styles.label}>Pronouns</Text>
+          <Text style={styles.label}>{t('profile.pronounsLabel')}</Text>
           <TextInput
             style={styles.input}
             value={pronouns}
             onChangeText={setPronouns}
-            placeholder="e.g. she/her, he/him, they/them"
+            placeholder={t('profile.pronounsPlaceholder')}
             placeholderTextColor={colors.textTertiary}
           />
 
-          <Text style={styles.label}>Gender</Text>
+          <Text style={styles.label}>{t('profile.genderLabel')}</Text>
           <TextInput
             style={styles.input}
             value={gender}
             onChangeText={setGender}
-            placeholder="Optional"
+            placeholder={t('profile.optionalPlaceholder')}
             placeholderTextColor={colors.textTertiary}
           />
 
-          <Text style={styles.label}>Sexual Orientation</Text>
+          <Text style={styles.label}>{t('profile.orientationLabel')}</Text>
           <TextInput
             style={styles.input}
             value={sexualOrientation}
             onChangeText={setSexualOrientation}
-            placeholder="Optional"
+            placeholder={t('profile.optionalPlaceholder')}
             placeholderTextColor={colors.textTertiary}
           />
         </View>
 
-        <Text style={styles.sectionLabel}>Details (Optional)</Text>
+        <Text style={styles.sectionLabel}>{t('profile.detailsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'text').map((field) => (
             <View key={field.key} style={styles.basicFieldBlock}>
@@ -390,7 +390,7 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>Basics (Optional)</Text>
+        <Text style={styles.sectionLabel}>{t('profile.basicsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'select').map((field) => (
             <View key={field.key} style={styles.basicFieldBlock}>
@@ -414,7 +414,7 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>Interests</Text>
+        <Text style={styles.sectionLabel}>{t('profile.interestsSection')}</Text>
         <View style={styles.chipsWrap}>
           {INTEREST_OPTIONS.map((interest) => {
             const selected = interests.includes(interest);

@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { createGathering } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const INTEREST_OPTIONS = [
@@ -15,6 +16,7 @@ const INTEREST_OPTIONS = [
 
 export default function CreateGatheringScreen({ navigation }) {
   const { colors, shadow, isDark } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -58,31 +60,29 @@ export default function CreateGatheringScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.header}>Host something nearby</Text>
-        <Text style={styles.subheader}>
-          Visible to people in your general area. Your exact address isn't shown — share that after you approve someone's interest.
-        </Text>
+        <Text style={styles.header}>{t('gatherings.createHeader')}</Text>
+        <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
 
-        <Text style={styles.label}>Title</Text>
+        <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. Watching the Olympics finale"
+          placeholder={t('gatherings.titlePlaceholder')}
           placeholderTextColor={colors.textTertiary}
           value={title}
           onChangeText={setTitle}
         />
 
-        <Text style={styles.label}>Description (optional)</Text>
+        <Text style={styles.label}>{t('gatherings.descriptionLabel')}</Text>
         <TextInput
           style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
-          placeholder="A few details about what to expect"
+          placeholder={t('gatherings.descriptionPlaceholder')}
           placeholderTextColor={colors.textTertiary}
           value={description}
           onChangeText={setDescription}
           multiline
         />
 
-        <Text style={styles.label}>Category (optional)</Text>
+        <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
         <View style={styles.chipsWrap}>
           {INTEREST_OPTIONS.map((option) => (
             <TouchableOpacity
@@ -96,7 +96,7 @@ export default function CreateGatheringScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.label}>When</Text>
+        <Text style={styles.label}>{t('gatherings.whenLabel')}</Text>
         <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
           <Text style={{ color: colors.textPrimary }}>
             {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
@@ -117,7 +117,7 @@ export default function CreateGatheringScreen({ navigation }) {
         )}
 
         <TouchableOpacity style={styles.button} onPress={submit} disabled={submitting} activeOpacity={0.85}>
-          <Text style={styles.buttonText}>{submitting ? 'Posting...' : 'Post Gathering'}</Text>
+          <Text style={styles.buttonText}>{submitting ? t('gatherings.posting') : t('gatherings.postButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
