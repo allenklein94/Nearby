@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { generateCompatibilityReport } from '../services/compatibility';
@@ -62,9 +63,11 @@ export default function DiscoveryScreen({ navigation }) {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   function showRadiusInfo() {
     Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);

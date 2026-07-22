@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, expressInterest, approveInterest } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
@@ -38,9 +39,13 @@ export default function GatheringsScreen({ navigation }) {
     setPhotoUrls(Object.fromEntries(urlEntries));
   }, []);
 
-  useEffect(() => {
-    load();
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
+  React.useEffect(() => {
     let channel;
     (async () => {
       const { data: sessionData } = await supabase.auth.getSession();
