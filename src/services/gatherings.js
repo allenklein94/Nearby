@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import * as Location from 'expo-location';
+import { distanceRangeLabel } from './distance';
 
 function coarseGatheringArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 1000) / 1000;
@@ -35,7 +36,9 @@ export async function getNearbyGatherings() {
   if (status !== 'granted') return [];
 
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  const area = coarseGatheringArea(location.coords.latitude, location.coords.longitude);
+  const myLat = location.coords.latitude;
+  const myLng = location.coords.longitude;
+  const area = coarseGatheringArea(myLat, myLng);
 
   const { data: blockedByMe } = await supabase
     .from('blocks')
@@ -54,9 +57,11 @@ export async function getNearbyGatherings() {
   const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', userId).single();
   const myInterests = myProfile?.interests ?? [];
 
+  // Approved attendees only — pending interest stays private, same
+  // spirit as a Notice not being visible until it's mutual.
   const { data, error } = await supabase
     .from('gatherings')
-    .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url)')
+    .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))')
     .eq('area', area)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
@@ -69,10 +74,16 @@ export async function getNearbyGatherings() {
 
   return (data ?? [])
     .filter((gathering) => !excludedHostIds.has(gathering.host_id))
-    .map((gathering) => ({
-      ...gathering,
-      matchesYourInterests: gathering.interest_tag ? myInterests.includes(gathering.interest_tag) : false,
-    }));
+    .map((gathering) => {
+      const [gatheringLat, gatheringLng] = (gathering.area || '').split(',').map(Number);
+      const approvedAttendees = (gathering.attendees ?? []).filter((a) => a.status === 'approved');
+      return {
+        ...gathering,
+        matchesYourInterests: gathering.interest_tag ? myInterests.includes(gathering.interest_tag) : false,
+        distanceLabel: distanceRangeLabel(myLat, myLng, gatheringLat, gatheringLng),
+        approvedAttendees,
+      };
+    });
 }
 
 export async function getMyGatherings() {

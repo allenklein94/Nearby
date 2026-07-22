@@ -18,6 +18,7 @@ export default function GatheringsScreen({ navigation }) {
   const [hosting, setHosting] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
 
   const load = useCallback(async () => {
@@ -37,6 +38,18 @@ export default function GatheringsScreen({ navigation }) {
       })
     );
     setPhotoUrls(Object.fromEntries(urlEntries));
+
+    const attendeeUrlEntries = await Promise.all(
+      nearbyResults.flatMap((g) =>
+        (g.approvedAttendees ?? []).map(async (a) => {
+          const path = a.profiles?.photo_url;
+          if (!path) return null;
+          const url = await getSignedPhotoUrl(path);
+          return [`${g.id}-${path}`, url];
+        })
+      )
+    );
+    setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
   }, []);
 
   useFocusEffect(
@@ -155,6 +168,29 @@ export default function GatheringsScreen({ navigation }) {
                 <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
                 {item.distanceLabel && <Text style={styles.distance}>· {item.distanceLabel}</Text>}
               </View>
+
+              {item.approvedAttendees?.length > 0 && (
+                <View style={styles.attendeesRow}>
+                  <View style={styles.attendeeAvatars}>
+                    {item.approvedAttendees.slice(0, 4).map((attendee, i) => {
+                      const url = attendeePhotoUrls[`${item.id}-${attendee.profiles?.photo_url}`];
+                      return url ? (
+                        <Image
+                          key={i}
+                          source={{ uri: url }}
+                          style={[styles.attendeeAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
+                        />
+                      ) : null;
+                    })}
+                  </View>
+                  <Text style={styles.attendeesText}>
+                    {item.approvedAttendees.length === 1
+                      ? `${item.approvedAttendees[0].profiles?.display_name} is attending`
+                      : `${item.approvedAttendees.length} people attending`}
+                  </Text>
+                </View>
+              )}
+
               <TouchableOpacity style={styles.interestButton} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
                 <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
               </TouchableOpacity>
@@ -246,6 +282,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.sm },
   time: { ...typography.caption, color: colors.primary, fontWeight: '600' },
   distance: { ...typography.caption, color: colors.textTertiary },
+  attendeesRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  attendeeAvatars: { flexDirection: 'row', marginRight: spacing.sm },
+  attendeeAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: colors.surfaceElevated },
+  attendeesText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   interestButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
