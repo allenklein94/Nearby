@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image } from 'react-native';
 import { getNearbyGatherings, getMyGatherings, expressInterest, approveInterest } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
+import { supabase } from '../services/supabase';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -37,6 +38,31 @@ export default function GatheringsScreen({ navigation }) {
 
   useEffect(() => {
     load();
+
+    // Live updates for interest expressions and approvals on gatherings
+    // you're hosting — same pattern as Chat and Shared Playlist, so a
+    // new interested person appears without needing to pull to refresh.
+    let channel;
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (!userId) return;
+
+      channel = supabase
+        .channel(`gathering-interest:${userId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'gathering_interest' },
+          () => {
+            load();
+          }
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [load]);
 
   async function onRefresh() {
