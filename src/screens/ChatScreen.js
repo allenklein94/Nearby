@@ -91,7 +91,7 @@ const voiceStyles = StyleSheet.create({
 export default function ChatScreen({ route, navigation }) {
   const { matchId } = route.params;
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const posthog = usePostHog();
   const [messages, setMessages] = useState([]);
@@ -276,6 +276,32 @@ export default function ChatScreen({ route, navigation }) {
         },
       ]
     );
+  }
+
+  async function handleTranslate(messageText) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/translate-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text: messageText, targetLanguage: language }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Error', result.error || 'Could not translate this message.');
+        return;
+      }
+
+      Alert.alert('Translation', result.translation);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   function handleTextChange(value) {
@@ -507,9 +533,16 @@ export default function ChatScreen({ route, navigation }) {
               ) : item.gif_url ? (
                 <Image source={{ uri: item.gif_url }} style={styles.gifBubble} resizeMode="cover" />
               ) : (
-                <View style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}>
+                <TouchableOpacity
+                  style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}
+                  onLongPress={() => item.sender_id !== userId && item.body && handleTranslate(item.body)}
+                  activeOpacity={0.85}
+                >
                   <Text style={[styles.bubbleText, item.sender_id === userId && styles.myBubbleText]}>{item.body}</Text>
-                </View>
+                  {item.sender_id !== userId && item.body ? (
+                    <Text style={styles.translateHint}>Hold to translate</Text>
+                  ) : null}
+                </TouchableOpacity>
               )}
               <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
               {lastMyMessage?.id === item.id && item.read_at && (
@@ -618,6 +651,7 @@ const getStyles = (colors) => StyleSheet.create({
   theirBubble: { backgroundColor: colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
   bubbleText: { color: colors.textPrimary, fontSize: 15, lineHeight: 20 },
   myBubbleText: { color: '#fff' },
+  translateHint: { color: colors.textTertiary, fontSize: 9, marginTop: 2, fontStyle: 'italic' },
   gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
   seenText: { ...typography.small, color: colors.textTertiary, marginTop: 2, marginHorizontal: 4, fontStyle: 'italic' },
