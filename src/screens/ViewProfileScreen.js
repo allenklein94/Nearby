@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndica
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
+import { calculateCompatibility } from '../services/compatibility';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -38,6 +39,7 @@ export default function ViewProfileScreen({ route }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [compatibilityScore, setCompatibilityScore] = useState(null);
 
   useEffect(() => {
     load();
@@ -62,6 +64,13 @@ export default function ViewProfileScreen({ route }) {
     setProfile(data);
     setPhotos(allPhotos);
     setLoading(false);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (myId && myId !== userId && data) {
+      const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
+      setCompatibilityScore(calculateCompatibility(myProfile, data));
+    }
   }
 
   if (loading) {
@@ -107,6 +116,12 @@ export default function ViewProfileScreen({ route }) {
 
   const prompts = profile.prompts || [];
 
+  function compatibilityColor(score) {
+    if (score >= 70) return colors.success;
+    if (score >= 40) return colors.primary;
+    return colors.textTertiary;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -144,6 +159,13 @@ export default function ViewProfileScreen({ route }) {
             <Text style={styles.name}>
               {profile.display_name}{age ? `, ${age}` : ''}
             </Text>
+            {compatibilityScore !== null && (
+              <View style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityScore) }]}>
+                <Text style={[styles.compatText, { color: compatibilityColor(compatibilityScore) }]}>
+                  {compatibilityScore}% Match
+                </Text>
+              </View>
+            )}
           </View>
 
           {badges.length > 0 && (
@@ -223,8 +245,10 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   photo: { height: 420, backgroundColor: colors.surfaceElevated },
   content: { padding: spacing.lg },
-  nameRow: { flexDirection: 'row', alignItems: 'center' },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm },
   name: { ...typography.display, color: colors.textPrimary, marginBottom: spacing.xs },
+  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4, marginBottom: spacing.xs },
+  compatText: { fontSize: 12, fontWeight: '700' },
   badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   badge: {
     borderWidth: 1, borderRadius: radius.full,
