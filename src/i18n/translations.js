@@ -58,6 +58,10 @@ export const translations = {
       sayHi: "Say hi — you both noticed each other.",
       messageBlocked: 'Message not sent',
       messageBlockedText: 'This message may violate our community guidelines. Please revise it.',
+      holdToTranslate: 'Hold to translate',
+      translationTitle: 'Translation',
+      stalledText: "This conversation's gone quiet.",
+      stalledLink: 'Get an AI suggestion ✨',
     },
     profile: {
       title: 'Your Profile',
@@ -232,6 +236,10 @@ export const translations = {
       sayHi: 'Saluda — ambos se dieron cuenta el uno del otro.',
       messageBlocked: 'Mensaje no enviado',
       messageBlockedText: 'Este mensaje puede violar nuestras normas de comunidad. Por favor revísalo.',
+      holdToTranslate: 'Mantén presionado para traducir',
+      translationTitle: 'Traducción',
+      stalledText: 'Esta conversación se ha quedado en silencio.',
+      stalledLink: 'Obtener una sugerencia de IA ✨',
     },
     profile: {
       title: 'Tu Perfil',

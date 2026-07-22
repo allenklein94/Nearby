@@ -298,7 +298,7 @@ export default function ChatScreen({ route, navigation }) {
         return;
       }
 
-      Alert.alert('Translation', result.translation);
+      Alert.alert(t('chat.translationTitle'), result.translation);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -540,7 +540,7 @@ export default function ChatScreen({ route, navigation }) {
                 >
                   <Text style={[styles.bubbleText, item.sender_id === userId && styles.myBubbleText]}>{item.body}</Text>
                   {item.sender_id !== userId && item.body ? (
-                    <Text style={styles.translateHint}>Hold to translate</Text>
+                    <Text style={styles.translateHint}>{t('chat.holdToTranslate')}</Text>
                   ) : null}
                 </TouchableOpacity>
               )}
@@ -554,9 +554,9 @@ export default function ChatScreen({ route, navigation }) {
 
         {isStalled && messages.length > 0 && isUserPremium && (
           <View style={styles.stalledBanner}>
-            <Text style={styles.stalledText}>This conversation's gone quiet.</Text>
+            <Text style={styles.stalledText}>{t('chat.stalledText')}</Text>
             <TouchableOpacity onPress={getIcebreaker} disabled={loadingIcebreaker}>
-              <Text style={styles.stalledLink}>{loadingIcebreaker ? 'Loading...' : 'Get an AI suggestion ✨'}</Text>
+              <Text style={styles.stalledLink}>{loadingIcebreaker ? '...' : t('chat.stalledLink')}</Text>
             </TouchableOpacity>
           </View>
         )}
