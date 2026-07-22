@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
-import { calculateCompatibility } from '../services/compatibility';
+import { generateCompatibilityReport } from '../services/compatibility';
 import { getRecentIntentionChangeCount } from '../services/intentionHistory';
 import { intentionLabel } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
+import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -42,7 +43,8 @@ export default function ViewProfileScreen({ route }) {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-  const [compatibilityScore, setCompatibilityScore] = useState(null);
+  const [compatibilityReport, setCompatibilityReport] = useState(null);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
   const [intentionChangeCount, setIntentionChangeCount] = useState(0);
 
   useEffect(() => {
@@ -78,7 +80,8 @@ export default function ViewProfileScreen({ route }) {
     const myId = sessionData?.session?.user?.id;
     if (myId && myId !== userId && data) {
       const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
-      setCompatibilityScore(calculateCompatibility(myProfile, data));
+      const report = generateCompatibilityReport(myProfile, data);
+      setCompatibilityReport(report);
     }
   }
 
@@ -170,12 +173,16 @@ export default function ViewProfileScreen({ route }) {
             <Text style={styles.name}>
               {profile.display_name}{age ? `, ${age}` : ''}
             </Text>
-            {compatibilityScore !== null && (
-              <View style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityScore) }]}>
-                <Text style={[styles.compatText, { color: compatibilityColor(compatibilityScore) }]}>
-                  {compatibilityScore}% Match
+            {compatibilityReport?.score !== null && compatibilityReport?.score !== undefined && (
+              <TouchableOpacity
+                style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityReport.score) }]}
+                onPress={() => setReportModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.compatText, { color: compatibilityColor(compatibilityReport.score) }]}>
+                  {compatibilityReport.score}% Match · Why?
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -259,6 +266,13 @@ export default function ViewProfileScreen({ route }) {
           )}
         </View>
       </ScrollView>
+
+      <CompatibilityReportModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        report={compatibilityReport}
+        theirName={profile.display_name}
+      />
     </SafeAreaView>
   );
 }
