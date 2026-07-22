@@ -49,19 +49,14 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
   async function blockUser() {
     Alert.alert(
       `Block ${reportedUserName || 'this user'}?`,
-      "They won't be able to contact you again, and won't be notified.",
+      "They won't be able to contact you again, and won't be notified. Any existing match between you will be removed.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Block',
           style: 'destructive',
           onPress: async () => {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const blockerId = sessionData?.session?.user?.id;
-            const { error } = await supabase.from('blocks').insert({
-              blocker_id: blockerId,
-              blocked_id: reportedUserId,
-            });
+            const { error } = await supabase.rpc('block_and_unmatch', { blocked_user_id: reportedUserId });
             if (error) {
               Alert.alert('Error', error.message);
               return;
