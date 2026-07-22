@@ -147,6 +147,12 @@ export default function DiscoveryScreen({ navigation }) {
     setRefreshing(false);
   }
 
+  function compatibilityColor(score) {
+    if (score >= 70) return colors.success;
+    if (score >= 40) return colors.primary;
+    return colors.textTertiary;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -189,7 +195,16 @@ export default function DiscoveryScreen({ navigation }) {
                 {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
               </View>
               <View style={styles.cardInfo}>
-                <Text style={styles.name}>{item.profiles?.display_name}</Text>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name}>{item.profiles?.display_name}</Text>
+                  {item.compatibilityScore !== null && (
+                    <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}>
+                      <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
+                        {item.compatibilityScore}% Match
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
               </View>
               <View style={styles.cardActions}>
@@ -272,7 +287,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.success, borderWidth: 2, borderColor: colors.surface,
   },
   cardInfo: { flex: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
   name: { ...typography.bodyBold, color: colors.textPrimary },
+  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
+  compatText: { fontSize: 10, fontWeight: '700' },
   bio: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   cardActions: { alignItems: 'center', gap: spacing.xs },
   noticeButton: {

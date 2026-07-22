@@ -12,6 +12,7 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { supabase } from './supabase';
+import { calculateCompatibility } from './compatibility';
 
 const BACKGROUND_LOCATION_TASK = 'nearby-background-location-task';
 
@@ -124,7 +125,7 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics')
     .eq('id', userId)
     .single();
 
@@ -132,7 +133,6 @@ export async function getNearbyMatches() {
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
-  const myInterests = myProfile?.interests ?? [];
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -163,7 +163,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -178,12 +178,11 @@ export async function getNearbyMatches() {
       const otherUserId = s.user_a === userId ? s.user_b : s.user_a;
       const otherProfile = profileById[otherUserId] ?? null;
 
-      // Compute shared interests up front so Discovery can show a
-      // "you both like X" nudge — a lightweight step toward
-      // interest-based connection, not just pure proximity.
       const sharedInterests = otherProfile
-        ? (otherProfile.interests ?? []).filter((i) => myInterests.includes(i))
+        ? (otherProfile.interests ?? []).filter((i) => (myProfile?.interests ?? []).includes(i))
         : [];
+
+      const compatibilityScore = otherProfile ? calculateCompatibility(myProfile, otherProfile) : null;
 
       return {
         id: s.id,
@@ -191,6 +190,7 @@ export async function getNearbyMatches() {
         otherUserId,
         profiles: otherProfile,
         sharedInterests,
+        compatibilityScore,
       };
     })
     .filter((item) => item.profiles !== null)
