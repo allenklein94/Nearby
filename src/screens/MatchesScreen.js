@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getSeenMatchIds, markMatchesSeen } from '../services/matchCelebration';
+import { getPendingCheckIns, respondToCheckIn, buildShareMessage } from '../services/dateSafety';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { Share } from 'react-native';
 
 export default function MatchesScreen({ navigation }) {
   const { colors } = useTheme();
@@ -42,11 +44,6 @@ export default function MatchesScreen({ navigation }) {
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
 
-      // Detect genuinely new matches by comparing against a locally
-      // stored list of seen match IDs. On the very first run ever
-      // (nothing has been tracked yet), skip celebrating — those are
-      // pre-existing matches the person likely already knows about,
-      // not something that just happened.
       const seenIds = await getSeenMatchIds();
       const isFirstRunEver = seenIds.length === 0 && data.length > 0;
       const newMatch = isFirstRunEver ? null : data.find((m) => !seenIds.includes(m.id));
@@ -62,7 +59,60 @@ export default function MatchesScreen({ navigation }) {
 
       await markMatchesSeen(data.map((m) => m.id));
     }
+
+    await checkPendingCheckIns();
   }, []);
+
+  async function checkPendingCheckIns() {
+    const pending = await getPendingCheckIns();
+    if (pending.length === 0) return;
+
+    // Only prompt for one at a time — if there are several, the rest
+    // will surface again next time the screen loads.
+    const checkin = pending[0];
+    const match = checkin.matches;
+    const otherName = match ? (match.a?.display_name ?? match.b?.display_name) : 'your date';
+
+    Alert.alert(
+      'How did your date go?',
+      `Checking in on your plans with ${otherName}.`,
+      [
+        {
+          text: "I'm safe 👍",
+          onPress: () => respondToCheckIn(checkin.id, 'safe'),
+        },
+        {
+          text: 'Something felt wrong',
+          style: 'destructive',
+          onPress: () => handleSomethingWrong(checkin, otherName),
+        },
+      ]
+    );
+  }
+
+  function handleSomethingWrong(checkin, otherName) {
+    Alert.alert(
+      "We're here to help",
+      'If you're in immediate danger, please contact local emergency services right away.',
+      [
+        {
+          text: 'Message my check-in contact',
+          onPress: async () => {
+            await Share.share({ message: `Update: my date with ${otherName} didn't go well. Checking in — please reach out.` });
+            respondToCheckIn(checkin.id, 'help_needed');
+          },
+        },
+        {
+          text: 'Report or Block',
+          onPress: () => {
+            respondToCheckIn(checkin.id, 'help_needed');
+            navigation.navigate('Chat', { matchId: checkin.match_id });
+          },
+        },
+        { text: 'Dismiss', style: 'cancel', onPress: () => respondToCheckIn(checkin.id, 'help_needed') },
+      ]
+    );
+  }
 
   useEffect(() => {
     load();
