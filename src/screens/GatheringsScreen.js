@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image } from 'react-native';
 import { getNearbyGatherings, getMyGatherings, expressInterest, approveInterest } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -13,6 +14,7 @@ export default function GatheringsScreen({ navigation }) {
   const [hosting, setHosting] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [reportTarget, setReportTarget] = useState(null);
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults] = await Promise.all([
@@ -106,6 +108,12 @@ export default function GatheringsScreen({ navigation }) {
                   <Text style={styles.title}>{item.title}</Text>
                   <Text style={styles.hostName}>Hosted by {item.host?.display_name}</Text>
                 </View>
+                <TouchableOpacity
+                  style={styles.moreButton}
+                  onPress={() => setReportTarget({ id: item.host_id, name: item.host?.display_name })}
+                >
+                  <Text style={styles.moreButtonText}>⋯</Text>
+                </TouchableOpacity>
               </View>
               {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
               <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
@@ -151,6 +159,20 @@ export default function GatheringsScreen({ navigation }) {
           )}
         />
       )}
+
+      <ReportBlockModal
+        visible={!!reportTarget}
+        onClose={() => {
+          setReportTarget(null);
+          load();
+        }}
+        onBlocked={() => {
+          setReportTarget(null);
+          load();
+        }}
+        reportedUserId={reportTarget?.id}
+        reportedUserName={reportTarget?.name}
+      />
     </SafeAreaView>
   );
 }
@@ -177,6 +199,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   hostAvatar: { width: 40, height: 40, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   title: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   hostName: { ...typography.small, color: colors.textTertiary },
+  moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   time: { ...typography.caption, color: colors.primary, fontWeight: '600', marginBottom: spacing.sm },
   interestButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
