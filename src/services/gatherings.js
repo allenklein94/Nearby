@@ -37,6 +37,23 @@ export async function getNearbyGatherings() {
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   const area = coarseGatheringArea(location.coords.latitude, location.coords.longitude);
 
+  // Gathering visibility should respect blocks the same way Discovery
+  // does — someone who blocked you (or whom you've blocked) shouldn't
+  // see your gatherings or have theirs shown to you.
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('blocked_id')
+    .eq('blocker_id', userId);
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('blocker_id')
+    .eq('blocked_id', userId);
+
+  const excludedHostIds = new Set([
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
+
   const { data, error } = await supabase
     .from('gatherings')
     .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url)')
@@ -49,7 +66,8 @@ export async function getNearbyGatherings() {
     console.error('getNearbyGatherings error', error);
     return [];
   }
-  return data ?? [];
+
+  return (data ?? []).filter((gathering) => !excludedHostIds.has(gathering.host_id));
 }
 
 export async function getMyGatherings() {
