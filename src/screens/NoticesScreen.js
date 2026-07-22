@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
@@ -14,12 +14,9 @@ export default function NoticesScreen({ navigation }) {
   const [notices, setNotices] = useState([]);
   const [premium, setPremium] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     const premiumStatus = await isPremium().catch(() => false);
     setPremium(premiumStatus);
 
@@ -41,6 +38,16 @@ export default function NoticesScreen({ navigation }) {
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
     }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   }
 
   return (
@@ -65,6 +72,7 @@ export default function NoticesScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>👋</Text>

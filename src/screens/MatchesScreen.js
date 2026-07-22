@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
@@ -13,12 +13,9 @@ export default function MatchesScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
@@ -41,6 +38,16 @@ export default function MatchesScreen({ navigation }) {
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
     }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   }
 
   return (
@@ -52,6 +59,7 @@ export default function MatchesScreen({ navigation }) {
         data={matches}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>
