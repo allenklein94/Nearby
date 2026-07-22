@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Image, RefreshControl } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
+import { getSeenMatchIds, markMatchesSeen } from '../services/matchCelebration';
+import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -14,6 +16,8 @@ export default function MatchesScreen({ navigation }) {
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [refreshing, setRefreshing] = useState(false);
+  const [celebrationMatch, setCelebrationMatch] = useState(null);
+  const [myPhotoUrl, setMyPhotoUrl] = useState(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -37,6 +41,26 @@ export default function MatchesScreen({ navigation }) {
         })
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
+
+      // Detect genuinely new matches by comparing against a locally
+      // stored list of seen match IDs. On the very first run ever
+      // (nothing has been tracked yet), skip celebrating — those are
+      // pre-existing matches the person likely already knows about,
+      // not something that just happened.
+      const seenIds = await getSeenMatchIds();
+      const isFirstRunEver = seenIds.length === 0 && data.length > 0;
+      const newMatch = isFirstRunEver ? null : data.find((m) => !seenIds.includes(m.id));
+
+      if (newMatch) {
+        const { data: myProfile } = await supabase.from('profiles').select('photo_url').eq('id', myId).single();
+        if (myProfile?.photo_url) {
+          const myUrl = await getSignedPhotoUrl(myProfile.photo_url);
+          setMyPhotoUrl(myUrl);
+        }
+        setCelebrationMatch(newMatch);
+      }
+
+      await markMatchesSeen(data.map((m) => m.id));
     }
   }, []);
 
@@ -48,6 +72,18 @@ export default function MatchesScreen({ navigation }) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  function otherPersonFor(match) {
+    return match.user_a === myUserId ? match.b : match.a;
+  }
+
+  function handleSendMessage() {
+    const match = celebrationMatch;
+    setCelebrationMatch(null);
+    if (match) {
+      navigation.navigate('Chat', { matchId: match.id });
+    }
   }
 
   return (
@@ -67,7 +103,7 @@ export default function MatchesScreen({ navigation }) {
           </View>
         }
         renderItem={({ item }) => {
-          const other = item.user_a === myUserId ? item.b : item.a;
+          const other = otherPersonFor(item);
           return (
             <View style={styles.card}>
               <TouchableOpacity
@@ -92,6 +128,15 @@ export default function MatchesScreen({ navigation }) {
             </View>
           );
         }}
+      />
+
+      <MatchCelebrationModal
+        visible={!!celebrationMatch}
+        myPhotoUrl={myPhotoUrl}
+        theirPhotoUrl={celebrationMatch ? photoUrls[celebrationMatch.id] : null}
+        theirName={celebrationMatch ? otherPersonFor(celebrationMatch)?.display_name : ''}
+        onSendMessage={handleSendMessage}
+        onDismiss={() => setCelebrationMatch(null)}
       />
     </SafeAreaView>
   );
