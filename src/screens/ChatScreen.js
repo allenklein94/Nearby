@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator } from 'react-native';
+import { Audio } from 'expo-av';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
+import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -11,6 +13,76 @@ import GifPickerModal from '../components/GifPickerModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+
+const MAX_RECORDING_SECONDS = 60;
+
+function VoiceBubble({ audioPath, isMe, colors }) {
+  const [sound, setSound] = useState(null);
+  const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function togglePlay() {
+    if (playing && sound) {
+      await sound.pauseAsync();
+      setPlaying(false);
+      return;
+    }
+
+    if (sound) {
+      await sound.playAsync();
+      setPlaying(true);
+      return;
+    }
+
+    setLoading(true);
+    const url = await getSignedAudioUrl(audioPath);
+    if (!url) {
+      setLoading(false);
+      Alert.alert('Error', 'Could not load this voice note.');
+      return;
+    }
+
+    const { sound: newSound } = await Audio.Sound.createAsync(
+      { uri: url },
+      { shouldPlay: true },
+      (status) => {
+        if (status.didJustFinish) {
+          setPlaying(false);
+          newSound.setPositionAsync(0);
+        }
+      }
+    );
+    setSound(newSound);
+    setPlaying(true);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (sound) sound.unloadAsync();
+    };
+  }, [sound]);
+
+  return (
+    <TouchableOpacity
+      style={[voiceStyles.bubble, isMe ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+      onPress={togglePlay}
+      activeOpacity={0.8}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color={isMe ? '#fff' : colors.primary} />
+      ) : (
+        <Text style={{ fontSize: 18 }}>{playing ? '⏸' : '▶️'}</Text>
+      )}
+      <Text style={[voiceStyles.label, { color: isMe ? '#fff' : colors.textPrimary }]}>Voice message</Text>
+    </TouchableOpacity>
+  );
+}
+
+const voiceStyles = StyleSheet.create({
+  bubble: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 18, gap: 8 },
+  label: { fontSize: 14, fontWeight: '600' },
+});
 
 export default function ChatScreen({ route, navigation }) {
   const { matchId } = route.params;
@@ -26,7 +98,12 @@ export default function ChatScreen({ route, navigation }) {
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
   const [isUserPremium, setIsUserPremium] = useState(false);
   const [loadingIcebreaker, setLoadingIcebreaker] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [uploadingVoice, setUploadingVoice] = useState(false);
   const listRef = useRef(null);
+  const recordingRef = useRef(null);
+  const recordingTimerRef = useRef(null);
 
   async function loadMessages() {
     const { data } = await supabase
@@ -58,6 +135,7 @@ export default function ChatScreen({ route, navigation }) {
     });
     return () => {
       if (pollInterval) clearInterval(pollInterval);
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     };
   }, []);
 
@@ -124,6 +202,74 @@ export default function ChatScreen({ route, navigation }) {
     return myId;
   }
 
+  async function handleStartRecording() {
+    try {
+      const recording = await startRecording();
+      recordingRef.current = recording;
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev + 1 >= MAX_RECORDING_SECONDS) {
+            handleStopRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  async function handleStopRecording() {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+
+    if (!recordingRef.current) return;
+
+    try {
+      const uri = await stopRecording(recordingRef.current);
+      recordingRef.current = null;
+
+      setUploadingVoice(true);
+      const path = await uploadVoiceNote(userId, uri);
+
+      const optimisticMessage = {
+        id: `optimistic-${Date.now()}`,
+        match_id: matchId,
+        sender_id: userId,
+        body: null,
+        gif_url: null,
+        audio_url: path,
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ match_id: matchId, sender_id: userId, body: '', audio_url: path })
+        .select()
+        .single();
+
+      setUploadingVoice(false);
+
+      if (error) {
+        console.error('sendVoiceNote error', error);
+        return;
+      }
+
+      posthog.capture('voice_note_sent');
+      setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+    } catch (e) {
+      setUploadingVoice(false);
+      Alert.alert('Error', e.message);
+    }
+  }
+
   async function getIcebreaker() {
     setLoadingIcebreaker(true);
     try {
@@ -174,6 +320,7 @@ export default function ChatScreen({ route, navigation }) {
       sender_id: userId,
       body,
       gif_url: null,
+      audio_url: null,
       read_at: null,
       created_at: new Date().toISOString(),
     };
@@ -204,6 +351,7 @@ export default function ChatScreen({ route, navigation }) {
       sender_id: userId,
       body: null,
       gif_url: gifUrl,
+      audio_url: null,
       read_at: null,
       created_at: new Date().toISOString(),
     };
@@ -227,6 +375,12 @@ export default function ChatScreen({ route, navigation }) {
   function formatTime(iso) {
     const d = new Date(iso);
     return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function formatRecordingTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
   const lastMyMessage = [...messages].reverse().find((m) => m.sender_id === userId);
@@ -257,7 +411,9 @@ export default function ChatScreen({ route, navigation }) {
           }
           renderItem={({ item }) => (
             <View style={[styles.bubbleRow, item.sender_id === userId ? styles.rowRight : styles.rowLeft]}>
-              {item.gif_url ? (
+              {item.audio_url ? (
+                <VoiceBubble audioPath={item.audio_url} isMe={item.sender_id === userId} colors={colors} />
+              ) : item.gif_url ? (
                 <Image source={{ uri: item.gif_url }} style={styles.gifBubble} resizeMode="cover" />
               ) : (
                 <View style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}>
@@ -271,31 +427,45 @@ export default function ChatScreen({ route, navigation }) {
             </View>
           )}
         />
-        <View style={styles.inputRow}>
-          {isUserPremium && (
-            <TouchableOpacity style={styles.icebreakerButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
-              {loadingIcebreaker ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.icebreakerButtonText}>✨</Text>}
+
+        {isRecording ? (
+          <View style={styles.recordingRow}>
+            <View style={styles.recordingIndicator} />
+            <Text style={styles.recordingTime}>{formatRecordingTime(recordingSeconds)}</Text>
+            <Text style={styles.recordingHint}>Recording voice note...</Text>
+            <TouchableOpacity style={styles.stopButton} onPress={handleStopRecording}>
+              <Text style={styles.stopButtonText}>Send</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.gifButton} onPress={() => setGifPickerVisible(true)}>
-            <Text style={styles.gifButtonText}>GIF</Text>
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder={t('chat.typePlaceholder')}
-            placeholderTextColor={colors.textTertiary}
-            value={text}
-            onChangeText={setText}
-            multiline
-          />
-          <TouchableOpacity
-            style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
-            onPress={sendMessage}
-            disabled={!text.trim()}
-          >
-            <Text style={styles.sendText}>{t('chat.send')}</Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+        ) : (
+          <View style={styles.inputRow}>
+            {isUserPremium && (
+              <TouchableOpacity style={styles.icebreakerButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
+                {loadingIcebreaker ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.icebreakerButtonText}>✨</Text>}
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.gifButton} onPress={() => setGifPickerVisible(true)}>
+              <Text style={styles.gifButtonText}>GIF</Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder={t('chat.typePlaceholder')}
+              placeholderTextColor={colors.textTertiary}
+              value={text}
+              onChangeText={setText}
+              multiline
+            />
+            {text.trim() ? (
+              <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+                <Text style={styles.sendText}>{t('chat.send')}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.micButton} onPress={handleStartRecording} disabled={uploadingVoice}>
+                {uploadingVoice ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={{ fontSize: 18 }}>🎤</Text>}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       <GifPickerModal
@@ -373,6 +543,18 @@ const getStyles = (colors) => StyleSheet.create({
     paddingVertical: spacing.sm,
     marginLeft: spacing.sm,
   },
-  sendButtonDisabled: { opacity: 0.4 },
   sendText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  micButton: {
+    justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginLeft: spacing.sm,
+  },
+  recordingRow: {
+    flexDirection: 'row', alignItems: 'center', padding: spacing.md,
+    borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background,
+  },
+  recordingIndicator: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.danger, marginRight: spacing.sm },
+  recordingTime: { color: colors.textPrimary, fontWeight: '700', marginRight: spacing.md },
+  recordingHint: { color: colors.textTertiary, flex: 1, fontSize: 13 },
+  stopButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  stopButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });

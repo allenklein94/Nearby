@@ -1,13 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, Image, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { registerForPushNotifications, updateBadgeCount } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
+import { supabase } from '../services/supabase';
+import { getSignedPhotoUrl } from '../services/photos';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
@@ -27,14 +31,76 @@ import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-function MainTabs() {
+const TAB_ICONS = {
+  Nearby: { active: 'location', inactive: 'location-outline' },
+  Notices: { active: 'hand-left', inactive: 'hand-left-outline' },
+  Matches: { active: 'heart', inactive: 'heart-outline' },
+  Gatherings: { active: 'calendar', inactive: 'calendar-outline' },
+};
+
+function ProfileTabIcon({ focused, size, colors, photoUrl }) {
+  if (!photoUrl) {
+    return <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={size} color={focused ? colors.primary : colors.textTertiary} />;
+  }
+
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false }}>
+    <View style={[
+      profileIconStyles.wrap,
+      { width: size + 6, height: size + 6, borderRadius: (size + 6) / 2 },
+      focused && { borderWidth: 2, borderColor: colors.primary },
+    ]}>
+      <Image source={{ uri: photoUrl }} style={[profileIconStyles.image, { width: size, height: size, borderRadius: size / 2 }]} />
+    </View>
+  );
+}
+
+const profileIconStyles = StyleSheet.create({
+  wrap: { justifyContent: 'center', alignItems: 'center' },
+  image: {},
+});
+
+function MainTabs() {
+  const { colors } = useTheme();
+  const [myPhotoUrl, setMyPhotoUrl] = useState(null);
+
+  useEffect(() => {
+    loadMyPhoto();
+  }, []);
+
+  async function loadMyPhoto() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return;
+
+    const { data } = await supabase.from('profiles').select('photo_url').eq('id', userId).single();
+    if (data?.photo_url) {
+      const url = await getSignedPhotoUrl(data.photo_url);
+      setMyPhotoUrl(url);
+    }
+  }
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textTertiary,
+        tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
+        tabBarIcon: ({ focused, size }) => {
+          if (route.name === 'Profile') {
+            return <ProfileTabIcon focused={focused} size={size} colors={colors} photoUrl={myPhotoUrl} />;
+          }
+          const iconSet = TAB_ICONS[route.name];
+          const iconName = focused ? iconSet.active : iconSet.inactive;
+          return <Ionicons name={iconName} size={size} color={focused ? colors.primary : colors.textTertiary} />;
+        },
+      })}
+    >
       <Tab.Screen name="Nearby" component={DiscoveryScreen} />
       <Tab.Screen name="Notices" component={NoticesScreen} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
       <Tab.Screen name="Gatherings" component={GatheringsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
     </Tab.Navigator>
   );
 }
