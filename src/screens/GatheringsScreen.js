@@ -5,6 +5,7 @@ import { getNearbyGatherings, getMyGatherings, expressInterest, approveInterest 
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import ReportBlockModal from '../components/ReportBlockModal';
+import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -143,59 +144,65 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.emptyText}>{t('gatherings.emptyNearby')}</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={[styles.card, item.matchesYourInterests && styles.matchCard]}>
-              <View style={styles.cardTopRow}>
-                {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} />}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.title}>{item.title}</Text>
-                  <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
+          renderItem={({ item }) => {
+            const categoryStyle = categoryStyleFor(item.interest_tag);
+            return (
+              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
+                <View style={styles.cardTopRow}>
+                  <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
+                    <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
+                  </View>
+                  {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} />}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.title}>{item.title}</Text>
+                    <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.moreButton}
+                    onPress={() => setReportTarget({ id: item.host_id, name: item.host?.display_name })}
+                  >
+                    <Text style={styles.moreButtonText}>⋯</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={styles.moreButton}
-                  onPress={() => setReportTarget({ id: item.host_id, name: item.host?.display_name })}
-                >
-                  <Text style={styles.moreButtonText}>⋯</Text>
+                {item.matchesYourInterests && (
+                  <View style={styles.matchBadge}>
+                    <Text style={styles.matchBadgeText}>{t('gatherings.matchesInterests')}</Text>
+                  </View>
+                )}
+                {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+                <View style={styles.metaRow}>
+                  <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+                  {item.distanceLabel && <Text style={styles.distance}>· {item.distanceLabel}</Text>}
+                </View>
+
+                {item.approvedAttendees?.length > 0 && (
+                  <View style={styles.attendeesRow}>
+                    <View style={styles.attendeeAvatars}>
+                      {item.approvedAttendees.slice(0, 4).map((attendee, i) => {
+                        const url = attendeePhotoUrls[`${item.id}-${attendee.profiles?.photo_url}`];
+                        return url ? (
+                          <Image
+                            key={i}
+                            source={{ uri: url }}
+                            style={[styles.attendeeAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
+                          />
+                        ) : null;
+                      })}
+                    </View>
+                    <Text style={styles.attendeesText}>
+                      {item.approvedAttendees.length === 1
+                        ? `${item.approvedAttendees[0].profiles?.display_name} is attending`
+                        : `${item.approvedAttendees.length} people attending`}
+                    </Text>
+                  </View>
+                )}
+
+                <TouchableOpacity style={[styles.interestButton, { backgroundColor: categoryStyle.color }]} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
+                  <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
                 </TouchableOpacity>
               </View>
-              {item.matchesYourInterests && (
-                <View style={styles.matchBadge}>
-                  <Text style={styles.matchBadgeText}>{t('gatherings.matchesInterests')}</Text>
-                </View>
-              )}
-              {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
-              <View style={styles.metaRow}>
-                <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                {item.distanceLabel && <Text style={styles.distance}>· {item.distanceLabel}</Text>}
-              </View>
-
-              {item.approvedAttendees?.length > 0 && (
-                <View style={styles.attendeesRow}>
-                  <View style={styles.attendeeAvatars}>
-                    {item.approvedAttendees.slice(0, 4).map((attendee, i) => {
-                      const url = attendeePhotoUrls[`${item.id}-${attendee.profiles?.photo_url}`];
-                      return url ? (
-                        <Image
-                          key={i}
-                          source={{ uri: url }}
-                          style={[styles.attendeeAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
-                        />
-                      ) : null;
-                    })}
-                  </View>
-                  <Text style={styles.attendeesText}>
-                    {item.approvedAttendees.length === 1
-                      ? `${item.approvedAttendees[0].profiles?.display_name} is attending`
-                      : `${item.approvedAttendees.length} people attending`}
-                  </Text>
-                </View>
-              )}
-
-              <TouchableOpacity style={styles.interestButton} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
-                <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+            );
+          }}
         />
       ) : (
         <FlatList
@@ -209,28 +216,36 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-              {item.interested?.length > 0 ? (
-                item.interested.map((interest) => (
-                  <View key={interest.id} style={styles.interestRow}>
-                    <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
-                    {interest.status === 'pending' ? (
-                      <TouchableOpacity style={styles.approveButton} onPress={() => handleApprove(interest)}>
-                        <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <Text style={styles.approvedLabel}>{t('gatherings.approved')}</Text>
-                    )}
+          renderItem={({ item }) => {
+            const categoryStyle = categoryStyleFor(item.interest_tag);
+            return (
+              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
+                <View style={styles.cardTopRow}>
+                  <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
+                    <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
-                ))
-              ) : (
-                <Text style={styles.noInterestText}>{t('gatherings.noInterestYet')}</Text>
-              )}
-            </View>
-          )}
+                  <Text style={styles.title}>{item.title}</Text>
+                </View>
+                <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+                {item.interested?.length > 0 ? (
+                  item.interested.map((interest) => (
+                    <View key={interest.id} style={styles.interestRow}>
+                      <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
+                      {interest.status === 'pending' ? (
+                        <TouchableOpacity style={styles.approveButton} onPress={() => handleApprove(interest)}>
+                          <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.approvedLabel}>{t('gatherings.approved')}</Text>
+                      )}
+                    </View>
+                  ))
+                ) : (
+                  <Text style={styles.noInterestText}>{t('gatherings.noInterestYet')}</Text>
+                )}
+              </View>
+            );
+          }}
         />
       )}
 
@@ -269,9 +284,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
-  matchCard: { borderColor: colors.primary, borderWidth: 1.5 },
+  matchCard: { borderColor: colors.primary },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
-  hostAvatar: { width: 40, height: 40, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
+  categoryBadge: { width: 36, height: 36, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },
+  categoryBadgeIcon: { fontSize: 18 },
+  hostAvatar: { width: 32, height: 32, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   title: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   hostName: { ...typography.small, color: colors.textTertiary },
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
@@ -286,7 +303,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeeAvatars: { flexDirection: 'row', marginRight: spacing.sm },
   attendeeAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: colors.surfaceElevated },
   attendeesText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
-  interestButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
+  interestButton: { borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
   interestName: { color: colors.textPrimary, fontSize: 14 },
