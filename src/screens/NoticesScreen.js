@@ -30,6 +30,7 @@ export default function NoticesScreen({ navigation }) {
     const { data, error } = await supabase
       .from('notices')
       .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics)')
+      .eq('to_user', myId)
       .order('is_super', { ascending: false })
       .order('created_at', { ascending: false });
 
