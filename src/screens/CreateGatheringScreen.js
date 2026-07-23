@@ -31,6 +31,10 @@ export default function CreateGatheringScreen({ navigation }) {
       return Alert.alert('Title required', 'Give your gathering a short title.');
     }
 
+    if (scheduledAt.getTime() <= Date.now()) {
+      return Alert.alert('Pick a future time', "Your gathering's date and time needs to be in the future.");
+    }
+
     const titleCheck = await checkTextModeration(title);
     if (!titleCheck.safe) {
       return Alert.alert('Title not allowed', 'Please revise your title and try again.');
