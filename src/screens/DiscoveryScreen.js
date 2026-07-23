@@ -191,8 +191,13 @@ export default function DiscoveryScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>{t('discovery.title')}</Text>
-          <TouchableOpacity onPress={showRadiusInfo} style={styles.infoButton}>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('discovery.title')}</Text>
+          <TouchableOpacity
+            onPress={showRadiusInfo}
+            style={styles.infoButton}
+            accessibilityLabel="Learn how Crossed Paths works"
+            accessibilityRole="button"
+          >
             <Text style={styles.infoButtonText}>ⓘ</Text>
           </TouchableOpacity>
         </View>
@@ -226,6 +231,8 @@ export default function DiscoveryScreen({ navigation }) {
               style={styles.tappableProfileArea}
               onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId })}
               activeOpacity={0.9}
+              accessibilityLabel={`View ${item.profiles?.display_name}'s profile${onlineStatuses[item.otherUserId] ? ', online now' : ''}`}
+              accessibilityRole="button"
             >
               <View>
                 <Image
@@ -242,6 +249,8 @@ export default function DiscoveryScreen({ navigation }) {
                   <TouchableOpacity
                     style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
                     onPress={() => showCompatibilityReport(item)}
+                    accessibilityLabel={`${item.compatibilityScore} percent compatible, view details`}
+                    accessibilityRole="button"
                   >
                     <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
                       {item.compatibilityScore}% · Why?
@@ -257,15 +266,29 @@ export default function DiscoveryScreen({ navigation }) {
                 </Text>
               )}
               <View style={styles.cardActions}>
-                <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
+                <TouchableOpacity
+                  style={styles.noticeButton}
+                  onPress={() => sendNotice(item.otherUserId)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`Send a Notice to ${item.profiles?.display_name}`}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.waveButton} onPress={() => confirmWave(item.otherUserId)} activeOpacity={0.85}>
+                <TouchableOpacity
+                  style={styles.waveButton}
+                  onPress={() => confirmWave(item.otherUserId)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`Send a Wave to ${item.profiles?.display_name}`}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.waveButtonText}>👋 {t('discovery.wave')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.moreButton}
                   onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
+                  accessibilityLabel={`Report or block ${item.profiles?.display_name}`}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.moreButtonText}>⋯</Text>
                 </TouchableOpacity>
@@ -277,9 +300,17 @@ export default function DiscoveryScreen({ navigation }) {
       )}
 
       {undoState && (
-        <Animated.View style={[styles.undoBanner, { opacity: undoOpacity }]}>
+        <Animated.View
+          style={[styles.undoBanner, { opacity: undoOpacity }]}
+          accessible={true}
+          accessibilityLiveRegion="polite"
+        >
           <Text style={styles.undoText}>{undoState.isWave ? 'Wave' : 'Notice'} sent</Text>
-          <TouchableOpacity onPress={handleUndo}>
+          <TouchableOpacity
+            onPress={handleUndo}
+            accessibilityLabel={`Undo sending ${undoState.isWave ? 'Wave' : 'Notice'}`}
+            accessibilityRole="button"
+          >
             <Text style={styles.undoButton}>Undo</Text>
           </TouchableOpacity>
         </Animated.View>
