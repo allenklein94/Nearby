@@ -101,10 +101,6 @@ export async function getMyGatherings() {
   return data ?? [];
 }
 
-// Gatherings someone else is hosting where the current user's
-// interest was approved — previously there was no dedicated place to
-// see these; they'd just be mixed into the general Nearby browse list
-// and could easily seem to have "disappeared."
 export async function getMyAttendingGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -124,6 +120,30 @@ export async function getMyAttendingGatherings() {
   return (data ?? [])
     .filter((row) => row.gatherings)
     .map((row) => row.gatherings);
+}
+
+// Fellow attendees at a gathering — approved people other than
+// yourself and the host, so you can connect directly with people you
+// share this specific gathering with, not just the host. This is the
+// "shared gathering attendance" equivalent of physically crossing
+// paths with someone.
+export async function getFellowAttendees(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('user_id, profiles(id, display_name, photo_url)')
+    .eq('gathering_id', gatheringId)
+    .eq('status', 'approved')
+    .neq('user_id', userId);
+
+  if (error) {
+    console.error('getFellowAttendees error', error);
+    return [];
+  }
+
+  return (data ?? []).filter((row) => row.profiles);
 }
 
 export async function expressInterest(gatheringId) {

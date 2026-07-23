@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, expressInterest, approveInterest } from '../services/gatherings';
+import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest } from '../services/gatherings';
+import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -22,6 +23,11 @@ export default function GatheringsScreen({ navigation }) {
   const [photoUrls, setPhotoUrls] = useState({});
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
+  const [expandedGathering, setExpandedGathering] = useState(null);
+  const [fellowAttendees, setFellowAttendees] = useState({});
+  const [fellowPhotoUrls, setFellowPhotoUrls] = useState({});
+  const [loadingFellows, setLoadingFellows] = useState(false);
+  const [sentNoticeTo, setSentNoticeTo] = useState({});
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults] = await Promise.all([
@@ -90,6 +96,45 @@ export default function GatheringsScreen({ navigation }) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  async function toggleExpandGathering(gatheringId) {
+    if (expandedGathering === gatheringId) {
+      setExpandedGathering(null);
+      return;
+    }
+
+    setExpandedGathering(gatheringId);
+
+    if (!fellowAttendees[gatheringId]) {
+      setLoadingFellows(true);
+      const fellows = await getFellowAttendees(gatheringId);
+      setFellowAttendees((prev) => ({ ...prev, [gatheringId]: fellows }));
+
+      const urlEntries = await Promise.all(
+        fellows.map(async (f) => {
+          const path = f.profiles?.photo_url;
+          if (!path) return null;
+          const url = await getSignedPhotoUrl(path);
+          return [f.user_id, url];
+        })
+      );
+      setFellowPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries.filter(Boolean)) }));
+      setLoadingFellows(false);
+    }
+  }
+
+  async function handleSendNoticeToFellow(userId) {
+    try {
+      await sendNoticeTo(userId, false);
+      setSentNoticeTo((prev) => ({ ...prev, [userId]: true }));
+    } catch (e) {
+      if (e.message === 'ALREADY_SENT') {
+        Alert.alert('Already sent', "You've already noticed this person.");
+      } else {
+        Alert.alert('Error', e.message);
+      }
+    }
   }
 
   async function handleExpressInterest(gatheringId) {
@@ -226,22 +271,66 @@ export default function GatheringsScreen({ navigation }) {
           }
           renderItem={({ item }) => {
             const categoryStyle = categoryStyleFor(item.interest_tag);
+            const isExpanded = expandedGathering === item.id;
+            const fellows = fellowAttendees[item.id] ?? [];
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
-                <View style={styles.cardTopRow}>
-                  <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
-                    <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
+                <TouchableOpacity onPress={() => toggleExpandGathering(item.id)} activeOpacity={0.85}>
+                  <View style={styles.cardTopRow}>
+                    <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
+                      <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.title}>{item.title}</Text>
+                      <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
+                    </View>
+                    <Text style={styles.expandChevron}>{isExpanded ? '⌃' : '⌄'}</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.title}>{item.title}</Text>
-                    <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
+                  {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+                  <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+                  <View style={styles.attendingBadge}>
+                    <Text style={styles.attendingBadgeText}>✓ You're going</Text>
                   </View>
-                </View>
-                {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
-                <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                <View style={styles.attendingBadge}>
-                  <Text style={styles.attendingBadgeText}>✓ You're going</Text>
-                </View>
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.fellowSection}>
+                    <Text style={styles.fellowSectionLabel}>Who else is going</Text>
+                    {loadingFellows && !fellowAttendees[item.id] && (
+                      <Text style={styles.emptyText}>Loading...</Text>
+                    )}
+                    {fellows.length === 0 && fellowAttendees[item.id] && (
+                      <Text style={styles.fellowEmptyText}>No one else approved yet.</Text>
+                    )}
+                    {fellows.map((fellow) => (
+                      <View key={fellow.user_id} style={styles.fellowRow}>
+                        <TouchableOpacity
+                          style={styles.fellowInfo}
+                          onPress={() => navigation.navigate('ViewProfile', { userId: fellow.user_id })}
+                          activeOpacity={0.85}
+                        >
+                          {fellowPhotoUrls[fellow.user_id] ? (
+                            <Image source={{ uri: fellowPhotoUrls[fellow.user_id] }} style={styles.fellowAvatar} />
+                          ) : (
+                            <View style={[styles.fellowAvatar, styles.fellowAvatarPlaceholder]} />
+                          )}
+                          <Text style={styles.fellowName}>{fellow.profiles?.display_name}</Text>
+                        </TouchableOpacity>
+                        {sentNoticeTo[fellow.user_id] ? (
+                          <Text style={styles.noticeSentText}>Sent ✓</Text>
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.fellowNoticeButton}
+                            onPress={() => handleSendNoticeToFellow(fellow.user_id)}
+                            activeOpacity={0.85}
+                          >
+                            <Text style={styles.fellowNoticeButtonText}>Notice</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             );
           }}
@@ -337,6 +426,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   hostName: { ...typography.small, color: colors.textTertiary },
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
+  expandChevron: { color: colors.textTertiary, fontSize: 16, paddingHorizontal: spacing.sm },
   matchBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
   matchBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '700' },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
@@ -349,6 +439,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeesText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   attendingBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
   attendingBadgeText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  fellowSection: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  fellowSectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
+  fellowEmptyText: { color: colors.textTertiary, fontSize: 13 },
+  fellowRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.xs },
+  fellowInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  fellowAvatar: { width: 36, height: 36, borderRadius: 18, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
+  fellowAvatarPlaceholder: {},
+  fellowName: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  fellowNoticeButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
+  fellowNoticeButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  noticeSentText: { color: colors.success, fontSize: 12, fontWeight: '700' },
   interestButton: { borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
