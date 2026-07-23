@@ -35,6 +35,7 @@ export default function SettingsScreen({ navigation }) {
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [relationshipIntention, setRelationshipIntention] = useState([]);
+  const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -71,6 +72,7 @@ export default function SettingsScreen({ navigation }) {
       setEthnicityHidden(data.ethnicity_hidden ?? false);
       setEthnicityPreferences(data.ethnicity_preferences ?? []);
       setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
+      setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
     }
   }
 
@@ -296,6 +298,22 @@ export default function SettingsScreen({ navigation }) {
               onValueChange={(v) => toggleNotifPref('notify_waves', v, setNotifyWaves)}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Notify me about Waves"
+            />
+          </View>
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">Privacy</Text>
+        <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Read Receipts</Text>
+              <Text style={styles.helperText}>Let matches see when you've read their messages. Turning this off also hides when they've read yours.</Text>
+            </View>
+            <Switch
+              value={readReceiptsEnabled}
+              onValueChange={(v) => toggleNotifPref('read_receipts_enabled', v, setReadReceiptsEnabled)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Read receipts"
             />
           </View>
         </View>

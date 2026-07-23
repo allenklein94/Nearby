@@ -171,7 +171,7 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name), b:profiles!matches_user_b_fkey(id, display_name)')
+      .select('user_a, user_b, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled)')
       .eq('id', matchId)
       .single();
 
@@ -603,7 +603,7 @@ export default function ChatScreen({ route, navigation }) {
                   </TouchableOpacity>
                 )}
                 <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
-                {lastMyMessage?.id === item.id && item.read_at && (
+                {lastMyMessage?.id === item.id && item.read_at && otherUser?.read_receipts_enabled !== false && (
                   <Text style={styles.seenText}>Seen</Text>
                 )}
               </View>
