@@ -91,7 +91,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.icon}>{otpSent ? '💬' : '📱'}</Text>
-      <Text style={styles.title}>{otpSent ? t('login.enterCode') : t('login.signIn')}</Text>
+      <Text style={styles.title} accessibilityRole="header">{otpSent ? t('login.enterCode') : t('login.signIn')}</Text>
 
       {!otpSent ? (
         <>
@@ -103,8 +103,17 @@ export default function LoginScreen() {
             keyboardType="phone-pad"
             value={phoneInput}
             onChangeText={setPhoneInput}
+            accessibilityLabel="Phone number"
+            textContentType="telephoneNumber"
           />
-          <TouchableOpacity style={styles.button} onPress={sendOtp} disabled={loading} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={sendOtp}
+            disabled={loading}
+            activeOpacity={0.85}
+            accessibilityLabel={loading ? t('login.sending') : t('login.sendCode')}
+            accessibilityRole="button"
+          >
             <Text style={styles.buttonText}>{loading ? t('login.sending') : t('login.sendCode')}</Text>
           </TouchableOpacity>
         </>
@@ -118,11 +127,25 @@ export default function LoginScreen() {
             keyboardType="number-pad"
             value={otp}
             onChangeText={setOtp}
+            accessibilityLabel="Verification code"
+            textContentType="oneTimeCode"
           />
-          <TouchableOpacity style={styles.button} onPress={verifyOtp} disabled={loading} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={verifyOtp}
+            disabled={loading}
+            activeOpacity={0.85}
+            accessibilityLabel={loading ? t('login.verifying') : t('login.verify')}
+            accessibilityRole="button"
+          >
             <Text style={styles.buttonText}>{loading ? t('login.verifying') : t('login.verify')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setOtpSent(false)} style={{ marginTop: spacing.md }}>
+          <TouchableOpacity
+            onPress={() => setOtpSent(false)}
+            style={{ marginTop: spacing.md }}
+            accessibilityLabel={t('login.differentNumber')}
+            accessibilityRole="button"
+          >
             <Text style={styles.backText}>{t('login.differentNumber')}</Text>
           </TouchableOpacity>
         </>

@@ -46,7 +46,12 @@ export default function OnboardingScreen({ navigation }) {
         style={{ flex: 1 }}
       >
         {SLIDES.map((slide, i) => (
-          <View key={i} style={[styles.slide, { width }]}>
+          <View
+            key={i}
+            style={[styles.slide, { width }]}
+            accessible={true}
+            accessibilityLabel={`Slide ${i + 1} of ${SLIDES.length}: ${slide.title}. ${slide.text}`}
+          >
             <View style={styles.emojiCircle}>
               <Text style={styles.emoji}>{slide.emoji}</Text>
             </View>
@@ -56,18 +61,29 @@ export default function OnboardingScreen({ navigation }) {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={[styles.skipButton, { top: insets.top + spacing.sm }]} onPress={() => navigation.navigate('Login')}>
+      <TouchableOpacity
+        style={[styles.skipButton, { top: insets.top + spacing.sm }]}
+        onPress={() => navigation.navigate('Login')}
+        accessibilityLabel="Skip introduction"
+        accessibilityRole="button"
+      >
         <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
-        <View style={styles.dots}>
+        <View style={styles.dots} accessible={false}>
           {SLIDES.map((_, i) => (
             <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
           ))}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={goNext} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={goNext}
+          activeOpacity={0.85}
+          accessibilityLabel={activeIndex === SLIDES.length - 1 ? t('onboarding.getStarted') : `${t('onboarding.next')}, slide ${activeIndex + 1} of ${SLIDES.length}`}
+          accessibilityRole="button"
+        >
           <Text style={styles.buttonText}>
             {activeIndex === SLIDES.length - 1 ? t('onboarding.getStarted') : t('onboarding.next')}
           </Text>
