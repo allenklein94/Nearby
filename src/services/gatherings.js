@@ -117,16 +117,22 @@ export async function getMyAttendingGatherings() {
     return [];
   }
 
+  const now = new Date();
+
+  // Sort so upcoming gatherings lead, with the soonest first — past
+  // ones (already attended) sink to the bottom instead of cluttering
+  // the top of the list indefinitely.
   return (data ?? [])
     .filter((row) => row.gatherings)
-    .map((row) => row.gatherings);
+    .map((row) => row.gatherings)
+    .sort((a, b) => {
+      const aPast = new Date(a.scheduled_at) < now;
+      const bPast = new Date(b.scheduled_at) < now;
+      if (aPast !== bPast) return aPast ? 1 : -1;
+      return new Date(a.scheduled_at) - new Date(b.scheduled_at);
+    });
 }
 
-// Fellow attendees at a gathering — now correctly excludes anyone
-// blocked in either direction, not just yourself. Without this, two
-// people who'd blocked each other could still see each other and get
-// a Notice button in "Who else is going," completely undermining the
-// block.
 export async function getFellowAttendees(gatheringId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;

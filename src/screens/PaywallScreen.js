@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
-import { getOfferings, purchasePackage, restorePurchases } from '../services/purchases';
+import { getOfferings, purchasePackage, restorePurchases, isPremium } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -12,6 +12,7 @@ export default function PaywallScreen({ navigation }) {
   const [offering, setOffering] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [alreadyPremium, setAlreadyPremium] = useState(false);
 
   const FEATURES = [
     { icon: '👀', text: t('paywall.feature1') },
@@ -21,6 +22,10 @@ export default function PaywallScreen({ navigation }) {
   ];
 
   useEffect(() => {
+    isPremium()
+      .then(setAlreadyPremium)
+      .catch(() => setAlreadyPremium(false));
+
     getOfferings()
       .then((result) => {
         setOffering(result);
@@ -78,6 +83,12 @@ export default function PaywallScreen({ navigation }) {
 
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+      ) : alreadyPremium ? (
+        <View style={styles.alreadyPremiumCard}>
+          <Text style={styles.alreadyPremiumEmoji}>🎉</Text>
+          <Text style={styles.alreadyPremiumTitle}>You're already Premium</Text>
+          <Text style={styles.alreadyPremiumText}>All these features are unlocked on your account.</Text>
+        </View>
       ) : offering ? (
         offering.availablePackages.map((pkg) => {
           const featured = isAnnual(pkg);
@@ -113,14 +124,16 @@ export default function PaywallScreen({ navigation }) {
         </View>
       )}
 
-      <TouchableOpacity
-        onPress={handleRestore}
-        style={{ marginTop: spacing.lg }}
-        accessibilityLabel={t('paywall.restorePurchases')}
-        accessibilityRole="button"
-      >
-        <Text style={styles.restoreText}>{t('paywall.restorePurchases')}</Text>
-      </TouchableOpacity>
+      {!alreadyPremium && (
+        <TouchableOpacity
+          onPress={handleRestore}
+          style={{ marginTop: spacing.lg }}
+          accessibilityLabel={t('paywall.restorePurchases')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.restoreText}>{t('paywall.restorePurchases')}</Text>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -150,6 +163,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   featureRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
   featureIcon: { fontSize: 20, marginRight: spacing.md },
   featureText: { ...typography.bodyBold, color: colors.textPrimary, flex: 1 },
+  alreadyPremiumCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl,
+    alignItems: 'center', borderWidth: 1.5, borderColor: colors.primary,
+  },
+  alreadyPremiumEmoji: { fontSize: 40, marginBottom: spacing.sm },
+  alreadyPremiumTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
+  alreadyPremiumText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   planButton: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
