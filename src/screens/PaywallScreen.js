@@ -64,10 +64,10 @@ export default function PaywallScreen({ navigation }) {
         <Text style={styles.badgeText}>✨ {t('paywall.badge')}</Text>
       </View>
 
-      <Text style={styles.title}>{t('paywall.title')}</Text>
+      <Text style={styles.title} accessibilityRole="header">{t('paywall.title')}</Text>
       <Text style={styles.subtitle}>{t('paywall.subtitle')}</Text>
 
-      <View style={styles.featuresCard}>
+      <View style={styles.featuresCard} accessible={true} accessibilityLabel={`Premium features: ${FEATURES.map((f) => f.text).join('. ')}`}>
         {FEATURES.map((f, i) => (
           <View key={f.text} style={[styles.featureRow, i > 0 && styles.featureRowBorder]}>
             <Text style={styles.featureIcon}>{f.icon}</Text>
@@ -79,23 +79,29 @@ export default function PaywallScreen({ navigation }) {
       {loading ? (
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
       ) : offering ? (
-        offering.availablePackages.map((pkg) => (
-          <TouchableOpacity
-            key={pkg.identifier}
-            style={[styles.planButton, isAnnual(pkg) && styles.planButtonFeatured]}
-            onPress={() => handlePurchase(pkg)}
-            activeOpacity={0.85}
-          >
-            {isAnnual(pkg) && (
-              <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>{t('paywall.bestValue')}</Text>
-              </View>
-            )}
-            <Text style={[styles.planButtonText, isAnnual(pkg) && styles.planButtonTextFeatured]}>
-              {pkg.product.title} — {pkg.product.priceString}
-            </Text>
-          </TouchableOpacity>
-        ))
+        offering.availablePackages.map((pkg) => {
+          const featured = isAnnual(pkg);
+          return (
+            <TouchableOpacity
+              key={pkg.identifier}
+              style={[styles.planButton, featured && styles.planButtonFeatured]}
+              onPress={() => handlePurchase(pkg)}
+              activeOpacity={0.85}
+              accessibilityLabel={`${pkg.product.title}, ${pkg.product.priceString}${featured ? ', ' + t('paywall.bestValue') : ''}`}
+              accessibilityRole="button"
+              accessibilityHint="Starts a subscription purchase"
+            >
+              {featured && (
+                <View style={styles.saveBadge}>
+                  <Text style={styles.saveBadgeText}>{t('paywall.bestValue')}</Text>
+                </View>
+              )}
+              <Text style={[styles.planButtonText, featured && styles.planButtonTextFeatured]}>
+                {pkg.product.title} — {pkg.product.priceString}
+              </Text>
+            </TouchableOpacity>
+          );
+        })
       ) : (
         <View style={styles.errorCard}>
           <Text style={styles.empty}>
@@ -107,7 +113,12 @@ export default function PaywallScreen({ navigation }) {
         </View>
       )}
 
-      <TouchableOpacity onPress={handleRestore} style={{ marginTop: spacing.lg }}>
+      <TouchableOpacity
+        onPress={handleRestore}
+        style={{ marginTop: spacing.lg }}
+        accessibilityLabel={t('paywall.restorePurchases')}
+        accessibilityRole="button"
+      >
         <Text style={styles.restoreText}>{t('paywall.restorePurchases')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
