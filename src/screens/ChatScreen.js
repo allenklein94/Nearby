@@ -677,7 +677,12 @@ export default function ChatScreen({ route, navigation }) {
                   </View>
                 )}
                 {reactionText && (
-                  <TouchableOpacity onPress={() => showReactionPicker(item.id)} style={styles.reactionBadge}>
+                  <TouchableOpacity
+                    onPress={() => showReactionPicker(item.id)}
+                    style={styles.reactionBadge}
+                    accessibilityLabel={`Reactions: ${reactionText}, tap to change your reaction`}
+                    accessibilityRole="button"
+                  >
                     <Text style={styles.reactionBadgeText}>{reactionText}</Text>
                   </TouchableOpacity>
                 )}
