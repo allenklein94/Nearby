@@ -199,9 +199,9 @@ export default function SettingsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.header}>{t('settings.title')}</Text>
+        <Text style={styles.header} accessibilityRole="header">{t('settings.title')}</Text>
 
-        <Text style={styles.sectionLabel}>Looking For</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">Looking For</Text>
         <View style={styles.card}>
           <View style={styles.chipsWrap}>
             {INTENTION_OPTIONS.map((option) => {
@@ -212,6 +212,9 @@ export default function SettingsScreen({ navigation }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleIntention(option.value)}
                   activeOpacity={0.8}
+                  accessibilityLabel={option.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                     {option.icon} {option.label}
@@ -225,7 +228,7 @@ export default function SettingsScreen({ navigation }) {
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('settings.appearance')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>{t('settings.darkMode')}</Text>
@@ -233,17 +236,21 @@ export default function SettingsScreen({ navigation }) {
               value={isDark}
               onValueChange={toggleTheme}
               trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Dark mode"
             />
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('settings.language')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.language')}</Text>
         <View style={styles.card}>
           <View style={styles.chipsWrap}>
             <TouchableOpacity
               style={[styles.chip, language === 'en' && styles.chipSelected]}
               onPress={() => setLanguage('en')}
               activeOpacity={0.8}
+              accessibilityLabel="English"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'en' }}
             >
               <Text style={[styles.chipText, language === 'en' && styles.chipTextSelected]}>English</Text>
             </TouchableOpacity>
@@ -251,13 +258,16 @@ export default function SettingsScreen({ navigation }) {
               style={[styles.chip, language === 'es' && styles.chipSelected]}
               onPress={() => setLanguage('es')}
               activeOpacity={0.8}
+              accessibilityLabel="Español"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'es' }}
             >
               <Text style={[styles.chipText, language === 'es' && styles.chipTextSelected]}>Español</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('settings.notifications')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>{t('settings.newMatches')}</Text>
@@ -265,6 +275,7 @@ export default function SettingsScreen({ navigation }) {
               value={notifyMatches}
               onValueChange={(v) => toggleNotifPref('notify_matches', v, setNotifyMatches)}
               trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about new matches"
             />
           </View>
           <View style={styles.divider} />
@@ -274,6 +285,7 @@ export default function SettingsScreen({ navigation }) {
               value={notifyMessages}
               onValueChange={(v) => toggleNotifPref('notify_messages', v, setNotifyMessages)}
               trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about new messages"
             />
           </View>
           <View style={styles.divider} />
@@ -283,11 +295,12 @@ export default function SettingsScreen({ navigation }) {
               value={notifyWaves}
               onValueChange={(v) => toggleNotifPref('notify_waves', v, setNotifyWaves)}
               trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about Waves"
             />
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('settings.discoveryPreferences')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.discoveryPreferences')}</Text>
         <View style={styles.card}>
           <Text style={styles.label}>{t('settings.showMe')}</Text>
           <View style={styles.chipsWrap}>
@@ -297,6 +310,9 @@ export default function SettingsScreen({ navigation }) {
                 style={[styles.chip, showMe === option && styles.chipSelected]}
                 onPress={() => setShowMe(option)}
                 activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: showMe === option }}
               >
                 <Text style={[styles.chipText, showMe === option && styles.chipTextSelected]}>{option}</Text>
               </TouchableOpacity>
@@ -311,6 +327,7 @@ export default function SettingsScreen({ navigation }) {
               onChangeText={setMinAge}
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Minimum age"
             />
             <Text style={styles.ageDash}>to</Text>
             <TextInput
@@ -319,6 +336,7 @@ export default function SettingsScreen({ navigation }) {
               onChangeText={setMaxAge}
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Maximum age"
             />
           </View>
 
@@ -330,6 +348,9 @@ export default function SettingsScreen({ navigation }) {
                 style={[styles.chip, discoveryGender === option && styles.chipSelected]}
                 onPress={() => setDiscoveryGender(option)}
                 activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: discoveryGender === option }}
               >
                 <Text style={[styles.chipText, discoveryGender === option && styles.chipTextSelected]}>{option}</Text>
               </TouchableOpacity>
@@ -348,6 +369,7 @@ export default function SettingsScreen({ navigation }) {
               value={genderHidden}
               onValueChange={(v) => toggleNotifPref('gender_hidden', v, setGenderHidden)}
               trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel={t('settings.hideGender')}
             />
           </View>
 
@@ -359,6 +381,9 @@ export default function SettingsScreen({ navigation }) {
                 style={[styles.chip, myEthnicity === option && styles.chipSelected]}
                 onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
                 activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: myEthnicity === option }}
               >
                 <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
               </TouchableOpacity>
@@ -374,6 +399,7 @@ export default function SettingsScreen({ navigation }) {
               value={ethnicityHidden}
               onValueChange={(v) => toggleNotifPref('ethnicity_hidden', v, setEthnicityHidden)}
               trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel={t('settings.hideEthnicity')}
             />
           </View>
 
@@ -387,6 +413,9 @@ export default function SettingsScreen({ navigation }) {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleEthnicityPreference(option)}
                   activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                 >
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
                 </TouchableOpacity>
@@ -395,15 +424,26 @@ export default function SettingsScreen({ navigation }) {
           </View>
           <Text style={styles.helperText}>{t('settings.ethnicityPreferencesHelper')}</Text>
 
-          <TouchableOpacity style={styles.button} onPress={savePreferences} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={savePreferences}
+            activeOpacity={0.85}
+            accessibilityLabel="Save preferences"
+            accessibilityRole="button"
+          >
             <Text style={styles.buttonText}>Save Preferences</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel}>Account</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">Account</Text>
         <View style={styles.card}>
           {!changingPhone ? (
-            <TouchableOpacity style={styles.rowButton} onPress={() => setChangingPhone(true)}>
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={() => setChangingPhone(true)}
+              accessibilityLabel={t('settings.changePhoneNumber')}
+              accessibilityRole="button"
+            >
               <Text style={styles.rowButtonText}>{t('settings.changePhoneNumber')}</Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
@@ -417,11 +457,23 @@ export default function SettingsScreen({ navigation }) {
                 keyboardType="phone-pad"
                 value={newPhoneInput}
                 onChangeText={setNewPhoneInput}
+                accessibilityLabel="New phone number"
               />
-              <TouchableOpacity style={styles.button} onPress={sendPhoneChangeOtp} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={sendPhoneChangeOtp}
+                activeOpacity={0.85}
+                accessibilityLabel="Send verification code"
+                accessibilityRole="button"
+              >
                 <Text style={styles.buttonText}>Send Verification Code</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setChangingPhone(false)} style={{ marginTop: spacing.sm }}>
+              <TouchableOpacity
+                onPress={() => setChangingPhone(false)}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
+              >
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -435,40 +487,82 @@ export default function SettingsScreen({ navigation }) {
                 keyboardType="number-pad"
                 value={otp}
                 onChangeText={setOtp}
+                accessibilityLabel="Verification code"
               />
-              <TouchableOpacity style={styles.button} onPress={verifyPhoneChange} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={verifyPhoneChange}
+                activeOpacity={0.85}
+                accessibilityLabel="Confirm new number"
+                accessibilityRole="button"
+              >
                 <Text style={styles.buttonText}>Confirm New Number</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('Paywall')}
+          activeOpacity={0.85}
+          accessibilityLabel={t('settings.manageSubscription')}
+          accessibilityRole="button"
+        >
           <Text style={styles.rowButtonText}>{t('settings.manageSubscription')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('Legal')} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('Legal')}
+          activeOpacity={0.85}
+          accessibilityLabel={t('settings.legal')}
+          accessibilityRole="button"
+        >
           <Text style={styles.rowButtonText}>{t('settings.legal')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
         {isAdmin && (
-          <TouchableOpacity style={styles.rowButtonCard} onPress={() => navigation.navigate('AdminReports')} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('AdminReports')}
+            activeOpacity={0.85}
+            accessibilityLabel="Review reports, admin"
+            accessibilityRole="button"
+          >
             <Text style={styles.rowButtonText}>Review Reports (Admin)</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.signOutButton} onPress={handleDataExport} disabled={exporting}>
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={handleDataExport}
+          disabled={exporting}
+          accessibilityLabel={exporting ? 'Preparing export' : 'Request my data'}
+          accessibilityRole="button"
+        >
           <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={signOut}
+          accessibilityLabel="Sign out"
+          accessibilityRole="button"
+        >
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.deleteButton} onPress={confirmDeleteAccount} disabled={deleting}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={confirmDeleteAccount}
+          disabled={deleting}
+          accessibilityLabel={deleting ? 'Deleting account' : 'Delete account, this permanently removes your profile and cannot be undone'}
+          accessibilityRole="button"
+        >
           <Text style={styles.deleteText}>
             {deleting ? 'Deleting account...' : 'Delete Account'}
           </Text>
