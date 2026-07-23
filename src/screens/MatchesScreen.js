@@ -37,7 +37,7 @@ export default function MatchesScreen({ navigation }) {
 
     const { data, error } = await supabase
       .from('matches')
-      .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics)')
+      .select('id, user_a, user_b, matched_at, source_gathering_id, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics)')
       .order('matched_at', { ascending: false });
 
     if (!error) {
@@ -207,7 +207,9 @@ export default function MatchesScreen({ navigation }) {
                     </TouchableOpacity>
                   )}
                 </View>
-                <Text style={styles.sub}>{t('matches.tapToChat')}</Text>
+                <Text style={styles.sub}>
+                  {item.gatherings?.title ? `Met through ${item.gatherings.title}` : t('matches.tapToChat')}
+                </Text>
               </TouchableOpacity>
               <Text style={styles.chevron}>›</Text>
             </View>
@@ -220,6 +222,7 @@ export default function MatchesScreen({ navigation }) {
         myPhotoUrl={myPhotoUrl}
         theirPhotoUrl={celebrationMatch ? photoUrls[celebrationMatch.id] : null}
         theirName={celebrationMatch ? otherPersonFor(celebrationMatch)?.display_name : ''}
+        gatheringTitle={celebrationMatch?.gatherings?.title || null}
         onSendMessage={handleSendMessage}
         onDismiss={() => setCelebrationMatch(null)}
       />
