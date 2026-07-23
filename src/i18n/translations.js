@@ -2,9 +2,9 @@ export const translations = {
   en: {
     onboarding: {
       slide1Title: 'Nearby',
-      slide1Text: "You've probably noticed someone nearby you wanted to talk to, but didn't. Nearby gives you a low-pressure way to let them know — when you're genuinely close, roughly across a room or closer, not just in the same neighborhood.",
-      slide2Title: 'Send a quiet Notice',
-      slide2Text: "If you're interested, send a silent \"Notice.\" They're never told unless they notice you back — no rejection, no pressure. Feeling bolder? A \"Wave\" lets them know right away.",
+      slide1Text: 'Meet people through real things happening around you — coffee meetups, hikes, game nights — hosted by people nearby who share your interests.',
+      slide2Title: 'Or send a quiet Notice',
+      slide2Text: "Cross paths with someone interesting? Send a silent \"Notice.\" They're never told unless they notice you back — no rejection, no pressure. Feeling bolder? A \"Wave\" lets them know right away.",
       slide3Title: 'Show your personality',
       slide3Text: 'Add multiple photos, your interests, and details like relationship goals or lifestyle preferences — as much or as little as you want to share.',
       slide4Title: 'Your privacy comes first',
@@ -180,9 +180,9 @@ export const translations = {
   es: {
     onboarding: {
       slide1Title: 'Nearby',
-      slide1Text: 'Seguramente has notado a alguien cerca a quien querías hablarle, pero no lo hiciste. Nearby te da una forma discreta de hacérselo saber — cuando estás realmente cerca, más o menos al otro lado de una habitación, no solo en el mismo vecindario.',
-      slide2Title: 'Envía un Aviso silencioso',
-      slide2Text: 'Si te interesa, envía un "Aviso" silencioso. Nunca se les informa a menos que también te avisen a ti — sin rechazo, sin presión. ¿Te sientes más audaz? Un "Saludo" les avisa de inmediato.',
+      slide1Text: 'Conoce gente a través de cosas reales que suceden a tu alrededor — encuentros para tomar café, caminatas, noches de juegos — organizados por personas cercanas que comparten tus intereses.',
+      slide2Title: 'O envía un Aviso silencioso',
+      slide2Text: '¿Te cruzaste con alguien interesante? Envía un "Aviso" silencioso. Nunca se les informa a menos que también te avisen a ti — sin rechazo, sin presión. ¿Te sientes más audaz? Un "Saludo" les avisa de inmediato.',
       slide3Title: 'Muestra tu personalidad',
       slide3Text: 'Agrega varias fotos, tus intereses y detalles como objetivos de relación o preferencias de estilo de vida — todo lo que quieras compartir.',
       slide4Title: 'Tu privacidad es lo primero',

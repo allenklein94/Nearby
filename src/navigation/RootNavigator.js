@@ -34,11 +34,15 @@ import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Gatherings now leads the tab order — real, shared-interest events
+// people can show up to together, positioned as the primary way
+// people meet, with 1:1 proximity matching (Nearby) as a natural
+// complement rather than the sole starting point.
 const TAB_ICONS = {
+  Gatherings: { active: 'calendar', inactive: 'calendar-outline' },
   Nearby: { active: 'location', inactive: 'location-outline' },
   Notices: { active: 'hand-left', inactive: 'hand-left-outline' },
   Matches: { active: 'heart', inactive: 'heart-outline' },
-  Gatherings: { active: 'calendar', inactive: 'calendar-outline' },
 };
 
 function ProfileTabIcon({ focused, size, colors, photoUrl }) {
@@ -125,10 +129,10 @@ function MainTabs() {
         },
       })}
     >
+      <Tab.Screen name="Gatherings" component={GatheringsScreen} />
       <Tab.Screen name="Nearby" component={DiscoveryScreen} />
       <Tab.Screen name="Notices" component={NoticesScreen} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
-      <Tab.Screen name="Gatherings" component={GatheringsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
     </Tab.Navigator>
   );
