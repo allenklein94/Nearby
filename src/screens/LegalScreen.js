@@ -30,28 +30,42 @@ export default function LegalScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.sectionLabel}>{t('legal.legalSection')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('legal.legalSection')}</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.row} onPress={() => Linking.openURL(PRIVACY_URL)}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => Linking.openURL(PRIVACY_URL)}
+            accessibilityLabel={t('legal.privacyPolicy')}
+            accessibilityRole="link"
+          >
             <Text style={styles.rowText}>{t('legal.privacyPolicy')}</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <TouchableOpacity style={styles.row} onPress={() => Linking.openURL(TERMS_URL)}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => Linking.openURL(TERMS_URL)}
+            accessibilityLabel={t('legal.termsOfService')}
+            accessibilityRole="link"
+          >
             <Text style={styles.rowText}>{t('legal.termsOfService')}</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('legal.privacyChoices')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('legal.privacyChoices')}</Text>
         <View style={styles.card}>
           <Text style={styles.bodyText}>{t('legal.privacyChoicesText')}</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('legal.openSourceLicenses')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('legal.openSourceLicenses')}</Text>
         <View style={styles.card}>
           {OPEN_SOURCE_LIBRARIES.map((lib, i) => (
-            <View key={lib.name} style={[styles.licenseRow, i > 0 && styles.divider]}>
+            <View
+              key={lib.name}
+              style={[styles.licenseRow, i > 0 && styles.divider]}
+              accessibilityLabel={`${lib.name}, ${lib.license} license`}
+            >
               <Text style={styles.rowText}>{lib.name}</Text>
               <Text style={styles.licenseText}>{lib.license}</Text>
             </View>
