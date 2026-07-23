@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, getMyGatherings, expressInterest, approveInterest } from '../services/gatherings';
+import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, expressInterest, approveInterest } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -17,18 +17,21 @@ export default function GatheringsScreen({ navigation }) {
   const [tab, setTab] = useState('nearby');
   const [nearby, setNearby] = useState([]);
   const [hosting, setHosting] = useState([]);
+  const [attending, setAttending] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
 
   const load = useCallback(async () => {
-    const [nearbyResults, hostingResults] = await Promise.all([
+    const [nearbyResults, hostingResults, attendingResults] = await Promise.all([
       getNearbyGatherings(),
       getMyGatherings(),
+      getMyAttendingGatherings(),
     ]);
     setNearby(nearbyResults);
     setHosting(hostingResults);
+    setAttending(attendingResults);
 
     const urlEntries = await Promise.all(
       nearbyResults.map(async (g) => {
@@ -127,12 +130,15 @@ export default function GatheringsScreen({ navigation }) {
         <TouchableOpacity style={[styles.tab, tab === 'nearby' && styles.tabActive]} onPress={() => setTab('nearby')}>
           <Text style={[styles.tabText, tab === 'nearby' && styles.tabTextActive]}>{t('gatherings.nearbyTab')}</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.tab, tab === 'attending' && styles.tabActive]} onPress={() => setTab('attending')}>
+          <Text style={[styles.tabText, tab === 'attending' && styles.tabTextActive]}>Attending</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, tab === 'hosting' && styles.tabActive]} onPress={() => setTab('hosting')}>
           <Text style={[styles.tabText, tab === 'hosting' && styles.tabTextActive]}>{t('gatherings.hostingTab')}</Text>
         </TouchableOpacity>
       </View>
 
-      {tab === 'nearby' ? (
+      {tab === 'nearby' && (
         <FlatList
           data={nearby}
           keyExtractor={(item) => item.id}
@@ -204,7 +210,45 @@ export default function GatheringsScreen({ navigation }) {
             );
           }}
         />
-      ) : (
+      )}
+
+      {tab === 'attending' && (
+        <FlatList
+          data={attending}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: spacing.lg }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>✅</Text>
+              <Text style={styles.emptyText}>You're not attending anything yet. Once a host approves your interest, it'll show up here.</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const categoryStyle = categoryStyleFor(item.interest_tag);
+            return (
+              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
+                <View style={styles.cardTopRow}>
+                  <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
+                    <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.title}>{item.title}</Text>
+                    <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
+                  </View>
+                </View>
+                {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+                <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+                <View style={styles.attendingBadge}>
+                  <Text style={styles.attendingBadgeText}>✓ You're going</Text>
+                </View>
+              </View>
+            );
+          }}
+        />
+      )}
+
+      {tab === 'hosting' && (
         <FlatList
           data={hosting}
           keyExtractor={(item) => item.id}
@@ -272,10 +316,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   createButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   createButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  tabRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.sm },
+  tabRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.xs },
   tab: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
+  tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
@@ -303,6 +347,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeeAvatars: { flexDirection: 'row', marginRight: spacing.sm },
   attendeeAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: colors.surfaceElevated },
   attendeesText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  attendingBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
+  attendingBadgeText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   interestButton: { borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },

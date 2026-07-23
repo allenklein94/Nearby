@@ -57,8 +57,6 @@ export async function getNearbyGatherings() {
   const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', userId).single();
   const myInterests = myProfile?.interests ?? [];
 
-  // Approved attendees only — pending interest stays private, same
-  // spirit as a Notice not being visible until it's mutual.
   const { data, error } = await supabase
     .from('gatherings')
     .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))')
@@ -101,6 +99,31 @@ export async function getMyGatherings() {
     return [];
   }
   return data ?? [];
+}
+
+// Gatherings someone else is hosting where the current user's
+// interest was approved — previously there was no dedicated place to
+// see these; they'd just be mixed into the general Nearby browse list
+// and could easily seem to have "disappeared."
+export async function getMyAttendingGatherings() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
+    .eq('user_id', userId)
+    .eq('status', 'approved')
+    .order('id', { ascending: false });
+
+  if (error) {
+    console.error('getMyAttendingGatherings error', error);
+    return [];
+  }
+
+  return (data ?? [])
+    .filter((row) => row.gatherings)
+    .map((row) => row.gatherings);
 }
 
 export async function expressInterest(gatheringId) {
