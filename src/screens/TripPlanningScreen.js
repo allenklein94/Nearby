@@ -68,17 +68,17 @@ export default function TripPlanningScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle}>🧳 Plan a Trip Together</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">🧳 Plan a Trip Together</Text>
           <Text style={styles.headerSubtitle}>Hypothetically, of course — brainstorm with {matchName}.</Text>
 
           {CATEGORIES.map((category) => {
             const categoryIdeas = ideas.filter((i) => i.category === category.key);
             return (
               <View key={category.key} style={styles.section}>
-                <Text style={styles.sectionLabel}>{category.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{category.label}</Text>
 
                 {categoryIdeas.map((idea) => (
-                  <View key={idea.id} style={styles.ideaCard}>
+                  <View key={idea.id} style={styles.ideaCard} accessibilityLabel={`${idea.idea_text}, added by ${idea.profiles?.display_name}`}>
                     <Text style={styles.ideaText}>{idea.idea_text}</Text>
                     <Text style={styles.ideaAddedBy}>— {idea.profiles?.display_name}</Text>
                   </View>
@@ -94,11 +94,14 @@ export default function TripPlanningScreen({ route }) {
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[category.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [category.key]: v }))}
+                    accessibilityLabel={`Add a ${category.label.replace(/[^\w\s]/g, '').trim()} idea`}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
+                    accessibilityLabel={`Add idea to ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
                   </TouchableOpacity>
