@@ -1,8 +1,19 @@
 import { supabase } from './supabase';
 
+// Same class of guard added to expressInterest() earlier — a self-
+// notice shouldn't be reachable through normal UI (every list that
+// calls this excludes the current user already), but that was also
+// true of the gathering interest flow before it wasn't. Since a
+// single self-notice row could trivially satisfy "mutual notice"
+// match logic, this is worth guarding explicitly rather than relying
+// on the UI alone.
 export async function sendNoticeTo(toUserId, isWave = false) {
   const { data: sessionData } = await supabase.auth.getSession();
   const fromUserId = sessionData?.session?.user?.id;
+
+  if (toUserId === fromUserId) {
+    throw new Error('SELF_NOTICE_BLOCKED');
+  }
 
   const { data: inserted, error: insertError } = await supabase
     .from('notices')
