@@ -69,7 +69,7 @@ export default function SharedDecisionsScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle}>🧭 Big Picture Conversations</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">🧭 Big Picture Conversations</Text>
           <Text style={styles.headerSubtitle}>
             Not about finding "correct" answers — just surfacing conversations with {matchName} earlier rather than later.
           </Text>
@@ -78,10 +78,10 @@ export default function SharedDecisionsScreen({ route }) {
             const categoryNotes = notes.filter((n) => n.category === category.key);
             return (
               <View key={category.key} style={styles.section}>
-                <Text style={styles.sectionLabel}>{category.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{category.label}</Text>
 
                 {categoryNotes.map((note) => (
-                  <View key={note.id} style={styles.noteCard}>
+                  <View key={note.id} style={styles.noteCard} accessibilityLabel={`${note.note_text}, added by ${note.profiles?.display_name}`}>
                     <Text style={styles.noteText}>{note.note_text}</Text>
                     <Text style={styles.noteAddedBy}>— {note.profiles?.display_name}</Text>
                   </View>
@@ -97,11 +97,14 @@ export default function SharedDecisionsScreen({ route }) {
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[category.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [category.key]: v }))}
+                    accessibilityLabel={`Share a thought on ${category.label.replace(/[^\w\s]/g, '').trim()}`}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
+                    accessibilityLabel={`Add thought to ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
                   </TouchableOpacity>
