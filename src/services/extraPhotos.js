@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import { Alert } from 'react-native';
 import { supabase } from './supabase';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -22,7 +23,61 @@ function base64ToUint8Array(base64) {
   return new Uint8Array(bytes);
 }
 
+// Same camera-or-library choice as the main profile photo picker,
+// wrapped inside this single function so ProfileScreen doesn't need
+// any changes to get it.
 export async function pickExtraPhoto() {
+  return new Promise((resolve, reject) => {
+    Alert.alert(
+      'Add a Photo',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+        {
+          text: 'Take Photo',
+          onPress: async () => {
+            try {
+              const asset = await takePhotoWithCamera();
+              resolve(asset);
+            } catch (e) {
+              reject(e);
+            }
+          },
+        },
+        {
+          text: 'Choose from Library',
+          onPress: async () => {
+            try {
+              const asset = await pickFromLibrary();
+              resolve(asset);
+            } catch (e) {
+              reject(e);
+            }
+          },
+        },
+      ],
+      { cancelable: true, onDismiss: () => resolve(null) }
+    );
+  });
+}
+
+async function takePhotoWithCamera() {
+  const permission = await ImagePicker.requestCameraPermissionsAsync();
+  if (!permission.granted) {
+    throw new Error('Camera access is needed to take a photo.');
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.8,
+  });
+
+  if (result.canceled) return null;
+  return result.assets[0];
+}
+
+async function pickFromLibrary() {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
     throw new Error('Photo library access is needed to choose a photo.');
@@ -104,11 +159,6 @@ export async function deleteExtraPhoto(photoId, photoUrl) {
   if (error) throw error;
 }
 
-// Swaps a gallery photo into the "main" slot and moves the current main
-// photo into that gallery photo's row — safe now that uploads always
-// use unique, timestamped filenames rather than a fixed one, so no
-// actual file needs to move, only which database row references which
-// path. Both photos keep whatever verification status they already had.
 export async function setAsMainPhoto(userId, extraPhotoId) {
   const { data: extraPhoto, error: extraError } = await supabase
     .from('profile_photos')
@@ -133,8 +183,6 @@ export async function setAsMainPhoto(userId, extraPhotoId) {
 
   if (updateProfileError) throw updateProfileError;
 
-  // Only swap the old main photo into the gallery slot if there was
-  // one — a brand new account might not have an existing main photo.
   if (profile?.photo_url) {
     const { error: updateExtraError } = await supabase
       .from('profile_photos')
@@ -143,8 +191,6 @@ export async function setAsMainPhoto(userId, extraPhotoId) {
 
     if (updateExtraError) throw updateExtraError;
   } else {
-    // No previous main photo — just remove this gallery entry since
-    // its photo has moved to become the main one.
     await supabase.from('profile_photos').delete().eq('id', extraPhotoId);
   }
 }

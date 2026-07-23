@@ -1,8 +1,65 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import { Alert } from 'react-native';
 import { supabase } from './supabase';
 
+// Offers both camera and library — most competitor apps let you take
+// a photo directly rather than only picking from an existing camera
+// roll. Wrapping the choice inside this single function means every
+// existing caller (ProfileScreen, CompleteProfileScreen) gets this
+// for free, with no changes needed on their end.
 export async function pickProfilePhoto() {
+  return new Promise((resolve, reject) => {
+    Alert.alert(
+      'Add a Photo',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel', onPress: () => resolve(null) },
+        {
+          text: 'Take Photo',
+          onPress: async () => {
+            try {
+              const asset = await takePhotoWithCamera();
+              resolve(asset);
+            } catch (e) {
+              reject(e);
+            }
+          },
+        },
+        {
+          text: 'Choose from Library',
+          onPress: async () => {
+            try {
+              const asset = await pickFromLibrary();
+              resolve(asset);
+            } catch (e) {
+              reject(e);
+            }
+          },
+        },
+      ],
+      { cancelable: true, onDismiss: () => resolve(null) }
+    );
+  });
+}
+
+async function takePhotoWithCamera() {
+  const permission = await ImagePicker.requestCameraPermissionsAsync();
+  if (!permission.granted) {
+    throw new Error('Camera access is needed to take a photo.');
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: 0.8,
+  });
+
+  if (result.canceled) return null;
+  return result.assets[0];
+}
+
+async function pickFromLibrary() {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!permission.granted) {
     throw new Error('Photo library access is needed to choose a profile photo.');
