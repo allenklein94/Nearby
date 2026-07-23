@@ -70,7 +70,7 @@ export default function SharedPlaylistScreen({ route }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🎵 Shared Playlist</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">🎵 Shared Playlist</Text>
         <Text style={styles.headerSubtitle}>Build a playlist with {matchName} — add songs you think they'd like.</Text>
       </View>
 
@@ -97,6 +97,8 @@ export default function SharedPlaylistScreen({ route }) {
                 style={styles.spotifyButton}
                 onPress={() => Linking.openURL(`https://open.spotify.com/search/${query}`)}
                 activeOpacity={0.8}
+                accessibilityLabel={`Open ${item.song_title} in Spotify`}
+                accessibilityRole="button"
               >
                 <Text style={styles.spotifyButtonText}>🎧 Open</Text>
               </TouchableOpacity>
@@ -112,6 +114,7 @@ export default function SharedPlaylistScreen({ route }) {
           placeholderTextColor={colors.textTertiary}
           value={songTitle}
           onChangeText={setSongTitle}
+          accessibilityLabel="Song title"
         />
         <TextInput
           style={[styles.input, { flex: 1 }]}
@@ -119,9 +122,17 @@ export default function SharedPlaylistScreen({ route }) {
           placeholderTextColor={colors.textTertiary}
           value={artist}
           onChangeText={setArtist}
+          accessibilityLabel="Artist, optional"
         />
       </View>
-      <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleAdd}
+        disabled={submitting}
+        activeOpacity={0.85}
+        accessibilityLabel={submitting ? 'Adding song' : 'Add song'}
+        accessibilityRole="button"
+      >
         <Text style={styles.addButtonText}>{submitting ? 'Adding...' : '+ Add Song'}</Text>
       </TouchableOpacity>
     </SafeAreaView>
