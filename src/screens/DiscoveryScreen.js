@@ -258,6 +258,9 @@ export default function DiscoveryScreen({ navigation }) {
                   </TouchableOpacity>
                 )}
               </View>
+              <View style={styles.proximityRow}>
+                <Text style={styles.proximityText}>📍 Within about 35 feet</Text>
+              </View>
               <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
               {item.sharedInterests?.length > 0 && (
                 <Text style={styles.sharedText}>
@@ -370,6 +373,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   name: { ...typography.headline, color: colors.textPrimary },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   compatText: { fontSize: 11, fontWeight: '700' },
+  proximityRow: { marginBottom: spacing.xs },
+  proximityText: { ...typography.small, color: colors.textTertiary },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.md },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
