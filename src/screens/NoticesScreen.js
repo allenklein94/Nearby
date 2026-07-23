@@ -71,11 +71,17 @@ export default function NoticesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('notices.title')}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('notices.title')}</Text>
       </View>
 
       {!premium && (
-        <TouchableOpacity style={styles.upsell} onPress={() => navigation.navigate('Paywall')} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.upsell}
+          onPress={() => navigation.navigate('Paywall')}
+          activeOpacity={0.85}
+          accessibilityLabel={`${t('notices.unlockPremium')}. ${t('notices.unlockPremiumText')}`}
+          accessibilityRole="button"
+        >
           <Text style={styles.upsellIcon}>✨</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.upsellTitle}>{t('notices.unlockPremium')}</Text>
@@ -97,34 +103,46 @@ export default function NoticesScreen({ navigation }) {
             <Text style={styles.emptyText}>{t('notices.emptyText')}</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.card, item.is_super && styles.waveCard]}
-            onPress={() => navigation.navigate('ViewProfile', { userId: item.from_user })}
-            activeOpacity={0.85}
-          >
-            {photoUrls[item.id] ? (
-              <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]} />
-            )}
-            {item.is_super && (
-              <View style={styles.waveBadge}>
-                <Text style={styles.waveBadgeText}>👋 Wave</Text>
+        renderItem={({ item }) => {
+          const score = compatScores[item.id];
+          const hasScore = score !== null && score !== undefined;
+          const label = [
+            item.profiles?.display_name,
+            item.is_super ? 'sent you a Wave' : 'noticed you',
+            hasScore ? `${score} percent compatible` : null,
+          ].filter(Boolean).join(', ');
+
+          return (
+            <TouchableOpacity
+              style={[styles.card, item.is_super && styles.waveCard]}
+              onPress={() => navigation.navigate('ViewProfile', { userId: item.from_user })}
+              activeOpacity={0.85}
+              accessibilityLabel={label}
+              accessibilityRole="button"
+            >
+              {photoUrls[item.id] ? (
+                <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]} />
+              )}
+              {item.is_super && (
+                <View style={styles.waveBadge}>
+                  <Text style={styles.waveBadgeText}>👋 Wave</Text>
+                </View>
+              )}
+              {hasScore && (
+                <View style={[styles.compatBadge, { borderColor: compatibilityColor(score) }]}>
+                  <Text style={[styles.compatText, { color: compatibilityColor(score) }]}>
+                    {score}%
+                  </Text>
+                </View>
+              )}
+              <View style={styles.cardFooter}>
+                <Text style={styles.name} numberOfLines={1}>{item.profiles?.display_name}</Text>
               </View>
-            )}
-            {compatScores[item.id] !== null && compatScores[item.id] !== undefined && (
-              <View style={[styles.compatBadge, { borderColor: compatibilityColor(compatScores[item.id]) }]}>
-                <Text style={[styles.compatText, { color: compatibilityColor(compatScores[item.id]) }]}>
-                  {compatScores[item.id]}%
-                </Text>
-              </View>
-            )}
-            <View style={styles.cardFooter}>
-              <Text style={styles.name} numberOfLines={1}>{item.profiles?.display_name}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          );
+        }}
       />
     </SafeAreaView>
   );

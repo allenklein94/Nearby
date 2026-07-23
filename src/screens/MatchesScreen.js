@@ -161,7 +161,7 @@ export default function MatchesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('matches.title')}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('matches.title')}</Text>
       </View>
       <FlatList
         data={matches}
@@ -177,11 +177,14 @@ export default function MatchesScreen({ navigation }) {
         renderItem={({ item }) => {
           const other = otherPersonFor(item);
           const report = generateCompatibilityReport(myProfile, other);
+          const subLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : 'Tap to chat';
           return (
             <View style={styles.card}>
               <TouchableOpacity
                 onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}
                 activeOpacity={0.85}
+                accessibilityLabel={`View ${other?.display_name}'s profile`}
+                accessibilityRole="button"
               >
                 {photoUrls[item.id] ? (
                   <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
@@ -193,6 +196,9 @@ export default function MatchesScreen({ navigation }) {
                 style={styles.cardInfo}
                 onPress={() => navigation.navigate('Chat', { matchId: item.id })}
                 activeOpacity={0.85}
+                accessibilityLabel={`${other?.display_name}, ${subLabel}${report.score !== null ? `, ${report.score} percent compatible` : ''}`}
+                accessibilityRole="button"
+                accessibilityHint="Opens chat"
               >
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{other?.display_name}</Text>
@@ -200,6 +206,8 @@ export default function MatchesScreen({ navigation }) {
                     <TouchableOpacity
                       style={[styles.compatBadge, { borderColor: compatibilityColor(report.score) }]}
                       onPress={() => showCompatibilityReport(item)}
+                      accessibilityLabel={`${report.score} percent compatible, view why`}
+                      accessibilityRole="button"
                     >
                       <Text style={[styles.compatText, { color: compatibilityColor(report.score) }]}>
                         {report.score}% · Why?
@@ -207,9 +215,7 @@ export default function MatchesScreen({ navigation }) {
                     </TouchableOpacity>
                   )}
                 </View>
-                <Text style={styles.sub}>
-                  {item.gatherings?.title ? `Met through ${item.gatherings.title}` : t('matches.tapToChat')}
-                </Text>
+                <Text style={styles.sub}>{subLabel}</Text>
               </TouchableOpacity>
               <Text style={styles.chevron}>›</Text>
             </View>
