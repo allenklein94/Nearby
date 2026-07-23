@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator } from 'react-native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio } from 'expo-av';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
@@ -99,6 +100,7 @@ export default function ChatScreen({ route, navigation }) {
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const posthog = usePostHog();
+  const headerHeight = useHeaderHeight();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [userId, setUserId] = useState(null);
@@ -606,7 +608,11 @@ export default function ChatScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+      >
         <FlatList
           ref={listRef}
           data={messages}
