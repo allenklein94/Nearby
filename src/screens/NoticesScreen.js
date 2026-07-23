@@ -68,6 +68,14 @@ export default function NoticesScreen({ navigation }) {
     return colors.textTertiary;
   }
 
+  function handleCardPress(item) {
+    if (premium) {
+      navigation.navigate('ViewProfile', { userId: item.from_user });
+    } else {
+      navigation.navigate('Paywall');
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -106,24 +114,35 @@ export default function NoticesScreen({ navigation }) {
         renderItem={({ item }) => {
           const score = compatScores[item.id];
           const hasScore = score !== null && score !== undefined;
-          const label = [
-            item.profiles?.display_name,
-            item.is_super ? 'sent you a Wave' : 'noticed you',
-            hasScore ? `${score} percent compatible` : null,
-          ].filter(Boolean).join(', ');
+          const label = premium
+            ? [
+                item.profiles?.display_name,
+                item.is_super ? 'sent you a Wave' : 'noticed you',
+                hasScore ? `${score} percent compatible` : null,
+              ].filter(Boolean).join(', ')
+            : `Someone ${item.is_super ? 'sent you a Wave' : 'noticed you'}${hasScore ? `, ${score} percent compatible` : ''}, unlock Premium to see who`;
 
           return (
             <TouchableOpacity
               style={[styles.card, item.is_super && styles.waveCard]}
-              onPress={() => navigation.navigate('ViewProfile', { userId: item.from_user })}
+              onPress={() => handleCardPress(item)}
               activeOpacity={0.85}
               accessibilityLabel={label}
               accessibilityRole="button"
             >
               {photoUrls[item.id] ? (
-                <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
+                <Image
+                  source={{ uri: photoUrls[item.id] }}
+                  style={styles.avatar}
+                  blurRadius={premium ? 0 : 25}
+                />
               ) : (
                 <View style={[styles.avatar, styles.avatarPlaceholder]} />
+              )}
+              {!premium && (
+                <View style={styles.lockOverlay}>
+                  <Text style={styles.lockIcon}>🔒</Text>
+                </View>
               )}
               {item.is_super && (
                 <View style={styles.waveBadge}>
@@ -138,7 +157,9 @@ export default function NoticesScreen({ navigation }) {
                 </View>
               )}
               <View style={styles.cardFooter}>
-                <Text style={styles.name} numberOfLines={1}>{item.profiles?.display_name}</Text>
+                <Text style={styles.name} numberOfLines={1}>
+                  {premium ? item.profiles?.display_name : 'Someone noticed you'}
+                </Text>
               </View>
             </TouchableOpacity>
           );
@@ -186,6 +207,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   avatar: { width: '100%', height: '75%', backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
+  lockOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, height: '75%',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  lockIcon: { fontSize: 28 },
   waveBadge: {
     position: 'absolute', top: spacing.xs, left: spacing.xs,
     backgroundColor: colors.primary, paddingHorizontal: spacing.sm, paddingVertical: 2,
