@@ -146,7 +146,8 @@ const getStyles = (colors) => StyleSheet.create({
   rowLabel: { color: colors.textSecondary, fontSize: 14 },
   rowValueMatch: { color: colors.success, fontWeight: '700', fontSize: 14 },
   differRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
-  differText: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
+  differText: { color
+    : colors.textTertiary, fontSize: 13, marginTop: 2 },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl, lineHeight: 20 },
   closeButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   closeButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
