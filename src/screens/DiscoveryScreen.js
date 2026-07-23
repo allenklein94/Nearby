@@ -222,36 +222,40 @@ export default function DiscoveryScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.cardTopRow}>
-              <TouchableOpacity
-                style={styles.tappableProfileArea}
-                onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId })}
-                activeOpacity={0.85}
-              >
-                <View>
-                  <Image
-                    source={{ uri: photoUrls[item.id] || 'https://placehold.co/100' }}
-                    style={styles.avatar}
-                  />
-                  {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
-                </View>
-                <View style={styles.cardInfo}>
-                  <View style={styles.nameRow}>
-                    <Text style={styles.name}>{item.profiles?.display_name}</Text>
-                    {item.compatibilityScore !== null && (
-                      <TouchableOpacity
-                        style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
-                        onPress={() => showCompatibilityReport(item)}
-                      >
-                        <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
-                          {item.compatibilityScore}% · Why?
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
-                </View>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.tappableProfileArea}
+              onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId })}
+              activeOpacity={0.9}
+            >
+              <View>
+                <Image
+                  source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }}
+                  style={styles.avatar}
+                />
+                {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
+              </View>
+            </TouchableOpacity>
+            <View style={styles.cardBody}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{item.profiles?.display_name}</Text>
+                {item.compatibilityScore !== null && (
+                  <TouchableOpacity
+                    style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
+                    onPress={() => showCompatibilityReport(item)}
+                  >
+                    <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>
+                      {item.compatibilityScore}% · Why?
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
+              {item.sharedInterests?.length > 0 && (
+                <Text style={styles.sharedText}>
+                  ✨ {t('discovery.youBothLike')} {item.sharedInterests.slice(0, 3).join(', ')}
+                  {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} ${t('discovery.moreCount')}` : ''}
+                </Text>
+              )}
               <View style={styles.cardActions}>
                 <TouchableOpacity style={styles.noticeButton} onPress={() => sendNotice(item.otherUserId)} activeOpacity={0.85}>
                   <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
@@ -267,14 +271,6 @@ export default function DiscoveryScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
-            {item.sharedInterests?.length > 0 && (
-              <View style={styles.sharedRow}>
-                <Text style={styles.sharedText}>
-                  ✨ {t('discovery.youBothLike')} {item.sharedInterests.slice(0, 3).join(', ')}
-                  {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} ${t('discovery.moreCount')}` : ''}
-                </Text>
-              </View>
-            )}
           </View>
         )}
       />
@@ -324,51 +320,50 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
-    padding: spacing.md,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
     ...shadow.card,
   },
-  cardTopRow: { flexDirection: 'row', alignItems: 'center' },
-  tappableProfileArea: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  avatar: { width: 60, height: 60, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
+  tappableProfileArea: { width: '100%' },
+  avatar: { width: '100%', height: 280, backgroundColor: colors.surfaceElevated },
   onlineDot: {
-    position: 'absolute', bottom: 2, right: spacing.md - 2,
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: colors.success, borderWidth: 2, borderColor: colors.surface,
+    position: 'absolute', top: spacing.md, right: spacing.md,
+    width: 16, height: 16, borderRadius: 8,
+    backgroundColor: colors.success, borderWidth: 2.5, borderColor: colors.surface,
   },
-  cardInfo: { flex: 1 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs },
-  name: { ...typography.bodyBold, color: colors.textPrimary },
-  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
-  compatText: { fontSize: 10, fontWeight: '700' },
-  bio: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  cardActions: { alignItems: 'center', gap: spacing.xs },
+  cardBody: { padding: spacing.md },
+  nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
+  name: { ...typography.headline, color: colors.textPrimary },
+  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  compatText: { fontSize: 11, fontWeight: '700' },
+  bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
+  sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.md },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   noticeButton: {
     backgroundColor: colors.primary,
     borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+    flex: 1,
+    alignItems: 'center',
   },
-  noticeButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  noticeButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   waveButton: {
     backgroundColor: colors.surfaceElevated,
     borderRadius: radius.full,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.primary,
+    flex: 1,
+    alignItems: 'center',
   },
-  waveButtonText: { color: colors.primary, fontWeight: '700', fontSize: 12 },
+  waveButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
-  moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
-  sharedRow: {
-    marginTop: spacing.sm, paddingTop: spacing.sm,
-    borderTopWidth: 1, borderTopColor: colors.border,
-  },
-  sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
+  moreButtonText: { color: colors.textTertiary, fontSize: 20, fontWeight: '700' },
   undoBanner: {
     position: 'absolute', bottom: spacing.lg, left: spacing.lg, right: spacing.lg,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
