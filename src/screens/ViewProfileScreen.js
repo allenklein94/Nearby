@@ -93,7 +93,12 @@ export default function ViewProfileScreen({ route, navigation }) {
     navigation.setOptions({
       headerRight: () =>
         !ownProfile ? (
-          <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+          <TouchableOpacity
+            onPress={() => setReportModalVisible(true)}
+            style={{ paddingHorizontal: spacing.sm }}
+            accessibilityLabel={`Report or block ${data?.display_name || 'this person'}`}
+            accessibilityRole="button"
+          >
             <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
           </TouchableOpacity>
         ) : null,
@@ -165,8 +170,12 @@ export default function ViewProfileScreen({ route, navigation }) {
               const index = Math.round(e.nativeEvent.contentOffset.x / width);
               setActivePhotoIndex(index);
             }}
-            renderItem={({ item }) => (
-              <Image source={{ uri: item.signedUrl }} style={[styles.photo, { width }]} />
+            renderItem={({ item, index }) => (
+              <Image
+                source={{ uri: item.signedUrl }}
+                style={[styles.photo, { width }]}
+                accessibilityLabel={`${profile.display_name}'s photo ${index + 1} of ${photos.length}`}
+              />
             )}
           />
         ) : (
@@ -176,7 +185,7 @@ export default function ViewProfileScreen({ route, navigation }) {
         )}
 
         {photos.length > 1 && (
-          <View style={styles.dotsRow}>
+          <View style={styles.dotsRow} accessible={false}>
             {photos.map((_, i) => (
               <View key={i} style={[styles.dot, i === activePhotoIndex && styles.dotActive]} />
             ))}
@@ -185,7 +194,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
         <View style={styles.content}>
           <View style={styles.nameRow}>
-            <Text style={styles.name}>
+            <Text style={styles.name} accessibilityRole="header">
               {profile.display_name}{age ? `, ${age}` : ''}
             </Text>
             {compatibilityReport?.score !== null && compatibilityReport?.score !== undefined && (
@@ -193,6 +202,8 @@ export default function ViewProfileScreen({ route, navigation }) {
                 style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityReport.score) }]}
                 onPress={() => setCompatModalVisible(true)}
                 activeOpacity={0.7}
+                accessibilityLabel={`${compatibilityReport.score} percent match, view why`}
+                accessibilityRole="button"
               >
                 <Text style={[styles.compatText, { color: compatibilityColor(compatibilityReport.score) }]}>
                   {compatibilityReport.score}% Match · Why?
@@ -235,7 +246,7 @@ export default function ViewProfileScreen({ route, navigation }) {
           {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
 
           {prompts.length > 0 && prompts.map((prompt, i) => (
-            <View key={i} style={styles.promptCard}>
+            <View key={i} style={styles.promptCard} accessibilityLabel={`${prompt.question}: ${prompt.answer}`}>
               <Text style={styles.promptQuestion}>{prompt.question}</Text>
               <Text style={styles.promptAnswer}>{prompt.answer}</Text>
             </View>
@@ -243,7 +254,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
           {profile.interests?.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>{t('viewProfile.interests')}</Text>
+              <Text style={styles.sectionLabel} accessibilityRole="header">{t('viewProfile.interests')}</Text>
               <View style={styles.chipsWrap}>
                 {profile.interests.map((interest) => (
                   <View key={interest} style={styles.interestChip}>
@@ -256,7 +267,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
           {filledDetails.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>{t('viewProfile.details')}</Text>
+              <Text style={styles.sectionLabel} accessibilityRole="header">{t('viewProfile.details')}</Text>
               <View style={styles.chipsWrap}>
                 {filledDetails.map((item, i) => (
                   <View key={i} style={styles.basicChip}>
@@ -269,7 +280,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
           {filledBasics.length > 0 && (
             <>
-              <Text style={styles.sectionLabel}>{t('viewProfile.basics')}</Text>
+              <Text style={styles.sectionLabel} accessibilityRole="header">{t('viewProfile.basics')}</Text>
               <View style={styles.chipsWrap}>
                 {filledBasics.map((item, i) => (
                   <View key={i} style={styles.basicChip}>
