@@ -2,7 +2,7 @@ export const translations = {
   en: {
     onboarding: {
       slide1Title: 'Nearby',
-      slide1Text: "You've probably noticed someone nearby you wanted to talk to, but didn't. Nearby gives you a low-pressure way to let them know.",
+      slide1Text: "You've probably noticed someone nearby you wanted to talk to, but didn't. Nearby gives you a low-pressure way to let them know — when you're genuinely close, roughly across a room or closer, not just in the same neighborhood.",
       slide2Title: 'Send a quiet Notice',
       slide2Text: "If you're interested, send a silent \"Notice.\" They're never told unless they notice you back — no rejection, no pressure. Feeling bolder? A \"Wave\" lets them know right away.",
       slide3Title: 'Show your personality',
@@ -33,7 +33,7 @@ export const translations = {
       notice: 'Notice',
       wave: 'Wave',
       emptyTitle: 'Nothing yet',
-      emptyText: "Keep the app open while you're out and about — we'll let you know when you cross paths with someone.",
+      emptyText: "Keep the app open while you're out and about — we'll let you know when you're genuinely close to someone (about 35 feet, roughly the same room), not just in the same area.",
       radiusInfoTitle: 'How Crossed Paths works',
       radiusInfoText: "You'll show up on someone's Crossed Paths list if you've been within about 35 feet of each other in the last several minutes, with the app open. Your exact location is never shown to anyone.",
       youBothLike: 'You both like',
@@ -180,7 +180,7 @@ export const translations = {
   es: {
     onboarding: {
       slide1Title: 'Nearby',
-      slide1Text: 'Seguramente has notado a alguien cerca a quien querías hablarle, pero no lo hiciste. Nearby te da una forma discreta de hacérselo saber.',
+      slide1Text: 'Seguramente has notado a alguien cerca a quien querías hablarle, pero no lo hiciste. Nearby te da una forma discreta de hacérselo saber — cuando estás realmente cerca, más o menos al otro lado de una habitación, no solo en el mismo vecindario.',
       slide2Title: 'Envía un Aviso silencioso',
       slide2Text: 'Si te interesa, envía un "Aviso" silencioso. Nunca se les informa a menos que también te avisen a ti — sin rechazo, sin presión. ¿Te sientes más audaz? Un "Saludo" les avisa de inmediato.',
       slide3Title: 'Muestra tu personalidad',
@@ -211,7 +211,7 @@ export const translations = {
       notice: 'Avisar',
       wave: 'Saludar',
       emptyTitle: 'Nada por aquí todavía',
-      emptyText: 'Mantén la app abierta mientras estás fuera — te avisaremos cuando te cruces con alguien.',
+      emptyText: 'Mantén la app abierta mientras estás fuera — te avisaremos cuando estés realmente cerca de alguien (unos 10 metros, la misma habitación), no solo en la misma zona.',
       radiusInfoTitle: 'Cómo funciona Caminos Cruzados',
       radiusInfoText: 'Aparecerás en la lista de Caminos Cruzados de alguien si has estado a unos 10 metros el uno del otro en los últimos minutos, con la app abierta. Tu ubicación exacta nunca se muestra a nadie.',
       youBothLike: 'A ambos les gusta',
