@@ -73,6 +73,8 @@ function VoiceBubble({ audioPath, isMe, colors }) {
       style={[voiceStyles.bubble, isMe ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
       onPress={togglePlay}
       activeOpacity={0.8}
+      accessibilityLabel={`${isMe ? 'Your' : 'Their'} voice message, ${playing ? 'playing, tap to pause' : 'tap to play'}`}
+      accessibilityRole="button"
     >
       {loading ? (
         <ActivityIndicator size="small" color={isMe ? '#fff' : colors.primary} />
@@ -180,7 +182,11 @@ export default function ChatScreen({ route, navigation }) {
       navigation.setOptions({
         headerShown: true,
         headerTitle: () => (
-          <TouchableOpacity onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}
+            accessibilityLabel={`View ${other?.display_name}'s profile`}
+            accessibilityRole="button"
+          >
             <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
               {other?.display_name || 'Chat'}
             </Text>
@@ -191,13 +197,28 @@ export default function ChatScreen({ route, navigation }) {
         headerShadowVisible: false,
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity onPress={showTogetherMenu} style={{ paddingHorizontal: spacing.sm }}>
+            <TouchableOpacity
+              onPress={showTogetherMenu}
+              style={{ paddingHorizontal: spacing.sm }}
+              accessibilityLabel="Do something together"
+              accessibilityRole="button"
+            >
               <Text style={{ fontSize: 18 }}>🎯</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setCheckInModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => setCheckInModalVisible(true)}
+              style={{ paddingHorizontal: spacing.sm }}
+              accessibilityLabel="Set up a date safety check-in"
+              accessibilityRole="button"
+            >
               <Text style={{ fontSize: 18 }}>🛡️</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={showChatOptions} style={{ paddingHorizontal: spacing.sm }}>
+            <TouchableOpacity
+              onPress={showChatOptions}
+              style={{ paddingHorizontal: spacing.sm }}
+              accessibilityLabel="Chat options"
+              accessibilityRole="button"
+            >
               <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
             </TouchableOpacity>
           </View>
@@ -537,7 +558,13 @@ export default function ChatScreen({ route, navigation }) {
               <Text style={styles.emptyEmoji}>💬</Text>
               <Text style={styles.emptyText}>{emptyStateText}</Text>
               {isUserPremium && (
-                <TouchableOpacity style={styles.icebreakerEmptyButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
+                <TouchableOpacity
+                  style={styles.icebreakerEmptyButton}
+                  onPress={getIcebreaker}
+                  disabled={loadingIcebreaker}
+                  accessibilityLabel="Get an AI icebreaker suggestion"
+                  accessibilityRole="button"
+                >
                   {loadingIcebreaker ? (
                     <ActivityIndicator color={colors.primary} />
                   ) : (
@@ -547,43 +574,59 @@ export default function ChatScreen({ route, navigation }) {
               )}
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={[styles.bubbleRow, item.sender_id === userId ? styles.rowRight : styles.rowLeft]}>
-              {item.audio_url ? (
-                <VoiceBubble audioPath={item.audio_url} isMe={item.sender_id === userId} colors={colors} />
-              ) : item.gif_url ? (
-                <Image source={{ uri: item.gif_url }} style={styles.gifBubble} resizeMode="cover" />
-              ) : (
-                <TouchableOpacity
-                  style={[styles.bubble, item.sender_id === userId ? styles.myBubble : styles.theirBubble]}
-                  onLongPress={() => item.sender_id !== userId && item.body && handleTranslate(item.body)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.bubbleText, item.sender_id === userId && styles.myBubbleText]}>{item.body}</Text>
-                  {item.sender_id !== userId && item.body ? (
-                    <Text style={styles.translateHint}>{t('chat.holdToTranslate')}</Text>
-                  ) : null}
-                </TouchableOpacity>
-              )}
-              <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
-              {lastMyMessage?.id === item.id && item.read_at && (
-                <Text style={styles.seenText}>Seen</Text>
-              )}
-            </View>
-          )}
+          renderItem={({ item }) => {
+            const isMe = item.sender_id === userId;
+            const senderLabel = isMe ? 'You' : (otherUser?.display_name || 'They');
+            return (
+              <View style={[styles.bubbleRow, isMe ? styles.rowRight : styles.rowLeft]}>
+                {item.audio_url ? (
+                  <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
+                ) : item.gif_url ? (
+                  <Image
+                    source={{ uri: item.gif_url }}
+                    style={styles.gifBubble}
+                    resizeMode="cover"
+                    accessibilityLabel={`${senderLabel} sent a GIF`}
+                  />
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
+                    onLongPress={() => !isMe && item.body && handleTranslate(item.body)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={`${senderLabel} said: ${item.body}, sent at ${formatTime(item.created_at)}`}
+                    accessibilityHint={!isMe ? 'Double tap and hold to translate' : undefined}
+                  >
+                    <Text style={[styles.bubbleText, isMe && styles.myBubbleText]}>{item.body}</Text>
+                    {!isMe && item.body ? (
+                      <Text style={styles.translateHint}>{t('chat.holdToTranslate')}</Text>
+                    ) : null}
+                  </TouchableOpacity>
+                )}
+                <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
+                {lastMyMessage?.id === item.id && item.read_at && (
+                  <Text style={styles.seenText}>Seen</Text>
+                )}
+              </View>
+            );
+          }}
         />
 
         {isStalled && messages.length > 0 && isUserPremium && (
           <View style={styles.stalledBanner}>
             <Text style={styles.stalledText}>{t('chat.stalledText')}</Text>
-            <TouchableOpacity onPress={getIcebreaker} disabled={loadingIcebreaker}>
+            <TouchableOpacity
+              onPress={getIcebreaker}
+              disabled={loadingIcebreaker}
+              accessibilityLabel="Get an AI conversation suggestion"
+              accessibilityRole="button"
+            >
               <Text style={styles.stalledLink}>{loadingIcebreaker ? '...' : t('chat.stalledLink')}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {otherIsTyping && !isRecording && (
-          <View style={styles.typingRow}>
+          <View style={styles.typingRow} accessibilityLiveRegion="polite">
             <View style={styles.typingBubble}>
               <Text style={styles.typingText}>{otherUser?.display_name} is typing...</Text>
             </View>
@@ -595,18 +638,34 @@ export default function ChatScreen({ route, navigation }) {
             <View style={styles.recordingIndicator} />
             <Text style={styles.recordingTime}>{formatRecordingTime(recordingSeconds)}</Text>
             <Text style={styles.recordingHint}>Recording voice note...</Text>
-            <TouchableOpacity style={styles.stopButton} onPress={handleStopRecording}>
+            <TouchableOpacity
+              style={styles.stopButton}
+              onPress={handleStopRecording}
+              accessibilityLabel="Stop recording and send voice message"
+              accessibilityRole="button"
+            >
               <Text style={styles.stopButtonText}>Send</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.inputRow}>
             {isUserPremium && (
-              <TouchableOpacity style={styles.icebreakerButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
+              <TouchableOpacity
+                style={styles.icebreakerButton}
+                onPress={getIcebreaker}
+                disabled={loadingIcebreaker}
+                accessibilityLabel="Get an AI icebreaker suggestion"
+                accessibilityRole="button"
+              >
                 {loadingIcebreaker ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.icebreakerButtonText}>✨</Text>}
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.gifButton} onPress={() => setGifPickerVisible(true)}>
+            <TouchableOpacity
+              style={styles.gifButton}
+              onPress={() => setGifPickerVisible(true)}
+              accessibilityLabel="Send a GIF"
+              accessibilityRole="button"
+            >
               <Text style={styles.gifButtonText}>GIF</Text>
             </TouchableOpacity>
             <TextInput
@@ -616,13 +675,25 @@ export default function ChatScreen({ route, navigation }) {
               value={text}
               onChangeText={handleTextChange}
               multiline
+              accessibilityLabel="Message input"
             />
             {text.trim() ? (
-              <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={sendMessage}
+                accessibilityLabel="Send message"
+                accessibilityRole="button"
+              >
                 <Text style={styles.sendText}>{t('chat.send')}</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity style={styles.micButton} onPress={handleStartRecording} disabled={uploadingVoice}>
+              <TouchableOpacity
+                style={styles.micButton}
+                onPress={handleStartRecording}
+                disabled={uploadingVoice}
+                accessibilityLabel="Record a voice message"
+                accessibilityRole="button"
+              >
                 {uploadingVoice ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={{ fontSize: 18 }}>🎤</Text>}
               </TouchableOpacity>
             )}
