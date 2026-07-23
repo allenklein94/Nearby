@@ -607,7 +607,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xs },
   galleryItem: {
-    width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden',
+    width: 108, height: 108, borderRadius: radius.md, overflow: 'hidden',
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
   },
   galleryImage: { width: '100%', height: '100%' },
@@ -617,7 +617,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   pendingOverlayText: { color: '#fff', fontSize: 9, textAlign: 'center', fontWeight: '700' },
   addPhotoButton: {
-    width: 72, height: 72, borderRadius: radius.md,
+    width: 108, height: 108, borderRadius: radius.md,
     borderWidth: 1.5, borderColor: colors.border, borderStyle: 'dashed',
     justifyContent: 'center', alignItems: 'center',
   },
