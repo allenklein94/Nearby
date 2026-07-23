@@ -119,9 +119,6 @@ export async function getMyAttendingGatherings() {
 
   const now = new Date();
 
-  // Sort so upcoming gatherings lead, with the soonest first — past
-  // ones (already attended) sink to the bottom instead of cluttering
-  // the top of the list indefinitely.
   return (data ?? [])
     .filter((row) => row.gatherings)
     .map((row) => row.gatherings)
@@ -166,9 +163,23 @@ export async function getFellowAttendees(gatheringId) {
   return (data ?? []).filter((row) => row.profiles && !excludedUserIds.has(row.user_id));
 }
 
+// Guards against expressing interest in your own gathering client-side
+// too, so the person gets a clear message instead of a raw database
+// error — the database trigger is the real, authoritative protection,
+// this is just a friendlier first line of defense.
 export async function expressInterest(gatheringId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
+
+  const { data: gathering } = await supabase
+    .from('gatherings')
+    .select('host_id')
+    .eq('id', gatheringId)
+    .single();
+
+  if (gathering?.host_id === userId) {
+    throw new Error("You can't express interest in your own gathering.");
+  }
 
   const { error } = await supabase
     .from('gathering_interest')
