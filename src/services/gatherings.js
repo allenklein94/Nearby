@@ -122,28 +122,42 @@ export async function getMyAttendingGatherings() {
     .map((row) => row.gatherings);
 }
 
-// Fellow attendees at a gathering — approved people other than
-// yourself and the host, so you can connect directly with people you
-// share this specific gathering with, not just the host. This is the
-// "shared gathering attendance" equivalent of physically crossing
-// paths with someone.
+// Fellow attendees at a gathering — now correctly excludes anyone
+// blocked in either direction, not just yourself. Without this, two
+// people who'd blocked each other could still see each other and get
+// a Notice button in "Who else is going," completely undermining the
+// block.
 export async function getFellowAttendees(gatheringId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
+
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('blocked_id')
+    .eq('blocker_id', userId);
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('blocker_id')
+    .eq('blocked_id', userId);
+
+  const excludedUserIds = new Set([
+    userId,
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
 
   const { data, error } = await supabase
     .from('gathering_interest')
     .select('user_id, profiles(id, display_name, photo_url)')
     .eq('gathering_id', gatheringId)
-    .eq('status', 'approved')
-    .neq('user_id', userId);
+    .eq('status', 'approved');
 
   if (error) {
     console.error('getFellowAttendees error', error);
     return [];
   }
 
-  return (data ?? []).filter((row) => row.profiles);
+  return (data ?? []).filter((row) => row.profiles && !excludedUserIds.has(row.user_id));
 }
 
 export async function expressInterest(gatheringId) {
