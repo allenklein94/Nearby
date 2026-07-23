@@ -119,16 +119,28 @@ export default function CompleteProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl }}>
-        <Text style={styles.header}>{t('completeProfile.header')}</Text>
+        <Text style={styles.header} accessibilityRole="header">{t('completeProfile.header')}</Text>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>18+ ONLY</Text>
         </View>
 
         <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
-        <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder={t('completeProfile.displayNamePlaceholder')} placeholderTextColor={colors.textTertiary} />
+        <TextInput
+          style={styles.input}
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder={t('completeProfile.displayNamePlaceholder')}
+          placeholderTextColor={colors.textTertiary}
+          accessibilityLabel="Display name"
+        />
 
         <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => setShowPicker(true)}
+          accessibilityLabel={birthdate ? `Date of birth, ${birthdate.toLocaleDateString()}` : 'Date of birth, not set'}
+          accessibilityRole="button"
+        >
           <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
             {birthdate ? birthdate.toLocaleDateString() : t('completeProfile.tapToSelect')}
           </Text>
@@ -148,7 +160,13 @@ export default function CompleteProfileScreen() {
         )}
 
         <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
-        <TouchableOpacity style={styles.photoPicker} onPress={choosePhoto} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.photoPicker}
+          onPress={choosePhoto}
+          activeOpacity={0.85}
+          accessibilityLabel={photoAsset ? 'Change your profile photo' : 'Choose a profile photo, required'}
+          accessibilityRole="button"
+        >
           {photoAsset ? (
             <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
           ) : (
@@ -168,6 +186,9 @@ export default function CompleteProfileScreen() {
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => toggleInterest(interest)}
                 activeOpacity={0.8}
+                accessibilityLabel={interest}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
               >
                 <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
               </TouchableOpacity>
@@ -175,7 +196,14 @@ export default function CompleteProfileScreen() {
           })}
         </View>
 
-        <TouchableOpacity style={styles.consentRow} onPress={() => setAgreedToTerms(!agreedToTerms)} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.consentRow}
+          onPress={() => setAgreedToTerms(!agreedToTerms)}
+          activeOpacity={0.7}
+          accessibilityLabel="Agree to Terms of Service and Privacy Policy"
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: agreedToTerms }}
+        >
           <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
             {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
           </View>
@@ -192,6 +220,8 @@ export default function CompleteProfileScreen() {
           onPress={submit}
           disabled={submitting}
           activeOpacity={0.85}
+          accessibilityLabel={submitting ? t('completeProfile.saving') : t('completeProfile.continue')}
+          accessibilityRole="button"
         >
           <Text style={styles.buttonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
         </TouchableOpacity>
