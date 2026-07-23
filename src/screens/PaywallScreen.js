@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Linking, Platform } from 'react-native';
 import { getOfferings, purchasePackage, restorePurchases, isPremium } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -61,6 +61,15 @@ export default function PaywallScreen({ navigation }) {
     }
   }
 
+  function openNativeSubscriptionManagement() {
+    const url = Platform.OS === 'ios'
+      ? 'itms-apps://apps.apple.com/account/subscriptions'
+      : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Could not open', 'Please open your device Settings app and look under Subscriptions to manage your plan.');
+    });
+  }
+
   const isAnnual = (pkg) => pkg.identifier.toLowerCase().includes('annual') || pkg.identifier.toLowerCase().includes('year');
 
   return (
@@ -88,6 +97,18 @@ export default function PaywallScreen({ navigation }) {
           <Text style={styles.alreadyPremiumEmoji}>🎉</Text>
           <Text style={styles.alreadyPremiumTitle}>You're already Premium</Text>
           <Text style={styles.alreadyPremiumText}>All these features are unlocked on your account.</Text>
+          <TouchableOpacity
+            style={styles.manageButton}
+            onPress={openNativeSubscriptionManagement}
+            activeOpacity={0.85}
+            accessibilityLabel="Manage your subscription plan"
+            accessibilityRole="button"
+          >
+            <Text style={styles.manageButtonText}>Manage Subscription</Text>
+          </TouchableOpacity>
+          <Text style={styles.manageHelperText}>
+            Change your plan, switch between monthly and annual, or cancel — all handled directly by {Platform.OS === 'ios' ? 'Apple' : 'Google'} through your device settings.
+          </Text>
         </View>
       ) : offering ? (
         offering.availablePackages.map((pkg) => {
@@ -169,7 +190,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   alreadyPremiumEmoji: { fontSize: 40, marginBottom: spacing.sm },
   alreadyPremiumTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
-  alreadyPremiumText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  alreadyPremiumText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
+  manageButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, paddingHorizontal: spacing.xl, ...shadow.button },
+  manageButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  manageHelperText: { ...typography.small, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md, lineHeight: 16 },
   planButton: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
