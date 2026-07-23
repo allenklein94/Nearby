@@ -30,7 +30,15 @@ function AccordionField({ field, value, expanded, onToggle, children }) {
 
   return (
     <View style={styles.wrap}>
-      <TouchableOpacity style={styles.header} onPress={onToggle} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.header}
+        onPress={onToggle}
+        activeOpacity={0.7}
+        accessibilityLabel={`${field.label}${value ? `, currently ${value}` : ', not set'}`}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        accessibilityHint={expanded ? 'Double tap to collapse' : 'Double tap to expand and edit'}
+      >
         <Text style={styles.headerLabel}>{field.icon} {field.label}</Text>
         <View style={styles.headerRight}>
           {value ? <Text style={styles.headerValue} numberOfLines={1}>{value}</Text> : null}
@@ -330,13 +338,25 @@ export default function ProfileScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={styles.settingsGear}>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('profile.title')}</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Settings')}
+            style={styles.settingsGear}
+            accessibilityLabel="Settings"
+            accessibilityRole="button"
+          >
             <Text style={styles.settingsGearText}>⚙️</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.photoWrap} onPress={changePhoto} disabled={uploading} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.photoWrap}
+          onPress={changePhoto}
+          disabled={uploading}
+          activeOpacity={0.85}
+          accessibilityLabel={photoUrl ? 'Change your main profile photo' : 'Add a main profile photo'}
+          accessibilityRole="button"
+        >
           {photoUrl ? (
             <Image source={{ uri: photoUrl }} style={styles.photoPreview} />
           ) : (
@@ -353,14 +373,16 @@ export default function ProfileScreen({ navigation }) {
           </Text>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('profile.morePhotos')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.morePhotos')}</Text>
         <View style={styles.galleryGrid}>
-          {extraPhotos.map((photo) => (
+          {extraPhotos.map((photo, index) => (
             <TouchableOpacity
               key={photo.id}
               style={styles.galleryItem}
               onLongPress={() => confirmDeleteExtraPhoto(photo)}
               activeOpacity={0.85}
+              accessibilityLabel={`Additional photo ${index + 1}${!photo.photo_verified ? ', pending review' : ''}`}
+              accessibilityHint="Double tap and hold for options to set as main photo or remove"
             >
               {photo.signedUrl && <Image source={{ uri: photo.signedUrl }} style={styles.galleryImage} />}
               {!photo.photo_verified && (
@@ -371,7 +393,14 @@ export default function ProfileScreen({ navigation }) {
             </TouchableOpacity>
           ))}
           {extraPhotos.length < MAX_EXTRA_PHOTOS && (
-            <TouchableOpacity style={styles.addPhotoButton} onPress={addExtraPhoto} disabled={uploadingExtra} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.addPhotoButton}
+              onPress={addExtraPhoto}
+              disabled={uploadingExtra}
+              activeOpacity={0.85}
+              accessibilityLabel="Add another photo"
+              accessibilityRole="button"
+            >
               <Text style={styles.addPhotoText}>{uploadingExtra ? '...' : '+'}</Text>
             </TouchableOpacity>
           )}
@@ -380,7 +409,7 @@ export default function ProfileScreen({ navigation }) {
 
         <View style={styles.formCard}>
           <Text style={styles.label}>{t('profile.displayName')}</Text>
-          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} />
+          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} accessibilityLabel="Display name" />
 
           <Text style={styles.label}>{t('profile.bio')}</Text>
           <TextInput
@@ -389,31 +418,50 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={setBio}
             multiline
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Bio"
           />
         </View>
 
-        <Text style={styles.sectionLabel}>{t('profile.prompts')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.prompts')}</Text>
         <View style={styles.formCard}>
           {prompts.map((prompt, index) => (
-            <TouchableOpacity key={index} style={styles.promptCard} onPress={() => openEditPrompt(index)} activeOpacity={0.85}>
+            <TouchableOpacity
+              key={index}
+              style={styles.promptCard}
+              onPress={() => openEditPrompt(index)}
+              activeOpacity={0.85}
+              accessibilityLabel={`Prompt: ${prompt.question}, answer: ${prompt.answer}. Double tap to edit`}
+              accessibilityRole="button"
+            >
               <View style={{ flex: 1 }}>
                 <Text style={styles.promptQuestion}>{prompt.question}</Text>
                 <Text style={styles.promptAnswer}>{prompt.answer}</Text>
               </View>
-              <TouchableOpacity onPress={() => removePrompt(index)} style={styles.promptRemove}>
+              <TouchableOpacity
+                onPress={() => removePrompt(index)}
+                style={styles.promptRemove}
+                accessibilityLabel={`Remove this prompt`}
+                accessibilityRole="button"
+              >
                 <Text style={styles.promptRemoveText}>✕</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           ))}
           {prompts.length < MAX_PROMPTS && (
-            <TouchableOpacity style={styles.addPromptButton} onPress={openAddPrompt} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.addPromptButton}
+              onPress={openAddPrompt}
+              activeOpacity={0.85}
+              accessibilityLabel="Add a prompt"
+              accessibilityRole="button"
+            >
               <Text style={styles.addPromptText}>{t('profile.addPrompt')}</Text>
             </TouchableOpacity>
           )}
           <Text style={styles.helperText}>Add up to {MAX_PROMPTS} prompts to show more of your personality.</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>{t('profile.aboutYou')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.aboutYou')}</Text>
         <View style={styles.formCard}>
           <Text style={styles.label}>{t('profile.pronounsLabel')}</Text>
           <TextInput
@@ -422,6 +470,7 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={setPronouns}
             placeholder={t('profile.pronounsPlaceholder')}
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Pronouns"
           />
 
           <Text style={styles.label}>{t('profile.genderLabel')}</Text>
@@ -431,6 +480,7 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={setGender}
             placeholder={t('profile.optionalPlaceholder')}
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Gender"
           />
 
           <Text style={styles.label}>{t('profile.orientationLabel')}</Text>
@@ -440,10 +490,11 @@ export default function ProfileScreen({ navigation }) {
             onChangeText={setSexualOrientation}
             placeholder={t('profile.optionalPlaceholder')}
             placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Sexual orientation"
           />
         </View>
 
-        <Text style={styles.sectionLabel}>{t('profile.detailsSection')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.detailsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'text').map((field) => (
             <AccordionField
@@ -460,12 +511,13 @@ export default function ProfileScreen({ navigation }) {
                 placeholder={field.placeholder}
                 placeholderTextColor={colors.textTertiary}
                 autoFocus
+                accessibilityLabel={field.label}
               />
             </AccordionField>
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>{t('profile.basicsSection')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.basicsSection')}</Text>
         <View style={styles.formCard}>
           {BASICS_FIELDS.filter((f) => f.type === 'select').map((field) => (
             <AccordionField
@@ -484,6 +536,9 @@ export default function ProfileScreen({ navigation }) {
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => setBasicField(field.key, option)}
                       activeOpacity={0.8}
+                      accessibilityLabel={option}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
                     >
                       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
                     </TouchableOpacity>
@@ -494,7 +549,7 @@ export default function ProfileScreen({ navigation }) {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel}>{t('profile.interestsSection')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
         <View style={styles.chipsWrap}>
           {INTEREST_OPTIONS.map((interest) => {
             const selected = interests.includes(interest);
@@ -504,6 +559,9 @@ export default function ProfileScreen({ navigation }) {
                 style={[styles.chip, selected && styles.chipSelected]}
                 onPress={() => toggleInterest(interest)}
                 activeOpacity={0.8}
+                accessibilityLabel={interest}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
               >
                 <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
               </TouchableOpacity>
@@ -511,11 +569,24 @@ export default function ProfileScreen({ navigation }) {
           })}
         </View>
 
-        <TouchableOpacity style={styles.strengthsButton} onPress={showStrengths} disabled={loadingStrengths} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.strengthsButton}
+          onPress={showStrengths}
+          disabled={loadingStrengths}
+          activeOpacity={0.85}
+          accessibilityLabel="Generate a note about why someone would be lucky to date you"
+          accessibilityRole="button"
+        >
           <Text style={styles.strengthsButtonText}>{loadingStrengths ? 'Thinking...' : '✨ Why someone would be lucky to date you'}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={save} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={save}
+          activeOpacity={0.85}
+          accessibilityLabel="Save changes"
+          accessibilityRole="button"
+        >
           <Text style={styles.buttonText}>{t('profile.save')}</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -523,8 +594,12 @@ export default function ProfileScreen({ navigation }) {
       <Modal visible={questionPickerVisible} animationType="slide" onRequestClose={() => setQuestionPickerVisible(false)}>
         <SafeAreaView style={styles.container}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Choose a Prompt</Text>
-            <TouchableOpacity onPress={() => setQuestionPickerVisible(false)}>
+            <Text style={styles.modalTitle} accessibilityRole="header">Choose a Prompt</Text>
+            <TouchableOpacity
+              onPress={() => setQuestionPickerVisible(false)}
+              accessibilityLabel="Cancel"
+              accessibilityRole="button"
+            >
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -533,7 +608,12 @@ export default function ProfileScreen({ navigation }) {
             keyExtractor={(item) => item}
             contentContainerStyle={{ padding: spacing.lg }}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.questionRow} onPress={() => selectQuestion(item)}>
+              <TouchableOpacity
+                style={styles.questionRow}
+                onPress={() => selectQuestion(item)}
+                accessibilityLabel={item}
+                accessibilityRole="button"
+              >
                 <Text style={styles.questionText}>{item}</Text>
                 <Text style={styles.chevron}>›</Text>
               </TouchableOpacity>
@@ -545,7 +625,7 @@ export default function ProfileScreen({ navigation }) {
       <Modal visible={answerModalVisible} animationType="slide" transparent onRequestClose={() => setAnswerModalVisible(false)}>
         <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetQuestion}>{draftQuestion}</Text>
+            <Text style={styles.sheetQuestion} accessibilityRole="header">{draftQuestion}</Text>
             <TextInput
               style={[styles.input, { height: 90, textAlignVertical: 'top', marginTop: spacing.md }]}
               placeholder="Your answer..."
@@ -554,11 +634,23 @@ export default function ProfileScreen({ navigation }) {
               onChangeText={setDraftAnswer}
               multiline
               autoFocus
+              accessibilityLabel="Your answer"
             />
-            <TouchableOpacity style={styles.button} onPress={saveDraftPrompt} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={saveDraftPrompt}
+              activeOpacity={0.85}
+              accessibilityLabel="Save prompt answer"
+              accessibilityRole="button"
+            >
               <Text style={styles.buttonText}>Save</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setAnswerModalVisible(false)} style={{ marginTop: spacing.md }}>
+            <TouchableOpacity
+              onPress={() => setAnswerModalVisible(false)}
+              style={{ marginTop: spacing.md }}
+              accessibilityLabel="Cancel"
+              accessibilityRole="button"
+            >
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
