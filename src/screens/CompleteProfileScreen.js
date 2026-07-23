@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
@@ -12,6 +12,13 @@ import { typography, spacing, radius } from '../theme';
 const MIN_AGE = 18;
 const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
 const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
+
+const INTEREST_OPTIONS = [
+  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
+  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
+  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
+  'Volunteering', 'Meditation', 'Running',
+];
 
 function calculateAge(birthdate) {
   const today = new Date();
@@ -32,11 +39,18 @@ export default function CompleteProfileScreen() {
   const [birthdate, setBirthdate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
   const [photoAsset, setPhotoAsset] = useState(null);
+  const [interests, setInterests] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const maxSelectableDate = new Date();
   maxSelectableDate.setFullYear(maxSelectableDate.getFullYear() - MIN_AGE);
+
+  function toggleInterest(interest) {
+    setInterests((prev) =>
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+    );
+  }
 
   async function choosePhoto() {
     try {
@@ -78,6 +92,7 @@ export default function CompleteProfileScreen() {
       id: userId,
       display_name: displayName.trim(),
       birthdate: birthdate.toISOString().split('T')[0],
+      interests,
       terms_accepted_at: new Date().toISOString(),
     });
 
@@ -103,70 +118,90 @@ export default function CompleteProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>{t('completeProfile.header')}</Text>
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>18+ ONLY</Text>
-      </View>
-
-      <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
-      <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder={t('completeProfile.displayNamePlaceholder')} placeholderTextColor={colors.textTertiary} />
-
-      <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
-      <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
-        <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
-          {birthdate ? birthdate.toLocaleDateString() : t('completeProfile.tapToSelect')}
-        </Text>
-      </TouchableOpacity>
-      {showPicker && (
-        <DateTimePicker
-          value={birthdate || maxSelectableDate}
-          mode="date"
-          maximumDate={maxSelectableDate}
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          themeVariant={isDark ? 'dark' : 'light'}
-          onChange={(event, selectedDate) => {
-            setShowPicker(Platform.OS === 'ios');
-            if (selectedDate) setBirthdate(selectedDate);
-          }}
-        />
-      )}
-
-      <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
-      <TouchableOpacity style={styles.photoPicker} onPress={choosePhoto} activeOpacity={0.85}>
-        {photoAsset ? (
-          <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
-        ) : (
-          <Text style={styles.photoPickerText}>📷{'\n'}Tap to choose a photo</Text>
-        )}
-      </TouchableOpacity>
-      <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
-
-      <TouchableOpacity style={styles.consentRow} onPress={() => setAgreedToTerms(!agreedToTerms)} activeOpacity={0.7}>
-        <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-          {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl }}>
+        <Text style={styles.header}>{t('completeProfile.header')}</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>18+ ONLY</Text>
         </View>
-        <Text style={styles.consentText}>
-          {t('completeProfile.agreeText')}{' '}
-          <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>{t('completeProfile.termsOfService')}</Text>
-          {' '}{t('completeProfile.andText')}{' '}
-          <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>{t('completeProfile.privacyPolicy')}</Text>
-        </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.button, !agreedToTerms && styles.buttonDisabled]}
-        onPress={submit}
-        disabled={submitting}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.buttonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
-      </TouchableOpacity>
+        <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
+        <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholder={t('completeProfile.displayNamePlaceholder')} placeholderTextColor={colors.textTertiary} />
+
+        <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+          <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
+            {birthdate ? birthdate.toLocaleDateString() : t('completeProfile.tapToSelect')}
+          </Text>
+        </TouchableOpacity>
+        {showPicker && (
+          <DateTimePicker
+            value={birthdate || maxSelectableDate}
+            mode="date"
+            maximumDate={maxSelectableDate}
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            themeVariant={isDark ? 'dark' : 'light'}
+            onChange={(event, selectedDate) => {
+              setShowPicker(Platform.OS === 'ios');
+              if (selectedDate) setBirthdate(selectedDate);
+            }}
+          />
+        )}
+
+        <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
+        <TouchableOpacity style={styles.photoPicker} onPress={choosePhoto} activeOpacity={0.85}>
+          {photoAsset ? (
+            <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
+          ) : (
+            <Text style={styles.photoPickerText}>📷{'\n'}Tap to choose a photo</Text>
+          )}
+        </TouchableOpacity>
+        <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
+
+        <Text style={styles.label}>Interests (Optional)</Text>
+        <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with.</Text>
+        <View style={styles.chipsWrap}>
+          {INTEREST_OPTIONS.map((interest) => {
+            const selected = interests.includes(interest);
+            return (
+              <TouchableOpacity
+                key={interest}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => toggleInterest(interest)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <TouchableOpacity style={styles.consentRow} onPress={() => setAgreedToTerms(!agreedToTerms)} activeOpacity={0.7}>
+          <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+            {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <Text style={styles.consentText}>
+            {t('completeProfile.agreeText')}{' '}
+            <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>{t('completeProfile.termsOfService')}</Text>
+            {' '}{t('completeProfile.andText')}{' '}
+            <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>{t('completeProfile.privacyPolicy')}</Text>
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, !agreedToTerms && styles.buttonDisabled]}
+          onPress={submit}
+          disabled={submitting}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.buttonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl },
+  container: { flex: 1, backgroundColor: colors.background },
   header: { ...typography.title, color: colors.textPrimary },
   badge: {
     alignSelf: 'flex-start',
@@ -188,6 +223,16 @@ const getStyles = (colors) => StyleSheet.create({
   photoPreview: { width: '100%', height: '100%' },
   photoPickerText: { color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.md, fontSize: 13, lineHeight: 20 },
   helperText: { ...typography.small, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.sm },
+  interestsHelper: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.sm },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
   consentRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: spacing.lg, paddingHorizontal: spacing.xs },
   checkbox: {
     width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.textTertiary,
@@ -197,7 +242,7 @@ const getStyles = (colors) => StyleSheet.create({
   checkmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
   consentText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 19 },
   link: { color: colors.primary, textDecorationLine: 'underline' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl },
+  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.xl },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });
