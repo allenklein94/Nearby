@@ -176,7 +176,7 @@ export default function GatheringsScreen({ navigation }) {
           <Text style={[styles.tabText, tab === 'nearby' && styles.tabTextActive]}>{t('gatherings.nearbyTab')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, tab === 'attending' && styles.tabActive]} onPress={() => setTab('attending')}>
-          <Text style={[styles.tabText, tab === 'attending' && styles.tabTextActive]}>Attending</Text>
+          <Text style={[styles.tabText, tab === 'attending' && styles.tabTextActive]}>{t('gatherings.attendingTab')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.tab, tab === 'hosting' && styles.tabActive]} onPress={() => setTab('hosting')}>
           <Text style={[styles.tabText, tab === 'hosting' && styles.tabTextActive]}>{t('gatherings.hostingTab')}</Text>
@@ -266,7 +266,7 @@ export default function GatheringsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>✅</Text>
-              <Text style={styles.emptyText}>You're not attending anything yet. Once a host approves your interest, it'll show up here.</Text>
+              <Text style={styles.emptyText}>{t('gatherings.emptyAttending')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -289,18 +289,18 @@ export default function GatheringsScreen({ navigation }) {
                   {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
                   <View style={styles.attendingBadge}>
-                    <Text style={styles.attendingBadgeText}>✓ You're going</Text>
+                    <Text style={styles.attendingBadgeText}>{t('gatherings.youreGoing')}</Text>
                   </View>
                 </TouchableOpacity>
 
                 {isExpanded && (
                   <View style={styles.fellowSection}>
-                    <Text style={styles.fellowSectionLabel}>Who else is going</Text>
+                    <Text style={styles.fellowSectionLabel}>{t('gatherings.whoElseGoing')}</Text>
                     {loadingFellows && !fellowAttendees[item.id] && (
-                      <Text style={styles.emptyText}>Loading...</Text>
+                      <Text style={styles.emptyText}>{t('gatherings.loadingText')}</Text>
                     )}
                     {fellows.length === 0 && fellowAttendees[item.id] && (
-                      <Text style={styles.fellowEmptyText}>No one else approved yet.</Text>
+                      <Text style={styles.fellowEmptyText}>{t('gatherings.noOneElseApproved')}</Text>
                     )}
                     {fellows.map((fellow) => (
                       <View key={fellow.user_id} style={styles.fellowRow}>
@@ -317,14 +317,14 @@ export default function GatheringsScreen({ navigation }) {
                           <Text style={styles.fellowName}>{fellow.profiles?.display_name}</Text>
                         </TouchableOpacity>
                         {sentNoticeTo[fellow.user_id] ? (
-                          <Text style={styles.noticeSentText}>Sent ✓</Text>
+                          <Text style={styles.noticeSentText}>{t('gatherings.noticeSent')}</Text>
                         ) : (
                           <TouchableOpacity
                             style={styles.fellowNoticeButton}
                             onPress={() => handleSendNoticeToFellow(fellow.user_id)}
                             activeOpacity={0.85}
                           >
-                            <Text style={styles.fellowNoticeButtonText}>Notice</Text>
+                            <Text style={styles.fellowNoticeButtonText}>{t('gatherings.sendNotice')}</Text>
                           </TouchableOpacity>
                         )}
                       </View>
