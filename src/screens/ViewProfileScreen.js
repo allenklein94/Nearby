@@ -8,6 +8,7 @@ import { getRecentIntentionChangeCount } from '../services/intentionHistory';
 import { intentionLabel } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -34,7 +35,7 @@ function isNewHere(createdAt) {
   return daysSinceJoined <= NEW_HERE_DAYS;
 }
 
-export default function ViewProfileScreen({ route }) {
+export default function ViewProfileScreen({ route, navigation }) {
   const { userId } = route.params;
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -44,7 +45,9 @@ export default function ViewProfileScreen({ route }) {
   const [loading, setLoading] = useState(true);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [compatibilityReport, setCompatibilityReport] = useState(null);
+  const [compatModalVisible, setCompatModalVisible] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [intentionChangeCount, setIntentionChangeCount] = useState(0);
 
   useEffect(() => {
@@ -78,11 +81,23 @@ export default function ViewProfileScreen({ route }) {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
-    if (myId && myId !== userId && data) {
+    const ownProfile = myId === userId;
+    setIsOwnProfile(ownProfile);
+
+    if (myId && !ownProfile && data) {
       const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
       const report = generateCompatibilityReport(myProfile, data);
       setCompatibilityReport(report);
     }
+
+    navigation.setOptions({
+      headerRight: () =>
+        !ownProfile ? (
+          <TouchableOpacity onPress={() => setReportModalVisible(true)} style={{ paddingHorizontal: spacing.sm }}>
+            <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
+          </TouchableOpacity>
+        ) : null,
+    });
   }
 
   if (loading) {
@@ -176,7 +191,7 @@ export default function ViewProfileScreen({ route }) {
             {compatibilityReport?.score !== null && compatibilityReport?.score !== undefined && (
               <TouchableOpacity
                 style={[styles.compatBadge, { borderColor: compatibilityColor(compatibilityReport.score) }]}
-                onPress={() => setReportModalVisible(true)}
+                onPress={() => setCompatModalVisible(true)}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.compatText, { color: compatibilityColor(compatibilityReport.score) }]}>
@@ -268,11 +283,24 @@ export default function ViewProfileScreen({ route }) {
       </ScrollView>
 
       <CompatibilityReportModal
-        visible={reportModalVisible}
-        onClose={() => setReportModalVisible(false)}
+        visible={compatModalVisible}
+        onClose={() => setCompatModalVisible(false)}
         report={compatibilityReport}
         theirName={profile.display_name}
       />
+
+      {!isOwnProfile && (
+        <ReportBlockModal
+          visible={reportModalVisible}
+          onClose={() => setReportModalVisible(false)}
+          onBlocked={() => {
+            setReportModalVisible(false);
+            navigation.goBack();
+          }}
+          reportedUserId={userId}
+          reportedUserName={profile.display_name}
+        />
+      )}
     </SafeAreaView>
   );
 }
