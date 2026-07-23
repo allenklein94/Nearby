@@ -5,6 +5,8 @@ import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { generateCompatibilityReport } from '../services/compatibility';
 import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidenceMode';
+import { isPremium } from '../services/purchases';
+import { checkNoticeLimit, checkWaveLimit } from '../services/noticeLimits';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -33,6 +35,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [undoState, setUndoState] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [myUserId, setMyUserId] = useState(null);
+  const [isUserPremium, setIsUserPremium] = useState(false);
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
   const [showConfidenceBanner, setShowConfidenceBanner] = useState(false);
@@ -58,6 +61,8 @@ export default function DiscoveryScreen({ navigation }) {
     const otherUserIds = results.map((item) => item.otherUserId);
     const statuses = await getOnlineStatuses(otherUserIds);
     setOnlineStatuses(statuses);
+
+    isPremium().then(setIsUserPremium).catch(() => setIsUserPremium(false));
 
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
@@ -118,6 +123,19 @@ export default function DiscoveryScreen({ navigation }) {
   }
 
   async function sendNotice(toUserId, isWave = false) {
+    const limitCheck = isWave ? await checkWaveLimit(isUserPremium) : await checkNoticeLimit(isUserPremium);
+    if (!limitCheck.allowed) {
+      Alert.alert(
+        isWave ? 'Weekly Wave used' : 'Daily limit reached',
+        limitCheck.reason,
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+        ]
+      );
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const { data: sessionData } = await supabase.auth.getSession();
     const fromUserId = sessionData?.session?.user?.id;
