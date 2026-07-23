@@ -99,6 +99,7 @@ export default function ChatScreen({ route, navigation }) {
   const [text, setText] = useState('');
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
+  const [gatheringTitle, setGatheringTitle] = useState(null);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
   const [checkInModalVisible, setCheckInModalVisible] = useState(false);
@@ -168,13 +169,14 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, a:profiles!matches_user_a_fkey(id, display_name), b:profiles!matches_user_b_fkey(id, display_name)')
+      .select('user_a, user_b, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name), b:profiles!matches_user_b_fkey(id, display_name)')
       .eq('id', matchId)
       .single();
 
     if (match) {
       const other = match.user_a === myId ? match.b : match.a;
       setOtherUser(other);
+      setGatheringTitle(match.gatherings?.title || null);
       navigation.setOptions({
         headerShown: true,
         headerTitle: () => (
@@ -517,6 +519,9 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   const lastMyMessage = [...messages].reverse().find((m) => m.sender_id === userId);
+  const emptyStateText = gatheringTitle
+    ? `Say hi — you're both attending "${gatheringTitle}"!`
+    : t('chat.sayHi');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -530,7 +535,7 @@ export default function ChatScreen({ route, navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💬</Text>
-              <Text style={styles.emptyText}>{t('chat.sayHi')}</Text>
+              <Text style={styles.emptyText}>{emptyStateText}</Text>
               {isUserPremium && (
                 <TouchableOpacity style={styles.icebreakerEmptyButton} onPress={getIcebreaker} disabled={loadingIcebreaker}>
                   {loadingIcebreaker ? (
@@ -656,7 +661,7 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
-  emptyText: { ...typography.body, color: colors.textTertiary },
+  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   icebreakerEmptyButton: { marginTop: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary },
   icebreakerEmptyText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
   bubbleRow: { marginBottom: spacing.md, maxWidth: '78%' },
