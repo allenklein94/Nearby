@@ -163,10 +163,11 @@ export async function getFellowAttendees(gatheringId) {
   return (data ?? []).filter((row) => row.profiles && !excludedUserIds.has(row.user_id));
 }
 
-// Guards against expressing interest in your own gathering client-side
-// too, so the person gets a clear message instead of a raw database
-// error — the database trigger is the real, authoritative protection,
-// this is just a friendlier first line of defense.
+// Now guards against both self-interest AND blocking — the browse
+// list already excludes both cases from view, but that's a UI-layer
+// protection only. Same class of gap as the self-interest issue found
+// earlier: a timing edge case (blocking someone after browsing but
+// before tapping "I'm Interested") could otherwise slip through.
 export async function expressInterest(gatheringId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -179,6 +180,24 @@ export async function expressInterest(gatheringId) {
 
   if (gathering?.host_id === userId) {
     throw new Error("You can't express interest in your own gathering.");
+  }
+
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', userId)
+    .eq('blocked_id', gathering?.host_id)
+    .maybeSingle();
+
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', gathering?.host_id)
+    .eq('blocked_id', userId)
+    .maybeSingle();
+
+  if (blockedByMe || blockedMe) {
+    throw new Error("You can't express interest in this gathering.");
   }
 
   const { error } = await supabase
