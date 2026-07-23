@@ -7,6 +7,7 @@ import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
 import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
 import { unmatch } from '../services/matchActions';
+import { toggleReaction, getReactionsForMatch } from '../services/messageReactions';
 import { randomExperiment } from '../constants/relationshipExperiments';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
@@ -20,6 +21,7 @@ import { typography, spacing, radius } from '../theme';
 const MAX_RECORDING_SECONDS = 60;
 const TYPING_IDLE_MS = 3000;
 const STALLED_THRESHOLD_DAYS = 3;
+const REACTION_EMOJIS = ['❤️', '😂', '👍', '😮', '😢'];
 
 function VoiceBubble({ audioPath, isMe, colors }) {
   const [sound, setSound] = useState(null);
@@ -112,6 +114,7 @@ export default function ChatScreen({ route, navigation }) {
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const [isStalled, setIsStalled] = useState(false);
+  const [reactions, setReactions] = useState({});
   const listRef = useRef(null);
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
@@ -133,6 +136,16 @@ export default function ChatScreen({ route, navigation }) {
     } else {
       setIsStalled(false);
     }
+  }
+
+  async function loadReactions() {
+    const data = await getReactionsForMatch(matchId);
+    const grouped = {};
+    data.forEach((r) => {
+      if (!grouped[r.message_id]) grouped[r.message_id] = [];
+      grouped[r.message_id].push(r);
+    });
+    setReactions(grouped);
   }
 
   async function markMessagesAsRead(myId) {
@@ -227,6 +240,7 @@ export default function ChatScreen({ route, navigation }) {
     }
 
     await loadMessages();
+    await loadReactions();
     await markMessagesAsRead(myId);
 
     const channel = supabase
@@ -247,6 +261,17 @@ export default function ChatScreen({ route, navigation }) {
         { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
         (payload) => {
           setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
+        }
+      )
+      .subscribe();
+
+    const reactionChannel = supabase
+      .channel(`reactions:${matchId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'message_reactions' },
+        () => {
+          loadReactions();
         }
       )
       .subscribe();
@@ -315,6 +340,31 @@ export default function ChatScreen({ route, navigation }) {
         },
       ]
     );
+  }
+
+  function showReactionPicker(messageId) {
+    const myExisting = (reactions[messageId] ?? []).find((r) => r.user_id === userId);
+    Alert.alert(
+      myExisting ? 'Change Reaction' : 'React',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        ...REACTION_EMOJIS.map((emoji) => ({
+          text: `${emoji}${myExisting?.emoji === emoji ? ' (tap to remove)' : ''}`,
+          onPress: () => handleReact(messageId, emoji),
+        })),
+      ]
+    );
+  }
+
+  async function handleReact(messageId, emoji) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await toggleReaction(messageId, emoji);
+      loadReactions();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   async function handleTranslate(messageText) {
@@ -539,6 +589,16 @@ export default function ChatScreen({ route, navigation }) {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  function reactionSummary(messageId) {
+    const list = reactions[messageId];
+    if (!list || list.length === 0) return null;
+    const counts = {};
+    list.forEach((r) => {
+      counts[r.emoji] = (counts[r.emoji] || 0) + 1;
+    });
+    return Object.entries(counts).map(([emoji, count]) => (count > 1 ? `${emoji}${count}` : emoji)).join(' ');
+  }
+
   const lastMyMessage = [...messages].reverse().find((m) => m.sender_id === userId);
   const emptyStateText = gatheringTitle
     ? `Say hi — you're both attending "${gatheringTitle}"!`
@@ -577,29 +637,48 @@ export default function ChatScreen({ route, navigation }) {
           renderItem={({ item }) => {
             const isMe = item.sender_id === userId;
             const senderLabel = isMe ? 'You' : (otherUser?.display_name || 'They');
+            const reactionText = reactionSummary(item.id);
             return (
               <View style={[styles.bubbleRow, isMe ? styles.rowRight : styles.rowLeft]}>
                 {item.audio_url ? (
-                  <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
+                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={1}>
+                    <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
+                  </TouchableOpacity>
                 ) : item.gif_url ? (
-                  <Image
-                    source={{ uri: item.gif_url }}
-                    style={styles.gifBubble}
-                    resizeMode="cover"
-                    accessibilityLabel={`${senderLabel} sent a GIF`}
-                  />
+                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.9}>
+                    <Image
+                      source={{ uri: item.gif_url }}
+                      style={styles.gifBubble}
+                      resizeMode="cover"
+                      accessibilityLabel={`${senderLabel} sent a GIF`}
+                    />
+                  </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity
-                    style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
-                    onLongPress={() => !isMe && item.body && handleTranslate(item.body)}
-                    activeOpacity={0.85}
-                    accessibilityLabel={`${senderLabel} said: ${item.body}, sent at ${formatTime(item.created_at)}`}
-                    accessibilityHint={!isMe ? 'Double tap and hold to translate' : undefined}
-                  >
-                    <Text style={[styles.bubbleText, isMe && styles.myBubbleText]}>{item.body}</Text>
+                  <View style={styles.bubbleWithTranslate}>
+                    <TouchableOpacity
+                      style={[styles.bubble, isMe ? styles.myBubble : styles.theirBubble]}
+                      onLongPress={() => showReactionPicker(item.id)}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${senderLabel} said: ${item.body}, sent at ${formatTime(item.created_at)}`}
+                      accessibilityHint="Double tap and hold to react"
+                    >
+                      <Text style={[styles.bubbleText, isMe && styles.myBubbleText]}>{item.body}</Text>
+                    </TouchableOpacity>
                     {!isMe && item.body ? (
-                      <Text style={styles.translateHint}>{t('chat.holdToTranslate')}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleTranslate(item.body)}
+                        style={styles.translateButton}
+                        accessibilityLabel="Translate this message"
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.translateButtonText}>🌐</Text>
+                      </TouchableOpacity>
                     ) : null}
+                  </View>
+                )}
+                {reactionText && (
+                  <TouchableOpacity onPress={() => showReactionPicker(item.id)} style={styles.reactionBadge}>
+                    <Text style={styles.reactionBadgeText}>{reactionText}</Text>
                   </TouchableOpacity>
                 )}
                 <Text style={styles.timestamp}>{formatTime(item.created_at)}</Text>
@@ -738,13 +817,20 @@ const getStyles = (colors) => StyleSheet.create({
   bubbleRow: { marginBottom: spacing.md, maxWidth: '78%' },
   rowLeft: { alignSelf: 'flex-start' },
   rowRight: { alignSelf: 'flex-end' },
+  bubbleWithTranslate: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   bubble: { padding: spacing.md, borderRadius: radius.lg },
   myBubble: { backgroundColor: colors.primary, borderBottomRightRadius: 4 },
   theirBubble: { backgroundColor: colors.surface, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
   bubbleText: { color: colors.textPrimary, fontSize: 15, lineHeight: 20 },
   myBubbleText: { color: '#fff' },
-  translateHint: { color: colors.textTertiary, fontSize: 9, marginTop: 2, fontStyle: 'italic' },
+  translateButton: { padding: 4 },
+  translateButtonText: { fontSize: 14 },
   gifBubble: { width: 180, height: 180, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated },
+  reactionBadge: {
+    alignSelf: 'flex-start', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    borderRadius: radius.full, paddingHorizontal: 8, paddingVertical: 2, marginTop: 2, marginHorizontal: 4,
+  },
+  reactionBadgeText: { fontSize: 12 },
   timestamp: { ...typography.small, color: colors.textTertiary, marginTop: 4, marginHorizontal: 4 },
   seenText: { ...typography.small, color: colors.textTertiary, marginTop: 2, marginHorizontal: 4, fontStyle: 'italic' },
   stalledBanner: {
