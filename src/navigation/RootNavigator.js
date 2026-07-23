@@ -34,15 +34,11 @@ import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Gatherings now leads the tab order — real, shared-interest events
-// people can show up to together, positioned as the primary way
-// people meet, with 1:1 proximity matching (Nearby) as a natural
-// complement rather than the sole starting point.
 const TAB_ICONS = {
-  Gatherings: { active: 'calendar', inactive: 'calendar-outline' },
-  Nearby: { active: 'location', inactive: 'location-outline' },
-  Notices: { active: 'hand-left', inactive: 'hand-left-outline' },
-  Matches: { active: 'heart', inactive: 'heart-outline' },
+  Gatherings: { active: 'calendar', inactive: 'calendar-outline', label: 'Gatherings' },
+  Nearby: { active: 'location', inactive: 'location-outline', label: 'Nearby, Crossed Paths' },
+  Notices: { active: 'hand-left', inactive: 'hand-left-outline', label: 'Notices' },
+  Matches: { active: 'heart', inactive: 'heart-outline', label: 'Matches' },
 };
 
 function ProfileTabIcon({ focused, size, colors, photoUrl }) {
@@ -66,7 +62,7 @@ const profileIconStyles = StyleSheet.create({
   image: {},
 });
 
-function BouncyTabButton({ children, onPress }) {
+function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityState }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   function handlePress(event) {
@@ -83,6 +79,10 @@ function BouncyTabButton({ children, onPress }) {
       onPress={handlePress}
       activeOpacity={1}
       style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+      accessible={true}
+      accessibilityRole="tab"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
         {children}
@@ -118,7 +118,12 @@ function MainTabs() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
-        tabBarButton: (props) => <BouncyTabButton {...props} />,
+        tabBarButton: (props) => (
+          <BouncyTabButton
+            {...props}
+            accessibilityLabel={route.name === 'Profile' ? 'Your Profile' : TAB_ICONS[route.name]?.label}
+          />
+        ),
         tabBarIcon: ({ focused, size }) => {
           if (route.name === 'Profile') {
             return <ProfileTabIcon focused={focused} size={size} colors={colors} photoUrl={myPhotoUrl} />;

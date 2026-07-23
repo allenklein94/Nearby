@@ -165,20 +165,43 @@ export default function GatheringsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('gatherings.title')}</Text>
-        <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('CreateGathering')}>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('gatherings.title')}</Text>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => navigation.navigate('CreateGathering')}
+          accessibilityLabel="Host a new gathering"
+          accessibilityRole="button"
+        >
           <Text style={styles.createButtonText}>{t('gatherings.hostButton')}</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabRow}>
-        <TouchableOpacity style={[styles.tab, tab === 'nearby' && styles.tabActive]} onPress={() => setTab('nearby')}>
+      <View style={styles.tabRow} accessibilityRole="tablist">
+        <TouchableOpacity
+          style={[styles.tab, tab === 'nearby' && styles.tabActive]}
+          onPress={() => setTab('nearby')}
+          accessibilityRole="tab"
+          accessibilityLabel="Nearby gatherings"
+          accessibilityState={{ selected: tab === 'nearby' }}
+        >
           <Text style={[styles.tabText, tab === 'nearby' && styles.tabTextActive]}>{t('gatherings.nearbyTab')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, tab === 'attending' && styles.tabActive]} onPress={() => setTab('attending')}>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'attending' && styles.tabActive]}
+          onPress={() => setTab('attending')}
+          accessibilityRole="tab"
+          accessibilityLabel="Gatherings you're attending"
+          accessibilityState={{ selected: tab === 'attending' }}
+        >
           <Text style={[styles.tabText, tab === 'attending' && styles.tabTextActive]}>{t('gatherings.attendingTab')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, tab === 'hosting' && styles.tabActive]} onPress={() => setTab('hosting')}>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'hosting' && styles.tabActive]}
+          onPress={() => setTab('hosting')}
+          accessibilityRole="tab"
+          accessibilityLabel="Gatherings you're hosting"
+          accessibilityState={{ selected: tab === 'hosting' }}
+        >
           <Text style={[styles.tabText, tab === 'hosting' && styles.tabTextActive]}>{t('gatherings.hostingTab')}</Text>
         </TouchableOpacity>
       </View>
@@ -200,10 +223,13 @@ export default function GatheringsScreen({ navigation }) {
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
                 <View style={styles.cardTopRow}>
-                  <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
+                  <View
+                    style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}
+                    accessibilityLabel={item.interest_tag ? `Category: ${item.interest_tag}` : 'Category: General'}
+                  >
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
-                  {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} />}
+                  {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} accessibilityLabel={`${item.host?.display_name}'s photo`} />}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.title}>{item.title}</Text>
                     <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
@@ -211,6 +237,8 @@ export default function GatheringsScreen({ navigation }) {
                   <TouchableOpacity
                     style={styles.moreButton}
                     onPress={() => setReportTarget({ id: item.host_id, name: item.host?.display_name })}
+                    accessibilityLabel={`Report or block ${item.host?.display_name}`}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.moreButtonText}>⋯</Text>
                   </TouchableOpacity>
@@ -248,7 +276,13 @@ export default function GatheringsScreen({ navigation }) {
                   </View>
                 )}
 
-                <TouchableOpacity style={[styles.interestButton, { backgroundColor: categoryStyle.color }]} onPress={() => handleExpressInterest(item.id)} activeOpacity={0.85}>
+                <TouchableOpacity
+                  style={[styles.interestButton, { backgroundColor: categoryStyle.color }]}
+                  onPress={() => handleExpressInterest(item.id)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`Express interest in ${item.title}`}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
                 </TouchableOpacity>
               </View>
@@ -275,7 +309,13 @@ export default function GatheringsScreen({ navigation }) {
             const fellows = fellowAttendees[item.id] ?? [];
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
-                <TouchableOpacity onPress={() => toggleExpandGathering(item.id)} activeOpacity={0.85}>
+                <TouchableOpacity
+                  onPress={() => toggleExpandGathering(item.id)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${item.title}, ${isExpanded ? 'showing' : 'show'} who else is attending`}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: isExpanded }}
+                >
                   <View style={styles.cardTopRow}>
                     <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                       <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
@@ -308,6 +348,8 @@ export default function GatheringsScreen({ navigation }) {
                           style={styles.fellowInfo}
                           onPress={() => navigation.navigate('ViewProfile', { userId: fellow.user_id })}
                           activeOpacity={0.85}
+                          accessibilityLabel={`View ${fellow.profiles?.display_name}'s profile`}
+                          accessibilityRole="button"
                         >
                           {fellowPhotoUrls[fellow.user_id] ? (
                             <Image source={{ uri: fellowPhotoUrls[fellow.user_id] }} style={styles.fellowAvatar} />
@@ -323,6 +365,8 @@ export default function GatheringsScreen({ navigation }) {
                             style={styles.fellowNoticeButton}
                             onPress={() => handleSendNoticeToFellow(fellow.user_id)}
                             activeOpacity={0.85}
+                            accessibilityLabel={`Send a notice to ${fellow.profiles?.display_name}`}
+                            accessibilityRole="button"
                           >
                             <Text style={styles.fellowNoticeButtonText}>{t('gatherings.sendNotice')}</Text>
                           </TouchableOpacity>
@@ -365,7 +409,12 @@ export default function GatheringsScreen({ navigation }) {
                     <View key={interest.id} style={styles.interestRow}>
                       <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
                       {interest.status === 'pending' ? (
-                        <TouchableOpacity style={styles.approveButton} onPress={() => handleApprove(interest)}>
+                        <TouchableOpacity
+                          style={styles.approveButton}
+                          onPress={() => handleApprove(interest)}
+                          accessibilityLabel={`Approve ${interest.profiles?.display_name}'s interest`}
+                          accessibilityRole="button"
+                        >
                           <Text style={styles.approveButtonText}>{t('gatherings.approve')}</Text>
                         </TouchableOpacity>
                       ) : (
