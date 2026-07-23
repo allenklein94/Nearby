@@ -63,7 +63,7 @@ export default function CreateGatheringScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.header}>{t('gatherings.createHeader')}</Text>
+        <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>
         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
 
         <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
@@ -73,6 +73,7 @@ export default function CreateGatheringScreen({ navigation }) {
           placeholderTextColor={colors.textTertiary}
           value={title}
           onChangeText={setTitle}
+          accessibilityLabel="Gathering title"
         />
 
         <Text style={styles.label}>{t('gatherings.descriptionLabel')}</Text>
@@ -83,6 +84,7 @@ export default function CreateGatheringScreen({ navigation }) {
           value={description}
           onChangeText={setDescription}
           multiline
+          accessibilityLabel="Gathering description, optional"
         />
 
         <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
@@ -99,6 +101,9 @@ export default function CreateGatheringScreen({ navigation }) {
                 ]}
                 onPress={() => setInterestTag(interestTag === option ? null : option)}
                 activeOpacity={0.8}
+                accessibilityLabel={`Category: ${option}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
               >
                 <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
                   {style.icon} {option}
@@ -109,7 +114,12 @@ export default function CreateGatheringScreen({ navigation }) {
         </View>
 
         <Text style={styles.label}>{t('gatherings.whenLabel')}</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => setShowPicker(true)}
+          accessibilityLabel={`When: ${scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
+          accessibilityRole="button"
+        >
           <Text style={{ color: colors.textPrimary }}>
             {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
           </Text>
@@ -133,6 +143,8 @@ export default function CreateGatheringScreen({ navigation }) {
           onPress={submit}
           disabled={submitting}
           activeOpacity={0.85}
+          accessibilityLabel={submitting ? t('gatherings.posting') : t('gatherings.postButton')}
+          accessibilityRole="button"
         >
           <Text style={styles.buttonText}>{submitting ? t('gatherings.posting') : t('gatherings.postButton')}</Text>
         </TouchableOpacity>
