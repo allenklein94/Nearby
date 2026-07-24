@@ -21,11 +21,17 @@ function formatMatchedTime(iso) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMins < 60) return 'Matched just now';
-  if (diffHours < 24) return `Matched ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-  if (diffDays === 1) return 'Matched yesterday';
-  if (diffDays < 7) return `Matched ${diffDays} days ago`;
-  return `Matched ${then.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+  const dateTimeStamp = then.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+    ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  let relative;
+  if (diffMins < 60) relative = 'Matched just now';
+  else if (diffHours < 24) relative = `Matched ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  else if (diffDays === 1) relative = 'Matched yesterday';
+  else if (diffDays < 7) relative = `Matched ${diffDays} days ago`;
+  else relative = null;
+
+  return relative ? `${relative} (${dateTimeStamp})` : `Matched ${dateTimeStamp}`;
 }
 
 export default function MatchesScreen({ navigation }) {

@@ -29,12 +29,18 @@ function formatCrossedPathsTime(iso) {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  return then.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const dateTimeStamp = then.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+    ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  let relative;
+  if (diffMins < 1) relative = 'Just now';
+  else if (diffMins < 60) relative = `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+  else if (diffHours < 24) relative = `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  else if (diffDays === 1) relative = 'Yesterday';
+  else if (diffDays < 7) relative = `${diffDays} days ago`;
+  else relative = null;
+
+  return relative ? `${relative} (${dateTimeStamp})` : dateTimeStamp;
 }
 
 export default function DiscoveryScreen({ navigation }) {
