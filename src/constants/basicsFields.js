@@ -27,4 +27,6 @@ export const BASICS_FIELDS = [
   { key: 'holiday_traditions', label: 'Holiday Traditions', icon: '🎄', type: 'text', placeholder: 'e.g. Big family gatherings, quiet at home, travel' },
   { key: 'cultural_background', label: 'Cultural Values', icon: '🌍', type: 'text', placeholder: 'e.g. traditions or values important to me' },
   { key: 'relocation_openness', label: 'Open to Relocating', icon: '🧳', type: 'select', options: ['Want to stay local', 'Open to relocating', 'Would love to live abroad'] },
+  { key: 'morning_person', label: 'A Typical Morning', icon: '🌅', type: 'select', options: ['Up with the sun', 'Snooze a few times', 'Not a morning person at all'] },
+  { key: 'cooking_habits', label: 'Weeknight Dinner', icon: '🍳', type: 'select', options: ['Cook most nights', 'Mix of cooking and ordering', 'Order in most nights'] },
 ];
