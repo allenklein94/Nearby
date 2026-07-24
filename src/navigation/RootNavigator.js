@@ -30,14 +30,12 @@ import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
 import TripPlanningScreen from '../screens/TripPlanningScreen';
 import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
+import RelationshipLegacyScreen from '../screens/RelationshipLegacyScreen';
+import LegacyLibraryScreen from '../screens/LegacyLibraryScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Exported so notification-tap handling (in notifications.js) can
-// navigate from outside the component tree — notifications can arrive
-// while the app is backgrounded or even fully closed, well before any
-// screen component exists to call navigation on.
 export const navigationRef = createNavigationContainerRef();
 
 const TAB_ICONS = {
@@ -187,6 +185,8 @@ export default function RootNavigator() {
             <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: 'Shared Playlist', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: 'Plan a Trip', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SharedDecisions" component={SharedDecisionsScreen} options={{ headerShown: true, title: 'Big Picture', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipLegacy" component={RelationshipLegacyScreen} options={{ headerShown: true, title: 'Leave Wisdom', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="LegacyLibrary" component={LegacyLibraryScreen} options={{ headerShown: true, title: 'Relationship Wisdom', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
