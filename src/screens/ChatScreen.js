@@ -303,6 +303,9 @@ export default function ChatScreen({ route, navigation }) {
         { text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
         { text: '💡 Suggest an Activity', onPress: showRandomExperiment },
         { text: '💌 Leave Relationship Wisdom', onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
+        { text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
+        { text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
+        { text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
       ]
     );
   }

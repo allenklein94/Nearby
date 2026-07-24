@@ -20,4 +20,6 @@ export const PROMPT_QUESTIONS = [
   "I recharge by...",
   "Something I remember about people is...",
   "Something I'm working on getting better at is...",
+  "A recent mistake and what it taught me...",
+  "An ordinary Tuesday for me looks like (unfiltered)...",
 ];
