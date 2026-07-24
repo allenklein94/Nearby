@@ -336,6 +336,19 @@ export default function ChatScreen({ route, navigation }) {
             try {
               await unmatch(matchId);
               navigation.goBack();
+              setTimeout(() => {
+                Alert.alert(
+                  'Want to reflect?',
+                  'You can privately write down what worked, what didn\u2019t, and what you\u2019d want next time. Only you will ever see it.',
+                  [
+                    { text: 'Not now', style: 'cancel' },
+                    {
+                      text: 'Add a Reflection',
+                      onPress: () => navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: otherUser?.display_name }),
+                    },
+                  ]
+                );
+              }, 400);
             } catch (e) {
               Alert.alert('Error', e.message);
             }

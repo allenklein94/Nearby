@@ -569,6 +569,17 @@ export default function SettingsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('GoodbyeArchiveList')}
+          activeOpacity={0.85}
+          accessibilityLabel="Your private reflections"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🌙 Private Reflections</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
           onPress={() => navigation.navigate('LegacyLibrary')}
           activeOpacity={0.85}
           accessibilityLabel="Relationship Wisdom library"

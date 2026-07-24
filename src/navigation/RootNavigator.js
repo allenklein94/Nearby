@@ -32,6 +32,8 @@ import TripPlanningScreen from '../screens/TripPlanningScreen';
 import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
 import RelationshipLegacyScreen from '../screens/RelationshipLegacyScreen';
 import LegacyLibraryScreen from '../screens/LegacyLibraryScreen';
+import GoodbyeArchiveEntryScreen from '../screens/GoodbyeArchiveEntryScreen';
+import GoodbyeArchiveListScreen from '../screens/GoodbyeArchiveListScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -187,6 +189,8 @@ export default function RootNavigator() {
             <Stack.Screen name="SharedDecisions" component={SharedDecisionsScreen} options={{ headerShown: true, title: 'Big Picture', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipLegacy" component={RelationshipLegacyScreen} options={{ headerShown: true, title: 'Leave Wisdom', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="LegacyLibrary" component={LegacyLibraryScreen} options={{ headerShown: true, title: 'Relationship Wisdom', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="GoodbyeArchiveEntry" component={GoodbyeArchiveEntryScreen} options={{ headerShown: true, title: 'Private Reflection', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: 'Private Reflections', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
