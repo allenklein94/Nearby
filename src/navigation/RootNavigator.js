@@ -39,6 +39,8 @@ import TimelinePlannerScreen from '../screens/TimelinePlannerScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import ChemistryDiaryEntryScreen from '../screens/ChemistryDiaryEntryScreen';
 import ChemistryDiaryListScreen from '../screens/ChemistryDiaryListScreen';
+import StressTestScreen from '../screens/StressTestScreen';
+import RelationshipConstitutionScreen from '../screens/RelationshipConstitutionScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -201,6 +203,8 @@ export default function RootNavigator() {
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: 'Memory Vault', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: 'Chemistry Check-In', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: 'Chemistry Diary', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="StressTest" component={StressTestScreen} options={{ headerShown: true, title: 'What If...', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipConstitution" component={RelationshipConstitutionScreen} options={{ headerShown: true, title: 'Our Constitution', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>

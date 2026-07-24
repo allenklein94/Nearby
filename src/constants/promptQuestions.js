@@ -22,4 +22,7 @@ export const PROMPT_QUESTIONS = [
   "Something I'm working on getting better at is...",
   "A recent mistake and what it taught me...",
   "An ordinary Tuesday for me looks like (unfiltered)...",
+  "The funniest thing that happened to me this week...",
+  "Something small that made me happy recently...",
+  "Something I'm a little obsessed with right now...",
 ];

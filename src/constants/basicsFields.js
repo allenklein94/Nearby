@@ -29,4 +29,5 @@ export const BASICS_FIELDS = [
   { key: 'relocation_openness', label: 'Open to Relocating', icon: '🧳', type: 'select', options: ['Want to stay local', 'Open to relocating', 'Would love to live abroad'] },
   { key: 'morning_person', label: 'A Typical Morning', icon: '🌅', type: 'select', options: ['Up with the sun', 'Snooze a few times', 'Not a morning person at all'] },
   { key: 'cooking_habits', label: 'Weeknight Dinner', icon: '🍳', type: 'select', options: ['Cook most nights', 'Mix of cooking and ordering', 'Order in most nights'] },
+  { key: 'life_chapter', label: 'My Life Chapter Right Now', icon: '📖', type: 'select', options: ['Reinventing after a career change', 'Building a business', 'Raising young kids', 'Exploring after retirement', 'Settling into a new city', 'On my own for the first time', 'Focused on personal growth', 'Steady and settled'] },
 ];

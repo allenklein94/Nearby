@@ -306,6 +306,8 @@ export default function ChatScreen({ route, navigation }) {
         { text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
         { text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
         { text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
+        { text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
+        { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
       ]
     );
   }
