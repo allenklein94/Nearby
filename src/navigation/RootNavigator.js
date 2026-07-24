@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +33,12 @@ import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// Exported so notification-tap handling (in notifications.js) can
+// navigate from outside the component tree — notifications can arrive
+// while the app is backgrounded or even fully closed, well before any
+// screen component exists to call navigation on.
+export const navigationRef = createNavigationContainerRef();
 
 const TAB_ICONS = {
   Gatherings: { active: 'calendar', inactive: 'calendar-outline', label: 'Gatherings' },
@@ -159,7 +165,7 @@ export default function RootNavigator() {
   if (loading || (session && profileLoading)) return null;
 
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!session ? (
           <>
