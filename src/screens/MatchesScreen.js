@@ -13,6 +13,21 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { Share } from 'react-native';
 
+function formatMatchedTime(iso) {
+  if (!iso) return null;
+  const then = new Date(iso);
+  const diffMs = Date.now() - then.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 60) return 'Matched just now';
+  if (diffHours < 24) return `Matched ${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  if (diffDays === 1) return 'Matched yesterday';
+  if (diffDays < 7) return `Matched ${diffDays} days ago`;
+  return `Matched ${then.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+}
+
 export default function MatchesScreen({ navigation }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
@@ -177,7 +192,9 @@ export default function MatchesScreen({ navigation }) {
         renderItem={({ item }) => {
           const other = otherPersonFor(item);
           const report = generateCompatibilityReport(myProfile, other);
-          const subLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : 'Tap to chat';
+          const gatheringLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : null;
+          const matchedLabel = formatMatchedTime(item.matched_at);
+          const subLabel = gatheringLabel ? `${gatheringLabel} · ${matchedLabel}` : matchedLabel || t('matches.tapToChat');
           return (
             <View style={styles.card}>
               <TouchableOpacity
