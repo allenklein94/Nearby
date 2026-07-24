@@ -21,6 +21,22 @@ import { typography, spacing, radius } from '../theme';
 
 const UNDO_WINDOW_SECONDS = 5;
 
+function formatCrossedPathsTime(iso) {
+  if (!iso) return null;
+  const then = new Date(iso);
+  const diffMs = Date.now() - then.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return then.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 export default function DiscoveryScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -115,11 +131,6 @@ export default function DiscoveryScreen({ navigation }) {
 
     await supabase.from('notices').delete().eq('id', undoState.noticeId);
 
-    // If this notice happened to complete a mutual pair, the database
-    // trigger already created a match before this Undo banner even
-    // appeared — deleting just the notice would otherwise leave the
-    // two people permanently matched despite "undoing" the action
-    // that created it.
     if (myUserId && undoState.otherUserId) {
       await supabase
         .from('matches')
@@ -256,7 +267,9 @@ export default function DiscoveryScreen({ navigation }) {
             <Text style={styles.emptyText}>{t('discovery.emptyText')}</Text>
           </View>
         }
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const crossedPathsTime = formatCrossedPathsTime(item.last_seen_at);
+          return (
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.tappableProfileArea}
@@ -290,7 +303,9 @@ export default function DiscoveryScreen({ navigation }) {
                 )}
               </View>
               <View style={styles.proximityRow}>
-                <Text style={styles.proximityText}>📍 Within about 35 feet</Text>
+                <Text style={styles.proximityText}>
+                  📍 Within about 35 feet{crossedPathsTime ? ` · Crossed paths ${crossedPathsTime}` : ''}
+                </Text>
               </View>
               <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
               {item.sharedInterests?.length > 0 && (
@@ -329,7 +344,8 @@ export default function DiscoveryScreen({ navigation }) {
               </View>
             </View>
           </View>
-        )}
+        );
+        }}
       />
       )}
 
