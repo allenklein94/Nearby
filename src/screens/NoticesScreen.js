@@ -27,6 +27,20 @@ export default function NoticesScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
 
+    // Exclude anyone already matched — a mutual notice immediately
+    // becomes a match via a database trigger, but the original notice
+    // rows never get deleted afterward, so without this filter the
+    // same person would confusingly show up in both Notices and
+    // Matches at once.
+    const { data: existingMatches } = await supabase
+      .from('matches')
+      .select('user_a, user_b')
+      .or(`user_a.eq.${myId},user_b.eq.${myId}`);
+
+    const matchedUserIds = new Set(
+      (existingMatches ?? []).map((m) => (m.user_a === myId ? m.user_b : m.user_a))
+    );
+
     const { data, error } = await supabase
       .from('notices')
       .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics)')
@@ -35,9 +49,10 @@ export default function NoticesScreen({ navigation }) {
       .order('created_at', { ascending: false });
 
     if (!error) {
-      setNotices(data);
+      const filtered = (data ?? []).filter((n) => !matchedUserIds.has(n.from_user));
+      setNotices(filtered);
       const urlEntries = await Promise.all(
-        data.map(async (n) => {
+        filtered.map(async (n) => {
           const path = n.profiles?.photo_url;
           if (!path) return [n.id, null];
           const url = await getSignedPhotoUrl(path);
@@ -46,7 +61,7 @@ export default function NoticesScreen({ navigation }) {
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
 
-      const scoreEntries = data.map((n) => [n.id, calculateCompatibility(myProfile, n.profiles)]);
+      const scoreEntries = filtered.map((n) => [n.id, calculateCompatibility(myProfile, n.profiles)]);
       setCompatScores(Object.fromEntries(scoreEntries));
     }
   }, []);
@@ -109,7 +124,9 @@ export default function NoticesScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>👋</Text>
-            <Text style={styles.emptyText}>{t('notices.emptyText')}</Text>
+            <Text style={styles.emptyText}>
+              Notices stay quiet on purpose. You'll only see someone here if they send you a Wave — a regular Notice only becomes a match once you notice them back too.
+            </Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -188,9 +205,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   upsellTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
   upsellText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
   upsellArrow: { color: '#fff', fontSize: 22, fontWeight: '700' },
-  emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%' },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
-  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
   card: {
     flex: 1,
     margin: spacing.xs,
