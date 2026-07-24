@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
@@ -9,6 +9,7 @@ import { isPremium } from '../services/purchases';
 import { checkNoticeLimit, checkWaveLimit } from '../services/noticeLimits';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
+import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import ReportBlockModal from '../components/ReportBlockModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
@@ -61,6 +62,8 @@ export default function DiscoveryScreen({ navigation }) {
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
   const [showConfidenceBanner, setShowConfidenceBanner] = useState(false);
+  const [intentionFilter, setIntentionFilter] = useState(null);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -235,6 +238,15 @@ export default function DiscoveryScreen({ navigation }) {
     return colors.textTertiary;
   }
 
+  const filteredNearby = nearby.filter((item) => {
+    if (verifiedOnly && !item.profiles?.photo_verified) return false;
+    if (intentionFilter) {
+      const intentions = Array.isArray(item.profiles?.relationship_intention) ? item.profiles.relationship_intention : [];
+      if (!intentions.includes(intentionFilter)) return false;
+    }
+    return true;
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -254,6 +266,33 @@ export default function DiscoveryScreen({ navigation }) {
 
       {showConfidenceBanner && <ConfidenceModeBanner onDismiss={handleDismissConfidenceBanner} />}
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
+        {INTENTION_OPTIONS.map((option) => {
+          const active = intentionFilter === option.value;
+          return (
+            <TouchableOpacity
+              key={option.value}
+              style={[styles.filterChip, active && styles.filterChipActive]}
+              onPress={() => setIntentionFilter(active ? null : option.value)}
+              accessibilityLabel={`Filter by ${option.label}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option.icon} {option.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+        <TouchableOpacity
+          style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
+          onPress={() => setVerifiedOnly(!verifiedOnly)}
+          accessibilityLabel="Filter to only photo-verified profiles"
+          accessibilityRole="button"
+          accessibilityState={{ selected: verifiedOnly }}
+        >
+          <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
       {initialLoading ? (
         <View>
           <SkeletonCard />
@@ -262,15 +301,15 @@ export default function DiscoveryScreen({ navigation }) {
         </View>
       ) : (
       <FlatList
-        data={nearby}
+        data={filteredNearby}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>{t('discovery.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{t('discovery.emptyText')}</Text>
+            <Text style={styles.emptyTitle}>{(intentionFilter || verifiedOnly) ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{(intentionFilter || verifiedOnly) ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -295,6 +334,9 @@ export default function DiscoveryScreen({ navigation }) {
             <View style={styles.cardBody}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.profiles?.display_name}</Text>
+                {item.profiles?.photo_verified && (
+                  <Text style={styles.verifiedBadge}>✓</Text>
+                )}
                 {item.compatibilityScore !== null && (
                   <TouchableOpacity
                     style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
@@ -394,12 +436,21 @@ export default function DiscoveryScreen({ navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   infoButton: { marginLeft: spacing.sm, padding: spacing.xs },
   infoButtonText: { color: colors.textTertiary, fontSize: 18 },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  filterRow: { flexGrow: 0, marginBottom: spacing.md },
+  filterChip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  filterChipTextActive: { color: '#fff' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
@@ -424,6 +475,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardBody: { padding: spacing.md },
   nameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
   name: { ...typography.headline, color: colors.textPrimary },
+  verifiedBadge: { color: colors.success, fontSize: 16, fontWeight: '700' },
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   compatText: { fontSize: 11, fontWeight: '700' },
   proximityRow: { marginBottom: spacing.xs },
