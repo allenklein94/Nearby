@@ -15,4 +15,9 @@ export const PROMPT_QUESTIONS = [
   'How do you spend a perfect Sunday?',
   'How do you handle disagreements?',
   'What are you excited about this year?',
+  'The way I show love is...',
+  'When I\'m stressed, what helps most is...',
+  "I recharge by...",
+  "Something I remember about people is...",
+  "Something I'm working on getting better at is...",
 ];
