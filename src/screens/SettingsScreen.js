@@ -55,9 +55,6 @@ export default function SettingsScreen({ navigation }) {
     load();
     checkOsPermission();
 
-    // Re-check when the person comes back from iOS Settings, so the
-    // banner disappears immediately after they actually fix it,
-    // rather than staying stale until the next full screen reload.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') checkOsPermission();
     });
@@ -567,6 +564,17 @@ export default function SettingsScreen({ navigation }) {
           accessibilityRole="button"
         >
           <Text style={styles.rowButtonText}>{t('settings.manageSubscription')}</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('LegacyLibrary')}
+          activeOpacity={0.85}
+          accessibilityLabel="Relationship Wisdom library"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>💌 Relationship Wisdom</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
