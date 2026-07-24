@@ -97,9 +97,9 @@ export default function DiscoveryScreen({ navigation }) {
     setCompatModalName(item.profiles?.display_name || '');
   }
 
-  function showUndoBanner(noticeId, isWave) {
+  function showUndoBanner(noticeId, isWave, otherUserId) {
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-    setUndoState({ noticeId, isWave });
+    setUndoState({ noticeId, isWave, otherUserId });
     Animated.timing(undoOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
 
     undoTimeoutRef.current = setTimeout(() => {
@@ -114,6 +114,19 @@ export default function DiscoveryScreen({ navigation }) {
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
 
     await supabase.from('notices').delete().eq('id', undoState.noticeId);
+
+    // If this notice happened to complete a mutual pair, the database
+    // trigger already created a match before this Undo banner even
+    // appeared — deleting just the notice would otherwise leave the
+    // two people permanently matched despite "undoing" the action
+    // that created it.
+    if (myUserId && undoState.otherUserId) {
+      await supabase
+        .from('matches')
+        .delete()
+        .or(`and(user_a.eq.${myUserId},user_b.eq.${undoState.otherUserId}),and(user_a.eq.${undoState.otherUserId},user_b.eq.${myUserId})`);
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     Animated.timing(undoOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
@@ -166,7 +179,7 @@ export default function DiscoveryScreen({ navigation }) {
             return;
           }
           posthog.capture('wave_sent');
-          showUndoBanner(existing.id, true);
+          showUndoBanner(existing.id, true, toUserId);
           return;
         }
 
@@ -179,7 +192,7 @@ export default function DiscoveryScreen({ navigation }) {
     }
 
     posthog.capture(isWave ? 'wave_sent' : 'notice_sent');
-    showUndoBanner(inserted.id, isWave);
+    showUndoBanner(inserted.id, isWave, toUserId);
   }
 
   function confirmWave(toUserId) {
