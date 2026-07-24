@@ -67,6 +67,19 @@ export default function SharedPlaylistScreen({ route }) {
     setSubmitting(false);
   }
 
+  function handleOpenPress(item) {
+    const query = encodeURIComponent(`${item.song_title} ${item.artist || ''}`.trim());
+    Alert.alert(
+      'Open where?',
+      '',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: '🎧 Spotify', onPress: () => Linking.openURL(`https://open.spotify.com/search/${query}`) },
+        { text: '▶️ YouTube', onPress: () => Linking.openURL(`https://www.youtube.com/results?search_query=${query}`) },
+      ]
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -84,27 +97,24 @@ export default function SharedPlaylistScreen({ route }) {
             <Text style={styles.emptyText}>No songs added yet. Be the first!</Text>
           </View>
         }
-        renderItem={({ item }) => {
-          const query = encodeURIComponent(`${item.song_title} ${item.artist || ''}`.trim());
-          return (
-            <View style={styles.card}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.songTitle}>{item.song_title}</Text>
-                {item.artist ? <Text style={styles.artist}>{item.artist}</Text> : null}
-                <Text style={styles.addedBy}>Added by {item.profiles?.display_name}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.spotifyButton}
-                onPress={() => Linking.openURL(`https://open.spotify.com/search/${query}`)}
-                activeOpacity={0.8}
-                accessibilityLabel={`Open ${item.song_title} in Spotify`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.spotifyButtonText}>🎧 Open</Text>
-              </TouchableOpacity>
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.songTitle}>{item.song_title}</Text>
+              {item.artist ? <Text style={styles.artist}>{item.artist}</Text> : null}
+              <Text style={styles.addedBy}>Added by {item.profiles?.display_name}</Text>
             </View>
-          );
-        }}
+            <TouchableOpacity
+              style={styles.openButton}
+              onPress={() => handleOpenPress(item)}
+              activeOpacity={0.8}
+              accessibilityLabel={`Open ${item.song_title}, choose Spotify or YouTube`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.openButtonText}>🎧 Open</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
 
       <View style={styles.addRow}>
@@ -155,8 +165,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   songTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   artist: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   addedBy: { color: colors.textTertiary, fontSize: 11, marginTop: spacing.xs },
-  spotifyButton: { backgroundColor: '#1DB954', borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
-  spotifyButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  openButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  openButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   addRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
   addButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginHorizontal: spacing.lg, marginBottom: spacing.lg, ...shadow.button },
