@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -40,6 +41,7 @@ export default function SettingsScreen({ navigation }) {
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
   const [notifyWaves, setNotifyWaves] = useState(true);
+  const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   const [changingPhone, setChangingPhone] = useState(false);
   const [newPhoneInput, setNewPhoneInput] = useState('');
@@ -51,7 +53,25 @@ export default function SettingsScreen({ navigation }) {
 
   useEffect(() => {
     load();
+    checkOsPermission();
+
+    // Re-check when the person comes back from iOS Settings, so the
+    // banner disappears immediately after they actually fix it,
+    // rather than staying stale until the next full screen reload.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkOsPermission();
+    });
+    return () => subscription.remove();
   }, []);
+
+  async function checkOsPermission() {
+    const { status } = await Notifications.getPermissionsAsync();
+    setOsNotifPermission(status);
+  }
+
+  function openSystemSettings() {
+    Linking.openSettings();
+  }
 
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -202,6 +222,25 @@ export default function SettingsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header} accessibilityRole="header">{t('settings.title')}</Text>
+
+        {osNotifPermission !== 'granted' && (
+          <TouchableOpacity
+            style={styles.permissionBanner}
+            onPress={openSystemSettings}
+            activeOpacity={0.85}
+            accessibilityLabel="Notifications are turned off in your device settings, tap to enable"
+            accessibilityRole="button"
+          >
+            <Text style={styles.permissionBannerIcon}>🔕</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.permissionBannerTitle}>Notifications are off</Text>
+              <Text style={styles.permissionBannerText}>
+                You won't get alerts for matches, messages, or Waves until you enable notifications in your device settings.
+              </Text>
+            </View>
+            <Text style={styles.permissionBannerArrow}>›</Text>
+          </TouchableOpacity>
+        )}
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Looking For</Text>
         <View style={styles.card}>
@@ -593,6 +632,15 @@ export default function SettingsScreen({ navigation }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
+  permissionBanner: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.lg,
+    borderWidth: 1, borderColor: colors.primary,
+  },
+  permissionBannerIcon: { fontSize: 22, marginRight: spacing.sm },
+  permissionBannerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14, marginBottom: 2 },
+  permissionBannerText: { color: colors.textSecondary, fontSize: 12, lineHeight: 16 },
+  permissionBannerArrow: { color: colors.textTertiary, fontSize: 20, marginLeft: spacing.xs },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
