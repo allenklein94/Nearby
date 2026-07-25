@@ -582,6 +582,17 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+     <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('RehearsalRoom')}
+          activeOpacity={0.85}
+          accessibilityLabel="Rehearsal Room, practice hard conversations"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🎭 Rehearsal Room</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('BrandOffers')}

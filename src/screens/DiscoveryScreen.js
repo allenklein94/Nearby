@@ -61,7 +61,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [isUserPremium, setIsUserPremium] = useState(false);
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
-  const [showConfidenceBanner, setShowConfidenceBanner] = useState(false);
+  const [confidenceBannerReason, setConfidenceBannerReason] = useState(null);
   const [intentionFilter, setIntentionFilter] = useState(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const undoTimeoutRef = useRef(null);
@@ -96,8 +96,8 @@ export default function DiscoveryScreen({ navigation }) {
       const { data: mine } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
       setMyProfile(mine);
 
-      const offerBreak = await shouldOfferBreak(myId);
-      setShowConfidenceBanner(offerBreak);
+      const reason = await shouldOfferBreak(myId);
+      setConfidenceBannerReason(reason);
     }
   }, []);
 
@@ -108,7 +108,7 @@ export default function DiscoveryScreen({ navigation }) {
   );
 
   async function handleDismissConfidenceBanner() {
-    setShowConfidenceBanner(false);
+    setConfidenceBannerReason(null);
     if (myUserId) await dismissBreakSuggestion(myUserId);
   }
 
@@ -264,7 +264,7 @@ export default function DiscoveryScreen({ navigation }) {
         <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
       </View>
 
-      {showConfidenceBanner && <ConfidenceModeBanner onDismiss={handleDismissConfidenceBanner} />}
+      {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
         {INTENTION_OPTIONS.map((option) => {
