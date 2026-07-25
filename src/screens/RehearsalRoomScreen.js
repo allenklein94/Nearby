@@ -11,7 +11,7 @@ const SCENARIOS = [
   { key: 'not_interested', label: '👋 Saying You\'re Not Interested', opener: "Let's practice. I'll play the other person — tell me kindly that you're not interested." },
 ];
 
-export default function RehearsalRoomScreen() {
+export default function RehearsalRoomScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [scenario, setScenario] = useState(null);
@@ -51,9 +51,19 @@ export default function RehearsalRoomScreen() {
         },
         body: JSON.stringify({ scenario: scenario.key, history: newMessages }),
       });
-      const result = await response.json();
+    const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403) {
+          Alert.alert(
+            'Rehearsal Room is Premium',
+            'Practicing hard conversations with an AI partner is a Premium feature. Upgrade to keep going.'
+          );
+          setScenario(null);
+          setMessages([]);
+          setSending(false);
+          return;
+        }
         Alert.alert('Error', result.error || 'Could not continue the practice conversation.');
         setSending(false);
         return;

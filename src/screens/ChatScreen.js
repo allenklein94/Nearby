@@ -361,9 +361,20 @@ export default function ChatScreen({ route, navigation }) {
         },
         body: JSON.stringify({ goal }),
       });
-      const result = await response.json();
+     const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403) {
+          Alert.alert(
+            'Help Me Say It is Premium',
+            'This uses AI to help you find the right words. Upgrade to Premium to use it.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+            ]
+          );
+          return;
+        }
         Alert.alert('Error', result.error || 'Could not generate a message right now.');
         return;
       }
