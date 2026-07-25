@@ -2,9 +2,13 @@ import { supabase } from './supabase';
 import * as Location from 'expo-location';
 import { distanceRangeLabel } from './distance';
 
+// Gatherings are planned events people travel to, unlike Discovery's
+// passive "crossed paths" mechanic — so this uses a much wider bucket
+// (roughly a mile, closer to how Meetup groups typically span a city
+// or metro area) rather than Discovery's tight few-hundred-foot radius.
 function coarseGatheringArea(latitude, longitude) {
-  const bucketLat = Math.round(latitude * 1000) / 1000;
-  const bucketLng = Math.round(longitude * 1000) / 1000;
+  const bucketLat = Math.round(latitude * 100) / 100;
+  const bucketLng = Math.round(longitude * 100) / 100;
   return `${bucketLat},${bucketLng}`;
 }
 
@@ -163,11 +167,6 @@ export async function getFellowAttendees(gatheringId) {
   return (data ?? []).filter((row) => row.profiles && !excludedUserIds.has(row.user_id));
 }
 
-// Now guards against both self-interest AND blocking — the browse
-// list already excludes both cases from view, but that's a UI-layer
-// protection only. Same class of gap as the self-interest issue found
-// earlier: a timing edge case (blocking someone after browsing but
-// before tapping "I'm Interested") could otherwise slip through.
 export async function expressInterest(gatheringId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;

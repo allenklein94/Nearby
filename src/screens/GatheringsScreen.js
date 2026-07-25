@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest } from '../services/gatherings';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -10,6 +10,13 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+
+const INTEREST_OPTIONS = [
+  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
+  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
+  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
+  'Volunteering', 'Meditation', 'Running',
+];
 
 export default function GatheringsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
@@ -28,6 +35,7 @@ export default function GatheringsScreen({ navigation }) {
   const [fellowPhotoUrls, setFellowPhotoUrls] = useState({});
   const [loadingFellows, setLoadingFellows] = useState(false);
   const [sentNoticeTo, setSentNoticeTo] = useState({});
+  const [interestFilter, setInterestFilter] = useState(null);
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults] = await Promise.all([
@@ -162,6 +170,10 @@ export default function GatheringsScreen({ navigation }) {
     return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
+  const filteredNearby = interestFilter
+    ? nearby.filter((g) => g.interest_tag === interestFilter)
+    : nearby;
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -207,15 +219,36 @@ export default function GatheringsScreen({ navigation }) {
       </View>
 
       {tab === 'nearby' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
+          {INTEREST_OPTIONS.map((option) => {
+            const active = interestFilter === option;
+            const style = categoryStyleFor(option);
+            return (
+              <TouchableOpacity
+                key={option}
+                style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
+                onPress={() => setInterestFilter(active ? null : option)}
+                accessibilityLabel={`Filter by ${option}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {tab === 'nearby' && (
         <FlatList
-          data={nearby}
+          data={filteredNearby}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>{t('gatherings.emptyNearby')}</Text>
+              <Text style={styles.emptyText}>{interestFilter ? `No ${interestFilter} gatherings nearby right now.` : t('gatherings.emptyNearby')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -459,6 +492,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
+  filterRow: { flexGrow: 0, marginTop: spacing.md },
+  filterChip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  filterChipTextActive: { color: '#fff' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
