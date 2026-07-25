@@ -338,6 +338,7 @@ export default function ChatScreen({ route, navigation }) {
           text: 'Unmatch',
           style: 'destructive',
           onPress: async () => {
+            const otherPersonName = otherUser?.display_name || 'this person';
             try {
               await unmatch(matchId);
               navigation.goBack();
@@ -349,7 +350,7 @@ export default function ChatScreen({ route, navigation }) {
                     { text: 'Not now', style: 'cancel' },
                     {
                       text: 'Add a Reflection',
-                      onPress: () => navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: otherUser?.display_name }),
+                      onPress: () => navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: otherPersonName }),
                     },
                   ]
                 );
