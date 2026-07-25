@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getMyGoodbyeEntries, deleteGoodbyeEntry } from '../services/goodbyeArchive';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -16,17 +17,30 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
   const styles = getStyles(colors, shadow);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     const data = await getMyGoodbyeEntries();
     setEntries(data);
     setLoading(false);
+  }, []);
+
+  // Reload every time this screen comes back into focus — not just on
+  // first mount — so an entry added via the Add Reflection screen
+  // shows up immediately on return, without needing to navigate away
+  // and back to force a remount.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   }
 
   function confirmDelete(entryId) {
@@ -74,7 +88,10 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
         <Text style={styles.headerTitle} accessibilityRole="header">🌙 Your Private Reflections</Text>
         <Text style={styles.headerSubtitle}>
           Only visible to you. Every relationship, however it went, becomes something you learned from rather than just something you lost.
