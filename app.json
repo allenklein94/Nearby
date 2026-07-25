@@ -58,7 +58,8 @@
         }
       ],
       "@sentry/react-native/expo",
-      "expo-localization"
+      "expo-localization",
+      "expo-font"
     ],
     "extra": {
       "eas": {
