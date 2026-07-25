@@ -23,6 +23,7 @@ export default function GatheringsScreen({ navigation }) {
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [tab, setTab] = useState('nearby');
+  const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
   const [hosting, setHosting] = useState([]);
   const [attending, setAttending] = useState([]);
@@ -39,7 +40,7 @@ export default function GatheringsScreen({ navigation }) {
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults] = await Promise.all([
-      getNearbyGatherings(),
+      getNearbyGatherings(radiusTier),
       getMyGatherings(),
       getMyAttendingGatherings(),
     ]);
@@ -68,7 +69,7 @@ export default function GatheringsScreen({ navigation }) {
       )
     );
     setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
-  }, []);
+  }, [radiusTier]);
 
   useFocusEffect(
     useCallback(() => {
@@ -219,24 +220,47 @@ export default function GatheringsScreen({ navigation }) {
       </View>
 
       {tab === 'nearby' && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
-          {INTEREST_OPTIONS.map((option) => {
-            const active = interestFilter === option;
-            const style = categoryStyleFor(option);
-            return (
-              <TouchableOpacity
-                key={option}
-                style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
-                onPress={() => setInterestFilter(active ? null : option)}
-                accessibilityLabel={`Filter by ${option}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        <>
+          <View style={styles.radiusToggleRow}>
+            <TouchableOpacity
+              style={[styles.radiusToggle, radiusTier === 'local' && styles.radiusToggleActive]}
+              onPress={() => setRadiusTier('local')}
+              accessibilityLabel="Local gatherings, within about a mile"
+              accessibilityRole="button"
+              accessibilityState={{ selected: radiusTier === 'local' }}
+            >
+              <Text style={[styles.radiusToggleText, radiusTier === 'local' && styles.radiusToggleTextActive]}>📍 Local (~1 mi)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.radiusToggle, radiusTier === 'wide' && styles.radiusToggleActive]}
+              onPress={() => setRadiusTier('wide')}
+              accessibilityLabel="Wider area gatherings, within about 15 miles"
+              accessibilityRole="button"
+              accessibilityState={{ selected: radiusTier === 'wide' }}
+            >
+              <Text style={[styles.radiusToggleText, radiusTier === 'wide' && styles.radiusToggleTextActive]}>🗺️ Wider Area (~15 mi)</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
+            {INTEREST_OPTIONS.map((option) => {
+              const active = interestFilter === option;
+              const style = categoryStyleFor(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
+                  onPress={() => setInterestFilter(active ? null : option)}
+                  accessibilityLabel={`Filter by ${option}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </>
       )}
 
       {tab === 'nearby' && (
@@ -248,7 +272,7 @@ export default function GatheringsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>{interestFilter ? `No ${interestFilter} gatherings nearby right now.` : t('gatherings.emptyNearby')}</Text>
+              <Text style={styles.emptyText}>{interestFilter ? `No ${interestFilter} gatherings in this range right now.` : t('gatherings.emptyNearby')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -492,6 +516,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
+  radiusToggleRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.xs },
+  radiusToggle: {
+    flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center',
+  },
+  radiusToggleActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  radiusToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
+  radiusToggleTextActive: { color: colors.primary },
   filterRow: { flexGrow: 0, marginTop: spacing.md },
   filterChip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

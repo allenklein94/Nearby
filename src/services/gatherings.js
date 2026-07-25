@@ -2,15 +2,40 @@ import { supabase } from './supabase';
 import * as Location from 'expo-location';
 import { distanceRangeLabel } from './distance';
 
-// Gatherings are planned events people travel to, unlike Discovery's
-// passive "crossed paths" mechanic — so this uses a much wider bucket
-// (roughly a mile, closer to how Meetup groups typically span a city
-// or metro area) rather than Discovery's tight few-hundred-foot radius.
-function coarseGatheringArea(latitude, longitude) {
+// "Local" bucket — roughly 0.6-0.7 miles, used for the tight,
+// walkable-distance tier.
+function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
   const bucketLng = Math.round(longitude * 100) / 100;
   return `${bucketLat},${bucketLng}`;
 }
+
+// "Wide" bucket — roughly 7 miles, closer to how Meetup groups
+// typically span a whole city or metro area. Used only as a coarse
+// pre-filter for the database query; actual sorting/display distance
+// is computed precisely below using the stored raw coordinates.
+function wideArea(latitude, longitude) {
+  const bucketLat = Math.round(latitude * 10) / 10;
+  const bucketLng = Math.round(longitude * 10) / 10;
+  return `${bucketLat},${bucketLng}`;
+}
+
+// Haversine distance in miles between two lat/lng points — used to
+// compute genuine real-world distance for the "wide" tier, rather
+// than relying solely on the coarse bucket match.
+function milesBetween(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+const WIDE_TIER_MAX_MILES = 15;
 
 export async function createGathering({ title, description, interestTag, scheduledAt }) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -20,11 +45,22 @@ export async function createGathering({ title, description, interestTag, schedul
   if (status !== 'granted') throw new Error('Location permission is needed to post a gathering.');
 
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  const area = coarseGatheringArea(location.coords.latitude, location.coords.longitude);
+  const lat = location.coords.latitude;
+  const lng = location.coords.longitude;
 
   const { data, error } = await supabase
     .from('gatherings')
-    .insert({ host_id: hostId, title, description, interest_tag: interestTag, area, scheduled_at: scheduledAt })
+    .insert({
+      host_id: hostId,
+      title,
+      description,
+      interest_tag: interestTag,
+      area: localArea(lat, lng),
+      wide_area: wideArea(lat, lng),
+      precise_lat: lat,
+      precise_lng: lng,
+      scheduled_at: scheduledAt,
+    })
     .select()
     .single();
 
@@ -32,7 +68,9 @@ export async function createGathering({ title, description, interestTag, schedul
   return data;
 }
 
-export async function getNearbyGatherings() {
+// tier: 'local' (~0.7mi, tight bucket match) or 'wide' (~15mi,
+// computed real distance, Meetup-style)
+export async function getNearbyGatherings(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
@@ -42,7 +80,6 @@ export async function getNearbyGatherings() {
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   const myLat = location.coords.latitude;
   const myLng = location.coords.longitude;
-  const area = coarseGatheringArea(myLat, myLng);
 
   const { data: blockedByMe } = await supabase
     .from('blocks')
@@ -61,13 +98,20 @@ export async function getNearbyGatherings() {
   const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', userId).single();
   const myInterests = myProfile?.interests ?? [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('gatherings')
     .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))')
-    .eq('area', area)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
+
+  if (tier === 'local') {
+    query = query.eq('area', localArea(myLat, myLng));
+  } else {
+    query = query.eq('wide_area', wideArea(myLat, myLng));
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('getNearbyGatherings error', error);
@@ -77,15 +121,23 @@ export async function getNearbyGatherings() {
   return (data ?? [])
     .filter((gathering) => !excludedHostIds.has(gathering.host_id))
     .map((gathering) => {
-      const [gatheringLat, gatheringLng] = (gathering.area || '').split(',').map(Number);
       const approvedAttendees = (gathering.attendees ?? []).filter((a) => a.status === 'approved');
+      const hasPreciseCoords = gathering.precise_lat != null && gathering.precise_lng != null;
+      const distanceMiles = hasPreciseCoords
+        ? milesBetween(myLat, myLng, gathering.precise_lat, gathering.precise_lng)
+        : null;
       return {
         ...gathering,
         matchesYourInterests: gathering.interest_tag ? myInterests.includes(gathering.interest_tag) : false,
-        distanceLabel: distanceRangeLabel(myLat, myLng, gatheringLat, gatheringLng),
+        distanceLabel: hasPreciseCoords
+          ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
+          : distanceRangeLabel(myLat, myLng, gathering.precise_lat, gathering.precise_lng),
+        distanceMiles,
         approvedAttendees,
       };
-    });
+    })
+    .filter((gathering) => tier === 'local' || gathering.distanceMiles === null || gathering.distanceMiles <= WIDE_TIER_MAX_MILES)
+    .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
 }
 
 export async function getMyGatherings() {
