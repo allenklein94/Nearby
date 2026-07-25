@@ -18,6 +18,55 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running',
 ];
 
+const DATE_OPTIONS = [
+  { key: 'anytime', label: 'Anytime' },
+  { key: 'today', label: 'Today' },
+  { key: 'tomorrow', label: 'Tomorrow' },
+  { key: 'weekend', label: 'This Weekend' },
+  { key: 'week', label: 'This Week' },
+];
+
+function matchesDateFilter(scheduledAt, filterKey) {
+  if (filterKey === 'anytime') return true;
+  const date = new Date(scheduledAt);
+  const now = new Date();
+
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const todayStart = startOfDay(now);
+
+  if (filterKey === 'today') {
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    return date >= todayStart && date < tomorrowStart;
+  }
+
+  if (filterKey === 'tomorrow') {
+    const tomorrowStart = new Date(todayStart);
+    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
+    const dayAfterStart = new Date(tomorrowStart);
+    dayAfterStart.setDate(dayAfterStart.getDate() + 1);
+    return date >= tomorrowStart && date < dayAfterStart;
+  }
+
+  if (filterKey === 'weekend') {
+    const dayOfWeek = todayStart.getDay();
+    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+    const saturdayStart = new Date(todayStart);
+    saturdayStart.setDate(saturdayStart.getDate() + daysUntilSaturday);
+    const mondayStart = new Date(saturdayStart);
+    mondayStart.setDate(mondayStart.getDate() + 2);
+    return date >= saturdayStart && date < mondayStart;
+  }
+
+  if (filterKey === 'week') {
+    const weekEnd = new Date(todayStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return date >= todayStart && date < weekEnd;
+  }
+
+  return true;
+}
+
 export default function GatheringsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -37,6 +86,7 @@ export default function GatheringsScreen({ navigation }) {
   const [loadingFellows, setLoadingFellows] = useState(false);
   const [sentNoticeTo, setSentNoticeTo] = useState({});
   const [interestFilter, setInterestFilter] = useState(null);
+  const [dateFilter, setDateFilter] = useState('anytime');
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults] = await Promise.all([
@@ -171,9 +221,9 @@ export default function GatheringsScreen({ navigation }) {
     return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
-  const filteredNearby = interestFilter
-    ? nearby.filter((g) => g.interest_tag === interestFilter)
-    : nearby;
+  const filteredNearby = nearby
+    .filter((g) => !interestFilter || g.interest_tag === interestFilter)
+    .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -243,6 +293,24 @@ export default function GatheringsScreen({ navigation }) {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
+            {DATE_OPTIONS.map((option) => {
+              const active = dateFilter === option.key;
+              return (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[styles.dateChip, active && styles.dateChipActive]}
+                  onPress={() => setDateFilter(option.key)}
+                  accessibilityLabel={`Filter by ${option.label}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
             {INTEREST_OPTIONS.map((option) => {
               const active = interestFilter === option;
               const style = categoryStyleFor(option);
@@ -272,7 +340,7 @@ export default function GatheringsScreen({ navigation }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>{interestFilter ? `No ${interestFilter} gatherings in this range right now.` : t('gatherings.emptyNearby')}</Text>
+              <Text style={styles.emptyText}>{(interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -525,6 +593,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   radiusToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
   radiusToggleTextActive: { color: colors.primary },
   filterRow: { flexGrow: 0, marginTop: spacing.md },
+  dateChip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  dateChipActive: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
+  dateChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  dateChipTextActive: { color: colors.background },
   filterChip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,

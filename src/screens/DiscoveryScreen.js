@@ -10,9 +10,11 @@ import { checkNoticeLimit, checkWaveLimit } from '../services/noticeLimits';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
+import { BASICS_FIELDS } from '../constants/basicsFields';
 import ReportBlockModal from '../components/ReportBlockModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
+import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
@@ -21,6 +23,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const UNDO_WINDOW_SECONDS = 5;
+
+// Every BASICS_FIELDS entry with defined options becomes a filterable
+// field automatically — free-text fields (height, job title, etc.)
+// aren't included since there's no fixed set of values to filter by.
+const DISCOVERY_FILTER_FIELDS = BASICS_FIELDS.filter((f) => f.type === 'select');
 
 function formatCrossedPathsTime(iso) {
   if (!iso) return null;
@@ -64,6 +71,8 @@ export default function DiscoveryScreen({ navigation }) {
   const [confidenceBannerReason, setConfidenceBannerReason] = useState(null);
   const [intentionFilter, setIntentionFilter] = useState(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [filtersModalVisible, setFiltersModalVisible] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({});
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -238,11 +247,18 @@ export default function DiscoveryScreen({ navigation }) {
     return colors.textTertiary;
   }
 
+  const advancedFilterCount = Object.values(advancedFilters).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
+
   const filteredNearby = nearby.filter((item) => {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
     if (intentionFilter) {
       const intentions = Array.isArray(item.profiles?.relationship_intention) ? item.profiles.relationship_intention : [];
       if (!intentions.includes(intentionFilter)) return false;
+    }
+    for (const [fieldKey, selectedOptions] of Object.entries(advancedFilters)) {
+      if (!selectedOptions || selectedOptions.length === 0) continue;
+      const personValue = item.profiles?.basics?.[fieldKey];
+      if (!personValue || !selectedOptions.includes(personValue)) return false;
     }
     return true;
   });
@@ -266,32 +282,44 @@ export default function DiscoveryScreen({ navigation }) {
 
       {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
-        {INTENTION_OPTIONS.map((option) => {
-          const active = intentionFilter === option.value;
-          return (
-            <TouchableOpacity
-              key={option.value}
-              style={[styles.filterChip, active && styles.filterChipActive]}
-              onPress={() => setIntentionFilter(active ? null : option.value)}
-              accessibilityLabel={`Filter by ${option.label}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-            >
-              <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option.icon} {option.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+      <View style={styles.filterBarRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ gap: spacing.xs }}>
+          {INTENTION_OPTIONS.map((option) => {
+            const active = intentionFilter === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => setIntentionFilter(active ? null : option.value)}
+                accessibilityLabel={`Filter by ${option.label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option.icon} {option.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity
+            style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
+            onPress={() => setVerifiedOnly(!verifiedOnly)}
+            accessibilityLabel="Filter to only photo-verified profiles"
+            accessibilityRole="button"
+            accessibilityState={{ selected: verifiedOnly }}
+          >
+            <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
+          </TouchableOpacity>
+        </ScrollView>
         <TouchableOpacity
-          style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
-          onPress={() => setVerifiedOnly(!verifiedOnly)}
-          accessibilityLabel="Filter to only photo-verified profiles"
+          style={[styles.moreFiltersButton, advancedFilterCount > 0 && styles.moreFiltersButtonActive]}
+          onPress={() => setFiltersModalVisible(true)}
+          accessibilityLabel={`More filters${advancedFilterCount > 0 ? `, ${advancedFilterCount} active` : ''}`}
           accessibilityRole="button"
-          accessibilityState={{ selected: verifiedOnly }}
         >
-          <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
+          <Text style={[styles.moreFiltersText, advancedFilterCount > 0 && styles.moreFiltersTextActive]}>
+            ⚙️{advancedFilterCount > 0 ? ` ${advancedFilterCount}` : ''}
+          </Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       {initialLoading ? (
         <View>
@@ -308,8 +336,8 @@ export default function DiscoveryScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>{(intentionFilter || verifiedOnly) ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{(intentionFilter || verifiedOnly) ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
+            <Text style={styles.emptyTitle}>{(intentionFilter || verifiedOnly || advancedFilterCount > 0) ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{(intentionFilter || verifiedOnly || advancedFilterCount > 0) ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -430,6 +458,14 @@ export default function DiscoveryScreen({ navigation }) {
         report={compatModalReport}
         theirName={compatModalName}
       />
+
+      <FiltersModal
+        visible={filtersModalVisible}
+        onClose={() => setFiltersModalVisible(false)}
+        fields={DISCOVERY_FILTER_FIELDS}
+        activeFilters={advancedFilters}
+        onApply={setAdvancedFilters}
+      />
     </SafeAreaView>
   );
 }
@@ -442,7 +478,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   infoButton: { marginLeft: spacing.sm, padding: spacing.xs },
   infoButtonText: { color: colors.textTertiary, fontSize: 18 },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-  filterRow: { flexGrow: 0, marginBottom: spacing.md },
+  filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
+  filterRow: { flexGrow: 0, flexShrink: 1 },
   filterChip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
@@ -451,6 +488,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   filterChipTextActive: { color: '#fff' },
+  moreFiltersButton: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  moreFiltersButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  moreFiltersText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  moreFiltersTextActive: { color: colors.primary },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
