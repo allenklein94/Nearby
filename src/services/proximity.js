@@ -118,12 +118,6 @@ function calculateAge(birthdateString) {
   return age;
 }
 
-// Mutual gender-based matching: shows a person only if BOTH sides'
-// preferences are satisfied — not just "do I want to see them,"
-// but also "would they want to see me." Falls back to the older
-// discovery_gender/show_me fields if either person hasn't filled in
-// the newer, more inclusive gender_identity/interested_in_genders
-// fields yet, so existing profiles aren't broken.
 function passesGenderMatch(myProfile, theirProfile) {
   const myIdentity = myProfile?.gender_identity ?? [];
   const myInterestedIn = myProfile?.interested_in_genders ?? [];
@@ -138,8 +132,6 @@ function passesGenderMatch(myProfile, theirProfile) {
     return iWantThem && theyWantMe;
   }
 
-  // Fallback to the legacy one-directional check for anyone who
-  // hasn't set up the new fields yet.
   const showMe = myProfile?.show_me ?? 'Everyone';
   if (showMe !== 'Everyone' && theirProfile?.discovery_gender !== showMe) {
     return false;
@@ -151,6 +143,22 @@ export async function getNearbyMatches() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return [];
+
+  // Blocking must be checked in BOTH directions — if I blocked them,
+  // or if they blocked me, neither of us should show up to the other.
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('blocked_id')
+    .eq('blocker_id', userId);
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('blocker_id')
+    .eq('blocked_id', userId);
+
+  const excludedUserIds = new Set([
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
 
   const { data: myProfile } = await supabase
     .from('profiles')
@@ -185,7 +193,7 @@ export async function getNearbyMatches() {
 
   const otherUserIds = sightings
     .map((s) => (s.user_a === userId ? s.user_b : s.user_a))
-    .filter((id) => !matchedUserIds.has(id));
+    .filter((id) => !matchedUserIds.has(id) && !excludedUserIds.has(id));
 
   if (otherUserIds.length === 0) return [];
 
