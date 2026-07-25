@@ -328,7 +328,7 @@ export default function ChatScreen({ route, navigation }) {
         { text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
         { text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
         { text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
-      { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+        { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
         { text: '🦁 Help Me Say It', onPress: showCourageMenu },
       ]
     );
@@ -403,7 +403,23 @@ export default function ChatScreen({ route, navigation }) {
           text: 'Unmatch',
           style: 'destructive',
           onPress: async () => {
-            const otherPersonName = otherUser?.display_name || 'this person';
+            // Don't trust component state here — if otherUser hasn't
+            // finished loading yet, we'd otherwise silently save a
+            // fallback placeholder as if it were a real name. Fetch
+            // fresh, directly, right before it's needed.
+            let otherPersonName = otherUser?.display_name;
+            if (!otherPersonName) {
+              const { data: freshMatch } = await supabase
+                .from('matches')
+                .select('user_a, user_b, a:profiles!matches_user_a_fkey(id, display_name), b:profiles!matches_user_b_fkey(id, display_name)')
+                .eq('id', matchId)
+                .single();
+              if (freshMatch) {
+                const fresh = freshMatch.user_a === userId ? freshMatch.b : freshMatch.a;
+                otherPersonName = fresh?.display_name;
+              }
+            }
+            otherPersonName = otherPersonName || null;
             try {
               await unmatch(matchId);
               navigation.goBack();
@@ -691,9 +707,6 @@ export default function ChatScreen({ route, navigation }) {
     ? `Say hi — you're both attending "${gatheringTitle}"!`
     : t('chat.sayHi');
 
-  // "I Message First" enforcement — only blocks the OTHER person from
-  // sending, never the designated first-messenger themselves. Once
-  // they've sent one message, the restriction lifts for good.
   const designatedHasSentMessage = designatedFirstMessengerId
     ? messages.some((m) => m.sender_id === designatedFirstMessengerId)
     : true;
