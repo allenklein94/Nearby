@@ -3,10 +3,12 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ale
 import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function IdVerificationScreen() {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [status, setStatus] = useState(null);
@@ -79,7 +81,7 @@ export default function IdVerificationScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.statusState}>
           <Text style={styles.statusEmoji}>⏳</Text>
-          <Text style={styles.statusTitle}>Under Review</Text>
+          <Text style={styles.statusTitle}>{t('idVerification.underReview')}</Text>
           <Text style={styles.statusText}>We're reviewing your submission — this usually takes a day or two. We'll let you know once it's done.</Text>
         </View>
       </SafeAreaView>
@@ -91,7 +93,7 @@ export default function IdVerificationScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.statusState}>
           <Text style={styles.statusEmoji}>✓</Text>
-          <Text style={styles.statusTitle}>You're Verified</Text>
+          <Text style={styles.statusTitle}>{t('idVerification.verified')}</Text>
           <Text style={styles.statusText}>Your profile now shows a verified badge, and you'll appear when others filter for verified profiles.</Text>
         </View>
       </SafeAreaView>
@@ -101,9 +103,9 @@ export default function IdVerificationScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.headerTitle} accessibilityRole="header">✓ Verify Your Identity</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('idVerification.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          Helps keep the community authentic and gives you a verified badge. We only use these photos to confirm your identity — they're never shown publicly.
+          {t('idVerification.subtitle')}
         </Text>
 
         {status?.status === 'rejected' && (
@@ -112,21 +114,21 @@ export default function IdVerificationScreen() {
           </View>
         )}
 
-        <Text style={styles.stepLabel}>1. Take a selfie</Text>
+        <Text style={styles.stepLabel}>1. {t('idVerification.takeSelfie')}</Text>
         {selfieAsset ? (
           <Image source={{ uri: selfieAsset.uri }} style={styles.preview} />
         ) : (
-          <TouchableOpacity style={styles.captureButton} onPress={handleTakeSelfie} activeOpacity={0.85} accessibilityLabel="Take a selfie" accessibilityRole="button">
-            <Text style={styles.captureButtonText}>📸 Take Selfie</Text>
+          <TouchableOpacity style={styles.captureButton} onPress={handleTakeSelfie} activeOpacity={0.85} accessibilityLabel={t('idVerification.takeSelfie')} accessibilityRole="button">
+            <Text style={styles.captureButtonText}>{t('idVerification.takeSelfie')}</Text>
           </TouchableOpacity>
         )}
 
-        <Text style={styles.stepLabel}>2. Photo of your ID</Text>
+        <Text style={styles.stepLabel}>2. {t('idVerification.takeIdPhoto')}</Text>
         {idAsset ? (
           <Image source={{ uri: idAsset.uri }} style={styles.preview} />
         ) : (
-          <TouchableOpacity style={styles.captureButton} onPress={handleTakeIdPhoto} activeOpacity={0.85} accessibilityLabel="Take a photo of your ID" accessibilityRole="button">
-            <Text style={styles.captureButtonText}>🪪 Take ID Photo</Text>
+          <TouchableOpacity style={styles.captureButton} onPress={handleTakeIdPhoto} activeOpacity={0.85} accessibilityLabel={t('idVerification.takeIdPhoto')} accessibilityRole="button">
+            <Text style={styles.captureButtonText}>{t('idVerification.takeIdPhoto')}</Text>
           </TouchableOpacity>
         )}
 
@@ -135,10 +137,10 @@ export default function IdVerificationScreen() {
           onPress={handleSubmit}
           disabled={submitting || !selfieAsset || !idAsset}
           activeOpacity={0.85}
-          accessibilityLabel={submitting ? 'Submitting' : 'Submit for verification'}
+          accessibilityLabel={submitting ? 'Submitting' : t('idVerification.submitButton')}
           accessibilityRole="button"
         >
-          <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit for Verification'}</Text>
+          <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : t('idVerification.submitButton')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

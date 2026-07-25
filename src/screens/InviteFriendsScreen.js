@@ -3,10 +3,12 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ale
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function InviteFriendsScreen() {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [code, setCode] = useState(null);
@@ -72,31 +74,31 @@ export default function InviteFriendsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.headerTitle} accessibilityRole="header">🎁 Invite Friends</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('inviteFriends.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          Share your code — when a friend joins with it, you both get 3 bonus Notices.
+          {t('inviteFriends.subtitle')}
         </Text>
 
         <View style={styles.codeCard}>
-          <Text style={styles.codeLabel}>Your Code</Text>
+          <Text style={styles.codeLabel}>{t('inviteFriends.yourCode')}</Text>
           <Text style={styles.codeText}>{code}</Text>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel="Share your referral code" accessibilityRole="button">
-            <Text style={styles.shareButtonText}>Share Code</Text>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel={t('inviteFriends.shareCode')} accessibilityRole="button">
+            <Text style={styles.shareButtonText}>{t('inviteFriends.shareCode')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.statCard}>
           <Text style={styles.statNumber}>{referralCount}</Text>
-          <Text style={styles.statLabel}>{referralCount === 1 ? 'friend joined' : 'friends joined'}</Text>
+          <Text style={styles.statLabel}>{t('inviteFriends.friendsJoined')}</Text>
         </View>
 
         {!alreadyReferred && (
           <View style={styles.redeemCard}>
-            <Text style={styles.redeemLabel}>Have a friend's code?</Text>
+            <Text style={styles.redeemLabel}>{t('inviteFriends.haveCode')}</Text>
             <View style={styles.redeemRow}>
               <TextInput
                 style={styles.redeemInput}
-                placeholder="Enter code"
+                placeholder={t('inviteFriends.enterCode')}
                 placeholderTextColor={colors.textTertiary}
                 value={redeemInput}
                 onChangeText={setRedeemInput}
@@ -107,10 +109,10 @@ export default function InviteFriendsScreen() {
                 style={styles.redeemButton}
                 onPress={handleRedeem}
                 disabled={redeeming || !redeemInput.trim()}
-                accessibilityLabel="Redeem code"
+                accessibilityLabel={t('inviteFriends.redeem')}
                 accessibilityRole="button"
               >
-                <Text style={styles.redeemButtonText}>{redeeming ? '...' : 'Redeem'}</Text>
+                <Text style={styles.redeemButtonText}>{redeeming ? '...' : t('inviteFriends.redeem')}</Text>
               </TouchableOpacity>
             </View>
           </View>

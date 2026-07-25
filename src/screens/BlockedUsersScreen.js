@@ -4,10 +4,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMyBlockedUsers, unblockUser } from '../services/blockedUsers';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function BlockedUsersScreen() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors);
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -50,7 +52,7 @@ export default function BlockedUsersScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Unblock',
+          text: t('blockedUsers.unblock'),
           onPress: async () => {
             setUnblockingId(block.id);
             try {
@@ -80,15 +82,15 @@ export default function BlockedUsersScreen() {
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <Text style={styles.headerTitle} accessibilityRole="header">🚫 Blocked Users</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('blockedUsers.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          People you've blocked won't see your profile and can't contact you. You can unblock anyone at any time.
+          {t('blockedUsers.subtitle')}
         </Text>
 
         {blockedUsers.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✓</Text>
-            <Text style={styles.emptyText}>You haven't blocked anyone.</Text>
+            <Text style={styles.emptyText}>{t('blockedUsers.noneBlocked')}</Text>
           </View>
         )}
 
@@ -104,10 +106,10 @@ export default function BlockedUsersScreen() {
               style={styles.unblockButton}
               onPress={() => confirmUnblock(block)}
               disabled={unblockingId === block.id}
-              accessibilityLabel={`Unblock ${block.profiles?.display_name || 'this person'}`}
+              accessibilityLabel={`${t('blockedUsers.unblock')} ${block.profiles?.display_name || 'this person'}`}
               accessibilityRole="button"
             >
-              <Text style={styles.unblockButtonText}>{unblockingId === block.id ? '...' : 'Unblock'}</Text>
+              <Text style={styles.unblockButtonText}>{unblockingId === block.id ? '...' : t('blockedUsers.unblock')}</Text>
             </TouchableOpacity>
           </View>
         ))}
