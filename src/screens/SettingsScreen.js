@@ -584,6 +584,17 @@ export default function SettingsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('BrandOffers')}
+          activeOpacity={0.85}
+          accessibilityLabel="Offers and perks"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🎁 Offers & Perks</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
           onPress={() => navigation.navigate('RelationshipEmergencyKit')}
           activeOpacity={0.85}
           accessibilityLabel="Relationship Emergency Kit"
