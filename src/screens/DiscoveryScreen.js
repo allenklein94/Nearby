@@ -25,11 +25,6 @@ import { typography, spacing, radius } from '../theme';
 
 const UNDO_WINDOW_SECONDS = 5;
 
-// Every BASICS_FIELDS entry with defined options becomes a filterable
-// field automatically — free-text fields (height, job title, etc.)
-// aren't included since there's no fixed set of values to filter by.
-// Ethnicity is added separately since it lives at the top level of
-// profiles rather than nested inside basics.
 const DISCOVERY_FILTER_FIELDS = [
   ...BASICS_FIELDS.filter((f) => f.type === 'select'),
   { key: 'ethnicity', label: 'Ethnicity', icon: '🌍', options: ETHNICITY_OPTIONS, topLevel: true },
@@ -89,6 +84,8 @@ export default function DiscoveryScreen({ navigation }) {
   const [confidenceBannerReason, setConfidenceBannerReason] = useState(null);
   const [intentionFilter, setIntentionFilter] = useState(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [highCompatOnly, setHighCompatOnly] = useState(false);
+  const [onlineOnly, setOnlineOnly] = useState(false);
   const [filtersModalVisible, setFiltersModalVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
@@ -284,9 +281,12 @@ export default function DiscoveryScreen({ navigation }) {
   const advancedFilterCount = Object.values(advancedFilters).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
   const ageFilterActive = ageRangeFilter.min !== 18 || ageRangeFilter.max !== 99;
   const totalActiveCount = advancedFilterCount + (ageFilterActive ? 1 : 0);
+  const anyFilterActive = intentionFilter || verifiedOnly || highCompatOnly || onlineOnly || totalActiveCount > 0;
 
   const filteredNearby = nearby.filter((item) => {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
+    if (highCompatOnly && (item.compatibilityScore === null || item.compatibilityScore < 70)) return false;
+    if (onlineOnly && !onlineStatuses[item.otherUserId]) return false;
     if (intentionFilter) {
       const intentions = Array.isArray(item.profiles?.relationship_intention) ? item.profiles.relationship_intention : [];
       if (!intentions.includes(intentionFilter)) return false;
@@ -351,6 +351,24 @@ export default function DiscoveryScreen({ navigation }) {
           >
             <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, highCompatOnly && styles.filterChipActive]}
+            onPress={() => setHighCompatOnly(!highCompatOnly)}
+            accessibilityLabel="Filter to 70 percent compatible or higher"
+            accessibilityRole="button"
+            accessibilityState={{ selected: highCompatOnly }}
+          >
+            <Text style={[styles.filterChipText, highCompatOnly && styles.filterChipTextActive]}>🎯 70%+ Match</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterChip, onlineOnly && styles.filterChipActive]}
+            onPress={() => setOnlineOnly(!onlineOnly)}
+            accessibilityLabel="Filter to only people online now"
+            accessibilityRole="button"
+            accessibilityState={{ selected: onlineOnly }}
+          >
+            <Text style={[styles.filterChipText, onlineOnly && styles.filterChipTextActive]}>🟢 Online Now</Text>
+          </TouchableOpacity>
         </ScrollView>
         <TouchableOpacity
           style={[styles.moreFiltersButton, totalActiveCount > 0 && styles.moreFiltersButtonActive]}
@@ -379,8 +397,8 @@ export default function DiscoveryScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>{(intentionFilter || verifiedOnly || totalActiveCount > 0) ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{(intentionFilter || verifiedOnly || totalActiveCount > 0) ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
+            <Text style={styles.emptyTitle}>{anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => {
