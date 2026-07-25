@@ -117,6 +117,8 @@ export default function ChatScreen({ route, navigation }) {
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const [isStalled, setIsStalled] = useState(false);
   const [reactions, setReactions] = useState({});
+  const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
+  const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
   const listRef = useRef(null);
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
@@ -186,14 +188,33 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled)')
+      .select('user_a, user_b, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
       .eq('id', matchId)
       .single();
 
     if (match) {
       const other = match.user_a === myId ? match.b : match.a;
+      const me = match.user_a === myId ? match.a : match.b;
       setOtherUser(other);
       setGatheringTitle(match.gatherings?.title || null);
+
+      // "I Message First" — if exactly one participant has opted in,
+      // they're the designated first-messenger for this match. If
+      // both or neither opted in, there's no restriction — avoids any
+      // ambiguity about whose preference takes precedence.
+      const meOptedIn = !!me?.women_message_first;
+      const otherOptedIn = !!other?.women_message_first;
+      if (meOptedIn && !otherOptedIn) {
+        setDesignatedFirstMessengerId(myId);
+        setDesignatedFirstMessengerName('You');
+      } else if (otherOptedIn && !meOptedIn) {
+        setDesignatedFirstMessengerId(other.id);
+        setDesignatedFirstMessengerName(other.display_name);
+      } else {
+        setDesignatedFirstMessengerId(null);
+        setDesignatedFirstMessengerName(null);
+      }
+
       navigation.setOptions({
         headerShown: true,
         headerTitle: () => (
@@ -626,6 +647,14 @@ export default function ChatScreen({ route, navigation }) {
     ? `Say hi — you're both attending "${gatheringTitle}"!`
     : t('chat.sayHi');
 
+  // "I Message First" enforcement — only blocks the OTHER person from
+  // sending, never the designated first-messenger themselves. Once
+  // they've sent one message, the restriction lifts for good.
+  const designatedHasSentMessage = designatedFirstMessengerId
+    ? messages.some((m) => m.sender_id === designatedFirstMessengerId)
+    : true;
+  const isBlockedFromSending = designatedFirstMessengerId && designatedFirstMessengerId !== userId && !designatedHasSentMessage;
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -643,6 +672,11 @@ export default function ChatScreen({ route, navigation }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💬</Text>
               <Text style={styles.emptyText}>{emptyStateText}</Text>
+              {isBlockedFromSending && (
+                <Text style={styles.firstMessageHint}>
+                  {designatedFirstMessengerName} will send the first message.
+                </Text>
+              )}
               {isUserPremium && (
                 <TouchableOpacity
                   style={styles.icebreakerEmptyButton}
@@ -743,7 +777,13 @@ export default function ChatScreen({ route, navigation }) {
           </View>
         )}
 
-        {isRecording ? (
+        {isBlockedFromSending ? (
+          <View style={styles.blockedRow}>
+            <Text style={styles.blockedText}>
+              🔒 {designatedFirstMessengerName} needs to send the first message before you can reply.
+            </Text>
+          </View>
+        ) : isRecording ? (
           <View style={styles.recordingRow}>
             <View style={styles.recordingIndicator} />
             <Text style={styles.recordingTime}>{formatRecordingTime(recordingSeconds)}</Text>
@@ -843,6 +883,7 @@ const getStyles = (colors) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
+  firstMessageHint: { ...typography.caption, color: colors.primary, textAlign: 'center', marginTop: spacing.sm, fontWeight: '600' },
   icebreakerEmptyButton: { marginTop: spacing.lg, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary },
   icebreakerEmptyText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
   bubbleRow: { marginBottom: spacing.md, maxWidth: '78%' },
@@ -874,6 +915,10 @@ const getStyles = (colors) => StyleSheet.create({
   typingRow: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xs },
   typingBubble: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, alignSelf: 'flex-start' },
   typingText: { color: colors.textTertiary, fontSize: 12, fontStyle: 'italic' },
+  blockedRow: {
+    padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surfaceElevated,
+  },
+  blockedText: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18 },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
