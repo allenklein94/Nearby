@@ -54,7 +54,35 @@ export default function ViewProfileScreen({ route, navigation }) {
     load();
   }, []);
 
-  async function load() {
+async function load() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+
+    // A blocked profile should never be viewable at all, regardless
+    // of how someone navigated here — this check is independent of
+    // (and in addition to) the list-level filtering elsewhere, since
+    // direct navigation bypasses those lists entirely.
+    if (myId && myId !== userId) {
+      const { data: blockedByMe } = await supabase
+        .from('blocks')
+        .select('id')
+        .eq('blocker_id', myId)
+        .eq('blocked_id', userId)
+        .maybeSingle();
+      const { data: blockedMe } = await supabase
+        .from('blocks')
+        .select('id')
+        .eq('blocker_id', userId)
+        .eq('blocked_id', myId)
+        .maybeSingle();
+
+      if (blockedByMe || blockedMe) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+    }
+
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
     let mainPhotoUrl = null;
