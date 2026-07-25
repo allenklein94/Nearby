@@ -328,9 +328,53 @@ export default function ChatScreen({ route, navigation }) {
         { text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
         { text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
         { text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
-        { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+      { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+        { text: '🦁 Help Me Say It', onPress: showCourageMenu },
       ]
     );
+  }
+
+  function showCourageMenu() {
+    Alert.alert(
+      'Help Me Say It',
+      "What are you trying to say? I'll help you find the words.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Ask them out', onPress: () => getCourageMessage('ask_out') },
+        { text: "Set a boundary", onPress: () => getCourageMessage('set_boundary') },
+        { text: "Say I'm interested", onPress: () => getCourageMessage('say_interested') },
+        { text: "Say I'm not interested", onPress: () => getCourageMessage('say_not_interested') },
+      ]
+    );
+  }
+
+  async function getCourageMessage(goal) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-courage-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ goal }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        Alert.alert('Error', result.error || 'Could not generate a message right now.');
+        return;
+      }
+
+      Alert.alert('Here\u2019s a draft', result.message, [
+        { text: 'Dismiss', style: 'cancel' },
+        { text: 'Use This', onPress: () => setText(result.message) },
+      ]);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   function showRandomExperiment() {

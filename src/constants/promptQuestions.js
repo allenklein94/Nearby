@@ -25,4 +25,8 @@ export const PROMPT_QUESTIONS = [
   "The funniest thing that happened to me this week...",
   "Something small that made me happy recently...",
   "Something I'm a little obsessed with right now...",
+  "A weird habit I have...",
+  "What my friends tease me about...",
+  "Something I need reassurance about...",
+  "A skill I definitely don't have...",
 ];
