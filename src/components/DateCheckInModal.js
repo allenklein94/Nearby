@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Location from 'expo-location';
 import { createCheckIn, buildShareMessage } from '../services/dateSafety';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -11,6 +12,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 2 * 60 * 60 * 1000));
   const [showPicker, setShowPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sharingLocation, setSharingLocation] = useState(false);
 
   async function handleCreate() {
     setSubmitting(true);
@@ -29,6 +31,34 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
       Alert.alert('Error', e.message);
     }
     setSubmitting(false);
+  }
+
+  // A snapshot share, not continuous tracking — the person taps this
+  // whenever they want a trusted contact to know exactly where they
+  // are right now. Genuine live tracking would need a public web page
+  // that updates in real time, which is a separate piece of
+  // infrastructure beyond what this in-app share sheet can do.
+  async function handleShareLocationNow() {
+    setSharingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location needed', 'Location access is needed to share your current spot.');
+        setSharingLocation(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const { latitude, longitude } = location.coords;
+      const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+
+      await Share.share({
+        message: `I'm currently here — sharing my location while I'm out with ${matchName || 'someone'}: ${mapsUrl}`,
+      });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSharingLocation(false);
   }
 
   return (
@@ -63,6 +93,23 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
           <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting} activeOpacity={0.85}>
             <Text style={styles.buttonText}>{submitting ? 'Setting up...' : 'Set Up Check-In & Share Plans'}</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={handleShareLocationNow}
+            disabled={sharingLocation}
+            activeOpacity={0.85}
+            accessibilityLabel="Share my current location right now"
+            accessibilityRole="button"
+          >
+            {sharingLocation ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.locationButtonText}>📍 Share My Location Now</Text>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.locationHint}>A one-time snapshot of where you are right now — not continuous tracking.</Text>
+
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
@@ -81,5 +128,11 @@ const getStyles = (colors) => StyleSheet.create({
   input: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center' },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  locationButton: {
+    borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full,
+    paddingVertical: 14, alignItems: 'center', marginTop: spacing.md,
+  },
+  locationButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  locationHint: { ...typography.small, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },
   cancelText: { color: colors.textTertiary, textAlign: 'center' },
 });
