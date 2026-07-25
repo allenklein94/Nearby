@@ -41,6 +41,22 @@ export default function NoticesScreen({ navigation }) {
       (existingMatches ?? []).map((m) => (m.user_a === myId ? m.user_b : m.user_a))
     );
 
+    // Exclude anyone blocked, in either direction — a blocked person's
+    // old Notice shouldn't linger here after blocking.
+    const { data: blockedByMe } = await supabase
+      .from('blocks')
+      .select('blocked_id')
+      .eq('blocker_id', myId);
+    const { data: blockedMe } = await supabase
+      .from('blocks')
+      .select('blocker_id')
+      .eq('blocked_id', myId);
+
+    const excludedUserIds = new Set([
+      ...(blockedByMe ?? []).map((b) => b.blocked_id),
+      ...(blockedMe ?? []).map((b) => b.blocker_id),
+    ]);
+
     const { data, error } = await supabase
       .from('notices')
       .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics)')
@@ -49,7 +65,7 @@ export default function NoticesScreen({ navigation }) {
       .order('created_at', { ascending: false });
 
     if (!error) {
-      const filtered = (data ?? []).filter((n) => !matchedUserIds.has(n.from_user));
+      const filtered = (data ?? []).filter((n) => !matchedUserIds.has(n.from_user) && !excludedUserIds.has(n.from_user));
       setNotices(filtered);
       const urlEntries = await Promise.all(
         filtered.map(async (n) => {
