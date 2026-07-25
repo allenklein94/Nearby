@@ -45,6 +45,7 @@ import BrandOffersScreen from '../screens/BrandOffersScreen';
 import RehearsalRoomScreen from '../screens/RehearsalRoomScreen';
 import IdVerificationScreen from '../screens/IdVerificationScreen';
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
+import InviteFriendsScreen from '../screens/InviteFriendsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -212,7 +213,8 @@ export default function RootNavigator() {
             <Stack.Screen name="BrandOffers" component={BrandOffersScreen} options={{ headerShown: true, title: 'Offers & Perks', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: 'Rehearsal Room', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: 'Verify Identity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+           <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} options={{ headerShown: true, title: 'Invite Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>

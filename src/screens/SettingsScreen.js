@@ -582,6 +582,17 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+       <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('InviteFriends')}
+          activeOpacity={0.85}
+          accessibilityLabel="Invite friends"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🎁 Invite Friends</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('IdVerification')}
