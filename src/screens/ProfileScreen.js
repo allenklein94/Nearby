@@ -8,6 +8,7 @@ import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, set
 import { checkTextModeration } from '../services/textModeration';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
+import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { typography, spacing, radius } from '../theme';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -76,6 +77,8 @@ export default function ProfileScreen({ navigation }) {
   const [pronouns, setPronouns] = useState('');
   const [gender, setGender] = useState('');
   const [sexualOrientation, setSexualOrientation] = useState('');
+  const [genderIdentity, setGenderIdentity] = useState([]);
+  const [interestedInGenders, setInterestedInGenders] = useState([]);
   const [basics, setBasics] = useState({});
   const [prompts, setPrompts] = useState([]);
   const [questionPickerVisible, setQuestionPickerVisible] = useState(false);
@@ -104,6 +107,8 @@ export default function ProfileScreen({ navigation }) {
       setPronouns(data.pronouns || '');
       setGender(data.gender || '');
       setSexualOrientation(data.sexual_orientation || '');
+      setGenderIdentity(data.gender_identity || []);
+      setInterestedInGenders(data.interested_in_genders || []);
       setBasics(data.basics || {});
       setPrompts(data.prompts || []);
       if (data.photo_url) {
@@ -152,6 +157,18 @@ export default function ProfileScreen({ navigation }) {
   function toggleInterest(interest) {
     setInterests((prev) =>
       prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+    );
+  }
+
+  function toggleGenderIdentity(option) {
+    setGenderIdentity((prev) =>
+      prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option]
+    );
+  }
+
+  function toggleInterestedInGender(option) {
+    setInterestedInGenders((prev) =>
+      prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option]
     );
   }
 
@@ -263,6 +280,8 @@ export default function ProfileScreen({ navigation }) {
         pronouns: pronouns.trim() || null,
         gender: gender.trim() || null,
         sexual_orientation: sexualOrientation.trim() || null,
+        gender_identity: genderIdentity,
+        interested_in_genders: interestedInGenders,
         basics,
         prompts,
       })
@@ -463,7 +482,49 @@ export default function ProfileScreen({ navigation }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.aboutYou')}</Text>
         <View style={styles.formCard}>
-          <Text style={styles.label}>{t('profile.pronounsLabel')}</Text>
+          <Text style={styles.label}>I identify as</Text>
+          <View style={styles.chipsWrap}>
+            {GENDER_IDENTITY_OPTIONS.map((option) => {
+              const selected = genderIdentity.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleGenderIdentity(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>Select all that apply — this affects who you're matched with.</Text>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>I'm interested in dating</Text>
+          <View style={styles.chipsWrap}>
+            {GENDER_IDENTITY_OPTIONS.map((option) => {
+              const selected = interestedInGenders.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleInterestedInGender(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>Select all that apply. Matching is mutual — you'll only see people whose preferences also include you.</Text>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('profile.pronounsLabel')}</Text>
           <TextInput
             style={styles.input}
             value={pronouns}
@@ -471,16 +532,6 @@ export default function ProfileScreen({ navigation }) {
             placeholder={t('profile.pronounsPlaceholder')}
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel="Pronouns"
-          />
-
-          <Text style={styles.label}>{t('profile.genderLabel')}</Text>
-          <TextInput
-            style={styles.input}
-            value={gender}
-            onChangeText={setGender}
-            placeholder={t('profile.optionalPlaceholder')}
-            placeholderTextColor={colors.textTertiary}
-            accessibilityLabel="Gender"
           />
 
           <Text style={styles.label}>{t('profile.orientationLabel')}</Text>

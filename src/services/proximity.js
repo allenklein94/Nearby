@@ -118,6 +118,35 @@ function calculateAge(birthdateString) {
   return age;
 }
 
+// Mutual gender-based matching: shows a person only if BOTH sides'
+// preferences are satisfied — not just "do I want to see them,"
+// but also "would they want to see me." Falls back to the older
+// discovery_gender/show_me fields if either person hasn't filled in
+// the newer, more inclusive gender_identity/interested_in_genders
+// fields yet, so existing profiles aren't broken.
+function passesGenderMatch(myProfile, theirProfile) {
+  const myIdentity = myProfile?.gender_identity ?? [];
+  const myInterestedIn = myProfile?.interested_in_genders ?? [];
+  const theirIdentity = theirProfile?.gender_identity ?? [];
+  const theirInterestedIn = theirProfile?.interested_in_genders ?? [];
+
+  const bothHaveNewFields = myIdentity.length > 0 && myInterestedIn.length > 0 && theirIdentity.length > 0 && theirInterestedIn.length > 0;
+
+  if (bothHaveNewFields) {
+    const iWantThem = theirIdentity.some((g) => myInterestedIn.includes(g));
+    const theyWantMe = myIdentity.some((g) => theirInterestedIn.includes(g));
+    return iWantThem && theyWantMe;
+  }
+
+  // Fallback to the legacy one-directional check for anyone who
+  // hasn't set up the new fields yet.
+  const showMe = myProfile?.show_me ?? 'Everyone';
+  if (showMe !== 'Everyone' && theirProfile?.discovery_gender !== showMe) {
+    return false;
+  }
+  return true;
+}
+
 export async function getNearbyMatches() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -125,11 +154,10 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
-  const showMe = myProfile?.show_me ?? 'Everyone';
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
@@ -163,7 +191,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -195,7 +223,7 @@ export async function getNearbyMatches() {
     })
     .filter((item) => item.profiles !== null)
     .filter((item) => {
-      if (showMe !== 'Everyone' && item.profiles.discovery_gender !== showMe) {
+      if (!passesGenderMatch(myProfile, item.profiles)) {
         return false;
       }
       const age = calculateAge(item.profiles.birthdate);
