@@ -54,7 +54,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     load();
   }, []);
 
-async function load() {
+  async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
 
@@ -107,8 +107,6 @@ async function load() {
       setIntentionChangeCount(count);
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
     const ownProfile = myId === userId;
     setIsOwnProfile(ownProfile);
 
