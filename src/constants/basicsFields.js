@@ -5,6 +5,7 @@ export const BASICS_FIELDS = [
   { key: 'job_title', label: 'Job Title', icon: '💼', type: 'text', placeholder: 'e.g. Software Engineer' },
   { key: 'relationship_goals', label: 'Looking For', icon: '💘', type: 'select', options: ['Long-term partner', 'Long-term, open to short', 'Short-term fun', 'New friends', 'Still figuring it out'] },
   { key: 'relationship_type', label: 'Relationship Type', icon: '💑', type: 'select', options: ['Monogamy', 'Non-monogamy', 'Figuring out'] },
+  { key: 'religion', label: 'Religion', icon: '🕊️', type: 'select', options: ['Agnostic', 'Atheist', 'Buddhist', 'Catholic', 'Christian', 'Hindu', 'Jewish', 'Muslim', 'Spiritual', 'Sikh', 'Other', 'Prefer not to say'] },
   { key: 'zodiac', label: 'Zodiac', icon: '🔮', type: 'select', options: ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'] },
   { key: 'education', label: 'Education', icon: '📚', type: 'select', options: ['High school', 'In college', 'Undergrad degree', 'In grad school', 'Grad degree', 'Trade school', 'Prefer not to say'] },
   { key: 'family_plans', label: 'Family Plans', icon: '👶', type: 'select', options: ['Want children', "Don't want children", 'Have children, want more', "Have children, don't want more", 'Not sure yet'] },

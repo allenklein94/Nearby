@@ -37,6 +37,7 @@ export default function SettingsScreen({ navigation }) {
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
+  const [womenMessageFirst, setWomenMessageFirst] = useState(false);
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -90,6 +91,7 @@ export default function SettingsScreen({ navigation }) {
       setEthnicityPreferences(data.ethnicity_preferences ?? []);
       setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
+      setWomenMessageFirst(data.women_message_first ?? false);
     }
   }
 
@@ -350,6 +352,19 @@ export default function SettingsScreen({ navigation }) {
               onValueChange={(v) => toggleNotifPref('read_receipts_enabled', v, setReadReceiptsEnabled)}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Read receipts"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>I Message First</Text>
+              <Text style={styles.helperText}>When you match with someone, they won't be able to send a message until you send the first one.</Text>
+            </View>
+            <Switch
+              value={womenMessageFirst}
+              onValueChange={(v) => toggleNotifPref('women_message_first', v, setWomenMessageFirst)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="I message first"
             />
           </View>
         </View>
