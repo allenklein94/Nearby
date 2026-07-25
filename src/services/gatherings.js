@@ -2,27 +2,18 @@ import { supabase } from './supabase';
 import * as Location from 'expo-location';
 import { distanceRangeLabel } from './distance';
 
-// "Local" bucket — roughly 0.6-0.7 miles, used for the tight,
-// walkable-distance tier.
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
   const bucketLng = Math.round(longitude * 100) / 100;
   return `${bucketLat},${bucketLng}`;
 }
 
-// "Wide" bucket — roughly 7 miles, closer to how Meetup groups
-// typically span a whole city or metro area. Used only as a coarse
-// pre-filter for the database query; actual sorting/display distance
-// is computed precisely below using the stored raw coordinates.
 function wideArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 10) / 10;
   const bucketLng = Math.round(longitude * 10) / 10;
   return `${bucketLat},${bucketLng}`;
 }
 
-// Haversine distance in miles between two lat/lng points — used to
-// compute genuine real-world distance for the "wide" tier, rather
-// than relying solely on the coarse bucket match.
 function milesBetween(lat1, lng1, lat2, lng2) {
   const R = 3958.8;
   const toRad = (deg) => (deg * Math.PI) / 180;
@@ -68,8 +59,6 @@ export async function createGathering({ title, description, interestTag, schedul
   return data;
 }
 
-// tier: 'local' (~0.7mi, tight bucket match) or 'wide' (~15mi,
-// computed real distance, Meetup-style)
 export async function getNearbyGatherings(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -144,6 +133,24 @@ export async function getMyGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
+  // Same block-checking a blocked person's PENDING interest expressed
+  // before being blocked shouldn't linger in the host's approval
+  // queue, even though expressInterest() already prevents NEW
+  // interest from a blocked person going forward.
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('blocked_id')
+    .eq('blocker_id', userId);
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('blocker_id')
+    .eq('blocked_id', userId);
+
+  const excludedUserIds = new Set([
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
+
   const { data, error } = await supabase
     .from('gatherings')
     .select('*, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
@@ -154,7 +161,11 @@ export async function getMyGatherings() {
     console.error('getMyGatherings error', error);
     return [];
   }
-  return data ?? [];
+
+  return (data ?? []).map((gathering) => ({
+    ...gathering,
+    interested: (gathering.interested ?? []).filter((i) => !excludedUserIds.has(i.user_id)),
+  }));
 }
 
 export async function getMyAttendingGatherings() {
