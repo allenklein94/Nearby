@@ -5,6 +5,7 @@ import { translations } from '../i18n/translations';
 
 const LanguageContext = createContext(null);
 const STORAGE_KEY = 'nearby-language-preference';
+const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt'];
 
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState('en');
@@ -12,11 +13,11 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (stored === 'es' || stored === 'en') {
+      if (SUPPORTED_LANGUAGES.includes(stored)) {
         setLanguageState(stored);
       } else {
         const deviceLang = Localization.getLocales()?.[0]?.languageCode;
-        setLanguageState(deviceLang === 'es' ? 'es' : 'en');
+        setLanguageState(SUPPORTED_LANGUAGES.includes(deviceLang) ? deviceLang : 'en');
       }
       setLoaded(true);
     });
@@ -33,7 +34,16 @@ export function LanguageProvider({ children }) {
     for (const part of parts) {
       value = value?.[part];
     }
-    return value ?? keyPath;
+    if (value === undefined) {
+      // Fall back to English if a key is missing in the current
+      // language, rather than showing the raw key path to the user.
+      let fallback = translations.en;
+      for (const part of parts) {
+        fallback = fallback?.[part];
+      }
+      return fallback ?? keyPath;
+    }
+    return value;
   }
 
   if (!loaded) return null;

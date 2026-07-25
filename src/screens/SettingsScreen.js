@@ -294,7 +294,7 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'en' && styles.chipTextSelected]}>English</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+           <TouchableOpacity
               style={[styles.chip, language === 'es' && styles.chipSelected]}
               onPress={() => setLanguage('es')}
               activeOpacity={0.8}
@@ -303,6 +303,36 @@ export default function SettingsScreen({ navigation }) {
               accessibilityState={{ selected: language === 'es' }}
             >
               <Text style={[styles.chipText, language === 'es' && styles.chipTextSelected]}>Español</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'de' && styles.chipSelected]}
+              onPress={() => setLanguage('de')}
+              activeOpacity={0.8}
+              accessibilityLabel="Deutsch"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'de' }}
+            >
+              <Text style={[styles.chipText, language === 'de' && styles.chipTextSelected]}>Deutsch</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'fr' && styles.chipSelected]}
+              onPress={() => setLanguage('fr')}
+              activeOpacity={0.8}
+              accessibilityLabel="Français"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'fr' }}
+            >
+              <Text style={[styles.chipText, language === 'fr' && styles.chipTextSelected]}>Français</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'pt' && styles.chipSelected]}
+              onPress={() => setLanguage('pt')}
+              activeOpacity={0.8}
+              accessibilityLabel="Português"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'pt' }}
+            >
+              <Text style={[styles.chipText, language === 'pt' && styles.chipTextSelected]}>Português</Text>
             </TouchableOpacity>
           </View>
         </View>
