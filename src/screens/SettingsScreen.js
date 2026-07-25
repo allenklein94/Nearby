@@ -593,6 +593,17 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+       <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('BlockedUsers')}
+          activeOpacity={0.85}
+          accessibilityLabel="Blocked users"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🚫 Blocked Users</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('IdVerification')}
