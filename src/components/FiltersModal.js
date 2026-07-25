@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal, SafeAreaView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-// Generic, reusable filter sheet driven entirely by a field-definition
-// list (key, label, icon, options) — so adding a new filterable field
-// anywhere in the app means adding one entry to a fields array, not
-// hand-building new UI. Selecting multiple options within one field
-// is OR logic (matches any); having active selections across
-// different fields is AND logic (must satisfy every active field).
-export default function FiltersModal({ visible, onClose, fields, activeFilters, onApply }) {
+export default function FiltersModal({ visible, onClose, fields, activeFilters, onApply, showAgeRange, ageRange, onAgeRangeChange }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [draft, setDraft] = useState(activeFilters);
+  const [draftMinAge, setDraftMinAge] = useState(String(ageRange?.min ?? 18));
+  const [draftMaxAge, setDraftMaxAge] = useState(String(ageRange?.max ?? 99));
 
   useEffect(() => {
-    if (visible) setDraft(activeFilters);
-  }, [visible, activeFilters]);
+    if (visible) {
+      setDraft(activeFilters);
+      setDraftMinAge(String(ageRange?.min ?? 18));
+      setDraftMaxAge(String(ageRange?.max ?? 99));
+    }
+  }, [visible, activeFilters, ageRange]);
 
   function toggleOption(fieldKey, option) {
     setDraft((prev) => {
@@ -30,10 +30,19 @@ export default function FiltersModal({ visible, onClose, fields, activeFilters, 
 
   function clearAll() {
     setDraft({});
+    setDraftMinAge('18');
+    setDraftMaxAge('99');
   }
 
   function apply() {
     onApply(draft);
+    if (showAgeRange && onAgeRangeChange) {
+      const min = parseInt(draftMinAge, 10);
+      const max = parseInt(draftMaxAge, 10);
+      if (!isNaN(min) && !isNaN(max) && min >= 18 && max >= min) {
+        onAgeRangeChange({ min, max });
+      }
+    }
     onClose();
   }
 
@@ -53,6 +62,31 @@ export default function FiltersModal({ visible, onClose, fields, activeFilters, 
         </View>
 
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+          {showAgeRange && (
+            <View style={styles.fieldSection}>
+              <Text style={styles.fieldLabel}>🎂 Age Range</Text>
+              <View style={styles.ageRow}>
+                <TextInput
+                  style={styles.ageInput}
+                  value={draftMinAge}
+                  onChangeText={setDraftMinAge}
+                  keyboardType="number-pad"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Minimum age"
+                />
+                <Text style={styles.ageDash}>to</Text>
+                <TextInput
+                  style={styles.ageInput}
+                  value={draftMaxAge}
+                  onChangeText={setDraftMaxAge}
+                  keyboardType="number-pad"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Maximum age"
+                />
+              </View>
+            </View>
+          )}
+
           {fields.map((field) => (
             <View key={field.key} style={styles.fieldSection}>
               <Text style={styles.fieldLabel}>{field.icon} {field.label}</Text>
@@ -94,6 +128,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 17 },
   fieldSection: { marginBottom: spacing.lg },
   fieldLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15, marginBottom: spacing.sm },
+  ageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  ageInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, textAlign: 'center' },
+  ageDash: { color: colors.textTertiary },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

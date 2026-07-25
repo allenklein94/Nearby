@@ -11,6 +11,7 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
+import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import ReportBlockModal from '../components/ReportBlockModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
@@ -27,7 +28,12 @@ const UNDO_WINDOW_SECONDS = 5;
 // Every BASICS_FIELDS entry with defined options becomes a filterable
 // field automatically — free-text fields (height, job title, etc.)
 // aren't included since there's no fixed set of values to filter by.
-const DISCOVERY_FILTER_FIELDS = BASICS_FIELDS.filter((f) => f.type === 'select');
+// Ethnicity is added separately since it lives at the top level of
+// profiles rather than nested inside basics.
+const DISCOVERY_FILTER_FIELDS = [
+  ...BASICS_FIELDS.filter((f) => f.type === 'select'),
+  { key: 'ethnicity', label: 'Ethnicity', icon: '🌍', options: ETHNICITY_OPTIONS, topLevel: true },
+];
 
 function formatCrossedPathsTime(iso) {
   if (!iso) return null;
@@ -49,6 +55,18 @@ function formatCrossedPathsTime(iso) {
   else relative = null;
 
   return relative ? `${relative} (${dateTimeStamp})` : dateTimeStamp;
+}
+
+function calculateAge(birthdateString) {
+  if (!birthdateString) return null;
+  const birthdate = new Date(birthdateString);
+  const today = new Date();
+  let age = today.getFullYear() - birthdate.getFullYear();
+  const monthDiff = today.getMonth() - birthdate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
+    age--;
+  }
+  return age;
 }
 
 export default function DiscoveryScreen({ navigation }) {
@@ -73,6 +91,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [filtersModalVisible, setFiltersModalVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
+  const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -129,6 +148,21 @@ export default function DiscoveryScreen({ navigation }) {
     const report = generateCompatibilityReport(myProfile, item.profiles);
     setCompatModalReport(report);
     setCompatModalName(item.profiles?.display_name || '');
+  }
+
+  function openFilters() {
+    if (!isUserPremium) {
+      Alert.alert(
+        'Advanced Filters is Premium',
+        'Filtering by education, drinking, religion, love language, and more is a Premium feature. Basic filters stay free.',
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+        ]
+      );
+      return;
+    }
+    setFiltersModalVisible(true);
   }
 
   function showUndoBanner(noticeId, isWave, otherUserId) {
@@ -248,6 +282,8 @@ export default function DiscoveryScreen({ navigation }) {
   }
 
   const advancedFilterCount = Object.values(advancedFilters).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
+  const ageFilterActive = ageRangeFilter.min !== 18 || ageRangeFilter.max !== 99;
+  const totalActiveCount = advancedFilterCount + (ageFilterActive ? 1 : 0);
 
   const filteredNearby = nearby.filter((item) => {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
@@ -255,10 +291,17 @@ export default function DiscoveryScreen({ navigation }) {
       const intentions = Array.isArray(item.profiles?.relationship_intention) ? item.profiles.relationship_intention : [];
       if (!intentions.includes(intentionFilter)) return false;
     }
-    for (const [fieldKey, selectedOptions] of Object.entries(advancedFilters)) {
-      if (!selectedOptions || selectedOptions.length === 0) continue;
-      const personValue = item.profiles?.basics?.[fieldKey];
-      if (!personValue || !selectedOptions.includes(personValue)) return false;
+    if (isUserPremium && ageFilterActive) {
+      const age = calculateAge(item.profiles?.birthdate);
+      if (age !== null && (age < ageRangeFilter.min || age > ageRangeFilter.max)) return false;
+    }
+    if (isUserPremium) {
+      for (const [fieldKey, selectedOptions] of Object.entries(advancedFilters)) {
+        if (!selectedOptions || selectedOptions.length === 0) continue;
+        const fieldDef = DISCOVERY_FILTER_FIELDS.find((f) => f.key === fieldKey);
+        const personValue = fieldDef?.topLevel ? item.profiles?.[fieldKey] : item.profiles?.basics?.[fieldKey];
+        if (!personValue || !selectedOptions.includes(personValue)) return false;
+      }
     }
     return true;
   });
@@ -310,13 +353,13 @@ export default function DiscoveryScreen({ navigation }) {
           </TouchableOpacity>
         </ScrollView>
         <TouchableOpacity
-          style={[styles.moreFiltersButton, advancedFilterCount > 0 && styles.moreFiltersButtonActive]}
-          onPress={() => setFiltersModalVisible(true)}
-          accessibilityLabel={`More filters${advancedFilterCount > 0 ? `, ${advancedFilterCount} active` : ''}`}
+          style={[styles.moreFiltersButton, totalActiveCount > 0 && styles.moreFiltersButtonActive]}
+          onPress={openFilters}
+          accessibilityLabel={`More filters, Premium${totalActiveCount > 0 ? `, ${totalActiveCount} active` : ''}`}
           accessibilityRole="button"
         >
-          <Text style={[styles.moreFiltersText, advancedFilterCount > 0 && styles.moreFiltersTextActive]}>
-            ⚙️{advancedFilterCount > 0 ? ` ${advancedFilterCount}` : ''}
+          <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
+            {isUserPremium ? '⚙️' : '🔒'}{totalActiveCount > 0 ? ` ${totalActiveCount}` : ''}
           </Text>
         </TouchableOpacity>
       </View>
@@ -336,8 +379,8 @@ export default function DiscoveryScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>{(intentionFilter || verifiedOnly || advancedFilterCount > 0) ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{(intentionFilter || verifiedOnly || advancedFilterCount > 0) ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
+            <Text style={styles.emptyTitle}>{(intentionFilter || verifiedOnly || totalActiveCount > 0) ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{(intentionFilter || verifiedOnly || totalActiveCount > 0) ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -465,6 +508,9 @@ export default function DiscoveryScreen({ navigation }) {
         fields={DISCOVERY_FILTER_FIELDS}
         activeFilters={advancedFilters}
         onApply={setAdvancedFilters}
+        showAgeRange
+        ageRange={ageRangeFilter}
+        onAgeRangeChange={setAgeRangeFilter}
       />
     </SafeAreaView>
   );
