@@ -43,6 +43,8 @@ import StressTestScreen from '../screens/StressTestScreen';
 import RelationshipConstitutionScreen from '../screens/RelationshipConstitutionScreen';
 import BrandOffersScreen from '../screens/BrandOffersScreen';
 import RehearsalRoomScreen from '../screens/RehearsalRoomScreen';
+import IdVerificationScreen from '../screens/IdVerificationScreen';
+import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -208,9 +210,9 @@ export default function RootNavigator() {
             <Stack.Screen name="StressTest" component={StressTestScreen} options={{ headerShown: true, title: 'What If...', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipConstitution" component={RelationshipConstitutionScreen} options={{ headerShown: true, title: 'Our Constitution', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BrandOffers" component={BrandOffersScreen} options={{ headerShown: true, title: 'Offers & Perks', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: 'Rehearsal Room', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-          </>
-        )}
+           <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: 'Rehearsal Room', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: 'Verify Identity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

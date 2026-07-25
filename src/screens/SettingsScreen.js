@@ -582,7 +582,18 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-     <TouchableOpacity
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('IdVerification')}
+          activeOpacity={0.85}
+          accessibilityLabel="Verify your identity"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>✓ Verify Identity</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('RehearsalRoom')}
           activeOpacity={0.85}
@@ -668,6 +679,19 @@ export default function SettingsScreen({ navigation }) {
             accessibilityRole="button"
           >
             <Text style={styles.rowButtonText}>Review Reports (Admin)</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('AdminVerification')}
+            activeOpacity={0.85}
+            accessibilityLabel="Review pending verifications, admin"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>Review Verifications (Admin)</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
