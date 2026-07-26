@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, onSendMessage, onDismiss }) {
+export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, onSendMessage, onDismiss }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
@@ -23,7 +23,9 @@ export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoU
 
   const subtitle = gatheringTitle
     ? `You met through "${gatheringTitle}"`
-    : `You and ${theirName} noticed each other.`;
+    : wasWave
+      ? `${theirName} waved at you, and you noticed them back.`
+      : `You and ${theirName} noticed each other.`;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>

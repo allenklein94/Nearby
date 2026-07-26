@@ -52,6 +52,7 @@ export default function MatchesScreen({ navigation }) {
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
   const [newOfferCount, setNewOfferCount] = useState(0);
+  const [celebrationWasWave, setCelebrationWasWave] = useState(false);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -89,6 +90,15 @@ export default function MatchesScreen({ navigation }) {
           const myUrl = await getSignedPhotoUrl(myPhotoProfile.photo_url);
           setMyPhotoUrl(myUrl);
         }
+
+        const otherPersonId = newMatch.user_a === myId ? newMatch.user_b : newMatch.user_a;
+        const { data: relatedNotices } = await supabase
+          .from('notices')
+          .select('is_super')
+          .or(`and(from_user.eq.${myId},to_user.eq.${otherPersonId}),and(from_user.eq.${otherPersonId},to_user.eq.${myId})`);
+        const anyWave = (relatedNotices ?? []).some((n) => n.is_super);
+        setCelebrationWasWave(anyWave);
+
         setCelebrationMatch(newMatch);
       }
 
@@ -286,6 +296,7 @@ export default function MatchesScreen({ navigation }) {
         theirPhotoUrl={celebrationMatch ? photoUrls[celebrationMatch.id] : null}
         theirName={celebrationMatch ? otherPersonFor(celebrationMatch)?.display_name : ''}
         gatheringTitle={celebrationMatch?.gatherings?.title || null}
+        wasWave={celebrationWasWave}
         onSendMessage={handleSendMessage}
         onDismiss={() => setCelebrationMatch(null)}
       />
