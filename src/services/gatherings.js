@@ -94,7 +94,7 @@ export async function getNearbyGatherings(tier = 'local') {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))`)
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url, basics), attendees:gathering_interest(status, profiles(display_name, photo_url))`)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });

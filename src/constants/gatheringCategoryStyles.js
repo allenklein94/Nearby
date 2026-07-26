@@ -32,6 +32,7 @@ export const CATEGORY_STYLES = {
   Volunteering: { icon: '🤝', color: PALETTE[2] },
   Meditation: { icon: '🕯️', color: PALETTE[4] },
   Running: { icon: '🏃', color: PALETTE[3] },
+  'Faith & Spirituality': { icon: '🙏', color: PALETTE[5] },
 };
 
 export function categoryStyleFor(interestTag) {
