@@ -7,6 +7,13 @@
  * so real-world crossed-paths moments are captured even when the app
  * isn't actively open on screen. The backend (report-presence Edge
  * Function) compares area buckets across users to find matches.
+ *
+ * The same location fetch also populates a much coarser wide_area
+ * bucket (~6-7 mile grid) on the person's own profile, used only for
+ * the optional Browse mode — a wider, filter-based discovery pool
+ * that isn't limited to actual crossed-paths proximity. This reuses
+ * the same coarse-bucketing privacy pattern already used for
+ * Gatherings' wide-radius tier, never exact coordinates.
  */
 
 import * as Location from 'expo-location';
@@ -35,12 +42,19 @@ function coarseAreaLabel(latitude, longitude) {
   return `${bucketLat},${bucketLng}`;
 }
 
+function wideAreaLabel(latitude, longitude) {
+  const bucketLat = Math.round(latitude * 10) / 10;
+  const bucketLng = Math.round(longitude * 10) / 10;
+  return `${bucketLat},${bucketLng}`;
+}
+
 async function sendPresenceReport(latitude, longitude) {
   const area = coarseAreaLabel(latitude, longitude);
 
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
-  if (!token) return;
+  const userId = sessionData?.session?.user?.id;
+  if (!token || !userId) return;
 
   await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/report-presence', {
     method: 'POST',
@@ -50,6 +64,17 @@ async function sendPresenceReport(latitude, longitude) {
     },
     body: JSON.stringify({ area }),
   }).catch((err) => console.error('background presence report failed', err));
+
+  // Same location fetch, no extra permission prompt or GPS call —
+  // just also updates the much coarser wide_area bucket used by
+  // Browse mode.
+  await supabase
+    .from('profiles')
+    .update({ wide_area: wideAreaLabel(latitude, longitude) })
+    .eq('id', userId)
+    .then(({ error }) => {
+      if (error) console.error('wide_area update failed', error);
+    });
 }
 
 export async function reportPresence() {
@@ -242,5 +267,87 @@ export async function getNearbyMatches() {
         return false;
       }
       return true;
+    });
+}
+
+const BROWSE_BATCH_SIZE = 20;
+
+// A second, optional discovery mode — NOT proximity-bound like
+// Crossed Paths. Pulls from anyone in the same coarse wide_area
+// bucket (~6-7 mile grid) matching the person's existing filters,
+// returned in batches. This exists alongside Crossed Paths as an
+// additional way to browse, not a replacement for it — Crossed Paths
+// remains the default, primary experience.
+export async function getBrowseMatches(offset = 0) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return [];
+
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('blocked_id')
+    .eq('blocker_id', userId);
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('blocker_id')
+    .eq('blocked_id', userId);
+
+  const excludedUserIds = new Set([
+    userId,
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
+
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
+    .eq('id', userId)
+    .single();
+
+  if (!myProfile?.wide_area) return [];
+
+  const minAge = myProfile?.preferred_min_age ?? 18;
+  const maxAge = myProfile?.preferred_max_age ?? 99;
+  const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
+
+  const { data: existingMatches } = await supabase
+    .from('matches')
+    .select('user_a, user_b')
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+
+  const matchedUserIds = new Set(
+    (existingMatches ?? []).map((m) => (m.user_a === userId ? m.user_b : m.user_a))
+  );
+
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    .eq('wide_area', myProfile.wide_area)
+    .range(offset, offset + BROWSE_BATCH_SIZE - 1);
+
+  if (error) {
+    console.error('getBrowseMatches error', error);
+    return [];
+  }
+
+  return (profiles ?? [])
+    .filter((p) => !excludedUserIds.has(p.id) && !matchedUserIds.has(p.id))
+    .filter((p) => passesGenderMatch(myProfile, p))
+    .filter((p) => {
+      const age = calculateAge(p.birthdate);
+      if (age !== null && (age < minAge || age > maxAge)) return false;
+      if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
+      return true;
+    })
+    .map((p) => {
+      const sharedInterests = (p.interests ?? []).filter((i) => (myProfile?.interests ?? []).includes(i));
+      const compatibilityScore = calculateCompatibility(myProfile, p);
+      return {
+        id: p.id,
+        otherUserId: p.id,
+        profiles: p,
+        sharedInterests,
+        compatibilityScore,
+      };
     });
 }
