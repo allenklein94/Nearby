@@ -3,19 +3,23 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { addStressTestNote, getStressTestNotes } from '../services/stressTest';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const SCENARIOS = [
-  { key: 'dream_opportunity', label: '✈️ A Dream Opportunity Elsewhere', placeholder: 'e.g. What would we want to happen if one of us got a great opportunity in another city?' },
-  { key: 'financial_setback', label: '💸 A Financial Setback', placeholder: 'e.g. How would we want to handle it if money got tight?' },
-  { key: 'family_conflict', label: '👪 A Family Conflict', placeholder: "e.g. How do we want to navigate disagreements with each other's families?" },
-  { key: 'lifestyle_difference', label: '🌗 A Major Lifestyle Difference', placeholder: 'e.g. What would we do if our day-to-day rhythms started pulling apart?' },
+  { key: 'dream_opportunity', labelKey: 'dreamOpportunity', placeholder: 'e.g. What would we want to happen if one of us got a great opportunity in another city?' },
+  { key: 'financial_setback', labelKey: 'financialSetback', placeholder: 'e.g. How would we want to handle it if money got tight?' },
+  { key: 'family_conflict', labelKey: 'familyConflict', placeholder: "e.g. How do we want to navigate disagreements with each other's families?" },
+  { key: 'lifestyle_difference', labelKey: 'lifestyleDifference', placeholder: 'e.g. What would we do if our day-to-day rhythms started pulling apart?' },
 ];
 
 export default function StressTestScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [notes, setNotes] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -57,6 +61,7 @@ export default function StressTestScreen({ route }) {
     setSubmittingScenario(scenarioKey);
     try {
       await addStressTestNote(matchId, scenarioKey, text);
+      posthog.capture('stress_test_note_added', { scenario: scenarioKey });
       setDrafts((prev) => ({ ...prev, [scenarioKey]: '' }));
       load();
     } catch (e) {
@@ -69,16 +74,17 @@ export default function StressTestScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">🧪 What If...</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('stressTest.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            Hypothetical scenarios with {matchName} — not to predict the future, just to surface conversations worth having before they actually come up. There are no right answers here.
+            {t('stressTest.subtitle')}
           </Text>
 
           {SCENARIOS.map((scenario) => {
             const scenarioNotes = notes.filter((n) => n.scenario === scenario.key);
+            const label = t(`stressTest.${scenario.labelKey}`);
             return (
               <View key={scenario.key} style={styles.section}>
-                <Text style={styles.sectionLabel} accessibilityRole="header">{scenario.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {scenarioNotes.map((note) => (
                   <View key={note.id} style={styles.noteCard} accessibilityLabel={`${note.note_text}, added by ${note.profiles?.display_name}`}>
@@ -87,7 +93,7 @@ export default function StressTestScreen({ route }) {
                   </View>
                 ))}
                 {scenarioNotes.length === 0 && (
-                  <Text style={styles.emptyText}>No thoughts shared yet.</Text>
+                  <Text style={styles.emptyText}>{t('timeline.noThoughtsYet')}</Text>
                 )}
 
                 <View style={styles.addRow}>
@@ -98,13 +104,13 @@ export default function StressTestScreen({ route }) {
                     value={drafts[scenario.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [scenario.key]: v }))}
                     multiline
-                    accessibilityLabel={`Add a thought for ${scenario.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={`Add a thought for ${label.replace(/[^\w\s]/g, '').trim()}`}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(scenario.key)}
                     disabled={submittingScenario === scenario.key}
-                    accessibilityLabel={`Add thought to ${scenario.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={`Add thought to ${label.replace(/[^\w\s]/g, '').trim()}`}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
