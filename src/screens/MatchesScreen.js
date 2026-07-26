@@ -9,6 +9,7 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
+import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -50,6 +51,7 @@ export default function MatchesScreen({ navigation }) {
   const [myPhotoUrl, setMyPhotoUrl] = useState(null);
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
+  const [newOfferCount, setNewOfferCount] = useState(0);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -92,6 +94,10 @@ export default function MatchesScreen({ navigation }) {
 
       await markMatchesSeen(myId, data.map((m) => m.id));
     }
+
+    const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
+    const unredeemed = offersData.filter((o) => !redemptionsData.includes(o.id));
+    setNewOfferCount(unredeemed.length);
 
     setLoading(false);
     await checkPendingCheckIns();
@@ -190,6 +196,19 @@ export default function MatchesScreen({ navigation }) {
         <Text style={styles.headerTitle} accessibilityRole="header">{t('matches.title')}</Text>
       </View>
 
+      {newOfferCount > 0 && (
+        <TouchableOpacity
+          style={styles.offersBanner}
+          onPress={() => navigation.navigate('BrandOffers')}
+          activeOpacity={0.85}
+          accessibilityLabel={`${newOfferCount} new offer${newOfferCount === 1 ? '' : 's'} available, tap to view`}
+          accessibilityRole="button"
+        >
+          <Text style={styles.offersBannerText}>🎁 {newOfferCount} new offer{newOfferCount === 1 ? '' : 's'} available</Text>
+          <Text style={styles.offersBannerArrow}>›</Text>
+        </TouchableOpacity>
+      )}
+
       {loading ? (
         <View>
           <SkeletonCard />
@@ -285,6 +304,13 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerTitle: { ...typography.title, color: colors.textPrimary },
+  offersBanner: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
+    marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.primary,
+  },
+  offersBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  offersBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
