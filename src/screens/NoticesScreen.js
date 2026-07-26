@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
 import { calculateCompatibility } from '../services/compatibility';
+import SkeletonGridCard from '../components/SkeletonGridCard';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -16,6 +17,7 @@ export default function NoticesScreen({ navigation }) {
   const [notices, setNotices] = useState([]);
   const [premium, setPremium] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [compatScores, setCompatScores] = useState({});
 
@@ -27,11 +29,6 @@ export default function NoticesScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
 
-    // Exclude anyone already matched — a mutual notice immediately
-    // becomes a match via a database trigger, but the original notice
-    // rows never get deleted afterward, so without this filter the
-    // same person would confusingly show up in both Notices and
-    // Matches at once.
     const { data: existingMatches } = await supabase
       .from('matches')
       .select('user_a, user_b')
@@ -41,8 +38,6 @@ export default function NoticesScreen({ navigation }) {
       (existingMatches ?? []).map((m) => (m.user_a === myId ? m.user_b : m.user_a))
     );
 
-    // Exclude anyone blocked, in either direction — a blocked person's
-    // old Notice shouldn't linger here after blocking.
     const { data: blockedByMe } = await supabase
       .from('blocks')
       .select('blocked_id')
@@ -80,6 +75,7 @@ export default function NoticesScreen({ navigation }) {
       const scoreEntries = filtered.map((n) => [n.id, calculateCompatibility(myProfile, n.profiles)]);
       setCompatScores(Object.fromEntries(scoreEntries));
     }
+    setLoading(false);
   }, []);
 
   useFocusEffect(
@@ -131,6 +127,11 @@ export default function NoticesScreen({ navigation }) {
         </TouchableOpacity>
       )}
 
+      {loading ? (
+        <View style={styles.skeletonGrid}>
+          {[...Array(6)].map((_, i) => <SkeletonGridCard key={i} />)}
+        </View>
+      ) : (
       <FlatList
         data={notices}
         keyExtractor={(item) => item.id}
@@ -199,6 +200,7 @@ export default function NoticesScreen({ navigation }) {
           );
         }}
       />
+      )}
     </SafeAreaView>
   );
 }
@@ -221,6 +223,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   upsellTitle: { color: '#fff', fontWeight: '700', fontSize: 15 },
   upsellText: { color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 1 },
   upsellArrow: { color: '#fff', fontSize: 22, fontWeight: '700' },
+  skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
