@@ -8,6 +8,7 @@ import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
 import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
 import { checkVoiceNoteLimit } from '../services/voiceNoteLimits';
+import { pickChatPhoto, uploadChatPhoto, getSignedChatMediaUrl } from '../services/chatMedia';
 import { unmatch } from '../services/matchActions';
 import { toggleReaction, getReactionsForMatch } from '../services/messageReactions';
 import { randomExperiment } from '../constants/relationshipExperiments';
@@ -119,6 +120,8 @@ export default function ChatScreen({ route, navigation }) {
   const [otherIsTyping, setOtherIsTyping] = useState(false);
   const [isStalled, setIsStalled] = useState(false);
   const [reactions, setReactions] = useState({});
+  const [mediaUrls, setMediaUrls] = useState({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
   const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
   const listRef = useRef(null);
@@ -165,6 +168,20 @@ export default function ChatScreen({ route, navigation }) {
 
     updateBadgeCount(myId);
   }
+
+  useEffect(() => {
+    const missingMediaIds = messages.filter((m) => m.media_url && !mediaUrls[m.id]);
+    if (missingMediaIds.length === 0) return;
+    (async () => {
+      const entries = await Promise.all(
+        missingMediaIds.map(async (m) => {
+          const url = await getSignedChatMediaUrl(m.media_url);
+          return [m.id, url];
+        })
+      );
+      setMediaUrls((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+  }, [messages]);
 
   useEffect(() => {
     let pollInterval;
@@ -700,6 +717,52 @@ export default function ChatScreen({ route, navigation }) {
     setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
   }
 
+  async function handlePickPhoto() {
+    try {
+      const asset = await pickChatPhoto();
+      if (!asset) return;
+
+      setUploadingPhoto(true);
+      const path = await uploadChatPhoto(userId, asset.uri);
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      const optimisticMessage = {
+        id: `optimistic-${Date.now()}`,
+        match_id: matchId,
+        sender_id: userId,
+        body: null,
+        gif_url: null,
+        audio_url: null,
+        media_url: path,
+        media_type: 'image',
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+      setIsStalled(false);
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ match_id: matchId, sender_id: userId, body: '', media_url: path, media_type: 'image' })
+        .select()
+        .single();
+
+      setUploadingPhoto(false);
+
+      if (error) {
+        console.error('sendPhoto error', error);
+        return;
+      }
+
+      posthog.capture('chat_photo_sent');
+      setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+    } catch (e) {
+      setUploadingPhoto(false);
+      Alert.alert('Error', e.message);
+    }
+  }
+
   function formatTime(iso) {
     const d = new Date(iso);
     return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -782,6 +845,21 @@ export default function ChatScreen({ route, navigation }) {
                 {item.audio_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={1}>
                     <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
+                  </TouchableOpacity>
+                ) : item.media_url ? (
+                  <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.9}>
+                    {mediaUrls[item.id] ? (
+                      <Image
+                        source={{ uri: mediaUrls[item.id] }}
+                        style={styles.gifBubble}
+                        resizeMode="cover"
+                        accessibilityLabel={`${senderLabel} sent a photo`}
+                      />
+                    ) : (
+                      <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center' }]}>
+                        <ActivityIndicator color={colors.primary} />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ) : item.gif_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.9}>
@@ -897,6 +975,15 @@ export default function ChatScreen({ route, navigation }) {
               accessibilityRole="button"
             >
               <Text style={styles.gifButtonText}>GIF</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.gifButton}
+              onPress={handlePickPhoto}
+              disabled={uploadingPhoto}
+              accessibilityLabel={uploadingPhoto ? 'Checking photo' : 'Send a photo'}
+              accessibilityRole="button"
+            >
+              {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Text style={styles.gifButtonText}>📷</Text>}
             </TouchableOpacity>
             <TextInput
               style={styles.input}
