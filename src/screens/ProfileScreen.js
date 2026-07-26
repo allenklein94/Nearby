@@ -15,7 +15,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const MAX_EXTRA_PHOTOS = 5;
+const MAX_EXTRA_PHOTOS = 6;
 const MAX_PROMPTS = 3;
 
 const INTEREST_OPTIONS = [
