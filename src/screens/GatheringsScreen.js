@@ -11,6 +11,8 @@ import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SkeletonCard from '../components/SkeletonCard';
+import GatheringsMapView from '../components/GatheringsMapView';
+import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -99,6 +101,8 @@ export default function GatheringsScreen({ navigation }) {
   const [topCategories, setTopCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
+  const [viewStyle, setViewStyle] = useState('list');
+  const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
 
   const load = useCallback(async () => {
@@ -138,6 +142,14 @@ export default function GatheringsScreen({ navigation }) {
     const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
     const unredeemed = offersData.filter((o) => !redemptionsData.includes(o.id));
     setNewOfferCount(unredeemed.length);
+
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status === 'granted') {
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+      if (location) {
+        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+      }
+    }
 
     setInitialLoading(false);
   }, [radiusTier]);
@@ -295,14 +307,25 @@ export default function GatheringsScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('gatherings.title')}</Text>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => navigation.navigate('CreateGathering')}
-          accessibilityLabel="Host a new gathering"
-          accessibilityRole="button"
-        >
-          <Text style={styles.createButtonText}>{t('gatherings.hostButton')}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            style={styles.viewToggleButton}
+            onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
+            accessibilityLabel={viewStyle === 'map' ? 'Currently on map view, switch to list view' : 'Currently on list view, switch to map view'}
+            accessibilityRole="button"
+          >
+            <Text style={styles.viewToggleIcon}>{viewStyle === 'map' ? '📋' : '🗺️'}</Text>
+            <Text style={styles.viewToggleLabel}>{viewStyle === 'map' ? 'List' : 'Map'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => navigation.navigate('CreateGathering')}
+            accessibilityLabel="Host a new gathering"
+            accessibilityRole="button"
+          >
+            <Text style={styles.createButtonText}>{t('gatherings.hostButton')}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {newOfferCount > 0 && (
@@ -488,6 +511,23 @@ export default function GatheringsScreen({ navigation }) {
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
+        </View>
+      ) : tab === 'nearby' && viewStyle === 'map' ? (
+        <View style={{ flex: 1 }}>
+          <GatheringsMapView
+            gatherings={filteredNearby}
+            userLocation={userLocation}
+            onSelectGathering={(gathering) => {
+              Alert.alert(
+                gathering.title,
+                `Hosted by ${gathering.host?.display_name}\n${gathering.distanceLabel}${gathering.description ? '\n\n' + gathering.description : ''}`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: t('gatherings.imInterested'), onPress: () => handleExpressInterest(gathering.id) },
+                ]
+              );
+            }}
+          />
         </View>
       ) : tab === 'nearby' && (
         <FlatList
@@ -744,6 +784,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   createButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   createButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  viewToggleButton: {
+    flexDirection: 'row', alignItems: 'center', marginRight: spacing.sm,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  viewToggleIcon: { fontSize: 16, marginRight: 6 },
+  viewToggleLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   offersBanner: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
