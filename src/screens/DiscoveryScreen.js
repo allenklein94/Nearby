@@ -193,7 +193,19 @@ export default function DiscoveryScreen({ navigation }) {
   }
 
   function showRadiusInfo() {
-    Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
+    if (discoveryMode === 'browse') {
+      Alert.alert(
+        'How Browse Works',
+        "Browse shows a wider pool of people matching your filters — not limited to actual proximity like Crossed Paths. Great for exploring beyond who you've recently been near.\n\n👋 Notice vs Wave:\nA Notice is silent — they only find out if they notice you back too. A Wave tells them right away that you noticed them, before it\u2019s mutual.",
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    Alert.alert(
+      t('discovery.radiusInfoTitle'),
+      t('discovery.radiusInfoText') + '\n\n👋 Notice vs Wave:\nA Notice is silent — they only find out if they notice you back too. A Wave tells them right away that you noticed them, before it\u2019s mutual.',
+      [{ text: 'OK' }]
+    );
   }
 
   function showCompatibilityReport(item) {
@@ -596,7 +608,7 @@ export default function DiscoveryScreen({ navigation }) {
           </View>
         }
         renderItem={({ item, index }) => {
-          const crossedPathsTime = formatCrossedPathsTime(item.last_seen_at);
+          const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
           return (
           <AnimatedListItem index={index}>
           <View style={styles.card}>
@@ -634,11 +646,17 @@ export default function DiscoveryScreen({ navigation }) {
                   </TouchableOpacity>
                 )}
               </View>
-              <View style={styles.proximityRow}>
-                <Text style={styles.proximityText}>
-                  📍 Within about 35 feet{crossedPathsTime ? ` · Crossed paths ${crossedPathsTime}` : ''}
-                </Text>
-              </View>
+              {discoveryMode === 'browse' ? (
+                <View style={styles.proximityRow}>
+                  <Text style={styles.proximityText}>🔎 Matches your filters</Text>
+                </View>
+              ) : (
+                <View style={styles.proximityRow}>
+                  <Text style={styles.proximityText}>
+                    📍 Within about 35 feet{crossedPathsTime ? ` · Crossed paths ${crossedPathsTime}` : ''}
+                  </Text>
+                </View>
+              )}
               <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
               {item.sharedInterests?.length > 0 && (
                 <Text style={styles.sharedText}>
