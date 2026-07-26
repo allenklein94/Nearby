@@ -3,7 +3,9 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { addTripIdea, getTripIdeas } from '../services/tripPlanning';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const CATEGORIES = [
@@ -15,6 +17,8 @@ const CATEGORIES = [
 export default function TripPlanningScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [ideas, setIdeas] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -56,6 +60,7 @@ export default function TripPlanningScreen({ route }) {
     setSubmittingCategory(categoryKey);
     try {
       await addTripIdea(matchId, categoryKey, text);
+      posthog.capture('trip_idea_added', { category: categoryKey });
       setDrafts((prev) => ({ ...prev, [categoryKey]: '' }));
       load();
     } catch (e) {
@@ -68,7 +73,7 @@ export default function TripPlanningScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">🧳 Plan a Trip Together</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('together.planTrip')}</Text>
           <Text style={styles.headerSubtitle}>Hypothetically, of course — brainstorm with {matchName}.</Text>
 
           {CATEGORIES.map((category) => {
