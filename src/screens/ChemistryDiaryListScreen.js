@@ -15,8 +15,31 @@ const SIGNALS = [
   { key: 'felt_like_myself', icon: '✨', labelKey: 'likeMyself' },
 ];
 
+const MIN_ENTRIES_FOR_INSIGHTS = 3;
+
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// A gentle, honest reflection of actual patterns — not a score or a
+// judgment, just "here's what showed up most often." Deliberately
+// avoids ranking people or comparisons; it's about the person's own
+// felt experience over time, which is the whole premise of this
+// feature ("a picture of what actually feels good").
+function computeInsights(entries) {
+  const counts = {};
+  for (const signal of SIGNALS) counts[signal.key] = 0;
+
+  for (const entry of entries) {
+    for (const signal of SIGNALS) {
+      if (entry[signal.key]) counts[signal.key]++;
+    }
+  }
+
+  const total = entries.length;
+  return SIGNALS
+    .map((signal) => ({ ...signal, count: counts[signal.key], percent: total > 0 ? Math.round((counts[signal.key] / total) * 100) : 0 }))
+    .sort((a, b) => b.count - a.count);
 }
 
 export default function ChemistryDiaryListScreen() {
@@ -27,6 +50,7 @@ export default function ChemistryDiaryListScreen() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
 
   const load = useCallback(async () => {
     const data = await getMyChemistryEntries();
@@ -34,9 +58,6 @@ export default function ChemistryDiaryListScreen() {
     setLoading(false);
   }, []);
 
-  // Reload on focus, not just mount — so a new entry added from a
-  // chat or profile shows up immediately on return, without needing
-  // to navigate away and back to force a remount.
   useFocusEffect(
     useCallback(() => {
       load();
@@ -72,6 +93,12 @@ export default function ChemistryDiaryListScreen() {
     );
   }
 
+  function toggleInsights() {
+    const opening = !showInsights;
+    setShowInsights(opening);
+    if (opening) posthog.capture('chemistry_diary_insights_viewed');
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -79,6 +106,10 @@ export default function ChemistryDiaryListScreen() {
       </SafeAreaView>
     );
   }
+
+  const insights = computeInsights(entries);
+  const canShowInsights = entries.length >= MIN_ENTRIES_FOR_INSIGHTS;
+  const topSignal = insights[0];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,6 +122,47 @@ export default function ChemistryDiaryListScreen() {
           {t('chemistryDiary.subtitle')}
         </Text>
 
+        {canShowInsights && (
+          <TouchableOpacity
+            style={styles.insightsCard}
+            onPress={toggleInsights}
+            activeOpacity={0.85}
+            accessibilityLabel={`Your patterns across ${entries.length} entries, ${showInsights ? 'tap to collapse' : 'tap to see the full picture'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showInsights }}
+          >
+            <View style={styles.insightsHeaderRow}>
+              <Text style={styles.insightsTitle}>✨ Your Patterns</Text>
+              <Text style={styles.insightsChevron}>{showInsights ? '⌃' : '⌄'}</Text>
+            </View>
+            {!showInsights && topSignal.count > 0 && (
+              <Text style={styles.insightsTeaser}>
+                {topSignal.icon} {t(`chemistryDiary.${topSignal.labelKey}`)} showed up most — {topSignal.percent}% of the time across {entries.length} entries.
+              </Text>
+            )}
+            {showInsights && (
+              <View style={styles.insightsBody}>
+                <Text style={styles.insightsBodyText}>Across {entries.length} entries, here's what actually showed up:</Text>
+                {insights.map((signal) => (
+                  <View key={signal.key} style={styles.insightRow}>
+                    <Text style={styles.insightLabel}>{signal.icon} {t(`chemistryDiary.${signal.labelKey}`)}</Text>
+                    <View style={styles.insightBarTrack}>
+                      <View style={[styles.insightBarFill, { width: `${signal.percent}%` }]} />
+                    </View>
+                    <Text style={styles.insightPercent}>{signal.percent}%</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {!canShowInsights && entries.length > 0 && (
+          <Text style={styles.insightsHint}>
+            {MIN_ENTRIES_FOR_INSIGHTS - entries.length} more {MIN_ENTRIES_FOR_INSIGHTS - entries.length === 1 ? 'entry' : 'entries'} until your patterns start to show.
+          </Text>
+        )}
+
         {entries.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📔</Text>
@@ -99,7 +171,7 @@ export default function ChemistryDiaryListScreen() {
         )}
 
         {entries.map((entry) => {
-          const activeSignals = SIGNALS.filter((s) => entry[s.key]);
+          const filledSignals = SIGNALS.filter((s) => entry[s.key]);
           return (
             <View key={entry.id} style={styles.card}>
               <View style={styles.cardHeader}>
@@ -115,9 +187,9 @@ export default function ChemistryDiaryListScreen() {
                   <Text style={styles.deleteText}>Delete</Text>
                 </TouchableOpacity>
               </View>
-              {activeSignals.length > 0 && (
+              {filledSignals.length > 0 && (
                 <View style={styles.signalsWrap}>
-                  {activeSignals.map((s) => (
+                  {filledSignals.map((s) => (
                     <View key={s.key} style={styles.signalChip}>
                       <Text style={styles.signalChipText}>{s.icon} {t(`chemistryDiary.${s.labelKey}`)}</Text>
                     </View>
@@ -137,6 +209,22 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
+  insightsCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
+    marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary,
+  },
+  insightsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  insightsTitle: { ...typography.bodyBold, color: colors.primary, fontSize: 15 },
+  insightsChevron: { color: colors.primary, fontSize: 16 },
+  insightsTeaser: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs, lineHeight: 18 },
+  insightsHint: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, fontStyle: 'italic' },
+  insightsBody: { marginTop: spacing.md },
+  insightsBodyText: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.md },
+  insightRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm },
+  insightLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', width: 110 },
+  insightBarTrack: { flex: 1, height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' },
+  insightBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+  insightPercent: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
