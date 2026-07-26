@@ -17,6 +17,7 @@ import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
 import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
+import AnimatedListItem from '../components/AnimatedListItem';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -401,9 +402,10 @@ export default function DiscoveryScreen({ navigation }) {
             <Text style={styles.emptyText}>{anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
           </View>
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const crossedPathsTime = formatCrossedPathsTime(item.last_seen_at);
           return (
+          <AnimatedListItem index={index}>
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.tappableProfileArea}
@@ -481,6 +483,7 @@ export default function DiscoveryScreen({ navigation }) {
               </View>
             </View>
           </View>
+          </AnimatedListItem>
         );
         }}
       />
