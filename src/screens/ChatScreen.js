@@ -121,7 +121,7 @@ export default function ChatScreen({ route, navigation }) {
   const [isStalled, setIsStalled] = useState(false);
   const [reactions, setReactions] = useState({});
   const [mediaUrls, setMediaUrls] = useState({});
-  const [disappearingEnabled, setDisappearingEnabled] = useState(false);
+  const [disappearingMode, setDisappearingMode] = useState('off');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
   const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
@@ -209,12 +209,12 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, disappearing_messages_enabled, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
+      .select('user_a, user_b, disappearing_mode, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
       .eq('id', matchId)
       .single();
 
     if (match) {
-      setDisappearingEnabled(!!match.disappearing_messages_enabled);
+      setDisappearingMode(match.disappearing_mode ?? 'off');
       const other = match.user_a === myId ? match.b : match.a;
       const me = match.user_a === myId ? match.a : match.b;
       setOtherUser(other);
@@ -411,35 +411,41 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   function showChatOptions() {
+    const modeLabel = disappearingMode === 'off' ? 'Off' : disappearingMode === '24h' ? '24 Hours' : 'Instant';
     Alert.alert(
       'Chat Options',
       '',
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: disappearingEnabled ? 'Turn Off Disappearing Messages' : 'Turn On Disappearing Messages (24h)',
-          onPress: toggleDisappearingMessages,
-        },
+        { text: `Disappearing Messages: ${modeLabel} (tap to change)`, onPress: showDisappearingModeOptions },
         { text: 'Unmatch', style: 'destructive', onPress: confirmUnmatch },
         { text: 'Report or Block', onPress: () => setReportModalVisible(true) },
       ]
     );
   }
 
-  async function toggleDisappearingMessages() {
-    const newValue = !disappearingEnabled;
-    const { error } = await supabase.from('matches').update({ disappearing_messages_enabled: newValue }).eq('id', matchId);
+  function showDisappearingModeOptions() {
+    Alert.alert(
+      'Disappearing Messages',
+      'Choose how long new messages stay in this chat, for both of you.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: disappearingMode === 'off' ? '✓ Off' : 'Off', onPress: () => updateDisappearingMode(  'off') },
+        { text: disappearingMode === '24h' ? '✓ 24 Hours' : '24 Hours', onPress: () => updateDisappearingMode('24h') },
+        { text: disappearingMode === 'instant' ? '✓ Instant (view once)' : 'Instant (view once)', onPress: () => updateDisappearingMode('instant') },
+      ]
+    );
+  }
+
+  async function updateDisappearingMode(mode) {
+    const { error } = await supabase.from('matches').update({ disappearing_mode: mode }).eq('id', matchId);
     if (error) {
       Alert.alert('Error', error.message);
       return;
     }
-    setDisappearingEnabled(newValue);
-    Alert.alert(
-      newValue ? 'Disappearing Messages On' : 'Disappearing Messages Off',
-      newValue
-        ? 'New messages in this chat will automatically delete after 24 hours, for both of you.'
-        : 'Messages will now be kept normally.'
-    );
+    setDisappearingMode(mode);
+    const labels = { off: 'Messages will now be kept normally.', '24h': 'New messages will automatically delete after 24 hours, for both of you.', instant: "New messages will disappear shortly after being read, for both of you — there's no window to reconsider once seen." };
+    Alert.alert('Updated', labels[mode]);
   }
 
   function confirmUnmatch() {

@@ -406,6 +406,7 @@ export default function GatheringsScreen({ navigation }) {
       </View>
 
       {tab === 'nearby' && (
+        <>
         <View style={styles.searchBarWrap}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
@@ -592,6 +593,7 @@ export default function GatheringsScreen({ navigation }) {
             </View>
           )}
         </View>
+        </>
       )}
 
       {tab === 'nearby' && initialLoading ? (
