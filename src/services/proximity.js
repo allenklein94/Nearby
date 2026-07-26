@@ -20,6 +20,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { supabase } from './supabase';
 import { calculateCompatibility } from './compatibility';
+import { getMyActiveLiveTrackingSession } from './liveTracking';
 
 const BACKGROUND_LOCATION_TASK = 'nearby-background-location-task';
 
@@ -75,6 +76,22 @@ async function sendPresenceReport(latitude, longitude) {
     .then(({ error }) => {
       if (error) console.error('wide_area update failed', error);
     });
+
+  // Same location fetch again — if the person has an active Live
+  // Tracking session (started from a chat's Date Safety check-in),
+  // update its precise position too. Reusing this existing periodic
+  // reporting means live tracking works in the background without a
+  // second, separate location task.
+  const activeSession = await getMyActiveLiveTrackingSession();
+  if (activeSession) {
+    await supabase
+      .from('live_tracking_sessions')
+      .update({ current_lat: latitude, current_lng: longitude, updated_at: new Date().toISOString() })
+      .eq('id', activeSession.id)
+      .then(({ error }) => {
+        if (error) console.error('live tracking location update failed', error);
+      });
+  }
 }
 
 export async function reportPresence() {
