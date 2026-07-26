@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitGoodbyeEntry } from '../services/goodbyeArchive';
 import { checkTextModeration } from '../services/textModeration';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
   const { aboutDisplayName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [whatWasBeautiful, setWhatWasBeautiful] = useState('');
   const [whatWasDifficult, setWhatWasDifficult] = useState('');
@@ -38,6 +42,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
         whatYouLearned,
         whatYouWantNextTime,
       });
+      posthog.capture('goodbye_archive_entry_saved');
       Alert.alert('Saved privately', 'Only you can see this. It\u2019s yours whenever you want to look back.');
       navigation.goBack();
     } catch (e) {
@@ -58,7 +63,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
             About {aboutDisplayName || 'this connection'} — completely private, just for you. Every relationship, however it went, has something worth carrying forward. Answer whatever feels true; skip the rest.
           </Text>
 
-          <Text style={styles.label}>What was beautiful</Text>
+          <Text style={styles.label}>{t('goodbyeArchive.whatWasBeautiful')}</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. How easy it was to talk to them"
@@ -66,10 +71,10 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
             value={whatWasBeautiful}
             onChangeText={setWhatWasBeautiful}
             multiline
-            accessibilityLabel="What was beautiful"
+            accessibilityLabel={t('goodbyeArchive.whatWasBeautiful')}
           />
 
-          <Text style={styles.label}>What was difficult</Text>
+          <Text style={styles.label}>{t('goodbyeArchive.whatWasDifficult')}</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. We wanted different things and couldn't bridge that"
@@ -77,10 +82,10 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
             value={whatWasDifficult}
             onChangeText={setWhatWasDifficult}
             multiline
-            accessibilityLabel="What was difficult"
+            accessibilityLabel={t('goodbyeArchive.whatWasDifficult')}
           />
 
-          <Text style={styles.label}>What you learned</Text>
+          <Text style={styles.label}>{t('goodbyeArchive.whatYouLearned')}</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. I need to say what I actually want, earlier"
@@ -88,10 +93,10 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
             value={whatYouLearned}
             onChangeText={setWhatYouLearned}
             multiline
-            accessibilityLabel="What you learned"
+            accessibilityLabel={t('goodbyeArchive.whatYouLearned')}
           />
 
-          <Text style={styles.label}>What you want next time</Text>
+          <Text style={styles.label}>{t('goodbyeArchive.whatYouWant')}</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. Someone who shares how they're really feeling"
@@ -99,7 +104,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
             value={whatYouWantNextTime}
             onChangeText={setWhatYouWantNextTime}
             multiline
-            accessibilityLabel="What you want next time"
+            accessibilityLabel={t('goodbyeArchive.whatYouWant')}
           />
 
           <TouchableOpacity

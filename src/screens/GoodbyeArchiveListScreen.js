@@ -1,19 +1,23 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyGoodbyeEntries, deleteGoodbyeEntry } from '../services/goodbyeArchive';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const FIELDS = [
-  { key: 'what_was_beautiful', label: '✨ What was beautiful' },
-  { key: 'what_was_difficult', label: '💔 What was difficult' },
-  { key: 'what_you_learned', label: '🌱 What you learned' },
-  { key: 'what_you_want_next_time', label: '🧭 What you want next time' },
+  { key: 'what_was_beautiful', labelKey: 'whatWasBeautiful' },
+  { key: 'what_was_difficult', labelKey: 'whatWasDifficult' },
+  { key: 'what_you_learned', labelKey: 'whatYouLearned' },
+  { key: 'what_you_want_next_time', labelKey: 'whatYouWant' },
 ];
 
 export default function GoodbyeArchiveListScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,10 +31,6 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
     setLoading(false);
   }, []);
 
-  // Reload every time this screen comes back into focus — not just on
-  // first mount — so an entry added via the Add Reflection screen
-  // shows up immediately on return, without needing to navigate away
-  // and back to force a remount.
   useFocusEffect(
     useCallback(() => {
       load();
@@ -75,6 +75,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
       return Alert.alert('Add a name', "Who is this reflection about? First name or however you'd like to remember them.");
     }
     setNameModalVisible(false);
+    posthog.capture('goodbye_archive_entry_started');
     navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: nameInput.trim() });
   }
 
@@ -92,25 +93,25 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <Text style={styles.headerTitle} accessibilityRole="header">🌙 Your Private Reflections</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('goodbyeArchive.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          Only visible to you. Every relationship, however it went, becomes something you learned from rather than just something you lost.
+          {t('goodbyeArchive.subtitle')}
         </Text>
 
         <TouchableOpacity
           style={styles.addButton}
           onPress={startNewEntry}
           activeOpacity={0.85}
-          accessibilityLabel="Add a new private reflection"
+          accessibilityLabel={t('goodbyeArchive.addReflection')}
           accessibilityRole="button"
         >
-          <Text style={styles.addButtonText}>+ Add a Reflection</Text>
+          <Text style={styles.addButtonText}>{t('goodbyeArchive.addReflection')}</Text>
         </TouchableOpacity>
 
         {entries.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🌙</Text>
-            <Text style={styles.emptyText}>Nothing here yet. Add one any time — after unmatching, you'll also be offered this automatically.</Text>
+            <Text style={styles.emptyText}>{t('goodbyeArchive.nothingYet')}</Text>
           </View>
         )}
 
@@ -130,7 +131,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
               </View>
               {filledFields.map((f) => (
                 <View key={f.key} style={styles.fieldBlock}>
-                  <Text style={styles.fieldLabel}>{f.label}</Text>
+                  <Text style={styles.fieldLabel}>{t(`goodbyeArchive.${f.labelKey}`)}</Text>
                   <Text style={styles.fieldText}>{entry[f.key]}</Text>
                 </View>
               ))}
@@ -142,7 +143,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
       <Modal visible={nameModalVisible} animationType="slide" transparent onRequestClose={() => setNameModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>Who is this about?</Text>
+            <Text style={styles.sheetTitle}>{t('goodbyeArchive.whoIsThisAbout')}</Text>
             <TextInput
               style={styles.nameInput}
               placeholder="First name or however you'd like to remember them"
