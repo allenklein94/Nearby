@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering } from '../services/gatherings';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
@@ -24,8 +24,10 @@ const INTEREST_OPTIONS = [
   'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
   'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
   'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
+  'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality',
 ];
+
+const RELIGION_OPTIONS = ['Agnostic', 'Atheist', 'Buddhist', 'Catholic', 'Christian', 'Hindu', 'Jewish', 'Muslim', 'Spiritual', 'Sikh', 'Other', 'Prefer not to say'];
 
 const DATE_OPTIONS = [
   { key: 'anytime', label: 'Anytime' },
@@ -102,6 +104,8 @@ export default function GatheringsScreen({ navigation }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [religionFilter, setReligionFilter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
 
@@ -318,6 +322,12 @@ export default function GatheringsScreen({ navigation }) {
   const filteredNearby = nearby
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
+    .filter((g) => !religionFilter || g.host?.basics?.religion === religionFilter)
+    .filter((g) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.trim().toLowerCase();
+      return g.title?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q);
+    })
     .sort((a, b) => {
       if (!forYouActive) return 0;
       const aRank = topCategories.indexOf(a.interest_tag);
@@ -396,6 +406,23 @@ export default function GatheringsScreen({ navigation }) {
       </View>
 
       {tab === 'nearby' && (
+        <View style={styles.searchBarWrap}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search gatherings..."
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            accessibilityLabel="Search gatherings by title or description"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+              <Text style={styles.searchClear}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         <View style={styles.accordionContainer}>
           <TouchableOpacity
             style={styles.accordionHeader}
@@ -521,6 +548,43 @@ export default function GatheringsScreen({ navigation }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.accordionDivider} />
+
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('religion')}
+            accessibilityLabel={`Host's Religion: ${religionFilter || 'Any'}, ${expandedFilterSection === 'religion' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'religion' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>🕊️ Host's Religion</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{religionFilter || 'Any'}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'religion' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'religion' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.chipsWrapInline}>
+                {RELIGION_OPTIONS.map((option) => {
+                  const active = religionFilter === option;
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                      onPress={() => setReligionFilter(active ? null : option)}
+                      accessibilityLabel={`Filter by host's religion: ${option}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -845,6 +909,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
+  searchBarWrap: {
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg, marginTop: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+  },
+  searchIcon: { fontSize: 14, marginRight: spacing.sm },
+  searchInput: { flex: 1, color: colors.textPrimary, fontSize: 14 },
+  searchClear: { color: colors.textTertiary, fontSize: 14, paddingHorizontal: spacing.xs },
   accordionContainer: {
     marginHorizontal: spacing.lg, marginTop: spacing.md, backgroundColor: colors.surface,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
