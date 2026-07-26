@@ -365,7 +365,7 @@ export default function GatheringsScreen({ navigation }) {
           </ScrollView>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
-            {topCategories.length > 0 && (
+            {topCategories.length > 0 ? (
               <TouchableOpacity
                 style={[styles.forYouChip, forYouActive && styles.forYouChipActive]}
                 onPress={toggleForYou}
@@ -375,6 +375,13 @@ export default function GatheringsScreen({ navigation }) {
               >
                 <Text style={[styles.forYouChipText, forYouActive && styles.forYouChipTextActive]}>⭐ For You</Text>
               </TouchableOpacity>
+            ) : (
+              <View
+                style={styles.forYouChipLocked}
+                accessibilityLabel="For You — will unlock once you've shown interest in a gathering"
+              >
+                <Text style={styles.forYouChipLockedText}>⭐ For You (soon)</Text>
+              </View>
             )}
             {INTEREST_OPTIONS.map((option) => {
               const active = interestFilter === option;
@@ -686,6 +693,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   forYouChipActive: { backgroundColor: colors.primary },
   forYouChipText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   forYouChipTextActive: { color: '#fff' },
+  forYouChipLocked: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, opacity: 0.6,
+  },
+  forYouChipLockedText: { color: colors.textTertiary, fontSize: 12, fontWeight: '700' },
   forYouHint: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.md, fontStyle: 'italic' },
   dateChip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
