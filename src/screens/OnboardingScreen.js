@@ -20,6 +20,7 @@ export default function OnboardingScreen({ navigation }) {
     { emoji: '🔔', title: t('onboarding.slide2Title'), text: t('onboarding.slide2Text') },
     { emoji: '✨', title: t('onboarding.slide3Title'), text: t('onboarding.slide3Text') },
     { emoji: '🔒', title: t('onboarding.slide4Title'), text: t('onboarding.slide4Text') },
+    { emoji: '🧭', title: t('onboarding.slide5Title'), text: t('onboarding.slide5Text') },
   ];
 
   function handleScroll(event) {

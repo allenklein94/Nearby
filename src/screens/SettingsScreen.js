@@ -294,7 +294,7 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'en' && styles.chipTextSelected]}>English</Text>
             </TouchableOpacity>
-           <TouchableOpacity
+            <TouchableOpacity
               style={[styles.chip, language === 'es' && styles.chipSelected]}
               onPress={() => setLanguage('es')}
               activeOpacity={0.8}
@@ -324,7 +324,7 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'fr' && styles.chipTextSelected]}>Français</Text>
             </TouchableOpacity>
-           <TouchableOpacity
+            <TouchableOpacity
               style={[styles.chip, language === 'pt' && styles.chipSelected]}
               onPress={() => setLanguage('pt')}
               activeOpacity={0.8}
@@ -374,7 +374,7 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'tl' && styles.chipTextSelected]}>Tagalog</Text>
             </TouchableOpacity>
-        <TouchableOpacity
+            <TouchableOpacity
               style={[styles.chip, language === 'ru' && styles.chipSelected]}
               onPress={() => setLanguage('ru')}
               activeOpacity={0.8}
@@ -395,7 +395,6 @@ export default function SettingsScreen({ navigation }) {
               <Text style={[styles.chipText, language === 'ko' && styles.chipTextSelected]}>한국어</Text>
             </TouchableOpacity>
           </View>
-        </View>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.notifications')}</Text>
@@ -673,7 +672,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-       <TouchableOpacity
+        <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('InviteFriends')}
           activeOpacity={0.85}
@@ -684,7 +683,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-       <TouchableOpacity
+        <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('BlockedUsers')}
           activeOpacity={0.85}
