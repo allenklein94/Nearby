@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import * as Location from 'expo-location';
-import { distanceRangeLabel } from './distance';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -211,6 +210,11 @@ export async function getMyGatherings() {
   }));
 }
 
+// Returns upcoming and past gatherings separately, rather than one
+// flat list — a gathering that already happened is a genuinely
+// different thing to someone browsing (a memory, not a plan), and
+// mixing them together made past events linger indefinitely at the
+// bottom of the list with no real distinction.
 export async function getMyAttendingGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -224,20 +228,21 @@ export async function getMyAttendingGatherings() {
 
   if (error) {
     console.error('getMyAttendingGatherings error', error);
-    return [];
+    return { upcoming: [], past: [] };
   }
 
   const now = new Date();
+  const all = (data ?? []).filter((row) => row.gatherings).map((row) => row.gatherings);
 
-  return (data ?? [])
-    .filter((row) => row.gatherings)
-    .map((row) => row.gatherings)
-    .sort((a, b) => {
-      const aPast = new Date(a.scheduled_at) < now;
-      const bPast = new Date(b.scheduled_at) < now;
-      if (aPast !== bPast) return aPast ? 1 : -1;
-      return new Date(a.scheduled_at) - new Date(b.scheduled_at);
-    });
+  const upcoming = all
+    .filter((g) => new Date(g.scheduled_at) >= now)
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+
+  const past = all
+    .filter((g) => new Date(g.scheduled_at) < now)
+    .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
+
+  return { upcoming, past };
 }
 
 export async function getFellowAttendees(gatheringId) {

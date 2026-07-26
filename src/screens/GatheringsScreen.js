@@ -85,7 +85,7 @@ export default function GatheringsScreen({ navigation }) {
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
   const [hosting, setHosting] = useState([]);
-  const [attending, setAttending] = useState([]);
+  const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
@@ -308,15 +308,17 @@ export default function GatheringsScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('gatherings.title')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity
-            style={styles.viewToggleButton}
-            onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
-            accessibilityLabel={viewStyle === 'map' ? 'Currently on map view, switch to list view' : 'Currently on list view, switch to map view'}
-            accessibilityRole="button"
-          >
-            <Text style={styles.viewToggleIcon}>{viewStyle === 'map' ? '📋' : '🗺️'}</Text>
-            <Text style={styles.viewToggleLabel}>{viewStyle === 'map' ? 'List' : 'Map'}</Text>
-          </TouchableOpacity>
+          {tab === 'nearby' && (
+            <TouchableOpacity
+              style={styles.viewToggleButton}
+              onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
+              accessibilityLabel={viewStyle === 'map' ? 'Currently on map view, switch to list view' : 'Currently on list view, switch to map view'}
+              accessibilityRole="button"
+            >
+              <Text style={styles.viewToggleIcon}>{viewStyle === 'map' ? '📋' : '🗺️'}</Text>
+              <Text style={styles.viewToggleLabel}>{viewStyle === 'map' ? 'List' : 'Map'}</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate('CreateGathering')}
@@ -623,8 +625,13 @@ export default function GatheringsScreen({ navigation }) {
 
       {tab === 'attending' && (
         <FlatList
-          data={attending}
-          keyExtractor={(item) => item.id}
+          data={[
+            ...(attending.upcoming.length > 0 ? [{ type: 'header', key: 'upcoming-header', label: 'Upcoming' }] : []),
+            ...attending.upcoming.map((g) => ({ type: 'gathering', key: g.id, gathering: g })),
+            ...(attending.past.length > 0 ? [{ type: 'header', key: 'past-header', label: 'Past' }] : []),
+            ...attending.past.map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })),
+          ]}
+          keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
@@ -633,14 +640,20 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.emptyText}>{t('gatherings.emptyAttending')}</Text>
             </View>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item: row }) => {
+            if (row.type === 'header') {
+              return <Text style={styles.attendingSectionHeader}>{row.label}</Text>;
+            }
+            const item = row.gathering;
+            const isPast = row.isPast;
             const categoryStyle = categoryStyleFor(item.interest_tag);
             const isExpanded = expandedGathering === item.id;
             const fellows = fellowAttendees[item.id] ?? [];
             return (
-              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
+              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
                 <TouchableOpacity
-                  onPress={() => toggleExpandGathering(item.id)}
+                  onPress={() => !isPast && toggleExpandGathering(item.id)}
+                  disabled={isPast}
                   activeOpacity={0.85}
                   accessibilityLabel={`${item.title}, ${isExpanded ? 'showing' : 'show'} who else is attending`}
                   accessibilityRole="button"
@@ -658,12 +671,12 @@ export default function GatheringsScreen({ navigation }) {
                   </View>
                   {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                  <View style={styles.attendingBadge}>
-                    <Text style={styles.attendingBadgeText}>{t('gatherings.youreGoing')}</Text>
+                  <View style={[styles.attendingBadge, isPast && styles.pastBadge]}>
+                    <Text style={[styles.attendingBadgeText, isPast && styles.pastBadgeText]}>{isPast ? '✓ Attended' : t('gatherings.youreGoing')}</Text>
                   </View>
                 </TouchableOpacity>
 
-                {isExpanded && (
+                {isExpanded && !isPast && (
                   <View style={styles.fellowSection}>
                     <Text style={styles.fellowSectionLabel}>{t('gatherings.whoElseGoing')}</Text>
                     {loadingFellows && !fellowAttendees[item.id] && (
@@ -884,6 +897,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeeAvatars: { flexDirection: 'row', marginRight: spacing.sm },
   attendeeAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.surface, backgroundColor: colors.surfaceElevated },
   attendeesText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  attendingSectionHeader: {
+    ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5,
+    marginTop: spacing.lg, marginBottom: spacing.sm,
+  },
+  pastCard: { opacity: 0.6 },
+  pastBadge: { backgroundColor: colors.surfaceElevated },
+  pastBadgeText: { color: colors.textTertiary },
   attendingBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
   attendingBadgeText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   fellowSection: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },

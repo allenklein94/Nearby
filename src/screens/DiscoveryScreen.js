@@ -540,9 +540,17 @@ export default function DiscoveryScreen({ navigation }) {
       ) : viewStyle === 'cards' ? (
         filteredNearby.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>{anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
+            <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
+            <Text style={styles.emptyTitle}>
+              {discoveryMode === 'browse'
+                ? 'No one matches your filters in this area yet'
+                : (anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle'))}
+            </Text>
+            <Text style={styles.emptyText}>
+              {discoveryMode === 'browse'
+                ? 'Try adjusting your filters, or check back as more people join.'
+                : (anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText'))}
+            </Text>
           </View>
         ) : (
           <SwipeableDiscoveryCards
