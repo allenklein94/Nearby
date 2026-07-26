@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, Image, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
 import { calculateCompatibility } from '../services/compatibility';
+import { sendNoticeTo } from '../services/noticeActions';
 import SkeletonGridCard from '../components/SkeletonGridCard';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -21,6 +22,7 @@ export default function NoticesScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [compatScores, setCompatScores] = useState({});
+  const [noticedBackIds, setNoticedBackIds] = useState({});
 
   const load = useCallback(async () => {
     const premiumStatus = await isPremium().catch(() => false);
@@ -106,6 +108,26 @@ export default function NoticesScreen({ navigation }) {
     }
   }
 
+  async function handleNoticeBack(item) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await sendNoticeTo(item.from_user, false);
+      setNoticedBackIds((prev) => ({ ...prev, [item.id]: true }));
+      Alert.alert("It's a Match! 🎉", `You and ${item.profiles?.display_name} noticed each other.`, [
+        { text: 'Keep Browsing', style: 'cancel' },
+        { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
+      ]);
+      load();
+    } catch (e) {
+      if (e.message === 'ALREADY_SENT') {
+        // They already matched by the time this loaded — just refresh
+        load();
+      } else {
+        Alert.alert('Error', e.message);
+      }
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -151,6 +173,7 @@ export default function NoticesScreen({ navigation }) {
         renderItem={({ item }) => {
           const score = compatScores[item.id];
           const hasScore = score !== null && score !== undefined;
+          const alreadyNoticedBack = noticedBackIds[item.id];
           const label = premium
             ? [
                 item.profiles?.display_name,
@@ -160,45 +183,59 @@ export default function NoticesScreen({ navigation }) {
             : `Someone ${item.is_super ? 'sent you a Wave' : 'noticed you'}${hasScore ? `, ${score} percent compatible` : ''}, unlock Premium to see who`;
 
           return (
-            <TouchableOpacity
-              style={[styles.card, item.is_super && styles.waveCard]}
-              onPress={() => handleCardPress(item)}
-              activeOpacity={0.85}
-              accessibilityLabel={label}
-              accessibilityRole="button"
-            >
-              {photoUrls[item.id] ? (
-                <Image
-                  source={{ uri: photoUrls[item.id] }}
-                  style={styles.avatar}
-                  blurRadius={premium ? 0 : 25}
-                />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]} />
-              )}
-              {!premium && (
-                <View style={styles.lockOverlay}>
-                  <Text style={styles.lockIcon}>🔒</Text>
-                </View>
-              )}
-              {item.is_super && (
-                <View style={styles.waveBadge}>
-                  <Text style={styles.waveBadgeText}>👋 Wave</Text>
-                </View>
-              )}
-              {hasScore && (
-                <View style={[styles.compatBadge, { borderColor: compatibilityColor(score) }]}>
-                  <Text style={[styles.compatText, { color: compatibilityColor(score) }]}>
-                    {score}%
-                  </Text>
-                </View>
-              )}
+            <View style={[styles.card, item.is_super && styles.waveCard]}>
+              <TouchableOpacity
+                onPress={() => handleCardPress(item)}
+                activeOpacity={0.85}
+                accessibilityLabel={label}
+                accessibilityRole="button"
+              >
+                {photoUrls[item.id] ? (
+                  <Image
+                    source={{ uri: photoUrls[item.id] }}
+                    style={styles.avatar}
+                    blurRadius={premium ? 0 : 25}
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                )}
+                {!premium && (
+                  <View style={styles.lockOverlay}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                  </View>
+                )}
+                {item.is_super && (
+                  <View style={styles.waveBadge}>
+                    <Text style={styles.waveBadgeText}>👋 Wave</Text>
+                  </View>
+                )}
+                {hasScore && (
+                  <View style={[styles.compatBadge, { borderColor: compatibilityColor(score) }]}>
+                    <Text style={[styles.compatText, { color: compatibilityColor(score) }]}>
+                      {score}%
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <View style={styles.cardFooter}>
                 <Text style={styles.name} numberOfLines={1}>
                   {premium ? item.profiles?.display_name : 'Someone noticed you'}
                 </Text>
+                {premium && (
+                  <TouchableOpacity
+                    style={[styles.noticeBackButton, alreadyNoticedBack && styles.noticeBackButtonDone]}
+                    onPress={() => handleNoticeBack(item)}
+                    disabled={alreadyNoticedBack}
+                    accessibilityLabel={alreadyNoticedBack ? 'Already noticed back' : `Notice ${item.profiles?.display_name} back`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.noticeBackButtonText}>
+                      {alreadyNoticedBack ? '✓ Matched' : '👋 Notice Back'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
           );
         }}
       />
@@ -237,17 +274,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    aspectRatio: 0.85,
     ...shadow.card,
   },
   waveCard: {
     borderColor: colors.primary,
     borderWidth: 2,
   },
-  avatar: { width: '100%', height: '75%', backgroundColor: colors.surfaceElevated },
+  avatar: { width: '100%', aspectRatio: 1, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
   lockOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, height: '75%',
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: 'center', alignItems: 'center',
   },
   lockIcon: { fontSize: 28 },
@@ -264,5 +300,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   compatText: { fontSize: 10, fontWeight: '700' },
   cardFooter: { padding: spacing.sm, justifyContent: 'center' },
-  name: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
+  name: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14, marginBottom: spacing.xs },
+  noticeBackButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full,
+    paddingVertical: 6, alignItems: 'center',
+  },
+  noticeBackButtonDone: { backgroundColor: colors.success },
+  noticeBackButtonText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 });
