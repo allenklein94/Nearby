@@ -14,7 +14,7 @@
     #status.live { color: #4ade80; }
     #status.expired { color: #f87171; }
     #map { height: calc(100vh - 88px); width: 100%; }
-    #loading, #error { padding: 40px 20px; text-align: center; color: #aaa; }
+    #loading, #error { padding: 40px 20px; text-align: center; color: #aaa; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -56,7 +56,8 @@
         );
 
         if (!res.ok) {
-          showError('Could not load this location share.');
+          const errorText = await res.text();
+          showError('DEBUG - Status: ' + res.status + ' - Response: ' + errorText);
           return;
         }
 
@@ -88,7 +89,7 @@
         statusEl.textContent = `Live — last updated ${updatedAgo < 60 ? updatedAgo + 's' : Math.round(updatedAgo / 60) + 'm'} ago`;
         statusEl.className = 'live';
       } catch (err) {
-        showError('Something went wrong loading this location share.');
+        showError('DEBUG - Caught error: ' + err.message + ' - ' + err.toString());
       }
     }
 
