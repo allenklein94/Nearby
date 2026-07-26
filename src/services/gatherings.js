@@ -336,3 +336,8 @@ export async function approveInterest(interestId) {
   if (error) throw error;
   return data;
 }
+
+export async function cancelGathering(gatheringId) {
+  const { error } = await supabase.from('gatherings').delete().eq('id', gatheringId);
+  if (error) throw error;
+}

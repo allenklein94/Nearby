@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories } from '../services/gatherings';
+import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering } from '../services/gatherings';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -263,6 +263,28 @@ export default function GatheringsScreen({ navigation }) {
     } catch (e) {
       Alert.alert('Error', e.message);
     }
+  }
+
+  function confirmCancelGathering(gathering) {
+    Alert.alert(
+      `Cancel "${gathering.title}"?`,
+      "This removes the gathering completely. Anyone who expressed interest won't be notified automatically.",
+      [
+        { text: 'Keep It', style: 'cancel' },
+        {
+          text: 'Cancel Gathering',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelGathering(gathering.id);
+              load();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function formatDate(iso) {
@@ -744,7 +766,14 @@ export default function GatheringsScreen({ navigation }) {
                   <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
-                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={[styles.title, { flex: 1 }]}>{item.title}</Text>
+                  <TouchableOpacity
+                    onPress={() => confirmCancelGathering(item)}
+                    accessibilityLabel={`Cancel ${item.title}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.cancelGatheringText}>Cancel</Text>
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
                 {item.interested?.length > 0 ? (
@@ -925,4 +954,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   approveButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   approvedLabel: { color: colors.success, fontSize: 12, fontWeight: '700' },
   noInterestText: { color: colors.textTertiary, fontSize: 13 },
+  cancelGatheringText: { color: colors.primary, fontSize: 12, opacity: 0.7, fontWeight: '600' },
 });
