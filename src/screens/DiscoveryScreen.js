@@ -343,11 +343,12 @@ export default function DiscoveryScreen({ navigation }) {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={toggleViewStyle}
-            style={styles.infoButton}
-            accessibilityLabel={viewStyle === 'cards' ? 'Switch to list view' : 'Switch to card view'}
+            style={styles.viewToggleButton}
+            accessibilityLabel={viewStyle === 'cards' ? 'Currently on card view, switch to list view' : 'Currently on list view, switch to card view'}
             accessibilityRole="button"
           >
-            <Text style={styles.infoButtonText}>{viewStyle === 'cards' ? '📋' : '🃏'}</Text>
+            <Text style={styles.viewToggleIcon}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
+            <Text style={styles.viewToggleLabel}>{viewStyle === 'cards' ? 'Cards' : 'List'}</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
@@ -590,6 +591,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   infoButton: { marginLeft: spacing.sm, padding: spacing.xs },
   infoButtonText: { color: colors.textTertiary, fontSize: 18 },
+  viewToggleButton: {
+    flexDirection: 'row', alignItems: 'center', marginLeft: spacing.sm,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  viewToggleIcon: { fontSize: 14, marginRight: 4 },
+  viewToggleLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
