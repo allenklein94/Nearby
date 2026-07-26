@@ -14,19 +14,13 @@ function wideArea(latitude, longitude) {
   return `${bucketLat},${bucketLng}`;
 }
 
-function milesBetween(lat1, lng1, lat2, lng2) {
-  const R = 3958.8;
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 const WIDE_TIER_MAX_MILES = 15;
+
+// Fields explicitly listed rather than using "*" — precise_lat and
+// precise_lng must never leave the server. Distance and an
+// approximate, jittered pin position are computed server-side via
+// get_gathering_distances() and merged in below by gathering id.
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, source_gathering_id';
 
 export async function createGathering({ title, description, interestTag, scheduledAt }) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -89,7 +83,7 @@ export async function getNearbyGatherings(tier = 'local') {
 
   let query = supabase
     .from('gatherings')
-    .select('*, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))')
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))`)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
@@ -107,21 +101,40 @@ export async function getNearbyGatherings(tier = 'local') {
     return [];
   }
 
-  return (data ?? [])
-    .filter((gathering) => !excludedHostIds.has(gathering.host_id))
+  const filtered = (data ?? []).filter((gathering) => !excludedHostIds.has(gathering.host_id));
+
+  // Distance and an approximate map position are computed
+  // server-side in one batched call — the client never sees the
+  // real precise_lat/precise_lng for any gathering.
+  const gatheringIds = filtered.map((g) => g.id);
+  let distanceById = {};
+  if (gatheringIds.length > 0) {
+    const { data: distances, error: distError } = await supabase.rpc('get_gathering_distances', {
+      my_lat: myLat,
+      my_lng: myLng,
+      gathering_ids: gatheringIds,
+    });
+    if (distError) {
+      console.error('get_gathering_distances error', distError);
+    } else {
+      distanceById = Object.fromEntries((distances ?? []).map((d) => [d.id, d]));
+    }
+  }
+
+  return filtered
     .map((gathering) => {
       const approvedAttendees = (gathering.attendees ?? []).filter((a) => a.status === 'approved');
-      const hasPreciseCoords = gathering.precise_lat != null && gathering.precise_lng != null;
-      const distanceMiles = hasPreciseCoords
-        ? milesBetween(myLat, myLng, gathering.precise_lat, gathering.precise_lng)
-        : null;
+      const dist = distanceById[gathering.id];
+      const distanceMiles = dist?.distance_miles ?? null;
       return {
         ...gathering,
         matchesYourInterests: gathering.interest_tag ? myInterests.includes(gathering.interest_tag) : false,
-        distanceLabel: hasPreciseCoords
+        distanceLabel: distanceMiles !== null
           ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
-          : distanceRangeLabel(myLat, myLng, gathering.precise_lat, gathering.precise_lng),
+          : 'Nearby',
         distanceMiles,
+        latitude: dist?.fuzzed_lat ?? null,
+        longitude: dist?.fuzzed_lng ?? null,
         approvedAttendees,
       };
     })
