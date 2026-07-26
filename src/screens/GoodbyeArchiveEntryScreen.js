@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { useHeaderHeight } from '@react-navigation/elements';
 import { submitGoodbyeEntry } from '../services/goodbyeArchive';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
@@ -9,7 +8,6 @@ import { typography, spacing, radius } from '../theme';
 export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
   const { aboutDisplayName } = route.params;
   const { colors, shadow } = useTheme();
-  const headerHeight = useHeaderHeight();
   const styles = getStyles(colors, shadow);
   const [whatWasBeautiful, setWhatWasBeautiful] = useState('');
   const [whatWasDifficult, setWhatWasDifficult] = useState('');
@@ -53,7 +51,6 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">A private reflection</Text>
