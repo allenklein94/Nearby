@@ -97,6 +97,7 @@ export default function GatheringsScreen({ navigation }) {
   const [topCategories, setTopCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
+  const [expandedFilterSection, setExpandedFilterSection] = useState(null);
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -256,6 +257,14 @@ export default function GatheringsScreen({ navigation }) {
     setForYouActive(false);
   }
 
+  function toggleFilterSection(section) {
+    setExpandedFilterSection((prev) => (prev === section ? null : section));
+  }
+
+  const distanceSummary = radiusTier === 'local' ? 'Local (~1 mi)' : 'Wider Area (~15 mi)';
+  const dateSummaryLabel = DATE_OPTIONS.find((d) => d.key === dateFilter)?.label ?? 'Anytime';
+  const categorySummary = forYouActive ? 'For You' : (interestFilter || 'All Categories');
+
   const filteredNearby = nearby
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
@@ -324,83 +333,138 @@ export default function GatheringsScreen({ navigation }) {
       </View>
 
       {tab === 'nearby' && (
-        <>
-          <View style={styles.radiusToggleRow}>
-            <TouchableOpacity
-              style={[styles.radiusToggle, radiusTier === 'local' && styles.radiusToggleActive]}
-              onPress={() => setRadiusTier('local')}
-              accessibilityLabel="Local gatherings, within about a mile"
-              accessibilityRole="button"
-              accessibilityState={{ selected: radiusTier === 'local' }}
-            >
-              <Text style={[styles.radiusToggleText, radiusTier === 'local' && styles.radiusToggleTextActive]}>📍 Local (~1 mi)</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.radiusToggle, radiusTier === 'wide' && styles.radiusToggleActive]}
-              onPress={() => setRadiusTier('wide')}
-              accessibilityLabel="Wider area gatherings, within about 15 miles"
-              accessibilityRole="button"
-              accessibilityState={{ selected: radiusTier === 'wide' }}
-            >
-              <Text style={[styles.radiusToggleText, radiusTier === 'wide' && styles.radiusToggleTextActive]}>🗺️ Wider Area (~15 mi)</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
-            {DATE_OPTIONS.map((option) => {
-              const active = dateFilter === option.key;
-              return (
+        <View style={styles.accordionContainer}>
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('distance')}
+            accessibilityLabel={`Distance: ${distanceSummary}, ${expandedFilterSection === 'distance' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'distance' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>📍 Distance</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{distanceSummary}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'distance' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'distance' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.radiusToggleRow}>
                 <TouchableOpacity
-                  key={option.key}
-                  style={[styles.dateChip, active && styles.dateChipActive]}
-                  onPress={() => setDateFilter(option.key)}
-                  accessibilityLabel={`Filter by ${option.label}`}
+                  style={[styles.radiusToggle, radiusTier === 'local' && styles.radiusToggleActive]}
+                  onPress={() => setRadiusTier('local')}
+                  accessibilityLabel="Local gatherings, within about a mile"
                   accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
+                  accessibilityState={{ selected: radiusTier === 'local' }}
                 >
-                  <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                  <Text style={[styles.radiusToggleText, radiusTier === 'local' && styles.radiusToggleTextActive]}>📍 Local (~1 mi)</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
-            {topCategories.length > 0 ? (
-              <TouchableOpacity
-                style={[styles.forYouChip, forYouActive && styles.forYouChipActive]}
-                onPress={toggleForYou}
-                accessibilityLabel="For You — based on gatherings you've attended or shown interest in before"
-                accessibilityRole="button"
-                accessibilityState={{ selected: forYouActive }}
-              >
-                <Text style={[styles.forYouChipText, forYouActive && styles.forYouChipTextActive]}>⭐ For You</Text>
-              </TouchableOpacity>
-            ) : (
-              <View
-                style={styles.forYouChipLocked}
-                accessibilityLabel="For You — will unlock once you've shown interest in a gathering"
-              >
-                <Text style={styles.forYouChipLockedText}>⭐ For You (soon)</Text>
+                <TouchableOpacity
+                  style={[styles.radiusToggle, radiusTier === 'wide' && styles.radiusToggleActive]}
+                  onPress={() => setRadiusTier('wide')}
+                  accessibilityLabel="Wider area gatherings, within about 15 miles"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: radiusTier === 'wide' }}
+                >
+                  <Text style={[styles.radiusToggleText, radiusTier === 'wide' && styles.radiusToggleTextActive]}>🗺️ Wider Area (~15 mi)</Text>
+                </TouchableOpacity>
               </View>
-            )}
-            {INTEREST_OPTIONS.map((option) => {
-              const active = interestFilter === option;
-              const style = categoryStyleFor(option);
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
-                  onPress={() => selectInterestFilter(option)}
-                  accessibilityLabel={`Filter by ${option}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </>
+            </View>
+          )}
+
+          <View style={styles.accordionDivider} />
+
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('when')}
+            accessibilityLabel={`When: ${dateSummaryLabel}, ${expandedFilterSection === 'when' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'when' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>📅 When</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{dateSummaryLabel}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'when' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'when' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.chipsWrapInline}>
+                {DATE_OPTIONS.map((option) => {
+                  const active = dateFilter === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.key}
+                      style={[styles.dateChip, active && styles.dateChipActive]}
+                      onPress={() => setDateFilter(option.key)}
+                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.accordionDivider} />
+
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('category')}
+            accessibilityLabel={`Category: ${categorySummary}, ${expandedFilterSection === 'category' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'category' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>🏷️ Category</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{categorySummary}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'category' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'category' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.chipsWrapInline}>
+                {topCategories.length > 0 ? (
+                  <TouchableOpacity
+                    style={[styles.forYouChip, forYouActive && styles.forYouChipActive]}
+                    onPress={toggleForYou}
+                    accessibilityLabel="For You — based on gatherings you've attended or shown interest in before"
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: forYouActive }}
+                  >
+                    <Text style={[styles.forYouChipText, forYouActive && styles.forYouChipTextActive]}>⭐ For You</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View
+                    style={styles.forYouChipLocked}
+                    accessibilityLabel="For You — will unlock once you've shown interest in a gathering"
+                  >
+                    <Text style={styles.forYouChipLockedText}>⭐ For You (soon)</Text>
+                  </View>
+                )}
+                {INTEREST_OPTIONS.map((option) => {
+                  const active = interestFilter === option;
+                  const style = categoryStyleFor(option);
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
+                      onPress={() => selectInterestFilter(option)}
+                      accessibilityLabel={`Filter by ${option}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
       )}
 
       {tab === 'nearby' && initialLoading ? (
@@ -676,7 +740,22 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
-  radiusToggleRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.xs },
+  accordionContainer: {
+    marginHorizontal: spacing.lg, marginTop: spacing.md, backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+  },
+  accordionHeaderLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  accordionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  accordionHeaderValue: { color: colors.textTertiary, fontSize: 13 },
+  accordionChevron: { color: colors.textTertiary, fontSize: 14 },
+  accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+  accordionDivider: { height: 1, backgroundColor: colors.border },
+  chipsWrapInline: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  radiusToggleRow: { flexDirection: 'row', gap: spacing.xs },
   radiusToggle: {
     flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center',
