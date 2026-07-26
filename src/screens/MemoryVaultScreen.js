@@ -4,6 +4,7 @@ import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -61,6 +62,7 @@ export default function MemoryVaultScreen({ route }) {
     setSubmittingCategory(categoryKey);
     try {
       await addMemoryItem(matchId, categoryKey, text);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('memory_vault_item_added', { category: categoryKey });
       setDrafts((prev) => ({ ...prev, [categoryKey]: '' }));
       load();

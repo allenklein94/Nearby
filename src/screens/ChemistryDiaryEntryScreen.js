@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { submitChemistryEntry } from '../services/chemistryDiary';
 import { checkTextModeration } from '../services/textModeration';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -39,7 +40,8 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
 
     setSubmitting(true);
     try {
-      await submitChemistryEntry(aboutDisplayName, signals, noteText);
+     await submitChemistryEntry(aboutDisplayName, signals, noteText);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('chemistry_diary_entry_saved');
       Alert.alert('Saved privately', 'Only you can see this — it helps build a picture of what actually feels good to you over time.');
       navigation.goBack();

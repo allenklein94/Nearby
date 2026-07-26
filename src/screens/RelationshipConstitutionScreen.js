@@ -4,6 +4,7 @@ import { addConstitutionEntry, getConstitutionEntries } from '../services/relati
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -61,7 +62,8 @@ export default function RelationshipConstitutionScreen({ route }) {
 
     setSubmittingArticle(articleKey);
     try {
-      await addConstitutionEntry(matchId, articleKey, text);
+     await addConstitutionEntry(matchId, articleKey, text);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('constitution_entry_added', { article: articleKey });
       setDrafts((prev) => ({ ...prev, [articleKey]: '' }));
       load();

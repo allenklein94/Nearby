@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ale
 import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -60,6 +61,7 @@ export default function IdVerificationScreen() {
     setSubmitting(true);
     try {
       await submitVerification(userId, selfieAsset, idAsset);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('id_verification_submitted');
       Alert.alert('Submitted', "We'll review your submission — this usually takes a day or two.");
       setSelfieAsset(null);

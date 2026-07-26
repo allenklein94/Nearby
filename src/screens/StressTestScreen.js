@@ -4,6 +4,7 @@ import { addStressTestNote, getStressTestNotes } from '../services/stressTest';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -61,6 +62,7 @@ export default function StressTestScreen({ route }) {
     setSubmittingScenario(scenarioKey);
     try {
       await addStressTestNote(matchId, scenarioKey, text);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('stress_test_note_added', { scenario: scenarioKey });
       setDrafts((prev) => ({ ...prev, [scenarioKey]: '' }));
       load();

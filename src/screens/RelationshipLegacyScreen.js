@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { submitLegacyEntry } from '../services/relationshipLegacy';
 import { checkTextModeration } from '../services/textModeration';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -42,6 +43,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
         whatMadeUsStronger,
         whatWeWishWeDiscussedEarlier,
       });
+     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('relationship_legacy_submitted');
       Alert.alert('Thank you', 'Your wisdom is now part of the library for others to learn from.');
       navigation.goBack();

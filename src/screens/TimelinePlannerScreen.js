@@ -4,6 +4,7 @@ import { addTimelineNote, getTimelineNotes } from '../services/timelinePlanner';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -60,7 +61,8 @@ export default function TimelinePlannerScreen({ route }) {
 
     setSubmittingPeriod(periodKey);
     try {
-      await addTimelineNote(matchId, periodKey, text);
+     await addTimelineNote(matchId, periodKey, text);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('timeline_note_added', { period: periodKey });
       setDrafts((prev) => ({ ...prev, [periodKey]: '' }));
       load();

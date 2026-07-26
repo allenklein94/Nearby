@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { submitGoodbyeEntry } from '../services/goodbyeArchive';
 import { checkTextModeration } from '../services/textModeration';
 import { usePostHog } from 'posthog-react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -42,6 +43,7 @@ export default function GoodbyeArchiveEntryScreen({ route, navigation }) {
         whatYouLearned,
         whatYouWantNextTime,
       });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('goodbye_archive_entry_saved');
       Alert.alert('Saved privately', 'Only you can see this. It\u2019s yours whenever you want to look back.');
       navigation.goBack();
