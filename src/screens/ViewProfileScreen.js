@@ -9,6 +9,7 @@ import { intentionLabel } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
+import PhotoLightbox from '../components/PhotoLightbox';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -49,6 +50,8 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [intentionChangeCount, setIntentionChangeCount] = useState(0);
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxPhotoUri, setLightboxPhotoUri] = useState(null);
 
   useEffect(() => {
     load();
@@ -58,10 +61,6 @@ export default function ViewProfileScreen({ route, navigation }) {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
 
-    // A blocked profile should never be viewable at all, regardless
-    // of how someone navigated here — this check is independent of
-    // (and in addition to) the list-level filtering elsewhere, since
-    // direct navigation bypasses those lists entirely.
     if (myId && myId !== userId) {
       const { data: blockedByMe } = await supabase
         .from('blocks')
@@ -131,6 +130,11 @@ export default function ViewProfileScreen({ route, navigation }) {
     });
   }
 
+  function openLightbox(uri) {
+    setLightboxPhotoUri(uri);
+    setLightboxVisible(true);
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -197,11 +201,17 @@ export default function ViewProfileScreen({ route, navigation }) {
               setActivePhotoIndex(index);
             }}
             renderItem={({ item, index }) => (
-              <Image
-                source={{ uri: item.signedUrl }}
-                style={[styles.photo, { width }]}
-                accessibilityLabel={`${profile.display_name}'s photo ${index + 1} of ${photos.length}`}
-              />
+              <TouchableOpacity
+                activeOpacity={0.95}
+                onPress={() => openLightbox(item.signedUrl)}
+                accessibilityLabel={`${profile.display_name}'s photo ${index + 1} of ${photos.length}, tap to view full screen`}
+                accessibilityRole="button"
+              >
+                <Image
+                  source={{ uri: item.signedUrl }}
+                  style={[styles.photo, { width }]}
+                />
+              </TouchableOpacity>
             )}
           />
         ) : (
@@ -338,6 +348,12 @@ export default function ViewProfileScreen({ route, navigation }) {
           reportedUserName={profile.display_name}
         />
       )}
+
+      <PhotoLightbox
+        visible={lightboxVisible}
+        photoUri={lightboxPhotoUri}
+        onClose={() => setLightboxVisible(false)}
+      />
     </SafeAreaView>
   );
 }
