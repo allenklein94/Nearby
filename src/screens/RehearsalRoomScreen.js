@@ -1,18 +1,22 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const SCENARIOS = [
-  { key: 'ask_out', label: '💬 Asking Someone Out', opener: "Let's practice. I'll play the other person — go ahead and ask me out however you'd actually say it." },
-  { key: 'boundary', label: '⚖️ Setting a Boundary', opener: "Let's practice. I'll play the other person — tell me the boundary you want to set." },
-  { key: 'hard_conversation', label: '💭 A Hard Conversation', opener: "Let's practice a difficult conversation. I'll play the other person — start however you'd actually begin." },
-  { key: 'not_interested', label: '👋 Saying You\'re Not Interested', opener: "Let's practice. I'll play the other person — tell me kindly that you're not interested." },
+  { key: 'ask_out', labelKey: 'askingSomeoneOut', opener: "Let's practice. I'll play the other person — go ahead and ask me out however you'd actually say it." },
+  { key: 'boundary', labelKey: 'settingBoundary', opener: "Let's practice. I'll play the other person — tell me the boundary you want to set." },
+  { key: 'hard_conversation', labelKey: 'hardConversation', opener: "Let's practice a difficult conversation. I'll play the other person — start however you'd actually begin." },
+  { key: 'not_interested', labelKey: 'sayingNotInterested', opener: "Let's practice. I'll play the other person — tell me kindly that you're not interested." },
 ];
 
 export default function RehearsalRoomScreen({ navigation }) {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [scenario, setScenario] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -23,6 +27,7 @@ export default function RehearsalRoomScreen({ navigation }) {
   function startScenario(s) {
     setScenario(s);
     setMessages([{ role: 'ai', text: s.opener }]);
+    posthog.capture('rehearsal_room_started', { scenario: s.key });
   }
 
   function resetRoom() {
@@ -69,6 +74,7 @@ export default function RehearsalRoomScreen({ navigation }) {
         return;
       }
 
+      posthog.capture('rehearsal_room_message_sent', { scenario: scenario.key });
       setMessages((prev) => [...prev, { role: 'ai', text: result.reply }]);
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -80,21 +86,21 @@ export default function RehearsalRoomScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">🎭 Rehearsal Room</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('rehearsalRoom.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            A private space to practice a hard conversation before having it for real. The AI plays a fictional role-play partner — nothing here is analyzed, saved permanently, or about any real person.
+            {t('rehearsalRoom.subtitle')}
           </Text>
-          <Text style={styles.pickLabel}>What do you want to practice?</Text>
+          <Text style={styles.pickLabel}>{t('rehearsalRoom.whatToPractice')}</Text>
           {SCENARIOS.map((s) => (
             <TouchableOpacity
               key={s.key}
               style={styles.scenarioCard}
               onPress={() => startScenario(s)}
               activeOpacity={0.85}
-              accessibilityLabel={`Practice: ${s.label}`}
+              accessibilityLabel={`Practice: ${t(`rehearsalRoom.${s.labelKey}`)}`}
               accessibilityRole="button"
             >
-              <Text style={styles.scenarioLabel}>{s.label}</Text>
+              <Text style={styles.scenarioLabel}>{t(`rehearsalRoom.${s.labelKey}`)}</Text>
               <Text style={styles.scenarioChevron}>›</Text>
             </TouchableOpacity>
           ))}
@@ -106,9 +112,9 @@ export default function RehearsalRoomScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.practiceBanner} accessibilityLiveRegion="polite">
-        <Text style={styles.practiceBannerText}>🎭 This is practice — not a real person</Text>
+        <Text style={styles.practiceBannerText}>{t('rehearsalRoom.practiceReminder')}</Text>
         <TouchableOpacity onPress={resetRoom} accessibilityLabel="End practice session" accessibilityRole="button">
-          <Text style={styles.endText}>End</Text>
+          <Text style={styles.endText}>{t('rehearsalRoom.end')}</Text>
         </TouchableOpacity>
       </View>
 
