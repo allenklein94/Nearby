@@ -3,7 +3,9 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { addSharedDecisionNote, getSharedDecisionNotes } from '../services/sharedDecisions';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const CATEGORIES = [
@@ -16,6 +18,8 @@ const CATEGORIES = [
 export default function SharedDecisionsScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [notes, setNotes] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -57,6 +61,7 @@ export default function SharedDecisionsScreen({ route }) {
     setSubmittingCategory(categoryKey);
     try {
       await addSharedDecisionNote(matchId, categoryKey, text);
+      posthog.capture('shared_decision_note_added', { category: categoryKey });
       setDrafts((prev) => ({ ...prev, [categoryKey]: '' }));
       load();
     } catch (e) {
@@ -69,7 +74,7 @@ export default function SharedDecisionsScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">🧭 Big Picture Conversations</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('together.bigPicture')}</Text>
           <Text style={styles.headerSubtitle}>
             Not about finding "correct" answers — just surfacing conversations with {matchName} earlier rather than later.
           </Text>
