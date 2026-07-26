@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getLegacyEntries } from '../services/relationshipLegacy';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const FIELDS = [
@@ -13,20 +15,23 @@ const FIELDS = [
 
 export default function LegacyLibraryScreen() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = getStyles(colors);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     const data = await getLegacyEntries();
     setEntries(data);
     setLoading(false);
-  }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   async function onRefresh() {
     setRefreshing(true);
@@ -48,7 +53,7 @@ export default function LegacyLibraryScreen() {
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <Text style={styles.headerTitle} accessibilityRole="header">💌 Relationship Wisdom</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('legacyLibrary.title')}</Text>
         <Text style={styles.headerSubtitle}>
           Real, anonymous reflections from couples who found each other here — shared to help you navigate your own relationships.
         </Text>

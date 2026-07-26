@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitLegacyEntry } from '../services/relationshipLegacy';
 import { checkTextModeration } from '../services/textModeration';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function RelationshipLegacyScreen({ route, navigation }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [whatSurprisedUs, setWhatSurprisedUs] = useState('');
   const [whatAlmostEndedUs, setWhatAlmostEndedUs] = useState('');
@@ -38,6 +42,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
         whatMadeUsStronger,
         whatWeWishWeDiscussedEarlier,
       });
+      posthog.capture('relationship_legacy_submitted');
       Alert.alert('Thank you', 'Your wisdom is now part of the library for others to learn from.');
       navigation.goBack();
     } catch (e) {
@@ -50,7 +55,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">💌 Leave Some Wisdom</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">💌 {t('legacyLibrary.leaveWisdom')}</Text>
           <Text style={styles.headerSubtitle}>
             Anything you and {matchName} have learned together — shared publicly and anonymously to help others navigate their own relationships. Answer whatever feels true; skip the rest.
           </Text>
