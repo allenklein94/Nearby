@@ -33,7 +33,7 @@ export async function checkVoiceNoteLimit(isPremiumUser) {
   if ((count ?? 0) >= FREE_DAILY_VOICE_NOTE_LIMIT) {
     return {
       allowed: false,
-      reason: `Free accounts get ${FREE_DAILY_VOICE_NOTE_LIMIT} voice notes per day. Upgrade to Premium for unlimited voice notes, or send a text message instead.`,
+      reason: `You've sent your free voice notes for today — a text works just as well in the meantime. Premium removes the cap entirely.`,
     };
   }
 

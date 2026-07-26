@@ -33,7 +33,7 @@ export async function checkGatheringInterestLimit(isPremiumUser) {
   if ((count ?? 0) >= FREE_DAILY_GATHERING_INTEREST_LIMIT) {
     return {
       allowed: false,
-      reason: `Free accounts can express interest in ${FREE_DAILY_GATHERING_INTEREST_LIMIT} gatherings per day. Upgrade to Premium for unlimited.`,
+      reason: `You've reached today's limit for showing interest — plenty more gatherings are still worth a browse, and this resets tomorrow. Premium removes the cap.`,
     };
   }
 

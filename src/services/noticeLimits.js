@@ -34,7 +34,7 @@ export async function checkNoticeLimit(isUserPremium) {
   }
 
   if ((count ?? 0) >= FREE_NOTICE_DAILY_LIMIT) {
-    return { allowed: false, reason: `Free accounts get ${FREE_NOTICE_DAILY_LIMIT} Notices per day. Upgrade to Premium for unlimited Notices, or invite a friend for 3 bonus Notices.` };
+    return { allowed: false, reason: `You've used today's free Notices — they'll refresh tomorrow. Invite a friend for 3 bonus Notices right now, or Premium removes the daily cap entirely.` };
   }
 
   return { allowed: true };
@@ -61,7 +61,7 @@ export async function checkWaveLimit(isUserPremium) {
   }
 
   if ((count ?? 0) >= FREE_WAVE_WEEKLY_LIMIT) {
-    return { allowed: false, reason: `Free accounts get ${FREE_WAVE_WEEKLY_LIMIT} Wave per week. Upgrade to Premium for unlimited Waves.` };
+    return { allowed: false, reason: `You've used this week's free Wave — a regular Notice still works great, and this refreshes next week. Premium removes the weekly cap.` };
   }
 
   return { allowed: true };
