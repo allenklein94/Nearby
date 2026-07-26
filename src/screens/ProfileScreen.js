@@ -134,9 +134,21 @@ export default function ProfileScreen({ navigation }) {
           Authorization: `Bearer ${token}`,
         },
       });
-      const result = await response.json();
+const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403) {
+          Alert.alert(
+            'Premium Feature',
+            'Generating a personalized note about your profile uses AI and is a Premium feature.',
+            [
+              { text: 'Not now', style: 'cancel' },
+              { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+            ]
+          );
+          setLoadingStrengths(false);
+          return;
+        }
         Alert.alert('Error', result.error || 'Could not generate this right now.');
         setLoadingStrengths(false);
         return;
