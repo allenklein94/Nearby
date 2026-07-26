@@ -98,6 +98,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [browseHasMore, setBrowseHasMore] = useState(true);
   const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
+  const [showBrowseCallout, setShowBrowseCallout] = useState(false);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -127,12 +128,16 @@ export default function DiscoveryScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, seen_browse_callout').eq('id', myId).single();
       setMyProfile(mine);
       setViewStyle(mine?.discovery_view_style ?? 'list');
 
       const reason = await shouldOfferBreak(myId);
       setConfidenceBannerReason(reason);
+
+      if (mine && !mine.seen_browse_callout) {
+        setShowBrowseCallout(true);
+      }
     }
   }, []);
 
@@ -190,6 +195,13 @@ export default function DiscoveryScreen({ navigation }) {
   async function handleDismissConfidenceBanner() {
     setConfidenceBannerReason(null);
     if (myUserId) await dismissBreakSuggestion(myUserId);
+  }
+
+  async function dismissBrowseCallout() {
+    setShowBrowseCallout(false);
+    if (myUserId) {
+      await supabase.from('profiles').update({ seen_browse_callout: true }).eq('id', myUserId);
+    }
   }
 
   function showRadiusInfo() {
@@ -443,6 +455,17 @@ export default function DiscoveryScreen({ navigation }) {
           <Text style={[styles.modeButtonText, discoveryMode === 'browse' && styles.modeButtonTextActive]}>🔎 Browse</Text>
         </TouchableOpacity>
       </View>
+
+      {showBrowseCallout && (
+        <View style={styles.calloutBanner}>
+          <Text style={styles.calloutText}>
+            👆 New: tap "Browse" to see a wider pool of people matching your filters, not just who you've crossed paths with.
+          </Text>
+          <TouchableOpacity onPress={dismissBrowseCallout} accessibilityLabel="Dismiss this tip" accessibilityRole="button">
+            <Text style={styles.calloutDismiss}>Got it</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
@@ -788,6 +811,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modeButtonActive: { backgroundColor: colors.primary },
   modeButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   modeButtonTextActive: { color: '#fff' },
+  calloutBanner: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
+    marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.primary,
+  },
+  calloutText: { flex: 1, color: colors.primary, fontSize: 12, fontWeight: '600', marginRight: spacing.sm, lineHeight: 16 },
+  calloutDismiss: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
   filterChip: {
