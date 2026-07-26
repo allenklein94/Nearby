@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
+import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -120,6 +121,7 @@ export default function ChatScreen({ route, navigation }) {
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
   const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
   const listRef = useRef(null);
+  const seenMessageIdsRef = useRef(new Set());
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const typingChannelRef = useRef(null);
@@ -198,10 +200,6 @@ export default function ChatScreen({ route, navigation }) {
       setOtherUser(other);
       setGatheringTitle(match.gatherings?.title || null);
 
-      // "I Message First" — if exactly one participant has opted in,
-      // they're the designated first-messenger for this match. If
-      // both or neither opted in, there's no restriction — avoids any
-      // ambiguity about whose preference takes precedence.
       const meOptedIn = !!me?.women_message_first;
       const otherOptedIn = !!other?.women_message_first;
       if (meOptedIn && !otherOptedIn) {
@@ -361,7 +359,7 @@ export default function ChatScreen({ route, navigation }) {
         },
         body: JSON.stringify({ goal }),
       });
-     const result = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
         if (response.status === 403) {
@@ -414,10 +412,6 @@ export default function ChatScreen({ route, navigation }) {
           text: 'Unmatch',
           style: 'destructive',
           onPress: async () => {
-            // Don't trust component state here — if otherUser hasn't
-            // finished loading yet, we'd otherwise silently save a
-            // fallback placeholder as if it were a real name. Fetch
-            // fresh, directly, right before it's needed.
             let otherPersonName = otherUser?.display_name;
             if (!otherPersonName) {
               const { data: freshMatch } = await supabase
@@ -766,7 +760,10 @@ export default function ChatScreen({ route, navigation }) {
             const isMe = item.sender_id === userId;
             const senderLabel = isMe ? 'You' : (otherUser?.display_name || 'They');
             const reactionText = reactionSummary(item.id);
+            const isNewMessage = !seenMessageIdsRef.current.has(item.id);
+            seenMessageIdsRef.current.add(item.id);
             return (
+              <AnimatedMessageBubble isNew={isNewMessage}>
               <View style={[styles.bubbleRow, isMe ? styles.rowRight : styles.rowLeft]}>
                 {item.audio_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={1}>
@@ -819,6 +816,7 @@ export default function ChatScreen({ route, navigation }) {
                   <Text style={styles.seenText}>Seen</Text>
                 )}
               </View>
+              </AnimatedMessageBubble>
             );
           }}
         />
