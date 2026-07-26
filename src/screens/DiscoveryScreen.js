@@ -142,12 +142,8 @@ export default function DiscoveryScreen({ navigation }) {
     if (myUserId) await dismissBreakSuggestion(myUserId);
   }
 
-function showRadiusInfo() {
-    Alert.alert(
-      t('discovery.radiusInfoTitle'),
-      t('discovery.radiusInfoText') + '\n\n👋 Notice vs Wave:\nA Notice is silent — they only find out if they notice you back too. A Wave tells them right away that you noticed them, before it\u2019s mutual.',
-      [{ text: 'OK' }]
-    );
+  function showRadiusInfo() {
+    Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
   }
 
   function showCompatibilityReport(item) {
@@ -593,15 +589,19 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { ...typography.title, color: colors.textPrimary },
-  infoButton: { marginLeft: spacing.sm, padding: spacing.xs },
-  infoButtonText: { color: colors.textTertiary, fontSize: 18 },
+  infoButton: {
+    marginLeft: spacing.sm, width: 32, height: 32, borderRadius: 16,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  infoButtonText: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   viewToggleButton: {
     flexDirection: 'row', alignItems: 'center', marginLeft: spacing.sm,
-    paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
   },
-  viewToggleIcon: { fontSize: 14, marginRight: 4 },
-  viewToggleLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  viewToggleIcon: { fontSize: 18, marginRight: 6 },
+  viewToggleLabel: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
