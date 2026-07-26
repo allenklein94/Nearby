@@ -155,7 +155,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Gatherings" component={GatheringsScreen} />
       <Tab.Screen name="Nearby" component={DiscoveryScreen} />
-      <Tab.Screen name="Notices" component={NoticesScreen} />
+      <Tab.Screen name="Notices" component={NoticesScreen} options={{ tabBarLabel: 'Interested' }} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
     </Tab.Navigator>
