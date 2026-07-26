@@ -52,6 +52,18 @@ export async function createGathering({ title, description, interestTag, schedul
   return data;
 }
 
+const LOCAL_TIER_MAX_MILES = 1;
+
+// Filters by genuine computed distance (via get_gathering_distances,
+// real haversine math server-side) rather than exact-string bucket
+// matching. Bucket strings are fragile — two GPS readings from the
+// same physical spot, taken moments apart, can round to different
+// bucket values right at a boundary, silently hiding real nearby
+// gatherings. Real distance comparison doesn't have that failure
+// mode. This does mean fetching all upcoming gatherings before
+// filtering, rather than letting the database narrow it down first —
+// a reasonable tradeoff at this scale; a spatial index would be the
+// next-level fix if gathering volume grows substantially.
 export async function getNearbyGatherings(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -80,20 +92,12 @@ export async function getNearbyGatherings(tier = 'local') {
   const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', userId).single();
   const myInterests = myProfile?.interests ?? [];
 
-  let query = supabase
+  const { data, error } = await supabase
     .from('gatherings')
     .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))`)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
-
-  if (tier === 'local') {
-    query = query.eq('area', localArea(myLat, myLng));
-  } else {
-    query = query.eq('wide_area', wideArea(myLat, myLng));
-  }
-
-  const { data, error } = await query;
 
   if (error) {
     console.error('getNearbyGatherings error', error);
@@ -120,6 +124,8 @@ export async function getNearbyGatherings(tier = 'local') {
     }
   }
 
+  const maxMiles = tier === 'local' ? LOCAL_TIER_MAX_MILES : WIDE_TIER_MAX_MILES;
+
   return filtered
     .map((gathering) => {
       const approvedAttendees = (gathering.attendees ?? []).filter((a) => a.status === 'approved');
@@ -137,7 +143,7 @@ export async function getNearbyGatherings(tier = 'local') {
         approvedAttendees,
       };
     })
-    .filter((gathering) => tier === 'local' || gathering.distanceMiles === null || gathering.distanceMiles <= WIDE_TIER_MAX_MILES)
+    .filter((gathering) => gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
     .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
 }
 
