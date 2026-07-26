@@ -9,6 +9,7 @@ import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SkeletonCard from '../components/SkeletonCard';
+import * as Haptics from 'expo-haptics';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -162,6 +163,7 @@ export default function GatheringsScreen({ navigation }) {
   }, [load]);
 
   async function onRefresh() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await load();
     setRefreshing(false);

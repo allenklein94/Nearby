@@ -6,6 +6,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { isPremium } from '../services/purchases';
 import { calculateCompatibility } from '../services/compatibility';
 import SkeletonGridCard from '../components/SkeletonGridCard';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -85,6 +86,7 @@ export default function NoticesScreen({ navigation }) {
   );
 
   async function onRefresh() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await load();
     setRefreshing(false);

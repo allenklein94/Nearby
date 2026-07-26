@@ -9,6 +9,7 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -152,6 +153,7 @@ export default function MatchesScreen({ navigation }) {
   );
 
   async function onRefresh() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await load();
     setRefreshing(false);

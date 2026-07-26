@@ -280,6 +280,7 @@ export default function DiscoveryScreen({ navigation }) {
   }
 
   async function onRefresh() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await load();
     setRefreshing(false);
@@ -485,7 +486,7 @@ export default function DiscoveryScreen({ navigation }) {
                 </Text>
               )}
               <View style={styles.cardActions}>
-              <ScaleButton
+                <ScaleButton
                   style={styles.noticeButton}
                   onPress={() => sendNotice(item.otherUserId)}
                   accessibilityLabel={`Send a Notice to ${item.profiles?.display_name}`}
