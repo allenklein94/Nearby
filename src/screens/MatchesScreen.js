@@ -8,6 +8,7 @@ import { getPendingCheckIns, respondToCheckIn } from '../services/dateSafety';
 import { generateCompatibilityReport } from '../services/compatibility';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
+import SkeletonCard from '../components/SkeletonCard';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -42,6 +43,7 @@ export default function MatchesScreen({ navigation }) {
   const [myUserId, setMyUserId] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [celebrationMatch, setCelebrationMatch] = useState(null);
   const [myPhotoUrl, setMyPhotoUrl] = useState(null);
@@ -90,6 +92,7 @@ export default function MatchesScreen({ navigation }) {
       await markMatchesSeen(myId, data.map((m) => m.id));
     }
 
+    setLoading(false);
     await checkPendingCheckIns();
   }, []);
 
@@ -184,6 +187,15 @@ export default function MatchesScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('matches.title')}</Text>
       </View>
+
+      {loading ? (
+        <View>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : (
       <FlatList
         data={matches}
         keyExtractor={(item) => item.id}
@@ -245,6 +257,7 @@ export default function MatchesScreen({ navigation }) {
           );
         }}
       />
+      )}
 
       <MatchCelebrationModal
         visible={!!celebrationMatch}
