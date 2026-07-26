@@ -7,6 +7,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
+import AnimatedListItem from '../components/AnimatedListItem';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -387,9 +388,10 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.emptyText}>{forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby'))}</Text>
             </View>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const categoryStyle = categoryStyleFor(item.interest_tag);
             return (
+              <AnimatedListItem index={index}>
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
                 <View style={styles.cardTopRow}>
                   <View
@@ -455,6 +457,7 @@ export default function GatheringsScreen({ navigation }) {
                   <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
                 </TouchableOpacity>
               </View>
+              </AnimatedListItem>
             );
           }}
         />
