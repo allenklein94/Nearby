@@ -5,7 +5,7 @@ import { translations } from '../i18n/translations';
 
 const LanguageContext = createContext(null);
 const STORAGE_KEY = 'nearby-language-preference';
-const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru'];
+const SUPPORTED_LANGUAGES = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
 
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState('en');

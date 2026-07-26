@@ -374,7 +374,7 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'tl' && styles.chipTextSelected]}>Tagalog</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+        <TouchableOpacity
               style={[styles.chip, language === 'ru' && styles.chipSelected]}
               onPress={() => setLanguage('ru')}
               activeOpacity={0.8}
@@ -384,7 +384,18 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'ru' && styles.chipTextSelected]}>Русский</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'ko' && styles.chipSelected]}
+              onPress={() => setLanguage('ko')}
+              activeOpacity={0.8}
+              accessibilityLabel="한국어"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'ko' }}
+            >
+              <Text style={[styles.chipText, language === 'ko' && styles.chipTextSelected]}>한국어</Text>
+            </TouchableOpacity>
           </View>
+        </View>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.notifications')}</Text>
