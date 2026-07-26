@@ -7,6 +7,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
 import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
+import { checkVoiceNoteLimit } from '../services/voiceNoteLimits';
 import { unmatch } from '../services/matchActions';
 import { toggleReaction, getReactionsForMatch } from '../services/messageReactions';
 import { randomExperiment } from '../constants/relationshipExperiments';
@@ -16,7 +17,6 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
-import ScaleButton from '../components/ScaleButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -515,6 +515,19 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   async function handleStartRecording() {
+    const limitCheck = await checkVoiceNoteLimit(isUserPremium);
+    if (!limitCheck.allowed) {
+      Alert.alert(
+        'Daily limit reached',
+        limitCheck.reason,
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+        ]
+      );
+      return;
+    }
+
     try {
       const recording = await startRecording();
       recordingRef.current = recording;
@@ -895,14 +908,14 @@ export default function ChatScreen({ route, navigation }) {
               accessibilityLabel="Message input"
             />
             {text.trim() ? (
-              <ScaleButton
+              <TouchableOpacity
                 style={styles.sendButton}
                 onPress={sendMessage}
                 accessibilityLabel="Send message"
                 accessibilityRole="button"
               >
                 <Text style={styles.sendText}>{t('chat.send')}</Text>
-              </ScaleButton>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.micButton}

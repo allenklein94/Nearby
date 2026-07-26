@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories } from '../services/gatherings';
+import { checkGatheringInterestLimit } from '../services/gatheringLimits';
+import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
@@ -217,6 +219,20 @@ export default function GatheringsScreen({ navigation }) {
   }
 
   async function handleExpressInterest(gatheringId) {
+    const isUserPremium = await isPremium().catch(() => false);
+    const limitCheck = await checkGatheringInterestLimit(isUserPremium);
+    if (!limitCheck.allowed) {
+      Alert.alert(
+        'Daily limit reached',
+        limitCheck.reason,
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+        ]
+      );
+      return;
+    }
+
     try {
       await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed');
