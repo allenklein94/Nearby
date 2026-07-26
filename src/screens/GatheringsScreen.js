@@ -8,6 +8,7 @@ import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
 import AnimatedListItem from '../components/AnimatedListItem';
+import SkeletonCard from '../components/SkeletonCard';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -92,6 +93,7 @@ export default function GatheringsScreen({ navigation }) {
   const [dateFilter, setDateFilter] = useState('anytime');
   const [forYouActive, setForYouActive] = useState(false);
   const [topCategories, setTopCategories] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -126,6 +128,7 @@ export default function GatheringsScreen({ navigation }) {
       )
     );
     setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
+    setInitialLoading(false);
   }, [radiusTier]);
 
   useFocusEffect(
@@ -371,7 +374,13 @@ export default function GatheringsScreen({ navigation }) {
         </>
       )}
 
-      {tab === 'nearby' && (
+      {tab === 'nearby' && initialLoading ? (
+        <View>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
+      ) : tab === 'nearby' && (
         <FlatList
           data={filteredNearby}
           keyExtractor={(item) => item.id}
