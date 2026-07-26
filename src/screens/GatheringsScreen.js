@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest } from '../services/gatherings';
+import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories } from '../services/gatherings';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
@@ -87,16 +87,20 @@ export default function GatheringsScreen({ navigation }) {
   const [sentNoticeTo, setSentNoticeTo] = useState({});
   const [interestFilter, setInterestFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState('anytime');
+  const [forYouActive, setForYouActive] = useState(false);
+  const [topCategories, setTopCategories] = useState([]);
 
   const load = useCallback(async () => {
-    const [nearbyResults, hostingResults, attendingResults] = await Promise.all([
+    const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
       getNearbyGatherings(radiusTier),
       getMyGatherings(),
       getMyAttendingGatherings(),
+      getMyTopGatheringCategories(),
     ]);
     setNearby(nearbyResults);
     setHosting(hostingResults);
     setAttending(attendingResults);
+    setTopCategories(topCats);
 
     const urlEntries = await Promise.all(
       nearbyResults.map(async (g) => {
@@ -221,9 +225,30 @@ export default function GatheringsScreen({ navigation }) {
     return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
+  function toggleForYou() {
+    if (forYouActive) {
+      setForYouActive(false);
+    } else {
+      setForYouActive(true);
+      setInterestFilter(null);
+    }
+  }
+
+  function selectInterestFilter(option) {
+    setInterestFilter(interestFilter === option ? null : option);
+    setForYouActive(false);
+  }
+
   const filteredNearby = nearby
-    .filter((g) => !interestFilter || g.interest_tag === interestFilter)
-    .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter));
+    .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
+    .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
+    .sort((a, b) => {
+      if (!forYouActive) return 0;
+      // Within "For You", rank by how high the category ranks in your history
+      const aRank = topCategories.indexOf(a.interest_tag);
+      const bRank = topCategories.indexOf(b.interest_tag);
+      return aRank - bRank;
+    });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -311,6 +336,17 @@ export default function GatheringsScreen({ navigation }) {
           </ScrollView>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.xs }}>
+            {topCategories.length > 0 && (
+              <TouchableOpacity
+                style={[styles.forYouChip, forYouActive && styles.forYouChipActive]}
+                onPress={toggleForYou}
+                accessibilityLabel="For You — based on gatherings you've attended or shown interest in before"
+                accessibilityRole="button"
+                accessibilityState={{ selected: forYouActive }}
+              >
+                <Text style={[styles.forYouChipText, forYouActive && styles.forYouChipTextActive]}>⭐ For You</Text>
+              </TouchableOpacity>
+            )}
             {INTEREST_OPTIONS.map((option) => {
               const active = interestFilter === option;
               const style = categoryStyleFor(option);
@@ -318,7 +354,7 @@ export default function GatheringsScreen({ navigation }) {
                 <TouchableOpacity
                   key={option}
                   style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
-                  onPress={() => setInterestFilter(active ? null : option)}
+                  onPress={() => selectInterestFilter(option)}
                   accessibilityLabel={`Filter by ${option}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
@@ -337,10 +373,15 @@ export default function GatheringsScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          ListHeaderComponent={
+            forYouActive ? (
+              <Text style={styles.forYouHint}>Based on gatherings you've attended or shown interest in before.</Text>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>{(interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')}</Text>
+              <Text style={styles.emptyText}>{forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby'))}</Text>
             </View>
           }
           renderItem={({ item }) => {
@@ -593,6 +634,15 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   radiusToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
   radiusToggleTextActive: { color: colors.primary },
   filterRow: { flexGrow: 0, marginTop: spacing.md },
+  forYouChip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
+  },
+  forYouChipActive: { backgroundColor: colors.primary },
+  forYouChipText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  forYouChipTextActive: { color: '#fff' },
+  forYouHint: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.md, fontStyle: 'italic' },
   dateChip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,

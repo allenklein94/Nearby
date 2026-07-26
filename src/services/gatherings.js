@@ -129,6 +129,36 @@ export async function getNearbyGatherings(tier = 'local') {
     .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
 }
 
+// Infers a person's top interest categories from their actual behavior
+// (gatherings they've expressed interest in or attended) rather than
+// only their self-declared profile interests — a stronger signal
+// since it reflects what they actually engaged with.
+export async function getMyTopGatheringCategories() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('gatherings(interest_tag)')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('getMyTopGatheringCategories error', error);
+    return [];
+  }
+
+  const counts = {};
+  for (const row of data ?? []) {
+    const tag = row.gatherings?.interest_tag;
+    if (!tag) continue;
+    counts[tag] = (counts[tag] ?? 0) + 1;
+  }
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tag]) => tag);
+}
+
 export async function getMyGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
