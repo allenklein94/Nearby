@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ActivityIndicator } from 'react-native';
 import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -9,6 +10,7 @@ import { typography, spacing, radius } from '../theme';
 export default function IdVerificationScreen() {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [status, setStatus] = useState(null);
@@ -58,6 +60,7 @@ export default function IdVerificationScreen() {
     setSubmitting(true);
     try {
       await submitVerification(userId, selfieAsset, idAsset);
+      posthog.capture('id_verification_submitted');
       Alert.alert('Submitted', "We'll review your submission — this usually takes a day or two.");
       setSelfieAsset(null);
       setIdAsset(null);

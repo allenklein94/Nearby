@@ -5,6 +5,7 @@ import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFell
 import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -70,6 +71,7 @@ function matchesDateFilter(scheduledAt, filterKey) {
 export default function GatheringsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [tab, setTab] = useState('nearby');
   const [radiusTier, setRadiusTier] = useState('local');
@@ -203,6 +205,7 @@ export default function GatheringsScreen({ navigation }) {
   async function handleExpressInterest(gatheringId) {
     try {
       await expressInterest(gatheringId);
+      posthog.capture('gathering_interest_expressed');
       Alert.alert("You're interested!", "The host will review and let you know.");
       load();
     } catch (e) {
@@ -231,6 +234,7 @@ export default function GatheringsScreen({ navigation }) {
     } else {
       setForYouActive(true);
       setInterestFilter(null);
+      posthog.capture('gatherings_for_you_used');
     }
   }
 
@@ -244,7 +248,6 @@ export default function GatheringsScreen({ navigation }) {
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
     .sort((a, b) => {
       if (!forYouActive) return 0;
-      // Within "For You", rank by how high the category ranks in your history
       const aRank = topCategories.indexOf(a.interest_tag);
       const bRank = topCategories.indexOf(b.interest_tag);
       return aRank - bRank;

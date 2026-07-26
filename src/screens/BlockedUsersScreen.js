@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBlockedUsers, unblockUser } from '../services/blockedUsers';
 import { getSignedPhotoUrl } from '../services/photos';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -10,6 +11,7 @@ import { typography, spacing, radius } from '../theme';
 export default function BlockedUsersScreen() {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors);
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -57,6 +59,7 @@ export default function BlockedUsersScreen() {
             setUnblockingId(block.id);
             try {
               await unblockUser(block.id);
+              posthog.capture('user_unblocked');
               load();
             } catch (e) {
               Alert.alert('Error', e.message);

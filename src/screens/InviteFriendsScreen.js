@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Share, ActivityIndicator, TextInput } from 'react-native';
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -9,6 +10,7 @@ import { typography, spacing, radius } from '../theme';
 export default function InviteFriendsScreen() {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [code, setCode] = useState(null);
@@ -41,9 +43,12 @@ export default function InviteFriendsScreen() {
 
   async function handleShare() {
     try {
-      await Share.share({
+      const result = await Share.share({
         message: `Join me on Nearby! Use my code ${code} when you sign up and we'll both get bonus Notices. https://apps.apple.com/app/nearby-crossed-paths/id6792143175`,
       });
+      if (result.action === Share.sharedAction) {
+        posthog.capture('referral_code_shared');
+      }
     } catch (e) {
       // User cancelled the share sheet — not an error
     }
@@ -54,6 +59,7 @@ export default function InviteFriendsScreen() {
     setRedeeming(true);
     try {
       await redeemReferralCode(userId, redeemInput);
+      posthog.capture('referral_code_redeemed');
       Alert.alert('Success!', "You've both received 3 bonus Notices.");
       setRedeemInput('');
       load();
