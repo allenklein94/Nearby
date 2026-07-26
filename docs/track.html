@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Live Location — Nearby</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; font-family: -apple-system, sans-serif; background: #1a1a2e; color: #fff; }
+    #banner { padding: 16px; text-align: center; background: #16213e; border-bottom: 1px solid #2a2a4a; }
+    #banner h1 { font-size: 16px; margin: 0 0 4px; }
+    #banner p { font-size: 13px; color: #aaa; margin: 0; }
+    #status { font-size: 12px; margin-top: 6px; }
+    #status.live { color: #4ade80; }
+    #status.expired { color: #f87171; }
+    #map { height: calc(100vh - 88px); width: 100%; }
+    #loading, #error { padding: 40px 20px; text-align: center; color: #aaa; }
+  </style>
+</head>
+<body>
+  <div id="banner">
+    <h1>📍 Live Location Sharing</h1>
+    <p>This is a one-time safety share from Nearby — not a permanent tracking feature.</p>
+    <div id="status">Loading...</div>
+  </div>
+  <div id="map"></div>
+  <div id="error" style="display:none;"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://enmosvippabmuqslzrox.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVubW9zdmlwcGFibXVxc2x6cm94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMjU2MTQsImV4cCI6MjA5ODYwMTYxNH0.Dni47R2qHeoFG3aNqw7QJhvijWpLG_mcDLmWGWpbBNw';
+    const POLL_INTERVAL_MS = 15000;
+
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session');
+    const statusEl = document.getElementById('status');
+    const mapEl = document.getElementById('map');
+    const errorEl = document.getElementById('error');
+
+    let map = null;
+    let marker = null;
+    let pollTimer = null;
+
+    if (!sessionId) {
+      showError('No tracking session specified in this link.');
+    } else {
+      fetchAndRender();
+      pollTimer = setInterval(fetchAndRender, POLL_INTERVAL_MS);
+    }
+
+    async function fetchAndRender() {
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/live_tracking_sessions?id=eq.${encodeURIComponent(sessionId)}&select=current_lat,current_lng,updated_at,expires_at,active`,
+          {
+            headers: {
+              apikey: SUPABASE_ANON_KEY,
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            },
+          }
+        );
+
+        if (!res.ok) {
+          showError('Could not load this location share.');
+          return;
+        }
+
+        const rows = await res.json();
+        const session = rows[0];
+
+        if (!session) {
+          showError('This location share has ended or the link is invalid.');
+          return;
+        }
+
+        const expired = new Date(session.expires_at) <= new Date();
+        if (!session.active || expired) {
+          if (pollTimer) clearInterval(pollTimer);
+          statusEl.textContent = 'This location share has ended.';
+          statusEl.className = 'expired';
+          return;
+        }
+
+        if (session.current_lat == null || session.current_lng == null) {
+          statusEl.textContent = 'Waiting for the first location update...';
+          statusEl.className = '';
+          return;
+        }
+
+        renderMap(session.current_lat, session.current_lng);
+
+        const updatedAgo = Math.round((Date.now() - new Date(session.updated_at).getTime()) / 1000);
+        statusEl.textContent = `Live — last updated ${updatedAgo < 60 ? updatedAgo + 's' : Math.round(updatedAgo / 60) + 'm'} ago`;
+        statusEl.className = 'live';
+      } catch (err) {
+        showError('Something went wrong loading this location share.');
+      }
+    }
+
+    function renderMap(lat, lng) {
+      if (!map) {
+        map = L.map('map').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map);
+        marker = L.marker([lat, lng]).addTo(map);
+      } else {
+        marker.setLatLng([lat, lng]);
+        map.panTo([lat, lng]);
+      }
+    }
+
+    function showError(message) {
+      if (pollTimer) clearInterval(pollTimer);
+      mapEl.style.display = 'none';
+      errorEl.style.display = 'block';
+      errorEl.textContent = message;
+      statusEl.textContent = '';
+    }
+  </script>
+</body>
+</html>
