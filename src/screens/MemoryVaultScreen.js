@@ -3,19 +3,23 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const CATEGORIES = [
-  { key: 'milestone', label: '🎉 Milestones', placeholder: 'e.g. Our first conversation, first date' },
-  { key: 'funny', label: '😂 Funny Moments', placeholder: 'e.g. That time we got completely lost' },
-  { key: 'inside_joke', label: '🤫 Inside Jokes', placeholder: 'e.g. Whatever only the two of you would get' },
-  { key: 'note', label: '💭 Little Things', placeholder: 'e.g. Something small worth remembering' },
+  { key: 'milestone', labelKey: 'milestones', placeholder: 'e.g. Our first conversation, first date' },
+  { key: 'funny', labelKey: 'funnyMoments', placeholder: 'e.g. That time we got completely lost' },
+  { key: 'inside_joke', labelKey: 'insideJokes', placeholder: 'e.g. Whatever only the two of you would get' },
+  { key: 'note', labelKey: 'littleThings', placeholder: 'e.g. Something small worth remembering' },
 ];
 
 export default function MemoryVaultScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [memories, setMemories] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -57,6 +61,7 @@ export default function MemoryVaultScreen({ route }) {
     setSubmittingCategory(categoryKey);
     try {
       await addMemoryItem(matchId, categoryKey, text);
+      posthog.capture('memory_vault_item_added', { category: categoryKey });
       setDrafts((prev) => ({ ...prev, [categoryKey]: '' }));
       load();
     } catch (e) {
@@ -69,16 +74,17 @@ export default function MemoryVaultScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">💫 Memory Vault</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('memoryVault.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            A shared space with {matchName} to preserve the small stuff — the things worth looking back on later.
+            {t('memoryVault.subtitle')}
           </Text>
 
           {CATEGORIES.map((category) => {
             const categoryMemories = memories.filter((m) => m.category === category.key);
+            const label = t(`memoryVault.${category.labelKey}`);
             return (
               <View key={category.key} style={styles.section}>
-                <Text style={styles.sectionLabel} accessibilityRole="header">{category.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {categoryMemories.map((memory) => (
                   <View key={memory.id} style={styles.memoryCard} accessibilityLabel={`${memory.memory_text}, added by ${memory.profiles?.display_name}`}>
@@ -87,7 +93,7 @@ export default function MemoryVaultScreen({ route }) {
                   </View>
                 ))}
                 {categoryMemories.length === 0 && (
-                  <Text style={styles.emptyText}>Nothing here yet.</Text>
+                  <Text style={styles.emptyText}>{t('memoryVault.nothingYet')}</Text>
                 )}
 
                 <View style={styles.addRow}>
@@ -97,13 +103,13 @@ export default function MemoryVaultScreen({ route }) {
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[category.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [category.key]: v }))}
-                    accessibilityLabel={`Add to ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={`Add to ${label.replace(/[^\w\s]/g, '').trim()}`}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
-                    accessibilityLabel={`Add memory to ${category.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={`Add memory to ${label.replace(/[^\w\s]/g, '').trim()}`}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
