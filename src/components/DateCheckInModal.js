@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import { createCheckIn, buildShareMessage } from '../services/dateSafety';
+import { startLiveTracking, stopLiveTracking, getMyActiveLiveTrackingSession } from '../services/liveTracking';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -13,6 +14,46 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
   const [showPicker, setShowPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [sharingLocation, setSharingLocation] = useState(false);
+  const [activeLiveSession, setActiveLiveSession] = useState(null);
+  const [startingTracking, setStartingTracking] = useState(false);
+  const [stoppingTracking, setStoppingTracking] = useState(false);
+
+  React.useEffect(() => {
+    if (visible) {
+      getMyActiveLiveTrackingSession().then(setActiveLiveSession);
+    }
+  }, [visible]);
+
+  async function handleStartLiveTracking() {
+    setStartingTracking(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location needed', 'Location permission is required to share your live location.');
+        setStartingTracking(false);
+        return;
+      }
+      const { sessionId, shareUrl, expiresAt } = await startLiveTracking(3);
+      setActiveLiveSession({ id: sessionId, expires_at: expiresAt });
+      await Share.share({
+        message: `I'm sharing my live location with you for the next few hours as a safety check-in: ${shareUrl}`,
+      });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setStartingTracking(false);
+  }
+
+  async function handleStopLiveTracking() {
+    setStoppingTracking(true);
+    try {
+      await stopLiveTracking(activeLiveSession.id);
+      setActiveLiveSession(null);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setStoppingTracking(false);
+  }
 
   async function handleCreate() {
     setSubmitting(true);
@@ -134,5 +175,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   locationButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   locationHint: { ...typography.small, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },
+  stopTrackingButton: { borderColor: colors.danger },
+  stopTrackingButtonText: { color: colors.danger, fontWeight: '700', fontSize: 14 },
   cancelText: { color: colors.textTertiary, textAlign: 'center' },
 });
