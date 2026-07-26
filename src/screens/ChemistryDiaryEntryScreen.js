@@ -2,20 +2,24 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitChemistryEntry } from '../services/chemistryDiary';
 import { checkTextModeration } from '../services/textModeration';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const SIGNALS = [
-  { key: 'felt_relaxed', icon: '😌', label: 'Did I feel relaxed?' },
-  { key: 'felt_curious', icon: '🤔', label: 'Did I feel curious?' },
-  { key: 'felt_respected', icon: '🤝', label: 'Did I feel respected?' },
-  { key: 'felt_laughed', icon: '😄', label: 'Did I laugh?' },
-  { key: 'felt_like_myself', icon: '✨', label: 'Did I feel like myself?' },
+  { key: 'felt_relaxed', icon: '😌', labelKey: 'relaxed' },
+  { key: 'felt_curious', icon: '🤔', labelKey: 'curious' },
+  { key: 'felt_respected', icon: '🤝', labelKey: 'respected' },
+  { key: 'felt_laughed', icon: '😄', labelKey: 'laughed' },
+  { key: 'felt_like_myself', icon: '✨', labelKey: 'likeMyself' },
 ];
 
 export default function ChemistryDiaryEntryScreen({ route, navigation }) {
   const { aboutDisplayName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [signals, setSignals] = useState({});
   const [noteText, setNoteText] = useState('');
@@ -36,6 +40,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
     setSubmitting(true);
     try {
       await submitChemistryEntry(aboutDisplayName, signals, noteText);
+      posthog.capture('chemistry_diary_entry_saved');
       Alert.alert('Saved privately', 'Only you can see this — it helps build a picture of what actually feels good to you over time.');
       navigation.goBack();
     } catch (e) {
@@ -48,25 +53,26 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">How did that feel?</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('chemistryDiary.howDidItFeel')}</Text>
           <Text style={styles.headerSubtitle}>
             About time with {aboutDisplayName || 'them'} — completely private. Just your own honest answers, nothing analyzed or shown to anyone.
           </Text>
 
           {SIGNALS.map((signal) => {
             const active = !!signals[signal.key];
+            const label = t(`chemistryDiary.${signal.labelKey}`);
             return (
               <TouchableOpacity
                 key={signal.key}
                 style={[styles.signalRow, active && styles.signalRowActive]}
                 onPress={() => toggleSignal(signal.key)}
                 activeOpacity={0.8}
-                accessibilityLabel={signal.label}
+                accessibilityLabel={label}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: active }}
               >
                 <Text style={styles.signalIcon}>{signal.icon}</Text>
-                <Text style={styles.signalLabel}>{signal.label}</Text>
+                <Text style={styles.signalLabel}>{label}</Text>
                 <View style={[styles.checkbox, active && styles.checkboxChecked]}>
                   {active && <Text style={styles.checkmark}>✓</Text>}
                 </View>
@@ -90,10 +96,10 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Saving' : 'Save privately'}
+            accessibilityLabel={submitting ? 'Saving' : t('chemistryDiary.savePrivately')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Save Privately'}</Text>
+            <Text style={styles.buttonText}>{submitting ? 'Saving...' : t('chemistryDiary.savePrivately')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

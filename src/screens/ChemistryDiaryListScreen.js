@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemistryDiary';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const SIGNALS = [
-  { key: 'felt_relaxed', icon: '😌', label: 'Relaxed' },
-  { key: 'felt_curious', icon: '🤔', label: 'Curious' },
-  { key: 'felt_respected', icon: '🤝', label: 'Respected' },
-  { key: 'felt_laughed', icon: '😄', label: 'Laughed' },
-  { key: 'felt_like_myself', icon: '✨', label: 'Felt like myself' },
+  { key: 'felt_relaxed', icon: '😌', labelKey: 'relaxed' },
+  { key: 'felt_curious', icon: '🤔', labelKey: 'curious' },
+  { key: 'felt_respected', icon: '🤝', labelKey: 'respected' },
+  { key: 'felt_laughed', icon: '😄', labelKey: 'laughed' },
+  { key: 'felt_like_myself', icon: '✨', labelKey: 'likeMyself' },
 ];
 
 function formatDate(iso) {
@@ -18,18 +21,32 @@ function formatDate(iso) {
 
 export default function ChemistryDiaryListScreen() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     const data = await getMyChemistryEntries();
     setEntries(data);
     setLoading(false);
+  }, []);
+
+  // Reload on focus, not just mount — so a new entry added from a
+  // chat or profile shows up immediately on return, without needing
+  // to navigate away and back to force a remount.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   }
 
   function confirmDelete(entryId) {
@@ -44,6 +61,7 @@ export default function ChemistryDiaryListScreen() {
           onPress: async () => {
             try {
               await deleteChemistryEntry(entryId);
+              posthog.capture('chemistry_diary_entry_deleted');
               load();
             } catch (e) {
               Alert.alert('Error', e.message);
@@ -64,10 +82,13 @@ export default function ChemistryDiaryListScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.headerTitle} accessibilityRole="header">📔 Chemistry Diary</Text>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('chemistryDiary.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          Only visible to you. Over time, this becomes a picture of what actually feels good — not what looks good on paper.
+          {t('chemistryDiary.subtitle')}
         </Text>
 
         {entries.length === 0 && (
@@ -98,7 +119,7 @@ export default function ChemistryDiaryListScreen() {
                 <View style={styles.signalsWrap}>
                   {activeSignals.map((s) => (
                     <View key={s.key} style={styles.signalChip}>
-                      <Text style={styles.signalChipText}>{s.icon} {s.label}</Text>
+                      <Text style={styles.signalChipText}>{s.icon} {t(`chemistryDiary.${s.labelKey}`)}</Text>
                     </View>
                   ))}
                 </View>
