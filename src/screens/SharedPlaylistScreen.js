@@ -3,12 +3,16 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeArea
 import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function SharedPlaylistScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [items, setItems] = useState([]);
   const [songTitle, setSongTitle] = useState('');
@@ -58,6 +62,7 @@ export default function SharedPlaylistScreen({ route }) {
     setSubmitting(true);
     try {
       await addPlaylistItem(matchId, songTitle.trim(), artist.trim());
+      posthog.capture('shared_playlist_song_added');
       setSongTitle('');
       setArtist('');
       load();
@@ -74,8 +79,8 @@ export default function SharedPlaylistScreen({ route }) {
       '',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: '🎧 Spotify', onPress: () => Linking.openURL(`https://open.spotify.com/search/${query}`) },
-        { text: '▶️ YouTube', onPress: () => Linking.openURL(`https://www.youtube.com/results?search_query=${query}`) },
+        { text: '🎧 Spotify', onPress: () => { posthog.capture('shared_playlist_opened', { service: 'spotify' }); Linking.openURL(`https://open.spotify.com/search/${query}`); } },
+        { text: '▶️ YouTube', onPress: () => { posthog.capture('shared_playlist_opened', { service: 'youtube' }); Linking.openURL(`https://www.youtube.com/results?search_query=${query}`); } },
       ]
     );
   }
@@ -83,7 +88,7 @@ export default function SharedPlaylistScreen({ route }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header">🎵 Shared Playlist</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('together.sharedPlaylist')}</Text>
         <Text style={styles.headerSubtitle}>Build a playlist with {matchName} — add songs you think they'd like.</Text>
       </View>
 
