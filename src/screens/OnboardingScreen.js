@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Dimensions, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,6 +14,8 @@ export default function OnboardingScreen({ navigation }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef(null);
   const styles = getStyles(colors, shadow);
+  const emojiScale = useRef(new Animated.Value(1)).current;
+  const contentOpacity = useRef(new Animated.Value(1)).current;
 
   const SLIDES = [
     { emoji: '👋', title: t('onboarding.slide1Title'), text: t('onboarding.slide1Text') },
@@ -23,9 +25,21 @@ export default function OnboardingScreen({ navigation }) {
     { emoji: '🧭', title: t('onboarding.slide5Title'), text: t('onboarding.slide5Text') },
   ];
 
+  // A gentle bounce on the emoji and a quick fade on the text each
+  // time the active slide changes, so paging feels a little more
+  // alive without needing a complex scroll-linked interpolation.
+  useEffect(() => {
+    emojiScale.setValue(0.6);
+    contentOpacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(emojiScale, { toValue: 1, friction: 5, tension: 60, useNativeDriver: true }),
+      Animated.timing(contentOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+    ]).start();
+  }, [activeIndex]);
+
   function handleScroll(event) {
     const index = Math.round(event.nativeEvent.contentOffset.x / width);
-    setActiveIndex(index);
+    if (index !== activeIndex) setActiveIndex(index);
   }
 
   function goNext() {
@@ -53,11 +67,13 @@ export default function OnboardingScreen({ navigation }) {
             accessible={true}
             accessibilityLabel={`Slide ${i + 1} of ${SLIDES.length}: ${slide.title}. ${slide.text}`}
           >
-            <View style={styles.emojiCircle}>
+            <Animated.View style={[styles.emojiCircle, i === activeIndex && { transform: [{ scale: emojiScale }] }]}>
               <Text style={styles.emoji}>{slide.emoji}</Text>
-            </View>
-            <Text style={styles.title}>{slide.title}</Text>
-            <Text style={styles.text}>{slide.text}</Text>
+            </Animated.View>
+            <Animated.View style={i === activeIndex ? { opacity: contentOpacity } : undefined}>
+              <Text style={styles.title}>{slide.title}</Text>
+              <Text style={styles.text}>{slide.text}</Text>
+            </Animated.View>
           </View>
         ))}
       </ScrollView>
