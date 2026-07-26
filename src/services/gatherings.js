@@ -19,7 +19,7 @@ const WIDE_TIER_MAX_MILES = 15;
 // precise_lng must never leave the server. Distance and an
 // approximate, jittered pin position are computed server-side via
 // get_gathering_distances() and merged in below by gathering id.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, source_gathering_id';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area';
 
 export async function createGathering({ title, description, interestTag, scheduledAt }) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -69,11 +69,7 @@ export async function getNearbyGatherings(tier = 'local') {
   const userId = sessionData?.session?.user?.id;
 
   const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') {
-    console.error('getNearbyGatherings: location permission not granted, status:', status);
-    alert('Gatherings: location permission not granted (' + status + ')');
-    return [];
-  }
+  if (status !== 'granted') return [];
 
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   const myLat = location.coords.latitude;
@@ -105,11 +101,8 @@ export async function getNearbyGatherings(tier = 'local') {
 
   if (error) {
     console.error('getNearbyGatherings error', error);
-    alert('Gatherings query error: ' + JSON.stringify(error));
     return [];
   }
-
-  alert('Gatherings fetched (before distance filter): ' + (data ?? []).length);
 
   const filtered = (data ?? []).filter((gathering) => !excludedHostIds.has(gathering.host_id));
 
@@ -126,7 +119,6 @@ export async function getNearbyGatherings(tier = 'local') {
     });
     if (distError) {
       console.error('get_gathering_distances error', distError);
-      alert('Distance RPC error: ' + JSON.stringify(distError));
     } else {
       distanceById = Object.fromEntries((distances ?? []).map((d) => [d.id, d]));
     }
