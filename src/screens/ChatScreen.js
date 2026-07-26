@@ -121,6 +121,7 @@ export default function ChatScreen({ route, navigation }) {
   const [isStalled, setIsStalled] = useState(false);
   const [reactions, setReactions] = useState({});
   const [mediaUrls, setMediaUrls] = useState({});
+  const [disappearingEnabled, setDisappearingEnabled] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
   const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
@@ -208,11 +209,12 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
+      .select('user_a, user_b, disappearing_messages_enabled, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
       .eq('id', matchId)
       .single();
 
     if (match) {
+      setDisappearingEnabled(!!match.disappearing_messages_enabled);
       const other = match.user_a === myId ? match.b : match.a;
       const me = match.user_a === myId ? match.a : match.b;
       setOtherUser(other);
@@ -414,9 +416,29 @@ export default function ChatScreen({ route, navigation }) {
       '',
       [
         { text: 'Cancel', style: 'cancel' },
+        {
+          text: disappearingEnabled ? 'Turn Off Disappearing Messages' : 'Turn On Disappearing Messages (24h)',
+          onPress: toggleDisappearingMessages,
+        },
         { text: 'Unmatch', style: 'destructive', onPress: confirmUnmatch },
         { text: 'Report or Block', onPress: () => setReportModalVisible(true) },
       ]
+    );
+  }
+
+  async function toggleDisappearingMessages() {
+    const newValue = !disappearingEnabled;
+    const { error } = await supabase.from('matches').update({ disappearing_messages_enabled: newValue }).eq('id', matchId);
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+    setDisappearingEnabled(newValue);
+    Alert.alert(
+      newValue ? 'Disappearing Messages On' : 'Disappearing Messages Off',
+      newValue
+        ? 'New messages in this chat will automatically delete after 24 hours, for both of you.'
+        : 'Messages will now be kept normally.'
     );
   }
 
