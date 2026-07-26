@@ -167,6 +167,14 @@ export default function DiscoveryScreen({ navigation }) {
     setFiltersModalVisible(true);
   }
 
+  async function toggleViewStyle() {
+    const newStyle = viewStyle === 'cards' ? 'list' : 'cards';
+    setViewStyle(newStyle);
+    if (myUserId) {
+      await supabase.from('profiles').update({ discovery_view_style: newStyle }).eq('id', myUserId);
+    }
+  }
+
   function showUndoBanner(noticeId, isWave, otherUserId) {
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     setUndoState({ noticeId, isWave, otherUserId });
@@ -332,6 +340,14 @@ export default function DiscoveryScreen({ navigation }) {
             accessibilityRole="button"
           >
             <Text style={styles.infoButtonText}>ⓘ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={toggleViewStyle}
+            style={styles.infoButton}
+            accessibilityLabel={viewStyle === 'cards' ? 'Switch to list view' : 'Switch to card view'}
+            accessibilityRole="button"
+          >
+            <Text style={styles.infoButtonText}>{viewStyle === 'cards' ? '📋' : '🃏'}</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
