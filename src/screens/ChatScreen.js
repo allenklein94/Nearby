@@ -16,6 +16,7 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
+import ScaleButton from '../components/ScaleButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -894,14 +895,14 @@ export default function ChatScreen({ route, navigation }) {
               accessibilityLabel="Message input"
             />
             {text.trim() ? (
-              <TouchableOpacity
+              <ScaleButton
                 style={styles.sendButton}
                 onPress={sendMessage}
                 accessibilityLabel="Send message"
                 accessibilityRole="button"
               >
                 <Text style={styles.sendText}>{t('chat.send')}</Text>
-              </TouchableOpacity>
+              </ScaleButton>
             ) : (
               <TouchableOpacity
                 style={styles.micButton}

@@ -19,6 +19,7 @@ import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SwipeableDiscoveryCards from '../components/SwipeableDiscoveryCards';
+import ScaleButton from '../components/ScaleButton';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -484,24 +485,22 @@ export default function DiscoveryScreen({ navigation }) {
                 </Text>
               )}
               <View style={styles.cardActions}>
-                <TouchableOpacity
+              <ScaleButton
                   style={styles.noticeButton}
                   onPress={() => sendNotice(item.otherUserId)}
-                  activeOpacity={0.85}
                   accessibilityLabel={`Send a Notice to ${item.profiles?.display_name}`}
                   accessibilityRole="button"
                 >
                   <Text style={styles.noticeButtonText}>{t('discovery.notice')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </ScaleButton>
+                <ScaleButton
                   style={styles.waveButton}
                   onPress={() => confirmWave(item.otherUserId)}
-                  activeOpacity={0.85}
                   accessibilityLabel={`Send a Wave to ${item.profiles?.display_name}`}
                   accessibilityRole="button"
                 >
                   <Text style={styles.waveButtonText}>👋 {t('discovery.wave')}</Text>
-                </TouchableOpacity>
+                </ScaleButton>
                 <TouchableOpacity
                   style={styles.moreButton}
                   onPress={() => setReportTarget({ id: item.otherUserId, name: item.profiles?.display_name })}
