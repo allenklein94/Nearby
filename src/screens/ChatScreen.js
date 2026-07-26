@@ -870,17 +870,22 @@ export default function ChatScreen({ route, navigation }) {
                   </TouchableOpacity>
                 ) : item.media_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={0.9}>
-                    {mediaUrls[item.id] ? (
+                    {mediaUrls[item.id] === undefined ? (
+                      <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center' }]}>
+                        <ActivityIndicator color={colors.primary} />
+                      </View>
+                    ) : mediaUrls[item.id] === null ? (
+                      <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
+                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>Couldn't load photo</Text>
+                      </View>
+                    ) : (
                       <Image
                         source={{ uri: mediaUrls[item.id] }}
                         style={styles.gifBubble}
                         resizeMode="cover"
                         accessibilityLabel={`${senderLabel} sent a photo`}
+                        onError={(e) => console.error('Photo failed to load:', e.nativeEvent.error)}
                       />
-                    ) : (
-                      <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center' }]}>
-                        <ActivityIndicator color={colors.primary} />
-                      </View>
                     )}
                   </TouchableOpacity>
                 ) : item.gif_url ? (
