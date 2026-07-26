@@ -3,20 +3,24 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { addConstitutionEntry, getConstitutionEntries } from '../services/relationshipConstitution';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const ARTICLES = [
-  { key: 'conflict', label: '⚖️ How We Handle Conflict', placeholder: 'e.g. We take a break if things get heated, then come back to it' },
-  { key: 'decisions', label: '🤝 How We Make Big Decisions', placeholder: 'e.g. We talk it through together before deciding, always' },
-  { key: 'support', label: '🌱 How We Support Each Other\'s Dreams', placeholder: 'e.g. We show up for the things that matter to the other person' },
-  { key: 'never_forget', label: '💎 What We Never Want to Take for Granted', placeholder: 'e.g. Saying thank you, even for small things' },
-  { key: 'feel_loved', label: '❤️ What Makes Each of Us Feel Loved', placeholder: 'e.g. Being listened to without being interrupted' },
+  { key: 'conflict', labelKey: 'conflict', placeholder: 'e.g. We take a break if things get heated, then come back to it' },
+  { key: 'decisions', labelKey: 'decisions', placeholder: 'e.g. We talk it through together before deciding, always' },
+  { key: 'support', labelKey: 'support', placeholder: 'e.g. We show up for the things that matter to the other person' },
+  { key: 'never_forget', labelKey: 'neverForget', placeholder: 'e.g. Saying thank you, even for small things' },
+  { key: 'feel_loved', labelKey: 'feelLoved', placeholder: 'e.g. Being listened to without being interrupted' },
 ];
 
 export default function RelationshipConstitutionScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [entries, setEntries] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -58,6 +62,7 @@ export default function RelationshipConstitutionScreen({ route }) {
     setSubmittingArticle(articleKey);
     try {
       await addConstitutionEntry(matchId, articleKey, text);
+      posthog.capture('constitution_entry_added', { article: articleKey });
       setDrafts((prev) => ({ ...prev, [articleKey]: '' }));
       load();
     } catch (e) {
@@ -70,16 +75,17 @@ export default function RelationshipConstitutionScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">📜 Our Constitution</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('constitution.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            A living agreement with {matchName} — not legal, just human. The invisible rules every relationship eventually creates anyway, written down together instead of left unspoken.
+            {t('constitution.subtitle')}
           </Text>
 
           {ARTICLES.map((article) => {
             const articleEntries = entries.filter((e) => e.article === article.key);
+            const label = t(`constitution.${article.labelKey}`);
             return (
               <View key={article.key} style={styles.section}>
-                <Text style={styles.sectionLabel} accessibilityRole="header">{article.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {articleEntries.map((entry) => (
                   <View key={entry.id} style={styles.entryCard} accessibilityLabel={`${entry.entry_text}, added by ${entry.profiles?.display_name}`}>
@@ -88,7 +94,7 @@ export default function RelationshipConstitutionScreen({ route }) {
                   </View>
                 ))}
                 {articleEntries.length === 0 && (
-                  <Text style={styles.emptyText}>Nothing written yet.</Text>
+                  <Text style={styles.emptyText}>{t('constitution.nothingWrittenYet')}</Text>
                 )}
 
                 <View style={styles.addRow}>
@@ -99,13 +105,13 @@ export default function RelationshipConstitutionScreen({ route }) {
                     value={drafts[article.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [article.key]: v }))}
                     multiline
-                    accessibilityLabel={`Add to ${article.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={`Add to ${label.replace(/[^\w\s]/g, '').trim()}`}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(article.key)}
                     disabled={submittingArticle === article.key}
-                    accessibilityLabel={`Add entry to ${article.label.replace(/[^\w\s]/g, '').trim()}`}
+                    accessibilityLabel={`Add entry to ${label.replace(/[^\w\s]/g, '').trim()}`}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
