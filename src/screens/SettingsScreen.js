@@ -810,6 +810,17 @@ export default function SettingsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('FeaturesOverview')}
+          activeOpacity={0.85}
+          accessibilityLabel="Everything in Nearby, a guide to all features"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>✨ Everything In Nearby</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
           onPress={() => navigation.navigate('Legal')}
           activeOpacity={0.85}
           accessibilityLabel={t('settings.legal')}
