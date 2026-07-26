@@ -1,32 +1,49 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { getActiveOffers, getMyRedemptions, redeemOffer } from '../services/brandOffers';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 export default function BrandOffersScreen() {
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [offers, setOffers] = useState([]);
   const [redeemedIds, setRedeemedIds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [redeemingId, setRedeemingId] = useState(null);
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
+  const load = useCallback(async () => {
     const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
     setOffers(offersData);
     setRedeemedIds(redemptionsData);
     setLoading(false);
+  }, []);
+
+  // Reload on focus, not just mount — offers can change (new ones
+  // added, others expiring) between visits to this screen.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
   }
 
   async function handleRedeem(offer) {
     setRedeemingId(offer.id);
     try {
       await redeemOffer(offer.id);
+      posthog.capture('brand_offer_redeemed', { offer_id: offer.id, partner: offer.brand_partners?.name });
       Alert.alert(
         'Redeemed!',
         offer.redemption_instructions || 'Check your account for details on how to use this.'
@@ -52,16 +69,19 @@ export default function BrandOffersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.headerTitle} accessibilityRole="header">🎁 Offers & Perks</Text>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+      >
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('brandOffers.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          Deals from brands and local businesses partnering with Nearby.
+          {t('brandOffers.subtitle')}
         </Text>
 
         {offers.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🎁</Text>
-            <Text style={styles.emptyText}>No offers available right now — check back soon.</Text>
+            <Text style={styles.emptyText}>{t('brandOffers.noOffers')}</Text>
           </View>
         )}
 
@@ -83,7 +103,7 @@ export default function BrandOffersScreen() {
               {offer.description ? <Text style={styles.description}>{offer.description}</Text> : null}
               {alreadyRedeemed ? (
                 <View style={styles.redeemedBadge}>
-                  <Text style={styles.redeemedBadgeText}>✓ Redeemed</Text>
+                  <Text style={styles.redeemedBadgeText}>{t('brandOffers.redeemed')}</Text>
                 </View>
               ) : (
                 <TouchableOpacity
@@ -91,10 +111,10 @@ export default function BrandOffersScreen() {
                   onPress={() => handleRedeem(offer)}
                   disabled={redeemingId === offer.id}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Redeem: ${offer.title}, from ${offer.brand_partners?.name}`}
+                  accessibilityLabel={`${t('brandOffers.redeem')}: ${offer.title}, from ${offer.brand_partners?.name}`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? 'Redeeming...' : 'Redeem'}</Text>
+                  <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? 'Redeeming...' : t('brandOffers.redeem')}</Text>
                 </TouchableOpacity>
               )}
             </View>
