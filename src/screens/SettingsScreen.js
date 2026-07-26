@@ -34,6 +34,7 @@ export default function SettingsScreen({ navigation }) {
   const [genderHidden, setGenderHidden] = useState(false);
   const [myEthnicity, setMyEthnicity] = useState(null);
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
+  const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
@@ -88,6 +89,7 @@ export default function SettingsScreen({ navigation }) {
       setGenderHidden(data.gender_hidden ?? false);
       setMyEthnicity(data.ethnicity ?? null);
       setEthnicityHidden(data.ethnicity_hidden ?? false);
+      setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setEthnicityPreferences(data.ethnicity_preferences ?? []);
       setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
@@ -135,6 +137,14 @@ export default function SettingsScreen({ navigation }) {
 
     if (error) return Alert.alert('Error', error.message);
     Alert.alert('Saved');
+  }
+
+  async function updateDiscoveryViewStyle(style) {
+    setDiscoveryViewStyle(style);
+    const { error } = await supabase.from('profiles').update({ discovery_view_style: style }).eq('id', userId);
+    if (error) {
+      Alert.alert('Error', error.message);
+    }
   }
 
   async function toggleNotifPref(key, value, setter) {
@@ -278,6 +288,33 @@ export default function SettingsScreen({ navigation }) {
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Dark mode"
             />
+          </View>
+          <View style={styles.divider} />
+          <View style={{ paddingVertical: spacing.sm }}>
+            <Text style={styles.settingLabel}>Nearby Display Style</Text>
+            <Text style={styles.helperText}>Choose how profiles are shown in Nearby. Entirely optional — the list stays the default.</Text>
+            <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
+              <TouchableOpacity
+                style={[styles.chip, discoveryViewStyle === 'list' && styles.chipSelected]}
+                onPress={() => updateDiscoveryViewStyle('list')}
+                activeOpacity={0.8}
+                accessibilityLabel="List view"
+                accessibilityRole="button"
+                accessibilityState={{ selected: discoveryViewStyle === 'list' }}
+              >
+                <Text style={[styles.chipText, discoveryViewStyle === 'list' && styles.chipTextSelected]}>📋 List</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.chip, discoveryViewStyle === 'cards' && styles.chipSelected]}
+                onPress={() => updateDiscoveryViewStyle('cards')}
+                activeOpacity={0.8}
+                accessibilityLabel="Card swipe view"
+                accessibilityRole="button"
+                accessibilityState={{ selected: discoveryViewStyle === 'cards' }}
+              >
+                <Text style={[styles.chipText, discoveryViewStyle === 'cards' && styles.chipTextSelected]}>🃏 Cards</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
