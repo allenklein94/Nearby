@@ -3,19 +3,23 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { addTimelineNote, getTimelineNotes } from '../services/timelinePlanner';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
+import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 const PERIODS = [
-  { key: 'month_1', label: '📅 Month 1', placeholder: 'e.g. Getting to know each other, no pressure' },
-  { key: 'month_6', label: '📅 Month 6', placeholder: 'e.g. When exclusivity feels right to discuss' },
-  { key: 'year_1', label: '📅 Year 1', placeholder: 'e.g. Thoughts on living arrangements' },
-  { key: 'year_3', label: '📅 Year 3+', placeholder: 'e.g. Marriage, family, long-term plans' },
+  { key: 'month_1', labelKey: 'month1', placeholder: 'e.g. Getting to know each other, no pressure' },
+  { key: 'month_6', labelKey: 'month6', placeholder: 'e.g. When exclusivity feels right to discuss' },
+  { key: 'year_1', labelKey: 'year1', placeholder: 'e.g. Thoughts on living arrangements' },
+  { key: 'year_3', labelKey: 'year3', placeholder: 'e.g. Marriage, family, long-term plans' },
 ];
 
 export default function TimelinePlannerScreen({ route }) {
   const { matchId, matchName } = route.params;
   const { colors, shadow } = useTheme();
+  const { t } = useLanguage();
+  const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
   const [notes, setNotes] = useState([]);
   const [drafts, setDrafts] = useState({});
@@ -57,6 +61,7 @@ export default function TimelinePlannerScreen({ route }) {
     setSubmittingPeriod(periodKey);
     try {
       await addTimelineNote(matchId, periodKey, text);
+      posthog.capture('timeline_note_added', { period: periodKey });
       setDrafts((prev) => ({ ...prev, [periodKey]: '' }));
       load();
     } catch (e) {
@@ -69,16 +74,17 @@ export default function TimelinePlannerScreen({ route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">🗓️ Timeline Thoughts</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('timeline.title')}</Text>
           <Text style={styles.headerSubtitle}>
-            Not a rulebook — just a space with {matchName} to surface expectations around timing before mismatches turn into friction. Skip whatever doesn't apply.
+            {t('timeline.subtitle')}
           </Text>
 
           {PERIODS.map((period) => {
             const periodNotes = notes.filter((n) => n.period === period.key);
+            const label = t(`timeline.${period.labelKey}`);
             return (
               <View key={period.key} style={styles.section}>
-                <Text style={styles.sectionLabel} accessibilityRole="header">{period.label}</Text>
+                <Text style={styles.sectionLabel} accessibilityRole="header">{label}</Text>
 
                 {periodNotes.map((note) => (
                   <View key={note.id} style={styles.noteCard} accessibilityLabel={`${note.note_text}, added by ${note.profiles?.display_name}`}>
@@ -87,7 +93,7 @@ export default function TimelinePlannerScreen({ route }) {
                   </View>
                 ))}
                 {periodNotes.length === 0 && (
-                  <Text style={styles.emptyText}>No thoughts shared yet.</Text>
+                  <Text style={styles.emptyText}>{t('timeline.noThoughtsYet')}</Text>
                 )}
 
                 <View style={styles.addRow}>
@@ -97,13 +103,13 @@ export default function TimelinePlannerScreen({ route }) {
                     placeholderTextColor={colors.textTertiary}
                     value={drafts[period.key] || ''}
                     onChangeText={(v) => setDrafts((prev) => ({ ...prev, [period.key]: v }))}
-                    accessibilityLabel={`Add a thought for ${period.label}`}
+                    accessibilityLabel={`Add a thought for ${label}`}
                   />
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => handleAdd(period.key)}
                     disabled={submittingPeriod === period.key}
-                    accessibilityLabel={`Add thought to ${period.label}`}
+                    accessibilityLabel={`Add thought to ${label}`}
                     accessibilityRole="button"
                   >
                     <Text style={styles.addButtonText}>+</Text>
