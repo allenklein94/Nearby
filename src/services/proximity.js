@@ -319,10 +319,24 @@ export async function getBrowseMatches(offset = 0) {
     (existingMatches ?? []).map((m) => (m.user_a === userId ? m.user_b : m.user_a))
   );
 
+  // Check the current bucket plus its 8 immediate neighbors, not
+  // just an exact match — two people genuinely in the same broad
+  // area can still land in different rounded buckets if their last
+  // location updates happened to round differently near a boundary.
+  const [bucketLat, bucketLng] = myProfile.wide_area.split(',').map(Number);
+  const neighborBuckets = [];
+  for (const dLat of [-0.1, 0, 0.1]) {
+    for (const dLng of [-0.1, 0, 0.1]) {
+      const lat = Math.round((bucketLat + dLat) * 10) / 10;
+      const lng = Math.round((bucketLng + dLng) * 10) / 10;
+      neighborBuckets.push(`${lat},${lng}`);
+    }
+  }
+
   const { data: profiles, error } = await supabase
     .from('profiles')
     .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
-    .eq('wide_area', myProfile.wide_area)
+    .in('wide_area', neighborBuckets)
     .range(offset, offset + BROWSE_BATCH_SIZE - 1);
 
   if (error) {
