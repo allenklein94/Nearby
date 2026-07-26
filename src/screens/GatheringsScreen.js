@@ -10,6 +10,7 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SkeletonCard from '../components/SkeletonCard';
 import * as Haptics from 'expo-haptics';
+import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -95,6 +96,7 @@ export default function GatheringsScreen({ navigation }) {
   const [forYouActive, setForYouActive] = useState(false);
   const [topCategories, setTopCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [newOfferCount, setNewOfferCount] = useState(0);
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -129,6 +131,11 @@ export default function GatheringsScreen({ navigation }) {
       )
     );
     setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
+
+    const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
+    const unredeemed = offersData.filter((o) => !redemptionsData.includes(o.id));
+    setNewOfferCount(unredeemed.length);
+
     setInitialLoading(false);
   }, [radiusTier]);
 
@@ -272,6 +279,19 @@ export default function GatheringsScreen({ navigation }) {
           <Text style={styles.createButtonText}>{t('gatherings.hostButton')}</Text>
         </TouchableOpacity>
       </View>
+
+      {newOfferCount > 0 && (
+        <TouchableOpacity
+          style={styles.offersBanner}
+          onPress={() => navigation.navigate('BrandOffers')}
+          activeOpacity={0.85}
+          accessibilityLabel={`${newOfferCount} new offer${newOfferCount === 1 ? '' : 's'} available, tap to view`}
+          accessibilityRole="button"
+        >
+          <Text style={styles.offersBannerText}>🎁 {newOfferCount} new offer{newOfferCount === 1 ? '' : 's'} available</Text>
+          <Text style={styles.offersBannerArrow}>›</Text>
+        </TouchableOpacity>
+      )}
 
       <View style={styles.tabRow} accessibilityRole="tablist">
         <TouchableOpacity
@@ -637,6 +657,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   createButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   createButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  offersBanner: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
+    marginHorizontal: spacing.lg, marginTop: spacing.md, borderWidth: 1, borderColor: colors.primary,
+  },
+  offersBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  offersBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   tabRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md, gap: spacing.xs },
   tab: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
