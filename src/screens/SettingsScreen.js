@@ -324,7 +324,7 @@ export default function SettingsScreen({ navigation }) {
             >
               <Text style={[styles.chipText, language === 'fr' && styles.chipTextSelected]}>Français</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+           <TouchableOpacity
               style={[styles.chip, language === 'pt' && styles.chipSelected]}
               onPress={() => setLanguage('pt')}
               activeOpacity={0.8}
@@ -333,6 +333,56 @@ export default function SettingsScreen({ navigation }) {
               accessibilityState={{ selected: language === 'pt' }}
             >
               <Text style={[styles.chipText, language === 'pt' && styles.chipTextSelected]}>Português</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'ht' && styles.chipSelected]}
+              onPress={() => setLanguage('ht')}
+              activeOpacity={0.8}
+              accessibilityLabel="Kreyòl Ayisyen"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'ht' }}
+            >
+              <Text style={[styles.chipText, language === 'ht' && styles.chipTextSelected]}>Kreyòl Ayisyen</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'zh' && styles.chipSelected]}
+              onPress={() => setLanguage('zh')}
+              activeOpacity={0.8}
+              accessibilityLabel="中文"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'zh' }}
+            >
+              <Text style={[styles.chipText, language === 'zh' && styles.chipTextSelected]}>中文</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'vi' && styles.chipSelected]}
+              onPress={() => setLanguage('vi')}
+              activeOpacity={0.8}
+              accessibilityLabel="Tiếng Việt"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'vi' }}
+            >
+              <Text style={[styles.chipText, language === 'vi' && styles.chipTextSelected]}>Tiếng Việt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'tl' && styles.chipSelected]}
+              onPress={() => setLanguage('tl')}
+              activeOpacity={0.8}
+              accessibilityLabel="Tagalog"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'tl' }}
+            >
+              <Text style={[styles.chipText, language === 'tl' && styles.chipTextSelected]}>Tagalog</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, language === 'ru' && styles.chipSelected]}
+              onPress={() => setLanguage('ru')}
+              activeOpacity={0.8}
+              accessibilityLabel="Русский"
+              accessibilityRole="button"
+              accessibilityState={{ selected: language === 'ru' }}
+            >
+              <Text style={[styles.chipText, language === 'ru' && styles.chipTextSelected]}>Русский</Text>
             </TouchableOpacity>
           </View>
         </View>
