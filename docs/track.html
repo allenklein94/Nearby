@@ -52,13 +52,7 @@
     async function fetchAndRender() {
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/live_tracking_sessions?id=eq.${encodeURIComponent(sessionId)}&select=current_lat,current_lng,updated_at,expires_at,active`,
-          {
-            headers: {
-              apikey: SUPABASE_ANON_KEY,
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-            },
-          }
+          `${SUPABASE_URL}/rest/v1/live_tracking_sessions?id=eq.${encodeURIComponent(sessionId)}&select=current_lat,current_lng,updated_at,expires_at,active&apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`
         );
 
         if (!res.ok) {
