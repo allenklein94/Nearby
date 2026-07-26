@@ -69,7 +69,11 @@ export async function getNearbyGatherings(tier = 'local') {
   const userId = sessionData?.session?.user?.id;
 
   const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return [];
+  if (status !== 'granted') {
+    console.error('getNearbyGatherings: location permission not granted, status:', status);
+    alert('Gatherings: location permission not granted (' + status + ')');
+    return [];
+  }
 
   const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
   const myLat = location.coords.latitude;
@@ -101,8 +105,11 @@ export async function getNearbyGatherings(tier = 'local') {
 
   if (error) {
     console.error('getNearbyGatherings error', error);
+    alert('Gatherings query error: ' + JSON.stringify(error));
     return [];
   }
+
+  alert('Gatherings fetched (before distance filter): ' + (data ?? []).length);
 
   const filtered = (data ?? []).filter((gathering) => !excludedHostIds.has(gathering.host_id));
 
@@ -119,6 +126,7 @@ export async function getNearbyGatherings(tier = 'local') {
     });
     if (distError) {
       console.error('get_gathering_distances error', distError);
+      alert('Distance RPC error: ' + JSON.stringify(distError));
     } else {
       distanceById = Object.fromEntries((distances ?? []).map((d) => [d.id, d]));
     }
