@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyMatches, reportPresence } from '../services/proximity';
+import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { generateCompatibilityReport } from '../services/compatibility';
 import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidenceMode';
@@ -93,6 +93,10 @@ export default function DiscoveryScreen({ navigation }) {
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
   const [viewStyle, setViewStyle] = useState('list');
+  const [discoveryMode, setDiscoveryMode] = useState('crossedPaths');
+  const [browseOffset, setBrowseOffset] = useState(0);
+  const [browseHasMore, setBrowseHasMore] = useState(true);
+  const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
@@ -132,10 +136,55 @@ export default function DiscoveryScreen({ navigation }) {
     }
   }, []);
 
+  const loadBrowseBatch = useCallback(async (offset) => {
+    const results = await getBrowseMatches(offset);
+    setBrowseHasMore(results.length > 0);
+
+    const urlEntries = await Promise.all(
+      results.map(async (item) => {
+        const path = item.profiles?.photo_url;
+        if (!path) return [item.id, null];
+        const url = await getSignedPhotoUrl(path);
+        return [item.id, url];
+      })
+    );
+    setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries) }));
+
+    if (offset === 0) {
+      setNearby(results);
+    } else {
+      setNearby((prev) => [...prev, ...results]);
+    }
+  }, []);
+
+  async function switchDiscoveryMode(mode) {
+    if (mode === discoveryMode) return;
+    setDiscoveryMode(mode);
+    setNearby([]);
+    setBrowseOffset(0);
+    setBrowseHasMore(true);
+    setInitialLoading(true);
+    if (mode === 'browse') {
+      await loadBrowseBatch(0);
+      setInitialLoading(false);
+    } else {
+      await load();
+    }
+  }
+
+  async function loadMoreBrowse() {
+    if (loadingMoreBrowse || !browseHasMore) return;
+    setLoadingMoreBrowse(true);
+    const nextOffset = browseOffset + 20;
+    await loadBrowseBatch(nextOffset);
+    setBrowseOffset(nextOffset);
+    setLoadingMoreBrowse(false);
+  }
+
   useFocusEffect(
     useCallback(() => {
-      load();
-    }, [load])
+      if (discoveryMode === 'crossedPaths') load();
+    }, [load, discoveryMode])
   );
 
   async function handleDismissConfidenceBanner() {
@@ -362,6 +411,27 @@ export default function DiscoveryScreen({ navigation }) {
         <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
       </View>
 
+      <View style={styles.modeSwitcher}>
+        <TouchableOpacity
+          style={[styles.modeButton, discoveryMode === 'crossedPaths' && styles.modeButtonActive]}
+          onPress={() => switchDiscoveryMode('crossedPaths')}
+          accessibilityLabel="Crossed Paths, people you've actually been near"
+          accessibilityRole="button"
+          accessibilityState={{ selected: discoveryMode === 'crossedPaths' }}
+        >
+          <Text style={[styles.modeButtonText, discoveryMode === 'crossedPaths' && styles.modeButtonTextActive]}>📍 Crossed Paths</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeButton, discoveryMode === 'browse' && styles.modeButtonActive]}
+          onPress={() => switchDiscoveryMode('browse')}
+          accessibilityLabel="Browse, a wider pool of people matching your filters, not limited to proximity"
+          accessibilityRole="button"
+          accessibilityState={{ selected: discoveryMode === 'browse' }}
+        >
+          <Text style={[styles.modeButtonText, discoveryMode === 'browse' && styles.modeButtonTextActive]}>🔎 Browse</Text>
+        </TouchableOpacity>
+      </View>
+
       {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
       <View style={styles.accordionContainer}>
@@ -484,6 +554,7 @@ export default function DiscoveryScreen({ navigation }) {
             onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId })}
             onReport={(id, name) => setReportTarget({ id, name })}
             compatibilityColor={compatibilityColor}
+            onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
           />
         )
       ) : (
@@ -492,11 +563,28 @@ export default function DiscoveryScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: spacing.xl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        onEndReached={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          discoveryMode === 'browse' && loadingMoreBrowse ? (
+            <View style={{ paddingVertical: spacing.lg }}>
+              <SkeletonCard />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📍</Text>
-            <Text style={styles.emptyTitle}>{anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
-            <Text style={styles.emptyText}>{anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
+            <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
+            <Text style={styles.emptyTitle}>
+              {discoveryMode === 'browse'
+                ? 'No one matches your filters in this area yet'
+                : (anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle'))}
+            </Text>
+            <Text style={styles.emptyText}>
+              {discoveryMode === 'browse'
+                ? 'Try adjusting your filters, or check back as more people join.'
+                : (anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText'))}
+            </Text>
           </View>
         }
         renderItem={({ item, index }) => {
@@ -666,6 +754,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
   accordionDivider: { height: 1, backgroundColor: colors.border },
   chipsWrapInline: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  modeSwitcher: {
+    flexDirection: 'row', marginHorizontal: spacing.lg, marginBottom: spacing.md,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.full, padding: 3,
+  },
+  modeButton: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full, alignItems: 'center' },
+  modeButtonActive: { backgroundColor: colors.primary },
+  modeButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  modeButtonTextActive: { color: '#fff' },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
   filterChip: {

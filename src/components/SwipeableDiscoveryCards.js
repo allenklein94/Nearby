@@ -24,7 +24,7 @@ function formatCrossedPathsTime(iso) {
 // stays as an explicit button rather than a swipe direction, since
 // it's premium-limited and shouldn't be triggerable by accident.
 export default function SwipeableDiscoveryCards({
-  data, photoUrls, onlineStatuses, onNotice, onWave, onViewProfile, onReport, compatibilityColor,
+  data, photoUrls, onlineStatuses, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore,
 }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -66,7 +66,14 @@ export default function SwipeableDiscoveryCards({
       onNotice(item.otherUserId);
     }
     position.setValue({ x: 0, y: 0 });
-    setCurrentIndex((prev) => prev + 1);
+    const nextIndex = currentIndex + 1;
+    setCurrentIndex(nextIndex);
+
+    // Request more results once only a few cards remain, so the
+    // stack rarely actually runs dry mid-swipe.
+    if (onNeedMore && data.length - nextIndex <= 3) {
+      onNeedMore();
+    }
   }
 
   function handleButtonSkip() {
