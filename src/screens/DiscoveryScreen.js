@@ -142,8 +142,12 @@ export default function DiscoveryScreen({ navigation }) {
     if (myUserId) await dismissBreakSuggestion(myUserId);
   }
 
-  function showRadiusInfo() {
-    Alert.alert(t('discovery.radiusInfoTitle'), t('discovery.radiusInfoText'), [{ text: 'OK' }]);
+function showRadiusInfo() {
+    Alert.alert(
+      t('discovery.radiusInfoTitle'),
+      t('discovery.radiusInfoText') + '\n\n👋 Notice vs Wave:\nA Notice is silent — they only find out if they notice you back too. A Wave tells them right away that you noticed them, before it\u2019s mutual.',
+      [{ text: 'OK' }]
+    );
   }
 
   function showCompatibilityReport(item) {
