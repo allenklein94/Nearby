@@ -18,6 +18,7 @@ import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
 import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
 import AnimatedListItem from '../components/AnimatedListItem';
+import SwipeableDiscoveryCards from '../components/SwipeableDiscoveryCards';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -90,6 +91,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [filtersModalVisible, setFiltersModalVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
+  const [viewStyle, setViewStyle] = useState('list');
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -119,8 +121,9 @@ export default function DiscoveryScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style').eq('id', myId).single();
       setMyProfile(mine);
+      setViewStyle(mine?.discovery_view_style ?? 'list');
 
       const reason = await shouldOfferBreak(myId);
       setConfidenceBannerReason(reason);
@@ -267,6 +270,14 @@ export default function DiscoveryScreen({ navigation }) {
     );
   }
 
+  function handleCardNotice(toUserId) {
+    sendNotice(toUserId, false);
+  }
+
+  function handleCardWave(toUserId) {
+    confirmWave(toUserId);
+  }
+
   async function onRefresh() {
     setRefreshing(true);
     await load();
@@ -389,6 +400,25 @@ export default function DiscoveryScreen({ navigation }) {
           <SkeletonCard />
           <SkeletonCard />
         </View>
+      ) : viewStyle === 'cards' ? (
+        filteredNearby.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>📍</Text>
+            <Text style={styles.emptyTitle}>{anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle')}</Text>
+            <Text style={styles.emptyText}>{anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText')}</Text>
+          </View>
+        ) : (
+          <SwipeableDiscoveryCards
+            data={filteredNearby}
+            photoUrls={photoUrls}
+            onlineStatuses={onlineStatuses}
+            onNotice={handleCardNotice}
+            onWave={handleCardWave}
+            onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId })}
+            onReport={(id, name) => setReportTarget({ id, name })}
+            compatibilityColor={compatibilityColor}
+          />
+        )
       ) : (
       <FlatList
         data={filteredNearby}
