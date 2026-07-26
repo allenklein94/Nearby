@@ -93,6 +93,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
   const [viewStyle, setViewStyle] = useState('list');
+  const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -165,6 +166,10 @@ export default function DiscoveryScreen({ navigation }) {
       return;
     }
     setFiltersModalVisible(true);
+  }
+
+  function toggleFilterSection(section) {
+    setExpandedFilterSection((prev) => (prev === section ? null : section));
   }
 
   async function toggleViewStyle() {
@@ -304,6 +309,9 @@ export default function DiscoveryScreen({ navigation }) {
   const ageFilterActive = ageRangeFilter.min !== 18 || ageRangeFilter.max !== 99;
   const totalActiveCount = advancedFilterCount + (ageFilterActive ? 1 : 0);
   const anyFilterActive = intentionFilter || verifiedOnly || highCompatOnly || onlineOnly || totalActiveCount > 0;
+  const lookingForSummary = intentionFilter ? (INTENTION_OPTIONS.find((o) => o.value === intentionFilter)?.label ?? 'Any') : 'Any';
+  const activeQuickCount = [verifiedOnly, highCompatOnly, onlineOnly].filter(Boolean).length;
+  const quickFilterSummary = activeQuickCount > 0 ? `${activeQuickCount} active` : 'None';
 
   const filteredNearby = nearby.filter((item) => {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
@@ -356,62 +364,102 @@ export default function DiscoveryScreen({ navigation }) {
 
       {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
-      <View style={styles.filterBarRow}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ gap: spacing.xs }}>
-          {INTENTION_OPTIONS.map((option) => {
-            const active = intentionFilter === option.value;
-            return (
-              <TouchableOpacity
-                key={option.value}
-                style={[styles.filterChip, active && styles.filterChipActive]}
-                onPress={() => setIntentionFilter(active ? null : option.value)}
-                accessibilityLabel={`Filter by ${option.label}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option.icon} {option.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity
-            style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
-            onPress={() => setVerifiedOnly(!verifiedOnly)}
-            accessibilityLabel="Filter to only photo-verified profiles"
-            accessibilityRole="button"
-            accessibilityState={{ selected: verifiedOnly }}
-          >
-            <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterChip, highCompatOnly && styles.filterChipActive]}
-            onPress={() => setHighCompatOnly(!highCompatOnly)}
-            accessibilityLabel="Filter to 70 percent compatible or higher"
-            accessibilityRole="button"
-            accessibilityState={{ selected: highCompatOnly }}
-          >
-            <Text style={[styles.filterChipText, highCompatOnly && styles.filterChipTextActive]}>🎯 70%+ Match</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.filterChip, onlineOnly && styles.filterChipActive]}
-            onPress={() => setOnlineOnly(!onlineOnly)}
-            accessibilityLabel="Filter to only people online now"
-            accessibilityRole="button"
-            accessibilityState={{ selected: onlineOnly }}
-          >
-            <Text style={[styles.filterChipText, onlineOnly && styles.filterChipTextActive]}>🟢 Online Now</Text>
-          </TouchableOpacity>
-        </ScrollView>
+      <View style={styles.accordionContainer}>
         <TouchableOpacity
-          style={[styles.moreFiltersButton, totalActiveCount > 0 && styles.moreFiltersButtonActive]}
-          onPress={openFilters}
-          accessibilityLabel={`More filters, Premium${totalActiveCount > 0 ? `, ${totalActiveCount} active` : ''}`}
+          style={styles.accordionHeader}
+          onPress={() => toggleFilterSection('lookingFor')}
+          accessibilityLabel={`Looking For: ${lookingForSummary}, ${expandedFilterSection === 'lookingFor' ? 'tap to collapse' : 'tap to expand'}`}
           accessibilityRole="button"
+          accessibilityState={{ expanded: expandedFilterSection === 'lookingFor' }}
         >
-          <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
-            {isUserPremium ? '🎚️' : '🔒'} Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
-          </Text>
+          <Text style={styles.accordionHeaderLabel}>💘 Looking For</Text>
+          <View style={styles.accordionHeaderRight}>
+            <Text style={styles.accordionHeaderValue}>{lookingForSummary}</Text>
+            <Text style={styles.accordionChevron}>{expandedFilterSection === 'lookingFor' ? '⌃' : '⌄'}</Text>
+          </View>
         </TouchableOpacity>
+        {expandedFilterSection === 'lookingFor' && (
+          <View style={styles.accordionBody}>
+            <View style={styles.chipsWrapInline}>
+              {INTENTION_OPTIONS.map((option) => {
+                const active = intentionFilter === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.filterChip, active && styles.filterChipActive]}
+                    onPress={() => setIntentionFilter(active ? null : option.value)}
+                    accessibilityLabel={`Filter by ${option.label}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                  >
+                    <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option.icon} {option.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        <View style={styles.accordionDivider} />
+
+        <TouchableOpacity
+          style={styles.accordionHeader}
+          onPress={() => toggleFilterSection('quick')}
+          accessibilityLabel={`Quick Filters: ${quickFilterSummary}, ${expandedFilterSection === 'quick' ? 'tap to collapse' : 'tap to expand'}`}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: expandedFilterSection === 'quick' }}
+        >
+          <Text style={styles.accordionHeaderLabel}>⚡ Quick Filters</Text>
+          <View style={styles.accordionHeaderRight}>
+            <Text style={styles.accordionHeaderValue}>{quickFilterSummary}</Text>
+            <Text style={styles.accordionChevron}>{expandedFilterSection === 'quick' ? '⌃' : '⌄'}</Text>
+          </View>
+        </TouchableOpacity>
+        {expandedFilterSection === 'quick' && (
+          <View style={styles.accordionBody}>
+            <View style={styles.chipsWrapInline}>
+              <TouchableOpacity
+                style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
+                onPress={() => setVerifiedOnly(!verifiedOnly)}
+                accessibilityLabel="Filter to only photo-verified profiles"
+                accessibilityRole="button"
+                accessibilityState={{ selected: verifiedOnly }}
+              >
+                <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, highCompatOnly && styles.filterChipActive]}
+                onPress={() => setHighCompatOnly(!highCompatOnly)}
+                accessibilityLabel="Filter to 70 percent compatible or higher"
+                accessibilityRole="button"
+                accessibilityState={{ selected: highCompatOnly }}
+              >
+                <Text style={[styles.filterChipText, highCompatOnly && styles.filterChipTextActive]}>🎯 70%+ Match</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterChip, onlineOnly && styles.filterChipActive]}
+                onPress={() => setOnlineOnly(!onlineOnly)}
+                accessibilityLabel="Filter to only people online now"
+                accessibilityRole="button"
+                accessibilityState={{ selected: onlineOnly }}
+              >
+                <Text style={[styles.filterChipText, onlineOnly && styles.filterChipTextActive]}>🟢 Online Now</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
+
+      <TouchableOpacity
+        style={[styles.moreFiltersButton, totalActiveCount > 0 && styles.moreFiltersButtonActive]}
+        onPress={openFilters}
+        accessibilityLabel={`More filters, Premium${totalActiveCount > 0 ? `, ${totalActiveCount} active` : ''}`}
+        accessibilityRole="button"
+      >
+        <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
+          {isUserPremium ? '🎚️' : '🔒'} Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
+        </Text>
+      </TouchableOpacity>
 
       {initialLoading ? (
         <View>
@@ -603,6 +651,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   viewToggleIcon: { fontSize: 18, marginRight: 6 },
   viewToggleLabel: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  accordionContainer: {
+    marginHorizontal: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+  },
+  accordionHeaderLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  accordionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  accordionHeaderValue: { color: colors.textTertiary, fontSize: 13 },
+  accordionChevron: { color: colors.textTertiary, fontSize: 14 },
+  accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+  accordionDivider: { height: 1, backgroundColor: colors.border },
+  chipsWrapInline: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
   filterChip: {
@@ -614,6 +677,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   filterChipTextActive: { color: '#fff' },
   moreFiltersButton: {
+    marginHorizontal: spacing.lg, marginBottom: spacing.md, alignSelf: 'flex-start',
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
