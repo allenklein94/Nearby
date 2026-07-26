@@ -12,6 +12,9 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.allenklein.nearby",
+      "config": {
+        "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Nearby uses your approximate location to show you people you've crossed paths with nearby. We never show your exact location to other users.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Nearby checks for crossed paths periodically in the background so you don't miss a connection while your phone is locked. We never show your exact location to other users.",
@@ -28,6 +31,11 @@
     },
     "android": {
       "package": "com.allenklein.nearby",
+      "config": {
+        "googleMaps": {
+          "apiKey": "$GOOGLE_MAPS_API_KEY"
+        }
+      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
