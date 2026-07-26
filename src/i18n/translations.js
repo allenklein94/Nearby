@@ -11,6 +11,8 @@ export const translations = {
       slide4Text: "Your exact location is never shown to anyone. No one can see who you've noticed unless it's mutual.",
       slide5Title: "There's more once you match",
       slide5Text: 'Shared playlists, trip planning, relationship check-ins, and more \u2014 tools to help real connections grow, not just start.',
+      slide6Title: 'Two ways to discover people',
+      slide6Text: "Crossed Paths shows people you've actually been near. Browse shows a wider pool matching your filters, no proximity required. Switch between them anytime from the Nearby tab.",
       skip: 'Skip',
       next: 'Next',
       getStarted: 'Get Started',
