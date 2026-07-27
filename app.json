@@ -22,6 +22,7 @@
         "NSCameraUsageDescription": "Nearby needs camera access so you can take a profile photo.",
         "NSPhotoLibraryUsageDescription": "Nearby needs photo library access so you can choose a profile photo.",
         "NSMicrophoneUsageDescription": "Nearby needs microphone access so you can send voice notes in chat.",
+        "NSContactsUsageDescription": "Nearby can check your contacts to see if any of your friends are already using the app, so you can connect with them. We never store your contacts, only match phone numbers securely.",
         "UIBackgroundModes": [
           "location",
           "location"
