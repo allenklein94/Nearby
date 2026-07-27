@@ -19,9 +19,9 @@ const WIDE_TIER_MAX_MILES = 15;
 // precise_lng must never leave the server. Distance and an
 // approximate, jittered pin position are computed server-side via
 // get_gathering_distances() and merged in below by gathering id.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -52,6 +52,7 @@ export async function createGathering({ title, description, interestTag, schedul
       precise_lng: lng,
       scheduled_at: scheduledAt,
       is_public: isPublic,
+      show_on_map: showOnMap,
     })
     .select()
     .single();
@@ -146,8 +147,8 @@ export async function getNearbyGatherings(tier = 'local') {
           ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
           : 'Nearby',
         distanceMiles,
-        latitude: dist?.fuzzed_lat ?? null,
-        longitude: dist?.fuzzed_lng ?? null,
+        latitude: gathering.show_on_map ? (dist?.fuzzed_lat ?? null) : null,
+        longitude: gathering.show_on_map ? (dist?.fuzzed_lng ?? null) : null,
         approvedAttendees,
       };
     })
