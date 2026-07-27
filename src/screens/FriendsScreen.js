@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyFriends, getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
+import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
+import { findFriendsFromContacts } from '../services/contactsImport';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -13,6 +14,9 @@ export default function FriendsScreen({ navigation }) {
   const [pending, setPending] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [contactMatches, setContactMatches] = useState(null);
+  const [searchingContacts, setSearchingContacts] = useState(false);
+  const [requestedIds, setRequestedIds] = useState({});
 
   const load = useCallback(async () => {
     const [friendsList, pendingList] = await Promise.all([getMyFriends(), getPendingFriendRequests()]);
@@ -46,6 +50,41 @@ export default function FriendsScreen({ navigation }) {
     }
   }
 
+  async function handleFindFromContacts() {
+    setSearchingContacts(true);
+    try {
+      const matches = await findFriendsFromContacts();
+      const existingIds = new Set([...friends.map((f) => f.id), ...pending.map((p) => p.id)]);
+      const newMatches = matches.filter((m) => !existingIds.has(m.id));
+      setContactMatches(newMatches);
+
+      const urlEntries = await Promise.all(
+        newMatches.map(async (person) => {
+          if (!person.photo_url) return [person.id, null];
+          const url = await getSignedPhotoUrl(person.photo_url);
+          return [person.id, url];
+        })
+      );
+      setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries) }));
+
+      if (newMatches.length === 0) {
+        Alert.alert('No new matches', "We didn't find any new people from your contacts who are already on Nearby.");
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSearchingContacts(false);
+  }
+
+  async function handleSendRequest(personId) {
+    try {
+      await sendFriendRequest(personId);
+      setRequestedIds((prev) => ({ ...prev, [personId]: true }));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
@@ -54,6 +93,53 @@ export default function FriendsScreen({ navigation }) {
         contentContainerStyle={{ padding: spacing.lg }}
         ListHeaderComponent={
           <>
+            <TouchableOpacity
+              style={styles.findContactsButton}
+              onPress={handleFindFromContacts}
+              disabled={searchingContacts}
+              accessibilityLabel="Find friends from your contacts who are already on Nearby"
+              accessibilityRole="button"
+            >
+              {searchingContacts ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.findContactsButtonText}>📱 Find Friends From Contacts</Text>
+              )}
+            </TouchableOpacity>
+
+            {contactMatches !== null && contactMatches.length > 0 && (
+              <>
+                <Text style={styles.sectionHeader}>From Your Contacts</Text>
+                {contactMatches.map((person) => (
+                  <View key={person.id} style={styles.requestRow}>
+                    <TouchableOpacity
+                      style={styles.personInfo}
+                      onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
+                      accessibilityLabel={`View ${person.display_name}'s profile`}
+                      accessibilityRole="button"
+                    >
+                      {photoUrls[person.id] ? (
+                        <Image source={{ uri: photoUrls[person.id] }} style={styles.avatar} />
+                      ) : (
+                        <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                      )}
+                      <Text style={styles.personName}>{person.display_name}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.acceptButton, requestedIds[person.id] && styles.acceptButtonSent]}
+                      onPress={() => handleSendRequest(person.id)}
+                      disabled={requestedIds[person.id]}
+                      accessibilityLabel={requestedIds[person.id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.acceptButtonText}>{requestedIds[person.id] ? '✓ Sent' : 'Add'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={styles.divider} />
+              </>
+            )}
+
             {pending.length > 0 && (
               <>
                 <Text style={styles.sectionHeader}>Friend Requests</Text>
@@ -103,7 +189,7 @@ export default function FriendsScreen({ navigation }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🤝</Text>
               <Text style={styles.emptyText}>
-                Add friends from anyone's profile to see who's interested in the same gatherings as you.
+                Add friends from anyone's profile, or find friends from your contacts above, to see who's interested in the same gatherings as you.
               </Text>
             </View>
           )
@@ -130,6 +216,11 @@ export default function FriendsScreen({ navigation }) {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  findContactsButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginBottom: spacing.lg,
+  },
+  findContactsButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   sectionHeader: {
     ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
     letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm,
@@ -145,6 +236,7 @@ const getStyles = (colors) => StyleSheet.create({
   avatarPlaceholder: {},
   personName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  acceptButtonSent: { backgroundColor: colors.success },
   acceptButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   declineButton: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   declineButtonText: { color: colors.textTertiary, fontSize: 14, fontWeight: '700' },
