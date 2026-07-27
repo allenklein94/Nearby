@@ -214,7 +214,7 @@ export async function getMyGatherings() {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select('*, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
+    .select('id, title, description, interest_tag, scheduled_at, show_on_map, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
     .eq('host_id', userId)
     .order('scheduled_at', { ascending: true });
 
@@ -232,7 +232,9 @@ export async function getMyGatherings() {
   const upcoming = all.filter((g) => new Date(g.scheduled_at) >= now).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
   const past = all.filter((g) => new Date(g.scheduled_at) < now).sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
 
-  return { upcoming, past };
+  const upcomingWithCoords = await attachFuzzedCoordinates(upcoming);
+
+  return { upcoming: upcomingWithCoords, past };
 }
 
 // Returns upcoming and past gatherings separately, rather than one
@@ -246,7 +248,7 @@ export async function getMyAttendingGatherings() {
 
   const { data, error } = await supabase
     .from('gathering_interest')
-    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
+    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
     .eq('user_id', userId)
     .eq('status', 'approved')
     .order('id', { ascending: false });
@@ -267,7 +269,42 @@ export async function getMyAttendingGatherings() {
     .filter((g) => new Date(g.scheduled_at) < now)
     .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
 
-  return { upcoming, past };
+  const upcomingWithCoords = await attachFuzzedCoordinates(upcoming);
+
+  return { upcoming: upcomingWithCoords, past };
+}
+
+// Shared helper — fetches the current device location once, then
+// batches a single get_gathering_distances RPC call for a list of
+// gatherings, attaching the same fuzzed-coordinate privacy
+// protection used everywhere else in the app.
+async function attachFuzzedCoordinates(gatheringList) {
+  if (gatheringList.length === 0) return gatheringList;
+
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') return gatheringList.map((g) => ({ ...g, latitude: null, longitude: null }));
+
+  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+  if (!location) return gatheringList.map((g) => ({ ...g, latitude: null, longitude: null }));
+
+  const { data: distances, error } = await supabase.rpc('get_gathering_distances', {
+    my_lat: location.coords.latitude,
+    my_lng: location.coords.longitude,
+    gathering_ids: gatheringList.map((g) => g.id),
+  });
+
+  if (error) {
+    console.error('attachFuzzedCoordinates error', error);
+    return gatheringList.map((g) => ({ ...g, latitude: null, longitude: null }));
+  }
+
+  const distanceById = Object.fromEntries((distances ?? []).map((d) => [d.id, d]));
+
+  return gatheringList.map((g) => ({
+    ...g,
+    latitude: g.show_on_map !== false ? (distanceById[g.id]?.fuzzed_lat ?? null) : null,
+    longitude: g.show_on_map !== false ? (distanceById[g.id]?.fuzzed_lng ?? null) : null,
+  }));
 }
 
 export async function getFellowAttendees(gatheringId) {
