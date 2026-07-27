@@ -201,6 +201,45 @@ export default function ChatScreen({ route, navigation }) {
     };
   }, []);
 
+  // Re-registers the header's "⋯" button whenever disappearingMode
+  // changes — navigation.setOptions inside init() only runs once on
+  // mount, which would otherwise permanently freeze the button's
+  // closure to whatever disappearingMode was at that exact moment,
+  // never reflecting later updates.
+  useEffect(() => {
+    if (!otherUser) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={showTogetherMenu}
+            style={{ paddingHorizontal: spacing.sm }}
+            accessibilityLabel="Do something together"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 18 }}>🎯</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setCheckInModalVisible(true)}
+            style={{ paddingHorizontal: spacing.sm }}
+            accessibilityLabel="Set up a date safety check-in"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 18 }}>🛡️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={showChatOptions}
+            style={{ paddingHorizontal: spacing.sm }}
+            accessibilityLabel="Chat options"
+            accessibilityRole="button"
+          >
+            <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  }, [disappearingMode, otherUser]);
+
   async function init() {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
@@ -439,13 +478,9 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   async function updateDisappearingMode(mode) {
-    const { data, error } = await supabase.from('matches').update({ disappearing_mode: mode }).eq('id', matchId).select();
+    const { error } = await supabase.from('matches').update({ disappearing_mode: mode }).eq('id', matchId);
     if (error) {
       Alert.alert('Error', error.message);
-      return;
-    }
-    if (!data || data.length === 0) {
-      Alert.alert('Error', "This didn't actually save — please try again.");
       return;
     }
     setDisappearingMode(mode);
