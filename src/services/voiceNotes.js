@@ -27,9 +27,23 @@ export async function requestMicrophonePermission() {
   return status === 'granted';
 }
 
+// expo-av only allows one active Recording instance globally — if a
+// prior recording (e.g. from a cancel that didn't fully finish
+// unloading, or a double-tap) is still technically active when a new
+// one starts, expo-av throws "Only one Recording object can be
+// prepared at a given time". Defensively clearing any lingering
+// module-level recording here, rather than trusting every caller to
+// have cleaned up perfectly, makes this robust against that race.
+let activeRecording = null;
+
 export async function startRecording() {
   const hasPermission = await requestMicrophonePermission();
   if (!hasPermission) throw new Error('Microphone access is needed to record a voice note.');
+
+  if (activeRecording) {
+    await activeRecording.stopAndUnloadAsync().catch(() => {});
+    activeRecording = null;
+  }
 
   await Audio.setAudioModeAsync({
     allowsRecordingIOS: true,
@@ -39,12 +53,16 @@ export async function startRecording() {
   const recording = new Audio.Recording();
   await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
   await recording.startAsync();
+  activeRecording = recording;
   return recording;
 }
 
 export async function stopRecording(recording) {
   await recording.stopAndUnloadAsync();
   await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+  if (activeRecording === recording) {
+    activeRecording = null;
+  }
   return recording.getURI();
 }
 
