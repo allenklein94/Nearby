@@ -1,0 +1,88 @@
+[33mcommit 9414a1d2dee77881381bab5be26b6747036b57c5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: allenklein94 <allenklein94@gmail.com>
+Date:   Mon Jul 27 22:41:32 2026 +0000
+
+    Fix filter icon rendering inconsistency and add tap-outside-to-dismiss keyboard on Create Gathering screen
+
+[1mdiff --git a/src/screens/CreateGatheringScreen.js b/src/screens/CreateGatheringScreen.js[m
+[1mindex 10a1d287..2e0bd831 100644[m
+[1m--- a/src/screens/CreateGatheringScreen.js[m
+[1m+++ b/src/screens/CreateGatheringScreen.js[m
+[36m@@ -1,5 +1,5 @@[m
+ import React, { useState, useEffect } from 'react';[m
+[31m-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView } from 'react-native';[m
+[32m+[m[32mimport { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';[m
+ import DateTimePicker from '@react-native-community/datetimepicker';[m
+ import { createGathering } from '../services/gatherings';[m
+ import { checkTextModeration } from '../services/textModeration';[m
+[36m@@ -27,7 +27,6 @@[m [mexport default function CreateGatheringScreen({ navigation, route }) {[m
+   const [submitting, setSubmitting] = useState(false);[m
+   const [isPublic, setIsPublic] = useState(true);[m
+   const [customLocation, setCustomLocation] = useState(null);[m
+[31m-  const [showOnMap, setShowOnMap] = useState(true);[m
+ [m
+   useEffect(() => {[m
+     if (route.params?.selectedLat && route.params?.selectedLng) {[m
+[36m@@ -64,7 +63,6 @@[m [mexport default function CreateGatheringScreen({ navigation, route }) {[m
+         scheduledAt: scheduledAt.toISOString(),[m
+         isPublic,[m
+         customLocation,[m
+[31m-        showOnMap: isPublic ? true : showOnMap,[m
+       });[m
+       Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');[m
+       navigation.goBack();[m
+[36m@@ -78,7 +76,8 @@[m [mexport default function CreateGatheringScreen({ navigation, route }) {[m
+ [m
+   return ([m
+     <SafeAreaView style={styles.container}>[m
+[31m-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>[m
+[32m+[m[32m      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>[m
+[32m+[m[32m      <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">[m
+         <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>[m
+         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>[m
+ [m
+[36m@@ -108,36 +107,6 @@[m [mexport default function CreateGatheringScreen({ navigation, route }) {[m
+           </TouchableOpacity>[m
+         </View>[m
+ [m
+[31m-        {!isPublic && ([m
+[31m-          <>[m
+[31m-            <Text style={styles.label}>Map Visibility</Text>[m
+[31m-            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>[m
+[31m-              <TouchableOpacity[m
+[31m-                style={[styles.publicToggle, showOnMap && styles.publicToggleActive]}[m
+[31m-                onPress={() => setShowOnMap(true)}[m
+[31m-                activeOpacity={0.85}[m
+[31m-                accessibilityLabel="Show an approximate pin on the map"[m
+[31m-                accessibilityRole="button"[m
+[31m-                accessibilityState={{ selected: showOnMap }}[m
+[31m-              >[m
+[31m-                <Text style={[styles.publicToggleText, showOnMap && styles.publicToggleTextActive]}>🗺️ On Map</Text>[m
+[31m-                <Text style={[styles.publicToggleHint, showOnMap && styles.publicToggleHintActive]}>Approximate pin shown</Text>[m
+[31m-              </TouchableOpacity>[m
+[31m-              <TouchableOpacity[m
+[31m-                style={[styles.publicToggle, !showOnMap && styles.publicToggleActive]}[m
+[31m-                onPress={() => setShowOnMap(false)}[m
+[31m-                activeOpacity={0.85}[m
+[31m-                accessibilityLabel="Hide from the map entirely, only visible in list search"[m
+[31m-                accessibilityRole="button"[m
+[31m-                accessibilityState={{ selected: !showOnMap }}[m
+[31m-              >[m
+[31m-                <Text style={[styles.publicToggleText, !showOnMap && styles.publicToggleTextActive]}>🚫 Off Map</Text>[m
+[31m-                <Text style={[styles.publicToggleHint, !showOnMap && styles.publicToggleHintActive]}>List only, hidden from map</Text>[m
+[31m-              </TouchableOpacity>[m
+[31m-            </View>[m
+[31m-          </>[m
+[31m-        )}[m
+[31m-[m
+         <Text style={styles.label}>Where</Text>[m
+         <TouchableOpacity[m
+           style={styles.input}[m
+[36m@@ -236,6 +205,7 @@[m [mexport default function CreateGatheringScreen({ navigation, route }) {[m
+           <Text style={styles.buttonText}>{submitting ? t('gatherings.posting') : t('gatherings.postButton')}</Text>[m
+         </TouchableOpacity>[m
+       </ScrollView>[m
+[32m+[m[32m      </TouchableWithoutFeedback>[m
+     </SafeAreaView>[m
+   );[m
+ }[m

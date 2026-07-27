@@ -27,6 +27,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [customLocation, setCustomLocation] = useState(null);
+  const [showOnMap, setShowOnMap] = useState(true);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -63,6 +64,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         scheduledAt: scheduledAt.toISOString(),
         isPublic,
         customLocation,
+        showOnMap: isPublic ? true : showOnMap,
       });
       Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');
       navigation.goBack();
@@ -106,6 +108,36 @@ export default function CreateGatheringScreen({ navigation, route }) {
             <Text style={[styles.publicToggleHint, !isPublic && styles.publicToggleHintActive]}>You approve each person</Text>
           </TouchableOpacity>
         </View>
+
+        {!isPublic && (
+          <>
+            <Text style={styles.label}>Map Visibility</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+              <TouchableOpacity
+                style={[styles.publicToggle, showOnMap && styles.publicToggleActive]}
+                onPress={() => setShowOnMap(true)}
+                activeOpacity={0.85}
+                accessibilityLabel="Show an approximate pin on the map"
+                accessibilityRole="button"
+                accessibilityState={{ selected: showOnMap }}
+              >
+                <Text style={[styles.publicToggleText, showOnMap && styles.publicToggleTextActive]}>🗺️ On Map</Text>
+                <Text style={[styles.publicToggleHint, showOnMap && styles.publicToggleHintActive]}>Approximate pin shown</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.publicToggle, !showOnMap && styles.publicToggleActive]}
+                onPress={() => setShowOnMap(false)}
+                activeOpacity={0.85}
+                accessibilityLabel="Hide from the map entirely, only visible in list search"
+                accessibilityRole="button"
+                accessibilityState={{ selected: !showOnMap }}
+              >
+                <Text style={[styles.publicToggleText, !showOnMap && styles.publicToggleTextActive]}>🚫 Off Map</Text>
+                <Text style={[styles.publicToggleHint, !showOnMap && styles.publicToggleHintActive]}>List only, hidden from map</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
         <Text style={styles.label}>Where</Text>
         <TouchableOpacity
