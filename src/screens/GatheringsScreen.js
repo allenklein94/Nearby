@@ -109,6 +109,7 @@ export default function GatheringsScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
+  const [mapDeals, setMapDeals] = useState([]);
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -147,6 +148,7 @@ export default function GatheringsScreen({ navigation }) {
     const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
     const unredeemed = offersData.filter((o) => !redemptionsData.includes(o.id));
     setNewOfferCount(unredeemed.length);
+    setMapDeals(offersData.filter((o) => o.latitude != null && o.longitude != null));
 
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status === 'granted') {
@@ -588,6 +590,7 @@ export default function GatheringsScreen({ navigation }) {
         <View style={{ flex: 1 }}>
           <GatheringsMapView
             gatherings={filteredNearby}
+            deals={mapDeals}
             userLocation={userLocation}
             onSelectGathering={(gathering) => {
               Alert.alert(
@@ -596,6 +599,22 @@ export default function GatheringsScreen({ navigation }) {
                 [
                   { text: 'Cancel', style: 'cancel' },
                   { text: t('gatherings.imInterested'), onPress: () => handleExpressInterest(gathering.id) },
+                ]
+              );
+            }}
+            onSelectDeal={(deal) => {
+              Alert.alert(
+                deal.title,
+                `${deal.brand_partners?.name}${deal.description ? '\n\n' + deal.description : ''}`,
+                [
+                  { text: 'Close', style: 'cancel' },
+                  {
+                    text: 'Host a Gathering Here',
+                    onPress: () => navigation.navigate('CreateGathering', {
+                      selectedLat: deal.latitude,
+                      selectedLng: deal.longitude,
+                    }),
+                  },
                 ]
               );
             }}
