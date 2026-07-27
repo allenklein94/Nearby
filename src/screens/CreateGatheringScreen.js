@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createGathering } from '../services/gatherings';
@@ -15,7 +15,7 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running',
 ];
 
-export default function CreateGatheringScreen({ navigation }) {
+export default function CreateGatheringScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -26,6 +26,13 @@ export default function CreateGatheringScreen({ navigation }) {
   const [showPicker, setShowPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
+  const [customLocation, setCustomLocation] = useState(null);
+
+  useEffect(() => {
+    if (route.params?.selectedLat && route.params?.selectedLng) {
+      setCustomLocation({ latitude: route.params.selectedLat, longitude: route.params.selectedLng });
+    }
+  }, [route.params?.selectedLat, route.params?.selectedLng]);
 
   async function submit() {
     if (!title.trim()) {
@@ -55,6 +62,7 @@ export default function CreateGatheringScreen({ navigation }) {
         interestTag,
         scheduledAt: scheduledAt.toISOString(),
         isPublic,
+        customLocation,
       });
       Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');
       navigation.goBack();
@@ -97,6 +105,21 @@ export default function CreateGatheringScreen({ navigation }) {
             <Text style={[styles.publicToggleHint, !isPublic && styles.publicToggleHintActive]}>You approve each person</Text>
           </TouchableOpacity>
         </View>
+
+        <Text style={styles.label}>Where</Text>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => navigation.navigate('SelectGatheringLocation', {
+            initialLat: customLocation?.latitude,
+            initialLng: customLocation?.longitude,
+          })}
+          accessibilityLabel={customLocation ? 'Location set, tap to change' : 'Set the gathering location, defaults to your current location if not set'}
+          accessibilityRole="button"
+        >
+          <Text style={{ color: customLocation ? colors.textPrimary : colors.textTertiary }}>
+            {customLocation ? '📍 Custom location set — tap to change' : '📍 Use my current location (tap to set a different spot)'}
+          </Text>
+        </TouchableOpacity>
 
         <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
         <TextInput

@@ -21,16 +21,23 @@ const WIDE_TIER_MAX_MILES = 15;
 // get_gathering_distances() and merged in below by gathering id.
 const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') throw new Error('Location permission is needed to post a gathering.');
+  let lat, lng;
 
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  const lat = location.coords.latitude;
-  const lng = location.coords.longitude;
+  if (customLocation) {
+    lat = customLocation.latitude;
+    lng = customLocation.longitude;
+  } else {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') throw new Error('Location permission is needed to post a gathering.');
+
+    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    lat = location.coords.latitude;
+    lng = location.coords.longitude;
+  }
 
   const { data, error } = await supabase
     .from('gatherings')
