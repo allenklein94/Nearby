@@ -85,7 +85,7 @@ export default function GatheringsScreen({ navigation }) {
   const [tab, setTab] = useState('nearby');
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
-  const [hosting, setHosting] = useState([]);
+  const [hosting, setHosting] = useState({ upcoming: [], past: [] });
   const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [refreshing, setRefreshing] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -796,8 +796,13 @@ export default function GatheringsScreen({ navigation }) {
 
       {tab === 'hosting' && (
         <FlatList
-          data={hosting}
-          keyExtractor={(item) => item.id}
+          data={[
+            ...(hosting.upcoming.length > 0 ? [{ type: 'header', key: 'hosting-upcoming-header', label: 'Upcoming' }] : []),
+            ...hosting.upcoming.map((g) => ({ type: 'gathering', key: g.id, gathering: g })),
+            ...(hosting.past.length > 0 ? [{ type: 'header', key: 'hosting-past-header', label: 'Past' }] : []),
+            ...hosting.past.map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })),
+          ]}
+          keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           ListEmptyComponent={
@@ -806,29 +811,38 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
             </View>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item: row }) => {
+            if (row.type === 'header') {
+              return <Text style={styles.attendingSectionHeader}>{row.label}</Text>;
+            }
+            const item = row.gathering;
+            const isPast = row.isPast;
             const categoryStyle = categoryStyleFor(item.interest_tag);
             return (
-              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
+              <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
                 <View style={styles.cardTopRow}>
                   <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
                   <Text style={[styles.title, { flex: 1 }]}>{item.title}</Text>
-                  <TouchableOpacity
-                    onPress={() => confirmCancelGathering(item)}
-                    accessibilityLabel={`Cancel ${item.title}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.cancelGatheringText}>Cancel</Text>
-                  </TouchableOpacity>
+                  {!isPast && (
+                    <TouchableOpacity
+                      onPress={() => confirmCancelGathering(item)}
+                      accessibilityLabel={`Cancel ${item.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.cancelGatheringText}>Cancel</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
                 {item.interested?.length > 0 ? (
                   item.interested.map((interest) => (
                     <View key={interest.id} style={styles.interestRow}>
                       <Text style={styles.interestName}>{interest.profiles?.display_name}</Text>
-                      {interest.status === 'pending' ? (
+                      {isPast ? (
+                        <Text style={styles.approvedLabel}>{interest.status === 'approved' ? '✓ Attended' : 'Did not attend'}</Text>
+                      ) : interest.status === 'pending' ? (
                         <TouchableOpacity
                           style={styles.approveButton}
                           onPress={() => handleApprove(interest)}

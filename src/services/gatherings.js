@@ -220,13 +220,19 @@ export async function getMyGatherings() {
 
   if (error) {
     console.error('getMyGatherings error', error);
-    return [];
+    return { upcoming: [], past: [] };
   }
 
-  return (data ?? []).map((gathering) => ({
+  const all = (data ?? []).map((gathering) => ({
     ...gathering,
     interested: (gathering.interested ?? []).filter((i) => !excludedUserIds.has(i.user_id)),
   }));
+
+  const now = new Date();
+  const upcoming = all.filter((g) => new Date(g.scheduled_at) >= now).sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+  const past = all.filter((g) => new Date(g.scheduled_at) < now).sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
+
+  return { upcoming, past };
 }
 
 // Returns upcoming and past gatherings separately, rather than one
