@@ -151,7 +151,11 @@ export async function getNearbyGatherings(tier = 'local') {
         approvedAttendees,
       };
     })
-    .filter((gathering) => gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
+    // Public gatherings are discoverable regardless of distance —
+    // they're lower-commitment (no approval needed), so wide
+    // visibility makes sense. Private gatherings stay tiered by the
+    // selected radius, matching the original design.
+    .filter((gathering) => gathering.is_public || gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
     .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
 }
 
