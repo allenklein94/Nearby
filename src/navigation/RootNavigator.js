@@ -49,6 +49,7 @@ import InviteFriendsScreen from '../screens/InviteFriendsScreen';
 import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import FeaturesOverviewScreen from '../screens/FeaturesOverviewScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
+import FriendsScreen from '../screens/FriendsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -221,6 +222,7 @@ export default function RootNavigator() {
             <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ headerShown: true, title: 'Blocked Users', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="FeaturesOverview" component={FeaturesOverviewScreen} options={{ headerShown: true, title: 'Everything In Nearby', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: 'Set Location', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>

@@ -10,6 +10,7 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
+import { sendFriendRequest } from '../services/friends';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -52,6 +53,8 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [intentionChangeCount, setIntentionChangeCount] = useState(0);
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxPhotoUri, setLightboxPhotoUri] = useState(null);
+  const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
+  const [friendRequestSent, setFriendRequestSent] = useState(false);
 
   useEffect(() => {
     load();
@@ -128,6 +131,18 @@ export default function ViewProfileScreen({ route, navigation }) {
           </TouchableOpacity>
         ) : null,
     });
+  }
+
+  async function handleAddFriend() {
+    setSendingFriendRequest(true);
+    try {
+      await sendFriendRequest(userId);
+      setFriendRequestSent(true);
+      Alert.alert('Friend request sent', `${profile.display_name} will see your request.`);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSendingFriendRequest(false);
   }
 
   function openLightbox(uri) {
@@ -247,6 +262,21 @@ export default function ViewProfileScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
           </View>
+
+          {!isOwnProfile && (
+            <TouchableOpacity
+              style={[styles.addFriendButton, friendRequestSent && styles.addFriendButtonSent]}
+              onPress={handleAddFriend}
+              disabled={sendingFriendRequest || friendRequestSent}
+              activeOpacity={0.85}
+              accessibilityLabel={friendRequestSent ? 'Friend request sent' : `Add ${profile.display_name} as a friend`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.addFriendButtonText}>
+                {friendRequestSent ? '✓ Request Sent' : '🤝 Add Friend'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {intentionText && (
             <View style={styles.intentionCard}>
@@ -398,6 +428,13 @@ const getStyles = (colors) => StyleSheet.create({
     borderRadius: radius.full,
   },
   interestChipText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  addFriendButton: {
+    alignSelf: 'flex-start', borderWidth: 1, borderColor: colors.primary,
+    borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  addFriendButtonSent: { borderColor: colors.success },
+  addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.sm, gap: 4 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
