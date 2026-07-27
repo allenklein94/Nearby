@@ -21,6 +21,7 @@ import SkeletonCard from '../components/SkeletonCard';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SwipeableDiscoveryCards from '../components/SwipeableDiscoveryCards';
 import SightingMapModal from '../components/SightingMapModal';
+import SightingsOverviewMap from '../components/SightingsOverviewMap';
 import ScaleButton from '../components/ScaleButton';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
@@ -101,6 +102,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
+  const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showBrowseCallout, setShowBrowseCallout] = useState(false);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
@@ -451,6 +453,16 @@ export default function DiscoveryScreen({ navigation }) {
             <Text style={styles.viewToggleIcon}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
             <Text style={styles.viewToggleLabel}>{viewStyle === 'cards' ? 'Cards' : 'List'}</Text>
           </TouchableOpacity>
+          {discoveryMode === 'crossedPaths' && (
+            <TouchableOpacity
+              onPress={() => setShowSightingsOverview(true)}
+              style={styles.infoButton}
+              accessibilityLabel="See all your crossed paths on a map"
+              accessibilityRole="button"
+            >
+              <Text style={styles.infoButtonText}>🗺️</Text>
+            </TouchableOpacity>
+          )}
         </View>
         <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
       </View>
@@ -802,6 +814,25 @@ export default function DiscoveryScreen({ navigation }) {
         longitude={sightingMapTarget?.sightingLng}
         personName={sightingMapTarget?.profiles?.display_name}
       />
+
+      {showSightingsOverview && (
+        <View style={StyleSheet.absoluteFill}>
+          <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            <View style={styles.overviewHeader}>
+              <Text style={styles.overviewTitle}>All Your Crossed Paths</Text>
+              <TouchableOpacity onPress={() => setShowSightingsOverview(false)} accessibilityLabel="Close map" accessibilityRole="button">
+                <Text style={styles.overviewClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <SightingsOverviewMap
+              sightings={nearby}
+              photoUrls={photoUrls}
+              userLocation={null}
+              onSelectSighting={(s) => navigation.navigate('ViewProfile', { userId: s.otherUserId })}
+            />
+          </SafeAreaView>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -904,6 +935,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   proximityRow: { marginBottom: spacing.xs },
   proximityText: { ...typography.small, color: colors.textTertiary },
   viewOnMapText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 2 },
+  overviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
+  overviewTitle: { ...typography.headline, color: colors.textPrimary },
+  overviewClose: { color: colors.textTertiary, fontSize: 20 },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.md },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
