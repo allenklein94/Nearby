@@ -121,6 +121,7 @@ export default function ChatScreen({ route, navigation }) {
   const [isStalled, setIsStalled] = useState(false);
   const [reactions, setReactions] = useState({});
   const [mediaUrls, setMediaUrls] = useState({});
+  const [imageLoadFailed, setImageLoadFailed] = useState({});
   const [disappearingMode, setDisappearingMode] = useState('off');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
@@ -893,13 +894,20 @@ export default function ChatScreen({ route, navigation }) {
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
                         <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>Couldn't load photo</Text>
                       </View>
+                    ) : imageLoadFailed[item.id] ? (
+                      <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
+                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>DEBUG: Image failed to actually render (onError fired)</Text>
+                      </View>
                     ) : (
                       <Image
                         source={{ uri: mediaUrls[item.id] }}
                         style={styles.gifBubble}
                         resizeMode="cover"
                         accessibilityLabel={`${senderLabel} sent a photo`}
-                        onError={(e) => console.error('Photo failed to load:', e.nativeEvent.error)}
+                        onError={(e) => {
+                          console.error('Photo failed to load:', e.nativeEvent.error);
+                          setImageLoadFailed((prev) => ({ ...prev, [item.id]: true }));
+                        }}
                       />
                     )}
                   </TouchableOpacity>
