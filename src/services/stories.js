@@ -92,6 +92,20 @@ export async function markStoryViewed(storyId) {
   await supabase.from('story_views').insert({ story_id: storyId, viewer_id: myId }).select().maybeSingle().catch(() => {});
 }
 
+export async function getStoryViewers(storyId) {
+  const { data, error } = await supabase
+    .from('story_views')
+    .select('viewer_id, viewed_at, profiles(display_name, photo_url)')
+    .eq('story_id', storyId)
+    .order('viewed_at', { ascending: false });
+
+  if (error) {
+    console.error('getStoryViewers error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getSignedStoryUrl(path) {
   const { data, error } = await supabase.storage.from('stories').createSignedUrl(path, 3600);
   if (error) {
