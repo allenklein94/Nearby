@@ -580,7 +580,7 @@ export default function DiscoveryScreen({ navigation }) {
         accessibilityRole="button"
       >
         <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
-          {isUserPremium ? '🎚️' : '🔒'} Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
+          {isUserPremium ? '' : '🔒 '}Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
         </Text>
       </TouchableOpacity>
 
