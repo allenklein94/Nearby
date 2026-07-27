@@ -27,8 +27,6 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality',
 ];
 
-const RELIGION_OPTIONS = ['Agnostic', 'Atheist', 'Buddhist', 'Catholic', 'Christian', 'Hindu', 'Jewish', 'Muslim', 'Spiritual', 'Sikh', 'Other', 'Prefer not to say'];
-
 const DATE_OPTIONS = [
   { key: 'anytime', label: 'Anytime' },
   { key: 'today', label: 'Today' },
@@ -105,7 +103,6 @@ export default function GatheringsScreen({ navigation }) {
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
   const [searchQuery, setSearchQuery] = useState('');
-  const [religionFilter, setReligionFilter] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
 
@@ -322,7 +319,6 @@ export default function GatheringsScreen({ navigation }) {
   const filteredNearby = nearby
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
-    .filter((g) => !religionFilter || g.host?.basics?.religion === religionFilter)
     .filter((g) => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.trim().toLowerCase();
@@ -556,42 +552,6 @@ export default function GatheringsScreen({ navigation }) {
             </View>
           )}
 
-          <View style={styles.accordionDivider} />
-
-          <TouchableOpacity
-            style={styles.accordionHeader}
-            onPress={() => toggleFilterSection('religion')}
-            accessibilityLabel={`Host's Religion: ${religionFilter || 'Any'}, ${expandedFilterSection === 'religion' ? 'tap to collapse' : 'tap to expand'}`}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: expandedFilterSection === 'religion' }}
-          >
-            <Text style={styles.accordionHeaderLabel}>🕊️ Host's Religion</Text>
-            <View style={styles.accordionHeaderRight}>
-              <Text style={styles.accordionHeaderValue}>{religionFilter || 'Any'}</Text>
-              <Text style={styles.accordionChevron}>{expandedFilterSection === 'religion' ? '⌃' : '⌄'}</Text>
-            </View>
-          </TouchableOpacity>
-          {expandedFilterSection === 'religion' && (
-            <View style={styles.accordionBody}>
-              <View style={styles.chipsWrapInline}>
-                {RELIGION_OPTIONS.map((option) => {
-                  const active = religionFilter === option;
-                  return (
-                    <TouchableOpacity
-                      key={option}
-                      style={[styles.filterChip, active && styles.filterChipActive]}
-                      onPress={() => setReligionFilter(active ? null : option)}
-                      accessibilityLabel={`Filter by host's religion: ${option}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                    >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          )}
         </View>
         </>
       )}
