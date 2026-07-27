@@ -874,6 +874,11 @@ export default function ChatScreen({ route, navigation }) {
             return (
               <AnimatedMessageBubble isNew={isNewMessage}>
               <View style={[styles.bubbleRow, isMe ? styles.rowRight : styles.rowLeft]}>
+                {__DEV__ === undefined ? null : (
+                  <Text style={{ color: 'red', fontSize: 8, backgroundColor: 'yellow' }}>
+                    DEBUG: audio={String(!!item.audio_url)} media={String(!!item.media_url)} gif={String(!!item.gif_url)} mediaUrlState={String(mediaUrls[item.id])}
+                  </Text>
+                )}
                 {item.audio_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={1}>
                     <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
