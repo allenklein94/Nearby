@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
+import { checkAndCountBrowseView } from '../services/browseLimits';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { generateCompatibilityReport } from '../services/compatibility';
 import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidenceMode';
@@ -143,6 +144,23 @@ export default function DiscoveryScreen({ navigation }) {
 
   const loadBrowseBatch = useCallback(async (offset) => {
     const results = await getBrowseMatches(offset);
+
+    if (myUserId) {
+      const limitCheck = await checkAndCountBrowseView(myUserId, results.length, isUserPremium);
+      if (!limitCheck.allowed) {
+        setBrowseHasMore(false);
+        Alert.alert(
+          'Daily limit reached',
+          limitCheck.reason,
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
+          ]
+        );
+        return;
+      }
+    }
+
     setBrowseHasMore(results.length > 0);
 
     const urlEntries = await Promise.all(
@@ -160,7 +178,7 @@ export default function DiscoveryScreen({ navigation }) {
     } else {
       setNearby((prev) => [...prev, ...results]);
     }
-  }, []);
+  }, [myUserId, isUserPremium]);
 
   async function switchDiscoveryMode(mode) {
     if (mode === discoveryMode) return;
