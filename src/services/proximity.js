@@ -251,6 +251,11 @@ export async function getNearbyMatches() {
 
   const profileById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]));
 
+  const { data: sightingCoords } = await supabase.rpc('get_sighting_fuzzed_coords', {
+    sighting_ids: sightings.map((s) => s.id),
+  });
+  const coordsById = Object.fromEntries((sightingCoords ?? []).map((c) => [c.id, c]));
+
   return sightings
     .map((s) => {
       const otherUserId = s.user_a === userId ? s.user_b : s.user_a;
@@ -269,6 +274,8 @@ export async function getNearbyMatches() {
         profiles: otherProfile,
         sharedInterests,
         compatibilityScore,
+        sightingLat: coordsById[s.id]?.fuzzed_lat ?? null,
+        sightingLng: coordsById[s.id]?.fuzzed_lng ?? null,
       };
     })
     .filter((item) => item.profiles !== null)
