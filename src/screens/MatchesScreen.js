@@ -85,6 +85,14 @@ export default function MatchesScreen({ navigation }) {
       const newMatch = isFirstRunEver ? null : data.find((m) => !seenIds.includes(m.id));
 
       if (newMatch) {
+        // Gathering-sourced connections are a quiet confirmation, not
+        // a romantic "It's a Match!" celebration — joining a public
+        // gathering isn't the same kind of moment as a mutual Notice.
+        if (newMatch.source_gathering_id) {
+          load();
+          return;
+        }
+
         const { data: myPhotoProfile } = await supabase.from('profiles').select('photo_url').eq('id', myId).single();
         if (myPhotoProfile?.photo_url) {
           const myUrl = await getSignedPhotoUrl(myPhotoProfile.photo_url);
