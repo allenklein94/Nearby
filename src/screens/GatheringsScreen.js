@@ -255,7 +255,7 @@ export default function GatheringsScreen({ navigation }) {
       const result = await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed');
       if (result?.autoApproved) {
-        Alert.alert("It's a Match! 🎉", "This gathering is public, so you're in — you can now chat with the host.", [
+        Alert.alert("You're In! ✓", "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.", [
           { text: 'Keep Browsing', style: 'cancel' },
           { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
         ]);
