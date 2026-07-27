@@ -438,9 +438,13 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   async function updateDisappearingMode(mode) {
-    const { error } = await supabase.from('matches').update({ disappearing_mode: mode }).eq('id', matchId);
+    const { data, error } = await supabase.from('matches').update({ disappearing_mode: mode }).eq('id', matchId).select();
     if (error) {
       Alert.alert('Error', error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      Alert.alert('Error', "This didn't actually save — please try again.");
       return;
     }
     setDisappearingMode(mode);
