@@ -12,6 +12,7 @@ const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 // the pin directly, rather than being locked to wherever their
 // phone's GPS happens to be at the moment of creating the gathering.
 export default function SelectGatheringLocationScreen({ navigation, route }) {
+  Alert.alert('DEBUG', 'SelectGatheringLocationScreen reached, about to render');
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [searchText, setSearchText] = useState('');
