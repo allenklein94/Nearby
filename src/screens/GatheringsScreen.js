@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering } from '../services/gatherings';
+import { getMyFriends } from '../services/friends';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -102,6 +103,7 @@ export default function GatheringsScreen({ navigation }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
+  const [myFriendIds, setMyFriendIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
@@ -151,6 +153,9 @@ export default function GatheringsScreen({ navigation }) {
         setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
       }
     }
+
+    const friendsList = await getMyFriends();
+    setMyFriendIds(new Set(friendsList.map((f) => f.id)));
 
     setInitialLoading(false);
   }, [radiusTier]);
@@ -634,6 +639,16 @@ export default function GatheringsScreen({ navigation }) {
                     <Text style={styles.matchBadgeText}>{t('gatherings.matchesInterests')}</Text>
                   </View>
                 )}
+                {(() => {
+                  const interestedFriendsCount = (item.approvedAttendees ?? []).filter((a) => myFriendIds.has(a.user_id)).length;
+                  return interestedFriendsCount > 0 ? (
+                    <View style={styles.friendsInterestedBadge}>
+                      <Text style={styles.friendsInterestedText}>
+                        🤝 {interestedFriendsCount} friend{interestedFriendsCount === 1 ? '' : 's'} interested
+                      </Text>
+                    </View>
+                  ) : null;
+                })()}
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                 <View style={styles.metaRow}>
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
@@ -959,6 +974,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   expandChevron: { color: colors.textTertiary, fontSize: 16, paddingHorizontal: spacing.sm },
   matchBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
   matchBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '700' },
+  friendsInterestedBadge: {
+    alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+  },
+  friendsInterestedText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.sm },
   time: { ...typography.caption, color: colors.primary, fontWeight: '600' },
