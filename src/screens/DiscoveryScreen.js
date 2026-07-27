@@ -20,6 +20,7 @@ import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SwipeableDiscoveryCards from '../components/SwipeableDiscoveryCards';
+import SightingMapModal from '../components/SightingMapModal';
 import ScaleButton from '../components/ScaleButton';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
@@ -99,6 +100,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [browseHasMore, setBrowseHasMore] = useState(true);
   const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
+  const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showBrowseCallout, setShowBrowseCallout] = useState(false);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
@@ -580,7 +582,7 @@ export default function DiscoveryScreen({ navigation }) {
         accessibilityRole="button"
       >
         <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
-          {isUserPremium ? '' : '🔒 '}Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
+          {isUserPremium ? '🎚️' : '🔒'} Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
         </Text>
       </TouchableOpacity>
 
@@ -696,6 +698,15 @@ export default function DiscoveryScreen({ navigation }) {
                   <Text style={styles.proximityText}>
                     📍 Within about 35 feet{crossedPathsTime ? ` · Crossed paths ${crossedPathsTime}` : ''}
                   </Text>
+                  {(item.sightingLat != null) && (
+                    <TouchableOpacity
+                      onPress={() => setSightingMapTarget(item)}
+                      accessibilityLabel="View roughly where you crossed paths, on a map"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.viewOnMapText}>View on map</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
               <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
@@ -782,6 +793,14 @@ export default function DiscoveryScreen({ navigation }) {
         showAgeRange
         ageRange={ageRangeFilter}
         onAgeRangeChange={setAgeRangeFilter}
+      />
+
+      <SightingMapModal
+        visible={!!sightingMapTarget}
+        onClose={() => setSightingMapTarget(null)}
+        latitude={sightingMapTarget?.sightingLat}
+        longitude={sightingMapTarget?.sightingLng}
+        personName={sightingMapTarget?.profiles?.display_name}
       />
     </SafeAreaView>
   );
@@ -884,6 +903,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   compatText: { fontSize: 11, fontWeight: '700' },
   proximityRow: { marginBottom: spacing.xs },
   proximityText: { ...typography.small, color: colors.textTertiary },
+  viewOnMapText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 2 },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.md },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
