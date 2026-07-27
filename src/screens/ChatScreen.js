@@ -18,6 +18,7 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
+import * as ScreenCapture from 'expo-screen-capture';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -200,6 +201,20 @@ export default function ChatScreen({ route, navigation }) {
       if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current);
     };
   }, []);
+
+  // Screenshot detection only makes sense when disappearing messages
+  // are actually on — true prevention isn't possible on iOS, so this
+  // is the realistic equivalent: the other person finds out a
+  // screenshot happened, same as Snapchat's approach.
+  useEffect(() => {
+    if (disappearingMode === 'off') return;
+    const subscription = ScreenCapture.addScreenshotListener(() => {
+      supabase.rpc('notify_screenshot_taken', { match_id_param: matchId }).catch((err) => {
+        console.error('notify_screenshot_taken error', err);
+      });
+    });
+    return () => subscription.remove();
+  }, [disappearingMode, matchId]);
 
   // Re-registers the header's "⋯" button whenever disappearingMode
   // changes — navigation.setOptions inside init() only runs once on
