@@ -634,6 +634,15 @@ export default function ChatScreen({ route, navigation }) {
     }
   }
 
+  async function handleCancelRecording() {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+    if (recordingRef.current) {
+      await stopRecording(recordingRef.current).catch(() => {});
+      recordingRef.current = null;
+    }
+  }
+
   async function handleStopRecording() {
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
     setIsRecording(false);
@@ -1032,6 +1041,14 @@ export default function ChatScreen({ route, navigation }) {
             <Text style={styles.recordingTime}>{formatRecordingTime(recordingSeconds)}</Text>
             <Text style={styles.recordingHint}>Recording voice note...</Text>
             <TouchableOpacity
+              style={styles.cancelRecordingButton}
+              onPress={handleCancelRecording}
+              accessibilityLabel="Cancel recording without sending"
+              accessibilityRole="button"
+            >
+              <Text style={styles.cancelRecordingButtonText}>✕</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.stopButton}
               onPress={handleStopRecording}
               accessibilityLabel="Stop recording and send voice message"
@@ -1222,4 +1239,9 @@ const getStyles = (colors) => StyleSheet.create({
   recordingHint: { color: colors.textTertiary, flex: 1, fontSize: 13 },
   stopButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   stopButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  cancelRecordingButton: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm,
+  },
+  cancelRecordingButtonText: { color: colors.textTertiary, fontSize: 14, fontWeight: '700' },
 });
