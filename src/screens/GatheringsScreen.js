@@ -257,7 +257,7 @@ export default function GatheringsScreen({ navigation }) {
       const result = await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed');
       if (result?.autoApproved) {
-        Alert.alert("It's a Match! 🎉", "This gathering is public, so you're in — you can now chat with the host.", [
+        Alert.alert("You're In! ✓", "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.", [
           { text: 'Keep Browsing', style: 'cancel' },
           { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
         ]);
@@ -350,7 +350,7 @@ export default function GatheringsScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('gatherings.title')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {tab === 'nearby' && (
+          {(tab === 'nearby' || tab === 'attending' || tab === 'hosting') && (
             <TouchableOpacity
               style={styles.viewToggleButton}
               onPress={() => setViewStyle(viewStyle === 'map' ? 'list' : 'map')}
@@ -361,6 +361,14 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.viewToggleLabel}>{viewStyle === 'map' ? 'List' : 'Map'}</Text>
             </TouchableOpacity>
           )}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Friends')}
+            style={{ marginRight: spacing.sm, padding: spacing.xs }}
+            accessibilityLabel="Friends, manage friend requests and see your friends list"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 22 }}>🤝</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate('CreateGathering')}
@@ -708,7 +716,21 @@ export default function GatheringsScreen({ navigation }) {
         />
       )}
 
-      {tab === 'attending' && (
+      {tab === 'attending' && viewStyle === 'map' ? (
+        <View style={{ flex: 1 }}>
+          <GatheringsMapView
+            gatherings={attending.upcoming}
+            userLocation={userLocation}
+            onSelectGathering={(gathering) => {
+              Alert.alert(
+                gathering.title,
+                `Hosted by ${gathering.host?.display_name}${gathering.description ? '\n\n' + gathering.description : ''}`,
+                [{ text: 'OK' }]
+              );
+            }}
+          />
+        </View>
+      ) : tab === 'attending' && (
         <FlatList
           data={[
             ...(attending.upcoming.length > 0 ? [{ type: 'header', key: 'upcoming-header', label: 'Upcoming' }] : []),
@@ -809,7 +831,21 @@ export default function GatheringsScreen({ navigation }) {
         />
       )}
 
-      {tab === 'hosting' && (
+      {tab === 'hosting' && viewStyle === 'map' ? (
+        <View style={{ flex: 1 }}>
+          <GatheringsMapView
+            gatherings={hosting.upcoming}
+            userLocation={userLocation}
+            onSelectGathering={(gathering) => {
+              Alert.alert(
+                gathering.title,
+                gathering.description || 'No description',
+                [{ text: 'OK' }]
+              );
+            }}
+          />
+        </View>
+      ) : tab === 'hosting' && (
         <FlatList
           data={[
             ...(hosting.upcoming.length > 0 ? [{ type: 'header', key: 'hosting-upcoming-header', label: 'Upcoming' }] : []),
