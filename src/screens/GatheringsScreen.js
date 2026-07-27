@@ -247,9 +247,16 @@ export default function GatheringsScreen({ navigation }) {
     }
 
     try {
-      await expressInterest(gatheringId);
+      const result = await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed');
-      Alert.alert("You're interested!", "The host will review and let you know.");
+      if (result?.autoApproved) {
+        Alert.alert("It's a Match! 🎉", "This gathering is public, so you're in — you can now chat with the host.", [
+          { text: 'Keep Browsing', style: 'cancel' },
+          { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
+        ]);
+      } else {
+        Alert.alert("You're interested!", "The host will review and let you know.");
+      }
       load();
     } catch (e) {
       Alert.alert('Error', e.message);

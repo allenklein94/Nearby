@@ -25,6 +25,7 @@ export default function CreateGatheringScreen({ navigation }) {
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 60 * 60 * 1000));
   const [showPicker, setShowPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
 
   async function submit() {
     if (!title.trim()) {
@@ -53,6 +54,7 @@ export default function CreateGatheringScreen({ navigation }) {
         description: description.trim() || null,
         interestTag,
         scheduledAt: scheduledAt.toISOString(),
+        isPublic,
       });
       Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');
       navigation.goBack();
@@ -69,6 +71,32 @@ export default function CreateGatheringScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>
         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
+
+        <Text style={styles.label}>Who can join</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+          <TouchableOpacity
+            style={[styles.publicToggle, isPublic && styles.publicToggleActive]}
+            onPress={() => setIsPublic(true)}
+            activeOpacity={0.85}
+            accessibilityLabel="Public - anyone interested joins automatically, no approval needed"
+            accessibilityRole="button"
+            accessibilityState={{ selected: isPublic }}
+          >
+            <Text style={[styles.publicToggleText, isPublic && styles.publicToggleTextActive]}>🌍 Public</Text>
+            <Text style={[styles.publicToggleHint, isPublic && styles.publicToggleHintActive]}>Anyone interested joins instantly</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.publicToggle, !isPublic && styles.publicToggleActive]}
+            onPress={() => setIsPublic(false)}
+            activeOpacity={0.85}
+            accessibilityLabel="Private - you approve each person before they join"
+            accessibilityRole="button"
+            accessibilityState={{ selected: !isPublic }}
+          >
+            <Text style={[styles.publicToggleText, !isPublic && styles.publicToggleTextActive]}>🔒 Private</Text>
+            <Text style={[styles.publicToggleHint, !isPublic && styles.publicToggleHintActive]}>You approve each person</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
         <TextInput
@@ -173,4 +201,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  publicToggle: {
+    flex: 1, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  publicToggleActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  publicToggleText: { color: colors.textPrimary, fontWeight: '700', fontSize: 14, marginBottom: 2 },
+  publicToggleTextActive: { color: colors.primary },
+  publicToggleHint: { color: colors.textTertiary, fontSize: 11 },
+  publicToggleHintActive: { color: colors.primary, opacity: 0.8 },
 });

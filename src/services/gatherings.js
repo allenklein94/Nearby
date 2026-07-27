@@ -19,9 +19,9 @@ const WIDE_TIER_MAX_MILES = 15;
 // precise_lng must never leave the server. Distance and an
 // approximate, jittered pin position are computed server-side via
 // get_gathering_distances() and merged in below by gathering id.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public';
 
-export async function createGathering({ title, description, interestTag, scheduledAt }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -44,6 +44,7 @@ export async function createGathering({ title, description, interestTag, schedul
       precise_lat: lat,
       precise_lng: lng,
       scheduled_at: scheduledAt,
+      is_public: isPublic,
     })
     .select()
     .single();
@@ -94,7 +95,7 @@ export async function getNearbyGatherings(tier = 'local') {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url, basics), attendees:gathering_interest(status, profiles(display_name, photo_url))`)
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, profiles(display_name, photo_url))`)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
@@ -290,7 +291,7 @@ export async function expressInterest(gatheringId) {
 
   const { data: gathering } = await supabase
     .from('gatherings')
-    .select('host_id')
+    .select('host_id, is_public')
     .eq('id', gatheringId)
     .single();
 
@@ -316,11 +317,21 @@ export async function expressInterest(gatheringId) {
     throw new Error("You can't express interest in this gathering.");
   }
 
+  // Public gatherings skip the approval step entirely — interest is
+  // auto-approved and a match is created immediately via the RPC,
+  // which re-checks blocking and ownership server-side too.
+  if (gathering?.is_public) {
+    const { error: rpcError } = await supabase.rpc('express_interest_public', { gathering_id_param: gatheringId });
+    if (rpcError) throw rpcError;
+    return { autoApproved: true };
+  }
+
   const { error } = await supabase
     .from('gathering_interest')
     .insert({ gathering_id: gatheringId, user_id: userId, status: 'pending' });
 
   if (error) throw error;
+  return { autoApproved: false };
 }
 
 export async function approveInterest(interestId) {
