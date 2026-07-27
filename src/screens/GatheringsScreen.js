@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Refre
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering } from '../services/gatherings';
 import { getMyFriends } from '../services/friends';
+import InviteFriendsModal from '../components/InviteFriendsModal';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -104,6 +105,7 @@ export default function GatheringsScreen({ navigation }) {
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [viewStyle, setViewStyle] = useState('list');
   const [myFriendIds, setMyFriendIds] = useState(new Set());
+  const [inviteModalGathering, setInviteModalGathering] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
@@ -255,7 +257,7 @@ export default function GatheringsScreen({ navigation }) {
       const result = await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed');
       if (result?.autoApproved) {
-        Alert.alert("You're In! ✓", "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.", [
+        Alert.alert("It's a Match! 🎉", "This gathering is public, so you're in — you can now chat with the host.", [
           { text: 'Keep Browsing', style: 'cancel' },
           { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
         ]);
@@ -359,14 +361,6 @@ export default function GatheringsScreen({ navigation }) {
               <Text style={styles.viewToggleLabel}>{viewStyle === 'map' ? 'List' : 'Map'}</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Friends')}
-            style={{ marginRight: spacing.sm, padding: spacing.xs }}
-            accessibilityLabel="Friends, manage friend requests and see your friends list"
-            accessibilityRole="button"
-          >
-            <Text style={{ fontSize: 22 }}>🤝</Text>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate('CreateGathering')}
@@ -685,15 +679,28 @@ export default function GatheringsScreen({ navigation }) {
                   </View>
                 )}
 
-                <TouchableOpacity
-                  style={[styles.interestButton, { backgroundColor: categoryStyle.color }]}
-                  onPress={() => handleExpressInterest(item.id)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`Express interest in ${item.title}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <TouchableOpacity
+                    style={[styles.interestButton, { backgroundColor: categoryStyle.color, flex: 1 }]}
+                    onPress={() => handleExpressInterest(item.id)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={`Express interest in ${item.title}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
+                  </TouchableOpacity>
+                  {myFriendIds.size > 0 && (
+                    <TouchableOpacity
+                      style={styles.inviteFriendsButton}
+                      onPress={() => setInviteModalGathering(item)}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`Invite friends to ${item.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.inviteFriendsButtonText}>🤝</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               </AnimatedListItem>
             );
@@ -886,6 +893,13 @@ export default function GatheringsScreen({ navigation }) {
         reportedUserId={reportTarget?.id}
         reportedUserName={reportTarget?.name}
       />
+
+      <InviteFriendsModal
+        visible={!!inviteModalGathering}
+        onClose={() => setInviteModalGathering(null)}
+        gatheringId={inviteModalGathering?.id}
+        gatheringTitle={inviteModalGathering?.title}
+      />
     </SafeAreaView>
   );
 }
@@ -1031,6 +1045,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   noticeSentText: { color: colors.success, fontSize: 12, fontWeight: '700' },
   interestButton: { borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
   interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  inviteFriendsButton: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    width: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border,
+  },
+  inviteFriendsButtonText: { fontSize: 16 },
   interestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs },
   interestName: { color: colors.textPrimary, fontSize: 14 },
   approveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 6 },
