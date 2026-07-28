@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
 import { findFriendsFromContacts } from '../services/contactsImport';
@@ -12,6 +12,7 @@ export default function FriendsScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [friends, setFriends] = useState([]);
+  const [friendSearch, setFriendSearch] = useState('');
   const [pending, setPending] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
@@ -101,11 +102,23 @@ export default function FriendsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={friends}
+        data={friends.filter((f) => !friendSearch.trim() || f.display_name?.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
         keyExtractor={(item) => item.friendshipId}
         contentContainerStyle={{ padding: spacing.lg }}
         ListHeaderComponent={
           <>
+            <View style={styles.searchBarWrap}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search your friends..."
+                placeholderTextColor={colors.textTertiary}
+                value={friendSearch}
+                onChangeText={setFriendSearch}
+                accessibilityLabel="Search friends by name"
+              />
+            </View>
+
             <TouchableOpacity
               style={styles.findContactsButton}
               onPress={handleFindFromContacts}
@@ -252,6 +265,13 @@ export default function FriendsScreen({ navigation }) {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  searchBarWrap: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+  },
+  searchIcon: { fontSize: 14, marginRight: spacing.sm },
+  searchInput: { flex: 1, color: colors.textPrimary, fontSize: 14 },
   findContactsButton: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
     alignItems: 'center', marginBottom: spacing.lg,
