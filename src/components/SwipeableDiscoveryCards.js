@@ -30,6 +30,7 @@ export default function SwipeableDiscoveryCards({
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [lastSkippedIndex, setLastSkippedIndex] = useState(null);
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
@@ -65,6 +66,13 @@ export default function SwipeableDiscoveryCards({
     if (direction === 'right' && item) {
       onNotice(item.otherUserId);
     }
+    // Skipping never persists anything server-side — so rewinding is
+    // just moving the local index back, nothing to undo remotely.
+    if (direction === 'left') {
+      setLastSkippedIndex(currentIndex);
+    } else {
+      setLastSkippedIndex(null);
+    }
     position.setValue({ x: 0, y: 0 });
     const nextIndex = currentIndex + 1;
     setCurrentIndex(nextIndex);
@@ -74,6 +82,13 @@ export default function SwipeableDiscoveryCards({
     if (onNeedMore && data.length - nextIndex <= 3) {
       onNeedMore();
     }
+  }
+
+  function handleRewind() {
+    if (lastSkippedIndex === null) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCurrentIndex(lastSkippedIndex);
+    setLastSkippedIndex(null);
   }
 
   function handleButtonSkip() {
@@ -143,6 +158,16 @@ export default function SwipeableDiscoveryCards({
       </Animated.View>
 
       <View style={styles.buttonRow}>
+        {lastSkippedIndex !== null && (
+          <TouchableOpacity
+            style={styles.rewindButton}
+            onPress={handleRewind}
+            accessibilityLabel="Rewind to the person you just skipped"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rewindButtonText}>↺</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.skipButton}
           onPress={handleButtonSkip}
@@ -206,6 +231,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   buttonRow: {
     position: 'absolute', bottom: spacing.xl, flexDirection: 'row', gap: spacing.lg, alignItems: 'center',
   },
+  rewindButton: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: '#f59e0b', justifyContent: 'center', alignItems: 'center', ...shadow.card,
+  },
+  rewindButtonText: { color: '#f59e0b', fontSize: 22, fontWeight: '700' },
   skipButton: {
     width: 52, height: 52, borderRadius: 26, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', ...shadow.card,
