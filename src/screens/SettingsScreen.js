@@ -698,14 +698,26 @@ export default function SettingsScreen({ navigation }) {
           )}
         </View>
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">Connect</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('Paywall')}
+          onPress={() => navigation.navigate('Friends')}
           activeOpacity={0.85}
-          accessibilityLabel={t('settings.manageSubscription')}
+          accessibilityLabel="Friends, manage friend requests and see your friends list"
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>{t('settings.manageSubscription')}</Text>
+          <Text style={styles.rowButtonText}>🤝 Friends</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('MusicMode')}
+          activeOpacity={0.85}
+          accessibilityLabel="Music Mode, connect Spotify and pick favorite tracks for your profile"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🎵 Music Mode</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -720,6 +732,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">Safety</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('BlockedUsers')}
@@ -744,34 +757,24 @@ export default function SettingsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('RehearsalRoom')}
-          activeOpacity={0.85}
-          accessibilityLabel="Rehearsal Room, practice hard conversations"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🎭 Rehearsal Room</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('BrandOffers')}
-          activeOpacity={0.85}
-          accessibilityLabel="Offers and perks"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🎁 Offers & Perks</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
           onPress={() => navigation.navigate('RelationshipEmergencyKit')}
           activeOpacity={0.85}
           accessibilityLabel="Relationship Emergency Kit"
           accessibilityRole="button"
         >
           <Text style={styles.rowButtonText}>🧰 Emergency Kit</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">Reflection Tools</Text>
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('RehearsalRoom')}
+          activeOpacity={0.85}
+          accessibilityLabel="Rehearsal Room, practice hard conversations"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🎭 Rehearsal Room</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -808,28 +811,30 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">Account & Billing</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('Friends')}
+          onPress={() => navigation.navigate('Paywall')}
           activeOpacity={0.85}
-          accessibilityLabel="Friends, manage friend requests and see your friends list"
+          accessibilityLabel={t('settings.manageSubscription')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🤝 Friends</Text>
+          <Text style={styles.rowButtonText}>{t('settings.manageSubscription')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('MusicMode')}
+          onPress={() => navigation.navigate('BrandOffers')}
           activeOpacity={0.85}
-          accessibilityLabel="Music Mode, connect Spotify and pick favorite tracks for your profile"
+          accessibilityLabel="Offers and perks"
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🎵 Music Mode</Text>
+          <Text style={styles.rowButtonText}>🎁 Offers & Perks</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">Help & Legal</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('FeaturesOverview')}
