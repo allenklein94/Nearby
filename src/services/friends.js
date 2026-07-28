@@ -6,6 +6,23 @@ export async function sendFriendRequest(otherUserId) {
   if (!myId) throw new Error('Not signed in');
   if (myId === otherUserId) throw new Error("You can't add yourself as a friend.");
 
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', myId)
+    .eq('blocked_id', otherUserId)
+    .maybeSingle();
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', otherUserId)
+    .eq('blocked_id', myId)
+    .maybeSingle();
+
+  if (blockedByMe || blockedMe) {
+    throw new Error("You can't send a friend request to this person.");
+  }
+
   const userA = myId < otherUserId ? myId : otherUserId;
   const userB = myId < otherUserId ? otherUserId : myId;
 
