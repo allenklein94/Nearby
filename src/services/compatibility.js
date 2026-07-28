@@ -98,9 +98,10 @@ export function generateCompatibilityCompass(report) {
   const north = [
     ...report.matchingFields.map((f) => labelFor(f.key)),
     ...(report.sharedInterests.length > 0 ? [`Shared interest in ${report.sharedInterests.slice(0, 2).join(' and ')}`] : []),
+    ...(report.sharedArtists?.length > 0 ? [`Both like ${report.sharedArtists.slice(0, 2).join(' and ')}`] : []),
   ];
 
-  const east = report.sharedInterests;
+  const east = [...report.sharedInterests, ...(report.sharedArtists ?? [])];
 
   const south = report.differingFields
     .filter((f) => BIG_TOPIC_KEYS.includes(f.key))
