@@ -50,6 +50,7 @@ import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import FeaturesOverviewScreen from '../screens/FeaturesOverviewScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
 import FriendsScreen from '../screens/FriendsScreen';
+import MusicModeScreen from '../screens/MusicModeScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -157,7 +158,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Gatherings" component={GatheringsScreen} />
-      <Tab.Screen name="Nearby" component={DiscoveryScreen} options={{ tabBarLabel: 'Discover' }} />
+      <Tab.Screen name="Nearby" component={DiscoveryScreen} />
       <Tab.Screen name="Notices" component={NoticesScreen} options={{ tabBarLabel: 'Interested' }} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
@@ -223,6 +224,7 @@ export default function RootNavigator() {
             <Stack.Screen name="FeaturesOverview" component={FeaturesOverviewScreen} options={{ headerShown: true, title: 'Everything In Nearby', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: 'Set Location', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: 'Music Mode', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>

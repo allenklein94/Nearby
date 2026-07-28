@@ -322,6 +322,25 @@ export default function ViewProfileScreen({ route, navigation }) {
             </View>
           ))}
 
+          {profile.favorite_tracks?.length > 0 && (
+            <>
+              <Text style={styles.sectionLabel} accessibilityRole="header">🎵 Music</Text>
+              {profile.favorite_tracks.map((track) => (
+                <View key={track.id} style={styles.trackRowDisplay}>
+                  {track.albumArt ? (
+                    <Image source={{ uri: track.albumArt }} style={styles.trackArtDisplay} />
+                  ) : (
+                    <View style={[styles.trackArtDisplay, styles.trackArtPlaceholder]} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.trackNameDisplay} numberOfLines={1}>{track.name}</Text>
+                    <Text style={styles.trackArtistDisplay} numberOfLines={1}>{track.artist}</Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+
           {profile.interests?.length > 0 && (
             <>
               <Text style={styles.sectionLabel} accessibilityRole="header">{t('viewProfile.interests')}</Text>
@@ -440,6 +459,11 @@ const getStyles = (colors) => StyleSheet.create({
   addFriendButtonSent: { borderColor: colors.success },
   addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
+  trackRowDisplay: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  trackArtDisplay: { width: 44, height: 44, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
+  trackArtPlaceholder: {},
+  trackNameDisplay: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
+  trackArtistDisplay: { color: colors.textTertiary, fontSize: 12 },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.sm, gap: 4 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 16 },
