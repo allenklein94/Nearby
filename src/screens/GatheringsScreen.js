@@ -364,14 +364,6 @@ export default function GatheringsScreen({ navigation }) {
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            onPress={() => navigation.navigate('Friends')}
-            style={{ marginRight: spacing.sm, padding: spacing.xs }}
-            accessibilityLabel="Friends, manage friend requests and see your friends list"
-            accessibilityRole="button"
-          >
-            <Text style={{ fontSize: 22 }}>🤝</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             style={styles.createButton}
             onPress={() => navigation.navigate('CreateGathering')}
             accessibilityLabel="Host a new gathering"
