@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert
 import { getMyFriends } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -46,6 +47,7 @@ export default function InviteFriendsModal({ visible, onClose, gatheringId, gath
         friend_id_param: friendId,
       });
       if (error) throw error;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setInvitedIds((prev) => ({ ...prev, [friendId]: true }));
     } catch (e) {
       Alert.alert('Error', e.message);
