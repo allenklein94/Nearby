@@ -117,7 +117,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     setIsOwnProfile(ownProfile);
 
     if (myId && !ownProfile && data) {
-      const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
+      const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
       const report = generateCompatibilityReport(myProfile, data);
       setCompatibilityReport(report);
     }

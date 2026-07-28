@@ -11,6 +11,16 @@ export function generateCompatibilityReport(myProfile, theirProfile) {
 
   const sharedInterests = myInterests.filter((i) => theirInterests.includes(i));
 
+  const myArtists = (myProfile?.favorite_tracks ?? []).map((t) => t.artist).filter(Boolean);
+  const theirArtists = (theirProfile?.favorite_tracks ?? []).map((t) => t.artist).filter(Boolean);
+  const sharedArtists = [...new Set(myArtists.filter((a) => theirArtists.includes(a)))];
+
+  let musicScore = null;
+  if (myArtists.length > 0 && theirArtists.length > 0) {
+    const artistUnion = new Set([...myArtists, ...theirArtists]);
+    musicScore = sharedArtists.length / artistUnion.size;
+  }
+
   let interestScore = null;
   if (myInterests.length > 0 && theirInterests.length > 0) {
     const union = new Set([...myInterests, ...theirInterests]);
@@ -34,18 +44,28 @@ export function generateCompatibilityReport(myProfile, theirProfile) {
     basicsScore = matchingFields.length / comparableKeys.length;
   }
 
+  // Music weighted lightly relative to interests/basics — two people
+  // liking the same handful of artists is a nice, genuine signal,
+  // but shouldn't dominate a score also built from deeper
+  // compatibility factors, especially since most people won't have
+  // connected Music Mode at all yet.
+  const scoredParts = [
+    interestScore !== null && { value: interestScore, weight: 0.5 },
+    basicsScore !== null && { value: basicsScore, weight: 0.35 },
+    musicScore !== null && { value: musicScore, weight: 0.15 },
+  ].filter(Boolean);
+
   let score = null;
-  if (interestScore !== null && basicsScore !== null) {
-    score = Math.round((interestScore * 0.6 + basicsScore * 0.4) * 100);
-  } else if (interestScore !== null) {
-    score = Math.round(interestScore * 100);
-  } else if (basicsScore !== null) {
-    score = Math.round(basicsScore * 100);
+  if (scoredParts.length > 0) {
+    const totalWeight = scoredParts.reduce((sum, p) => sum + p.weight, 0);
+    const weightedSum = scoredParts.reduce((sum, p) => sum + p.value * p.weight, 0);
+    score = Math.round((weightedSum / totalWeight) * 100);
   }
 
   return {
     score,
     sharedInterests,
+    sharedArtists,
     matchingFields,
     differingFields,
   };
