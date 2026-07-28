@@ -197,14 +197,28 @@ export async function getNearbyMatches() {
     .select('blocker_id')
     .eq('blocked_id', userId);
 
+  const { data: sessionForFriends } = await supabase.auth.getSession();
+  const myIdForFriends = sessionForFriends?.session?.user?.id;
+  const { data: acceptedFriends } = await supabase
+    .from('friendships')
+    .select('user_a, user_b')
+    .eq('status', 'accepted')
+    .or(`user_a.eq.${myIdForFriends},user_b.eq.${myIdForFriends}`);
+
   const excludedUserIds = new Set([
     ...(blockedByMe ?? []).map((b) => b.blocked_id),
     ...(blockedMe ?? []).map((b) => b.blocker_id),
+    // Once a friendship is confirmed, that person shouldn't keep
+    // showing up here to Notice/Wave — it risks creating a
+    // duplicate match on top of the friendship, and someone you've
+    // already connected with as a friend doesn't need to be
+    // re-surfaced as a dating prospect.
+    ...(acceptedFriends ?? []).map((f) => (f.user_a === myIdForFriends ? f.user_b : f.user_a)),
   ]);
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders, favorite_tracks')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -241,7 +255,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, favorite_tracks')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -309,15 +323,25 @@ export async function getBrowseMatches(offset = 0) {
     .select('blocker_id')
     .eq('blocked_id', userId);
 
+  const { data: acceptedFriends } = await supabase
+    .from('friendships')
+    .select('user_a, user_b')
+    .eq('status', 'accepted')
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+
   const excludedUserIds = new Set([
     userId,
     ...(blockedByMe ?? []).map((b) => b.blocked_id),
     ...(blockedMe ?? []).map((b) => b.blocker_id),
+    // Once a friendship is confirmed, that person shouldn't keep
+    // showing up here to Notice/Wave — it risks creating a
+    // duplicate match on top of the friendship.
+    ...(acceptedFriends ?? []).map((f) => (f.user_a === userId ? f.user_b : f.user_a)),
   ]);
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders, favorite_tracks')
+    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -352,7 +376,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, favorite_tracks')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('wide_area', neighborBuckets)
     .range(offset, offset + BROWSE_BATCH_SIZE - 1);
 
