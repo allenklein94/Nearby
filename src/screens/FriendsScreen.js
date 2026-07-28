@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
-import AnimatedListItem from './AnimatedListItem';
+import AnimatedListItem from '../components/AnimatedListItem';
 import { findFriendsFromContacts } from '../services/contactsImport';
 import * as Haptics from 'expo-haptics';
 import { getSignedPhotoUrl } from '../services/photos';
