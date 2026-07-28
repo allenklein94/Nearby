@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -89,7 +90,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
           <TouchableOpacity
             style={[styles.publicToggle, isPublic && styles.publicToggleActive]}
-            onPress={() => setIsPublic(true)}
+            onPress={() => { Haptics.selectionAsync(); setIsPublic(true); }}
             activeOpacity={0.85}
             accessibilityLabel="Public - anyone interested joins automatically, no approval needed"
             accessibilityRole="button"
@@ -100,7 +101,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.publicToggle, !isPublic && styles.publicToggleActive]}
-            onPress={() => setIsPublic(false)}
+            onPress={() => { Haptics.selectionAsync(); setIsPublic(false); }}
             activeOpacity={0.85}
             accessibilityLabel="Private - you approve each person before they join"
             accessibilityRole="button"
@@ -113,7 +114,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
         <TouchableOpacity
           style={styles.womenOnlyToggle}
-          onPress={() => setWomenOnly(!womenOnly)}
+          onPress={() => { Haptics.selectionAsync(); setWomenOnly(!womenOnly); }}
           activeOpacity={0.85}
           accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
           accessibilityRole="switch"
@@ -128,7 +129,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
               <TouchableOpacity
                 style={[styles.publicToggle, showOnMap && styles.publicToggleActive]}
-                onPress={() => setShowOnMap(true)}
+                onPress={() => { Haptics.selectionAsync(); setShowOnMap(true); }}
                 activeOpacity={0.85}
                 accessibilityLabel="Show an approximate pin on the map"
                 accessibilityRole="button"
@@ -139,7 +140,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.publicToggle, !showOnMap && styles.publicToggleActive]}
-                onPress={() => setShowOnMap(false)}
+                onPress={() => { Haptics.selectionAsync(); setShowOnMap(false); }}
                 activeOpacity={0.85}
                 accessibilityLabel="Hide from the map entirely, only visible in list search"
                 accessibilityRole="button"
