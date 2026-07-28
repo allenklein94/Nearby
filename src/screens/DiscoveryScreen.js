@@ -89,7 +89,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [compatModalReport, setCompatModalReport] = useState(null);
   const [compatModalName, setCompatModalName] = useState('');
   const [confidenceBannerReason, setConfidenceBannerReason] = useState(null);
-  const [intentionFilter, setIntentionFilter] = useState(null);
+  const [intentionFilter, setIntentionFilter] = useState([]);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [highCompatOnly, setHighCompatOnly] = useState(false);
   const [onlineOnly, setOnlineOnly] = useState(false);
@@ -404,8 +404,10 @@ export default function DiscoveryScreen({ navigation }) {
   const advancedFilterCount = Object.values(advancedFilters).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
   const ageFilterActive = ageRangeFilter.min !== 18 || ageRangeFilter.max !== 99;
   const totalActiveCount = advancedFilterCount + (ageFilterActive ? 1 : 0);
-  const anyFilterActive = intentionFilter || verifiedOnly || highCompatOnly || onlineOnly || totalActiveCount > 0;
-  const lookingForSummary = intentionFilter ? (INTENTION_OPTIONS.find((o) => o.value === intentionFilter)?.label ?? 'Any') : 'Any';
+  const anyFilterActive = intentionFilter.length > 0 || verifiedOnly || highCompatOnly || onlineOnly || totalActiveCount > 0;
+  const lookingForSummary = intentionFilter.length > 0
+    ? intentionFilter.map((v) => INTENTION_OPTIONS.find((o) => o.value === v)?.label).filter(Boolean).join(', ')
+    : 'Any';
   const activeQuickCount = [verifiedOnly, highCompatOnly, onlineOnly].filter(Boolean).length;
   const quickFilterSummary = activeQuickCount > 0 ? `${activeQuickCount} active` : 'None';
 
@@ -413,9 +415,9 @@ export default function DiscoveryScreen({ navigation }) {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
     if (highCompatOnly && (item.compatibilityScore === null || item.compatibilityScore < 70)) return false;
     if (onlineOnly && !onlineStatuses[item.otherUserId]) return false;
-    if (intentionFilter) {
+    if (intentionFilter.length > 0) {
       const intentions = Array.isArray(item.profiles?.relationship_intention) ? item.profiles.relationship_intention : [];
-      if (!intentions.includes(intentionFilter)) return false;
+      if (!intentionFilter.some((f) => intentions.includes(f))) return false;
     }
     if (isUserPremium && ageFilterActive) {
       const age = calculateAge(item.profiles?.birthdate);
@@ -520,12 +522,12 @@ export default function DiscoveryScreen({ navigation }) {
           <View style={styles.accordionBody}>
             <View style={styles.chipsWrapInline}>
               {INTENTION_OPTIONS.map((option) => {
-                const active = intentionFilter === option.value;
+                const active = intentionFilter.includes(option.value);
                 return (
                   <TouchableOpacity
                     key={option.value}
                     style={[styles.filterChip, active && styles.filterChipActive]}
-                    onPress={() => setIntentionFilter(active ? null : option.value)}
+                    onPress={() => setIntentionFilter((prev) => active ? prev.filter((v) => v !== option.value) : [...prev, option.value])}
                     accessibilityLabel={`Filter by ${option.label}`}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
