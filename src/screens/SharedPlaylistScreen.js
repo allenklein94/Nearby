@@ -3,6 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, Image, StyleSheet, S
 import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
 import { searchSpotifyTracks } from '../services/spotifyAuth';
 import { supabase } from '../services/supabase';
+import * as Haptics from 'expo-haptics';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -69,6 +70,7 @@ export default function SharedPlaylistScreen({ route }) {
     setAdding(track.id);
     try {
       await addPlaylistItem(matchId, track);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('shared_playlist_song_added');
       setQuery('');
       setSearchResults([]);
