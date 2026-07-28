@@ -4,6 +4,7 @@ import { getMyFriends } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import * as Haptics from 'expo-haptics';
+import AnimatedListItem from './AnimatedListItem';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -72,7 +73,8 @@ export default function InviteFriendsModal({ visible, onClose, gatheringId, gath
               ListEmptyComponent={
                 <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
               }
-              renderItem={({ item }) => (
+              renderItem={({ item, index }) => (
+                <AnimatedListItem index={index}>
                 <View style={styles.friendRow}>
                   {photoUrls[item.id] ? (
                     <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
@@ -94,6 +96,7 @@ export default function InviteFriendsModal({ visible, onClose, gatheringId, gath
                     )}
                   </TouchableOpacity>
                 </View>
+                </AnimatedListItem>
               )}
             />
           )}
