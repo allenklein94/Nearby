@@ -85,7 +85,11 @@ export default function ViewProfileScreen({ route, navigation }) {
       }
     }
 
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks')
+      .eq('id', userId)
+      .single();
 
     let mainPhotoUrl = null;
     if (data?.photo_url) {
