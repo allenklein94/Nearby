@@ -1,12 +1,20 @@
 import { supabase } from './supabase';
 
-export async function addPlaylistItem(matchId, songTitle, artist) {
+export async function addPlaylistItem(matchId, track) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
   const { error } = await supabase
     .from('shared_playlist_items')
-    .insert({ match_id: matchId, added_by: userId, song_title: songTitle, artist: artist || null });
+    .insert({
+      match_id: matchId,
+      added_by: userId,
+      song_title: track.name,
+      artist: track.artist || null,
+      spotify_track_id: track.id || null,
+      album_art: track.albumArt || null,
+      preview_url: track.previewUrl || null,
+    });
 
   if (error) throw error;
 }
