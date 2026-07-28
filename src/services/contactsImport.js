@@ -21,7 +21,8 @@ export async function requestContactsPermission() {
 // via a secure server-side function that only ever returns matches,
 // never confirming or denying any specific number that didn't match.
 // Raw contact data is never sent anywhere except this one matching
-// call, and is never stored.
+// call, and is never stored. Also returns a capped list of contacts
+// that aren't on the app yet, so the person can invite them directly.
 export async function findFriendsFromContacts() {
   const hasPermission = await requestContactsPermission();
   if (!hasPermission) {
@@ -33,13 +34,17 @@ export async function findFriendsFromContacts() {
   });
 
   const phoneNumbers = new Set();
+  const contactByPhone = new Map();
   for (const contact of data) {
     for (const phone of contact.phoneNumbers ?? []) {
-      if (phone.number) phoneNumbers.add(normalizePhone(phone.number));
+      if (!phone.number) continue;
+      const normalized = normalizePhone(phone.number);
+      phoneNumbers.add(normalized);
+      if (contact.name) contactByPhone.set(normalized, { name: contact.name, phone: phone.number });
     }
   }
 
-  if (phoneNumbers.size === 0) return [];
+  if (phoneNumbers.size === 0) return { matches: [], notOnApp: [] };
 
   const { data: matches, error } = await supabase.rpc('match_contacts_to_users', {
     phone_numbers: Array.from(phoneNumbers),
@@ -47,8 +52,17 @@ export async function findFriendsFromContacts() {
 
   if (error) {
     console.error('findFriendsFromContacts error', error);
-    return [];
+    return { matches: [], notOnApp: [] };
   }
 
-  return matches ?? [];
+  // Contacts genuinely not on Nearby yet — we only know this because
+  // the server-side matching function came back with fewer results
+  // than phone numbers we sent; we never learn *which* numbers
+  // matched beyond what's already safely returned.
+  const matchedNames = new Set((matches ?? []).map((m) => m.display_name));
+  const notOnApp = Array.from(contactByPhone.values())
+    .filter((c) => !matchedNames.has(c.name))
+    .slice(0, 50);
+
+  return { matches: matches ?? [], notOnApp };
 }

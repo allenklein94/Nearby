@@ -2,9 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
-import AnimatedListItem from '../components/AnimatedListItem';
 import { findFriendsFromContacts } from '../services/contactsImport';
-import * as Haptics from 'expo-haptics';
+import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -19,6 +18,7 @@ export default function FriendsScreen({ navigation }) {
   const [contactMatches, setContactMatches] = useState(null);
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [requestedIds, setRequestedIds] = useState({});
+  const [notOnAppContacts, setNotOnAppContacts] = useState([]);
 
   const load = useCallback(async () => {
     const [friendsList, pendingList] = await Promise.all([getMyFriends(), getPendingFriendRequests()]);
@@ -46,7 +46,6 @@ export default function FriendsScreen({ navigation }) {
   async function handleRespond(friendshipId, accept) {
     try {
       await respondToFriendRequest(friendshipId, accept);
-      Haptics.notificationAsync(accept ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
       load();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -56,10 +55,11 @@ export default function FriendsScreen({ navigation }) {
   async function handleFindFromContacts() {
     setSearchingContacts(true);
     try {
-      const matches = await findFriendsFromContacts();
+      const { matches, notOnApp } = await findFriendsFromContacts();
       const existingIds = new Set([...friends.map((f) => f.id), ...pending.map((p) => p.id)]);
       const newMatches = matches.filter((m) => !existingIds.has(m.id));
       setContactMatches(newMatches);
+      setNotOnAppContacts(notOnApp);
 
       const urlEntries = await Promise.all(
         newMatches.map(async (person) => {
@@ -70,13 +70,23 @@ export default function FriendsScreen({ navigation }) {
       );
       setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries) }));
 
-      if (newMatches.length === 0) {
-        Alert.alert('No new matches', "We didn't find any new people from your contacts who are already on Nearby.");
+      if (newMatches.length === 0 && notOnApp.length === 0) {
+        Alert.alert('No new matches', "We didn't find any new people from your contacts.");
       }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
     setSearchingContacts(false);
+  }
+
+  async function handleInviteContact(contact) {
+    try {
+      await Share.share({
+        message: `Hey ${contact.name}, come join me on Nearby! Download it here: https://apps.apple.com/app/id6792143175`,
+      });
+    } catch (e) {
+      // user cancelled the share sheet, nothing to do
+    }
   }
 
   async function handleSendRequest(personId) {
@@ -143,6 +153,29 @@ export default function FriendsScreen({ navigation }) {
               </>
             )}
 
+            {notOnAppContacts.length > 0 && (
+              <>
+                <Text style={styles.sectionHeader}>Not On Nearby Yet</Text>
+                {notOnAppContacts.map((contact) => (
+                  <View key={contact.phone} style={styles.requestRow}>
+                    <View style={styles.personInfo}>
+                      <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                      <Text style={styles.personName}>{contact.name}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.acceptButton}
+                      onPress={() => handleInviteContact(contact)}
+                      accessibilityLabel={`Invite ${contact.name} to Nearby`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.acceptButtonText}>Invite</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={styles.divider} />
+              </>
+            )}
+
             {pending.length > 0 && (
               <>
                 <Text style={styles.sectionHeader}>Friend Requests</Text>
@@ -197,8 +230,7 @@ export default function FriendsScreen({ navigation }) {
             </View>
           )
         }
-        renderItem={({ item, index }) => (
-          <AnimatedListItem index={index}>
+        renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.friendRow}
             onPress={() => navigation.navigate('ViewProfile', { userId: item.id })}
@@ -212,7 +244,6 @@ export default function FriendsScreen({ navigation }) {
             )}
             <Text style={styles.personName}>{item.display_name}</Text>
           </TouchableOpacity>
-          </AnimatedListItem>
         )}
       />
     </SafeAreaView>
