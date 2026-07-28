@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
+import AnimatedListItem from './AnimatedListItem';
 import { findFriendsFromContacts } from '../services/contactsImport';
 import * as Haptics from 'expo-haptics';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -196,7 +197,8 @@ export default function FriendsScreen({ navigation }) {
             </View>
           )
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
+          <AnimatedListItem index={index}>
           <TouchableOpacity
             style={styles.friendRow}
             onPress={() => navigation.navigate('ViewProfile', { userId: item.id })}
@@ -210,6 +212,7 @@ export default function FriendsScreen({ navigation }) {
             )}
             <Text style={styles.personName}>{item.display_name}</Text>
           </TouchableOpacity>
+          </AnimatedListItem>
         )}
       />
     </SafeAreaView>
