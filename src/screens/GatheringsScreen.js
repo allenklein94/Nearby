@@ -900,6 +900,16 @@ export default function GatheringsScreen({ navigation }) {
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
                   <Text style={[styles.title, { flex: 1 }]}>{item.title}</Text>
+                  {!isPast && myFriendIds.size > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setInviteModalGathering(item)}
+                      style={{ marginRight: spacing.sm }}
+                      accessibilityLabel={`Invite friends to ${item.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={{ fontSize: 18 }}>🤝</Text>
+                    </TouchableOpacity>
+                  )}
                   {!isPast && (
                     <TouchableOpacity
                       onPress={() => confirmCancelGathering(item)}
