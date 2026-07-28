@@ -15,10 +15,6 @@ function wideArea(latitude, longitude) {
 
 const WIDE_TIER_MAX_MILES = 15;
 
-// Fields explicitly listed rather than using "*" — precise_lat and
-// precise_lng must never leave the server. Distance and an
-// approximate, jittered pin position are computed server-side via
-// get_gathering_distances() and merged in below by gathering id.
 const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only';
 
 export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false }) {
@@ -64,16 +60,6 @@ export async function createGathering({ title, description, interestTag, schedul
 
 const LOCAL_TIER_MAX_MILES = 1;
 
-// Filters by genuine computed distance (via get_gathering_distances,
-// real haversine math server-side) rather than exact-string bucket
-// matching. Bucket strings are fragile — two GPS readings from the
-// same physical spot, taken moments apart, can round to different
-// bucket values right at a boundary, silently hiding real nearby
-// gatherings. Real distance comparison doesn't have that failure
-// mode. This does mean fetching all upcoming gatherings before
-// filtering, rather than letting the database narrow it down first —
-// a reasonable tradeoff at this scale; a spatial index would be the
-// next-level fix if gathering volume grows substantially.
 export async function getNearbyGatherings(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -120,9 +106,6 @@ export async function getNearbyGatherings(tier = 'local') {
     .filter((gathering) => !excludedHostIds.has(gathering.host_id))
     .filter((gathering) => !gathering.women_only || isWoman);
 
-  // Distance and an approximate map position are computed
-  // server-side in one batched call — the client never sees the
-  // real precise_lat/precise_lng for any gathering.
   const gatheringIds = filtered.map((g) => g.id);
   let distanceById = {};
   if (gatheringIds.length > 0) {
@@ -157,18 +140,10 @@ export async function getNearbyGatherings(tier = 'local') {
         approvedAttendees,
       };
     })
-    // Public gatherings are discoverable regardless of distance —
-    // they're lower-commitment (no approval needed), so wide
-    // visibility makes sense. Private gatherings stay tiered by the
-    // selected radius, matching the original design.
     .filter((gathering) => gathering.is_public || gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
     .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
 }
 
-// Infers a person's top interest categories from their actual behavior
-// (gatherings they've expressed interest in or attended) rather than
-// only their self-declared profile interests — a stronger signal
-// since it reflects what they actually engaged with.
 export async function getMyTopGatheringCategories() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -199,10 +174,6 @@ export async function getMyGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
-  // Same block-checking a blocked person's PENDING interest expressed
-  // before being blocked shouldn't linger in the host's approval
-  // queue, even though expressInterest() already prevents NEW
-  // interest from a blocked person going forward.
   const { data: blockedByMe } = await supabase
     .from('blocks')
     .select('blocked_id')
@@ -242,11 +213,29 @@ export async function getMyGatherings() {
   return { upcoming: upcomingWithCoords, past };
 }
 
-// Returns upcoming and past gatherings separately, rather than one
-// flat list — a gathering that already happened is a genuinely
-// different thing to someone browsing (a memory, not a plan), and
-// mixing them together made past events linger indefinitely at the
-// bottom of the list with no real distinction.
+async function attachApprovedAttendees(gatheringList) {
+  if (gatheringList.length === 0) return gatheringList;
+
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('gathering_id, user_id, status')
+    .in('gathering_id', gatheringList.map((g) => g.id))
+    .eq('status', 'approved');
+
+  if (error) {
+    console.error('attachApprovedAttendees error', error);
+    return gatheringList;
+  }
+
+  const byGathering = {};
+  for (const row of data ?? []) {
+    if (!byGathering[row.gathering_id]) byGathering[row.gathering_id] = [];
+    byGathering[row.gathering_id].push(row);
+  }
+
+  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [] }));
+}
+
 export async function getMyAttendingGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -275,14 +264,11 @@ export async function getMyAttendingGatherings() {
     .sort((a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at));
 
   const upcomingWithCoords = await attachFuzzedCoordinates(upcoming);
+  const upcomingWithAttendees = await attachApprovedAttendees(upcomingWithCoords);
 
-  return { upcoming: upcomingWithCoords, past };
+  return { upcoming: upcomingWithAttendees, past };
 }
 
-// Shared helper — fetches the current device location once, then
-// batches a single get_gathering_distances RPC call for a list of
-// gatherings, attaching the same fuzzed-coordinate privacy
-// protection used everywhere else in the app.
 async function attachFuzzedCoordinates(gatheringList) {
   if (gatheringList.length === 0) return gatheringList;
 
@@ -377,9 +363,6 @@ export async function expressInterest(gatheringId) {
     throw new Error("You can't express interest in this gathering.");
   }
 
-  // Public gatherings skip the approval step entirely — interest is
-  // auto-approved and a match is created immediately via the RPC,
-  // which re-checks blocking and ownership server-side too.
   if (gathering?.is_public) {
     const { error: rpcError } = await supabase.rpc('express_interest_public', { gathering_id_param: gatheringId });
     if (rpcError) throw rpcError;

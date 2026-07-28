@@ -800,6 +800,16 @@ export default function GatheringsScreen({ navigation }) {
                     </View>
                     <Text style={styles.expandChevron}>{isExpanded ? '⌃' : '⌄'}</Text>
                   </View>
+                  {(() => {
+                    const interestedFriendsCount = (item.approvedAttendees ?? []).filter((a) => myFriendIds.has(a.user_id)).length;
+                    return interestedFriendsCount > 0 ? (
+                      <View style={styles.friendsInterestedBadge}>
+                        <Text style={styles.friendsInterestedText}>
+                          🤝 {interestedFriendsCount} friend{interestedFriendsCount === 1 ? '' : 's'} also going
+                        </Text>
+                      </View>
+                    ) : null;
+                  })()}
                   {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
                   <View style={[styles.attendingBadge, isPast && styles.pastBadge]}>
