@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
@@ -593,9 +594,16 @@ export default function DiscoveryScreen({ navigation }) {
         accessibilityLabel={`More filters, Premium${totalActiveCount > 0 ? `, ${totalActiveCount} active` : ''}`}
         accessibilityRole="button"
       >
-        <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
-          {isUserPremium ? '🎚️' : '🔒'} Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {isUserPremium ? (
+            <Feather name="sliders" size={14} color={totalActiveCount > 0 ? colors.primary : colors.textSecondary} />
+          ) : (
+            <Text style={{ fontSize: 13 }}>🔒</Text>
+          )}
+          <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
+            Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
+          </Text>
+        </View>
       </TouchableOpacity>
 
       {initialLoading ? (
