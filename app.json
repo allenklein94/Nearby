@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Nearby",
+    "scheme": "nearby",
     "slug": "nearby",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -68,13 +69,15 @@
       ],
       "@sentry/react-native/expo",
       "expo-localization",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
         "projectId": "bcd5120e-57e9-4c3f-8ee9-4812ade060ba"
       },
-      "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY"
+      "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY",
+      "spotifyClientId": "042d42d6db1d46dfac3859bd194c91d8"
     }
   }
 }
