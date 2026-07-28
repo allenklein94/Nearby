@@ -663,6 +663,11 @@ export default function GatheringsScreen({ navigation }) {
                     <Text style={styles.moreButtonText}>⋯</Text>
                   </TouchableOpacity>
                 </View>
+                {item.women_only && (
+                  <View style={styles.womenOnlyBadge}>
+                    <Text style={styles.womenOnlyBadgeText}>👩 Women Only</Text>
+                  </View>
+                )}
                 {item.matchesYourInterests && (
                   <View style={styles.matchBadge}>
                     <Text style={styles.matchBadgeText}>{t('gatherings.matchesInterests')}</Text>
@@ -1065,6 +1070,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   expandChevron: { color: colors.textTertiary, fontSize: 16, paddingHorizontal: spacing.sm },
   matchBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
   matchBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '700' },
+  womenOnlyBadge: { alignSelf: 'flex-start', backgroundColor: '#f9a8d4', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
+  womenOnlyBadgeText: { color: '#831843', fontSize: 11, fontWeight: '700' },
   friendsInterestedBadge: {
     alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
     paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
