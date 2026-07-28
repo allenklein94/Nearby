@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getVisibleStoriesGrouped, captureStoryMedia, uploadStory } from '../services/stories';
+import * as Haptics from 'expo-haptics';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import StoryViewerModal from './StoryViewerModal';
@@ -51,6 +52,7 @@ export default function StoriesRow() {
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
       await uploadStory(userId, captured.uri, captured.type);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await load();
     } catch (e) {
       Alert.alert('Error', e.message);
