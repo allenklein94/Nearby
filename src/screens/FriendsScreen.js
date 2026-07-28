@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
 import { findFriendsFromContacts } from '../services/contactsImport';
+import * as Haptics from 'expo-haptics';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -44,6 +45,7 @@ export default function FriendsScreen({ navigation }) {
   async function handleRespond(friendshipId, accept) {
     try {
       await respondToFriendRequest(friendshipId, accept);
+      Haptics.notificationAsync(accept ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
       load();
     } catch (e) {
       Alert.alert('Error', e.message);
