@@ -19,9 +19,9 @@ const WIDE_TIER_MAX_MILES = 15;
 // precise_lng must never leave the server. Distance and an
 // approximate, jittered pin position are computed server-side via
 // get_gathering_distances() and merged in below by gathering id.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -53,6 +53,7 @@ export async function createGathering({ title, description, interestTag, schedul
       scheduled_at: scheduledAt,
       is_public: isPublic,
       show_on_map: showOnMap,
+      women_only: womenOnly,
     })
     .select()
     .single();
@@ -98,8 +99,10 @@ export async function getNearbyGatherings(tier = 'local') {
     ...(blockedMe ?? []).map((b) => b.blocker_id),
   ]);
 
-  const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', userId).single();
+  const { data: myProfile } = await supabase.from('profiles').select('interests, gender, basics').eq('id', userId).single();
   const myInterests = myProfile?.interests ?? [];
+  const myGender = (myProfile?.gender || myProfile?.basics?.gender || '').toLowerCase();
+  const isWoman = myGender === 'female' || myGender === 'woman';
 
   const { data, error } = await supabase
     .from('gatherings')
@@ -113,7 +116,9 @@ export async function getNearbyGatherings(tier = 'local') {
     return [];
   }
 
-  const filtered = (data ?? []).filter((gathering) => !excludedHostIds.has(gathering.host_id));
+  const filtered = (data ?? [])
+    .filter((gathering) => !excludedHostIds.has(gathering.host_id))
+    .filter((gathering) => !gathering.women_only || isWoman);
 
   // Distance and an approximate map position are computed
   // server-side in one batched call — the client never sees the

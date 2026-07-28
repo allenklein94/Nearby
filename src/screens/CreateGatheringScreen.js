@@ -28,6 +28,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [isPublic, setIsPublic] = useState(true);
   const [customLocation, setCustomLocation] = useState(null);
   const [showOnMap, setShowOnMap] = useState(true);
+  const [womenOnly, setWomenOnly] = useState(false);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -65,6 +66,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         isPublic,
         customLocation,
         showOnMap: isPublic ? true : showOnMap,
+        womenOnly,
       });
       Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');
       navigation.goBack();
@@ -108,6 +110,17 @@ export default function CreateGatheringScreen({ navigation, route }) {
             <Text style={[styles.publicToggleHint, !isPublic && styles.publicToggleHintActive]}>You approve each person</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.womenOnlyToggle}
+          onPress={() => setWomenOnly(!womenOnly)}
+          activeOpacity={0.85}
+          accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: womenOnly }}
+        >
+          <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
+        </TouchableOpacity>
 
         {!isPublic && (
           <>
@@ -267,4 +280,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   publicToggleTextActive: { color: colors.primary },
   publicToggleHint: { color: colors.textTertiary, fontSize: 11 },
   publicToggleHintActive: { color: colors.primary, opacity: 0.8 },
+  womenOnlyToggle: {
+    flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginBottom: spacing.lg,
+  },
+  womenOnlyToggleText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
 });
