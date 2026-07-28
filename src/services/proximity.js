@@ -204,7 +204,7 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders, favorite_tracks')
     .eq('id', userId)
     .single();
 
@@ -241,7 +241,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, favorite_tracks')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -250,11 +250,6 @@ export async function getNearbyMatches() {
   }
 
   const profileById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]));
-
-  const { data: sightingCoords } = await supabase.rpc('get_sighting_fuzzed_coords', {
-    sighting_ids: sightings.map((s) => s.id),
-  });
-  const coordsById = Object.fromEntries((sightingCoords ?? []).map((c) => [c.id, c]));
 
   return sightings
     .map((s) => {
@@ -274,8 +269,6 @@ export async function getNearbyMatches() {
         profiles: otherProfile,
         sharedInterests,
         compatibilityScore,
-        sightingLat: coordsById[s.id]?.fuzzed_lat ?? null,
-        sightingLng: coordsById[s.id]?.fuzzed_lng ?? null,
       };
     })
     .filter((item) => item.profiles !== null)
@@ -324,7 +317,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
+    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders, favorite_tracks')
     .eq('id', userId)
     .single();
 
@@ -359,7 +352,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, favorite_tracks')
     .in('wide_area', neighborBuckets)
     .range(offset, offset + BROWSE_BATCH_SIZE - 1);
 
