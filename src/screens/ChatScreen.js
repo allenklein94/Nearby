@@ -124,6 +124,7 @@ export default function ChatScreen({ route, navigation }) {
   const [mediaUrls, setMediaUrls] = useState({});
   const [imageLoadFailed, setImageLoadFailed] = useState({});
   const [disappearingMode, setDisappearingMode] = useState('off');
+  const [firstMessageSentFlag, setFirstMessageSentFlag] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
   const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
@@ -264,12 +265,13 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, disappearing_mode, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
+      .select('user_a, user_b, disappearing_mode, first_message_sent, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
       .eq('id', matchId)
       .single();
 
     if (match) {
       setDisappearingMode(match.disappearing_mode ?? 'off');
+      setFirstMessageSentFlag(!!match.first_message_sent);
       const other = match.user_a === myId ? match.b : match.a;
       const me = match.user_a === myId ? match.a : match.b;
       setOtherUser(other);
@@ -773,6 +775,14 @@ export default function ChatScreen({ route, navigation }) {
       return;
     }
 
+    // Recorded as a permanent fact on the match itself, not derived
+    // from the current messages list — a disappearing message can
+    // vanish afterward, but "did they ever send the first message"
+    // needs to stay true forever once it's genuinely happened.
+    if (userId === designatedFirstMessengerId) {
+      await supabase.from('matches').update({ first_message_sent: true }).eq('id', matchId).select();
+    }
+
     posthog.capture('message_sent');
     setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
   }
@@ -882,7 +892,7 @@ export default function ChatScreen({ route, navigation }) {
     : t('chat.sayHi');
 
   const designatedHasSentMessage = designatedFirstMessengerId
-    ? messages.some((m) => m.sender_id === designatedFirstMessengerId)
+    ? (firstMessageSentFlag || messages.some((m) => m.sender_id === designatedFirstMessengerId))
     : true;
   const isBlockedFromSending = designatedFirstMessengerId && designatedFirstMessengerId !== userId && !designatedHasSentMessage;
 
