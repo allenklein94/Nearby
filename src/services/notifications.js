@@ -83,11 +83,13 @@ function routeNotificationTap(data) {
 
   switch (data.type) {
     case 'match':
+    case 'new_match':
     case 'message':
     case 'gathering_approved':
     case 'playlist_addition':
     case 'trip_idea_addition':
     case 'shared_decision_addition':
+    case 'screenshot':
       if (data.match_id) {
         navigationRef.navigate('Chat', { matchId: data.match_id });
       }
@@ -96,7 +98,13 @@ function routeNotificationTap(data) {
       navigationRef.navigate('MainTabs', { screen: 'Notices' });
       break;
     case 'gathering_interest':
+    case 'gathering_invite':
+    case 'gathering_reminder':
       navigationRef.navigate('MainTabs', { screen: 'Gatherings' });
+      break;
+    case 'friend_request':
+    case 'friend_accepted':
+      navigationRef.navigate('Friends');
       break;
     default:
       break;
