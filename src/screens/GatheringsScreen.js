@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Refre
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering } from '../services/gatherings';
 import { getMyFriends } from '../services/friends';
+import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
@@ -110,6 +111,8 @@ export default function GatheringsScreen({ navigation }) {
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const [mapDeals, setMapDeals] = useState([]);
+  const [mapStories, setMapStories] = useState([]);
+  const [mapStoryPhotoUrls, setMapStoryPhotoUrls] = useState({});
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -149,6 +152,21 @@ export default function GatheringsScreen({ navigation }) {
     const unredeemed = offersData.filter((o) => !redemptionsData.includes(o.id));
     setNewOfferCount(unredeemed.length);
     setMapDeals(offersData.filter((o) => o.latitude != null && o.longitude != null));
+
+    const publicStories = await getPublicStoriesOnMap();
+    setMapStories(publicStories);
+    const storyPosterIds = [...new Set(publicStories.map((s) => s.user_id))];
+    if (storyPosterIds.length > 0) {
+      const { data: posterProfiles } = await supabase.from('profiles').select('id, photo_url').in('id', storyPosterIds);
+      const urlEntries = await Promise.all(
+        (posterProfiles ?? []).map(async (p) => {
+          if (!p.photo_url) return [p.id, null];
+          const url = await getSignedPhotoUrl(p.photo_url);
+          return [p.id, url];
+        })
+      );
+      setMapStoryPhotoUrls(Object.fromEntries(urlEntries));
+    }
 
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status === 'granted') {
@@ -583,6 +601,8 @@ export default function GatheringsScreen({ navigation }) {
           <GatheringsMapView
             gatherings={filteredNearby}
             deals={mapDeals}
+            stories={mapStories}
+            storyPhotoUrls={mapStoryPhotoUrls}
             userLocation={userLocation}
             onSelectGathering={(gathering) => {
               Alert.alert(
@@ -593,6 +613,12 @@ export default function GatheringsScreen({ navigation }) {
                   { text: t('gatherings.imInterested'), onPress: () => handleExpressInterest(gathering.id) },
                 ]
               );
+            }}
+            onSelectStory={(story) => {
+              Alert.alert('Public Story', 'View this story?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'View', onPress: () => navigation.navigate('ViewProfile', { userId: story.user_id }) },
+              ]);
             }}
             onSelectDeal={(deal) => {
               Alert.alert(
