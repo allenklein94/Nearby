@@ -88,7 +88,7 @@ export async function getNearbyGatherings(tier = 'local') {
   const { data: myProfile } = await supabase.from('profiles').select('interests, gender, basics').eq('id', userId).single();
   const myInterests = myProfile?.interests ?? [];
   const myGender = (myProfile?.gender || myProfile?.basics?.gender || '').toLowerCase();
-  const isWoman = myGender === 'female' || myGender === 'woman';
+  const isWoman = ['female', 'woman'].includes((myGender ?? '').toLowerCase());
 
   const { data, error } = await supabase
     .from('gatherings')
