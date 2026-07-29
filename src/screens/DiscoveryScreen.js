@@ -105,6 +105,8 @@ export default function DiscoveryScreen({ navigation }) {
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showBrowseCallout, setShowBrowseCallout] = useState(false);
+  const [quickFilterOrder, setQuickFilterOrder] = useState(['verified', 'highCompat', 'online']);
+  const [quickFilterVisible, setQuickFilterVisible] = useState(['verified', 'highCompat', 'online']);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -134,7 +136,9 @@ export default function DiscoveryScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, seen_browse_callout').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, seen_browse_callout, quick_filter_order, quick_filter_visible').eq('id', myId).single();
+      if (mine?.quick_filter_order) setQuickFilterOrder(mine.quick_filter_order);
+      if (mine?.quick_filter_visible) setQuickFilterVisible(mine.quick_filter_visible);
       setMyProfile(mine);
       setViewStyle(mine?.discovery_view_style ?? 'list');
 
@@ -558,32 +562,33 @@ export default function DiscoveryScreen({ navigation }) {
         {expandedFilterSection === 'quick' && (
           <View style={styles.accordionBody}>
             <View style={styles.chipsWrapInline}>
+              {quickFilterOrder.filter((key) => quickFilterVisible.includes(key)).map((key) => {
+                const configs = {
+                  verified: { active: verifiedOnly, toggle: () => setVerifiedOnly(!verifiedOnly), label: '✓ Verified Only', a11y: 'Filter to only photo-verified profiles' },
+                  highCompat: { active: highCompatOnly, toggle: () => setHighCompatOnly(!highCompatOnly), label: '🎯 70%+ Match', a11y: 'Filter to 70 percent compatible or higher' },
+                  online: { active: onlineOnly, toggle: () => setOnlineOnly(!onlineOnly), label: '🟢 Online Now', a11y: 'Filter to only people online now' },
+                };
+                const config = configs[key];
+                if (!config) return null;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.filterChip, config.active && styles.filterChipActive]}
+                    onPress={config.toggle}
+                    accessibilityLabel={config.a11y}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: config.active }}
+                  >
+                    <Text style={[styles.filterChipText, config.active && styles.filterChipTextActive]}>{config.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
               <TouchableOpacity
-                style={[styles.filterChip, verifiedOnly && styles.filterChipActive]}
-                onPress={() => setVerifiedOnly(!verifiedOnly)}
-                accessibilityLabel="Filter to only photo-verified profiles"
+                onPress={() => navigation.navigate('QuickFilterCustomize')}
+                accessibilityLabel="Customize which Quick Filters show and their order"
                 accessibilityRole="button"
-                accessibilityState={{ selected: verifiedOnly }}
               >
-                <Text style={[styles.filterChipText, verifiedOnly && styles.filterChipTextActive]}>✓ Verified Only</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterChip, highCompatOnly && styles.filterChipActive]}
-                onPress={() => setHighCompatOnly(!highCompatOnly)}
-                accessibilityLabel="Filter to 70 percent compatible or higher"
-                accessibilityRole="button"
-                accessibilityState={{ selected: highCompatOnly }}
-              >
-                <Text style={[styles.filterChipText, highCompatOnly && styles.filterChipTextActive]}>🎯 70%+ Match</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterChip, onlineOnly && styles.filterChipActive]}
-                onPress={() => setOnlineOnly(!onlineOnly)}
-                accessibilityLabel="Filter to only people online now"
-                accessibilityRole="button"
-                accessibilityState={{ selected: onlineOnly }}
-              >
-                <Text style={[styles.filterChipText, onlineOnly && styles.filterChipTextActive]}>🟢 Online Now</Text>
+                <Text style={styles.customizeLink}>⚙️ Customize</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -906,6 +911,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   filterChipTextActive: { color: '#fff' },
+  customizeLink: { color: colors.primary, fontSize: 12, fontWeight: '700', alignSelf: 'center', paddingHorizontal: spacing.sm },
   moreFiltersButton: {
     marginHorizontal: spacing.lg, marginBottom: spacing.md, alignSelf: 'flex-start',
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

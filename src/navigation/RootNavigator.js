@@ -51,6 +51,7 @@ import FeaturesOverviewScreen from '../screens/FeaturesOverviewScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
+import QuickFilterCustomizeScreen from '../screens/QuickFilterCustomizeScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -225,6 +226,7 @@ export default function RootNavigator() {
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: 'Set Location', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringChat" component={GatheringChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.gatheringTitle ?? 'Group Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={{ headerShown: true, title: 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
