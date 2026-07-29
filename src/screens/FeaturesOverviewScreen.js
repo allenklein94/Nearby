@@ -10,7 +10,7 @@ const CATEGORIES = [
     features: [
       { icon: '📍', name: 'Crossed Paths', description: "The main way you find people — shows you who you've actually been near recently (about 35 feet, a few minutes ago), not just anyone in the city." },
       { icon: '👋', name: 'Notices & Waves', description: 'A Notice is silent — the other person only finds out if they notice you back too. A Wave tells them right away. Both live in the "Interested" tab.' },
-      { icon: '🔎', name: 'Browse', description: "An optional second way to discover people — not limited to proximity, shows a wider pool matching your filters. Switch to it from the Nearby tab." },
+      { icon: '🔎', name: 'Browse', description: "An optional second way to discover people — not limited to proximity, shows a wider pool matching your filters. Switch to it from the People screen." },
       { icon: '🎉', name: 'Gatherings', description: 'Real things happening nearby — coffee meetups, hikes, game nights — hosted by people near you. A great way to meet people even before matching.' },
       { icon: '🗺️', name: 'Gatherings Map', description: "See gatherings on an actual map instead of a list. Locations are shown approximately, never your exact address." },
     ],

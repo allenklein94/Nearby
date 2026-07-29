@@ -12,7 +12,7 @@ export const translations = {
       slide5Title: "There's more once you match",
       slide5Text: 'Shared playlists, trip planning, relationship check-ins, and more \u2014 tools to help real connections grow, not just start.',
       slide6Title: 'Two ways to discover people',
-      slide6Text: "Crossed Paths shows people you've actually been near. Browse shows a wider pool matching your filters, no proximity required. Switch between them anytime from the Nearby tab.",
+      slide6Text: "Crossed Paths shows people you've actually been near. Browse shows a wider pool matching your filters, no proximity required. Switch between them anytime from People.",
       slide7Title: 'Real plans, real discounts',
       slide7Text: "Matched with someone? Suggest a date night with real local discounts built right in, or spot a happy hour deal directly on the map — turning a connection into an actual plan.",
       skip: 'Skip',
