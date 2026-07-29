@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { supabase } from './supabase';
 
 const MAX_VIDEO_SECONDS = 15;
@@ -32,11 +33,36 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false) {
 
   if (error) throw error;
 
+  // Only public stories need a location captured — private ones are
+  // matches/friends-only and never appear on the map, so there's no
+  // reason to prompt for location access in the common case.
+  let latitude = null;
+  let longitude = null;
+  if (isPublic) {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+      if (location) {
+        latitude = location.coords.latitude;
+        longitude = location.coords.longitude;
+      }
+    }
+  }
+
   const { error: insertError } = await supabase
     .from('stories')
-    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic });
+    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic, latitude, longitude });
 
   if (insertError) throw insertError;
+}
+
+export async function getPublicStoriesOnMap() {
+  const { data, error } = await supabase.rpc('get_public_stories_with_fuzzed_coords');
+  if (error) {
+    console.error('getPublicStoriesOnMap error', error);
+    return [];
+  }
+  return data ?? [];
 }
 
 // Returns stories grouped by poster — each entry represents one
