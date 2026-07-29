@@ -405,8 +405,41 @@ export default function ChatScreen({ route, navigation }) {
         { text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
         { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
         { text: '🦁 Help Me Say It', onPress: showCourageMenu },
+        { text: '🌆 Suggest a Date Night', onPress: suggestDateNight },
       ]
     );
+  }
+
+  async function suggestDateNight() {
+    try {
+      const { data: offersData } = await supabase
+        .from('brand_offers')
+        .select('*, brand_partners(name)')
+        .eq('active', true)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!offersData || offersData.length === 0) {
+        Alert.alert('No suggestions right now', "There aren't any active offers to suggest at the moment — check back soon.");
+        return;
+      }
+
+      const pick = offersData[Math.floor(Math.random() * offersData.length)];
+      const suggestionText = `💡 Date night idea: ${pick.title} at ${pick.brand_partners?.name ?? 'a local spot'}!`;
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ match_id: matchId, sender_id: userId, body: suggestionText })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setMessages((prev) => [...prev, data]);
+      posthog.capture('date_night_suggested');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   function showCourageMenu() {
