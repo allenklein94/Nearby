@@ -65,7 +65,7 @@ export default function MatchesScreen({ navigation }) {
 
     const { data, error } = await supabase
       .from('matches')
-      .select('id, user_a, user_b, matched_at, source_gathering_id, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics, favorite_tracks), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics, favorite_tracks)')
+      .select('id, user_a, user_b, matched_at, source_gathering_id, source_friendship_id, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics)')
       .order('matched_at', { ascending: false });
 
     if (!error) {
@@ -89,7 +89,7 @@ export default function MatchesScreen({ navigation }) {
         // Gathering-sourced connections are a quiet confirmation, not
         // a romantic "It's a Match!" celebration — joining a public
         // gathering isn't the same kind of moment as a mutual Notice.
-        if (newMatch.source_gathering_id) {
+        if (newMatch.source_gathering_id || newMatch.source_friendship_id) {
           load();
           return;
         }
