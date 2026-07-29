@@ -20,7 +20,7 @@ export async function captureStoryMedia() {
   return { uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image' };
 }
 
-export async function uploadStory(userId, uri, mediaType) {
+export async function uploadStory(userId, uri, mediaType, isPublic = false) {
   const response = await fetch(uri);
   const blob = await response.blob();
   const fileExt = mediaType === 'video' ? 'mov' : 'jpg';
@@ -34,7 +34,7 @@ export async function uploadStory(userId, uri, mediaType) {
 
   const { error: insertError } = await supabase
     .from('stories')
-    .insert({ user_id: userId, media_path: path, media_type: mediaType });
+    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic });
 
   if (insertError) throw insertError;
 }

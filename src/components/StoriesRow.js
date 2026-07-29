@@ -49,15 +49,38 @@ export default function StoriesRow() {
         setPosting(false);
         return;
       }
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
-      await uploadStory(userId, captured.uri, captured.type);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await load();
+
+      Alert.alert(
+        'Who can see this?',
+        '',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => setPosting(false) },
+          {
+            text: 'Matches & Friends Only',
+            onPress: async () => {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const userId = sessionData?.session?.user?.id;
+              await uploadStory(userId, captured.uri, captured.type, false);
+              await load();
+              setPosting(false);
+            },
+          },
+          {
+            text: 'Public — Anyone',
+            onPress: async () => {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const userId = sessionData?.session?.user?.id;
+              await uploadStory(userId, captured.uri, captured.type, true);
+              await load();
+              setPosting(false);
+            },
+          },
+        ]
+      );
     } catch (e) {
       Alert.alert('Error', e.message);
+      setPosting(false);
     }
-    setPosting(false);
   }
 
   if (groups.length === 0 && !posting) {
