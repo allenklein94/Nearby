@@ -18,6 +18,7 @@ import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
 import HomeScreen from '../screens/HomeScreen';
 import DiscoverHubScreen from '../screens/DiscoverHubScreen';
+import ActivityScreen from '../screens/ActivityScreen';
 import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
 import GatheringsScreen from '../screens/GatheringsScreen';
@@ -162,7 +163,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverHubScreen} />
-      <Tab.Screen name="Notices" component={NoticesScreen} options={{ tabBarLabel: 'Interested' }} />
+      <Tab.Screen name="Notices" component={ActivityScreen} options={{ tabBarLabel: 'Activity' }} />
       <Tab.Screen name="Matches" component={MatchesScreen} options={{ tabBarLabel: 'Messages' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
     </Tab.Navigator>
