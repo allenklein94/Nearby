@@ -809,6 +809,16 @@ export default function GatheringsScreen({ navigation }) {
                   </View>
                 </TouchableOpacity>
 
+                {!isPast && (
+                  <TouchableOpacity
+                    style={styles.groupChatButton}
+                    onPress={() => navigation.navigate('GatheringChat', { gatheringId: item.id, gatheringTitle: item.title })}
+                    accessibilityLabel={`Open group chat for ${item.title}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
+                  </TouchableOpacity>
+                )}
                 {isExpanded && !isPast && (
                   <View style={styles.fellowSection}>
                     <Text style={styles.fellowSectionLabel}>{t('gatherings.whoElseGoing')}</Text>
@@ -923,6 +933,16 @@ export default function GatheringsScreen({ navigation }) {
                   )}
                 </View>
                 <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
+                {!isPast && (
+                  <TouchableOpacity
+                    style={styles.groupChatButton}
+                    onPress={() => navigation.navigate('GatheringChat', { gatheringId: item.id, gatheringTitle: item.title })}
+                    accessibilityLabel={`Open group chat for ${item.title}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
+                  </TouchableOpacity>
+                )}
                 {item.interested?.length > 0 ? (
                   item.interested.map((interest) => (
                     <View key={interest.id} style={styles.interestRow}>
@@ -1106,6 +1126,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   pastBadgeText: { color: colors.textTertiary },
   attendingBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
   attendingBadgeText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  groupChatButton: {
+    alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border,
+  },
+  groupChatButtonText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700' },
   fellowSection: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   fellowSectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   fellowEmptyText: { color: colors.textTertiary, fontSize: 13 },
