@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
 import { findFriendsFromContacts } from '../services/contactsImport';
+import StoriesRow from '../components/StoriesRow';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
@@ -101,6 +102,7 @@ export default function FriendsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StoriesRow />
       <FlatList
         data={friends.filter((f) => !friendSearch.trim() || f.display_name?.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
         keyExtractor={(item) => item.friendshipId}
