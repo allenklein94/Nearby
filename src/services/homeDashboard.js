@@ -8,6 +8,41 @@ function isToday(iso) {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
+export async function getInboxUnreadCount() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return 0;
+
+  const { data: myMatches } = await supabase
+    .from('matches')
+    .select('id')
+    .or(`user_a.eq.${myId},user_b.eq.${myId}`);
+
+  let unreadMessages = 0;
+  if (myMatches && myMatches.length > 0) {
+    const { count } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .in('match_id', myMatches.map((m) => m.id))
+      .neq('sender_id', myId)
+      .is('read_at', null);
+    unreadMessages = count ?? 0;
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('last_activity_check').eq('id', myId).single();
+  let newActivity = 0;
+  if (profile?.last_activity_check) {
+    const { count } = await supabase
+      .from('notices')
+      .select('id', { count: 'exact', head: true })
+      .eq('to_user', myId)
+      .gt('created_at', profile.last_activity_check);
+    newActivity = count ?? 0;
+  }
+
+  return unreadMessages + newActivity;
+}
+
 export async function getSocialForecast(latitude, longitude) {
   const { data: requestId, error: submitError } = await supabase.rpc('submit_weather_request', { my_lat: latitude, my_lng: longitude });
   if (submitError || !requestId) {

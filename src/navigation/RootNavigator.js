@@ -12,7 +12,7 @@ import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
-import ActivityBell from '../components/ActivityBell';
+import { getInboxUnreadCount } from '../services/homeDashboard';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
@@ -20,6 +20,7 @@ import DiscoveryScreen from '../screens/DiscoveryScreen';
 import HomeScreen from '../screens/HomeScreen';
 import DiscoverHubScreen from '../screens/DiscoverHubScreen';
 import CreateHubScreen from '../screens/CreateHubScreen';
+import InboxScreen from '../screens/InboxScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
@@ -67,7 +68,7 @@ const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
   Discover: { active: 'compass', inactive: 'compass-outline', label: 'Discover' },
   Create: { active: 'add-circle', inactive: 'add-circle-outline', label: 'Create' },
-  Matches: { active: 'heart', inactive: 'heart-outline', label: 'Messages' },
+  Matches: { active: 'chatbubbles', inactive: 'chatbubbles-outline', label: 'Inbox' },
 };
 
 function ProfileTabIcon({ focused, size, colors, photoUrl }) {
@@ -123,10 +124,19 @@ function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityS
 function MainTabs() {
   const { colors } = useTheme();
   const [myPhotoUrl, setMyPhotoUrl] = useState(null);
+  const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
 
   useEffect(() => {
     loadMyPhoto();
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 15000);
+    return () => clearInterval(interval);
   }, []);
+
+  async function loadUnreadCount() {
+    const count = await getInboxUnreadCount();
+    setInboxUnreadCount(count);
+  }
 
   async function loadMyPhoto() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -142,17 +152,8 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route, navigation }) => ({
-        // A minimal, title-less native header just for the shared
-        // bell — screens still render their own internal headers
-        // beneath this, same pattern already used for People and
-        // Gatherings' transparent back-button header.
-        headerShown: true,
-        headerTransparent: true,
-        headerTitle: '',
-        headerShadowVisible: false,
-        headerLeft: () => null,
-        headerRight: () => <ActivityBell navigation={navigation} />,
+      screenOptions={({ route }) => ({
+        headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
@@ -175,7 +176,7 @@ function MainTabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverHubScreen} />
       <Tab.Screen name="Create" component={CreateHubScreen} />
-      <Tab.Screen name="Matches" component={MatchesScreen} options={{ tabBarLabel: 'Messages' }} />
+      <Tab.Screen name="Matches" component={InboxScreen} options={{ tabBarLabel: 'Inbox', tabBarBadge: inboxUnreadCount > 0 ? inboxUnreadCount : undefined }} />
       <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
     </Tab.Navigator>
   );
