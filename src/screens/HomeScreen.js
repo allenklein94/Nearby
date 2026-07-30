@@ -94,6 +94,24 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {dashboard?.upcomingPlans?.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>📅 Upcoming Plans</Text>
+            {dashboard.upcomingPlans.map((plan) => (
+              <TouchableOpacity
+                key={plan.id}
+                style={styles.trendingCard}
+                onPress={() => navigation.navigate('Gatherings')}
+                accessibilityLabel={`${plan.title}, you're ${plan.role}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.trendingTitle}>{plan.title}</Text>
+                <Text style={styles.trendingMeta}>{plan.role === 'hosting' ? 'Hosting' : 'Attending'} · {new Date(plan.scheduled_at).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
         <TouchableOpacity
           style={styles.startSomethingButton}
           onPress={() => setStartModalVisible(true)}

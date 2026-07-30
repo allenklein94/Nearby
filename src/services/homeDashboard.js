@@ -144,6 +144,30 @@ export async function getHomeDashboard() {
   // A genuine, real recap of the last 7 days — gatherings actually
   // attended (approved interest on a past gathering), friends
   // actually made, messages actually sent. No invented metrics.
+  // Genuine upcoming plans — gatherings you're actually confirmed
+  // for (approved interest) or hosting, sorted soonest first, not
+  // just a count of what's happening nearby generally.
+  const now = new Date().toISOString();
+  const { data: attendingUpcoming } = await supabase
+    .from('gathering_interest')
+    .select('gatherings!inner(id, title, scheduled_at)')
+    .eq('user_id', myId)
+    .eq('status', 'approved')
+    .gte('gatherings.scheduled_at', now);
+
+  const { data: hostingUpcoming } = await supabase
+    .from('gatherings')
+    .select('id, title, scheduled_at')
+    .eq('host_id', myId)
+    .gte('scheduled_at', now);
+
+  const upcomingPlans = [
+    ...(attendingUpcoming ?? []).map((row) => ({ ...row.gatherings, role: 'attending' })),
+    ...(hostingUpcoming ?? []).map((g) => ({ ...g, role: 'hosting' })),
+  ]
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 3);
+
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const { count: gatheringsAttendedCount } = await supabase
@@ -186,5 +210,6 @@ export async function getHomeDashboard() {
     bestPick,
     sinceAway,
     weeklyRecap,
+    upcomingPlans,
   };
 }

@@ -58,7 +58,7 @@ export default function DiscoverHubScreen({ navigation }) {
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
 
-      <<TouchableOpacity
+      <TouchableOpacity
         style={styles.card}
         onPress={() => navigation.navigate('Gatherings')}
         activeOpacity={0.85}
@@ -87,6 +87,7 @@ export default function DiscoverHubScreen({ navigation }) {
         </View>
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
+
       {publicStories.length > 0 && (
         <>
           <Text style={styles.sectionHeader}>Public Stories Near You</Text>
