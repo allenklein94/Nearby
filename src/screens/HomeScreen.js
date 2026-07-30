@@ -188,6 +188,13 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
+        {!dashboard?.bestPick && (!dashboard?.trendingGatherings || dashboard.trendingGatherings.length === 0) && (dashboard?.nearbyPeopleCount ?? 0) === 0 && (
+          <View style={styles.quietCard}>
+            <Text style={styles.quietTitle}>Quiet night nearby</Text>
+            <Text style={styles.quietText}>Nothing notable happening right now — but that can change fast. Browse anyway, or check back later.</Text>
+          </View>
+        )}
+
         <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Nearby')} accessibilityLabel="Continue browsing" accessibilityRole="button">
           <Text style={styles.browseButtonText}>Continue Browsing →</Text>
         </TouchableOpacity>
@@ -245,6 +252,11 @@ const getStyles = (colors) => StyleSheet.create({
   trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   trendingTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   trendingMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  quietCard: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
+  },
+  quietTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
+  quietText: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18 },
   browseButton: { alignItems: 'center', paddingVertical: spacing.md, marginTop: spacing.md },
   browseButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
 });
