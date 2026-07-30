@@ -10,7 +10,7 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
-import { sendFriendRequest } from '../services/friends';
+import { sendFriendRequest, getMutualFriends } from '../services/friends';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -55,6 +55,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [lightboxPhotoUri, setLightboxPhotoUri] = useState(null);
   const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
+  const [mutualFriends, setMutualFriends] = useState([]);
 
   useEffect(() => {
     load();
@@ -63,8 +64,8 @@ export default function ViewProfileScreen({ route, navigation }) {
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
-
     if (myId && myId !== userId) {
+      getMutualFriends(userId).then(setMutualFriends);
       const { data: blockedByMe } = await supabase
         .from('blocks')
         .select('id')
@@ -282,6 +283,16 @@ export default function ViewProfileScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
 
+          {mutualFriends.length > 0 && (
+            <Text style={styles.mutualFriendsText}>
+              🤝 {mutualFriends.length === 1
+                ? `You both know ${mutualFriends[0].display_name}`
+                : mutualFriends.length === 2
+                  ? `You both know ${mutualFriends[0].display_name} and ${mutualFriends[1].display_name}`
+                  : `You both know ${mutualFriends[0].display_name} and ${mutualFriends.length - 1} others`}
+            </Text>
+          )}
+
           {intentionText && (
             <View style={styles.intentionCard}>
               <Text style={styles.intentionText}>Looking for: {intentionText}</Text>
@@ -458,6 +469,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   addFriendButtonSent: { borderColor: colors.success },
   addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  mutualFriendsText: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
   trackRowDisplay: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   trackArtDisplay: { width: 44, height: 44, borderRadius: radius.sm, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },

@@ -1,5 +1,14 @@
 import { supabase } from './supabase';
 
+export async function getMutualFriends(otherUserId) {
+  const { data, error } = await supabase.rpc('get_mutual_friends', { other_user_id: otherUserId });
+  if (error) {
+    console.error('getMutualFriends error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getSuggestedFriends() {
   const { data, error } = await supabase.rpc('get_suggested_friends');
   if (error) {
