@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, FlatList, Share, Alert } from 'react-native';
 import { Video } from 'expo-av';
 import { getSignedStoryUrl, markStoryViewed, getStoryViewers, deleteStory } from '../services/stories';
+import { getMyFriends, sendFriendRequest } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import { spacing, radius } from '../theme';
@@ -15,6 +16,8 @@ export default function StoryViewerModal({ visible, group, onClose }) {
   const [myUserId, setMyUserId] = useState(null);
   const [showViewers, setShowViewers] = useState(false);
   const [viewers, setViewers] = useState([]);
+  const [myFriendIds, setMyFriendIds] = useState(new Set());
+  const [requestedViewerIds, setRequestedViewerIds] = useState({});
   const [viewerPhotoUrls, setViewerPhotoUrls] = useState({});
   const progress = useRef(new Animated.Value(0)).current;
   const timerRef = useRef(null);
@@ -84,6 +87,9 @@ export default function StoryViewerModal({ visible, group, onClose }) {
     setShowViewers(true);
     const results = await getStoryViewers(story.id);
     setViewers(results);
+
+    const currentFriends = await getMyFriends();
+    setMyFriendIds(new Set(currentFriends.map((f) => f.id)));
 
     const urlEntries = await Promise.all(
       results.map(async (v) => {
@@ -211,6 +217,24 @@ export default function StoryViewerModal({ visible, group, onClose }) {
                     <View style={[styles.viewerAvatar, styles.viewerAvatarPlaceholder]} />
                   )}
                   <Text style={styles.viewerName}>{item.profiles?.display_name}</Text>
+                  {!myFriendIds.has(item.viewer_id) && (
+                    <TouchableOpacity
+                      style={[styles.addFriendButton, requestedViewerIds[item.viewer_id] && styles.addFriendButtonSent]}
+                      onPress={async () => {
+                        try {
+                          await sendFriendRequest(item.viewer_id);
+                          setRequestedViewerIds((prev) => ({ ...prev, [item.viewer_id]: true }));
+                        } catch (e) {
+                          Alert.alert('Error', e.message);
+                        }
+                      }}
+                      disabled={requestedViewerIds[item.viewer_id]}
+                      accessibilityLabel={requestedViewerIds[item.viewer_id] ? 'Friend request sent' : `Add ${item.profiles?.display_name} as a friend`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.addFriendButtonText}>{requestedViewerIds[item.viewer_id] ? '✓' : '+ Add'}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             />
@@ -262,7 +286,10 @@ const styles = StyleSheet.create({
   viewerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs },
   viewerAvatar: { width: 36, height: 36, borderRadius: 18, marginRight: spacing.sm, backgroundColor: '#333' },
   viewerAvatarPlaceholder: {},
-  viewerName: { color: '#fff', fontSize: 14 },
+  viewerName: { flex: 1, color: '#fff', fontSize: 14 },
+  addFriendButton: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
+  addFriendButtonSent: { backgroundColor: 'rgba(255,255,255,0.3)' },
+  addFriendButtonText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   emptyViewersText: { color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', paddingVertical: spacing.lg },
   closeViewersText: { color: 'rgba(255,255,255,0.7)', textAlign: 'center', fontSize: 14 },
 });
