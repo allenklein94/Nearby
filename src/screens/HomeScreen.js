@@ -94,6 +94,24 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {dashboard?.friendsActivity?.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>👥 Friends' Activity</Text>
+            {dashboard.friendsActivity.map((g) => (
+              <TouchableOpacity
+                key={g.id}
+                style={styles.trendingCard}
+                onPress={() => navigation.navigate('Gatherings')}
+                accessibilityLabel={`${g.profiles?.display_name} is hosting ${g.title}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.trendingTitle}>{g.profiles?.display_name} is hosting</Text>
+                <Text style={styles.trendingMeta}>{g.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </>
+        )}
+
         {dashboard?.upcomingPlans?.length > 0 && (
           <>
             <Text style={styles.sectionHeader}>📅 Upcoming Plans</Text>

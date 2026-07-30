@@ -168,6 +168,30 @@ export async function getHomeDashboard() {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
 
+  // Genuine recent activity from your actual friends — a new
+  // gathering they're hosting, in the last 3 days. Real names, real
+  // events, not a fabricated feed.
+  const { data: myFriendships } = await supabase
+    .from('friendships')
+    .select('user_a, user_b')
+    .eq('status', 'accepted')
+    .or(`user_a.eq.${myId},user_b.eq.${myId}`);
+
+  const friendIds = (myFriendships ?? []).map((f) => (f.user_a === myId ? f.user_b : f.user_a));
+
+  let friendsActivity = [];
+  if (friendIds.length > 0) {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: friendGatherings } = await supabase
+      .from('gatherings')
+      .select('id, title, host_id, created_at, profiles!gatherings_host_id_fkey(display_name)')
+      .in('host_id', friendIds)
+      .gte('created_at', threeDaysAgo)
+      .order('created_at', { ascending: false })
+      .limit(3);
+    friendsActivity = friendGatherings ?? [];
+  }
+
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const { count: gatheringsAttendedCount } = await supabase
@@ -211,5 +235,6 @@ export async function getHomeDashboard() {
     sinceAway,
     weeklyRecap,
     upcomingPlans,
+    friendsActivity,
   };
 }
