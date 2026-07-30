@@ -9,9 +9,21 @@ function isToday(iso) {
 }
 
 export async function getSocialForecast(latitude, longitude) {
-  const { data, error } = await supabase.rpc('get_social_forecast', { my_lat: latitude, my_lng: longitude });
+  const { data: requestId, error: submitError } = await supabase.rpc('submit_weather_request', { my_lat: latitude, my_lng: longitude });
+  if (submitError || !requestId) {
+    console.error('submitWeatherRequest error', submitError);
+    return null;
+  }
+
+  // pg_net processes the request asynchronously via a background
+  // worker — a short wait here, then a separate query, avoids the
+  // transaction-visibility deadlock that a single blocking function
+  // would hit trying to wait for its own request.
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  const { data, error } = await supabase.rpc('get_weather_result', { request_id_param: requestId });
   if (error) {
-    console.error('getSocialForecast error', error);
+    console.error('getWeatherResult error', error);
     return null;
   }
   return data?.[0] ?? null;
