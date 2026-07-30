@@ -56,6 +56,44 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false) {
   if (insertError) throw insertError;
 }
 
+// Groups public stories by poster for browsing (not just the map),
+// showing anyone's public story regardless of whether you're
+// connected to them — same privacy scope as the map version (public
+// means genuinely public), just presented as a scrollable row.
+export async function getPublicStoriesGrouped() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, user_id, media_path, media_type, created_at, expires_at, profiles(display_name, photo_url)')
+    .eq('is_public', true)
+    .gt('expires_at', new Date().toISOString())
+    .neq('user_id', myId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getPublicStoriesGrouped error', error);
+    return [];
+  }
+
+  const grouped = {};
+  for (const story of data ?? []) {
+    if (!grouped[story.user_id]) {
+      grouped[story.user_id] = {
+        userId: story.user_id,
+        displayName: story.profiles?.display_name,
+        photoUrl: story.profiles?.photo_url,
+        stories: [],
+      };
+    }
+    grouped[story.user_id].stories.push({ ...story, viewed: false });
+  }
+
+  return Object.values(grouped);
+}
+
 export async function getPublicStoriesOnMap() {
   const { data, error } = await supabase.rpc('get_public_stories_with_fuzzed_coords');
   if (error) {

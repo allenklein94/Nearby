@@ -1,5 +1,9 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { getPublicStoriesGrouped } from '../services/stories';
+import { getSignedPhotoUrl } from '../services/photos';
+import StoryViewerModal from '../components/StoryViewerModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -10,6 +14,29 @@ import { spacing, radius, typography } from '../theme';
 export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const [publicStories, setPublicStories] = useState([]);
+  const [storyPhotoUrls, setStoryPhotoUrls] = useState({});
+  const [viewerTarget, setViewerTarget] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadPublicStories();
+    }, [])
+  );
+
+  async function loadPublicStories() {
+    const grouped = await getPublicStoriesGrouped();
+    setPublicStories(grouped);
+
+    const urlEntries = await Promise.all(
+      grouped.map(async (g) => {
+        if (!g.photoUrl) return [g.userId, null];
+        const url = await getSignedPhotoUrl(g.photoUrl);
+        return [g.userId, url];
+      })
+    );
+    setStoryPhotoUrls(Object.fromEntries(urlEntries));
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,6 +72,39 @@ export default function DiscoverHubScreen({ navigation }) {
         </View>
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
+
+      {publicStories.length > 0 && (
+        <>
+          <Text style={styles.sectionHeader}>Public Stories Near You</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+            {publicStories.map((group) => (
+              <TouchableOpacity
+                key={group.userId}
+                style={styles.storyRing}
+                onPress={() => setViewerTarget(group)}
+                accessibilityLabel={`${group.displayName}'s public story`}
+                accessibilityRole="button"
+              >
+                {storyPhotoUrls[group.userId] ? (
+                  <Image source={{ uri: storyPhotoUrls[group.userId] }} style={styles.storyAvatar} />
+                ) : (
+                  <View style={[styles.storyAvatar, styles.storyAvatarPlaceholder]} />
+                )}
+                <Text style={styles.storyName} numberOfLines={1}>{group.displayName}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </>
+      )}
+
+      <StoryViewerModal
+        visible={!!viewerTarget}
+        group={viewerTarget}
+        onClose={() => {
+          setViewerTarget(null);
+          loadPublicStories();
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -62,4 +122,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardTitle: { ...typography.headline, color: colors.textPrimary },
   cardSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   cardChevron: { color: colors.textTertiary, fontSize: 24 },
+  sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
+  storyRing: { alignItems: 'center', width: 64 },
+  storyAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#e1306c', marginBottom: 4, backgroundColor: colors.surfaceElevated },
+  storyAvatarPlaceholder: {},
+  storyName: { color: colors.textSecondary, fontSize: 11, textAlign: 'center' },
 });
