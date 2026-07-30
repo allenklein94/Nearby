@@ -5,6 +5,7 @@ import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFell
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import NewcomerBadge from '../components/NewcomerBadge';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -705,6 +706,7 @@ export default function GatheringsScreen({ navigation }) {
                     </View>
                   ) : null;
                 })()}
+                <NewcomerBadge gatheringId={item.id} />
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                 <View style={styles.metaRow}>
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
