@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio } from 'expo-av';
 import { supabase } from '../services/supabase';
@@ -189,17 +189,34 @@ export default function ChatScreen({ route, navigation }) {
 
   useEffect(() => {
     let pollInterval;
+    let currentMyId;
     init().then((myId) => {
+      currentMyId = myId;
       pollInterval = setInterval(async () => {
         await loadMessages();
         if (myId) await markMessagesAsRead(myId);
       }, 3000);
     });
+
+    // iOS suspends JS timers (including this poll) whenever the
+    // screen locks or the app backgrounds — this forces an
+    // immediate refresh the moment the app returns, rather than
+    // waiting up to 3 seconds for the next scheduled tick, so
+    // anything that changed while suspended (like a disappearing
+    // message) shows up right away.
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        loadMessages();
+        if (currentMyId) markMessagesAsRead(currentMyId);
+      }
+    });
+
     return () => {
       if (pollInterval) clearInterval(pollInterval);
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
       if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current);
+      subscription.remove();
     };
   }, []);
 
