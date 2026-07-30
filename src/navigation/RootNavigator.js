@@ -12,12 +12,14 @@ import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
+import ActivityBell from '../components/ActivityBell';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
 import HomeScreen from '../screens/HomeScreen';
 import DiscoverHubScreen from '../screens/DiscoverHubScreen';
+import CreateHubScreen from '../screens/CreateHubScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
@@ -62,10 +64,10 @@ const Tab = createBottomTabNavigator();
 export const navigationRef = createNavigationContainerRef();
 
 const TAB_ICONS = {
-  Gatherings: { active: 'calendar', inactive: 'calendar-outline', label: 'Gatherings' },
-  Nearby: { active: 'location', inactive: 'location-outline', label: 'Nearby, Crossed Paths' },
-  Notices: { active: 'hand-left', inactive: 'hand-left-outline', label: 'Notices' },
-  Matches: { active: 'heart', inactive: 'heart-outline', label: 'Matches' },
+  Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
+  Discover: { active: 'compass', inactive: 'compass-outline', label: 'Discover' },
+  Create: { active: 'add-circle', inactive: 'add-circle-outline', label: 'Create' },
+  Matches: { active: 'heart', inactive: 'heart-outline', label: 'Messages' },
 };
 
 function ProfileTabIcon({ focused, size, colors, photoUrl }) {
@@ -140,8 +142,17 @@ function MainTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
+      screenOptions={({ route, navigation }) => ({
+        // A minimal, title-less native header just for the shared
+        // bell — screens still render their own internal headers
+        // beneath this, same pattern already used for People and
+        // Gatherings' transparent back-button header.
+        headerShown: true,
+        headerTransparent: true,
+        headerTitle: '',
+        headerShadowVisible: false,
+        headerLeft: () => null,
+        headerRight: () => <ActivityBell navigation={navigation} />,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border },
@@ -163,7 +174,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Discover" component={DiscoverHubScreen} />
-      <Tab.Screen name="Notices" component={ActivityScreen} options={{ tabBarLabel: 'Activity' }} />
+      <Tab.Screen name="Create" component={CreateHubScreen} />
       <Tab.Screen name="Matches" component={MatchesScreen} options={{ tabBarLabel: 'Messages' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
     </Tab.Navigator>
@@ -229,6 +240,7 @@ export default function RootNavigator() {
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: 'Set Location', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Nearby" component={DiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: 'Activity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringChat" component={GatheringChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.gatheringTitle ?? 'Group Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={{ headerShown: true, title: 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

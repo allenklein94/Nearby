@@ -34,6 +34,9 @@ export default function ActivityScreen({ navigation }) {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
+    if (myId) {
+      supabase.from('profiles').update({ last_activity_check: new Date().toISOString() }).eq('id', myId);
+    }
     const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
 
     const { data: existingMatches } = await supabase
