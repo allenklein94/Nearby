@@ -118,6 +118,11 @@ export async function markStoryViewed(storyId) {
   await supabase.from('story_views').insert({ story_id: storyId, viewer_id: myId }).select().maybeSingle().catch(() => {});
 }
 
+export async function deleteStory(storyId) {
+  const { error } = await supabase.from('stories').delete().eq('id', storyId);
+  if (error) throw error;
+}
+
 export async function getStoryViewers(storyId) {
   const { data, error } = await supabase
     .from('story_views')

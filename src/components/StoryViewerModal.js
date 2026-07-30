@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, FlatList } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, FlatList, Share, Alert } from 'react-native';
 import { Video } from 'expo-av';
-import { getSignedStoryUrl, markStoryViewed, getStoryViewers } from '../services/stories';
+import { getSignedStoryUrl, markStoryViewed, getStoryViewers, deleteStory } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import { spacing, radius } from '../theme';
@@ -95,6 +95,44 @@ export default function StoryViewerModal({ visible, group, onClose }) {
     setViewerPhotoUrls(Object.fromEntries(urlEntries));
   }
 
+  async function handleDeleteStory() {
+    const story = group.stories[index];
+    Alert.alert(
+      'Delete this story?',
+      "This can't be undone.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteStory(story.id);
+              if (group.stories.length <= 1) {
+                onClose();
+              } else if (index === group.stories.length - 1) {
+                setIndex(index - 1);
+              } else {
+                advance();
+              }
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleShareStory() {
+    if (!mediaUrl) return;
+    try {
+      await Share.share({ url: mediaUrl, message: mediaUrl });
+    } catch (e) {
+      // user cancelled share sheet, nothing to do
+    }
+  }
+
   if (!visible || !group) return null;
 
   const story = group.stories[index];
@@ -142,10 +180,19 @@ export default function StoryViewerModal({ visible, group, onClose }) {
           <TouchableOpacity style={{ flex: 1 }} onPress={advance} accessibilityLabel="Next story" />
         </View>
 
+        <TouchableOpacity style={styles.shareButton} onPress={handleShareStory} accessibilityLabel="Share this story" accessibilityRole="button">
+          <Text style={styles.shareButtonText}>↗</Text>
+        </TouchableOpacity>
+
         {isOwnStory && (
-          <TouchableOpacity style={styles.viewersButton} onPress={handleShowViewers} accessibilityLabel="See who viewed this story" accessibilityRole="button">
-            <Text style={styles.viewersButtonText}>👁 Viewers</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.viewersButton} onPress={handleShowViewers} accessibilityLabel="See who viewed this story" accessibilityRole="button">
+              <Text style={styles.viewersButtonText}>👁 Viewers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteStory} accessibilityLabel="Delete this story" accessibilityRole="button">
+              <Text style={styles.deleteButtonText}>🗑</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {showViewers && (
@@ -194,6 +241,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
   },
   viewersButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  shareButton: {
+    position: 'absolute', bottom: 30, right: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
+    width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
+  },
+  shareButtonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  deleteButton: {
+    position: 'absolute', bottom: 30, left: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
+    width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
+  },
+  deleteButtonText: { fontSize: 16 },
   viewersSheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#1a1a2e',
     borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, maxHeight: '60%',
