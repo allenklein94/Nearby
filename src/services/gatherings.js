@@ -383,6 +383,15 @@ export async function approveInterest(interestId) {
   return data;
 }
 
+export async function getHostStats(hostId) {
+  const { data, error } = await supabase.rpc('get_host_stats', { host_id_param: hostId });
+  if (error) {
+    console.error('getHostStats error', error);
+    return null;
+  }
+  return data?.[0] ?? null;
+}
+
 export async function cancelGathering(gatheringId) {
   const { error } = await supabase.from('gatherings').delete().eq('id', gatheringId);
   if (error) throw error;

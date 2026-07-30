@@ -11,6 +11,7 @@ import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import { sendFriendRequest, getMutualFriends } from '../services/friends';
+import { getHostStats } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -55,7 +56,8 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [lightboxPhotoUri, setLightboxPhotoUri] = useState(null);
   const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
-  const [mutualFriends, setMutualFriends] = useState([]);
+  cconst [mutualFriends, setMutualFriends] = useState([]);
+  const [hostStats, setHostStats] = useState(null);
 
   useEffect(() => {
     load();
@@ -66,6 +68,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     const myId = sessionData?.session?.user?.id;
     if (myId && myId !== userId) {
       getMutualFriends(userId).then(setMutualFriends);
+      getHostStats(userId).then(setHostStats);
       const { data: blockedByMe } = await supabase
         .from('blocks')
         .select('id')
@@ -290,6 +293,12 @@ export default function ViewProfileScreen({ route, navigation }) {
                 : mutualFriends.length === 2
                   ? `You both know ${mutualFriends[0].display_name} and ${mutualFriends[1].display_name}`
                   : `You both know ${mutualFriends[0].display_name} and ${mutualFriends.length - 1} others`}
+            </Text>
+          )}
+
+          {hostStats && hostStats.gatherings_hosted > 0 && (
+            <Text style={styles.mutualFriendsText}>
+              🎉 Hosted {hostStats.gatherings_hosted} gathering{hostStats.gatherings_hosted === 1 ? '' : 's'}, averaging {Math.round(hostStats.avg_attendance)} attendee{Math.round(hostStats.avg_attendance) === 1 ? '' : 's'}
             </Text>
           )}
 
