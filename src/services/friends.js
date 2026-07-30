@@ -1,5 +1,14 @@
 import { supabase } from './supabase';
 
+export async function getSuggestedFriends() {
+  const { data, error } = await supabase.rpc('get_suggested_friends');
+  if (error) {
+    console.error('getSuggestedFriends error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function sendFriendRequest(otherUserId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

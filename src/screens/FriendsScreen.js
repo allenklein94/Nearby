@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest } from '../services/friends';
+import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest, getSuggestedFriends } from '../services/friends';
 import { findFriendsFromContacts } from '../services/contactsImport';
 import StoriesRow from '../components/StoriesRow';
 import { Share } from 'react-native';
@@ -21,13 +21,15 @@ export default function FriendsScreen({ navigation }) {
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [requestedIds, setRequestedIds] = useState({});
   const [notOnAppContacts, setNotOnAppContacts] = useState([]);
+  const [suggestedFriends, setSuggestedFriends] = useState([]);
 
   const load = useCallback(async () => {
-    const [friendsList, pendingList] = await Promise.all([getMyFriends(), getPendingFriendRequests()]);
+    const [friendsList, pendingList, suggested] = await Promise.all([getMyFriends(), getPendingFriendRequests(), getSuggestedFriends()]);
     setFriends(friendsList);
     setPending(pendingList);
+    setSuggestedFriends(suggested);
 
-    const all = [...friendsList, ...pendingList];
+    const all = [...friendsList, ...pendingList, ...suggested.map((s) => ({ id: s.suggested_id, photo_url: s.photo_url }))];
     const urlEntries = await Promise.all(
       all.map(async (person) => {
         if (!person.photo_url) return [person.id, null];
@@ -134,6 +136,42 @@ export default function FriendsScreen({ navigation }) {
                 <Text style={styles.findContactsButtonText}>📱 Find Friends From Contacts</Text>
               )}
             </TouchableOpacity>
+
+            {suggestedFriends.length > 0 && (
+              <>
+                <Text style={styles.sectionHeader}>People You May Know</Text>
+                {suggestedFriends.map((person) => (
+                  <View key={person.suggested_id} style={styles.requestRow}>
+                    <TouchableOpacity
+                      style={styles.personInfo}
+                      onPress={() => navigation.navigate('ViewProfile', { userId: person.suggested_id })}
+                      accessibilityLabel={`View ${person.display_name}'s profile, ${person.mutual_count} mutual friends`}
+                      accessibilityRole="button"
+                    >
+                      {photoUrls[person.suggested_id] ? (
+                        <Image source={{ uri: photoUrls[person.suggested_id] }} style={styles.avatar} />
+                      ) : (
+                        <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                      )}
+                      <View>
+                        <Text style={styles.personName}>{person.display_name}</Text>
+                        <Text style={styles.mutualText}>{person.mutual_count} mutual friend{person.mutual_count === 1 ? '' : 's'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.acceptButton, requestedIds[person.suggested_id] && styles.acceptButtonSent]}
+                      onPress={() => handleSendRequest(person.suggested_id)}
+                      disabled={requestedIds[person.suggested_id]}
+                      accessibilityLabel={requestedIds[person.suggested_id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.acceptButtonText}>{requestedIds[person.suggested_id] ? '✓ Sent' : 'Add'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={styles.divider} />
+              </>
+            )}
 
             {contactMatches !== null && contactMatches.length > 0 && (
               <>
@@ -293,6 +331,7 @@ const getStyles = (colors) => StyleSheet.create({
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},
   personName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  mutualText: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   acceptButtonSent: { backgroundColor: colors.success },
   acceptButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
