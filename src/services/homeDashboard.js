@@ -85,6 +85,31 @@ export async function getHomeDashboard() {
     unreadCount = count ?? 0;
   }
 
+  // A genuine, real recap of the last 7 days — gatherings actually
+  // attended (approved interest on a past gathering), friends
+  // actually made, messages actually sent. No invented metrics.
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { count: gatheringsAttendedCount } = await supabase
+    .from('gathering_interest')
+    .select('id, gatherings!inner(scheduled_at)', { count: 'exact', head: true })
+    .eq('user_id', myId)
+    .eq('status', 'approved')
+    .gte('gatherings.scheduled_at', weekAgo)
+    .lt('gatherings.scheduled_at', new Date().toISOString());
+
+  const { count: newFriendsCount } = await supabase
+    .from('friendships')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'accepted')
+    .or(`user_a.eq.${myId},user_b.eq.${myId}`)
+    .gte('created_at', weekAgo);
+
+  const weeklyRecap = {
+    gatheringsAttended: gatheringsAttendedCount ?? 0,
+    newFriends: newFriendsCount ?? 0,
+  };
+
   // Genuinely new since the last time Home was opened — not since
   // account creation, and not an invented number. First-ever visit
   // has nothing to compare against, so this stays empty rather than
@@ -104,5 +129,6 @@ export async function getHomeDashboard() {
     trendingGatherings,
     bestPick,
     sinceAway,
+    weeklyRecap,
   };
 }

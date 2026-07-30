@@ -139,6 +139,18 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
+        {dashboard?.weeklyRecap && (dashboard.weeklyRecap.gatheringsAttended > 0 || dashboard.weeklyRecap.newFriends > 0) && (
+          <View style={styles.recapCard}>
+            <Text style={styles.recapTitle}>This Week</Text>
+            {dashboard.weeklyRecap.gatheringsAttended > 0 && (
+              <Text style={styles.recapItem}>✓ Attended {dashboard.weeklyRecap.gatheringsAttended} gathering{dashboard.weeklyRecap.gatheringsAttended === 1 ? '' : 's'}</Text>
+            )}
+            {dashboard.weeklyRecap.newFriends > 0 && (
+              <Text style={styles.recapItem}>✓ Made {dashboard.weeklyRecap.newFriends} new friend{dashboard.weeklyRecap.newFriends === 1 ? '' : 's'}</Text>
+            )}
+          </View>
+        )}
+
         {dashboard?.trendingGatherings?.length > 0 && (
           <>
             <Text style={styles.sectionHeader}>🔥 Trending Near You</Text>
@@ -199,6 +211,11 @@ const getStyles = (colors) => StyleSheet.create({
   bestPickReasons: { marginBottom: spacing.sm },
   bestPickReason: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
   bestPickAction: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  recapCard: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
+  },
+  recapTitle: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  recapItem: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
   trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   trendingTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   trendingMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
