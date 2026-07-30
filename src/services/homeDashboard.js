@@ -13,6 +13,10 @@ export async function getHomeDashboard() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return null;
 
+  const { data: profileData } = await supabase.from('profiles').select('last_home_visit').eq('id', myId).single();
+  const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
+  await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
+
   const [nearbyPeople, nearbyGatherings] = await Promise.all([
     getNearbyMatches().catch(() => []),
     getNearbyGatherings('wide').catch(() => []),
@@ -81,6 +85,17 @@ export async function getHomeDashboard() {
     unreadCount = count ?? 0;
   }
 
+  // Genuinely new since the last time Home was opened — not since
+  // account creation, and not an invented number. First-ever visit
+  // has nothing to compare against, so this stays empty rather than
+  // showing something misleading.
+  const sinceAway = lastVisit
+    ? {
+        newPeopleCount: nearbyPeople.filter((p) => new Date(p.last_seen_at) > lastVisit).length,
+        newGatheringsCount: nearbyGatherings.filter((g) => new Date(g.created_at ?? g.scheduled_at) > lastVisit).length,
+      }
+    : null;
+
   return {
     nearbyPeopleCount: nearbyPeople.length,
     gatheringsTodayCount: gatheringsToday.length,
@@ -88,5 +103,6 @@ export async function getHomeDashboard() {
     unreadCount,
     trendingGatherings,
     bestPick,
+    sinceAway,
   };
 }

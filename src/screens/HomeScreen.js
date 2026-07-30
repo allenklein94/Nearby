@@ -61,6 +61,18 @@ export default function HomeScreen({ navigation }) {
       >
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
 
+        {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
+          <View style={styles.sinceAwayBanner}>
+            <Text style={styles.sinceAwayTitle}>Since you were away</Text>
+            {dashboard.sinceAway.newPeopleCount > 0 && (
+              <Text style={styles.sinceAwayItem}>👥 {dashboard.sinceAway.newPeopleCount} new {dashboard.sinceAway.newPeopleCount === 1 ? 'person' : 'people'} nearby</Text>
+            )}
+            {dashboard.sinceAway.newGatheringsCount > 0 && (
+              <Text style={styles.sinceAwayItem}>🎉 {dashboard.sinceAway.newGatheringsCount} new gathering{dashboard.sinceAway.newGatheringsCount === 1 ? '' : 's'}</Text>
+            )}
+          </View>
+        )}
+
         <View style={styles.card}>
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
             <Text style={styles.cardIcon}>👥</Text>
@@ -145,6 +157,11 @@ export default function HomeScreen({ navigation }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
+  sinceAwayBanner: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
+  },
+  sinceAwayTitle: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  sinceAwayItem: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.lg },
   cardRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
   cardIcon: { fontSize: 20, marginRight: spacing.sm },
