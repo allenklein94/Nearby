@@ -96,6 +96,26 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {dashboard?.bestPick && (
+          <>
+            <Text style={styles.sectionHeader}>⭐ Best Pick Tonight</Text>
+            <TouchableOpacity
+              style={styles.bestPickCard}
+              onPress={() => navigation.navigate('Gatherings')}
+              accessibilityLabel={`${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.bestPickTitle}>{dashboard.bestPick.title}</Text>
+              <View style={styles.bestPickReasons}>
+                {dashboard.bestPick.reasons.map((reason, i) => (
+                  <Text key={i} style={styles.bestPickReason}>✓ {reason}</Text>
+                ))}
+              </View>
+              <Text style={styles.bestPickAction}>View →</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
         {dashboard?.trendingGatherings?.length > 0 && (
           <>
             <Text style={styles.sectionHeader}>🔥 Trending Near You</Text>
@@ -132,6 +152,14 @@ const getStyles = (colors) => StyleSheet.create({
   cardChevron: { color: colors.textTertiary, fontSize: 18 },
   divider: { height: 1, backgroundColor: colors.border },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  bestPickCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
+    padding: spacing.lg, marginBottom: spacing.lg,
+  },
+  bestPickTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
+  bestPickReasons: { marginBottom: spacing.sm },
+  bestPickReason: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
+  bestPickAction: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   trendingTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   trendingMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },

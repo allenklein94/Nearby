@@ -23,6 +23,44 @@ export async function getHomeDashboard() {
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
 
+  // A single, genuine best pick rather than another list — scored on
+  // real signals only (attendance, closeness, actual shared
+  // interest), with honest reasons attached rather than invented
+  // ones. If nothing scores meaningfully, there's no pick — the app
+  // doesn't pretend an ordinary night is special.
+  let bestPick = null;
+  if (nearbyGatherings.length > 0) {
+    const scored = nearbyGatherings.map((g) => {
+      const attendeeCount = g.approvedAttendees?.length ?? 0;
+      const reasons = [];
+      let score = 0;
+
+      if (attendeeCount > 0) {
+        score += Math.min(attendeeCount, 10);
+        reasons.push(`${attendeeCount} ${attendeeCount === 1 ? 'person' : 'people'} attending`);
+      }
+      if (g.matchesYourInterests) {
+        score += 5;
+        reasons.push('Matches your interests');
+      }
+      if (g.distanceMiles !== null && g.distanceMiles < 2) {
+        score += 3;
+        reasons.push(g.distanceLabel);
+      }
+      if (isToday(g.scheduled_at)) {
+        score += 2;
+        reasons.push('Happening today');
+      }
+
+      return { gathering: g, score, reasons };
+    });
+
+    const top = scored.sort((a, b) => b.score - a.score)[0];
+    if (top && top.score >= 5) {
+      bestPick = { ...top.gathering, reasons: top.reasons };
+    }
+  }
+
   const mostRecentSighting = nearbyPeople.length > 0
     ? [...nearbyPeople].sort((a, b) => new Date(b.last_seen_at) - new Date(a.last_seen_at))[0]
     : null;
@@ -49,5 +87,6 @@ export async function getHomeDashboard() {
     mostRecentSighting,
     unreadCount,
     trendingGatherings,
+    bestPick,
   };
 }
