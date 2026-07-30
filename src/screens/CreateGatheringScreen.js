@@ -31,11 +31,20 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [showOnMap, setShowOnMap] = useState(true);
   const [womenOnly, setWomenOnly] = useState(false);
 
-  useEffect(() => {
+  uuseEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
       setCustomLocation({ latitude: route.params.selectedLat, longitude: route.params.selectedLng });
     }
   }, [route.params?.selectedLat, route.params?.selectedLng]);
+
+  useEffect(() => {
+    if (route.params?.quickStartTitle) {
+      setTitle(route.params.quickStartTitle);
+    }
+    if (route.params?.quickStartCategory) {
+      setInterestTag(route.params.quickStartCategory);
+    }
+  }, [route.params?.quickStartTitle, route.params?.quickStartCategory]);
 
   async function submit() {
     if (!title.trim()) {

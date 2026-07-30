@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ref
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
+import StartSomethingModal from '../components/StartSomethingModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -20,6 +21,7 @@ export default function HomeScreen({ navigation }) {
   const [myName, setMyName] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [startModalVisible, setStartModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -72,6 +74,15 @@ export default function HomeScreen({ navigation }) {
             )}
           </View>
         )}
+
+        <TouchableOpacity
+          style={styles.startSomethingButton}
+          onPress={() => setStartModalVisible(true)}
+          accessibilityLabel="Start something spontaneous"
+          accessibilityRole="button"
+        >
+          <Text style={styles.startSomethingText}>+ Start Something</Text>
+        </TouchableOpacity>
 
         <View style={styles.card}>
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
@@ -150,6 +161,12 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.browseButtonText}>Continue Browsing →</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <StartSomethingModal
+        visible={startModalVisible}
+        onClose={() => setStartModalVisible(false)}
+        navigation={navigation}
+      />
     </SafeAreaView>
   );
 }
@@ -162,6 +179,11 @@ const getStyles = (colors) => StyleSheet.create({
   },
   sinceAwayTitle: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
   sinceAwayItem: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
+  startSomethingButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
+    alignItems: 'center', marginBottom: spacing.lg,
+  },
+  startSomethingText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.lg },
   cardRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
   cardIcon: { fontSize: 20, marginRight: spacing.sm },
