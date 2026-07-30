@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { Audio } from 'expo-av';
+import { Audio, Video } from 'expo-av';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
 import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } from '../services/voiceNotes';
 import { checkVoiceNoteLimit } from '../services/voiceNoteLimits';
-import { pickChatPhoto, uploadChatPhoto, getSignedChatMediaUrl } from '../services/chatMedia';
+import { pickChatPhoto, uploadChatPhoto, pickChatVideo, uploadChatVideo, getSignedChatMediaUrl } from '../services/chatMedia';
 import { unmatch } from '../services/matchActions';
 import { toggleReaction, getReactionsForMatch } from '../services/messageReactions';
 import { randomExperiment } from '../constants/relationshipExperiments';
@@ -869,6 +869,52 @@ export default function ChatScreen({ route, navigation }) {
     setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
   }
 
+  async function handlePickVideo() {
+    try {
+      const asset = await pickChatVideo();
+      if (!asset) return;
+
+      setUploadingPhoto(true);
+      const path = await uploadChatVideo(userId, asset.uri);
+
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      const optimisticMessage = {
+        id: `optimistic-${Date.now()}`,
+        match_id: matchId,
+        sender_id: userId,
+        body: null,
+        gif_url: null,
+        audio_url: null,
+        media_url: path,
+        media_type: 'video',
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+      setIsStalled(false);
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({ match_id: matchId, sender_id: userId, body: '', media_url: path, media_type: 'video' })
+        .select()
+        .single();
+
+      setUploadingPhoto(false);
+
+      if (error) {
+        console.error('sendVideo error', error);
+        return;
+      }
+
+      posthog.capture('chat_video_sent');
+      setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+    } catch (e) {
+      setUploadingPhoto(false);
+      Alert.alert('Error', e.message);
+    }
+  }
+
   async function handlePickPhoto() {
     try {
       const asset = await pickChatPhoto();
@@ -1017,6 +1063,14 @@ export default function ChatScreen({ route, navigation }) {
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
                         <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>DEBUG: Image failed to actually render (onError fired)</Text>
                       </View>
+                    ) : item.media_type === 'video' ? (
+                      <Video
+                        source={{ uri: mediaUrls[item.id] }}
+                        style={styles.gifBubble}
+                        resizeMode="cover"
+                        useNativeControls
+                        accessibilityLabel={`${senderLabel} sent a video`}
+                      />
                     ) : (
                       <Image
                         source={{ uri: mediaUrls[item.id] }}
@@ -1161,6 +1215,15 @@ export default function ChatScreen({ route, navigation }) {
               accessibilityRole="button"
             >
               {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Text style={styles.gifButtonText}>📷</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.gifButton}
+              onPress={handlePickVideo}
+              disabled={uploadingPhoto}
+              accessibilityLabel={uploadingPhoto ? 'Checking video' : 'Send a video'}
+              accessibilityRole="button"
+            >
+              {uploadingPhoto ? <ActivityIndicator size="small" color={colors.textSecondary} /> : <Text style={styles.gifButtonText}>🎥</Text>}
             </TouchableOpacity>
             <TextInput
               style={styles.input}

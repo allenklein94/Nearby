@@ -38,6 +38,24 @@ export async function pickChatPhoto() {
   return result.assets[0];
 }
 
+const MAX_CHAT_VIDEO_SECONDS = 30;
+
+export async function pickChatVideo() {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    throw new Error('Photo library access is needed to send a video.');
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+    quality: 0.7,
+    videoMaxDuration: MAX_CHAT_VIDEO_SECONDS,
+  });
+
+  if (result.canceled || !result.assets?.[0]) return null;
+  return result.assets[0];
+}
+
 // Uses the same base64-read-and-convert approach as voice note
 // uploads, rather than fetch().blob() — that pattern has a known
 // reliability issue on iOS where it can silently produce an empty
@@ -56,6 +74,23 @@ export async function uploadChatPhoto(userId, uri) {
   const { error } = await supabase.storage
     .from('chat-media')
     .upload(path, bytes, { contentType: 'image/jpeg' });
+
+  if (error) throw error;
+  return path;
+}
+
+export async function uploadChatVideo(userId, uri) {
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+  if (!base64 || base64.length === 0) {
+    throw new Error('Could not read the selected video. Please try again.');
+  }
+
+  const bytes = base64ToUint8Array(base64);
+  const path = `${userId}/${Date.now()}.mov`;
+
+  const { error } = await supabase.storage
+    .from('chat-media')
+    .upload(path, bytes, { contentType: 'video/quicktime' });
 
   if (error) throw error;
   return path;
