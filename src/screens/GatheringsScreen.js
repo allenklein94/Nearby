@@ -115,6 +115,8 @@ export default function GatheringsScreen({ navigation }) {
   const [mapStoryPhotoUrls, setMapStoryPhotoUrls] = useState({});
   const [attendingPastExpanded, setAttendingPastExpanded] = useState(false);
   const [hostingPastExpanded, setHostingPastExpanded] = useState(false);
+  const [attendingPastSort, setAttendingPastSort] = useState('newest');
+  const [hostingPastSort, setHostingPastSort] = useState('newest');
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -779,8 +781,8 @@ export default function GatheringsScreen({ navigation }) {
           data={[
             ...(attending.upcoming.length > 0 ? [{ type: 'header', key: 'upcoming-header', label: 'Upcoming' }] : []),
             ...attending.upcoming.map((g) => ({ type: 'gathering', key: g.id, gathering: g })),
-            ...(attending.past.length > 0 ? [{ type: 'header', key: 'past-header', label: `Past (${attending.past.length})`, collapsible: true, expanded: attendingPastExpanded, onToggle: () => setAttendingPastExpanded((v) => !v) }] : []),
-            ...(attendingPastExpanded ? attending.past.map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })) : []),
+            ...(attending.past.length > 0 ? [{ type: 'header', key: 'past-header', label: `Past (${attending.past.length})`, collapsible: true, expanded: attendingPastExpanded, onToggle: () => setAttendingPastExpanded((v) => !v), sortable: true, sortValue: attendingPastSort, onSortToggle: () => setAttendingPastSort((v) => v === 'newest' ? 'oldest' : 'newest') }] : []),
+            ...(attendingPastExpanded ? [...attending.past].sort((a, b) => attendingPastSort === 'newest' ? new Date(b.scheduled_at) - new Date(a.scheduled_at) : new Date(a.scheduled_at) - new Date(b.scheduled_at)).map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })) : []),
           ]}
           keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: spacing.lg }}
@@ -795,10 +797,17 @@ export default function GatheringsScreen({ navigation }) {
             if (row.type === 'header') {
               if (row.collapsible) {
                 return (
-                  <TouchableOpacity onPress={row.onToggle} style={styles.collapsibleHeaderRow} accessibilityLabel={`${row.label}, ${row.expanded ? 'tap to collapse' : 'tap to expand'}`} accessibilityRole="button">
-                    <Text style={styles.attendingSectionHeader}>{row.label}</Text>
-                    <Text style={styles.collapsibleChevron}>{row.expanded ? '⌃' : '⌄'}</Text>
-                  </TouchableOpacity>
+                  <View>
+                    <TouchableOpacity onPress={row.onToggle} style={styles.collapsibleHeaderRow} accessibilityLabel={`${row.label}, ${row.expanded ? 'tap to collapse' : 'tap to expand'}`} accessibilityRole="button">
+                      <Text style={styles.attendingSectionHeader}>{row.label}</Text>
+                      <Text style={styles.collapsibleChevron}>{row.expanded ? '⌃' : '⌄'}</Text>
+                    </TouchableOpacity>
+                    {row.expanded && row.sortable && (
+                      <TouchableOpacity onPress={row.onSortToggle} accessibilityLabel={`Sorted ${row.sortValue}, tap to switch`} accessibilityRole="button">
+                        <Text style={styles.sortToggleText}>Sort: {row.sortValue === 'newest' ? 'Newest first' : 'Oldest first'} ⇅</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 );
               }
               return <Text style={styles.attendingSectionHeader}>{row.label}</Text>;
@@ -922,8 +931,8 @@ export default function GatheringsScreen({ navigation }) {
           data={[
             ...(hosting.upcoming.length > 0 ? [{ type: 'header', key: 'hosting-upcoming-header', label: 'Upcoming' }] : []),
             ...hosting.upcoming.map((g) => ({ type: 'gathering', key: g.id, gathering: g })),
-            ...(hosting.past.length > 0 ? [{ type: 'header', key: 'hosting-past-header', label: `Past (${hosting.past.length})`, collapsible: true, expanded: hostingPastExpanded, onToggle: () => setHostingPastExpanded((v) => !v) }] : []),
-            ...(hostingPastExpanded ? hosting.past.map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })) : []),
+            ...(hosting.past.length > 0 ? [{ type: 'header', key: 'hosting-past-header', label: `Past (${hosting.past.length})`, collapsible: true, expanded: hostingPastExpanded, onToggle: () => setHostingPastExpanded((v) => !v), sortable: true, sortValue: hostingPastSort, onSortToggle: () => setHostingPastSort((v) => v === 'newest' ? 'oldest' : 'newest') }] : []),
+            ...(hostingPastExpanded ? [...hosting.past].sort((a, b) => hostingPastSort === 'newest' ? new Date(b.scheduled_at) - new Date(a.scheduled_at) : new Date(a.scheduled_at) - new Date(b.scheduled_at)).map((g) => ({ type: 'gathering', key: `past-${g.id}`, gathering: g, isPast: true })) : []),
           ]}
           keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: spacing.lg }}
@@ -936,12 +945,19 @@ export default function GatheringsScreen({ navigation }) {
           }
           renderItem={({ item: row }) => {
             if (row.type === 'header') {
-              if (row.collapsible) {
+             if (row.collapsible) {
                 return (
-                  <TouchableOpacity onPress={row.onToggle} style={styles.collapsibleHeaderRow} accessibilityLabel={`${row.label}, ${row.expanded ? 'tap to collapse' : 'tap to expand'}`} accessibilityRole="button">
-                    <Text style={styles.attendingSectionHeader}>{row.label}</Text>
-                    <Text style={styles.collapsibleChevron}>{row.expanded ? '⌃' : '⌄'}</Text>
-                  </TouchableOpacity>
+                  <View>
+                    <TouchableOpacity onPress={row.onToggle} style={styles.collapsibleHeaderRow} accessibilityLabel={`${row.label}, ${row.expanded ? 'tap to collapse' : 'tap to expand'}`} accessibilityRole="button">
+                      <Text style={styles.attendingSectionHeader}>{row.label}</Text>
+                      <Text style={styles.collapsibleChevron}>{row.expanded ? '⌃' : '⌄'}</Text>
+                    </TouchableOpacity>
+                    {row.expanded && row.sortable && (
+                      <TouchableOpacity onPress={row.onSortToggle} accessibilityLabel={`Sorted ${row.sortValue}, tap to switch`} accessibilityRole="button">
+                        <Text style={styles.sortToggleText}>Sort: {row.sortValue === 'newest' ? 'Newest first' : 'Oldest first'} ⇅</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 );
               }
               return <Text style={styles.attendingSectionHeader}>{row.label}</Text>;
@@ -1167,6 +1183,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   collapsibleHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   collapsibleChevron: { color: colors.textTertiary, fontSize: 14, marginTop: spacing.lg },
+  sortToggleText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
   pastCard: { opacity: 0.6 },
   pastBadge: { backgroundColor: colors.surfaceElevated },
   pastBadgeText: { color: colors.textTertiary },
