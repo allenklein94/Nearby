@@ -58,7 +58,7 @@ export default function DiscoverHubScreen({ navigation }) {
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
+      <<TouchableOpacity
         style={styles.card}
         onPress={() => navigation.navigate('Gatherings')}
         activeOpacity={0.85}
@@ -73,6 +73,20 @@ export default function DiscoverHubScreen({ navigation }) {
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('Communities')}
+        activeOpacity={0.85}
+        accessibilityLabel="Communities, ongoing groups you can join"
+        accessibilityRole="button"
+      >
+        <Text style={styles.cardIcon}>🏘️</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Communities</Text>
+          <Text style={styles.cardSubtitle}>Join ongoing groups</Text>
+        </View>
+        <Text style={styles.cardChevron}>›</Text>
+      </TouchableOpacity>
       {publicStories.length > 0 && (
         <>
           <Text style={styles.sectionHeader}>Public Stories Near You</Text>
