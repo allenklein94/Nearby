@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHomeDashboard } from '../services/homeDashboard';
+import { getHomeDashboard, getSocialForecast } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
+import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -22,6 +23,7 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
+  const [socialForecast, setSocialForecast] = useState(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -33,6 +35,15 @@ export default function HomeScreen({ navigation }) {
     const result = await getHomeDashboard();
     setDashboard(result);
     setLoading(false);
+
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status === 'granted') {
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+      if (location) {
+        const forecast = await getSocialForecast(location.coords.latitude, location.coords.longitude);
+        setSocialForecast(forecast);
+      }
+    }
   }, []);
 
   useFocusEffect(
@@ -62,6 +73,14 @@ export default function HomeScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
+
+        {socialForecast && (
+          <View style={styles.forecastCard}>
+            <Text style={styles.forecastLabel}>☀️ Social Forecast</Text>
+            <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
+            <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
+          </View>
+        )}
 
         {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
           <View style={styles.sinceAwayBanner}>
@@ -186,6 +205,13 @@ export default function HomeScreen({ navigation }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
+  forecastCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  forecastLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  forecastValue: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
+  forecastDetail: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
   sinceAwayBanner: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },

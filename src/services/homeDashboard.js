@@ -8,6 +8,15 @@ function isToday(iso) {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
+export async function getSocialForecast(latitude, longitude) {
+  const { data, error } = await supabase.rpc('get_social_forecast', { my_lat: latitude, my_lng: longitude });
+  if (error) {
+    console.error('getSocialForecast error', error);
+    return null;
+  }
+  return data?.[0] ?? null;
+}
+
 export async function getHomeDashboard() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
