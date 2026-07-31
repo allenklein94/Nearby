@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
+import { getProfileQuickStats } from '../services/homeDashboard';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
@@ -88,6 +89,7 @@ export default function ProfileScreen({ navigation }) {
   const [draftAnswer, setDraftAnswer] = useState('');
   const [expandedField, setExpandedField] = useState(null);
   const [loadingStrengths, setLoadingStrengths] = useState(false);
+  const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
 
   useEffect(() => {
     load();
@@ -119,6 +121,9 @@ export default function ProfileScreen({ navigation }) {
 
     const extras = await getExtraPhotos(id);
     setExtraPhotos(extras);
+
+    const stats = await getProfileQuickStats();
+    setQuickStats(stats);
   }
 
   async function showStrengths() {
@@ -377,6 +382,25 @@ const result = await response.json();
             accessibilityRole="button"
           >
             <Text style={styles.settingsGearText}>⚙️</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.quickStatsRow}>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={`${quickStats.communities} communities`} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
+            <Text style={styles.quickStatLabel}>Communities</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${quickStats.friends} friends`} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.friends}</Text>
+            <Text style={styles.quickStatLabel}>Friends</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
+            <Text style={styles.quickStatLabel}>Upcoming</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
+            <Text style={styles.quickStatLabel}>Past</Text>
           </TouchableOpacity>
         </View>
 
@@ -729,6 +753,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   settingsGear: { padding: spacing.xs },
   settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
+  quickStatsRow: {
+    flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg, overflow: 'hidden',
+  },
+  quickStat: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
+  quickStatNumber: { ...typography.headline, color: colors.textPrimary },
+  quickStatLabel: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
   photoWrap: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

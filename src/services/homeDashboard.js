@@ -8,6 +8,28 @@ function isToday(iso) {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
+export async function getProfileQuickStats() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return { communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 };
+
+  const [communitiesRes, friendsRes, attendingRes, hostingRes, pastAttendingRes, pastHostingRes] = await Promise.all([
+    supabase.from('community_members').select('id', { count: 'exact', head: true }).eq('user_id', myId),
+    supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`user_a.eq.${myId},user_b.eq.${myId}`),
+    supabase.from('gathering_interest').select('gatherings!inner(scheduled_at)', { count: 'exact', head: true }).eq('user_id', myId).eq('status', 'approved').gte('gatherings.scheduled_at', new Date().toISOString()),
+    supabase.from('gatherings').select('id', { count: 'exact', head: true }).eq('host_id', myId).gte('scheduled_at', new Date().toISOString()),
+    supabase.from('gathering_interest').select('gatherings!inner(scheduled_at)', { count: 'exact', head: true }).eq('user_id', myId).eq('status', 'approved').lt('gatherings.scheduled_at', new Date().toISOString()),
+    supabase.from('gatherings').select('id', { count: 'exact', head: true }).eq('host_id', myId).lt('scheduled_at', new Date().toISOString()),
+  ]);
+
+  return {
+    communities: communitiesRes.count ?? 0,
+    friends: friendsRes.count ?? 0,
+    upcomingPlans: (attendingRes.count ?? 0) + (hostingRes.count ?? 0),
+    pastGatherings: (pastAttendingRes.count ?? 0) + (pastHostingRes.count ?? 0),
+  };
+}
+
 export async function getInboxUnreadCount() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
