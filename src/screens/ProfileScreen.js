@@ -92,6 +92,7 @@ export default function ProfileScreen({ navigation }) {
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
+  const [connectionGoal, setConnectionGoal] = useState('');
 
   useEffect(() => {
     load();
@@ -115,6 +116,7 @@ export default function ProfileScreen({ navigation }) {
       setInterestedInGenders(data.interested_in_genders || []);
       setBasics(data.basics || {});
       setPrompts(data.prompts || []);
+      setConnectionGoal(data.connection_goal || '');
       if (data.photo_url) {
         const url = await getSignedPhotoUrl(data.photo_url);
         setPhotoUrl(url);
@@ -308,6 +310,7 @@ const result = await response.json();
         interested_in_genders: interestedInGenders,
         basics,
         prompts,
+        connection_goal: connectionGoal || null,
       })
       .eq('id', userId);
     if (error) return Alert.alert('Error', error.message);
@@ -548,6 +551,27 @@ const result = await response.json();
           )}
           <Text style={styles.helperText}>Add up to {MAX_PROMPTS} prompts to show more of your personality.</Text>
         </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">What are you hoping to find?</Text>
+        <View style={styles.chipsWrap}>
+          {['Meet friends', 'Date', 'Network', 'Explore my city', 'Find community', 'Get out more'].map((goal) => {
+            const selected = connectionGoal === goal;
+            return (
+              <TouchableOpacity
+                key={goal}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setConnectionGoal(selected ? '' : goal)}
+                activeOpacity={0.8}
+                accessibilityLabel={goal}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{goal}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <Text style={styles.helperText}>This helps us tailor what we show you — you can change it anytime.</Text>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.aboutYou')}</Text>
         <View style={styles.formCard}>
