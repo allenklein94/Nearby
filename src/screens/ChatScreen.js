@@ -282,7 +282,7 @@ export default function ChatScreen({ route, navigation }) {
 
     const { data: match } = await supabase
       .from('matches')
-      .select('user_a, user_b, disappearing_mode, first_message_sent, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
+      .select('user_a, user_b, disappearing_mode, first_message_sent, source_gathering_id, source_friendship_id, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, read_receipts_enabled, women_message_first), b:profiles!matches_user_b_fkey(id, display_name, read_receipts_enabled, women_message_first)')
       .eq('id', matchId)
       .single();
 
@@ -294,8 +294,13 @@ export default function ChatScreen({ route, navigation }) {
       setOtherUser(other);
       setGatheringTitle(match.gatherings?.title || null);
 
-      const meOptedIn = !!me?.women_message_first;
-      const otherOptedIn = !!other?.women_message_first;
+      // "Women message first" only makes sense for genuinely
+      // romantic matches — applying it to a friend or gathering
+      // connection would incorrectly gate what's meant to be a
+      // platonic chat with dating-context framing.
+      const isRomanticMatch = !match.source_gathering_id && !match.source_friendship_id;
+      const meOptedIn = isRomanticMatch && !!me?.women_message_first;
+      const otherOptedIn = isRomanticMatch && !!other?.women_message_first;
       if (meOptedIn && !otherOptedIn) {
         setDesignatedFirstMessengerId(myId);
         setDesignatedFirstMessengerName('You');
