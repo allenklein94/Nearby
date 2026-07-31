@@ -129,6 +129,18 @@ export default function ProfileScreen({ navigation }) {
     const stats = await getProfileQuickStats();
     setQuickStats(stats);
 
+    // Quietly keep the stored timezone current — used server-side
+    // so daily AI usage limits reset at the user's actual midnight,
+    // not the database server's default UTC midnight.
+    try {
+      const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (deviceTimezone) {
+        supabase.from('profiles').update({ timezone: deviceTimezone }).eq('id', id);
+      }
+    } catch (e) {
+      // fail quietly, this is a background nicety, not critical
+    }
+
     const earnedAchievements = await getAchievements();
     setAchievements(earnedAchievements);
 
