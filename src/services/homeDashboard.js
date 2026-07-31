@@ -8,6 +8,37 @@ function isToday(iso) {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
 }
 
+export async function getAchievements() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const stats = await getProfileQuickStats();
+
+  const { count: hostedCount } = await supabase
+    .from('gatherings')
+    .select('id', { count: 'exact', head: true })
+    .eq('host_id', myId)
+    .lt('scheduled_at', new Date().toISOString());
+
+  const { count: createdCommunitiesCount } = await supabase
+    .from('communities')
+    .select('id', { count: 'exact', head: true })
+    .eq('creator_id', myId);
+
+  // Each achievement is a genuine, real threshold against actual
+  // data — no fabricated unlock dates, just current, honest state.
+  const achievements = [
+    { icon: '🎉', label: 'First Gathering', earned: stats.pastGatherings >= 1, description: 'Attended your first gathering' },
+    { icon: '🌟', label: 'Regular', earned: stats.pastGatherings >= 5, description: 'Attended 5+ gatherings' },
+    { icon: '🎤', label: 'Host', earned: hostedCount >= 1, description: 'Hosted your first gathering' },
+    { icon: '🏘️', label: 'Community Builder', earned: createdCommunitiesCount >= 1, description: 'Started a community' },
+    { icon: '🤝', label: 'Connector', earned: stats.friends >= 5, description: 'Made 5+ friends' },
+  ];
+
+  return achievements;
+}
+
 export async function getProfileQuickStats() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

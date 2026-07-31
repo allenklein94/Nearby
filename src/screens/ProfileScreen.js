@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
-import { getProfileQuickStats } from '../services/homeDashboard';
+import { getProfileQuickStats, getAchievements } from '../services/homeDashboard';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
@@ -90,6 +90,7 @@ export default function ProfileScreen({ navigation }) {
   const [expandedField, setExpandedField] = useState(null);
   const [loadingStrengths, setLoadingStrengths] = useState(false);
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
+  const [achievements, setAchievements] = useState([]);
 
   useEffect(() => {
     load();
@@ -124,6 +125,9 @@ export default function ProfileScreen({ navigation }) {
 
     const stats = await getProfileQuickStats();
     setQuickStats(stats);
+
+    const earnedAchievements = await getAchievements();
+    setAchievements(earnedAchievements);
   }
 
   async function showStrengths() {
@@ -403,6 +407,20 @@ const result = await response.json();
             <Text style={styles.quickStatLabel}>Past</Text>
           </TouchableOpacity>
         </View>
+
+        {achievements.some((a) => a.earned) && (
+          <>
+            <Text style={styles.sectionLabel} accessibilityRole="header">Achievements</Text>
+            <View style={styles.achievementsGrid}>
+              {achievements.filter((a) => a.earned).map((a) => (
+                <View key={a.label} style={styles.achievementBadge} accessibilityLabel={`${a.label}: ${a.description}`}>
+                  <Text style={styles.achievementIcon}>{a.icon}</Text>
+                  <Text style={styles.achievementLabel}>{a.label}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         <TouchableOpacity
           style={styles.photoWrap}
@@ -760,6 +778,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   quickStat: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
   quickStatNumber: { ...typography.headline, color: colors.textPrimary },
   quickStatLabel: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  achievementBadge: {
+    alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, width: 90,
+  },
+  achievementIcon: { fontSize: 24, marginBottom: 4 },
+  achievementLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textAlign: 'center' },
   photoWrap: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
