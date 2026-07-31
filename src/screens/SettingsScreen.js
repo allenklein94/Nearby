@@ -869,6 +869,18 @@ export default function SettingsScreen({ navigation }) {
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('BusinessDashboard')}
+            activeOpacity={0.85}
+            accessibilityLabel="Business dashboard, admin"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>Business Dashboard (Admin)</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
 
         {isAdmin && (
           <TouchableOpacity

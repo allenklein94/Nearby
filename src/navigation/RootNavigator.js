@@ -25,6 +25,7 @@ import CommunitiesScreen from '../screens/CommunitiesScreen';
 import CreateCommunityScreen from '../screens/CreateCommunityScreen';
 import CommunityDetailScreen from '../screens/CommunityDetailScreen';
 import CommunityChatScreen from '../screens/CommunityChatScreen';
+import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
@@ -253,6 +254,7 @@ export default function RootNavigator() {
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CommunityChat" component={CommunityChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.communityName ?? 'Community Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
