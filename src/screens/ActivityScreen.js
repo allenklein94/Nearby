@@ -8,6 +8,7 @@ import { calculateCompatibility } from '../services/compatibility';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
+import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import SkeletonGridCard from '../components/SkeletonGridCard';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -89,7 +90,15 @@ export default function ActivityScreen({ navigation }) {
       raw: f,
     }));
 
-    const allItems = [...noticeItems, ...sightingItems, ...friendRequestItems].sort(
+    const businessUpdates = await getFollowedBusinessUpdates().catch(() => []);
+    const businessUpdateItems = businessUpdates.map((u) => ({
+      type: 'business_update',
+      key: `business-${u.id}`,
+      timestamp: u.created_at,
+      raw: u,
+    }));
+
+    const allItems = [...noticeItems, ...sightingItems, ...friendRequestItems, ...businessUpdateItems].sort(
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
 
@@ -263,6 +272,21 @@ export default function ActivityScreen({ navigation }) {
                     </View>
                   )}
                 </TouchableOpacity>
+              );
+            }
+
+            if (item.type === 'business_update') {
+              const u = item.raw;
+              return (
+                <View style={styles.row} accessibilityLabel={`${u.brand_partners?.name}: ${u.title}`}>
+                  <View style={[styles.rowAvatar, styles.avatarPlaceholder, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ fontSize: 20 }}>📣</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>{u.brand_partners?.name}: {u.title}</Text>
+                    {u.body ? <Text style={styles.rowSubtitle}>{u.body}</Text> : null}
+                  </View>
+                </View>
               );
             }
 

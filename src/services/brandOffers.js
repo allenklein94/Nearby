@@ -31,6 +31,34 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function postBusinessUpdate(partnerId, title, body) {
+  const { error } = await supabase.from('business_updates').insert({ partner_id: partnerId, title, body });
+  if (error) throw error;
+}
+
+export async function getFollowedBusinessUpdates() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data: followed } = await supabase.from('business_followers').select('brand_partner_id').eq('user_id', myId);
+  const partnerIds = (followed ?? []).map((f) => f.brand_partner_id);
+  if (partnerIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('business_updates')
+    .select('id, title, body, created_at, brand_partners(name)')
+    .in('partner_id', partnerIds)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error('getFollowedBusinessUpdates error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getMyBusinessGatherings(partnerId) {
   const { data, error } = await supabase
     .from('gatherings')

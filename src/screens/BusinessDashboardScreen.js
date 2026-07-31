@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -22,6 +22,10 @@ export default function BusinessDashboardScreen() {
   const [newInstructions, setNewInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [gatherings, setGatherings] = useState([]);
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [updateTitle, setUpdateTitle] = useState('');
+  const [updateBody, setUpdateBody] = useState('');
+  const [postingUpdate, setPostingUpdate] = useState(false);
 
   useEffect(() => {
     loadPartners();
@@ -63,6 +67,27 @@ export default function BusinessDashboardScreen() {
 
   function formatDate(iso) {
     return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  async function handlePostUpdate() {
+    if (!updateTitle.trim()) {
+      return Alert.alert('Title required', 'Give your update a short title.');
+    }
+    const titleCheck = await checkTextModeration(updateTitle);
+    if (!titleCheck.safe) {
+      return Alert.alert('Title not allowed', 'Please revise and try again.');
+    }
+    setPostingUpdate(true);
+    try {
+      await postBusinessUpdate(selectedPartner.id, updateTitle.trim(), updateBody.trim() || null);
+      setUpdateModalVisible(false);
+      setUpdateTitle('');
+      setUpdateBody('');
+      Alert.alert('Sent', 'Your followers have been notified.');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setPostingUpdate(false);
   }
 
   async function handleCreateOffer() {
@@ -165,6 +190,15 @@ export default function BusinessDashboardScreen() {
             </View>
           ))
         )}
+
+        <TouchableOpacity
+          style={styles.postUpdateButton}
+          onPress={() => setUpdateModalVisible(true)}
+          accessibilityLabel="Post an update to your followers"
+          accessibilityRole="button"
+        >
+          <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
+        </TouchableOpacity>
 
         <View style={styles.offersHeader}>
           <Text style={styles.sectionHeader}>Rewards & Offers</Text>
@@ -272,6 +306,44 @@ export default function BusinessDashboardScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+      <Modal visible={updateModalVisible} animationType="slide" transparent onRequestClose={() => setUpdateModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Post Update</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="What's new?"
+                placeholderTextColor={colors.textTertiary}
+                value={updateTitle}
+                onChangeText={setUpdateTitle}
+                accessibilityLabel="Update title"
+              />
+              <TextInput
+                style={[styles.input, { height: 90, textAlignVertical: 'top', marginTop: spacing.sm }]}
+                placeholder="Details (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={updateBody}
+                onChangeText={setUpdateBody}
+                multiline
+                accessibilityLabel="Update details, optional"
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handlePostUpdate}
+                disabled={postingUpdate}
+                accessibilityLabel={postingUpdate ? 'Sending' : 'Send update'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{postingUpdate ? 'Sending...' : 'Send to Followers'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setUpdateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -299,6 +371,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   offersHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm },
   createOfferButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   createOfferButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  postUpdateButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginTop: spacing.xl,
+  },
+  postUpdateButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   offerCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
