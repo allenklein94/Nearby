@@ -1,45 +1,35 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { supabase } from '../services/supabase';
-import {
-  getMyCommunities, joinCommunity, leaveCommunity,
-  getCommunityMemberCount, getCommunityGatherings,
-} from '../services/communities';
+import { getMyCommunities, getPublicCommunities, joinCommunity, getCommunityMemberCount } from '../services/communities';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import BusinessHostBadge from '../components/BusinessHostBadge';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-export default function CommunityDetailScreen({ route, navigation }) {
-  const { communityId, communityName } = route.params;
+export default function CommunitiesScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [community, setCommunity] = useState(null);
-  const [isMember, setIsMember] = useState(false);
-  const [isCreator, setIsCreator] = useState(false);
-  const [memberCount, setMemberCount] = useState(0);
-  const [gatherings, setGatherings] = useState([]);
+  const [myCommunities, setMyCommunities] = useState([]);
+  const [discoverCommunities, setDiscoverCommunities] = useState([]);
+  const [memberCounts, setMemberCounts] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
-    setCommunity(data);
+    const [mine, publicOnes] = await Promise.all([getMyCommunities(), getPublicCommunities()]);
+    setMyCommunities(mine);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    setIsCreator(data?.creator_id === myId);
+    const myIds = new Set(mine.map((c) => c.id));
+    const toDiscover = publicOnes.filter((c) => !myIds.has(c.id));
+    setDiscoverCommunities(toDiscover);
 
-    const mine = await getMyCommunities();
-    setIsMember(mine.some((c) => c.id === communityId));
-
-    const count = await getCommunityMemberCount(communityId);
-    setMemberCount(count);
-
-    const upcoming = await getCommunityGatherings(communityId);
-    setGatherings(upcoming.filter((g) => new Date(g.scheduled_at) >= new Date()));
-
+    const counts = await Promise.all(
+      [...mine, ...toDiscover].map(async (c) => [c.id, await getCommunityMemberCount(c.id)])
+    );
+    setMemberCounts(Object.fromEntries(counts));
     setLoading(false);
-  }, [communityId]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -47,100 +37,134 @@ export default function CommunityDetailScreen({ route, navigation }) {
     }, [load])
   );
 
-  async function handleJoinLeave() {
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  async function handleJoin(communityId) {
     try {
-      if (isMember) {
-        await leaveCommunity(communityId);
-      } else {
-        await joinCommunity(communityId);
-      }
+      await joinCommunity(communityId);
       load();
     } catch (e) {
       Alert.alert('Error', e.message);
     }
   }
 
-  function formatDate(iso) {
-    return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  }
-
-  if (loading || !community) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
-      </SafeAreaView>
-    );
-  }
-
-  const categoryStyle = categoryStyleFor(community.interest_tag);
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <View style={[styles.iconBadge, { backgroundColor: categoryStyle.color + '30' }]}>
-          <Text style={styles.iconText}>{categoryStyle.icon}</Text>
-        </View>
-        <Text style={styles.title}>{community.name}</Text>
-        <Text style={styles.meta}>{memberCount} member{memberCount === 1 ? '' : 's'} · {community.is_public ? 'Public' : 'Private'}</Text>
-        {community.description ? <Text style={styles.description}>{community.description}</Text> : null}
-
-        {!isCreator && (
-          <TouchableOpacity
-            style={[styles.joinButton, isMember && styles.leaveButton]}
-            onPress={handleJoinLeave}
-            activeOpacity={0.85}
-            accessibilityLabel={isMember ? `Leave ${community.name}` : `Join ${community.name}`}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.joinButtonText, isMember && styles.leaveButtonText]}>
-              {isMember ? 'Leave Community' : 'Join Community'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {isMember && (
-          <TouchableOpacity
-            style={styles.chatButton}
-            onPress={() => navigation.navigate('CommunityChat', { communityId, communityName: community.name })}
-            activeOpacity={0.85}
-            accessibilityLabel="Open community group chat"
-            accessibilityRole="button"
-          >
-            <Text style={styles.chatButtonText}>💬 Community Chat</Text>
-          </TouchableOpacity>
-        )}
-
-        {gatherings.length > 0 && (
+      <FlatList
+        data={discoverCommunities}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: spacing.lg }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        ListHeaderComponent={
           <>
-            <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
-            {gatherings.map((g) => (
-              <View key={g.id} style={styles.gatheringCard}>
-                <Text style={styles.gatheringTitle}>{g.title}</Text>
-                <Text style={styles.gatheringMeta}>{formatDate(g.scheduled_at)}</Text>
-              </View>
-            ))}
+            <View style={styles.headerRow}>
+              <Text style={styles.title}>Communities</Text>
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={() => navigation.navigate('CreateCommunity')}
+                accessibilityLabel="Create a new community"
+                accessibilityRole="button"
+              >
+                <Text style={styles.createButtonText}>+ Create</Text>
+              </TouchableOpacity>
+            </View>
+
+            {myCommunities.length > 0 && (
+              <>
+                <Text style={styles.sectionHeader}>Your Communities</Text>
+                {myCommunities.map((c) => {
+                  const categoryStyle = categoryStyleFor(c.interest_tag);
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}
+                      onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+                      accessibilityLabel={`${c.name}, ${memberCounts[c.id] ?? 0} members`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardTitle}>{c.name}</Text>
+                        <Text style={styles.cardMeta}>{memberCounts[c.id] ?? 0} members</Text>
+                      </View>
+                      <Text style={styles.cardChevron}>›</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <View style={styles.divider} />
+              </>
+            )}
+
+            <Text style={styles.sectionHeader}>Discover</Text>
           </>
-        )}
-      </ScrollView>
+        }
+        ListEmptyComponent={
+          !loading && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🏘️</Text>
+              <Text style={styles.emptyText}>No public communities to discover right now — start your own!</Text>
+            </View>
+          )
+        }
+        renderItem={({ item }) => {
+          const categoryStyle = categoryStyleFor(item.interest_tag);
+          return (
+            <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }]}>
+              <TouchableOpacity
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => navigation.navigate('CommunityDetail', { communityId: item.id, communityName: item.name })}
+                accessibilityLabel={`${item.name}, ${memberCounts[item.id] ?? 0} members`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.cardIcon}>{categoryStyle.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{item.name}</Text>
+                  <Text style={styles.cardMeta}>{memberCounts[item.id] ?? 0} members</Text>
+                  <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} />
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.joinButton}
+                onPress={() => handleJoin(item.id)}
+                accessibilityLabel={`Join ${item.name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.joinButtonText}>Join</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
+      />
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  iconBadge: { width: 56, height: 56, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.md },
-  iconText: { fontSize: 28 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
   title: { ...typography.title, color: colors.textPrimary },
-  meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2, marginBottom: spacing.md },
-  description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
-  joinButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.sm, ...shadow.button },
-  leaveButton: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  joinButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  leaveButtonText: { color: colors.textSecondary },
-  chatButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.lg },
-  chatButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
-  sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
-  gatheringCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
-  gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
-  gatheringMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  createButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  createButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  sectionHeader: {
+    ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
+    letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm,
+  },
+  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  card: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm, ...shadow.card,
+  },
+  cardIcon: { fontSize: 24, marginRight: spacing.sm },
+  cardTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
+  cardMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  cardChevron: { color: colors.textTertiary, fontSize: 20 },
+  joinButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
+  joinButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
+  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
 });

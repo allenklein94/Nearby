@@ -25,7 +25,7 @@ export async function getMyCommunities() {
 
   const { data, error } = await supabase
     .from('community_members')
-    .select('community_id, role, communities(id, name, description, interest_tag, is_public, cover_photo_url, creator_id)')
+    .select('community_id, role, communities(id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id)')
     .eq('user_id', myId);
 
   if (error) {
@@ -38,7 +38,7 @@ export async function getMyCommunities() {
 export async function getPublicCommunities() {
   const { data, error } = await supabase
     .from('communities')
-    .select('id, name, description, interest_tag, is_public, cover_photo_url, creator_id')
+    .select('id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id')
     .eq('is_public', true)
     .order('created_at', { ascending: false });
 
