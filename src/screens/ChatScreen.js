@@ -110,6 +110,7 @@ export default function ChatScreen({ route, navigation }) {
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
   const [gatheringTitle, setGatheringTitle] = useState(null);
+  const [isRomanticMatch, setIsRomanticMatch] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
   const [checkInModalVisible, setCheckInModalVisible] = useState(false);
@@ -298,9 +299,10 @@ export default function ChatScreen({ route, navigation }) {
       // romantic matches — applying it to a friend or gathering
       // connection would incorrectly gate what's meant to be a
       // platonic chat with dating-context framing.
-      const isRomanticMatch = !match.source_gathering_id && !match.source_friendship_id;
-      const meOptedIn = isRomanticMatch && !!me?.women_message_first;
-      const otherOptedIn = isRomanticMatch && !!other?.women_message_first;
+      const matchIsRomantic = !match.source_gathering_id && !match.source_friendship_id;
+      setIsRomanticMatch(matchIsRomantic);
+      const meOptedIn = matchIsRomantic && !!me?.women_message_first;
+      const otherOptedIn = matchIsRomantic && !!other?.women_message_first;
       if (meOptedIn && !otherOptedIn) {
         setDesignatedFirstMessengerId(myId);
         setDesignatedFirstMessengerName('You');
@@ -466,15 +468,25 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   function showCourageMenu() {
+    // "Ask them out" / "Say I'm interested" only make sense for a
+    // genuinely romantic match — offering them in a friend or
+    // gathering-sourced chat would be genuinely wrong. Setting a
+    // boundary is universal, so that one stays either way.
+    const romanticOptions = isRomanticMatch
+      ? [
+          { text: 'Ask them out', onPress: () => getCourageMessage('ask_out') },
+          { text: "Say I'm interested", onPress: () => getCourageMessage('say_interested') },
+          { text: "Say I'm not interested", onPress: () => getCourageMessage('say_not_interested') },
+        ]
+      : [];
+
     Alert.alert(
       'Help Me Say It',
       "What are you trying to say? I'll help you find the words.",
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Ask them out', onPress: () => getCourageMessage('ask_out') },
         { text: "Set a boundary", onPress: () => getCourageMessage('set_boundary') },
-        { text: "Say I'm interested", onPress: () => getCourageMessage('say_interested') },
-        { text: "Say I'm not interested", onPress: () => getCourageMessage('say_not_interested') },
+        ...romanticOptions,
       ]
     );
   }
