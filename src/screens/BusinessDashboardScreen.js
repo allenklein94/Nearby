@@ -4,18 +4,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness } from '../services/brandOffers';
+import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 const SECTIONS = [
-  { key: 'home', icon: '🏠', label: 'Home' },
+  { key: 'home', icon: '🏠', label: 'Dashboard' },
   { key: 'gatherings', icon: '🎉', label: 'Gatherings' },
   { key: 'community', icon: '🏘️', label: 'Community' },
   { key: 'insights', icon: '📊', label: 'Insights' },
-  { key: 'offers', icon: '🎁', label: 'Offers' },
-  { key: 'inbox', icon: '💬', label: 'Inbox' },
+  { key: 'business', icon: '⚙️', label: 'Business' },
 ];
 
 export default function BusinessDashboardScreen() {
@@ -40,6 +39,9 @@ export default function BusinessDashboardScreen() {
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateBody, setUpdateBody] = useState('');
   const [postingUpdate, setPostingUpdate] = useState(false);
+  const [needsAttention, setNeedsAttention] = useState([]);
+  const [topMembers, setTopMembers] = useState([]);
+  const [visitFrequency, setVisitFrequency] = useState(null);
   const [growth, setGrowth] = useState(null);
   const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
   const [conversations, setConversations] = useState([]);
@@ -68,6 +70,9 @@ export default function BusinessDashboardScreen() {
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
         loadConversations(selectedPartner.id);
+        loadNeedsAttention(selectedPartner.id);
+        loadTopMembers(selectedPartner.id);
+        loadVisitFrequency(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -105,6 +110,40 @@ export default function BusinessDashboardScreen() {
   async function loadConversations(partnerId) {
     const results = await getBusinessConversations(partnerId);
     setConversations(results);
+  }
+
+  async function loadNeedsAttention(partnerId) {
+    // Genuine, real actionable items — not invented busywork. A
+    // pending gathering approval and unread messages are the only
+    // two things I can compute honestly right now without guessing.
+    const tasks = [];
+
+    const { count: pendingCount } = await supabase
+      .from('gathering_interest')
+      .select('id, gatherings!inner(hosting_partner_id)', { count: 'exact', head: true })
+      .eq('gatherings.hosting_partner_id', partnerId)
+      .eq('status', 'pending');
+    if (pendingCount > 0) {
+      tasks.push({ label: `${pendingCount} attendee request${pendingCount === 1 ? '' : 's'} waiting for approval`, onPress: () => setSection('gatherings') });
+    }
+
+    const unreadConvos = await getBusinessConversations(partnerId);
+    const unreadCount = unreadConvos.filter((c) => !c.from_business).length;
+    if (unreadCount > 0) {
+      tasks.push({ label: `${unreadCount} conversation${unreadCount === 1 ? '' : 's'} waiting for a reply`, onPress: () => setSection('inbox_modal') });
+    }
+
+    setNeedsAttention(tasks);
+  }
+
+  async function loadTopMembers(partnerId) {
+    const results = await getBusinessTopMembers(partnerId);
+    setTopMembers(results);
+  }
+
+  async function loadVisitFrequency(partnerId) {
+    const result = await getBusinessVisitFrequency(partnerId);
+    setVisitFrequency(result);
   }
 
   async function openConversation(convo) {
@@ -207,7 +246,16 @@ export default function BusinessDashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Business Mode</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Business Mode</Text>
+          <TouchableOpacity
+            onPress={() => setSection('inbox_modal')}
+            accessibilityLabel="Messages"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 22 }}>💬</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity
           style={styles.partnerSelector}
           onPress={() => setPickerVisible(true)}
@@ -283,6 +331,24 @@ export default function BusinessDashboardScreen() {
                       )}
                     </View>
                   )}
+
+                  {needsAttention.length > 0 && (
+                    <>
+                      <Text style={styles.sectionHeader}>Needs Attention</Text>
+                      {needsAttention.map((task, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          style={styles.taskRow}
+                          onPress={task.onPress}
+                          accessibilityLabel={task.label}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.taskText}>• {task.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  )}
+
                   <TouchableOpacity
                     style={styles.postUpdateButton}
                     onPress={() => setUpdateModalVisible(true)}
@@ -308,8 +374,6 @@ export default function BusinessDashboardScreen() {
                     <View key={g.id} style={styles.gatheringRow}>
                       <Text style={styles.offerTitle}>{g.title}{g.recurrence_rule ? ` (${g.recurrence_rule})` : ''}</Text>
                       <Text style={styles.offerDescription}>{isUpcoming ? 'Next: ' : 'Last: '}{formatDate(g.scheduled_at)}</Text>
-                      <Text style={styles.offerTitle}>{g.title}</Text>
-                      <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
                       {breakdown && breakdown.total_attending > 0 && (
                         <Text style={styles.breakdownText}>
                           {breakdown.total_attending} attending · {breakdown.new_attendees} new · {breakdown.returning_attendees} returning
@@ -322,27 +386,44 @@ export default function BusinessDashboardScreen() {
             )}
 
             {section === 'community' && (
-              communities.length === 0 ? (
-                <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
-              ) : (
-                communities.map((c) => (
-                  <View key={c.id} style={styles.gatheringRow}>
-                    <Text style={styles.offerTitle}>{c.name}</Text>
-                    <Text style={styles.breakdownText}>{c.memberCount} member{c.memberCount === 1 ? '' : 's'}</Text>
-                    {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
-                  </View>
-                ))
-              )
+              <>
+                {communities.length === 0 ? (
+                  <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
+                ) : (
+                  communities.map((c) => (
+                    <View key={c.id} style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>{c.name}</Text>
+                      <Text style={styles.breakdownText}>{c.memberCount} member{c.memberCount === 1 ? '' : 's'}</Text>
+                      {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
+                    </View>
+                  ))
+                )}
+
+                {topMembers.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Most Engaged</Text>
+                    {topMembers.map((m, i) => (
+                      <View key={m.user_id} style={styles.gatheringRow}>
+                        <Text style={styles.offerTitle}>{i + 1}. {m.display_name}</Text>
+                        <Text style={styles.offerDescription}>{m.gatherings_attended} gathering{m.gatherings_attended === 1 ? '' : 's'} attended</Text>
+                      </View>
+                    ))}
+                  </>
+                )}
+              </>
             )}
 
             {section === 'insights' && (
-              insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null) ? (
+              (insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
-                  {insights.top_interests?.length > 0 && (
+                  {insights?.top_interests?.length > 0 && (
                     <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
                   )}
-                  {insights.best_hour_of_day !== null && insights.best_hour_of_day !== undefined && (
+                  {insights?.best_hour_of_day !== null && insights?.best_hour_of_day !== undefined && (
                     <Text style={styles.insightLine}>Best-performing time: {formatHour(insights.best_hour_of_day)}</Text>
+                  )}
+                  {visitFrequency !== null && (
+                    <Text style={styles.insightLine}>Attendees average {visitFrequency} gathering{visitFrequency === 1 ? '' : 's'} with you</Text>
                   )}
                 </View>
               ) : (
@@ -350,8 +431,9 @@ export default function BusinessDashboardScreen() {
               )
             )}
 
-            {section === 'offers' && (
+            {section === 'business' && (
               <>
+                <Text style={styles.sectionHeader}>Rewards & Offers</Text>
                 <TouchableOpacity
                   style={styles.createOfferButton}
                   onPress={() => setCreateModalVisible(true)}
@@ -377,10 +459,16 @@ export default function BusinessDashboardScreen() {
                     </View>
                   ))
                 )}
+
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
+                <View style={styles.gatheringRow}>
+                  <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
+                  <Text style={styles.offerDescription}>Editing business profile details isn't available yet — contact support to make changes for now.</Text>
+                </View>
               </>
             )}
 
-            {section === 'inbox' && (
+            {section === 'inbox_modal' && (
               activeConversation ? (
                 <View>
                   <TouchableOpacity onPress={() => setActiveConversation(null)} accessibilityLabel="Back to conversations" accessibilityRole="button">
@@ -542,6 +630,7 @@ export default function BusinessDashboardScreen() {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.md },
   partnerSelector: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -588,6 +677,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   insightLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 4, lineHeight: 18 },
   breakdownText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  taskRow: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs },
+  taskText: { color: colors.textPrimary, fontSize: 13 },
   growthCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginTop: spacing.md,

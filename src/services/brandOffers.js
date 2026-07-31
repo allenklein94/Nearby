@@ -31,6 +31,24 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function getBusinessTopMembers(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_top_members', { partner_id_param: partnerId });
+  if (error) {
+    console.error('getBusinessTopMembers error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function getBusinessVisitFrequency(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_visit_frequency', { partner_id_param: partnerId });
+  if (error) {
+    console.error('getBusinessVisitFrequency error', error);
+    return null;
+  }
+  return data;
+}
+
 export async function getBusinessInsights(partnerId) {
   const { data, error } = await supabase.rpc('get_business_insights', { partner_id_param: partnerId });
   if (error) {
