@@ -251,7 +251,11 @@ export default function MatchesScreen({ navigation }) {
         }
         renderItem={({ item }) => {
           const other = otherPersonFor(item);
-          const report = generateCompatibilityReport(myProfile, other);
+          // A dating-style compatibility score doesn't make sense
+          // for a friend or gathering connection — only compute and
+          // show it for genuinely romantic matches.
+          const isRomanticMatch = !item.source_gathering_id && !item.source_friendship_id;
+          const report = isRomanticMatch ? generateCompatibilityReport(myProfile, other) : { score: null };
           const gatheringLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : null;
           const matchedLabel = formatMatchedTime(item.matched_at);
           const subLabel = gatheringLabel ? `${gatheringLabel} · ${matchedLabel}` : matchedLabel || t('matches.tapToChat');
