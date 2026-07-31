@@ -56,7 +56,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [lightboxPhotoUri, setLightboxPhotoUri] = useState(null);
   const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
-  cconst [mutualFriends, setMutualFriends] = useState([]);
+  const [mutualFriends, setMutualFriends] = useState([]);
   const [hostStats, setHostStats] = useState(null);
   const [hostReputation, setHostReputation] = useState(null);
   useEffect(() => {
