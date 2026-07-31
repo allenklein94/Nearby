@@ -436,6 +436,11 @@ export async function updateGathering(gatheringId, { title, description, schedul
   if (error) throw error;
 }
 
+export async function stopRecurringSeries(gatheringId) {
+  const { error } = await supabase.from('gatherings').update({ series_stopped: true }).eq('id', gatheringId);
+  if (error) throw error;
+}
+
 export async function cancelGathering(gatheringId) {
   const { error } = await supabase.from('gatherings').delete().eq('id', gatheringId);
   if (error) throw error;

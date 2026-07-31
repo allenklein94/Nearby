@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering } from '../services/gatherings';
+import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -309,6 +309,41 @@ export default function GatheringsScreen({ navigation }) {
   }
 
   function confirmCancelGathering(gathering) {
+    if (gathering.recurrence_rule) {
+      Alert.alert(
+        `Cancel "${gathering.title}"?`,
+        'This is a recurring gathering. Do you want to cancel just this one, or stop the whole series?',
+        [
+          { text: 'Keep It', style: 'cancel' },
+          {
+            text: 'Just This One',
+            onPress: async () => {
+              try {
+                await cancelGathering(gathering.id);
+                load();
+              } catch (e) {
+                Alert.alert('Error', e.message);
+              }
+            },
+          },
+          {
+            text: 'Stop The Whole Series',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await stopRecurringSeries(gathering.id);
+                await cancelGathering(gathering.id);
+                load();
+              } catch (e) {
+                Alert.alert('Error', e.message);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     Alert.alert(
       `Cancel "${gathering.title}"?`,
       "This removes the gathering completely. Anyone who expressed interest won't be notified automatically.",
