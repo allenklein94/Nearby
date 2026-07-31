@@ -869,6 +869,16 @@ export default function SettingsScreen({ navigation }) {
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('BusinessPartnerApply')}
+          activeOpacity={0.85}
+          accessibilityLabel="Apply to partner your business"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>Partner With Us</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
         {isAdmin && (
           <TouchableOpacity
             style={styles.rowButtonCard}
@@ -878,6 +888,18 @@ export default function SettingsScreen({ navigation }) {
             accessibilityRole="button"
           >
             <Text style={styles.rowButtonText}>Business Dashboard (Admin)</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('AdminBusinessRequests')}
+            activeOpacity={0.85}
+            accessibilityLabel="Review business partner requests, admin"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>Business Requests (Admin)</Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
