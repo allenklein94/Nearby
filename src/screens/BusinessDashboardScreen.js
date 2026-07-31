@@ -325,6 +325,7 @@ export default function BusinessDashboardScreen() {
                 communities.map((c) => (
                   <View key={c.id} style={styles.gatheringRow}>
                     <Text style={styles.offerTitle}>{c.name}</Text>
+                    <Text style={styles.breakdownText}>{c.memberCount} member{c.memberCount === 1 ? '' : 's'}</Text>
                     {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
                   </View>
                 ))

@@ -11,7 +11,14 @@ export async function getBusinessCommunities(partnerId) {
     console.error('getBusinessCommunities error', error);
     return [];
   }
-  return data ?? [];
+
+  const withCounts = await Promise.all(
+    (data ?? []).map(async (c) => {
+      const count = await getCommunityMemberCount(c.id);
+      return { ...c, memberCount: count };
+    })
+  );
+  return withCounts;
 }
 
 export async function createCommunity({ name, description, interestTag, isPublic = true }) {
