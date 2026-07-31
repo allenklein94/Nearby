@@ -303,8 +303,11 @@ export default function BusinessDashboardScreen() {
               ) : (
                 gatherings.map((g) => {
                   const breakdown = gatheringBreakdowns[g.id];
+                  const isUpcoming = new Date(g.scheduled_at) >= new Date();
                   return (
                     <View key={g.id} style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>{g.title}{g.recurrence_rule ? ` (${g.recurrence_rule})` : ''}</Text>
+                      <Text style={styles.offerDescription}>{isUpcoming ? 'Next: ' : 'Last: '}{formatDate(g.scheduled_at)}</Text>
                       <Text style={styles.offerTitle}>{g.title}</Text>
                       <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
                       {breakdown && breakdown.total_attending > 0 && (

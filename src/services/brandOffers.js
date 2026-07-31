@@ -71,15 +71,40 @@ export async function getFollowedBusinessUpdates() {
 export async function getMyBusinessGatherings(partnerId) {
   const { data, error } = await supabase
     .from('gatherings')
-    .select('id, title, scheduled_at')
+    .select('id, title, scheduled_at, recurrence_rule, recurring_series_id')
     .eq('hosting_partner_id', partnerId)
     .order('scheduled_at', { ascending: false });
-
   if (error) {
     console.error('getMyBusinessGatherings error', error);
     return [];
   }
-  return data ?? [];
+
+  // Group recurring series into a single entry (the soonest
+  // upcoming instance, or most recent if none are upcoming) rather
+  // than showing every generated week as its own row — a weekly
+  // series should read as one ongoing thing, not dozens of entries.
+  const now = new Date();
+  const nonRecurring = (data ?? []).filter((g) => !g.recurring_series_id);
+  const recurringBySeries = {};
+  for (const g of data ?? []) {
+    if (!g.recurring_series_id) continue;
+    const existing = recurringBySeries[g.recurring_series_id];
+    if (!existing) {
+      recurringBySeries[g.recurring_series_id] = g;
+      continue;
+    }
+    const gIsUpcoming = new Date(g.scheduled_at) >= now;
+    const existingIsUpcoming = new Date(existing.scheduled_at) >= now;
+    if (gIsUpcoming && (!existingIsUpcoming || new Date(g.scheduled_at) < new Date(existing.scheduled_at))) {
+      recurringBySeries[g.recurring_series_id] = g;
+    } else if (!gIsUpcoming && !existingIsUpcoming && new Date(g.scheduled_at) > new Date(existing.scheduled_at)) {
+      recurringBySeries[g.recurring_series_id] = g;
+    }
+  }
+
+  return [...nonRecurring, ...Object.values(recurringBySeries)].sort(
+    (a, b) => new Date(b.scheduled_at) - new Date(a.scheduled_at)
+  );
 }
 
 export async function getConversationWithBusiness(partnerId, conversationWithId = null) {
