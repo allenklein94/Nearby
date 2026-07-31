@@ -51,8 +51,21 @@
 
     async function fetchAndRender() {
       try {
+        // Calls a security-definer function that requires this
+        // specific session ID as a parameter, rather than a direct
+        // table query — direct SELECT on coordinates is no longer
+        // permitted at all, by design, so this is the only valid
+        // way to read a live position now.
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/live_tracking_sessions?id=eq.${encodeURIComponent(sessionId)}&select=current_lat,current_lng,updated_at,expires_at,active&apikey=${encodeURIComponent(SUPABASE_ANON_KEY)}`
+          `${SUPABASE_URL}/rest/v1/rpc/get_live_tracking_session`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ session_id_param: sessionId }),
+          }
         );
 
         if (!res.ok) {
