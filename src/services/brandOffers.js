@@ -31,6 +31,18 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function followBusiness(brandPartnerId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase
+    .from('business_followers')
+    .insert({ user_id: myId, brand_partner_id: brandPartnerId });
+
+  // Already following is fine, not an error
+  if (error && error.code !== '23505') throw error;
+}
+
 export async function redeemOffer(offerId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;

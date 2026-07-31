@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getActiveOffers, getMyRedemptions, redeemOffer } from '../services/brandOffers';
+import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness } from '../services/brandOffers';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -46,7 +46,27 @@ export default function BrandOffersScreen() {
       posthog.capture('brand_offer_redeemed', { offer_id: offer.id, partner: offer.brand_partners?.name });
       Alert.alert(
         'Redeemed!',
-        offer.redemption_instructions || 'Check your account for details on how to use this.'
+        offer.redemption_instructions || 'Check your account for details on how to use this.',
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              // A genuine, explicit choice — not a default opt-in.
+              // The business only gets access if the person actually says yes.
+              Alert.alert(
+                `Stay connected with ${offer.brand_partners?.name ?? 'this business'}?`,
+                "They'll be able to invite you to future events and offers.",
+                [
+                  { text: 'No thanks', style: 'cancel' },
+                  {
+                    text: 'Yes, stay connected',
+                    onPress: () => followBusiness(offer.partner_id).catch(() => {}),
+                  },
+                ]
+              );
+            },
+          },
+        ]
       );
       load();
     } catch (e) {
