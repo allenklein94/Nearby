@@ -332,9 +332,15 @@ export default function GatheringsScreen({ navigation }) {
             style: 'destructive',
             onPress: async () => {
               try {
+                // Deliberately not cancelling this specific instance
+                // too — doing so would delete the very row carrying
+                // the stop flag, silently undoing the request and
+                // letting the series keep generating anyway. This
+                // instance still happens as planned; nothing new
+                // gets created after it.
                 await stopRecurringSeries(gathering.id);
-                await cancelGathering(gathering.id);
                 load();
+                Alert.alert('Series Stopped', "This one will still happen as scheduled, but no future ones will be created.");
               } catch (e) {
                 Alert.alert('Error', e.message);
               }
