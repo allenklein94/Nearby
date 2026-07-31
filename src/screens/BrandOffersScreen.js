@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness } from '../services/brandOffers';
+import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness } from '../services/brandOffers';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -17,12 +17,19 @@ export default function BrandOffersScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [redeemingId, setRedeemingId] = useState(null);
+  const [followingStatus, setFollowingStatus] = useState({});
 
   const load = useCallback(async () => {
     const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
     setOffers(offersData);
     setRedeemedIds(redemptionsData);
     setLoading(false);
+
+    const uniquePartnerIds = [...new Set(offersData.map((o) => o.partner_id))];
+    const followEntries = await Promise.all(
+      uniquePartnerIds.map(async (id) => [id, await isFollowingBusiness(id)])
+    );
+    setFollowingStatus(Object.fromEntries(followEntries));
   }, []);
 
   // Reload on focus, not just mount — offers can change (new ones
@@ -128,6 +135,27 @@ export default function BrandOffersScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               {offer.description ? <Text style={styles.description}>{offer.description}</Text> : null}
+              <TouchableOpacity
+                onPress={async () => {
+                  const currentlyFollowing = followingStatus[offer.partner_id];
+                  try {
+                    if (currentlyFollowing) {
+                      await unfollowBusiness(offer.partner_id);
+                    } else {
+                      await followBusiness(offer.partner_id);
+                    }
+                    setFollowingStatus((prev) => ({ ...prev, [offer.partner_id]: !currentlyFollowing }));
+                  } catch (e) {
+                    Alert.alert('Error', e.message);
+                  }
+                }}
+                accessibilityLabel={followingStatus[offer.partner_id] ? `Unfollow ${offer.brand_partners?.name}` : `Follow ${offer.brand_partners?.name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.followLinkText}>
+                  {followingStatus[offer.partner_id] ? '✓ Following' : '+ Follow'}
+                </Text>
+              </TouchableOpacity>
               {alreadyRedeemed ? (
                 <View style={styles.redeemedBadge}>
                   <Text style={styles.redeemedBadgeText}>{t('brandOffers.redeemed')}</Text>
@@ -169,6 +197,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   partnerName: { ...typography.caption, color: colors.textTertiary },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  followLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700', marginBottom: spacing.sm },
   redeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   redeemedBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
