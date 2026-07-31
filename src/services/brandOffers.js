@@ -5,14 +5,29 @@ export async function getActiveOffers() {
     .from('brand_offers')
     .select('*, brand_partners(name, logo_url, description)')
     .eq('active', true)
+    .is('gathering_id', null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .order('created_at', { ascending: false });
-
   if (error) {
     console.error('getActiveOffers error', error);
     return [];
   }
   return data ?? [];
+}
+
+export async function getGatheringOffer(gatheringId) {
+  const { data, error } = await supabase
+    .from('brand_offers')
+    .select('*, brand_partners(name, logo_url)')
+    .eq('gathering_id', gatheringId)
+    .eq('active', true)
+    .maybeSingle();
+
+  if (error) {
+    console.error('getGatheringOffer error', error);
+    return null;
+  }
+  return data;
 }
 
 export async function getMyRedemptions() {

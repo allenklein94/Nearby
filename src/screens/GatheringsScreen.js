@@ -9,6 +9,7 @@ import NewcomerBadge from '../components/NewcomerBadge';
 import BusinessHostBadge from '../components/BusinessHostBadge';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import RecurringBadge from '../components/RecurringBadge';
+import GatheringOfferBadge from '../components/GatheringOfferBadge';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -747,6 +748,7 @@ export default function GatheringsScreen({ navigation }) {
                 <NewcomerBadge gatheringId={item.id} />
                 <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} />
                 <RecurringBadge recurrenceRule={item.recurrence_rule} />
+                <GatheringOfferBadge gatheringId={item.id} />
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                 <View style={styles.metaRow}>
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
