@@ -16,7 +16,9 @@ export default function AdminBusinessRequestsScreen() {
     const { data } = await supabase
       .from('business_partner_requests')
       .select('*, profiles!business_partner_requests_requester_id_fkey(display_name)')
-      .eq('status', 'pending')
+      // Fetch everything, not just pending — approved/denied
+      // requests were vanishing with no history visible at all,
+      // even though the data itself was preserved.
       .order('created_at', { ascending: false });
     setRequests(data ?? []);
   }, []);
@@ -70,30 +72,37 @@ export default function AdminBusinessRequestsScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.businessName}>{item.business_name}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.businessName}>{item.business_name}</Text>
+              <Text style={[styles.statusBadge, item.status === 'approved' && styles.statusApproved, item.status === 'denied' && styles.statusDenied]}>
+                {item.status}
+              </Text>
+            </View>
             <Text style={styles.requester}>Requested by {item.profiles?.display_name}</Text>
             {item.business_description ? <Text style={styles.description}>{item.business_description}</Text> : null}
             {item.contact_info ? <Text style={styles.contact}>📞 {item.contact_info}</Text> : null}
-            <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={styles.approveButton}
-                onPress={() => handleApprove(item)}
-                disabled={processingIds[item.id]}
-                accessibilityLabel={`Approve ${item.business_name}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.approveButtonText}>Approve</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.denyButton}
-                onPress={() => handleDeny(item)}
-                disabled={processingIds[item.id]}
-                accessibilityLabel={`Deny ${item.business_name}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.denyButtonText}>Deny</Text>
-              </TouchableOpacity>
-            </View>
+            {item.status === 'pending' && (
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={styles.approveButton}
+                  onPress={() => handleApprove(item)}
+                  disabled={processingIds[item.id]}
+                  accessibilityLabel={`Approve ${item.business_name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.approveButtonText}>Approve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.denyButton}
+                  onPress={() => handleDeny(item)}
+                  disabled={processingIds[item.id]}
+                  accessibilityLabel={`Deny ${item.business_name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.denyButtonText}>Deny</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
       />
@@ -111,6 +120,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   businessName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   requester: { color: colors.textTertiary, fontSize: 12, marginTop: 2, marginBottom: spacing.sm },
+  statusBadge: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  statusApproved: { color: colors.success },
+  statusDenied: { color: colors.textTertiary },
   description: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs, lineHeight: 18 },
   contact: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.sm },
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
