@@ -7,6 +7,7 @@ import { isPremium } from '../services/purchases';
 import { calculateCompatibility } from '../services/compatibility';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
+import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
 import SkeletonGridCard from '../components/SkeletonGridCard';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -14,8 +15,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
-// and newly-visible gatherings all interleaved by recency into one
-// chronological list, rather than three separate places to check.
+// friend requests, and other activity all interleaved by recency
+// into one chronological list, rather than scattered across
+// separate places to check.
 export default function ActivityScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -27,6 +29,7 @@ export default function ActivityScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [compatScores, setCompatScores] = useState({});
   const [noticedBackIds, setNoticedBackIds] = useState({});
+  const [respondedFriendIds, setRespondedFriendIds] = useState({});
 
   const load = useCallback(async () => {
     const premiumStatus = await isPremium().catch(() => false);
@@ -78,7 +81,15 @@ export default function ActivityScreen({ navigation }) {
       raw: s,
     }));
 
-    const allItems = [...noticeItems, ...sightingItems].sort(
+    const pendingFriends = await getPendingFriendRequests().catch(() => []);
+    const friendRequestItems = pendingFriends.map((f) => ({
+      type: 'friend_request',
+      key: `friend-${f.friendshipId}`,
+      timestamp: new Date().toISOString(),
+      raw: f,
+    }));
+
+    const allItems = [...noticeItems, ...sightingItems, ...friendRequestItems].sort(
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
 
@@ -86,7 +97,7 @@ export default function ActivityScreen({ navigation }) {
 
     const urlEntries = await Promise.all(
       allItems.map(async (item) => {
-        const path = item.type === 'notice' ? item.raw.profiles?.photo_url : item.raw.profiles?.photo_url;
+        const path = item.type === 'friend_request' ? item.raw.photo_url : item.raw.profiles?.photo_url;
         if (!path) return [item.key, null];
         const url = await getSignedPhotoUrl(path);
         return [item.key, url];
@@ -120,6 +131,10 @@ export default function ActivityScreen({ navigation }) {
   }
 
   function handleCardPress(item) {
+    if (item.type === 'friend_request') {
+      navigation.navigate('ViewProfile', { userId: item.raw.id });
+      return;
+    }
     const userId = item.type === 'notice' ? item.raw.from_user : item.raw.otherUserId;
     if (premium || item.type === 'sighting') {
       navigation.navigate('ViewProfile', { userId });
@@ -144,6 +159,16 @@ export default function ActivityScreen({ navigation }) {
       } else {
         Alert.alert('Error', e.message);
       }
+    }
+  }
+
+  async function handleFriendRespond(item, accept) {
+    try {
+      await respondToFriendRequest(item.raw.friendshipId, accept);
+      setRespondedFriendIds((prev) => ({ ...prev, [item.key]: true }));
+      load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
     }
   }
 
@@ -198,6 +223,49 @@ export default function ActivityScreen({ navigation }) {
             </View>
           }
           renderItem={({ item }) => {
+            if (item.type === 'friend_request') {
+              const f = item.raw;
+              const responded = respondedFriendIds[item.key];
+              return (
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => handleCardPress(item)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${f.display_name} sent a friend request`}
+                  accessibilityRole="button"
+                >
+                  {photoUrls[item.key] ? (
+                    <Image source={{ uri: photoUrls[item.key] }} style={styles.rowAvatar} />
+                  ) : (
+                    <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>🤝 {f.display_name} wants to be friends</Text>
+                  </View>
+                  {!responded && (
+                    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                      <TouchableOpacity
+                        style={styles.inlineButton}
+                        onPress={() => handleFriendRespond(item, true)}
+                        accessibilityLabel={`Accept ${f.display_name}'s friend request`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.inlineButtonText}>✓</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.inlineButton, styles.declineInlineButton]}
+                        onPress={() => handleFriendRespond(item, false)}
+                        accessibilityLabel={`Decline ${f.display_name}'s friend request`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.inlineButtonText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            }
+
             if (item.type === 'notice') {
               const n = item.raw;
               const score = compatScores[item.key];
@@ -296,5 +364,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   rowSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   inlineButton: { backgroundColor: colors.primary, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   inlineButtonDone: { backgroundColor: colors.success },
+  declineInlineButton: { backgroundColor: colors.surfaceElevated },
   inlineButtonText: { fontSize: 16 },
 });
