@@ -42,6 +42,7 @@ export default function BusinessDashboardScreen() {
   const [needsAttention, setNeedsAttention] = useState([]);
   const [topMembers, setTopMembers] = useState([]);
   const [visitFrequency, setVisitFrequency] = useState(null);
+  const [offerGatheringId, setOfferGatheringId] = useState(null);
   const [growth, setGrowth] = useState(null);
   const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
   const [conversations, setConversations] = useState([]);
@@ -215,11 +216,13 @@ export default function BusinessDashboardScreen() {
         description: newDescription.trim() || null,
         rewardType: 'discount',
         redemptionInstructions: newInstructions.trim() || null,
+        gatheringId: offerGatheringId,
       });
       setCreateModalVisible(false);
       setNewTitle('');
       setNewDescription('');
       setNewInstructions('');
+      setOfferGatheringId(null);
       loadOffers(selectedPartner.id);
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -370,10 +373,25 @@ export default function BusinessDashboardScreen() {
                 gatherings.map((g) => {
                   const breakdown = gatheringBreakdowns[g.id];
                   const isUpcoming = new Date(g.scheduled_at) >= new Date();
+                  const attachedOffer = offers.find((o) => o.gathering_id === g.id);
                   return (
                     <View key={g.id} style={styles.gatheringRow}>
                       <Text style={styles.offerTitle}>{g.title}{g.recurrence_rule ? ` (${g.recurrence_rule})` : ''}</Text>
                       <Text style={styles.offerDescription}>{isUpcoming ? 'Next: ' : 'Last: '}{formatDate(g.scheduled_at)}</Text>
+                      {attachedOffer ? (
+                        <Text style={styles.breakdownText}>🎁 {attachedOffer.title}</Text>
+                      ) : isUpcoming && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setOfferGatheringId(g.id);
+                            setCreateModalVisible(true);
+                          }}
+                          accessibilityLabel={`Attach a reward to ${g.title}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.attachRewardText}>+ Attach Reward</Text>
+                        </TouchableOpacity>
+                      )}
                       {breakdown && breakdown.total_attending > 0 && (
                         <Text style={styles.breakdownText}>
                           {breakdown.total_attending} attending · {breakdown.new_attendees} new · {breakdown.returning_attendees} returning
@@ -679,6 +697,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   breakdownText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   taskRow: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs },
   taskText: { color: colors.textPrimary, fontSize: 13 },
+  attachRewardText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   growthCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginTop: spacing.md,

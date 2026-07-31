@@ -218,7 +218,7 @@ export async function getMyBusinessOffers(partnerId) {
   return data ?? [];
 }
 
-export async function createBusinessOffer({ partnerId, title, description, rewardType, redemptionInstructions }) {
+export async function createBusinessOffer({ partnerId, title, description, rewardType, redemptionInstructions, gatheringId = null }) {
   const { error } = await supabase
     .from('brand_offers')
     .insert({
@@ -228,6 +228,7 @@ export async function createBusinessOffer({ partnerId, title, description, rewar
       reward_type: rewardType,
       redemption_instructions: redemptionInstructions,
       active: true,
+      gathering_id: gatheringId,
     });
 
   if (error) throw error;
