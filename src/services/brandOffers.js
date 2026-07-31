@@ -31,6 +31,52 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function getMyManagedPartner() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return null;
+
+  const { data: profile } = await supabase.from('profiles').select('managed_partner_id').eq('id', myId).single();
+  if (!profile?.managed_partner_id) return null;
+
+  const { data: partner } = await supabase.from('brand_partners').select('*').eq('id', profile.managed_partner_id).single();
+  return partner;
+}
+
+export async function getMyBusinessOffers(partnerId) {
+  const { data, error } = await supabase
+    .from('brand_offers')
+    .select('*')
+    .eq('partner_id', partnerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getMyBusinessOffers error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function createBusinessOffer({ partnerId, title, description, rewardType, redemptionInstructions }) {
+  const { error } = await supabase
+    .from('brand_offers')
+    .insert({
+      partner_id: partnerId,
+      title,
+      description,
+      reward_type: rewardType,
+      redemption_instructions: redemptionInstructions,
+      active: true,
+    });
+
+  if (error) throw error;
+}
+
+export async function toggleOfferActive(offerId, active) {
+  const { error } = await supabase.from('brand_offers').update({ active }).eq('id', offerId);
+  if (error) throw error;
+}
+
 export async function followBusiness(brandPartnerId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

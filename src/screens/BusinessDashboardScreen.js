@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive } from '../services/brandOffers';
+import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -13,6 +15,12 @@ export default function BusinessDashboardScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [offers, setOffers] = useState([]);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newInstructions, setNewInstructions] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadPartners();
@@ -27,7 +35,10 @@ export default function BusinessDashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (selectedPartner) loadStats(selectedPartner.id);
+      if (selectedPartner) {
+        loadStats(selectedPartner.id);
+        loadOffers(selectedPartner.id);
+      }
     }, [selectedPartner])
   );
 
@@ -36,6 +47,50 @@ export default function BusinessDashboardScreen() {
     const { data, error } = await supabase.rpc('get_business_dashboard_stats', { partner_id_param: partnerId });
     if (!error) setStats(data?.[0] ?? null);
     setLoading(false);
+  }
+
+  async function loadOffers(partnerId) {
+    const results = await getMyBusinessOffers(partnerId);
+    setOffers(results);
+  }
+
+  async function handleCreateOffer() {
+    if (!newTitle.trim()) {
+      return Alert.alert('Title required', 'Give your offer a title.');
+    }
+
+    const titleCheck = await checkTextModeration(newTitle);
+    if (!titleCheck.safe) {
+      return Alert.alert('Title not allowed', 'Please revise and try again.');
+    }
+
+    setSubmitting(true);
+    try {
+      await createBusinessOffer({
+        partnerId: selectedPartner.id,
+        title: newTitle.trim(),
+        description: newDescription.trim() || null,
+        rewardType: 'discount',
+        redemptionInstructions: newInstructions.trim() || null,
+      });
+      setCreateModalVisible(false);
+      setNewTitle('');
+      setNewDescription('');
+      setNewInstructions('');
+      loadOffers(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSubmitting(false);
+  }
+
+  async function handleToggleActive(offer) {
+    try {
+      await toggleOfferActive(offer.id, !offer.active);
+      loadOffers(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   return (
@@ -87,6 +142,36 @@ export default function BusinessDashboardScreen() {
         ) : (
           <Text style={styles.emptyText}>No data yet for this business.</Text>
         )}
+
+        <View style={styles.offersHeader}>
+          <Text style={styles.sectionHeader}>Rewards & Offers</Text>
+          <TouchableOpacity
+            style={styles.createOfferButton}
+            onPress={() => setCreateModalVisible(true)}
+            accessibilityLabel="Create a new offer"
+            accessibilityRole="button"
+          >
+            <Text style={styles.createOfferButtonText}>+ Create</Text>
+          </TouchableOpacity>
+        </View>
+
+        {offers.length === 0 ? (
+          <Text style={styles.emptyText}>No offers yet — create one to give your community a reason to visit.</Text>
+        ) : (
+          offers.map((offer) => (
+            <View key={offer.id} style={styles.offerCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.offerTitle}>{offer.title}</Text>
+                {offer.description ? <Text style={styles.offerDescription}>{offer.description}</Text> : null}
+              </View>
+              <Switch
+                value={offer.active}
+                onValueChange={() => handleToggleActive(offer)}
+                accessibilityLabel={`${offer.title}, ${offer.active ? 'active' : 'inactive'}, tap to toggle`}
+              />
+            </View>
+          ))
+        )}
       </ScrollView>
 
       <Modal visible={pickerVisible} animationType="slide" onRequestClose={() => setPickerVisible(false)}>
@@ -117,6 +202,53 @@ export default function BusinessDashboardScreen() {
           />
         </SafeAreaView>
       </Modal>
+
+      <Modal visible={createModalVisible} animationType="slide" transparent onRequestClose={() => setCreateModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>New Offer</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Free pastry with any coffee"
+                placeholderTextColor={colors.textTertiary}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                accessibilityLabel="Offer title"
+              />
+              <TextInput
+                style={[styles.input, { height: 70, textAlignVertical: 'top', marginTop: spacing.sm }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={newDescription}
+                onChangeText={setNewDescription}
+                multiline
+                accessibilityLabel="Offer description, optional"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Redemption instructions (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={newInstructions}
+                onChangeText={setNewInstructions}
+                accessibilityLabel="Redemption instructions, optional"
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleCreateOffer}
+                disabled={submitting}
+                accessibilityLabel={submitting ? 'Creating' : 'Create offer'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{submitting ? 'Creating...' : 'Create Offer'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCreateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -140,10 +272,25 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   statNumber: { ...typography.title, color: colors.primary },
   statLabel: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 2 },
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
-  emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xl },
+  emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md },
+  offersHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm },
+  createOfferButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  createOfferButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  offerCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
+  },
+  offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
+  offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
   modalTitle: { ...typography.title, color: colors.textPrimary },
   modalCloseText: { color: colors.primary, fontWeight: '600' },
   partnerRow: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   partnerRowText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
+  input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
+  submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
