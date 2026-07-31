@@ -82,6 +82,73 @@ export async function getMyBusinessGatherings(partnerId) {
   return data ?? [];
 }
 
+export async function getConversationWithBusiness(partnerId, conversationWithId = null) {
+  let targetUserId = conversationWithId;
+  if (!targetUserId) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    targetUserId = sessionData?.session?.user?.id;
+  }
+
+  const { data, error } = await supabase
+    .from('business_messages')
+    .select('id, sender_id, from_business, body, created_at')
+    .eq('partner_id', partnerId)
+    .eq('conversation_with_id', targetUserId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getConversationWithBusiness error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function sendMessageToBusiness(partnerId, body) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase.from('business_messages').insert({
+    partner_id: partnerId, sender_id: myId, conversation_with_id: myId, from_business: false, body,
+  });
+  if (error) throw error;
+}
+
+export async function getBusinessConversations(partnerId) {
+  const { data, error } = await supabase
+    .from('business_messages')
+    .select('conversation_with_id, body, created_at, from_business, profiles!business_messages_conversation_with_id_fkey(display_name)')
+    .eq('partner_id', partnerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getBusinessConversations error', error);
+    return [];
+  }
+
+  const grouped = {};
+  for (const msg of data ?? []) {
+    if (!grouped[msg.conversation_with_id]) {
+      grouped[msg.conversation_with_id] = {
+        userId: msg.conversation_with_id,
+        displayName: msg.profiles?.display_name,
+        lastMessage: msg.body,
+        lastAt: msg.created_at,
+      };
+    }
+  }
+  return Object.values(grouped);
+}
+
+export async function replyAsBusinessOwner(partnerId, conversationWithId, body) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase.from('business_messages').insert({
+    partner_id: partnerId, sender_id: myId, conversation_with_id: conversationWithId, from_business: true, body,
+  });
+  if (error) throw error;
+}
+
 export async function getMyManagedPartner() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

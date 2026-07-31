@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
+import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -14,6 +15,7 @@ const SECTIONS = [
   { key: 'community', icon: '🏘️', label: 'Community' },
   { key: 'insights', icon: '📊', label: 'Insights' },
   { key: 'offers', icon: '🎁', label: 'Offers' },
+  { key: 'inbox', icon: '💬', label: 'Inbox' },
 ];
 
 export default function BusinessDashboardScreen() {
@@ -38,6 +40,12 @@ export default function BusinessDashboardScreen() {
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateBody, setUpdateBody] = useState('');
   const [postingUpdate, setPostingUpdate] = useState(false);
+  const [growth, setGrowth] = useState(null);
+  const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [conversationMessages, setConversationMessages] = useState([]);
+  const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
     loadPartners();
@@ -58,6 +66,8 @@ export default function BusinessDashboardScreen() {
         loadGatherings(selectedPartner.id);
         loadInsights(selectedPartner.id);
         loadCommunities(selectedPartner.id);
+        loadGrowth(selectedPartner.id);
+        loadConversations(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -77,6 +87,42 @@ export default function BusinessDashboardScreen() {
   async function loadGatherings(partnerId) {
     const results = await getMyBusinessGatherings(partnerId);
     setGatherings(results);
+
+    const breakdowns = await Promise.all(
+      results.map(async (g) => {
+        const { data } = await supabase.rpc('get_gathering_attendee_breakdown', { gathering_id_param: g.id });
+        return [g.id, data?.[0] ?? null];
+      })
+    );
+    setGatheringBreakdowns(Object.fromEntries(breakdowns));
+  }
+
+  async function loadGrowth(partnerId) {
+    const { data, error } = await supabase.rpc('get_business_growth', { partner_id_param: partnerId });
+    if (!error) setGrowth(data?.[0] ?? null);
+  }
+
+  async function loadConversations(partnerId) {
+    const results = await getBusinessConversations(partnerId);
+    setConversations(results);
+  }
+
+  async function openConversation(convo) {
+    setActiveConversation(convo);
+    const messages = await getConversationWithBusiness(selectedPartner.id, convo.userId).catch(() => []);
+    setConversationMessages(messages);
+  }
+
+  async function sendReply() {
+    if (!replyText.trim()) return;
+    try {
+      await replyAsBusinessOwner(selectedPartner.id, activeConversation.userId, replyText.trim());
+      setReplyText('');
+      const messages = await getConversationWithBusiness(selectedPartner.id, activeConversation.userId).catch(() => []);
+      setConversationMessages(messages);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   async function loadInsights(partnerId) {
@@ -223,6 +269,20 @@ export default function BusinessDashboardScreen() {
                   <Text style={styles.helperText}>
                     These reflect people who opted in and genuinely engaged with your offers — not raw traffic or impressions.
                   </Text>
+                  {growth && (growth.redemptions_growth_pct !== null || growth.followers_growth_pct !== null) && (
+                    <View style={styles.growthCard}>
+                      {growth.redemptions_growth_pct !== null && (
+                        <Text style={styles.growthLine}>
+                          Redemptions {growth.redemptions_growth_pct >= 0 ? '+' : ''}{growth.redemptions_growth_pct}% vs. last month
+                        </Text>
+                      )}
+                      {growth.followers_growth_pct !== null && (
+                        <Text style={styles.growthLine}>
+                          Followers {growth.followers_growth_pct >= 0 ? '+' : ''}{growth.followers_growth_pct}% vs. last month
+                        </Text>
+                      )}
+                    </View>
+                  )}
                   <TouchableOpacity
                     style={styles.postUpdateButton}
                     onPress={() => setUpdateModalVisible(true)}
@@ -241,12 +301,20 @@ export default function BusinessDashboardScreen() {
               gatherings.length === 0 ? (
                 <Text style={styles.emptyText}>No gatherings hosted yet — create one from the Create tab and it'll show up here.</Text>
               ) : (
-                gatherings.map((g) => (
-                  <View key={g.id} style={styles.gatheringRow}>
-                    <Text style={styles.offerTitle}>{g.title}</Text>
-                    <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
-                  </View>
-                ))
+                gatherings.map((g) => {
+                  const breakdown = gatheringBreakdowns[g.id];
+                  return (
+                    <View key={g.id} style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>{g.title}</Text>
+                      <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
+                      {breakdown && breakdown.total_attending > 0 && (
+                        <Text style={styles.breakdownText}>
+                          {breakdown.total_attending} attending · {breakdown.new_attendees} new · {breakdown.returning_attendees} returning
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })
               )
             )}
 
@@ -306,6 +374,44 @@ export default function BusinessDashboardScreen() {
                   ))
                 )}
               </>
+            )}
+
+            {section === 'inbox' && (
+              activeConversation ? (
+                <View>
+                  <TouchableOpacity onPress={() => setActiveConversation(null)} accessibilityLabel="Back to conversations" accessibilityRole="button">
+                    <Text style={styles.backLink}>← Back to conversations</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.sectionHeader}>{activeConversation.displayName}</Text>
+                  {conversationMessages.map((m) => (
+                    <View key={m.id} style={[styles.messageBubble, m.from_business && styles.messageBubbleFromBusiness]}>
+                      <Text style={m.from_business ? styles.messageTextFromBusiness : styles.messageText}>{m.body}</Text>
+                    </View>
+                  ))}
+                  <View style={styles.replyRow}>
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      placeholder="Reply..."
+                      placeholderTextColor={colors.textTertiary}
+                      value={replyText}
+                      onChangeText={setReplyText}
+                      accessibilityLabel="Reply message"
+                    />
+                    <TouchableOpacity style={styles.sendReplyButton} onPress={sendReply} accessibilityLabel="Send reply" accessibilityRole="button">
+                      <Text style={styles.sendReplyButtonText}>Send</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : conversations.length === 0 ? (
+                <Text style={styles.emptyText}>No messages yet from your community.</Text>
+              ) : (
+                conversations.map((c) => (
+                  <TouchableOpacity key={c.userId} style={styles.gatheringRow} onPress={() => openConversation(c)} accessibilityLabel={`Conversation with ${c.displayName}`} accessibilityRole="button">
+                    <Text style={styles.offerTitle}>{c.displayName}</Text>
+                    <Text style={styles.offerDescription} numberOfLines={1}>{c.lastMessage}</Text>
+                  </TouchableOpacity>
+                ))
+              )
             )}
           </>
         )}
@@ -477,6 +583,20 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md,
   },
   insightLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 4, lineHeight: 18 },
+  breakdownText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  growthCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginTop: spacing.md,
+  },
+  growthLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
+  backLink: { color: colors.primary, fontWeight: '700', marginBottom: spacing.md },
+  messageBubble: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.sm, marginBottom: spacing.sm, alignSelf: 'flex-start', maxWidth: '80%', borderWidth: 1, borderColor: colors.border },
+  messageBubbleFromBusiness: { backgroundColor: colors.primary, alignSelf: 'flex-end', borderColor: colors.primary },
+  messageText: { color: colors.textPrimary, fontSize: 14 },
+  messageTextFromBusiness: { color: '#fff', fontSize: 14 },
+  replyRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  sendReplyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, justifyContent: 'center' },
+  sendReplyButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   gatheringRow: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,
