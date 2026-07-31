@@ -394,7 +394,7 @@ export default function BusinessDashboardScreen() {
                       )}
                       {breakdown && breakdown.total_attending > 0 && (
                         <Text style={styles.breakdownText}>
-                          {breakdown.total_attending} attending · {breakdown.new_attendees} new · {breakdown.returning_attendees} returning
+                          {breakdown.total_attending} attending · {breakdown.new_attendees} new to you · {breakdown.returning_attendees} returning
                         </Text>
                       )}
                     </View>

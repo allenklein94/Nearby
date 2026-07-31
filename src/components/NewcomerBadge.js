@@ -25,7 +25,7 @@ export default function NewcomerBadge({ gatheringId }) {
 
   return (
     <View style={styles.badge}>
-      <Text style={styles.text}>🌱 {count} newcomer{count === 1 ? '' : 's'} attending</Text>
+      <Text style={styles.text}>🌱 {count} first-timer{count === 1 ? '' : 's'} to gatherings, attending</Text>
     </View>
   );
 }
