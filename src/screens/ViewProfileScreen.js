@@ -122,9 +122,23 @@ export default function ViewProfileScreen({ route, navigation }) {
     setIsOwnProfile(ownProfile);
 
     if (myId && !ownProfile && data) {
-      const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
-      const report = generateCompatibilityReport(myProfile, data);
-      setCompatibilityReport(report);
+      // A dating-style compatibility score doesn't make sense for a
+      // friend's profile — same reasoning as the fix already applied
+      // to Matches and Chat. Check the friendship table directly,
+      // since this screen doesn't have a match-source field to rely
+      // on the way those two did.
+      const { data: friendship } = await supabase
+        .from('friendships')
+        .select('id')
+        .eq('status', 'accepted')
+        .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
+        .maybeSingle();
+
+      if (!friendship) {
+        const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
+        const report = generateCompatibilityReport(myProfile, data);
+        setCompatibilityReport(report);
+      }
     }
 
     navigation.setOptions({
