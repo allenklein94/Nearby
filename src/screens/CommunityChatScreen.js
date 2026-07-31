@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { getCommunityMessages, sendCommunityMessage } from '../services/communities';
 import { getSignedPhotoUrl } from '../services/photos';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -13,6 +14,7 @@ export default function CommunityChatScreen({ route }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [myUserId, setMyUserId] = useState(null);
+  const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const listRef = useRef(null);
 
@@ -77,7 +79,14 @@ export default function CommunityChatScreen({ route }) {
                   )
                 )}
                 <View style={{ maxWidth: '75%' }}>
-                  {!isMe && <Text style={styles.senderName}>{item.profiles?.display_name}</Text>}
+                  {!isMe && (
+                    <TouchableOpacity
+                      onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name })}
+                      accessibilityLabel={`${item.profiles?.display_name}, hold to report or block`}
+                    >
+                      <Text style={styles.senderName}>{item.profiles?.display_name}</Text>
+                    </TouchableOpacity>
+                  )}
                   <View style={[styles.bubble, isMe && styles.bubbleMe]}>
                     <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{item.body}</Text>
                   </View>
@@ -102,6 +111,14 @@ export default function CommunityChatScreen({ route }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <ReportBlockModal
+        visible={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        onBlocked={() => setReportTarget(null)}
+        reportedUserId={reportTarget?.id}
+        reportedUserName={reportTarget?.name}
+      />
     </SafeAreaView>
   );
 }
