@@ -992,6 +992,16 @@ export default function GatheringsScreen({ navigation }) {
                   )}
                   {!isPast && (
                     <TouchableOpacity
+                      onPress={() => navigation.navigate('EditGathering', { gathering: item })}
+                      style={{ marginRight: spacing.sm }}
+                      accessibilityLabel={`Edit ${item.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={{ fontSize: 16 }}>✏️</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!isPast && (
+                    <TouchableOpacity
                       onPress={() => confirmCancelGathering(item)}
                       accessibilityLabel={`Cancel ${item.title}`}
                       accessibilityRole="button"

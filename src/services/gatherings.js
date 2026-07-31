@@ -427,6 +427,15 @@ export async function getHostStats(hostId) {
   return data?.[0] ?? null;
 }
 
+export async function updateGathering(gatheringId, { title, description, scheduledAt }) {
+  const { error } = await supabase
+    .from('gatherings')
+    .update({ title, description, scheduled_at: scheduledAt })
+    .eq('id', gatheringId);
+
+  if (error) throw error;
+}
+
 export async function cancelGathering(gatheringId) {
   const { error } = await supabase.from('gatherings').delete().eq('id', gatheringId);
   if (error) throw error;
