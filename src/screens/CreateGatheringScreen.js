@@ -30,6 +30,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [customLocation, setCustomLocation] = useState(null);
   const [showOnMap, setShowOnMap] = useState(true);
   const [womenOnly, setWomenOnly] = useState(false);
+  const [recurrenceRule, setRecurrenceRule] = useState(null);
 
   uuseEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -77,6 +78,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         customLocation,
         showOnMap: isPublic ? true : showOnMap,
         womenOnly,
+        recurrenceRule: recurrenceRule || null,
       });
       Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');
       navigation.goBack();
@@ -94,6 +96,34 @@ export default function CreateGatheringScreen({ navigation, route }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
         <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>
         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
+
+        <Text style={styles.label}>Repeats</Text>
+        <View style={styles.chipsWrap}>
+          {[
+            { key: null, label: "Doesn't repeat" },
+            { key: 'weekly', label: 'Weekly' },
+            { key: 'biweekly', label: 'Every 2 weeks' },
+            { key: 'monthly', label: 'Monthly' },
+          ].map((option) => {
+            const selected = recurrenceRule === option.key;
+            return (
+              <TouchableOpacity
+                key={option.label}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setRecurrenceRule(option.key)}
+                activeOpacity={0.8}
+                accessibilityLabel={option.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {recurrenceRule && (
+          <Text style={styles.helperText}>A new one will be created automatically after each one passes.</Text>
+        )}
 
         <Text style={styles.label}>Who can join</Text>
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>

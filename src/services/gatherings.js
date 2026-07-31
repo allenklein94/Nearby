@@ -17,7 +17,7 @@ const WIDE_TIER_MAX_MILES = 15;
 
 const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -50,10 +50,11 @@ export async function createGathering({ title, description, interestTag, schedul
       is_public: isPublic,
       show_on_map: showOnMap,
       women_only: womenOnly,
+      recurrence_rule: recurrenceRule,
+      recurring_series_id: recurrenceRule ? crypto.randomUUID() : null,
     })
     .select()
     .single();
-
   if (error) throw error;
   return data;
 }
