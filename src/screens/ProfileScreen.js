@@ -91,6 +91,7 @@ export default function ProfileScreen({ navigation }) {
   const [loadingStrengths, setLoadingStrengths] = useState(false);
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
+  const [managesBusiness, setManagesBusiness] = useState(false);
 
   useEffect(() => {
     load();
@@ -128,6 +129,8 @@ export default function ProfileScreen({ navigation }) {
 
     const earnedAchievements = await getAchievements();
     setAchievements(earnedAchievements);
+
+    setManagesBusiness(!!data?.managed_partner_id);
   }
 
   async function showStrengths() {
@@ -420,6 +423,18 @@ const result = await response.json();
               ))}
             </View>
           </>
+        )}
+
+        {managesBusiness && (
+          <TouchableOpacity
+            style={styles.businessModeButton}
+            onPress={() => navigation.navigate('BusinessDashboard')}
+            activeOpacity={0.85}
+            accessibilityLabel="Switch to Business Dashboard"
+            accessibilityRole="button"
+          >
+            <Text style={styles.businessModeButtonText}>🏪 Switch to Business</Text>
+          </TouchableOpacity>
         )}
 
         <TouchableOpacity
@@ -785,6 +800,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   achievementIcon: { fontSize: 24, marginBottom: 4 },
   achievementLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textAlign: 'center' },
+  businessModeButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginBottom: spacing.lg,
+  },
+  businessModeButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   photoWrap: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
