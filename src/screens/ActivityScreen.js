@@ -314,7 +314,10 @@ export default function ActivityScreen({ navigation }) {
                       {premium ? n.profiles?.display_name : 'Someone'} {n.is_super ? '👋 sent you a Wave' : 'noticed you'}
                     </Text>
                     <Text style={styles.rowSubtitle}>
-                      {formatTimeAgo(item.timestamp)}{hasScore ? ` · ${score}% compatible` : ''}
+                      {formatTimeAgo(item.timestamp)}
+                      {hasScore && (
+                        <Text> · <Text style={{ color: compatibilityColor(score), fontWeight: '700' }}>{score}% compatible</Text></Text>
+                      )}
                     </Text>
                   </View>
                   {premium && (
