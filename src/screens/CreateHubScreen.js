@@ -47,6 +47,36 @@ export default function CreateHubScreen({ navigation }) {
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('CreateCommunity')}
+        activeOpacity={0.85}
+        accessibilityLabel="Create a community"
+        accessibilityRole="button"
+      >
+        <Text style={styles.cardIcon}>🏘️</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Create a Community</Text>
+          <Text style={styles.cardSubtitle}>Build an ongoing group around a shared interest</Text>
+        </View>
+        <Text style={styles.cardChevron}>›</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('BusinessPartnerApply')}
+        activeOpacity={0.85}
+        accessibilityLabel="Partner with a business"
+        accessibilityRole="button"
+      >
+        <Text style={styles.cardIcon}>🏪</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Partner With Us</Text>
+          <Text style={styles.cardSubtitle}>Bring your business into the community</Text>
+        </View>
+        <Text style={styles.cardChevron}>›</Text>
+      </TouchableOpacity>
+
       <StartSomethingModal
         visible={startModalVisible}
         onClose={() => setStartModalVisible(false)}
