@@ -2,15 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getConversationWithBusiness, sendMessageToBusiness } from '../services/brandOffers';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 
-export default function BusinessConversationScreen({ route }) {
+export default function BusinessConversationScreen({ route, navigation }) {
   const { partnerId, partnerName } = route.params;
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [reportTarget, setReportTarget] = useState(null);
 
   const load = useCallback(async () => {
     const results = await getConversationWithBusiness(partnerId);
@@ -24,6 +26,28 @@ export default function BusinessConversationScreen({ route }) {
       return () => clearInterval(interval);
     }, [load])
   );
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleReportBusiness}
+          accessibilityLabel={`Report ${partnerName}`}
+          accessibilityRole="button"
+        >
+          <Text style={{ fontSize: 20 }}>⋯</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, messages]);
+
+  function handleReportBusiness() {
+    const businessMessage = messages.find((m) => m.from_business);
+    if (!businessMessage) {
+      return;
+    }
+    setReportTarget({ id: businessMessage.sender_id, name: partnerName });
+  }
 
   async function handleSend() {
     if (!text.trim()) return;
@@ -71,6 +95,14 @@ export default function BusinessConversationScreen({ route }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <ReportBlockModal
+        visible={!!reportTarget}
+        onClose={() => setReportTarget(null)}
+        onBlocked={() => setReportTarget(null)}
+        reportedUserId={reportTarget?.id}
+        reportedUserName={reportTarget?.name}
+      />
     </SafeAreaView>
   );
 }
