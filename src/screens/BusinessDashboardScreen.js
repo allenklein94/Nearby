@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -22,6 +22,7 @@ export default function BusinessDashboardScreen() {
   const [newInstructions, setNewInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [gatherings, setGatherings] = useState([]);
+  const [insights, setInsights] = useState(null);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateBody, setUpdateBody] = useState('');
@@ -44,6 +45,7 @@ export default function BusinessDashboardScreen() {
         loadStats(selectedPartner.id);
         loadOffers(selectedPartner.id);
         loadGatherings(selectedPartner.id);
+        loadInsights(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -63,6 +65,18 @@ export default function BusinessDashboardScreen() {
   async function loadGatherings(partnerId) {
     const results = await getMyBusinessGatherings(partnerId);
     setGatherings(results);
+  }
+
+  async function loadInsights(partnerId) {
+    const result = await getBusinessInsights(partnerId);
+    setInsights(result);
+  }
+
+  function formatHour(hour) {
+    if (hour === null || hour === undefined) return null;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${displayHour}:00 ${period}`;
   }
 
   function formatDate(iso) {
@@ -177,6 +191,20 @@ export default function BusinessDashboardScreen() {
           </>
         ) : (
           <Text style={styles.emptyText}>No data yet for this business.</Text>
+        )}
+
+        {insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null) && (
+          <>
+            <Text style={styles.sectionHeader}>Insights</Text>
+            <View style={styles.insightsCard}>
+              {insights.top_interests?.length > 0 && (
+                <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
+              )}
+              {insights.best_hour_of_day !== null && insights.best_hour_of_day !== undefined && (
+                <Text style={styles.insightLine}>Best-performing time: {formatHour(insights.best_hour_of_day)}</Text>
+              )}
+            </View>
+          </>
         )}
 
         <Text style={styles.sectionHeader}>Gatherings</Text>
@@ -382,6 +410,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  insightsCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  insightLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 4, lineHeight: 18 },
   gatheringRow: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,

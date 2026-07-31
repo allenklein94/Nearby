@@ -31,6 +31,15 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function getBusinessInsights(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_insights', { partner_id_param: partnerId });
+  if (error) {
+    console.error('getBusinessInsights error', error);
+    return null;
+  }
+  return data?.[0] ?? null;
+}
+
 export async function postBusinessUpdate(partnerId, title, body) {
   const { error } = await supabase.from('business_updates').insert({ partner_id: partnerId, title, body });
   if (error) throw error;
