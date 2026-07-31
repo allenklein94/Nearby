@@ -383,6 +383,40 @@ export async function approveInterest(interestId) {
   return data;
 }
 
+export async function submitGatheringFeedback(gatheringId, feltWelcoming, wouldAttendAgain) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase
+    .from('gathering_feedback')
+    .upsert({ gathering_id: gatheringId, reviewer_id: myId, felt_welcoming: feltWelcoming, would_attend_again: wouldAttendAgain });
+
+  if (error) throw error;
+}
+
+export async function hasSubmittedFeedback(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { data } = await supabase
+    .from('gathering_feedback')
+    .select('id')
+    .eq('gathering_id', gatheringId)
+    .eq('reviewer_id', myId)
+    .maybeSingle();
+
+  return !!data;
+}
+
+export async function getHostReputation(hostId) {
+  const { data, error } = await supabase.rpc('get_host_reputation', { host_id_param: hostId });
+  if (error) {
+    console.error('getHostReputation error', error);
+    return null;
+  }
+  return data?.[0] ?? null;
+}
+
 export async function getHostStats(hostId) {
   const { data, error } = await supabase.rpc('get_host_stats', { host_id_param: hostId });
   if (error) {

@@ -11,7 +11,7 @@ import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import { sendFriendRequest, getMutualFriends } from '../services/friends';
-import { getHostStats } from '../services/gatherings';
+import { getHostStats, getHostReputation } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -58,7 +58,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [friendRequestSent, setFriendRequestSent] = useState(false);
   cconst [mutualFriends, setMutualFriends] = useState([]);
   const [hostStats, setHostStats] = useState(null);
-
+  const [hostReputation, setHostReputation] = useState(null);
   useEffect(() => {
     load();
   }, []);
@@ -69,6 +69,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     if (myId && myId !== userId) {
       getMutualFriends(userId).then(setMutualFriends);
       getHostStats(userId).then(setHostStats);
+      getHostReputation(userId).then(setHostReputation);
       const { data: blockedByMe } = await supabase
         .from('blocks')
         .select('id')
@@ -299,6 +300,12 @@ export default function ViewProfileScreen({ route, navigation }) {
           {hostStats && hostStats.gatherings_hosted > 0 && (
             <Text style={styles.mutualFriendsText}>
               🎉 Hosted {hostStats.gatherings_hosted} gathering{hostStats.gatherings_hosted === 1 ? '' : 's'}, averaging {Math.round(hostStats.avg_attendance)} attendee{Math.round(hostStats.avg_attendance) === 1 ? '' : 's'}
+            </Text>
+          )}
+
+          {hostReputation && hostReputation.feedback_count > 0 && (
+            <Text style={styles.mutualFriendsText}>
+              ⭐ {hostReputation.welcoming_pct}% said welcoming · {hostReputation.would_return_pct}% would attend again ({hostReputation.feedback_count} review{hostReputation.feedback_count === 1 ? '' : 's'})
             </Text>
           )}
 

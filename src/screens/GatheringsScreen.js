@@ -7,6 +7,7 @@ import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import NewcomerBadge from '../components/NewcomerBadge';
 import BusinessHostBadge from '../components/BusinessHostBadge';
+import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -856,6 +857,7 @@ export default function GatheringsScreen({ navigation }) {
                   <View style={[styles.attendingBadge, isPast && styles.pastBadge]}>
                     <Text style={[styles.attendingBadgeText, isPast && styles.pastBadgeText]}>{isPast ? '✓ Attended' : t('gatherings.youreGoing')}</Text>
                   </View>
+                  {isPast && <GatheringFeedbackPrompt gatheringId={item.id} />}
                 </TouchableOpacity>
 
                 {!isPast && (
