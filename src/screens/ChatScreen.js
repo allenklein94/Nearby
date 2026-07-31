@@ -433,6 +433,7 @@ export default function ChatScreen({ route, navigation }) {
         .from('brand_offers')
         .select('*, brand_partners(name)')
         .eq('active', true)
+        .is('gathering_id', null)
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .limit(5);
