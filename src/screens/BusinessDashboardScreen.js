@@ -8,9 +8,18 @@ import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+const SECTIONS = [
+  { key: 'home', icon: '🏠', label: 'Home' },
+  { key: 'gatherings', icon: '🎉', label: 'Gatherings' },
+  { key: 'community', icon: '🏘️', label: 'Community' },
+  { key: 'insights', icon: '📊', label: 'Insights' },
+  { key: 'offers', icon: '🎁', label: 'Offers' },
+];
+
 export default function BusinessDashboardScreen() {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const [section, setSection] = useState('home');
   const [partners, setPartners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -80,13 +89,6 @@ export default function BusinessDashboardScreen() {
     setCommunities(results);
   }
 
-  function formatHour(hour) {
-    if (hour === null || hour === undefined) return null;
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-    return `${displayHour}:00 ${period}`;
-  }
-
   function formatDate(iso) {
     return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
@@ -116,12 +118,10 @@ export default function BusinessDashboardScreen() {
     if (!newTitle.trim()) {
       return Alert.alert('Title required', 'Give your offer a title.');
     }
-
     const titleCheck = await checkTextModeration(newTitle);
     if (!titleCheck.safe) {
       return Alert.alert('Title not allowed', 'Please revise and try again.');
     }
-
     setSubmitting(true);
     try {
       await createBusinessOffer({
@@ -151,11 +151,17 @@ export default function BusinessDashboardScreen() {
     }
   }
 
+  function formatHour(hour) {
+    if (hour === null || hour === undefined) return null;
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+    return `${displayHour}:00 ${period}`;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.title}>Business Dashboard</Text>
-
+      <View style={styles.header}>
+        <Text style={styles.title}>Business Mode</Text>
         <TouchableOpacity
           style={styles.partnerSelector}
           onPress={() => setPickerVisible(true)}
@@ -165,117 +171,143 @@ export default function BusinessDashboardScreen() {
           <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? 'Select a business'}</Text>
           <Text style={styles.partnerSelectorChevron}>▾</Text>
         </TouchableOpacity>
+      </View>
 
+      <View style={styles.sectionTabs}>
+        {SECTIONS.map((s) => (
+          <TouchableOpacity
+            key={s.key}
+            style={[styles.sectionTab, section === s.key && styles.sectionTabActive]}
+            onPress={() => setSection(s.key)}
+            accessibilityLabel={s.label}
+            accessibilityRole="button"
+            accessibilityState={{ selected: section === s.key }}
+          >
+            <Text style={styles.sectionTabIcon}>{s.icon}</Text>
+            <Text style={[styles.sectionTabLabel, section === s.key && styles.sectionTabLabelActive]}>{s.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
-        ) : stats ? (
+        ) : (
           <>
-            <Text style={styles.sectionHeader}>Community Health</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{stats.total_followers}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{stats.followers_this_month}</Text>
-                <Text style={styles.statLabel}>New This Month</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{stats.total_redemptions}</Text>
-                <Text style={styles.statLabel}>Total Redemptions</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{stats.redemptions_this_month}</Text>
-                <Text style={styles.statLabel}>This Month</Text>
-              </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statNumber}>{stats.repeat_redeemers}</Text>
-                <Text style={styles.statLabel}>Repeat Customers</Text>
-              </View>
-            </View>
-            <Text style={styles.helperText}>
-              These reflect people who opted in and genuinely engaged with your offers — not raw traffic or impressions.
-            </Text>
+            {section === 'home' && (
+              stats ? (
+                <>
+                  <Text style={styles.sectionHeader}>Community Health</Text>
+                  <View style={styles.statsGrid}>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{stats.total_followers}</Text>
+                      <Text style={styles.statLabel}>Followers</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{stats.followers_this_month}</Text>
+                      <Text style={styles.statLabel}>New This Month</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{stats.total_redemptions}</Text>
+                      <Text style={styles.statLabel}>Total Redemptions</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{stats.redemptions_this_month}</Text>
+                      <Text style={styles.statLabel}>This Month</Text>
+                    </View>
+                    <View style={styles.statCard}>
+                      <Text style={styles.statNumber}>{stats.repeat_redeemers}</Text>
+                      <Text style={styles.statLabel}>Repeat Customers</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.helperText}>
+                    These reflect people who opted in and genuinely engaged with your offers — not raw traffic or impressions.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.postUpdateButton}
+                    onPress={() => setUpdateModalVisible(true)}
+                    accessibilityLabel="Post an update to your followers"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={styles.emptyText}>No data yet for this business.</Text>
+              )
+            )}
+
+            {section === 'gatherings' && (
+              gatherings.length === 0 ? (
+                <Text style={styles.emptyText}>No gatherings hosted yet — create one from the Create tab and it'll show up here.</Text>
+              ) : (
+                gatherings.map((g) => (
+                  <View key={g.id} style={styles.gatheringRow}>
+                    <Text style={styles.offerTitle}>{g.title}</Text>
+                    <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
+                  </View>
+                ))
+              )
+            )}
+
+            {section === 'community' && (
+              communities.length === 0 ? (
+                <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
+              ) : (
+                communities.map((c) => (
+                  <View key={c.id} style={styles.gatheringRow}>
+                    <Text style={styles.offerTitle}>{c.name}</Text>
+                    {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
+                  </View>
+                ))
+              )
+            )}
+
+            {section === 'insights' && (
+              insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null) ? (
+                <View style={styles.insightsCard}>
+                  {insights.top_interests?.length > 0 && (
+                    <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
+                  )}
+                  {insights.best_hour_of_day !== null && insights.best_hour_of_day !== undefined && (
+                    <Text style={styles.insightLine}>Best-performing time: {formatHour(insights.best_hour_of_day)}</Text>
+                  )}
+                </View>
+              ) : (
+                <Text style={styles.emptyText}>Not enough activity yet to show real insights.</Text>
+              )
+            )}
+
+            {section === 'offers' && (
+              <>
+                <TouchableOpacity
+                  style={styles.createOfferButton}
+                  onPress={() => setCreateModalVisible(true)}
+                  accessibilityLabel="Create a new offer"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.createOfferButtonText}>+ Create Offer</Text>
+                </TouchableOpacity>
+                {offers.length === 0 ? (
+                  <Text style={styles.emptyText}>No offers yet — create one to give your community a reason to visit.</Text>
+                ) : (
+                  offers.map((offer) => (
+                    <View key={offer.id} style={styles.offerCard}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.offerTitle}>{offer.title}</Text>
+                        {offer.description ? <Text style={styles.offerDescription}>{offer.description}</Text> : null}
+                      </View>
+                      <Switch
+                        value={offer.active}
+                        onValueChange={() => handleToggleActive(offer)}
+                        accessibilityLabel={`${offer.title}, ${offer.active ? 'active' : 'inactive'}, tap to toggle`}
+                      />
+                    </View>
+                  ))
+                )}
+              </>
+            )}
           </>
-        ) : (
-          <Text style={styles.emptyText}>No data yet for this business.</Text>
-        )}
-
-        {insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null) && (
-          <>
-            <Text style={styles.sectionHeader}>Insights</Text>
-            <View style={styles.insightsCard}>
-              {insights.top_interests?.length > 0 && (
-                <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
-              )}
-              {insights.best_hour_of_day !== null && insights.best_hour_of_day !== undefined && (
-                <Text style={styles.insightLine}>Best-performing time: {formatHour(insights.best_hour_of_day)}</Text>
-              )}
-            </View>
-          </>
-        )}
-
-        <Text style={styles.sectionHeader}>Communities</Text>
-        {communities.length === 0 ? (
-          <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
-        ) : (
-          communities.map((c) => (
-            <View key={c.id} style={styles.gatheringRow}>
-              <Text style={styles.offerTitle}>{c.name}</Text>
-              {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
-            </View>
-          ))
-        )}
-
-        <Text style={styles.sectionHeader}>Gatherings</Text>
-        {gatherings.length === 0 ? (
-          <Text style={styles.emptyText}>No gatherings hosted yet — create one from the Create tab and it'll show up here.</Text>
-        ) : (
-          gatherings.map((g) => (
-            <View key={g.id} style={styles.gatheringRow}>
-              <Text style={styles.offerTitle}>{g.title}</Text>
-              <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
-            </View>
-          ))
-        )}
-
-        <TouchableOpacity
-          style={styles.postUpdateButton}
-          onPress={() => setUpdateModalVisible(true)}
-          accessibilityLabel="Post an update to your followers"
-          accessibilityRole="button"
-        >
-          <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
-        </TouchableOpacity>
-
-        <View style={styles.offersHeader}>
-          <Text style={styles.sectionHeader}>Rewards & Offers</Text>
-          <TouchableOpacity
-            style={styles.createOfferButton}
-            onPress={() => setCreateModalVisible(true)}
-            accessibilityLabel="Create a new offer"
-            accessibilityRole="button"
-          >
-            <Text style={styles.createOfferButtonText}>+ Create</Text>
-          </TouchableOpacity>
-        </View>
-
-        {offers.length === 0 ? (
-          <Text style={styles.emptyText}>No offers yet — create one to give your community a reason to visit.</Text>
-        ) : (
-          offers.map((offer) => (
-            <View key={offer.id} style={styles.offerCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.offerTitle}>{offer.title}</Text>
-                {offer.description ? <Text style={styles.offerDescription}>{offer.description}</Text> : null}
-              </View>
-              <Switch
-                value={offer.active}
-                onValueChange={() => handleToggleActive(offer)}
-                accessibilityLabel={`${offer.title}, ${offer.active ? 'active' : 'inactive'}, tap to toggle`}
-              />
-            </View>
-          ))
         )}
       </ScrollView>
 
@@ -354,6 +386,7 @@ export default function BusinessDashboardScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
+
       <Modal visible={updateModalVisible} animationType="slide" transparent onRequestClose={() => setUpdateModalVisible(false)}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -398,14 +431,24 @@ export default function BusinessDashboardScreen() {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.md },
   partnerSelector: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.lg,
+    padding: spacing.md, marginBottom: spacing.md,
   },
   partnerSelectorText: { ...typography.bodyBold, color: colors.textPrimary },
   partnerSelectorChevron: { color: colors.textTertiary, fontSize: 16 },
+  sectionTabs: {
+    flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.xs,
+    borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.sm,
+  },
+  sectionTab: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs, borderRadius: radius.md },
+  sectionTabActive: { backgroundColor: colors.primaryMuted },
+  sectionTabIcon: { fontSize: 16 },
+  sectionTabLabel: { color: colors.textTertiary, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  sectionTabLabelActive: { color: colors.primary },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCard: {
@@ -416,14 +459,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   statLabel: { color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 2 },
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md },
-  offersHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm },
-  createOfferButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  createOfferButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   postUpdateButton: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
     alignItems: 'center', marginTop: spacing.xl,
   },
   postUpdateButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  createOfferButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, alignSelf: 'flex-start', marginBottom: spacing.md },
+  createOfferButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   offerCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
