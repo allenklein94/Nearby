@@ -1,5 +1,19 @@
 import { supabase } from './supabase';
 
+export async function getBusinessCommunities(partnerId) {
+  const { data, error } = await supabase
+    .from('communities')
+    .select('id, name, description')
+    .eq('hosting_partner_id', partnerId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getBusinessCommunities error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function createCommunity({ name, description, interestTag, isPublic = true }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const creatorId = sessionData?.session?.user?.id;

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights } from '../services/brandOffers';
+import { getBusinessCommunities } from '../services/communities';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -23,6 +24,7 @@ export default function BusinessDashboardScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [gatherings, setGatherings] = useState([]);
   const [insights, setInsights] = useState(null);
+  const [communities, setCommunities] = useState([]);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateBody, setUpdateBody] = useState('');
@@ -46,6 +48,7 @@ export default function BusinessDashboardScreen() {
         loadOffers(selectedPartner.id);
         loadGatherings(selectedPartner.id);
         loadInsights(selectedPartner.id);
+        loadCommunities(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -70,6 +73,11 @@ export default function BusinessDashboardScreen() {
   async function loadInsights(partnerId) {
     const result = await getBusinessInsights(partnerId);
     setInsights(result);
+  }
+
+  async function loadCommunities(partnerId) {
+    const results = await getBusinessCommunities(partnerId);
+    setCommunities(results);
   }
 
   function formatHour(hour) {
@@ -205,6 +213,18 @@ export default function BusinessDashboardScreen() {
               )}
             </View>
           </>
+        )}
+
+        <Text style={styles.sectionHeader}>Communities</Text>
+        {communities.length === 0 ? (
+          <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
+        ) : (
+          communities.map((c) => (
+            <View key={c.id} style={styles.gatheringRow}>
+              <Text style={styles.offerTitle}>{c.name}</Text>
+              {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
+            </View>
+          ))
         )}
 
         <Text style={styles.sectionHeader}>Gatherings</Text>
