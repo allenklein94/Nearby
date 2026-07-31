@@ -31,6 +31,20 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function getMyBusinessGatherings(partnerId) {
+  const { data, error } = await supabase
+    .from('gatherings')
+    .select('id, title, scheduled_at')
+    .eq('hosting_partner_id', partnerId)
+    .order('scheduled_at', { ascending: false });
+
+  if (error) {
+    console.error('getMyBusinessGatherings error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getMyManagedPartner() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

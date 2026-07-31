@@ -6,6 +6,7 @@ import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import NewcomerBadge from '../components/NewcomerBadge';
+import BusinessHostBadge from '../components/BusinessHostBadge';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
@@ -707,6 +708,7 @@ export default function GatheringsScreen({ navigation }) {
                   ) : null;
                 })()}
                 <NewcomerBadge gatheringId={item.id} />
+                <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} />
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                 <View style={styles.metaRow}>
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>

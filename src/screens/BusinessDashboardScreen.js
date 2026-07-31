@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -21,6 +21,7 @@ export default function BusinessDashboardScreen() {
   const [newDescription, setNewDescription] = useState('');
   const [newInstructions, setNewInstructions] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [gatherings, setGatherings] = useState([]);
 
   useEffect(() => {
     loadPartners();
@@ -38,6 +39,7 @@ export default function BusinessDashboardScreen() {
       if (selectedPartner) {
         loadStats(selectedPartner.id);
         loadOffers(selectedPartner.id);
+        loadGatherings(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -52,6 +54,15 @@ export default function BusinessDashboardScreen() {
   async function loadOffers(partnerId) {
     const results = await getMyBusinessOffers(partnerId);
     setOffers(results);
+  }
+
+  async function loadGatherings(partnerId) {
+    const results = await getMyBusinessGatherings(partnerId);
+    setGatherings(results);
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
   async function handleCreateOffer() {
@@ -141,6 +152,18 @@ export default function BusinessDashboardScreen() {
           </>
         ) : (
           <Text style={styles.emptyText}>No data yet for this business.</Text>
+        )}
+
+        <Text style={styles.sectionHeader}>Gatherings</Text>
+        {gatherings.length === 0 ? (
+          <Text style={styles.emptyText}>No gatherings hosted yet — create one from the Create tab and it'll show up here.</Text>
+        ) : (
+          gatherings.map((g) => (
+            <View key={g.id} style={styles.gatheringRow}>
+              <Text style={styles.offerTitle}>{g.title}</Text>
+              <Text style={styles.offerDescription}>{formatDate(g.scheduled_at)}</Text>
+            </View>
+          ))
         )}
 
         <View style={styles.offersHeader}>
@@ -282,6 +305,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  gatheringRow: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.sm,
+  },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
   modalTitle: { ...typography.title, color: colors.textPrimary },
   modalCloseText: { color: colors.primary, fontWeight: '600' },
