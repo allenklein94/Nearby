@@ -195,6 +195,34 @@ export async function toggleOfferActive(offerId, active) {
   if (error) throw error;
 }
 
+export async function isFollowingBusiness(partnerId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return false;
+
+  const { data } = await supabase
+    .from('business_followers')
+    .select('id')
+    .eq('user_id', myId)
+    .eq('brand_partner_id', partnerId)
+    .maybeSingle();
+
+  return !!data;
+}
+
+export async function unfollowBusiness(partnerId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase
+    .from('business_followers')
+    .delete()
+    .eq('user_id', myId)
+    .eq('brand_partner_id', partnerId);
+
+  if (error) throw error;
+}
+
 export async function followBusiness(brandPartnerId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

@@ -2,10 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import {
-  getMyCommunities, joinCommunity, leaveCommunity,
-  getCommunityMemberCount, getCommunityGatherings,
-} from '../services/communities';
+import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings } from '../services/communities';
+import { isFollowingBusiness, followBusiness, unfollowBusiness } from '../services/brandOffers';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -20,6 +18,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [memberCount, setMemberCount] = useState(0);
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [followingBusiness, setFollowingBusiness] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
@@ -38,6 +37,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
     const upcoming = await getCommunityGatherings(communityId);
     setGatherings(upcoming.filter((g) => new Date(g.scheduled_at) >= new Date()));
 
+    if (data?.hosting_partner_id) {
+      const following = await isFollowingBusiness(data.hosting_partner_id);
+      setFollowingBusiness(following);
+    }
+
     setLoading(false);
   }, [communityId]);
 
@@ -46,6 +50,19 @@ export default function CommunityDetailScreen({ route, navigation }) {
       load();
     }, [load])
   );
+
+  async function handleToggleFollowBusiness() {
+    try {
+      if (followingBusiness) {
+        await unfollowBusiness(community.hosting_partner_id);
+      } else {
+        await followBusiness(community.hosting_partner_id);
+      }
+      setFollowingBusiness(!followingBusiness);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
 
   async function handleJoinLeave() {
     try {
@@ -94,6 +111,20 @@ export default function CommunityDetailScreen({ route, navigation }) {
           >
             <Text style={[styles.joinButtonText, isMember && styles.leaveButtonText]}>
               {isMember ? 'Leave Community' : 'Join Community'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {community.hosting_partner_id && (
+          <TouchableOpacity
+            style={[styles.chatButton, followingBusiness && styles.leaveButton]}
+            onPress={handleToggleFollowBusiness}
+            activeOpacity={0.85}
+            accessibilityLabel={followingBusiness ? 'Unfollow this business' : 'Follow this business'}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.chatButtonText, followingBusiness && styles.leaveButtonText]}>
+              {followingBusiness ? '✓ Following' : '🏪 Follow This Business'}
             </Text>
           </TouchableOpacity>
         )}
