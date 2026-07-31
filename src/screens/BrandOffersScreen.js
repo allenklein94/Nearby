@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function BrandOffersScreen() {
+export default function BrandOffersScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -119,6 +119,13 @@ export default function BrandOffersScreen() {
                   <Text style={styles.partnerName}>{offer.brand_partners?.name}</Text>
                   <Text style={styles.offerTitle}>{offer.title}</Text>
                 </View>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('BusinessConversation', { partnerId: offer.partner_id, partnerName: offer.brand_partners?.name })}
+                  accessibilityLabel={`Message ${offer.brand_partners?.name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ fontSize: 20 }}>💬</Text>
+                </TouchableOpacity>
               </View>
               {offer.description ? <Text style={styles.description}>{offer.description}</Text> : null}
               {alreadyRedeemed ? (
