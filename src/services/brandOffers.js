@@ -234,6 +234,18 @@ export async function getMyBusinessOffers(partnerId) {
 }
 
 export async function createBusinessOffer({ partnerId, title, description, rewardType, redemptionInstructions, gatheringId = null }) {
+  // Gathering-specific rewards default to expiring 48 hours after
+  // the gathering itself — without this, an offer attached to one
+  // event would otherwise stay redeemable forever, since it has no
+  // expiration tied to the event's own timing.
+  let expiresAt = null;
+  if (gatheringId) {
+    const { data: gathering } = await supabase.from('gatherings').select('scheduled_at').eq('id', gatheringId).single();
+    if (gathering?.scheduled_at) {
+      expiresAt = new Date(new Date(gathering.scheduled_at).getTime() + 48 * 60 * 60 * 1000).toISOString();
+    }
+  }
+
   const { error } = await supabase
     .from('brand_offers')
     .insert({
@@ -244,6 +256,7 @@ export async function createBusinessOffer({ partnerId, title, description, rewar
       redemption_instructions: redemptionInstructions,
       active: true,
       gathering_id: gatheringId,
+      expires_at: expiresAt,
     });
 
   if (error) throw error;
