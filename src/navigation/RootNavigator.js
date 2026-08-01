@@ -186,7 +186,7 @@ function MainTabs() {
       <Tab.Screen name="Discover" component={DiscoverHubScreen} />
       <Tab.Screen name="Create" component={CreateHubScreen} />
       <Tab.Screen name="Matches" component={InboxScreen} options={{ tabBarLabel: 'Inbox', tabBarBadge: inboxUnreadCount > 0 ? inboxUnreadCount : undefined }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} options={{ tabBarLabel: 'You' }} />
     </Tab.Navigator>
   );
 }
