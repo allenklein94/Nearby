@@ -34,7 +34,7 @@ export async function captureStoryMedia() {
   return { uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image' };
 }
 
-export async function uploadStory(userId, uri, mediaType, isPublic = false) {
+export async function uploadStory(userId, uri, mediaType, isPublic = false, gatheringId = null) {
   const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   if (!base64 || base64.length === 0) {
     throw new Error('Could not read the selected media. Please try again.');
@@ -65,9 +65,48 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false) {
 
   const { error: insertError } = await supabase
     .from('stories')
-    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic, latitude, longitude });
-
+    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic, latitude, longitude, gathering_id: gatheringId });
   if (insertError) throw insertError;
+}
+
+// Groups gathering-linked stories together — "☕ Coffee Meetup (6
+// stories)" rather than showing them as unrelated individual posts.
+// These are the featured, focus content the redesign is built
+// around; general stories remain a smaller, secondary layer.
+export async function getGatheringStoriesGrouped() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data: blockedByMe } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', myId);
+  const { data: blockedMe } = await supabase.from('blocks').select('blocker_id').eq('blocked_id', myId);
+  const excludedUserIds = new Set([
+    ...(blockedByMe ?? []).map((b) => b.blocked_id),
+    ...(blockedMe ?? []).map((b) => b.blocker_id),
+  ]);
+
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, media_path, media_type, created_at, user_id, gathering_id, gatherings(title), profiles(display_name, photo_url)')
+    .not('gathering_id', 'is', null)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getGatheringStoriesGrouped error', error);
+    return [];
+  }
+
+  const filtered = (data ?? []).filter((s) => !excludedUserIds.has(s.user_id) && s.gatherings);
+
+  const grouped = {};
+  for (const story of filtered) {
+    if (!grouped[story.gathering_id]) {
+      grouped[story.gathering_id] = { gatheringId: story.gathering_id, gatheringTitle: story.gatherings.title, stories: [] };
+    }
+    grouped[story.gathering_id].stories.push(story);
+  }
+
+  return Object.values(grouped).sort((a, b) => new Date(b.stories[0].created_at) - new Date(a.stories[0].created_at));
 }
 
 // Groups public stories by poster for browsing (not just the map),

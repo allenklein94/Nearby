@@ -2,14 +2,32 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { getGatheringMessages, sendGatheringMessage } from '../services/gatheringChat';
 import { getSignedPhotoUrl } from '../services/photos';
+import { captureStoryMedia, uploadStory } from '../services/stories';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { Alert } from 'react-native';
 
 export default function GatheringChatScreen({ route }) {
   const { gatheringId, gatheringTitle } = route.params;
   const { colors } = useTheme();
+  const [postingStory, setPostingStory] = useState(false);
+
+  async function handlePostStory() {
+    try {
+      const media = await captureStoryMedia();
+      if (!media) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      setPostingStory(true);
+      await uploadStory(myId, media.uri, media.type, false, gatheringId);
+      Alert.alert('Posted!', `Your story is now shared with everyone at ${gatheringTitle}.`);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setPostingStory(false);
+  }
   const styles = getStyles(colors);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -98,6 +116,14 @@ export default function GatheringChatScreen({ route }) {
         />
 
         <View style={styles.inputRow}>
+          <TouchableOpacity
+            onPress={handlePostStory}
+            disabled={postingStory}
+            accessibilityLabel="Post a story from this gathering"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 22 }}>📸</Text>
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Message everyone..."
