@@ -4,12 +4,12 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 const QUICK_STARTS = [
-  { icon: '☕', label: 'Grab Coffee', category: 'Coffee' },
-  { icon: '🍕', label: 'Get Food', category: 'Foodie' },
-  { icon: '🏃', label: 'Go for a Run', category: 'Fitness' },
-  { icon: '🎲', label: 'Play Games', category: 'Gaming' },
-  { icon: '🎵', label: 'Listen to Music', category: 'Music' },
-  { icon: '🌳', label: 'Explore Outside', category: 'Outdoors' },
+  { icon: '☕', label: 'Coffee Meetup', category: 'Coffee' },
+  { icon: '🍽️', label: 'Dinner', category: 'Foodie' },
+  { icon: '🚶', label: 'Walk', category: 'Outdoors' },
+  { icon: '⚽', label: 'Soccer', category: 'Sports' },
+  { icon: '🧠', label: 'Trivia', category: 'Gaming' },
+  { icon: '🤝', label: 'Volunteer', category: 'Outdoors' },
 ];
 
 // A faster on-ramp into the existing Create Gathering flow — picking
