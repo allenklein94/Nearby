@@ -39,23 +39,31 @@ export async function searchNearbyPlaces(latitude, longitude, category) {
   // near each place, so a venue can honestly show "3 gatherings
   // hosted here" when that's genuinely true, without fabricating it
   // for places nobody's actually used yet.
-  const withGatheringCounts = await Promise.all(
-    places.map(async (place) => {
-      if (!place.latitude || !place.longitude) return { ...place, gatheringCount: 0 };
-      try {
-        const { data: count } = await supabase.rpc('count_gatherings_near', {
-          lat_param: place.latitude,
-          lng_param: place.longitude,
-        });
-        return { ...place, gatheringCount: count ?? 0 };
-      } catch (e) {
-        // One venue's gathering count failing to load shouldn't
-        // take down the whole results list — worst case, this one
-        // place just shows no count.
-        return { ...place, gatheringCount: 0 };
-      }
-    })
-  );
+  // A single batched RPC call instead of one round-trip per place —
+  // meaningfully faster than the naive per-place approach, especially
+  // on slower networks with up to 20 places to check.
+  const validPlaces = places.filter((p) => p.latitude && p.longitude);
+  let countsByIdx = {};
+  if (validPlaces.length > 0) {
+    try {
+      const { data: counts } = await supabase.rpc('count_gatherings_near_batch', {
+        lats: validPlaces.map((p) => p.latitude),
+        lngs: validPlaces.map((p) => p.longitude),
+      });
+      countsByIdx = Object.fromEntries((counts ?? []).map((c) => [c.idx, c.gathering_count]));
+    } catch (e) {
+      console.error('count_gatherings_near_batch error', e);
+      // Fails open to zero counts rather than losing the whole
+      // places list over a secondary, non-essential metric.
+    }
+  }
+
+  let validIdx = 0;
+  const withGatheringCounts = places.map((place) => {
+    if (!place.latitude || !place.longitude) return { ...place, gatheringCount: 0 };
+    validIdx += 1;
+    return { ...place, gatheringCount: countsByIdx[validIdx] ?? 0 };
+  });
 
   return withGatheringCounts;
 }
