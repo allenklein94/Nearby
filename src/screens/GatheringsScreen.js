@@ -106,6 +106,8 @@ export default function GatheringsScreen({ navigation, route }) {
   const [interestFilter, setInterestFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState(route?.params?.initialDateFilter ?? 'anytime');
   const [forYouActive, setForYouActive] = useState(false);
+  const [trendingActive, setTrendingActive] = useState(false);
+  const [trendingIds, setTrendingIds] = useState([]);
   const [topCategories, setTopCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [newOfferCount, setNewOfferCount] = useState(0);
@@ -134,6 +136,16 @@ export default function GatheringsScreen({ navigation, route }) {
     setHosting(hostingResults);
     setAttending(attendingResults);
     setTopCategories(topCats);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (myId) {
+      const { data: myProfile } = await supabase.from('profiles').select('wide_area').eq('id', myId).single();
+      if (myProfile?.wide_area) {
+        const { data: trending } = await supabase.rpc('get_trending_gathering_ids', { area_param: myProfile.wide_area });
+        setTrendingIds((trending ?? []).map((t) => t.id));
+      }
+    }
 
     const urlEntries = await Promise.all(
       nearbyResults.map(async (g) => {
@@ -402,6 +414,7 @@ export default function GatheringsScreen({ navigation, route }) {
 
   const filteredNearby = nearby
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
+    .filter((g) => !trendingActive || trendingIds.includes(g.id))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
     .filter((g) => {
       if (!searchQuery.trim()) return true;
@@ -616,6 +629,15 @@ export default function GatheringsScreen({ navigation, route }) {
                     <Text style={styles.forYouChipLockedText}>⭐ For You (soon)</Text>
                   </View>
                 )}
+                <TouchableOpacity
+                  style={[styles.forYouChip, trendingActive && styles.forYouChipActive]}
+                  onPress={() => setTrendingActive((v) => !v)}
+                  accessibilityLabel="Trending — most popular gatherings nearby right now"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: trendingActive }}
+                >
+                  <Text style={[styles.forYouChipText, trendingActive && styles.forYouChipTextActive]}>🔥 Trending</Text>
+                </TouchableOpacity>
                 {INTEREST_OPTIONS.map((option) => {
                   const active = interestFilter === option;
                   const style = categoryStyleFor(option);
