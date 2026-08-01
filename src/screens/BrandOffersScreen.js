@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
-import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness } from '../services/brandOffers';
+import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts } from '../services/brandOffers';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -19,6 +19,7 @@ export default function BrandOffersScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [redeemingId, setRedeemingId] = useState(null);
   const [followingStatus, setFollowingStatus] = useState({});
+  const [redemptionCounts, setRedemptionCounts] = useState({});
 
   const load = useCallback(async () => {
     let myLat = null;
@@ -35,12 +36,14 @@ export default function BrandOffersScreen({ navigation }) {
     setOffers(offersData);
     setRedeemedIds(redemptionsData);
     setLoading(false);
-
     const uniquePartnerIds = [...new Set(offersData.map((o) => o.partner_id))];
     const followEntries = await Promise.all(
       uniquePartnerIds.map(async (id) => [id, await isFollowingBusiness(id)])
     );
     setFollowingStatus(Object.fromEntries(followEntries));
+    const limitedOfferIds = offersData.filter((o) => o.redemption_limit != null).map((o) => o.id);
+    const counts = await getRedemptionCounts(limitedOfferIds);
+    setRedemptionCounts(counts);
   }, []);
 
   // Reload on focus, not just mount — offers can change (new ones
@@ -148,6 +151,11 @@ export default function BrandOffersScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
               {offer.description ? <Text style={styles.description}>{offer.description}</Text> : null}
+              {offer.redemption_limit != null && (
+                <Text style={styles.scarcityText}>
+                  {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} spots left
+                </Text>
+              )}
               <TouchableOpacity
                 onPress={async () => {
                   const currentlyFollowing = followingStatus[offer.partner_id];
@@ -210,6 +218,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   partnerName: { ...typography.caption, color: colors.textTertiary },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  scarcityText: { color: colors.primary, fontWeight: '700', fontSize: 12, marginBottom: spacing.sm },
   followLinkText: { color: colors.primary, fontSize: 13, fontWeight: '700', marginBottom: spacing.sm },
   redeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },

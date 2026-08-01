@@ -1,6 +1,24 @@
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
 
+export async function getRedemptionCounts(offerIds) {
+  if (!offerIds || offerIds.length === 0) return {};
+  // offer_redemptions' own RLS scopes SELECT to each person's own
+  // rows only, so a direct table query here would only ever see the
+  // current user's own redemption, never the true total. This RPC
+  // returns aggregate counts only, without exposing who redeemed.
+  const { data, error } = await supabase.rpc('get_offer_redemption_counts', { offer_ids: offerIds });
+  if (error) {
+    console.error('getRedemptionCounts error', error);
+    return {};
+  }
+  const counts = {};
+  (data ?? []).forEach((r) => {
+    counts[r.offer_id] = Number(r.redemption_count);
+  });
+  return counts;
+}
+
 export async function getActiveOffers(myLat = null, myLng = null) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
