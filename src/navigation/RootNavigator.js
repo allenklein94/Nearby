@@ -31,6 +31,7 @@ import AdminBusinessRequestsScreen from '../screens/AdminBusinessRequestsScreen'
 import BusinessConversationScreen from '../screens/BusinessConversationScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
 import PlacesScreen from '../screens/PlacesScreen';
+import TimelineScreen from '../screens/TimelineScreen';
 import ActivityScreen from '../screens/ActivityScreen';
 import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
@@ -265,6 +266,7 @@ export default function RootNavigator() {
             <Stack.Screen name="BusinessConversation" component={BusinessConversationScreen} options={({ route }) => ({ headerShown: true, title: route.params?.partnerName ?? 'Message', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: 'Edit Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>

@@ -142,6 +142,47 @@ export async function getContinueYourCommunity() {
   return { id: community.id, name: community.name, coverPhotoUrl: community.cover_photo_url, recentMessageCount: unreadCount ?? 0 };
 }
 
+export async function getMyTimeline() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const now = new Date().toISOString();
+
+  const { data: attended } = await supabase
+    .from('gathering_interest')
+    .select('created_at, gatherings(title, scheduled_at)')
+    .eq('user_id', myId)
+    .eq('status', 'approved')
+    .lt('gatherings.scheduled_at', now);
+
+  const { data: hosted } = await supabase
+    .from('gatherings')
+    .select('title, scheduled_at')
+    .eq('host_id', myId)
+    .lt('scheduled_at', now);
+
+  const { data: communityJoins } = await supabase
+    .from('community_members')
+    .select('joined_at, communities(name)')
+    .eq('user_id', myId);
+
+  const { data: profile } = await supabase.from('profiles').select('created_at').eq('id', myId).single();
+
+  const items = [
+    ...(profile ? [{ date: profile.created_at, icon: '🎉', text: 'Joined Nearby' }] : []),
+    ...(attended ?? [])
+      .filter((a) => a.gatherings)
+      .map((a) => ({ date: a.gatherings.scheduled_at, icon: '📅', text: `Attended "${a.gatherings.title}"` })),
+    ...(hosted ?? []).map((h) => ({ date: h.scheduled_at, icon: '🎪', text: `Hosted "${h.title}"` })),
+    ...(communityJoins ?? [])
+      .filter((c) => c.communities)
+      .map((c) => ({ date: c.joined_at, icon: '🏘️', text: `Joined ${c.communities.name}` })),
+  ];
+
+  return items.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
 export async function getUnlockedPerksCount() {
   const { data, error } = await supabase
     .from('brand_offers')

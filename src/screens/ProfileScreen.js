@@ -420,12 +420,21 @@ const result = await response.json();
             <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
             <Text style={styles.quickStatLabel}>Upcoming</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
+         <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
             <Text style={styles.quickStatLabel}>Past</Text>
           </TouchableOpacity>
         </View>
-
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Timeline')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your timeline, how your social life has grown"
+          accessibilityRole="button"
+        >
+          <Text style={styles.timelineLinkText}>📖 View Your Timeline</Text>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
         {achievements.some((a) => a.earned) && (
           <>
             <Text style={styles.sectionLabel} accessibilityRole="header">Achievements</Text>
@@ -822,6 +831,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   settingsGear: { padding: spacing.xs },
   settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
+  timelineLink: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  timelineLinkText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
+  timelineLinkChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   quickStatsRow: {
     flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg, overflow: 'hidden',
