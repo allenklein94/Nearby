@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
@@ -88,12 +90,30 @@ export default function CompleteProfileScreen() {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
 
+    // Picks up whatever was answered during the pre-signup onboarding
+    // questions, if any exist — someone could reach this screen
+    // without having gone through that flow (e.g., an existing
+    // account somehow ending up here), so this is genuinely optional.
+    let onboardingAnswers = {};
+    try {
+      const stored = await AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY);
+      if (stored) {
+        onboardingAnswers = JSON.parse(stored);
+        await AsyncStorage.removeItem(ONBOARDING_ANSWERS_KEY);
+      }
+    } catch (e) {
+      console.error('Failed to read onboarding answers', e);
+    }
+
     const { error: profileError } = await supabase.from('profiles').upsert({
       id: userId,
       display_name: displayName.trim(),
       birthdate: birthdate.toISOString().split('T')[0],
       interests,
       terms_accepted_at: new Date().toISOString(),
+      ...(onboardingAnswers.onboarding_motivations ? { onboarding_motivations: onboardingAnswers.onboarding_motivations } : {}),
+      ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
+      ...(onboardingAnswers.monthly_interests ? { monthly_interests: onboardingAnswers.monthly_interests, monthly_interests_updated_at: new Date().toISOString() } : {}),
     });
 
     if (profileError) {
