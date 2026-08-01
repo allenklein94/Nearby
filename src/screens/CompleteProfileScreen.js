@@ -115,6 +115,13 @@ export default function CompleteProfileScreen() {
       ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
       ...(onboardingAnswers.monthly_interests ? { monthly_interests: onboardingAnswers.monthly_interests, monthly_interests_updated_at: new Date().toISOString() } : {}),
     });
+    if (!profileError) {
+      // Marks this as a fresh signup so the navigator shows the
+      // recommendations screen first instead of jumping straight to
+      // MainTabs — checked and cleared the very next time the app's
+      // main stack renders, so it only ever fires once.
+      await AsyncStorage.setItem('just_completed_signup', 'true').catch(() => null);
+    }
 
     if (profileError) {
       setSubmitting(false);

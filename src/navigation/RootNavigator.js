@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -15,7 +16,9 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getInboxUnreadCount } from '../services/homeDashboard';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
+import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
+import OnboardingRecommendationsScreen from '../screens/OnboardingRecommendationsScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
@@ -198,16 +201,30 @@ function MainTabs() {
 export default function RootNavigator() {
   const { session, loading, profileComplete, profileLoading } = useAuth();
   const { colors } = useTheme();
-
   useEffect(() => {
     if (session && profileComplete) {
       initPurchases(session.user.id);
       registerForPushNotifications(session.user.id);
       startBackgroundPresenceReporting();
       updateBadgeCount(session.user.id);
+      // Checked and cleared here so the recommendations screen only
+      // ever shows once, right after a fresh signup — every
+      // subsequent app open goes straight to MainTabs as normal.
+      // Uses the imperative nav ref rather than initialRouteName,
+      // since initialRouteName only applies on this navigator's
+      // first mount and won't react to this state changing later.
+      AsyncStorage.getItem('just_completed_signup').then((flag) => {
+        if (flag === 'true') {
+          AsyncStorage.removeItem('just_completed_signup');
+          setTimeout(() => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('OnboardingRecommendations');
+            }
+          }, 300);
+        }
+      });
     }
   }, [session, profileComplete]);
-
   if (loading || (session && profileLoading)) return null;
 
   return (
@@ -225,6 +242,7 @@ export default function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
+            <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />

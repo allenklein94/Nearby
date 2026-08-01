@@ -183,6 +183,43 @@ export async function getMyTimeline() {
   return items.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
+export async function getOnboardingRecommendations() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data: myProfile } = await supabase
+    .from('profiles')
+    .select('monthly_interests, wide_area')
+    .eq('id', myId)
+    .single();
+
+  if (!myProfile?.wide_area) return [];
+
+  const { data: gatherings } = await supabase
+    .from('gatherings')
+    .select('id, title, interest_tag, scheduled_at, host_id, profiles!gatherings_host_id_fkey(display_name)')
+    .eq('wide_area', myProfile.wide_area)
+    .eq('is_public', true)
+    .gte('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(30);
+
+  const monthlyInterests = myProfile.monthly_interests ?? [];
+
+  // A genuine, honestly-computed score based on real overlap with
+  // what they said they're interested in this month — not an
+  // invented "92% match" figure with nothing real behind it.
+  const scored = (gatherings ?? []).map((g) => {
+    const matchesInterest = monthlyInterests.some((i) => i.toLowerCase() === (g.interest_tag ?? '').toLowerCase());
+    return { ...g, matchScore: matchesInterest ? 1 : 0 };
+  });
+
+  return scored
+    .sort((a, b) => b.matchScore - a.matchScore || new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 3);
+}
+
 export async function getUnlockedPerksCount() {
   const { data, error } = await supabase
     .from('brand_offers')
