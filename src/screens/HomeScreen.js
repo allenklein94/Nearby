@@ -2,6 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunity, getUnlockedPerksCount } from '../services/homeDashboard';
+import { getMostRecentUnratedGathering } from '../services/gatherings';
+import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
@@ -26,6 +28,7 @@ export default function HomeScreen({ navigation }) {
   const [socialForecast, setSocialForecast] = useState(null);
   const [continueCommunity, setContinueCommunity] = useState(null);
   const [perksCount, setPerksCount] = useState(0);
+  const [unratedGathering, setUnratedGathering] = useState(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -42,11 +45,13 @@ export default function HomeScreen({ navigation }) {
       setContinueCommunity(community);
       const perks = await getUnlockedPerksCount();
       setPerksCount(perks);
+      const unrated = await getMostRecentUnratedGathering();
+      setUnratedGathering(unrated);
     } catch (e) {
       // These are supplementary cards, not core functionality — a
       // failure here should never block social forecast/location
       // code that runs afterward in the same function.
-      console.error('Continue Community / Perks fetch failed', e);
+      console.error('Continue Community / Perks / Feedback fetch failed', e);
     }
 
     const { status } = await Location.getForegroundPermissionsAsync();
@@ -280,6 +285,11 @@ export default function HomeScreen({ navigation }) {
         visible={startModalVisible}
         onClose={() => setStartModalVisible(false)}
         navigation={navigation}
+      />
+      <GatheringFeedbackModal
+        visible={!!unratedGathering}
+        gatheringId={unratedGathering?.id}
+        onClose={() => setUnratedGathering(null)}
       />
     </SafeAreaView>
   );

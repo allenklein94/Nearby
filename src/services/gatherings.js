@@ -384,15 +384,52 @@ export async function approveInterest(interestId) {
   return data;
 }
 
-export async function submitGatheringFeedback(gatheringId, feltWelcoming, wouldAttendAgain) {
+export async function submitGatheringFeedback(gatheringId, { feltWelcoming = null, wouldAttendAgain = null, satisfactionRating = null, greatBecause = null } = {}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
-
   const { error } = await supabase
     .from('gathering_feedback')
-    .upsert({ gathering_id: gatheringId, reviewer_id: myId, felt_welcoming: feltWelcoming, would_attend_again: wouldAttendAgain });
-
+    .upsert({
+      gathering_id: gatheringId,
+      reviewer_id: myId,
+      felt_welcoming: feltWelcoming,
+      would_attend_again: wouldAttendAgain,
+      satisfaction_rating: satisfactionRating,
+      great_because: greatBecause,
+    });
   if (error) throw error;
+}
+
+export async function getMostRecentUnratedGathering() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return null;
+
+  const now = new Date();
+  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+  const { data: attended } = await supabase
+    .from('gathering_interest')
+    .select('gatherings!inner(id, title, scheduled_at)')
+    .eq('user_id', myId)
+    .eq('status', 'approved')
+    .lt('gatherings.scheduled_at', now.toISOString())
+    .gt('gatherings.scheduled_at', threeDaysAgo.toISOString())
+    .order('gatherings(scheduled_at)', { ascending: false })
+    .limit(5);
+
+  if (!attended || attended.length === 0) return null;
+
+  const { data: existingFeedback } = await supabase
+    .from('gathering_feedback')
+    .select('gathering_id')
+    .eq('reviewer_id', myId)
+    .in('gathering_id', attended.map((a) => a.gatherings.id));
+
+  const ratedIds = new Set((existingFeedback ?? []).map((f) => f.gathering_id));
+  const unrated = attended.find((a) => !ratedIds.has(a.gatherings.id));
+
+  return unrated ? unrated.gatherings : null;
 }
 
 export async function hasSubmittedFeedback(gatheringId) {
