@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList } from 'react-native';
+import { getSignedStoryUrl } from '../services/stories';
 import { useFocusEffect } from '@react-navigation/native';
-import { getPublicStoriesGrouped } from '../services/stories';
+import { getPublicStoriesGrouped, getGatheringStoriesGrouped } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import StoryViewerModal from '../components/StoryViewerModal';
 import { useTheme } from '../context/ThemeContext';
@@ -15,27 +16,40 @@ export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [publicStories, setPublicStories] = useState([]);
+  const [gatheringStories, setGatheringStories] = useState([]);
+  const [gatheringStoryViewer, setGatheringStoryViewer] = useState(null);
   const [storyPhotoUrls, setStoryPhotoUrls] = useState({});
   const [viewerTarget, setViewerTarget] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
       loadPublicStories();
+      loadGatheringStories();
     }, [])
   );
-
   async function loadPublicStories() {
-    const grouped = await getPublicStoriesGrouped();
-    setPublicStories(grouped);
-
-    const urlEntries = await Promise.all(
-      grouped.map(async (g) => {
-        if (!g.photoUrl) return [g.userId, null];
-        const url = await getSignedPhotoUrl(g.photoUrl);
-        return [g.userId, url];
-      })
-    );
-    setStoryPhotoUrls(Object.fromEntries(urlEntries));
+    try {
+      const grouped = await getPublicStoriesGrouped();
+      setPublicStories(grouped);
+      const urlEntries = await Promise.all(
+        grouped.map(async (g) => {
+          if (!g.photoUrl) return [g.userId, null];
+          const url = await getSignedPhotoUrl(g.photoUrl);
+          return [g.userId, url];
+        })
+      );
+      setStoryPhotoUrls(Object.fromEntries(urlEntries));
+    } catch (e) {
+      console.error('loadPublicStories failed', e);
+    }
+  }
+  async function loadGatheringStories() {
+    try {
+      const grouped = await getGatheringStoriesGrouped();
+      setGatheringStories(grouped);
+    } catch (e) {
+      console.error('loadGatheringStories failed', e);
+    }
   }
 
   return (
@@ -138,6 +152,28 @@ export default function DiscoverHubScreen({ navigation }) {
         </View>
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
+      {gatheringStories.length > 0 && (
+        <>
+          <Text style={styles.sectionHeader}>Gathering Memories</Text>
+          {gatheringStories.map((group) => (
+            <TouchableOpacity
+              key={group.gatheringId}
+              style={styles.card}
+              onPress={() => setGatheringStoryViewer(group)}
+              activeOpacity={0.85}
+              accessibilityLabel={`${group.gatheringTitle}, ${group.stories.length} stories`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.cardIcon}>🎉</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{group.gatheringTitle}</Text>
+                <Text style={styles.cardSubtitle}>{group.stories.length} stor{group.stories.length === 1 ? 'y' : 'ies'}</Text>
+              </View>
+              <Text style={styles.cardChevron}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </>
+      )}
       {publicStories.length > 0 && (
         <>
           <Text style={styles.sectionHeader}>Public Stories Near You</Text>
@@ -170,7 +206,39 @@ export default function DiscoverHubScreen({ navigation }) {
           loadPublicStories();
         }}
       />
+      <Modal visible={!!gatheringStoryViewer} animationType="slide" onRequestClose={() => setGatheringStoryViewer(null)}>
+        <SafeAreaView style={styles.container}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+            <Text style={styles.title}>{gatheringStoryViewer?.gatheringTitle}</Text>
+            <TouchableOpacity onPress={() => setGatheringStoryViewer(null)} accessibilityLabel="Close" accessibilityRole="button">
+              <Text style={{ color: colors.primary, fontWeight: '700' }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={gatheringStoryViewer?.stories ?? []}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <GatheringStoryItem story={item} colors={colors} />}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
+  );
+}
+
+function GatheringStoryItem({ story, colors }) {
+  const [url, setUrl] = useState(null);
+  React.useEffect(() => {
+    getSignedStoryUrl(story.media_path).then(setUrl);
+  }, [story.media_path]);
+  return (
+    <View style={{ marginBottom: spacing.lg }}>
+      <Text style={{ color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm }}>{story.profiles?.display_name}</Text>
+      {url ? (
+        <Image source={{ uri: url }} style={{ width: '100%', height: 400, borderRadius: radius.lg }} resizeMode="cover" />
+      ) : (
+        <View style={{ width: '100%', height: 400, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated }} />
+      )}
+    </View>
   );
 }
 
