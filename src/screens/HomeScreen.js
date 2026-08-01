@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHomeDashboard, getSocialForecast } from '../services/homeDashboard';
+import { getHomeDashboard, getSocialForecast, getContinueYourCommunity } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
@@ -24,6 +24,7 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [socialForecast, setSocialForecast] = useState(null);
+  const [continueCommunity, setContinueCommunity] = useState(null);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -35,6 +36,8 @@ export default function HomeScreen({ navigation }) {
     const result = await getHomeDashboard();
     setDashboard(result);
     setLoading(false);
+    const community = await getContinueYourCommunity();
+    setContinueCommunity(community);
 
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status === 'granted') {
@@ -82,6 +85,21 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
+        {continueCommunity && (
+          <TouchableOpacity
+            style={styles.continueCommunityCard}
+            onPress={() => navigation.navigate('CommunityDetail', { communityId: continueCommunity.id })}
+            activeOpacity={0.85}
+            accessibilityLabel={`Continue ${continueCommunity.name}${continueCommunity.recentMessageCount > 0 ? `, ${continueCommunity.recentMessageCount} recent messages` : ''}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.continueCommunityLabel}>🏘️ Continue Your Community</Text>
+            <Text style={styles.continueCommunityName}>{continueCommunity.name}</Text>
+            {continueCommunity.recentMessageCount > 0 && (
+              <Text style={styles.continueCommunityDetail}>{continueCommunity.recentMessageCount} new message{continueCommunity.recentMessageCount === 1 ? '' : 's'} in the last day</Text>
+            )}
+          </TouchableOpacity>
+        )}
         {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
           <View style={styles.sinceAwayBanner}>
             <Text style={styles.sinceAwayTitle}>Since you were away</Text>
@@ -248,6 +266,13 @@ export default function HomeScreen({ navigation }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
+  continueCommunityCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  continueCommunityLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  continueCommunityName: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
+  continueCommunityDetail: { color: colors.primary, fontSize: 12, marginTop: 2 },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,

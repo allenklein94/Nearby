@@ -117,6 +117,31 @@ export async function getSocialForecast(latitude, longitude) {
   return data?.[0] ?? null;
 }
 
+export async function getContinueYourCommunity() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return null;
+
+  const { data: memberships } = await supabase
+    .from('community_members')
+    .select('community_id, joined_at, communities(id, name, cover_photo_url)')
+    .eq('user_id', myId)
+    .order('joined_at', { ascending: false })
+    .limit(1);
+
+  if (!memberships || memberships.length === 0) return null;
+  const community = memberships[0].communities;
+  if (!community) return null;
+
+  const { count: unreadCount } = await supabase
+    .from('community_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('community_id', community.id)
+    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+  return { id: community.id, name: community.name, coverPhotoUrl: community.cover_photo_url, recentMessageCount: unreadCount ?? 0 };
+}
+
 export async function getHomeDashboard() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
