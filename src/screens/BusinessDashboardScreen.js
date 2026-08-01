@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
@@ -25,6 +25,7 @@ export default function BusinessDashboardScreen() {
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
+  const [estimtedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -190,6 +191,8 @@ export default function BusinessDashboardScreen() {
   async function loadInsights(partnerId) {
     const result = await getBusinessInsights(partnerId);
     setInsights(result);
+    const owed = await getEstimatedAmountOwed(partnerId).catch(() => ({ redemptionCount: 0, estimatedAmount: 0 }));
+    setEstimatedOwed(owed);
   }
 
   async function loadCommunities(partnerId) {
@@ -475,6 +478,13 @@ export default function BusinessDashboardScreen() {
             {section === 'insights' && (
               (insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
+                  {estimatedOwed.redemptionCount > 0 && (
+                    <View style={styles.estimatedOwedBanner}>
+                      <Text style={styles.estimatedOwedLabel}>Estimated this month</Text>
+                      <Text style={styles.estimatedOwedValue}>${estimatedOwed.estimatedAmount}</Text>
+                      <Text style={styles.estimatedOwedDetail}>{estimatedOwed.redemptionCount} redemption{estimatedOwed.redemptionCount === 1 ? '' : 's'} — a placeholder estimate, not an actual bill</Text>
+                    </View>
+                  )}
                   {insights?.top_interests?.length > 0 && (
                     <Text style={styles.insightLine}>Your community's top interests: {insights.top_interests.join(', ')}</Text>
                   )}
@@ -787,6 +797,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   offerRedemptionCount: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  estimatedOwedBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  estimatedOwedLabel: { color: colors.primary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  estimatedOwedValue: { color: colors.textPrimary, fontSize: 28, fontWeight: '800', marginTop: 2 },
+  estimatedOwedDetail: { color: colors.textTertiary, fontSize: 11, marginTop: 4 },
   insightsCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginBottom: spacing.md,

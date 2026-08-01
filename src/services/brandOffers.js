@@ -1,6 +1,38 @@
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
 
+// A placeholder flat rate — purely illustrative until real
+// per-business pricing and actual billing exist. This lets a
+// business see a genuine estimate before ever being asked to
+// connect a payment method, rather than nothing at all.
+const ESTIMATED_RATE_PER_REDEMPTION = 3;
+
+export async function getEstimatedAmountOwed(partnerId) {
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const { data: myOffers } = await supabase.from('brand_offers').select('id').eq('partner_id', partnerId);
+  const offerIds = (myOffers ?? []).map((o) => o.id);
+  if (offerIds.length === 0) return { redemptionCount: 0, estimatedAmount: 0 };
+
+  // Same RLS gap as getRedemptionCounts — offer_redemptions' own
+  // SELECT policy scopes to each person's own rows only, so this
+  // must go through a security-definer RPC to get the true total.
+  const { data: count, error } = await supabase.rpc('count_redemptions_since', {
+    offer_ids: offerIds,
+    since_time: startOfMonth.toISOString(),
+  });
+
+  if (error) {
+    console.error('getEstimatedAmountOwed error', error);
+    return { redemptionCount: 0, estimatedAmount: 0 };
+  }
+
+  const redemptionCount = count ?? 0;
+  return { redemptionCount, estimatedAmount: redemptionCount * ESTIMATED_RATE_PER_REDEMPTION };
+}
+
 export async function getRedemptionCounts(offerIds) {
   if (!offerIds || offerIds.length === 0) return {};
   // offer_redemptions' own RLS scopes SELECT to each person's own
