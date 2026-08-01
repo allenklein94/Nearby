@@ -112,6 +112,20 @@ export default function DiscoverHubScreen({ navigation }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.card}
+        onPress={() => navigation.navigate('Places')}
+        activeOpacity={0.85}
+        accessibilityLabel="Places, real spots nearby worth checking out"
+        accessibilityRole="button"
+      >
+        <Text style={styles.cardIcon}>📍</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>Places</Text>
+          <Text style={styles.cardSubtitle}>Coffee shops, restaurants, parks</Text>
+        </View>
+        <Text style={styles.cardChevron}>›</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.card}
         onPress={() => navigation.navigate('BrandOffers')}
         activeOpacity={0.85}
         accessibilityLabel="Perks, discounts and offers from local businesses"
