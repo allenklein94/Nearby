@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList } from 'react-native';
 import { getSignedStoryUrl } from '../services/stories';
+import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import { getPublicStoriesGrouped, getGatheringStoriesGrouped } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -234,7 +235,17 @@ function GatheringStoryItem({ story, colors }) {
     <View style={{ marginBottom: spacing.lg }}>
       <Text style={{ color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm }}>{story.profiles?.display_name}</Text>
       {url ? (
-        <Image source={{ uri: url }} style={{ width: '100%', height: 400, borderRadius: radius.lg }} resizeMode="cover" />
+        story.media_type === 'video' ? (
+          <Video
+            source={{ uri: url }}
+            style={{ width: '100%', height: 400, borderRadius: radius.lg }}
+            resizeMode="cover"
+            useNativeControls
+            accessibilityLabel={`${story.profiles?.display_name}'s video story`}
+          />
+        ) : (
+          <Image source={{ uri: url }} style={{ width: '100%', height: 400, borderRadius: radius.lg }} resizeMode="cover" />
+        )
       ) : (
         <View style={{ width: '100%', height: 400, borderRadius: radius.lg, backgroundColor: colors.surfaceElevated }} />
       )}
