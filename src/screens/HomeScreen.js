@@ -37,10 +37,17 @@ export default function HomeScreen({ navigation }) {
     const result = await getHomeDashboard();
     setDashboard(result);
     setLoading(false);
-    const community = await getContinueYourCommunity();
-    setContinueCommunity(community);
-    const perks = await getUnlockedPerksCount();
-    setPerksCount(perks);
+    try {
+      const community = await getContinueYourCommunity();
+      setContinueCommunity(community);
+      const perks = await getUnlockedPerksCount();
+      setPerksCount(perks);
+    } catch (e) {
+      // These are supplementary cards, not core functionality — a
+      // failure here should never block social forecast/location
+      // code that runs afterward in the same function.
+      console.error('Continue Community / Perks fetch failed', e);
+    }
 
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status === 'granted') {
