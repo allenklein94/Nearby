@@ -84,7 +84,7 @@ function matchesDateFilter(scheduledAt, filterKey) {
   return true;
 }
 
-export default function GatheringsScreen({ navigation }) {
+export default function GatheringsScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -104,7 +104,7 @@ export default function GatheringsScreen({ navigation }) {
   const [loadingFellows, setLoadingFellows] = useState(false);
   const [sentNoticeTo, setSentNoticeTo] = useState({});
   const [interestFilter, setInterestFilter] = useState(null);
-  const [dateFilter, setDateFilter] = useState('anytime');
+  const [dateFilter, setDateFilter] = useState(route?.params?.initialDateFilter ?? 'anytime');
   const [forYouActive, setForYouActive] = useState(false);
   const [topCategories, setTopCategories] = useState([]);
   const [initialLoading, setInitialLoading] = useState(true);

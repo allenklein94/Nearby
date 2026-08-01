@@ -73,6 +73,29 @@ export default function DiscoverHubScreen({ navigation }) {
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
 
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+        <TouchableOpacity
+          style={styles.quickTimeCard}
+          onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })}
+          activeOpacity={0.85}
+          accessibilityLabel="Gatherings happening tonight"
+          accessibilityRole="button"
+        >
+          <Text style={styles.quickTimeCardIcon}>🌙</Text>
+          <Text style={styles.quickTimeCardText}>Tonight</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.quickTimeCard}
+          onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'weekend' })}
+          activeOpacity={0.85}
+          accessibilityLabel="Gatherings happening this weekend"
+          accessibilityRole="button"
+        >
+          <Text style={styles.quickTimeCardIcon}>📅</Text>
+          <Text style={styles.quickTimeCardText}>This Weekend</Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity
         style={styles.card}
         onPress={() => navigation.navigate('Communities')}
@@ -139,6 +162,12 @@ export default function DiscoverHubScreen({ navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
+  quickTimeCard: {
+    flex: 1, alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md,
+  },
+  quickTimeCardIcon: { fontSize: 22, marginBottom: 4 },
+  quickTimeCardText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xl },
   card: {
