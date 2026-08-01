@@ -137,14 +137,22 @@ export default function GatheringsScreen({ navigation, route }) {
     setAttending(attendingResults);
     setTopCategories(topCats);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    if (myId) {
-      const { data: myProfile } = await supabase.from('profiles').select('wide_area').eq('id', myId).single();
-      if (myProfile?.wide_area) {
-        const { data: trending } = await supabase.rpc('get_trending_gathering_ids', { area_param: myProfile.wide_area });
-        setTrendingIds((trending ?? []).map((t) => t.id));
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      if (myId) {
+        const { data: myProfile } = await supabase.from('profiles').select('wide_area').eq('id', myId).single();
+        if (myProfile?.wide_area) {
+          const { data: trending } = await supabase.rpc('get_trending_gathering_ids', { area_param: myProfile.wide_area });
+          setTrendingIds((trending ?? []).map((t) => t.id));
+        }
       }
+    } catch (e) {
+      // Trending is a nice-to-have filter, not core functionality —
+      // a failure here should never block the rest of load() from
+      // completing (photo URLs, attendee data, etc, which all come
+      // after this in the same function).
+      console.error('Trending fetch failed', e);
     }
 
     const urlEntries = await Promise.all(
