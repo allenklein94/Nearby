@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
+import Constants from 'expo-constants';
 
-export async function getActiveOffers() {
+export async function getActiveOffers(myLat = null, myLng = null) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
 
@@ -8,6 +9,16 @@ export async function getActiveOffers() {
   if (myId) {
     const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', myId).single();
     myInterests = myProfile?.interests ?? [];
+  }
+
+  // Location filtering only applies when coordinates are actually
+  // available — a business without an address set yet, or a caller
+  // without location permission, still sees offers rather than
+  // getting an empty list over a missing precondition.
+  let nearbyOfferIds = null;
+  if (myLat != null && myLng != null) {
+    const { data: nearby } = await supabase.rpc('get_nearby_offer_ids', { my_lat: myLat, my_lng: myLng, radius_miles: 50 });
+    nearbyOfferIds = new Set((nearby ?? []).map((n) => n.id));
   }
 
   const { data, error } = await supabase
@@ -27,6 +38,7 @@ export async function getActiveOffers() {
   // match — untargeted offers with no target_interest_tag remain
   // visible to everyone, same as before.
   return (data ?? []).filter((offer) => {
+    if (nearbyOfferIds !== null && !nearbyOfferIds.has(offer.id)) return false;
     if (!offer.target_interest_tag) return true;
     return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
   });
@@ -221,6 +233,24 @@ export async function replyAsBusinessOwner(partnerId, conversationWithId, body) 
   const { error } = await supabase.from('business_messages').insert({
     partner_id: partnerId, sender_id: myId, conversation_with_id: conversationWithId, from_business: true, body,
   });
+  if (error) throw error;
+}
+
+export async function updateBusinessAddress(partnerId, address) {
+  const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
+  const response = await fetch(
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
+  );
+  const result = await response.json();
+  if (result.status !== 'OK' || !result.results?.[0]) {
+    throw new Error("Couldn't find that address. Try being more specific.");
+  }
+  const { lat, lng } = result.results[0].geometry.location;
+
+  const { error } = await supabase
+    .from('brand_partners')
+    .update({ address, latitude: lat, longitude: lng })
+    .eq('id', partnerId);
   if (error) throw error;
 }
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
@@ -23,6 +23,9 @@ export default function BusinessDashboardScreen() {
   const [section, setSection] = useState('home');
   const [partners, setPartners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
+  const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [addressInput, setAddressInput] = useState('');
+  const [savingAddress, setSavingAddress] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,10 +60,24 @@ export default function BusinessDashboardScreen() {
   }, []);
 
   async function loadPartners() {
-    const { data } = await supabase.from('brand_partners').select('id, name').order('name');
+    const { data } = await supabase.from('brand_partners').select('id, name, address').order('name');
     setPartners(data ?? []);
     if (data?.[0]) setSelectedPartner(data[0]);
     setLoading(false);
+  }
+
+  async function handleUpdateAddress() {
+    if (!addressInput.trim()) return;
+    setSavingAddress(true);
+    try {
+      await updateBusinessAddress(selectedPartner.id, addressInput.trim());
+      setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim() }));
+      setAddressModalVisible(false);
+      Alert.alert('Saved', 'Your business address is now set — offers will show to people nearby.');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingAddress(false);
   }
 
   useFocusEffect(
@@ -275,7 +292,22 @@ export default function BusinessDashboardScreen() {
           <Text style={styles.partnerSelectorChevron}>▾</Text>
         </TouchableOpacity>
       </View>
-
+      {selectedPartner && (
+        <TouchableOpacity
+          style={styles.addressBanner}
+          onPress={() => {
+            setAddressInput(selectedPartner.address ?? '');
+            setAddressModalVisible(true);
+          }}
+          activeOpacity={0.85}
+          accessibilityLabel={selectedPartner.address ? `Address: ${selectedPartner.address}, tap to edit` : 'Set your business address so offers show to people nearby'}
+          accessibilityRole="button"
+        >
+          <Text style={styles.addressBannerText}>
+            {selectedPartner.address ? `📍 ${selectedPartner.address}` : '📍 Set your address so offers reach people nearby'}
+          </Text>
+        </TouchableOpacity>
+      )}
       <View style={styles.sectionTabs}>
         {SECTIONS.map((s) => (
           <TouchableOpacity
@@ -625,7 +657,38 @@ export default function BusinessDashboardScreen() {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-
+      <Modal visible={addressModalVisible} animationType="slide" transparent onRequestClose={() => setAddressModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Business Address</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                This determines who sees your offers nearby.
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 123 Main St, Boca Raton, FL"
+                placeholderTextColor={colors.textTertiary}
+                value={addressInput}
+                onChangeText={setAddressInput}
+                accessibilityLabel="Business address"
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleUpdateAddress}
+                disabled={savingAddress || !addressInput.trim()}
+                accessibilityLabel={savingAddress ? 'Saving' : 'Save address'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{savingAddress ? 'Saving...' : 'Save Address'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setAddressModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
       <Modal visible={updateModalVisible} animationType="slide" transparent onRequestClose={() => setUpdateModalVisible(false)}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -673,6 +736,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.md },
+  addressBanner: {
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, marginHorizontal: spacing.lg, marginBottom: spacing.sm,
+  },
+  addressBannerText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
   partnerSelector: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

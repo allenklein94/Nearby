@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
+import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness } from '../services/brandOffers';
 import { usePostHog } from 'posthog-react-native';
@@ -20,7 +21,17 @@ export default function BrandOffersScreen({ navigation }) {
   const [followingStatus, setFollowingStatus] = useState({});
 
   const load = useCallback(async () => {
-    const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
+    let myLat = null;
+    let myLng = null;
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status === 'granted') {
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+      if (location) {
+        myLat = location.coords.latitude;
+        myLng = location.coords.longitude;
+      }
+    }
+    const [offersData, redemptionsData] = await Promise.all([getActiveOffers(myLat, myLng), getMyRedemptions()]);
     setOffers(offersData);
     setRedeemedIds(redemptionsData);
     setLoading(false);
