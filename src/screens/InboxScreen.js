@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image
 import { useFocusEffect } from '@react-navigation/native';
 import MatchesScreen from './MatchesScreen';
 import ActivityScreen from './ActivityScreen';
-import { getAllPendingRequests, approveInterest } from '../services/gatherings';
+import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
@@ -26,6 +26,8 @@ export default function InboxScreen(props) {
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [invitations, setInvitations] = useState([]);
   const [loadingInvitations, setLoadingInvitations] = useState(true);
+  const [reminders, setReminders] = useState([]);
+  const [loadingReminders, setLoadingReminders] = useState(true);
 
   const loadRequests = useCallback(async () => {
     const results = await getAllPendingRequests();
@@ -48,12 +50,27 @@ export default function InboxScreen(props) {
     setLoadingInvitations(false);
   }, []);
 
+  const loadReminders = useCallback(async () => {
+    const results = await getUpcomingReminders();
+    setReminders(results);
+    setLoadingReminders(false);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadRequests();
       loadInvitations();
-    }, [loadRequests, loadInvitations])
+      loadReminders();
+    }, [loadRequests, loadInvitations, loadReminders])
   );
+
+  function formatTimeUntil(iso) {
+    const diffMs = new Date(iso).getTime() - Date.now();
+    const diffHours = Math.round(diffMs / (60 * 60 * 1000));
+    if (diffHours < 1) return 'starting soon';
+    if (diffHours === 1) return 'in 1 hour';
+    return `in ${diffHours} hours`;
+  }
 
   async function handleApprove(request) {
     try {
@@ -105,6 +122,17 @@ export default function InboxScreen(props) {
         >
           <Text style={[styles.toggleText, section === 'invitations' && styles.toggleTextActive]}>
             🤝 Invites{invitations.length > 0 ? ` (${invitations.length})` : ''}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleButton, section === 'reminders' && styles.toggleButtonActive]}
+          onPress={() => setSection('reminders')}
+          accessibilityLabel={`Reminders${reminders.length > 0 ? `, ${reminders.length} upcoming` : ''}`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: section === 'reminders' }}
+        >
+          <Text style={[styles.toggleText, section === 'reminders' && styles.toggleTextActive]}>
+            ⏰{reminders.length > 0 ? ` (${reminders.length})` : ''}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -184,6 +212,29 @@ export default function InboxScreen(props) {
                 >
                   <Text style={styles.approveButtonText}>Approve</Text>
                 </TouchableOpacity>
+              </View>
+            )}
+          />
+        )}
+        {section === 'reminders' && (
+          <FlatList
+            data={reminders}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ padding: spacing.lg }}
+            refreshing={loadingReminders}
+            onRefresh={loadReminders}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>⏰</Text>
+                <Text style={styles.emptyText}>Nothing coming up in the next 24 hours.</Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.requestRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.requestName}>{item.title}</Text>
+                  <Text style={styles.requestSubtitle}>{item.role} · {formatTimeUntil(item.scheduledAt)}</Text>
+                </View>
               </View>
             )}
           />

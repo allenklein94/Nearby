@@ -427,6 +427,45 @@ export async function getHostStats(hostId) {
   return data?.[0] ?? null;
 }
 
+export async function getUpcomingReminders() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const now = new Date();
+  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  const { data: attending } = await supabase
+    .from('gathering_interest')
+    .select('gatherings!inner(id, title, scheduled_at, host_id, profiles!gatherings_host_id_fkey(display_name))')
+    .eq('user_id', myId)
+    .eq('status', 'approved')
+    .gte('gatherings.scheduled_at', now.toISOString())
+    .lte('gatherings.scheduled_at', in24h.toISOString());
+
+  const { data: hosting } = await supabase
+    .from('gatherings')
+    .select('id, title, scheduled_at')
+    .eq('host_id', myId)
+    .gte('scheduled_at', now.toISOString())
+    .lte('scheduled_at', in24h.toISOString());
+
+  const attendingItems = (attending ?? []).map((a) => ({
+    id: a.gatherings.id,
+    title: a.gatherings.title,
+    scheduledAt: a.gatherings.scheduled_at,
+    role: `Hosted by ${a.gatherings.profiles?.display_name ?? 'someone'}`,
+  }));
+  const hostingItems = (hosting ?? []).map((g) => ({
+    id: g.id,
+    title: g.title,
+    scheduledAt: g.scheduled_at,
+    role: "You're hosting",
+  }));
+
+  return [...attendingItems, ...hostingItems].sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
+}
+
 export async function getAllPendingRequests() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
