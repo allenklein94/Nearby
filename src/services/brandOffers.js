@@ -319,6 +319,9 @@ export async function redeemOffer(offerId) {
     if (error.code === '23505') {
       throw new Error('ALREADY_REDEEMED');
     }
+    if (error.message?.includes('REDEMPTION_LIMIT_REACHED')) {
+      throw new Error('REDEMPTION_LIMIT_REACHED');
+    }
     throw error;
   }
 }

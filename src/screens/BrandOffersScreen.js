@@ -79,6 +79,8 @@ export default function BrandOffersScreen({ navigation }) {
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
         Alert.alert('Already redeemed', "You've already claimed this offer.");
+      } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
+        Alert.alert('Offer fully claimed', "This offer's limited spots have all been claimed.");
       } else {
         Alert.alert('Error', e.message);
       }
