@@ -11,10 +11,10 @@ export default function TimelineScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMyTimeline().then((result) => {
-      setItems(result);
-      setLoading(false);
-    });
+    getMyTimeline()
+      .then((result) => setItems(result))
+      .catch((e) => console.error('getMyTimeline failed', e))
+      .finally(() => setLoading(false));
   }, []);
 
   function formatDate(iso) {
