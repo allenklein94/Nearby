@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
-import { getProfileQuickStats, getAchievements } from '../services/homeDashboard';
+import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
@@ -92,6 +92,7 @@ export default function ProfileScreen({ navigation }) {
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
+  const [earnedStats, setEarnedStats] = useState({ favoriteVibe: null, usuallyActive: null });
   const [connectionGoal, setConnectionGoal] = useState('');
 
   useEffect(() => {
@@ -143,8 +144,9 @@ export default function ProfileScreen({ navigation }) {
 
     const earnedAchievements = await getAchievements();
     setAchievements(earnedAchievements);
-
     setManagesBusiness(!!data?.managed_partner_id);
+    const earnedStats = await getEarnedProfileStats().catch(() => ({ favoriteVibe: null, usuallyActive: null }));
+    setEarnedStats(earnedStats);
   }
 
   async function showStrengths() {
@@ -435,6 +437,22 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>📖 View Your Timeline</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
+        {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
+          <View style={styles.earnedStatsRow}>
+            {earnedStats.favoriteVibe && (
+              <View style={styles.earnedStat}>
+                <Text style={styles.earnedStatLabel}>Favorite vibe</Text>
+                <Text style={styles.earnedStatValue}>{earnedStats.favoriteVibe}</Text>
+              </View>
+            )}
+            {earnedStats.usuallyActive && (
+              <View style={styles.earnedStat}>
+                <Text style={styles.earnedStatLabel}>Usually active</Text>
+                <Text style={styles.earnedStatValue}>{earnedStats.usuallyActive}s</Text>
+              </View>
+            )}
+          </View>
+        )}
         {achievements.some((a) => a.earned) && (
           <>
             <Text style={styles.sectionLabel} accessibilityRole="header">Achievements</Text>
@@ -838,6 +856,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   timelineLinkText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   timelineLinkChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
+  earnedStatsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  earnedStat: {
+    flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md,
+  },
+  earnedStatLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  earnedStatValue: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
   quickStatsRow: {
     flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg, overflow: 'hidden',

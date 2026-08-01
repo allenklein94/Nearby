@@ -77,6 +77,10 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
       </View>
 
       <View style={styles.footer}>
+        <View style={styles.missionCard}>
+          <Text style={styles.missionLabel}>Your first mission</Text>
+          <Text style={styles.missionText}>Say yes to one thing this week.</Text>
+        </View>
         <TouchableOpacity
           style={styles.button}
           onPress={() => navigation.navigate('MainTabs')}
@@ -108,6 +112,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
+  missionCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
+  },
+  missionLabel: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  missionText: { color: colors.textPrimary, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 18, alignItems: 'center', ...shadow.button },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
 });

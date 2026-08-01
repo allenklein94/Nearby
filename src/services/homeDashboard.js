@@ -142,6 +142,42 @@ export async function getContinueYourCommunity() {
   return { id: community.id, name: community.name, coverPhotoUrl: community.cover_photo_url, recentMessageCount: unreadCount ?? 0 };
 }
 
+export async function getEarnedProfileStats() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return { favoriteVibe: null, usuallyActive: null };
+
+  const { data: attended } = await supabase
+    .from('gathering_interest')
+    .select('gatherings!inner(interest_tag, scheduled_at)')
+    .eq('user_id', myId)
+    .eq('status', 'approved');
+
+  const attendedGatherings = (attended ?? []).filter((a) => a.gatherings).map((a) => a.gatherings);
+
+  if (attendedGatherings.length === 0) {
+    return { favoriteVibe: null, usuallyActive: null };
+  }
+
+  // Their profile isn't something they typed, it's something they
+  // earned — computed from real attendance, not a self-reported bio.
+  const tagCounts = {};
+  attendedGatherings.forEach((g) => {
+    if (g.interest_tag) tagCounts[g.interest_tag] = (tagCounts[g.interest_tag] ?? 0) + 1;
+  });
+  const favoriteVibe = Object.entries(tagCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayCounts = {};
+  attendedGatherings.forEach((g) => {
+    const day = dayNames[new Date(g.scheduled_at).getDay()];
+    dayCounts[day] = (dayCounts[day] ?? 0) + 1;
+  });
+  const usuallyActive = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+  return { favoriteVibe, usuallyActive };
+}
+
 export async function getMyTimeline() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
