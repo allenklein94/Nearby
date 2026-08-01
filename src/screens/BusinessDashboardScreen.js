@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
@@ -24,6 +24,7 @@ export default function BusinessDashboardScreen() {
   const [partners, setPartners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
+  const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -107,6 +108,8 @@ export default function BusinessDashboardScreen() {
   async function loadOffers(partnerId) {
     const results = await getMyBusinessOffers(partnerId);
     setOffers(results);
+    const counts = await getRedemptionCounts(results.map((o) => o.id));
+    setOfferRedemptionCounts(counts);
   }
 
   async function loadGatherings(partnerId) {
@@ -506,6 +509,9 @@ export default function BusinessDashboardScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.offerTitle}>{offer.title}</Text>
                         {offer.description ? <Text style={styles.offerDescription}>{offer.description}</Text> : null}
+                        <Text style={styles.offerRedemptionCount}>
+                          {offerRedemptionCounts[offer.id] ?? 0} redeemed{offer.redemption_limit != null ? ` of ${offer.redemption_limit}` : ''}
+                        </Text>
                       </View>
                       <Switch
                         value={offer.active}
@@ -780,6 +786,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  offerRedemptionCount: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   insightsCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginBottom: spacing.md,
