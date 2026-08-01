@@ -76,17 +76,15 @@ export async function uploadVoiceNote(userId, localUri) {
   const path = `${userId}/voice-${Date.now()}.m4a`;
 
   const { error } = await supabase.storage
-    .from('profile-photos')
+    .from('chat-media')
     .upload(path, bytes, { contentType: 'audio/m4a' });
-
   if (error) throw error;
   return path;
 }
-
 export async function getSignedAudioUrl(path) {
   if (!path) return null;
   const { data, error } = await supabase.storage
-    .from('profile-photos')
+    .from('chat-media')
     .createSignedUrl(path, 3600);
   if (error) return null;
   return data.signedUrl;
