@@ -42,11 +42,18 @@ export async function searchNearbyPlaces(latitude, longitude, category) {
   const withGatheringCounts = await Promise.all(
     places.map(async (place) => {
       if (!place.latitude || !place.longitude) return { ...place, gatheringCount: 0 };
-      const { data: count } = await supabase.rpc('count_gatherings_near', {
-        lat_param: place.latitude,
-        lng_param: place.longitude,
-      });
-      return { ...place, gatheringCount: count ?? 0 };
+      try {
+        const { data: count } = await supabase.rpc('count_gatherings_near', {
+          lat_param: place.latitude,
+          lng_param: place.longitude,
+        });
+        return { ...place, gatheringCount: count ?? 0 };
+      } catch (e) {
+        // One venue's gathering count failing to load shouldn't
+        // take down the whole results list — worst case, this one
+        // place just shows no count.
+        return { ...place, gatheringCount: 0 };
+      }
     })
   );
 
