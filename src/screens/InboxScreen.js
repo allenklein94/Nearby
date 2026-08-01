@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import MatchesScreen from './MatchesScreen';
 import ActivityScreen from './ActivityScreen';
 import { getAllPendingRequests, approveInterest } from '../services/gatherings';
+import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
@@ -23,6 +24,8 @@ export default function InboxScreen(props) {
   const [requests, setRequests] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loadingRequests, setLoadingRequests] = useState(true);
+  const [invitations, setInvitations] = useState([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(true);
 
   const loadRequests = useCallback(async () => {
     const results = await getAllPendingRequests();
@@ -39,16 +42,32 @@ export default function InboxScreen(props) {
     setPhotoUrls(Object.fromEntries(urlEntries));
   }, []);
 
+  const loadInvitations = useCallback(async () => {
+    const results = await getPendingFriendRequests();
+    setInvitations(results);
+    setLoadingInvitations(false);
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadRequests();
-    }, [loadRequests])
+      loadInvitations();
+    }, [loadRequests, loadInvitations])
   );
 
   async function handleApprove(request) {
     try {
       await approveInterest(request.id);
       loadRequests();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  async function handleRespondInvitation(invitation, accept) {
+    try {
+      await respondToFriendRequest(invitation.friendshipId, accept);
+      loadInvitations();
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -78,6 +97,17 @@ export default function InboxScreen(props) {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
+          style={[styles.toggleButton, section === 'invitations' && styles.toggleButtonActive]}
+          onPress={() => setSection('invitations')}
+          accessibilityLabel={`Invitations${invitations.length > 0 ? `, ${invitations.length} pending` : ''}`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: section === 'invitations' }}
+        >
+          <Text style={[styles.toggleText, section === 'invitations' && styles.toggleTextActive]}>
+            🤝 Invites{invitations.length > 0 ? ` (${invitations.length})` : ''}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.toggleButton, section === 'activity' && styles.toggleButtonActive]}
           onPress={() => setSection('activity')}
           accessibilityLabel="Activity"
@@ -90,6 +120,38 @@ export default function InboxScreen(props) {
       <View style={{ flex: 1 }}>
         {section === 'messages' && <MatchesScreen {...props} />}
         {section === 'activity' && <ActivityScreen {...props} />}
+        {section === 'invitations' && (
+          <FlatList
+            data={invitations}
+            keyExtractor={(item) => item.friendshipId}
+            contentContainerStyle={{ padding: spacing.lg }}
+            refreshing={loadingInvitations}
+            onRefresh={loadInvitations}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>🤝</Text>
+                <Text style={styles.emptyText}>No pending friend invitations right now.</Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.requestRow}>
+                <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.requestName}>{item.display_name}</Text>
+                  <Text style={styles.requestSubtitle}>wants to be friends</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.approveButton}
+                  onPress={() => handleRespondInvitation(item, true)}
+                  accessibilityLabel={`Accept ${item.display_name}'s friend request`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.approveButtonText}>Accept</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        )}
         {section === 'requests' && (
           <FlatList
             data={requests}
