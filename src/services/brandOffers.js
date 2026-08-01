@@ -1,6 +1,15 @@
 import { supabase } from './supabase';
 
 export async function getActiveOffers() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  let myInterests = [];
+  if (myId) {
+    const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', myId).single();
+    myInterests = myProfile?.interests ?? [];
+  }
+
   const { data, error } = await supabase
     .from('brand_offers')
     .select('*, brand_partners(name, logo_url, description)')
@@ -12,7 +21,15 @@ export async function getActiveOffers() {
     console.error('getActiveOffers error', error);
     return [];
   }
-  return data ?? [];
+
+  // Targeted offers (e.g., a coffee shop's offer aimed at people who
+  // like coffee) only show to people whose interests genuinely
+  // match — untargeted offers with no target_interest_tag remain
+  // visible to everyone, same as before.
+  return (data ?? []).filter((offer) => {
+    if (!offer.target_interest_tag) return true;
+    return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
+  });
 }
 
 export async function getGatheringOffer(gatheringId) {
