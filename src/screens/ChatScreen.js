@@ -436,29 +436,46 @@ export default function ChatScreen({ route, navigation }) {
 
   async function suggestDateNight() {
     try {
+      // Genuinely matched to what both people actually share, not a
+      // random pick from recent offers — this is the core mechanic
+      // of the brand-matching vision: real shared interests driving
+      // real local business referrals.
+      const { data: matchRow } = await supabase.from('matches').select('user_a, user_b').eq('id', matchId).single();
+      if (!matchRow) throw new Error('Could not find this match.');
+      const otherId = matchRow.user_a === userId ? matchRow.user_b : matchRow.user_a;
+
+      const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', userId).single();
+      const { data: theirProfile } = await supabase.from('profiles').select('interests').eq('id', otherId).single();
+      const myInterests = myProfile?.interests ?? [];
+      const theirInterests = theirProfile?.interests ?? [];
+      const sharedInterests = myInterests.filter((i) => theirInterests.some((t) => t.toLowerCase() === i.toLowerCase()));
+
+      if (sharedInterests.length === 0) {
+        Alert.alert('No shared interests yet', "You don't have any interests in common on your profiles yet to base a suggestion on.");
+        return;
+      }
+
       const { data: offersData } = await supabase
         .from('brand_offers')
         .select('*, brand_partners(name)')
         .eq('active', true)
         .is('gathering_id', null)
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .in('target_interest_tag', sharedInterests)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(3);
 
       if (!offersData || offersData.length === 0) {
-        Alert.alert('No suggestions right now', "There aren't any active offers to suggest at the moment — check back soon.");
+        Alert.alert('No suggestions right now', "There aren't any active offers matching what you both like yet — check back soon.");
         return;
       }
 
-      const pick = offersData[Math.floor(Math.random() * offersData.length)];
-      const suggestionText = `💡 Date night idea: ${pick.title} at ${pick.brand_partners?.name ?? 'a local spot'}!`;
-
+      const suggestionText = `💡 Date night ideas, since you both like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
       const { data, error } = await supabase
         .from('messages')
         .insert({ match_id: matchId, sender_id: userId, body: suggestionText })
         .select()
         .single();
-
       if (error) throw error;
       setMessages((prev) => [...prev, data]);
       posthog.capture('date_night_suggested');
