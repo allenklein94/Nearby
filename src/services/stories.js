@@ -1,8 +1,21 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from './supabase';
-
 const MAX_VIDEO_SECONDS = 15;
+
+// fetch(uri).blob() silently produces 0-byte files on iOS for local
+// file URIs — this is the same root cause already fixed for chat
+// photos and voice notes. Reading and converting the bytes directly
+// is the proven, correct approach.
+function base64ToUint8Array(base64) {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
 
 export async function captureStoryMedia() {
   const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -22,15 +35,16 @@ export async function captureStoryMedia() {
 }
 
 export async function uploadStory(userId, uri, mediaType, isPublic = false) {
-  const response = await fetch(uri);
-  const blob = await response.blob();
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+  if (!base64 || base64.length === 0) {
+    throw new Error('Could not read the selected media. Please try again.');
+  }
+  const bytes = base64ToUint8Array(base64);
   const fileExt = mediaType === 'video' ? 'mov' : 'jpg';
   const path = `${userId}/${Date.now()}.${fileExt}`;
-
   const { error } = await supabase.storage
     .from('stories')
-    .upload(path, blob, { contentType: mediaType === 'video' ? 'video/quicktime' : 'image/jpeg' });
-
+    .upload(path, bytes, { contentType: mediaType === 'video' ? 'video/quicktime' : 'image/jpeg' });
   if (error) throw error;
 
   // Only public stories need a location captured — private ones are
