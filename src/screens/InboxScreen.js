@@ -30,30 +30,46 @@ export default function InboxScreen(props) {
   const [loadingReminders, setLoadingReminders] = useState(true);
 
   const loadRequests = useCallback(async () => {
-    const results = await getAllPendingRequests();
-    setRequests(results);
-    setLoadingRequests(false);
-    const urlEntries = await Promise.all(
-      results.map(async (r) => {
-        const path = r.profiles?.photo_url;
-        if (!path) return [r.id, null];
-        const url = await getSignedPhotoUrl(path);
-        return [r.id, url];
-      })
-    );
-    setPhotoUrls(Object.fromEntries(urlEntries));
+    try {
+      const results = await getAllPendingRequests();
+      setRequests(results);
+      const urlEntries = await Promise.all(
+        results.map(async (r) => {
+          const path = r.profiles?.photo_url;
+          if (!path) return [r.id, null];
+          const url = await getSignedPhotoUrl(path);
+          return [r.id, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
+    } catch (e) {
+      // Without this, a failure here left the Requests section
+      // spinning forever, since setLoadingRequests(false) would
+      // never be reached.
+      console.error('loadRequests failed', e);
+    } finally {
+      setLoadingRequests(false);
+    }
   }, []);
-
   const loadInvitations = useCallback(async () => {
-    const results = await getPendingFriendRequests();
-    setInvitations(results);
-    setLoadingInvitations(false);
+    try {
+      const results = await getPendingFriendRequests();
+      setInvitations(results);
+    } catch (e) {
+      console.error('loadInvitations failed', e);
+    } finally {
+      setLoadingInvitations(false);
+    }
   }, []);
-
   const loadReminders = useCallback(async () => {
-    const results = await getUpcomingReminders();
-    setReminders(results);
-    setLoadingReminders(false);
+    try {
+      const results = await getUpcomingReminders();
+      setReminders(results);
+    } catch (e) {
+      console.error('loadReminders failed', e);
+    } finally {
+      setLoadingReminders(false);
+    }
   }, []);
 
   useFocusEffect(
