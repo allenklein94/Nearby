@@ -13,6 +13,62 @@ export default function GatheringChatScreen({ route }) {
   const { gatheringId, gatheringTitle } = route.params;
   const { colors } = useTheme();
   const [postingStory, setPostingStory] = useState(false);
+  const [suggestingOffers, setSuggestingOffers] = useState(false);
+
+  async function handleSuggestOffers() {
+    setSuggestingOffers(true);
+    try {
+      // "Shared by at least 2 people" rather than requiring
+      // unanimous agreement — for a group of 10, expecting every
+      // single person to share the exact same interest would almost
+      // never trigger a suggestion at all.
+      const { data: attendees } = await supabase
+        .from('gathering_interest')
+        .select('profiles(interests)')
+        .eq('gathering_id', gatheringId)
+        .eq('status', 'approved');
+
+      const interestCounts = {};
+      (attendees ?? []).forEach((a) => {
+        (a.profiles?.interests ?? []).forEach((i) => {
+          interestCounts[i] = (interestCounts[i] ?? 0) + 1;
+        });
+      });
+      const sharedInterests = Object.entries(interestCounts)
+        .filter(([, count]) => count >= 2)
+        .map(([interest]) => interest);
+
+      if (sharedInterests.length === 0) {
+        Alert.alert('No shared interests yet', "This group doesn't have enough overlapping interests on their profiles to base a suggestion on.");
+        setSuggestingOffers(false);
+        return;
+      }
+
+      const { data: offersData } = await supabase
+        .from('brand_offers')
+        .select('*, brand_partners(name)')
+        .eq('active', true)
+        .is('gathering_id', null)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .in('target_interest_tag', sharedInterests)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (!offersData || offersData.length === 0) {
+        Alert.alert('No suggestions right now', "There aren't any active offers matching what this group likes yet — check back soon.");
+        setSuggestingOffers(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      const suggestionText = `💡 Group ideas, since a few of you like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
+      await sendGatheringMessage(gatheringId, suggestionText);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSuggestingOffers(false);
+  }
 
   async function handlePostStory() {
     try {
@@ -123,6 +179,14 @@ export default function GatheringChatScreen({ route }) {
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 22 }}>📸</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSuggestOffers}
+            disabled={suggestingOffers}
+            accessibilityLabel="Suggest offers based on what this group likes"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 22 }}>💡</Text>
           </TouchableOpacity>
           <TextInput
             style={styles.input}
