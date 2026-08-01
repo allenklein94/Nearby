@@ -19,6 +19,7 @@ export default function PlacesScreen() {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     load();
@@ -26,6 +27,7 @@ export default function PlacesScreen() {
 
   async function load() {
     setLoading(true);
+    setLoadError(false);
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       setLocationDenied(true);
@@ -38,8 +40,13 @@ export default function PlacesScreen() {
       setLoading(false);
       return;
     }
-    const results = await searchNearbyPlaces(location.coords.latitude, location.coords.longitude, category);
-    setPlaces(results);
+    try {
+      const results = await searchNearbyPlaces(location.coords.latitude, location.coords.longitude, category);
+      setPlaces(results);
+    } catch (e) {
+      console.error('PlacesScreen load error', e);
+      setLoadError(true);
+    }
     setLoading(false);
   }
 
@@ -79,12 +86,18 @@ export default function PlacesScreen() {
           <Text style={styles.emptyEmoji}>📍</Text>
           <Text style={styles.emptyText}>Enable location to discover places nearby.</Text>
         </View>
+      ) : loadError ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyEmoji}>⚠️</Text>
+          <Text style={styles.emptyText}>Couldn't load places right now. Pull down to try again.</Text>
+        </View>
       ) : (
         <FlatList
           data={places}
           keyExtractor={(item) => item.placeId}
           contentContainerStyle={{ padding: spacing.lg }}
-          ListEmptyComponent={
+          ListEmpty
+          Component={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔍</Text>
               <Text style={styles.emptyText}>Nothing found nearby in this category.</Text>
