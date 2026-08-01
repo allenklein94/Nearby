@@ -43,6 +43,8 @@ export default function BusinessDashboardScreen() {
   const [topMembers, setTopMembers] = useState([]);
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [offerGatheringId, setOfferGatheringId] = useState(null);
+  const [newRedemptionLimit, setNewRedemptionLimit] = useState('');
+  const [newTargetInterestTag, setNewTargetInterestTag] = useState('');
   const [growth, setGrowth] = useState(null);
   const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
   const [conversations, setConversations] = useState([]);
@@ -217,12 +219,16 @@ export default function BusinessDashboardScreen() {
         rewardType: 'discount',
         redemptionInstructions: newInstructions.trim() || null,
         gatheringId: offerGatheringId,
+        redemptionLimit: newRedemptionLimit.trim() ? parseInt(newRedemptionLimit.trim(), 10) : null,
+        targetInterestTag: newTargetInterestTag.trim() || null,
       });
       setCreateModalVisible(false);
       setNewTitle('');
       setNewDescription('');
       setNewInstructions('');
       setOfferGatheringId(null);
+      setNewRedemptionLimit('');
+      setNewTargetInterestTag('');
       loadOffers(selectedPartner.id);
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -585,6 +591,23 @@ export default function BusinessDashboardScreen() {
                 value={newInstructions}
                 onChangeText={setNewInstructions}
                 accessibilityLabel="Redemption instructions, optional"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Limit to first N people (optional, e.g. 20)"
+                placeholderTextColor={colors.textTertiary}
+                value={newRedemptionLimit}
+                onChangeText={(t) => setNewRedemptionLimit(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                accessibilityLabel="Redemption limit, optional"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Target interest, e.g. Coffee (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={newTargetInterestTag}
+                onChangeText={setNewTargetInterestTag}
+                accessibilityLabel="Target interest tag, optional"
               />
               <TouchableOpacity
                 style={styles.submitButton}
