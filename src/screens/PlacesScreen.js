@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl } from '../services/places';
@@ -20,34 +20,42 @@ export default function PlacesScreen() {
   const [loading, setLoading] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     load();
   }, [category]);
 
   async function load() {
+    // Guards against a race condition when someone rapidly taps
+    // between category chips — an older, slower request finishing
+    // after a newer one would otherwise overwrite the correct,
+    // already-loaded results with stale data for the wrong category.
+    const thisRequestId = ++requestIdRef.current;
     setLoading(true);
     setLoadError(false);
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      setLocationDenied(true);
-      setLoading(false);
+      if (thisRequestId === requestIdRef.current) {
+        setLocationDenied(true);
+        setLoading(false);
+      }
       return;
     }
-    setLocationDenied(false);
+    if (thisRequestId === requestIdRef.current) setLocationDenied(false);
     const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
     if (!location) {
-      setLoading(false);
+      if (thisRequestId === requestIdRef.current) setLoading(false);
       return;
     }
     try {
       const results = await searchNearbyPlaces(location.coords.latitude, location.coords.longitude, category);
-      setPlaces(results);
+      if (thisRequestId === requestIdRef.current) setPlaces(results);
     } catch (e) {
       console.error('PlacesScreen load error', e);
-      setLoadError(true);
+      if (thisRequestId === requestIdRef.current) setLoadError(true);
     }
-    setLoading(false);
+    if (thisRequestId === requestIdRef.current) setLoading(false);
   }
 
   return (
