@@ -142,6 +142,21 @@ export async function getContinueYourCommunity() {
   return { id: community.id, name: community.name, coverPhotoUrl: community.cover_photo_url, recentMessageCount: unreadCount ?? 0 };
 }
 
+export async function getUnlockedPerksCount() {
+  const { data, error } = await supabase
+    .from('brand_offers')
+    .select('id')
+    .eq('active', true)
+    .is('gathering_id', null)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+
+  if (error) {
+    console.error('getUnlockedPerksCount error', error);
+    return 0;
+  }
+  return data?.length ?? 0;
+}
+
 export async function getHomeDashboard() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHomeDashboard, getSocialForecast, getContinueYourCommunity } from '../services/homeDashboard';
+import { getHomeDashboard, getSocialForecast, getContinueYourCommunity, getUnlockedPerksCount } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
@@ -25,6 +25,7 @@ export default function HomeScreen({ navigation }) {
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [socialForecast, setSocialForecast] = useState(null);
   const [continueCommunity, setContinueCommunity] = useState(null);
+  const [perksCount, setPerksCount] = useState(0);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -38,6 +39,8 @@ export default function HomeScreen({ navigation }) {
     setLoading(false);
     const community = await getContinueYourCommunity();
     setContinueCommunity(community);
+    const perks = await getUnlockedPerksCount();
+    setPerksCount(perks);
 
     const { status } = await Location.getForegroundPermissionsAsync();
     if (status === 'granted') {
@@ -98,6 +101,18 @@ export default function HomeScreen({ navigation }) {
             {continueCommunity.recentMessageCount > 0 && (
               <Text style={styles.continueCommunityDetail}>{continueCommunity.recentMessageCount} new message{continueCommunity.recentMessageCount === 1 ? '' : 's'} in the last day</Text>
             )}
+          </TouchableOpacity>
+        )}
+        {perksCount > 0 && (
+          <TouchableOpacity
+            style={styles.perksBanner}
+            onPress={() => navigation.navigate('BrandOffers')}
+            activeOpacity={0.85}
+            accessibilityLabel={`${perksCount} perks available to redeem`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.perksBannerText}>🎁 {perksCount} perk{perksCount === 1 ? '' : 's'} unlocked nearby</Text>
+            <Text style={styles.perksBannerArrow}>›</Text>
           </TouchableOpacity>
         )}
         {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
@@ -273,6 +288,13 @@ const getStyles = (colors) => StyleSheet.create({
   continueCommunityLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   continueCommunityName: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
   continueCommunityDetail: { color: colors.primary, fontSize: 12, marginTop: 2 },
+  perksBanner: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  perksBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  perksBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,
