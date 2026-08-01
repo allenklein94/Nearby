@@ -427,6 +427,25 @@ export async function getHostStats(hostId) {
   return data?.[0] ?? null;
 }
 
+export async function getAllPendingRequests() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('id, gathering_id, created_at, gatherings!inner(title, host_id), profiles(id, display_name, photo_url)')
+    .eq('status', 'pending')
+    .eq('gatherings.host_id', myId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getAllPendingRequests error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function updateGathering(gatheringId, { title, description, scheduledAt }) {
   const { error } = await supabase
     .from('gatherings')
