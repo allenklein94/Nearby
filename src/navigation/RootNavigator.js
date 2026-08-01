@@ -14,6 +14,8 @@ import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getInboxUnreadCount } from '../services/homeDashboard';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
+import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
 import LoginScreen from '../screens/LoginScreen';
 import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
@@ -214,6 +216,8 @@ export default function RootNavigator() {
         {!session ? (
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="OnboardingQuestions" component={OnboardingQuestionsScreen} />
+            <Stack.Screen name="OnboardingLocation" component={OnboardingLocationScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
           </>
         ) : !profileComplete ? (
