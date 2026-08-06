@@ -11,4 +11,5 @@ npm-debug.*
 web-build/
 .DS_Store
 *.pem
-.env*.local.claude/
+.env*.local
+.claude/
