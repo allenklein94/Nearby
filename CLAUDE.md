@@ -4,23 +4,39 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Billing / Monetization (genuinely not started)
+## Outstanding: Billing / Monetization (contract + invoice generation now built, Stripe still not started)
 
 The brand-matching business model (businesses offer targeted, quantity-limited discounts;
-redemptions are tracked; a "spread"/commission is the intended revenue model) is fully built
-EXCEPT for actual billing:
+redemptions are tracked; a "spread"/commission is the intended revenue model) now has real
+per-partner billing math, but no money actually moves yet:
 
-- `business_invoices` table exists (schema only — draft/sent/paid/failed/void status,
-  stripe_invoice_id/stripe_payment_intent_id columns reserved for later). Nothing writes to
-  it yet.
-- `getEstimatedAmountOwed()` in `src/services/brandOffers.js` computes a PLACEHOLDER estimate
-  (flat $3/redemption) for display only — not a real rate, not an actual charge.
-- No real Stripe integration exists: no account connection, no webhook handler, no actual
-  charging, no invoice generation, no dispute/refund handling.
-- Open design decision, never resolved: WHEN does a charge actually happen — per redemption
-  in real-time, or batched (e.g., monthly)? This needs deciding before implementation starts.
-- Treat this as its own project needing dedicated planning, not something to fold into a
-  quick feature request.
+- The WHEN design decision is resolved: billing is monthly/batched, not per-redemption
+  real-time. `supabase/migrations/20260806_partner_contracts_billing.sql` adds
+  `partner_contracts` (per-partner `billing_model`: per_redemption/flat_monthly/hybrid/custom,
+  with rates, contract dates, `max_monthly_spend` cap, `auto_renew`) and
+  `generate_monthly_invoices()`, a SECURITY DEFINER function meant to be run manually or from
+  a scheduled job once a month. It locks that partner's unbilled `offer_redemptions` rows
+  (`FOR UPDATE`, following the codebase's race-condition convention), sums them per the
+  contract's billing model, writes a row to `business_invoices` (status `draft`), and stamps
+  each redemption with `invoice_id` so it's never double-billed. `custom` contracts insert
+  with `amount_due = null` for finance to fill in by hand.
+  **This migration is written but has NOT been applied to the live Supabase project yet** —
+  no Supabase CLI/MCP connection was available in that session to run it. Apply it (and
+  verify `business_invoices` actually has `period_start`/`period_end`/`redemption_count`/
+  `amount_due` columns matching what the migration assumes — it only ALTERs that table, it
+  doesn't CREATE it) before relying on any of this.
+- `getEstimatedAmountOwed()` in `src/services/brandOffers.js` now calls
+  `get_partner_billing_estimate()` (same math as the invoice generator, run against the
+  current open month) instead of the old flat $3/redemption placeholder. Returns
+  `{ redemptionCount, estimatedAmount, billingModel }`; `billingModel` is `null` when the
+  partner has no active contract yet. `BusinessDashboardScreen.js` shows this in the insights
+  tab, gated on `billingModel` being present and not `'custom'`.
+- Still missing: no real Stripe integration (no account connection, no webhook handler, no
+  actual charging, no dispute/refund handling), and no scheduled job actually invokes
+  `generate_monthly_invoices()` yet (cron/pg_cron/Edge Function trigger still needed).
+- Contracts have no insert/update/delete RLS policy by design — they're a finance/ops
+  decision, written via the SQL editor (service role) or a future admin tool, not
+  self-served by the business.
 
 ## Recently completed, for context (do not re-build)
 

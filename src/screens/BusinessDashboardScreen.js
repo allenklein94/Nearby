@@ -24,7 +24,7 @@ export default function BusinessDashboardScreen() {
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
-  const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0 });
+  const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
   const [stats, setStats] = useState(null);
@@ -469,11 +469,15 @@ export default function BusinessDashboardScreen() {
             {section === 'insights' && (
               (insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
-                  {estimatedOwed.redemptionCount > 0 && (
+                  {estimatedOwed.billingModel && estimatedOwed.billingModel !== 'custom' && (
                     <View style={styles.estimatedOwedBanner}>
                       <Text style={styles.estimatedOwedLabel}>Estimated this month</Text>
-                      <Text style={styles.estimatedOwedValue}>${estimatedOwed.estimatedAmount}</Text>
-                      <Text style={styles.estimatedOwedDetail}>{estimatedOwed.redemptionCount} redemption{estimatedOwed.redemptionCount === 1 ? '' : 's'} — a placeholder estimate, not an actual bill</Text>
+                      <Text style={styles.estimatedOwedValue}>${Number(estimatedOwed.estimatedAmount ?? 0).toFixed(2)}</Text>
+                      <Text style={styles.estimatedOwedDetail}>
+                        {estimatedOwed.billingModel === 'flat_monthly'
+                          ? 'Flat monthly rate — final invoice may differ slightly'
+                          : `${estimatedOwed.redemptionCount} redemption${estimatedOwed.redemptionCount === 1 ? '' : 's'} this month so far — final invoice may differ slightly`}
+                      </Text>
                     </View>
                   )}
                   {insights?.top_interests?.length > 0 && (

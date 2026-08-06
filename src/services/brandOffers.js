@@ -1,27 +1,13 @@
 import { supabase } from './supabase';
 import Constants from 'expo-constants';
 
-// A placeholder flat rate — purely illustrative until real
-// per-business pricing and actual billing exist. This lets a
-// business see a genuine estimate before ever being asked to
-// connect a payment method, rather than nothing at all.
-const ESTIMATED_RATE_PER_REDEMPTION = 3;
-
 export async function getEstimatedAmountOwed(partnerId) {
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
-  const { data: myOffers } = await supabase.from('brand_offers').select('id').eq('partner_id', partnerId);
-  const offerIds = (myOffers ?? []).map((o) => o.id);
-  if (offerIds.length === 0) return { redemptionCount: 0, estimatedAmount: 0 };
-
-  // Same RLS gap as getRedemptionCounts — offer_redemptions' own
-  // SELECT policy scopes to each person's own rows only, so this
-  // must go through a security-definer RPC to get the true total.
-  const { data: count, error } = await supabase.rpc('count_redemptions_since', {
-    offer_ids: offerIds,
-    since_time: startOfMonth.toISOString(),
+  // Real per-partner contract terms (see partner_contracts), not a flat
+  // guess — get_partner_billing_estimate() runs the same math the actual
+  // monthly invoice generator uses, just against the current, still-open
+  // month. Returns zeros if the partner has no active contract yet.
+  const { data, error } = await supabase.rpc('get_partner_billing_estimate', {
+    partner_id_param: partnerId,
   });
 
   if (error) {
@@ -29,8 +15,12 @@ export async function getEstimatedAmountOwed(partnerId) {
     return { redemptionCount: 0, estimatedAmount: 0 };
   }
 
-  const redemptionCount = count ?? 0;
-  return { redemptionCount, estimatedAmount: redemptionCount * ESTIMATED_RATE_PER_REDEMPTION };
+  const row = data?.[0];
+  return {
+    redemptionCount: row?.redemption_count ?? 0,
+    estimatedAmount: row?.estimated_amount ?? 0,
+    billingModel: row?.billing_model ?? null,
+  };
 }
 
 export async function getRedemptionCounts(offerIds) {
