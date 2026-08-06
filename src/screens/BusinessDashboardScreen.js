@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, FlatList, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
@@ -21,14 +21,12 @@ export default function BusinessDashboardScreen() {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [section, setSection] = useState('home');
-  const [partners, setPartners] = useState([]);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
-  const [estimtedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0 });
+  const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
-  const [pickerVisible, setPickerVisible] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
@@ -58,13 +56,12 @@ export default function BusinessDashboardScreen() {
   const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
-    loadPartners();
+    loadMyPartner();
   }, []);
 
-  async function loadPartners() {
-    const { data } = await supabase.from('brand_partners').select('id, name, address').order('name');
-    setPartners(data ?? []);
-    if (data?.[0]) setSelectedPartner(data[0]);
+  async function loadMyPartner() {
+    const partner = await getMyManagedPartner();
+    setSelectedPartner(partner);
     setLoading(false);
   }
 
@@ -288,15 +285,9 @@ export default function BusinessDashboardScreen() {
             <Text style={{ fontSize: 22 }}>💬</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.partnerSelector}
-          onPress={() => setPickerVisible(true)}
-          accessibilityLabel={`Viewing ${selectedPartner?.name ?? 'no business selected'}, tap to change`}
-          accessibilityRole="button"
-        >
-          <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? 'Select a business'}</Text>
-          <Text style={styles.partnerSelectorChevron}>▾</Text>
-        </TouchableOpacity>
+        <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? 'No business found for this account'}>
+          <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? 'No business found for this account'}</Text>
+        </View>
       </View>
       {selectedPartner && (
         <TouchableOpacity
@@ -581,35 +572,6 @@ export default function BusinessDashboardScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={pickerVisible} animationType="slide" onRequestClose={() => setPickerVisible(false)}>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select a Business</Text>
-            <TouchableOpacity onPress={() => setPickerVisible(false)} accessibilityLabel="Close" accessibilityRole="button">
-              <Text style={styles.modalCloseText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={partners}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: spacing.lg }}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.partnerRow}
-                onPress={() => {
-                  setSelectedPartner(item);
-                  setPickerVisible(false);
-                }}
-                accessibilityLabel={item.name}
-                accessibilityRole="button"
-              >
-                <Text style={styles.partnerRowText}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </SafeAreaView>
-      </Modal>
-
       <Modal visible={createModalVisible} animationType="slide" transparent onRequestClose={() => setCreateModalVisible(false)}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
@@ -763,7 +725,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md,
   },
   partnerSelectorText: { ...typography.bodyBold, color: colors.textPrimary },
-  partnerSelectorChevron: { color: colors.textTertiary, fontSize: 16 },
   sectionTabs: {
     flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.xs,
     borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: spacing.sm,
@@ -830,11 +791,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,
   },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
-  modalTitle: { ...typography.title, color: colors.textPrimary },
   modalCloseText: { color: colors.primary, fontWeight: '600' },
-  partnerRow: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
-  partnerRowText: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
