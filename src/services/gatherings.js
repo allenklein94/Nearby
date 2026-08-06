@@ -93,7 +93,7 @@ export async function getNearbyGatherings(tier = 'local') {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, user_id, profiles(display_name, photo_url))`)
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, profiles(display_name, photo_url))`)
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
@@ -126,7 +126,9 @@ export async function getNearbyGatherings(tier = 'local') {
 
   return filtered
     .map((gathering) => {
-      const approvedAttendees = (gathering.attendees ?? []).filter((a) => a.status === 'approved');
+      const approvedAttendees = (gathering.attendees ?? [])
+        .filter((a) => a.status === 'approved')
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       const dist = distanceById[gathering.id];
       const distanceMiles = dist?.distance_miles ?? null;
       return {

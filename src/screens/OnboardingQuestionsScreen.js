@@ -33,7 +33,7 @@ const COMFORT_LEVELS = [
 const MONTHLY_INTERESTS = [
   { icon: '☕', label: 'Coffee' },
   { icon: '🍽️', label: 'Food' },
-  { icon: '🥾', label: 'Hiking' },
+  { icon: '🏖️', label: 'Beach' },
   { icon: '🏐', label: 'Sports' },
   { icon: '🎲', label: 'Games' },
   { icon: '🎵', label: 'Music' },

@@ -4,13 +4,7 @@ import { getOnboardingRecommendations } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
+import { getGreeting } from '../utils/timeContext';
 
 export default function OnboardingRecommendationsScreen({ navigation }) {
   const { colors, shadow } = useTheme();

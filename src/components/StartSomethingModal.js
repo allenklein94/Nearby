@@ -2,20 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { getQuickPrompts } from '../utils/timeContext';
 
-// First screen stays deliberately simple — broad activities, not
-// categories, so the very first tap feels effortless. Picking one
-// (other than "Something Else") reveals a genuine second step for
-// specificity, rather than forcing everything into the full form
-// immediately.
-const QUICK_STARTS = [
-  { icon: '☕', label: 'Coffee', category: 'Coffee' },
-  { icon: '🍽️', label: 'Dinner', category: 'Foodie' },
-  { icon: '🚶', label: 'Walk', category: 'Outdoors' },
-  { icon: '🏃', label: 'Workout', category: 'Fitness' },
-  { icon: '⚽', label: 'Sports', category: 'Sports' },
-  { icon: '➕', label: 'Something Else', category: null },
-];
+const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
 const SUB_OPTIONS = {
   Dinner: [
@@ -26,15 +15,6 @@ const SUB_OPTIONS = {
     { icon: '🥗', label: 'Healthy' },
     { icon: '🍝', label: 'Italian' },
     { icon: '➕', label: "Doesn't matter" },
-  ],
-  Sports: [
-    { icon: '⚽', label: 'Soccer' },
-    { icon: '🏀', label: 'Basketball' },
-    { icon: '🏐', label: 'Volleyball' },
-    { icon: '🎾', label: 'Tennis' },
-    { icon: '🏓', label: 'Pickleball' },
-    { icon: '🏈', label: 'Football' },
-    { icon: '➕', label: 'Other' },
   ],
 };
 
@@ -73,7 +53,7 @@ export default function StartSomethingModal({ visible, onClose, navigation }) {
     });
   }
 
-  const options = activeCategory ? SUB_OPTIONS[activeCategory.label] : QUICK_STARTS;
+  const options = activeCategory ? SUB_OPTIONS[activeCategory.label] : [...getQuickPrompts(), SOMETHING_ELSE];
   const title = activeCategory ? `What kind of ${activeCategory.label.toLowerCase()}?` : 'I want to...';
 
   return (

@@ -9,13 +9,7 @@ import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
+import { getGreeting } from '../utils/timeContext';
 
 export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
