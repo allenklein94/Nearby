@@ -32,13 +32,29 @@ per-partner billing math running end-to-end on a schedule, but no money actually
 - `getEstimatedAmountOwed()` in `src/services/brandOffers.js` now calls
   `get_partner_billing_estimate()` (same math as the invoice generator, run against the
   current open month) instead of the old flat $3/redemption placeholder. Returns
-  `{ redemptionCount, estimatedAmount, billingModel }`; `billingModel` is `null` when the
-  partner has no active contract yet. `BusinessDashboardScreen.js` shows this in the insights
-  tab, gated on `billingModel` being present and not `'custom'`.
-- No `partner_contracts` rows exist yet — the table is live but empty, and there's
-  deliberately no self-serve UI to create one (finance/ops decision, written via the SQL
-  editor/service role or a future admin tool). Nothing will actually get invoiced until at
-  least one contract is created by hand.
+  `{ redemptionCount, estimatedAmount, billingModel, includedUnits, billableCount }`;
+  `billingModel` is `null` when the partner has no active contract yet.
+  `BusinessDashboardScreen.js` shows this in the insights tab, gated on `billingModel` being
+  present and not `'custom'`, and calls out how many of the included allotment have been used.
+- `partner_contracts.included_units` (added in `20260807_billing_included_units.sql`, default
+  0) lets `per_redemption`/`hybrid` contracts include N free redemptions before the per-unit
+  rate applies — e.g. "100 included, $0.75 each after" — instead of billing from redemption
+  #1. Both billing functions compute `billable_count = greatest(count - included_units, 0)`
+  and multiply that by `redemption_fee`, not the raw count. `flat_monthly`/`custom` ignore it.
+- One test contract exists: partner **Coastal Coffee** (`67dd3d6d-f36b-4b20-8a80-ac980baecc30`),
+  contract `787d5b41-...`, `hybrid` billing, `$20/month` + `$1/redemption`, `included_units: 0`,
+  open-ended, `auto_renew: true`. Verified end-to-end (simulating the real caller via
+  `set_config('request.jwt.claims', ...)` since the Management API has no user session) —
+  returns `$20.00` with 0 redemptions so far this month, as expected.
+- No other `partner_contracts` rows exist, and there's deliberately no self-serve UI to
+  create one (finance/ops decision, written via the SQL editor/service role or a future admin
+  tool). Nothing will actually get invoiced for other partners until a contract is created by
+  hand.
+- Pricing philosophy note (from a strategy discussion, not yet decided as final policy):
+  billing by raw redemption count is what's actually instrumented today; a "verified visits"
+  metric (join gathering + GPS/check-in + dwell time or QR scan) was floated as a better
+  long-term metric but requires building attendance/check-in verification that doesn't exist
+  yet — treat that as a distinct future feature, not a pricing tweak.
 - Still missing before this is real billing: no Stripe integration at all (no account
   connection, no webhook handler, no actual charging, no dispute/refund handling). Invoices
   will sit in `draft` with nothing downstream until that's built.

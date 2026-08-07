@@ -20,6 +20,8 @@ export async function getEstimatedAmountOwed(partnerId) {
     redemptionCount: row?.redemption_count ?? 0,
     estimatedAmount: row?.estimated_amount ?? 0,
     billingModel: row?.billing_model ?? null,
+    includedUnits: row?.included_units ?? 0,
+    billableCount: row?.billable_count ?? 0,
   };
 }
 

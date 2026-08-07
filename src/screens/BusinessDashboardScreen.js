@@ -24,7 +24,7 @@ export default function BusinessDashboardScreen() {
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
-  const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null });
+  const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null, includedUnits: 0, billableCount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
   const [stats, setStats] = useState(null);
@@ -476,6 +476,8 @@ export default function BusinessDashboardScreen() {
                       <Text style={styles.estimatedOwedDetail}>
                         {estimatedOwed.billingModel === 'flat_monthly'
                           ? 'Flat monthly rate — final invoice may differ slightly'
+                          : estimatedOwed.includedUnits > 0
+                          ? `${estimatedOwed.redemptionCount} redemption${estimatedOwed.redemptionCount === 1 ? '' : 's'} this month (${Math.min(estimatedOwed.redemptionCount, estimatedOwed.includedUnits)} of ${estimatedOwed.includedUnits} included free) — final invoice may differ slightly`
                           : `${estimatedOwed.redemptionCount} redemption${estimatedOwed.redemptionCount === 1 ? '' : 's'} this month so far — final invoice may differ slightly`}
                       </Text>
                     </View>
