@@ -64,6 +64,7 @@ import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import MemoryVaultIndexScreen from '../screens/MemoryVaultIndexScreen';
 import InsightsScreen from '../screens/InsightsScreen';
 import MomentumScreen from '../screens/MomentumScreen';
+import AIConciergeScreen from '../screens/AIConciergeScreen';
 import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import ChemistryDiaryEntryScreen from '../screens/ChemistryDiaryEntryScreen';
 import ChemistryDiaryListScreen from '../screens/ChemistryDiaryListScreen';
@@ -269,6 +270,7 @@ export default function RootNavigator() {
             <Stack.Screen name="MemoryVaultIndex" component={MemoryVaultIndexScreen} options={{ headerShown: true, title: 'Memory Vaults', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Insights" component={InsightsScreen} options={{ headerShown: true, title: 'Your Insights', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: 'Your Momentum', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="AIConcierge" component={AIConciergeScreen} options={{ headerShown: true, title: 'AI Concierge', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: 'Emergency Contacts', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: 'Chemistry Check-In', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: 'Chemistry Diary', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

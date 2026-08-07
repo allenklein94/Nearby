@@ -30,12 +30,22 @@ exists but doesn't do the thing):
   a real, already-built feature. The one genuinely missing piece was a persistent, reusable
   emergency contact (name/phone/relationship) instead of picking a share recipient fresh every
   time — that's what got built.
-- **AI Concierge** (Phase 5) — no natural-language "find me something tonight" flow anywhere.
-  Would be this codebase's first real LLM call; every other place that could have used one
-  (Home's `getHomeInsight()`, Discover's "Recommended for you") deliberately used real-signal
-  heuristics instead, per this file's own existing entries. Needs its own explicit review
-  (cost, latency, prompt-injection surface via user-generated titles/descriptions) before
-  building, not a silent bolt-on.
+- **AI Concierge** (Phase 5) — **closed this session, see "Outstanding: AI Concierge" below —
+  and the premise in this line was wrong, worth flagging.** This line previously claimed no
+  natural-language flow existed anywhere and that Concierge "would be this codebase's first
+  real LLM call." **That was false.** Checking local `src/` for LLM usage was accurate (Home's
+  `getHomeInsight()`, Discover's "Recommended for you" genuinely are real-signal heuristics,
+  no LLM), but the check never looked at what's actually *deployed* on Supabase — the local
+  `supabase/functions/*/index.ts` files are all empty stubs (a pre-existing gap in this repo's
+  own practices, not something introduced this session), so a from-source grep found nothing
+  while production silently had 17 real deployed Edge Functions, at least 6 of them genuine
+  Claude API calls already wired to real screens: `generate-icebreaker` (`ChatScreen.js`),
+  `generate-strengths` (`ProfileScreen.js`), `generate-courage-message`/`translate-message`
+  (`ChatScreen.js`), `generate-introduction` (`CompatibilityReportModal.js`), `rehearsal-chat`
+  (`RehearsalRoomScreen.js`) — plus a live `ANTHROPIC_API_KEY` secret already configured. Same
+  class of miss this file has now caught three separate times (Safety/emergency-contacts,
+  Business Profile network calls, and now this) — always verify against what's actually live,
+  not just what's checked into git, before concluding a capability doesn't exist.
 - **Friend Circles** (Phase 5) — **closed this session, see "Outstanding: Friend Circles"
   below.** `FriendsScreen.js` was a flat friends list with no grouping concept (Work/Fitness/
   Family/Travel) anywhere in the schema or UI.
@@ -105,6 +115,100 @@ seven previously-unconfirmed items now checked, none left unverified**:
   the same `get_host_stats`/`get_host_reputation` RPCs used elsewhere, mutual friends, shared
   music/interests. No follower/following counts, no feed layout — nothing resembling a
   generic social-network profile. No fabricated numbers found.
+
+## Outstanding: AI Concierge (closes Phase 5 "AI Concierge" gap)
+
+Closed against the confirmed real gap (a natural-language "find me something tonight" flow),
+but built on a corrected premise — see the audit correction above. Discussed the design with
+the user first rather than silently bolting this on, since it's the first *new* LLM feature
+added this session (even though it turned out not to be the codebase's first ever). Deployed
+to production (`enmosvippabmuqslzrox`) and applied there, not just written locally.
+
+- **Found and fixed a live security bug while researching the existing AI pattern**, before
+  building anything new on top of it: `check_and_increment_ai_use(user_id_param, daily_limit)`
+  — the shared SECURITY DEFINER rate-limit RPC every `generate-*` Edge Function already calls —
+  was granted `EXECUTE` to the broad `authenticated` role with no check that the caller owned
+  `user_id_param`. Any logged-in user could call it directly with another user's id and burn
+  through that account's shared daily AI-use counter (`profiles.ai_uses_today`) — a denial-of-
+  service against another user's AI features, not a data leak. Same class of bug as the
+  business RPC ownership section above. Fixed in `20260807_ai_use_ownership_check.sql`: added
+  an internal `auth.uid() = user_id_param` check (returns `false` rather than raising, matching
+  this codebase's "just don't allow it" convention) and revoked `authenticated`/`anon`/`public`
+  execute, granting only `service_role` — the only real caller, since every existing
+  `generate-*` function invokes it via a service-role admin client, never the user's own
+  session. Verified live: re-ran the exact call as a different real profile via
+  `set_config('request.jwt.claims', ...)` and confirmed it's now rejected at the grant level
+  (`permission denied for function`) before even reaching the new internal check, and confirmed
+  a service-role-style call (no JWT claims) still succeeds — the legitimate path is unaffected.
+- **New `supabase/functions/ai-concierge/index.ts`**, matching the exact pattern every existing
+  `generate-*` function already uses in production (extracted by pulling their real deployed
+  source via the Management API's function-body endpoint, since the local stub files are
+  empty): verify the bearer token via a service-role `auth.getUser()` call, gate on
+  `profiles.is_premium` (matching `generate-icebreaker`/`generate-strengths`/
+  `generate-courage-message` — 3 of 4 comparable single-shot "generate something for me"
+  features are Premium-gated; only `generate-introduction`, feeding a core compatibility
+  report, is not — Concierge fits the majority pattern), call `check_and_increment_ai_use`
+  with `daily_limit: 50` (matching the single-shot-feature convention, not the higher 150 used
+  by per-message features like `translate-message`/`rehearsal-chat` — this is one shared
+  counter across every AI feature, not a per-feature budget, so the number had to match
+  existing precedent rather than being invented), then call `claude-haiku-4-5-20251001` (same
+  model every other function already uses) with `max_tokens: 600`. Deployed via
+  `supabase functions deploy` and confirmed live with `verify_jwt: true` (matching every other
+  function — the CLI's default deploy left it `false` on first push; caught by checking the
+  live function's settings afterward instead of assuming the deploy command's defaults matched
+  convention, corrected via a follow-up Management API `PATCH`).
+- **Prompt-injection handling — a real design discussion with the user, not a unilateral
+  choice**: gathering/community/perk titles are user-generated text, and this feature (unlike
+  the existing `generate-*` functions, which only ever process the *caller's own* profile data)
+  processes content written by *other* users, which the requesting user doesn't control. Talked
+  through two options: (a) constrain the model to picking ids only, with reason text assembled
+  from real signals server/client-side (zero new attack surface, since the model would never
+  author displayed text), vs (b) freeform model-written reason sentences (more natural, but the
+  model's raw output becomes on-screen text). **User chose (b)** after the tradeoff was
+  clarified. Mitigations actually built: only structured, low-risk fields (id/type/title/
+  category/time/distance) are ever sent to the model — full descriptions (the richest
+  injection vector) are deliberately excluded from the prompt entirely, never sent by the
+  client in the first place; all untrusted data is wrapped in explicit `<candidate_data>`/
+  `<user_request>` tags with the system prompt stating plainly that content inside is data to
+  describe, never instructions to follow; every returned id is re-validated against the real
+  candidate set server-side before it's ever returned to the client (an id the model invents or
+  hallucinates is silently dropped); every reason string is hard length-capped
+  (`MAX_REASON_LENGTH = 220`) regardless of what the model actually returned. **Residual risk,
+  stated honestly rather than claimed solved**: this delimiting reduces but doesn't eliminate
+  injection risk from candidate titles — a sufficiently crafted gathering title could still
+  influence a displayed reason sentence. What meaningfully caps the real-world severity: this
+  is React Native, not a webview — `<Text>` renders plain strings with no HTML/script
+  execution, so the actual worst case of a successful injection is a misleading sentence
+  attributed to the Concierge, never code execution or an unauthorized action (the model has no
+  write access or action-triggering capability in this design regardless of prompt content).
+- **New `src/services/aiConcierge.js`** (`askConcierge(queryText, location)`) — reuses the same
+  already-fetched Discover data sources (`getNearbyGatherings('wide')`, `getPublicCommunities()`,
+  `getActiveOffers()`, the same three functions `DiscoverHubScreen.js` already calls) rather
+  than new queries, builds the trimmed candidate list client-side, and maps returned picks back
+  to the full local objects (so rendering still has real descriptions/photos/etc. — only the
+  *prompt* excludes them, not the client's own data). **New `src/screens/AIConciergeScreen.js`**
+  + `AIConcierge` route (`RootNavigator.js`) — a single text box, four example-query suggestion
+  chips, and a results list (type icon, title, the model's real reason sentence, tap-through to
+  `GatheringDetail`/`CommunityDetail`/`BrandOffers`). Reachable from a new "✨ Ask AI Concierge
+  what to do" row on `DiscoverHubScreen.js`, directly under its existing search bar. A genuine
+  "nothing fit" empty state is shown when the model legitimately returns zero picks, rather
+  than hidden or defaulted to something.
+- **Not done yet / known verification gap, stated plainly**: unlike every other feature closed
+  this session, **the actual Anthropic call path was not exercised end-to-end** — confirmed the
+  Edge Function is deployed and its gateway-level `verify_jwt` correctly rejects missing/invalid
+  auth (tested directly via `curl`), and confirmed the underlying `check_and_increment_ai_use`
+  RPC logic works correctly against real profile rows, but reaching the actual premium-gated
+  Anthropic-calling code path requires a real premium user's live session access token, which
+  this sandboxed environment has no way to mint (no stored password/credentials for any real
+  account; the project's own `review-login` mechanism needs a PIN secret whose plaintext isn't
+  retrievable via the Management API). Confidence here rests on matching the already-proven-
+  in-production `generate-icebreaker` pattern line-for-line, not on a direct test of this
+  specific function's success path. Next session should: run the app as a real Premium account,
+  ask the Concierge something with real gatherings/communities/perks nearby, confirm real picks
+  with sensible reasons come back and tap-through navigation lands correctly; ask as a
+  non-Premium account and confirm the "This is a Premium feature." message surfaces cleanly;
+  and confirm hitting the shared daily AI-use cap surfaces the 429 message correctly instead of
+  a raw error.
 
 ## Outstanding: Friend Circles (closes Phase 5 "Friend Circles" gap)
 

@@ -13,3 +13,4 @@ web-build/
 *.pem
 .env*.local
 .claude/
+supabase/.temp/
