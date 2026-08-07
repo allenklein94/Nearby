@@ -39,7 +39,8 @@ exists but doesn't do the thing):
 - **Friend Circles** (Phase 5) — **closed this session, see "Outstanding: Friend Circles"
   below.** `FriendsScreen.js` was a flat friends list with no grouping concept (Work/Fitness/
   Family/Travel) anywhere in the schema or UI.
-- **Momentum** (Phase 5) — no "social momentum" signal/screen anywhere.
+- **Momentum** (Phase 5) — **closed this session, see "Outstanding: Momentum" below.** No
+  "social momentum" signal/screen existed anywhere.
 - **Empty-state audit** — **done this session, see "Outstanding: Empty-state audit" below.**
 
 **Verified in a follow-up audit pass (Aug 7 2026, same day, after the initial doc check) — all
@@ -151,6 +152,54 @@ committed this session, not written from scratch.
 - **Not done yet**: no manual run-through in a simulator/device. Next session should check:
   creating a circle, adding/removing friends via the tag icon, filtering by a circle chip,
   long-press delete, and that a brand-new user with zero circles sees an unchanged screen.
+
+## Outstanding: Momentum (closes Phase 5 "Momentum" gap)
+
+Closed against the confirmed real gap: no "social momentum" signal or screen existed anywhere.
+Built as a purely real, derived signal — no fabricated score, same "no invented numbers"
+convention as `homeDashboard.js`'s `bestPick`/`weeklyRecap` and `insights.js`'s whole premise.
+Deliberately not a single composite "momentum score" (0-100, etc.) — this codebase has never
+invented a blended metric like that anywhere else, so Momentum instead surfaces two honest,
+separately-real signals: a weekly activity streak and month-over-month deltas.
+
+- New `src/services/momentum.js` — `getMomentumStats()`. No new tables/RPCs; reads the same
+  tables/columns already trusted elsewhere (`gathering_interest.status='approved'` joined to
+  `gatherings.scheduled_at`, `gatherings.host_id`, `friendships.status='accepted'` via the same
+  `user_a`/`user_b` `.or()` pattern `friends.js` already uses, `community_members.joined_at`),
+  fetched once each from the earlier of an 8-week or two-month lookback, then bucketed
+  client-side two ways:
+  - **Weekly streak**: 8 weekly buckets (attended-or-hosted count per week), `currentStreak` =
+    consecutive weeks counting back from the current week with at least one real gathering.
+    A quiet week breaks the streak back to 0 — no grace period, no fabricated "streak freeze"
+    mechanic.
+  - **Month-over-month deltas**: real counts of gatherings attended, new (accepted) friends,
+    and communities joined, this calendar month vs. last calendar month, computed from the same
+    fetched rows (no extra queries) — an honest "▲/▼/—" per line, no percentage-change math
+    invented on top.
+- New `src/screens/MomentumScreen.js` + `Momentum` route (`RootNavigator.js`), reachable from a
+  new "🔥 Your Momentum" row on `ProfileScreen.js`, same `timelineLink` style as the
+  Timeline/Memory Vault/Insights rows above it. A streak card (🔥 with the week count, or 🌱
+  "no active streak yet" at zero — an honest zero-state, not hidden), an 8-bar weekly mini
+  chart (own lightweight bars, not a charting library — matches this codebase's existing
+  hand-rolled bar style from `InsightsScreen.js`'s vibe breakdown), and a delta card for the
+  three this-month-vs-last-month lines.
+- Verified end-to-end against the live production schema (`enmosvippabmuqslzrox`) before
+  committing: ran each of the four underlying query shapes directly via
+  `set_config('request.jwt.claims', ...)` as a real profile — confirmed a user with genuine
+  past attended/hosted gatherings and an accepted friendship gets real rows back, and a user
+  with zero community memberships gets a real empty array (exercising the chart's zero-state
+  path honestly rather than assuming it). Verified via a full `npx expo export --platform ios`
+  (1833 modules, two more than the prior 1831 baseline — the two new files), not yet a
+  simulator/device run.
+- **Deliberately not built**: a "longest streak ever" record, streak-loss notifications/nudges,
+  or any cross-user comparison ("you're more active than 80% of users") — the last one in
+  particular would need either a fabricated percentile or a new aggregate query across every
+  user, out of scope for a first pass and not asked for.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check: an
+  established account (real streak, real bar chart, real deltas), a brand-new account (zero
+  everywhere — streak card should read "no active streak yet", chart should show its empty
+  state, delta card should show real 0s with `—` symbols, not blank/hidden sections), and that
+  the streak correctly breaks to 0 after a genuinely quiet week rather than persisting.
 
 ## Outstanding: Memory Vault → Profile link (closes roadmap #5 partial gap)
 

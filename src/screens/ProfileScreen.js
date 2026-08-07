@@ -457,6 +457,16 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>📊 Your Insights</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Momentum')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your momentum, weekly activity streak"
+          accessibilityRole="button"
+        >
+          <Text style={styles.timelineLinkText}>🔥 Your Momentum</Text>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (
