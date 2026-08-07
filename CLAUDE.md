@@ -4,6 +4,67 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Known gaps against the Aug 7 2026 external roadmap doc
+
+The user pasted an external 16-item roadmap doc (plus a "Phase 5 (Magic)" wishlist) on
+Aug 7 2026 prioritizing remaining screen work. Checked against actual repo state that same day.
+Discover (item 1) was closed that session — see the section below. The rest, so nothing here
+gets silently forgotten:
+
+**Confirmed NOT built** (checked directly — grepped for it, found nothing, or the screen
+exists but doesn't do the thing):
+- **Create Flow as a guided multi-step wizard** — doc's vision: What do you want to do? →
+  Choose activity → Date & time → Location → Public/private → Invite friends → Preview →
+  Publish. What actually exists: `CreateHubScreen.js` (simple link hub) → single-screen
+  `CreateGatheringScreen.js` with every field on one form, no preview step, and **no way to
+  invite specific friends to a gathering at all** — `notifications.js` has a rendering `case
+  'gathering_invite':` with nothing anywhere in the codebase that ever creates one; it's dead/
+  vestigial. Also found (while reading this screen for this exact gap): `CreateGatheringScreen.js`
+  line 35 has `uuseEffect(() => {...})` — a typo'd `useEffect` call, which is not a defined
+  identifier. This throws a `ReferenceError` on every render, meaning **the whole "Host a
+  Gathering" flow is currently broken/crashing in production**, unrelated to any doc gap.
+- **Unified Map Experience** (#10) — `GatheringsMapView.js` plots gatherings + brand deals +
+  public stories only. No people, no communities, no businesses-as-such, no "live activity"
+  layer.
+- **Insights** (#13, user-facing "you've attended 18 gatherings") — no dedicated screen. Real
+  stats exist but are scattered inside `ProfileScreen.js` (`getProfileQuickStats`/
+  `getEarnedProfileStats`), not surfaced as their own Insights experience.
+- **Safety — emergency contact + check-in** (#15, half of it) — reporting, blocking, and ID
+  verification all exist (`AdminReportsScreen.js`, `BlockedUsersScreen.js`,
+  `IdVerificationScreen.js`). Emergency contact and a safety check-in flow do not exist
+  anywhere — zero matches for `emergency_contact`/`EmergencyContact`/`safetyCheckIn` in `src/`.
+- **AI Concierge** (Phase 5) — no natural-language "find me something tonight" flow anywhere.
+  Would be this codebase's first real LLM call; every other place that could have used one
+  (Home's `getHomeInsight()`, Discover's "Recommended for you") deliberately used real-signal
+  heuristics instead, per this file's own existing entries. Needs its own explicit review
+  (cost, latency, prompt-injection surface via user-generated titles/descriptions) before
+  building, not a silent bolt-on.
+- **Friend Circles** (Phase 5) — `FriendsScreen.js` exists (flat friends list) but no grouping
+  concept (Work/Fitness/Family/Travel) anywhere in the schema or UI.
+- **Momentum** (Phase 5) — no "social momentum" signal/screen anywhere.
+- **Empty-state audit** — the doc's own closing suggestion (design an empty state for every
+  major screen before the full version). Not done as a deliberate pass; some screens have ad
+  hoc empty states (e.g. `PlacesScreen.js`'s location-denied state), most are unaudited.
+
+**Likely fine, not re-verified against the doc's exact sub-bullets** — screens exist and are
+substantial, but nobody has checked them line-by-line against the doc since:
+- **Profile** (#5) — `ProfileScreen.js` (986 lines) has real stats/achievements; Memories and
+  Timeline live as separate screens (`MemoryVaultScreen.js`, `TimelineScreen.js`), unconfirmed
+  whether that split matches what the doc means by "Profile contains Memories/Timeline."
+- **Community Screen** (#7) — `CommunityDetailScreen.js` + `CommunityChatScreen.js` exist;
+  Leaders/Calendar sub-features unconfirmed.
+- **People Profile** (#8) — `ViewProfileScreen.js` exists; unconfirmed whether its framing
+  actually reads as "would I enjoy hanging out with this person" vs. a followers-style layout.
+- **Business Profile** (#9) — `BusinessDashboardScreen.js` is the *owner's* dashboard. A
+  public-facing profile a regular user browses to (gatherings/rewards/reviews/photos for that
+  business) is unconfirmed to exist as a distinct screen.
+- **Rewards** (#11) — perks + real billing exist (`BrandOffersScreen.js`, billing section
+  below); loyalty and group-unlock mechanics unconfirmed.
+- **Business Community CRM** (#12) — partially covered by `BusinessDashboardScreen.js`; full
+  attendance/analytics CRM depth unconfirmed.
+- **Settings** (#16) — `SettingsScreen.js` exists; unconfirmed whether Payments/Business Mode
+  sections match the doc's scope.
+
 ## Outstanding: Discover mini-app (unified search/filter/map/list + recommendations)
 
 Closed against a user-pasted external roadmap doc (Aug 7 2026) that prioritized "Discover" as
