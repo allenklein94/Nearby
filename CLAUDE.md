@@ -4,6 +4,92 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Gathering Hub ("What happens after you tap Join?" redesign)
+
+Closed against a third user-supplied vision doc (forwarded email, Jul 30 2026) describing a
+live, day-of "Gathering Hub" experience that replaces the old `Alert.alert("You're In!")`
+dead end. Core build is done and committed; **not yet manually tested in a running app** —
+same caveat as the Gathering Detail Screen entry below. Verified: every touched file compiles
+via `@babel/core`, a full `npx expo export --platform ios` (1823 modules) built clean, and the
+new schema/RPCs were applied to production (`enmosvippabmuqslzrox`) and exercised directly
+against the live database via `set_config('request.jwt.claims', ...)`.
+
+- New `src/screens/GatheringHubScreen.js` + `GatheringHub` route (`RootNavigator.js`), distinct
+  from `GatheringDetailScreen` for the same reason Detail was split from the list last pass:
+  Detail's job is persuading you to join; Hub is the live experience for people already in.
+  Joining a public (auto-approve) gathering from Detail now does
+  `navigation.replace('GatheringHub', { gatheringId, justJoined: true })` instead of just
+  reloading in place — Hub shows a 2.2-second "You're In! 🎉" banner (`setTimeout`, no new
+  screen/route needed for it) before revealing the full hub. Host-approval gatherings still land
+  on Detail's pending panel, since there's nothing live to enter until approved. Already-approved
+  visitors to Detail now get an "Open Gathering Hub →" button (promoted to primary CTA; "Say
+  Hello" demoted to a secondary link under it). Also wired from `GatheringsScreen`'s attending
+  tab (replaces the old per-card "Group Chat" button, since Hub's own Group Chat entry covers
+  that) and hosting tab (added alongside the existing Group Chat button, so hosts can check
+  who's on their way/checked in without losing direct chat access).
+- **Who You'll Meet**: up to 5 fellow approved attendees with one honest personalized line each
+  — real shared-interest overlap (`profiles.interests` intersection, same pattern as
+  `compatibility.js`/`ChatScreen.js`'s existing shared-interest suggestions), the existing
+  `getFirstTimerAttendeeIds()` flag, or "Organizer" for the host. Falls back to "Going to
+  {title}" rather than fabricating a reason when none of those apply.
+- **Ice Breakers**: static, category-keyed conversation starters
+  (`src/constants/gatheringHubContent.js`) — deliberately not a real AI/LLM call, same
+  no-new-API-cost tradeoff already made for Home's `getHomeInsight()`. Tapping one deep-links to
+  `GatheringChat` with a new `draftText` route param that prefills the message input (small
+  addition to `GatheringChatScreen.js`) rather than sending on the user's behalf.
+- **Checklist ("Before You Go")**: real weather via the existing `getSocialForecast()` RPC
+  (reusing `getGatheringById`'s already-fetched `get_gathering_distances` fuzzed coordinates —
+  no extra query) plus static, category-keyed prep tips (same constants file). The vision doc's
+  "parking available" line was **not** built — no real parking-availability signal exists
+  anywhere in this codebase, and a generic tip can't honestly claim it without becoming a
+  fabricated per-venue fact.
+- **Meet-Up Point**: a real single-pin map using the gathering's actual `precise_lat/lng` —
+  previously never exposed to the client at all (`SAFE_GATHERING_FIELDS` deliberately excludes
+  it; the app has only ever shown fuzzed coordinates, per `GatheringsMapView.js`'s own comment).
+  New SECURITY DEFINER RPC `get_gathering_meetup_point()` (in
+  `20260807_gathering_hub.sql`) returns the exact coordinates only to the host or an approved
+  attendee of that specific gathering — a narrow, honest-need exception to the fuzzing rule,
+  not a change to it. Verified live: an approved attendee gets real coordinates back, an
+  unrelated user gets an empty result set.
+- **"I'm On My Way" / "Who's Here"**: two new nullable timestamp columns on
+  `gathering_interest` (`on_my_way_at`, `checked_in_at`), set via two new SECURITY DEFINER RPCs
+  (`set_gathering_on_my_way`, `check_in_to_gathering` — no self-UPDATE RLS policy was opened,
+  matching this codebase's existing avoidance of broad client UPDATE access on a table that also
+  holds `status`/`match_id`). **These are self-reported taps, not GPS verification** — tapping
+  "I'm On My Way" just records a timestamp and shows fellow attendees a count. Checking in
+  switches the checked-in user's own view into a minimal "during the gathering" mode (Have fun 🎉
+  / Who's Here count / Say Hi / Questions / Photos), matching the vision doc's "put the phone
+  away" framing.
+  **Deliberately not built**: the vision doc's Uber-style "Live Mode" (continuous location
+  sharing, an actual ETA countdown, GPS-verified arrivals). This codebase has no directions/ETA
+  API integrated anywhere, and continuous location sharing between attendees who haven't met
+  yet is a materially different privacy posture than the fuzzed-coordinates-only approach used
+  everywhere else in the app. Treat real GPS-based ETA/arrival tracking as a distinct future
+  feature requiring its own explicit review, same category as the "verified visits" billing
+  metric noted below — not something to bolt on here.
+- **Post-gathering "what's next"**: `GatheringFeedbackModal` now has a second step after
+  submitting feedback — "Anything you'd like to do next?" with Coffee / Dinner / Another walk
+  chips (reusing the exact category tags `getQuickPrompts()` already maps those same labels to
+  in `timeContext.js`, so they prefill `CreateGathering` the same way Home's quick-action chips
+  do) plus "Join next week" (browses `Gatherings`). Requires a new `navigation` prop, now passed
+  from both its call sites (`HomeScreen.js`, `GatheringHubScreen.js`); skips straight to closing
+  if no `navigation` prop is given, so nothing breaks for any caller that doesn't pass one.
+- Two real, pre-existing bugs found and fixed while building this (unrelated to the feature,
+  same pattern as the duplicate-import fix from the Gathering Detail pass):
+  - `SelectGatheringLocationScreen.js` had a leftover `Alert.alert('DEBUG', ...)` firing on
+    every render — was popping a debug alert every single time a host tried to set a custom
+    gathering location.
+  - `GatheringFeedbackPrompt.js` (the inline 👍/👎 prompt on past attending gathering cards) was
+    calling `submitGatheringFeedback(gatheringId, feltWelcoming, wouldAttendAgain)` with two
+    positional booleans, but the function's actual signature takes a single options object
+    (`{ feltWelcoming, wouldAttendAgain, ... }`). Destructuring a bare `true` off that silently
+    produced `{feltWelcoming: null, wouldAttendAgain: null}` — every submission through this
+    specific prompt (not the richer `GatheringFeedbackModal`) was recording empty feedback.
+- **Not done yet**: same as Gathering Detail — no manual run-through in a simulator/device.
+  Next session should click through: join a public gathering from Detail (banner → full hub),
+  tap an ice breaker (chat prefill), tap "I'm On My Way" then "check in" (minimal mode), and
+  the post-feedback "what's next" chips, on both iOS and Android.
+
 ## Outstanding: Gathering Detail Screen ("Can I see myself here?" redesign)
 
 Closed against a second user-supplied vision doc — this one about what happens after tapping

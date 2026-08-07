@@ -24,7 +24,7 @@ export default function GatheringFeedbackPrompt({ gatheringId }) {
 
   async function handleAnswer(feltWelcoming, wouldAttendAgain) {
     try {
-      await submitGatheringFeedback(gatheringId, feltWelcoming, wouldAttendAgain);
+      await submitGatheringFeedback(gatheringId, { feltWelcoming, wouldAttendAgain });
       setSubmitted(true);
     } catch (e) {
       // fail quietly, this is a nice-to-have, not critical

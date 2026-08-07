@@ -355,6 +355,7 @@ export default function HomeScreen({ navigation }) {
       <GatheringFeedbackModal
         visible={!!unratedGathering}
         gatheringId={unratedGathering?.id}
+        navigation={navigation}
         onClose={() => setUnratedGathering(null)}
       />
     </SafeAreaView>

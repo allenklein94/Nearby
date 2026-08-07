@@ -10,7 +10,7 @@ import { spacing, radius, typography } from '../theme';
 import { Alert } from 'react-native';
 
 export default function GatheringChatScreen({ route }) {
-  const { gatheringId, gatheringTitle } = route.params;
+  const { gatheringId, gatheringTitle, draftText } = route.params;
   const { colors } = useTheme();
   const [postingStory, setPostingStory] = useState(false);
   const [suggestingOffers, setSuggestingOffers] = useState(false);
@@ -86,7 +86,7 @@ export default function GatheringChatScreen({ route }) {
   }
   const styles = getStyles(colors);
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(draftText ?? '');
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);

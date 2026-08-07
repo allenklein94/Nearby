@@ -19,19 +19,37 @@ const GREAT_BECAUSE_OPTIONS = [
   { value: 'host', label: 'Host' },
 ];
 
+// "What next" chips reuse the exact category tags getQuickPrompts()
+// already maps these same labels to (see timeContext.js), so tapping
+// one prefills CreateGathering the same way Home's quick-action chips
+// do — no new category vocabulary invented here.
+const NEXT_STEP_OPTIONS = [
+  { icon: '☕', label: 'Coffee', category: 'Coffee' },
+  { icon: '🍽️', label: 'Dinner', category: 'Foodie' },
+  { icon: '🚶', label: 'Another walk', category: 'Outdoors' },
+];
+
 // Behavior teaches the app more than a bio ever could — this is
 // deliberately asked only after someone's actually attended
 // something, never before, and it's the only post-gathering prompt
 // they'll see for this specific event.
-export default function GatheringFeedbackModal({ visible, gatheringId, onClose }) {
+export default function GatheringFeedbackModal({ visible, gatheringId, navigation, onClose }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [satisfaction, setSatisfaction] = useState(null);
   const [greatBecause, setGreatBecause] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState('rate');
 
   function toggleGreatBecause(value) {
     setGreatBecause((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  }
+
+  function handleClose() {
+    setSatisfaction(null);
+    setGreatBecause([]);
+    setStep('rate');
+    onClose();
   }
 
   async function handleSubmit() {
@@ -44,13 +62,64 @@ export default function GatheringFeedbackModal({ visible, gatheringId, onClose }
       // worth blocking or alarming someone over if it doesn't save.
     }
     setSubmitting(false);
-    setSatisfaction(null);
-    setGreatBecause([]);
-    onClose();
+    // Only worth asking "what's next" if we actually have somewhere
+    // useful to send them (navigation) — otherwise just close, same
+    // as before this was added.
+    if (navigation) {
+      setStep('next');
+    } else {
+      handleClose();
+    }
+  }
+
+  function handleNextStep(option) {
+    handleClose();
+    navigation.navigate('CreateGathering', { quickStartTitle: option.label, quickStartCategory: option.category });
+  }
+
+  function handleJoinNextWeek() {
+    handleClose();
+    navigation.navigate('Gatherings');
+  }
+
+  if (step === 'next') {
+    return (
+      <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.title}>Anything you'd like to do next?</Text>
+            <View style={styles.chipsWrap}>
+              {NEXT_STEP_OPTIONS.map((o) => (
+                <TouchableOpacity
+                  key={o.label}
+                  style={styles.chip}
+                  onPress={() => handleNextStep(o)}
+                  accessibilityLabel={o.label}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.chipText}>{o.icon} {o.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.chip}
+                onPress={handleJoinNextWeek}
+                accessibilityLabel="Join a gathering next week"
+                accessibilityRole="button"
+              >
+                <Text style={styles.chipText}>📅 Join next week</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.lg }} accessibilityLabel="Not now" accessibilityRole="button">
+              <Text style={styles.skipText}>Not now</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>How was it?</Text>
@@ -106,7 +175,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, onClose }
           >
             <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.sm }} accessibilityLabel="Skip" accessibilityRole="button">
+          <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.sm }} accessibilityLabel="Skip" accessibilityRole="button">
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
         </View>

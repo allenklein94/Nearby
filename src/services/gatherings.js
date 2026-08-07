@@ -414,7 +414,7 @@ export async function getMostRecentUnratedGathering() {
 
   const { data: attended } = await supabase
     .from('gathering_interest')
-    .select('gatherings!inner(id, title, scheduled_at)')
+    .select('gatherings!inner(id, title, scheduled_at, interest_tag)')
     .eq('user_id', myId)
     .eq('status', 'approved')
     .lt('gatherings.scheduled_at', now.toISOString())
@@ -700,7 +700,7 @@ export async function getGatheringById(gatheringId) {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(id, display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, profiles(id, display_name, photo_url))`)
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(id, display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, on_my_way_at, checked_in_at, profiles(id, display_name, photo_url, interests))`)
     .eq('id', gatheringId)
     .single();
 
@@ -722,6 +722,8 @@ export async function getGatheringById(gatheringId) {
 
   let distanceLabel = null;
   let distanceMiles = null;
+  let latitude = null;
+  let longitude = null;
   const { status: locStatus } = await Location.getForegroundPermissionsAsync();
   if (locStatus === 'granted') {
     const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
@@ -735,6 +737,11 @@ export async function getGatheringById(gatheringId) {
       distanceLabel = distanceMiles !== null
         ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
         : null;
+      // Same fuzzed coordinates the map view already uses (never the
+      // real precise_lat/lng) — good enough for a local weather lookup,
+      // which doesn't need house-level precision.
+      latitude = distances?.[0]?.fuzzed_lat ?? null;
+      longitude = distances?.[0]?.fuzzed_lng ?? null;
     }
   }
 
@@ -742,10 +749,14 @@ export async function getGatheringById(gatheringId) {
     ...data,
     approvedAttendees,
     myStatus: myInterest?.status ?? null,
+    myAttendee: myInterest,
     isHost: data.host_id === userId,
     matchesYourInterests: data.interest_tag ? myInterests.includes(data.interest_tag) : false,
     distanceLabel,
     distanceMiles,
+    latitude,
+    longitude,
+    myInterests,
   };
 }
 
@@ -858,4 +869,31 @@ export async function stopRecurringSeries(gatheringId) {
 export async function cancelGathering(gatheringId) {
   const { error } = await supabase.from('gatherings').delete().eq('id', gatheringId);
   if (error) throw error;
+}
+
+// Gathering Hub: the live, day-of experience shown after joining. See
+// 20260807_gathering_hub.sql — self-reported taps only, no GPS tracking.
+export async function setGatheringOnMyWay(gatheringId) {
+  const { error } = await supabase.rpc('set_gathering_on_my_way', { gathering_id_param: gatheringId });
+  if (error) throw error;
+}
+
+export async function checkInToGathering(gatheringId) {
+  const { error } = await supabase.rpc('check_in_to_gathering', { gathering_id_param: gatheringId });
+  if (error) throw error;
+}
+
+// Exact coordinates, gated server-side to the host or an approved
+// attendee — see get_gathering_meetup_point's own comment for why this
+// is a deliberate, narrow exception to "the client never gets
+// precise_lat/lng" rather than a change to that rule.
+export async function getGatheringMeetupPoint(gatheringId) {
+  const { data, error } = await supabase.rpc('get_gathering_meetup_point', { gathering_id_param: gatheringId });
+  if (error) {
+    console.error('getGatheringMeetupPoint error', error);
+    return null;
+  }
+  const point = data?.[0];
+  if (!point || point.latitude == null || point.longitude == null) return null;
+  return { latitude: point.latitude, longitude: point.longitude };
 }

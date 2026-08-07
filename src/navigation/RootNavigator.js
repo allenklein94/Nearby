@@ -41,6 +41,7 @@ import NoticesScreen from '../screens/NoticesScreen';
 import MatchesScreen from '../screens/MatchesScreen';
 import GatheringsScreen from '../screens/GatheringsScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
+import GatheringHubScreen from '../screens/GatheringHubScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
@@ -275,6 +276,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Nearby" component={DiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringDetail" component={GatheringDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="GatheringHub" component={GatheringHubScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: 'Activity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringChat" component={GatheringChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.gatheringTitle ?? 'Group Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />

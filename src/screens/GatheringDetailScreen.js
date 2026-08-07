@@ -125,6 +125,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
     try {
       await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed', { source: 'detail_screen' });
+      if (gathering.is_public) {
+        // Auto-approved gatherings land straight in the Gathering Hub —
+        // the live, day-of experience — rather than back on this
+        // persuade-you-to-join page. Host-approval gatherings stay here
+        // showing the pending panel, since there's nothing to enter yet.
+        navigation.replace('GatheringHub', { gatheringId, justJoined: true });
+        return;
+      }
       await load();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -341,12 +349,20 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <Text style={styles.youreInSub}>Say hello before it starts?</Text>
               <TouchableOpacity
                 style={styles.sayHelloButton}
-                onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
+                onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
                 activeOpacity={0.85}
+                accessibilityLabel="Open the Gathering Hub"
+                accessibilityRole="button"
+              >
+                <Text style={styles.sayHelloButtonText}>Open Gathering Hub →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}
+                style={{ marginTop: spacing.sm }}
                 accessibilityLabel="Open group chat and say hello"
                 accessibilityRole="button"
               >
-                <Text style={styles.sayHelloButtonText}>💬 Say Hello</Text>
+                <Text style={styles.sayHelloLink}>💬 Say Hello</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'pending' ? (
@@ -457,6 +473,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   youreInSub: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.md },
   sayHelloButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
   sayHelloButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  sayHelloLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   pendingPanel: {
     marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, alignItems: 'center',

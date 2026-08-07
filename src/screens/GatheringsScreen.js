@@ -995,11 +995,11 @@ export default function GatheringsScreen({ navigation, route }) {
                 {!isPast && (
                   <TouchableOpacity
                     style={styles.groupChatButton}
-                    onPress={() => navigation.navigate('GatheringChat', { gatheringId: item.id, gatheringTitle: item.title })}
-                    accessibilityLabel={`Open group chat for ${item.title}`}
+                    onPress={() => navigation.navigate('GatheringHub', { gatheringId: item.id })}
+                    accessibilityLabel={`Open the Gathering Hub for ${item.title}`}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
+                    <Text style={styles.groupChatButtonText}>🚀 Gathering Hub</Text>
                   </TouchableOpacity>
                 )}
                 {isExpanded && !isPast && (
@@ -1152,14 +1152,24 @@ export default function GatheringsScreen({ navigation, route }) {
                 </View>
                 <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
                 {!isPast && (
-                  <TouchableOpacity
-                    style={styles.groupChatButton}
-                    onPress={() => navigation.navigate('GatheringChat', { gatheringId: item.id, gatheringTitle: item.title })}
-                    accessibilityLabel={`Open group chat for ${item.title}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
-                  </TouchableOpacity>
+                  <View style={styles.hostingHubRow}>
+                    <TouchableOpacity
+                      style={[styles.groupChatButton, { flex: 1 }]}
+                      onPress={() => navigation.navigate('GatheringChat', { gatheringId: item.id, gatheringTitle: item.title })}
+                      accessibilityLabel={`Open group chat for ${item.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.groupChatButton, { flex: 1 }]}
+                      onPress={() => navigation.navigate('GatheringHub', { gatheringId: item.id })}
+                      accessibilityLabel={`Open the Gathering Hub for ${item.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.groupChatButtonText}>🚀 Hub</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
                 {item.interested?.length > 0 ? (
                   item.interested.map((interest) => (
@@ -1371,7 +1381,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
-  groupChatButtonText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700' },
+  groupChatButtonText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  hostingHubRow: { flexDirection: 'row', gap: spacing.sm },
   fellowSection: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   fellowSectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   fellowEmptyText: { color: colors.textTertiary, fontSize: 13 },
