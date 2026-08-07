@@ -17,10 +17,19 @@ exists but doesn't do the thing):
   public stories only. No people, no communities, no businesses-as-such, no "live activity"
   layer.
 - **Insights** (#13) — **closed this session, see "Outstanding: Insights screen" below.**
-- **Safety — emergency contact + check-in** (#15, half of it) — reporting, blocking, and ID
-  verification all exist (`AdminReportsScreen.js`, `BlockedUsersScreen.js`,
-  `IdVerificationScreen.js`). Emergency contact and a safety check-in flow do not exist
-  anywhere — zero matches for `emergency_contact`/`EmergencyContact`/`safetyCheckIn` in `src/`.
+- **Safety — emergency contact + check-in** (#15) — **closed this session, see "Outstanding:
+  Emergency Contacts" below — and the original audit line here was partly wrong, worth
+  flagging.** It grepped for `emergency_contact`/`EmergencyContact`/`safetyCheckIn` and found
+  nothing, concluding the whole check-in flow didn't exist. In fact a full "Date Safety
+  Check-In" flow already existed under different names — `date_checkins` table,
+  `services/dateSafety.js` (`createCheckIn`/`buildShareMessage`/local scheduled reminder via
+  `expo-notifications`), `DateCheckInModal.js` (also live-location-sharing and one-tap
+  location-snapshot sharing via `expo-location`), wired from `ChatScreen.js` and surfaced back
+  in `MatchesScreen.js` as a post-date "are you safe?" prompt. Same class of mistake this file's
+  own Discover section already warned about — a literal-string grep for the wrong name can miss
+  a real, already-built feature. The one genuinely missing piece was a persistent, reusable
+  emergency contact (name/phone/relationship) instead of picking a share recipient fresh every
+  time — that's what got built.
 - **AI Concierge** (Phase 5) — no natural-language "find me something tonight" flow anywhere.
   Would be this codebase's first real LLM call; every other place that could have used one
   (Home's `getHomeInsight()`, Discover's "Recommended for you") deliberately used real-signal
@@ -153,6 +162,51 @@ Verified via a full `npx expo export --platform ios` (1828 modules, two more tha
 - **Not done yet**: no manual run-through in a simulator/device. Next session should check a
   new-user account (all-zero/empty state, no vibe breakdown, no achievements) and an
   established account with real history render correctly.
+
+## Outstanding: Emergency Contacts (closes remainder of roadmap #15)
+
+As covered in the audit correction above, the date safety check-in flow itself already
+existed (`date_checkins`, `services/dateSafety.js`, `DateCheckInModal.js`) — this pass only
+needed to add a persistent emergency contact and wire it in. Applied to production
+(`enmosvippabmuqslzrox`) and verified live via the Supabase Management API (table + RLS
+policy confirmed to exist, matching `date_checkins`' own owner-scoped policy shape exactly).
+Verified via a full `npx expo export --platform ios` (1830 modules, two more than the prior
+1828 baseline), not yet a simulator/device run.
+
+- New `emergency_contacts` table (`20260807_emergency_contacts.sql`): `id`, `user_id`, `name`,
+  `phone`, `relationship` (nullable), `created_at`. One RLS policy, `for all using (auth.uid()
+  = user_id)` — same shape as `date_checkins`' existing "Users manage their own check-ins"
+  policy, this codebase's established pattern for a personal-safety table with no need for a
+  separate WITH CHECK clause.
+- New `src/services/emergencyContacts.js` (`getMyEmergencyContacts`/`addEmergencyContact`/
+  `deleteEmergencyContact`) + `src/screens/EmergencyContactsScreen.js` (add/list/remove),
+  reachable from a new "🛡️ Emergency Contacts" row in `SettingsScreen.js`'s existing Safety
+  section, alongside Blocked Users/Verify Identity.
+- **The check-in flow itself now uses the saved contact**: `DateCheckInModal.js` gained a
+  `shareWithContact()` helper — when a contact is saved, "Set Up Check-In & Share Plans",
+  "📍 Share My Location Now", and the live-tracking share link now all open the device's own
+  SMS composer pre-addressed to that contact (`Linking.openURL('sms:...')`, checked with
+  `Linking.canOpenURL` first) instead of the generic OS share sheet requiring the user to pick
+  a recipient fresh each time. Falls back to the original `Share.share()` behavior if no
+  contact is saved or `sms:` can't be opened (e.g. a device with no SMS capability), so nothing
+  regresses for a user who hasn't set one up. When no contact exists, the modal shows an inline
+  "add one →" link straight to the new Settings screen. `DateCheckInModal` gained an optional
+  `navigation` prop for this (wired from its one real caller, `ChatScreen.js`); the link simply
+  doesn't render if it's omitted, so nothing breaks for a hypothetical caller that doesn't pass
+  one.
+- **Deliberately not built**: any automatic/backend-triggered alert to the emergency contact
+  (e.g. auto-texting them if the user doesn't check in by the scheduled time). This app has no
+  SMS/email-sending infrastructure at all — grepped for `twilio`/`resend`/`sendgrid`/`smtp` in
+  both `src/` and `supabase/`, zero hits; the only outbound-delivery mechanism that exists is
+  Expo push notifications to devices already running this app, which an emergency contact who
+  isn't a Nearby user can't receive. Building real automatic delivery needs a new third-party
+  integration (its own API key, account, cost) and is a materially different, more sensitive
+  feature — same treatment as the Stripe billing gap elsewhere in this file, not something to
+  fake by silently only-notifying-if-the-contact-happens-to-have-the-app.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check:
+  adding/removing a contact, that the SMS composer actually opens pre-addressed and pre-filled
+  on a real device (the `sms:` deep link can't be verified from this sandboxed environment),
+  and that the share-sheet fallback still works with zero contacts saved.
 
 ## Outstanding: Business Profile (public-facing screen, closes roadmap #9)
 

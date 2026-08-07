@@ -1304,6 +1304,7 @@ export default function ChatScreen({ route, navigation }) {
         onClose={() => setCheckInModalVisible(false)}
         matchId={matchId}
         matchName={otherUser?.display_name || 'this person'}
+        navigation={navigation}
       />
 
       <ReportBlockModal

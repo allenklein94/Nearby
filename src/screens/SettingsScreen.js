@@ -757,6 +757,17 @@ export default function SettingsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('EmergencyContacts')}
+          activeOpacity={0.85}
+          accessibilityLabel="Emergency contacts"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🛡️ Emergency Contacts</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
           onPress={() => navigation.navigate('RelationshipEmergencyKit')}
           activeOpacity={0.85}
           accessibilityLabel="Relationship Emergency Kit"

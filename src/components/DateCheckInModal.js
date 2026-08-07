@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Platform, Alert, Share, Linking, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import { createCheckIn, buildShareMessage } from '../services/dateSafety';
 import { startLiveTracking, stopLiveTracking, getMyActiveLiveTrackingSession } from '../services/liveTracking';
+import { getMyEmergencyContacts } from '../services/emergencyContacts';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-export default function DateCheckInModal({ visible, onClose, matchId, matchName }) {
+export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation }) {
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 2 * 60 * 60 * 1000));
@@ -17,12 +18,31 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
   const [activeLiveSession, setActiveLiveSession] = useState(null);
   const [startingTracking, setStartingTracking] = useState(false);
   const [stoppingTracking, setStoppingTracking] = useState(false);
+  const [emergencyContact, setEmergencyContact] = useState(null);
 
   React.useEffect(() => {
     if (visible) {
       getMyActiveLiveTrackingSession().then(setActiveLiveSession);
+      getMyEmergencyContacts().then((contacts) => setEmergencyContact(contacts[0] ?? null));
     }
   }, [visible]);
+
+  // Texts the saved contact directly (via the device's own SMS composer —
+  // still a real tap the user has to send, no backend delivery) when one
+  // exists; otherwise falls back to the generic share sheet, same as before
+  // this contact feature existed.
+  async function shareWithContact(message) {
+    if (emergencyContact?.phone) {
+      const separator = Platform.OS === 'ios' ? '&' : '?';
+      const url = `sms:${emergencyContact.phone}${separator}body=${encodeURIComponent(message)}`;
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return;
+      }
+    }
+    await Share.share({ message });
+  }
 
   async function handleStartLiveTracking() {
     setStartingTracking(true);
@@ -35,9 +55,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
       }
       const { sessionId, shareUrl, expiresAt } = await startLiveTracking(3);
       setActiveLiveSession({ id: sessionId, expires_at: expiresAt });
-      await Share.share({
-        message: `I'm sharing my live location with you for the next few hours as a safety check-in: ${shareUrl}`,
-      });
+      await shareWithContact(`I'm sharing my live location with you for the next few hours as a safety check-in: ${shareUrl}`);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -61,7 +79,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
       await createCheckIn({ matchId, matchName, scheduledAt: scheduledAt.toISOString() });
 
       const message = buildShareMessage(matchName, scheduledAt.toISOString());
-      await Share.share({ message });
+      await shareWithContact(message);
 
       Alert.alert(
         "You're all set",
@@ -93,9 +111,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
       const { latitude, longitude } = location.coords;
       const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
 
-      await Share.share({
-        message: `I'm currently here — sharing my location while I'm out with ${matchName || 'someone'}: ${mapsUrl}`,
-      });
+      await shareWithContact(`I'm currently here — sharing my location while I'm out with ${matchName || 'someone'}: ${mapsUrl}`);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -110,6 +126,15 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName 
           <Text style={styles.description}>
             Set a time for your date. We'll check in with you afterward, and you can share your plans with a trusted contact.
           </Text>
+          {emergencyContact ? (
+            <Text style={styles.contactHint}>Sharing will text {emergencyContact.name}.</Text>
+          ) : (
+            navigation && (
+              <TouchableOpacity onPress={() => { onClose(); navigation.navigate('EmergencyContacts'); }} accessibilityRole="button">
+                <Text style={styles.contactHintLink}>No emergency contact saved yet — add one →</Text>
+              </TouchableOpacity>
+            )
+          )}
 
           <Text style={styles.label}>When are you meeting?</Text>
           <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
@@ -164,7 +189,9 @@ const getStyles = (colors) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
-  description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
+  description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 20 },
+  contactHint: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
+  contactHintLink: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: spacing.lg },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs },
   input: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center' },
