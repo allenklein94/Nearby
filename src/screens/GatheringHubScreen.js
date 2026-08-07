@@ -9,6 +9,7 @@ import {
   checkInToGathering,
   getFirstTimerAttendeeIds,
   hasSubmittedFeedback,
+  getHostStats,
 } from '../services/gatherings';
 import { getSocialForecast } from '../services/homeDashboard';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -54,6 +55,7 @@ export default function GatheringHubScreen({ route, navigation }) {
   const [checkInBusy, setCheckInBusy] = useState(false);
   const [showJoinedBanner, setShowJoinedBanner] = useState(!!justJoined);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
+  const [hostStats, setHostStats] = useState(null);
 
   const load = useCallback(async () => {
     const g = await getGatheringById(gatheringId);
@@ -72,6 +74,10 @@ export default function GatheringHubScreen({ route, navigation }) {
       ).then((entries) => setAttendeePhotoUrls(Object.fromEntries(entries.filter(Boolean))));
 
       getFirstTimerAttendeeIds(gatheringId, others.map((a) => a.user_id)).then((ids) => setFirstTimerIds(new Set(ids)));
+    }
+
+    if (g.host_id) {
+      getHostStats(g.host_id).then(setHostStats);
     }
 
     if (g.isHost || g.myStatus === 'approved') {
@@ -159,13 +165,25 @@ export default function GatheringHubScreen({ route, navigation }) {
   const countdown = getCountdownLabel(gathering.scheduled_at);
   const isOver = countdown === null;
 
-  function meetPersonLine(attendee) {
-    if (attendee.user_id === gathering.host_id) return 'Organizer';
-    if (firstTimerIds.has(attendee.user_id)) return 'First time here';
+  // Every true fact stacks (matches the vision doc's own example, where
+  // Sarah gets both a shared-interest line and "First time here" at
+  // once) — this only ever picks from real signals already fetched
+  // above, never a single best-guess line.
+  function meetPersonLines(attendee) {
+    const lines = [];
+    if (attendee.user_id === gathering.host_id) {
+      lines.push('Organizer');
+      if (hostStats?.gatherings_hosted > 0) {
+        lines.push(`Hosted ${hostStats.gatherings_hosted} gathering${hostStats.gatherings_hosted === 1 ? '' : 's'}`);
+      }
+      return lines;
+    }
     const theirInterests = attendee.profiles?.interests ?? [];
     const shared = (gathering.myInterests ?? []).filter((i) => theirInterests.includes(i));
-    if (shared.length > 0) return `Also into ${shared.slice(0, 2).join(' and ')}`;
-    return `Going to ${gathering.title}`;
+    if (shared.length > 0) lines.push(`Also into ${shared.slice(0, 2).join(' and ')}`);
+    if (firstTimerIds.has(attendee.user_id)) lines.push('First time here');
+    if (lines.length === 0) lines.push(`Going to ${gathering.title}`);
+    return lines;
   }
 
   return (
@@ -259,7 +277,9 @@ export default function GatheringHubScreen({ route, navigation }) {
                     )}
                     <View>
                       <Text style={styles.meetName}>{a.profiles?.display_name}</Text>
-                      <Text style={styles.meetLine}>{meetPersonLine(a)}</Text>
+                      {meetPersonLines(a).map((line, i) => (
+                        <Text key={i} style={styles.meetLine}>{line}</Text>
+                      ))}
                     </View>
                   </TouchableOpacity>
                 ))}

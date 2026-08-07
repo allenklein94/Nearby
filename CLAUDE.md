@@ -27,11 +27,16 @@ against the live database via `set_config('request.jwt.claims', ...)`.
   tab (replaces the old per-card "Group Chat" button, since Hub's own Group Chat entry covers
   that) and hosting tab (added alongside the existing Group Chat button, so hosts can check
   who's on their way/checked in without losing direct chat access).
-- **Who You'll Meet**: up to 5 fellow approved attendees with one honest personalized line each
-  — real shared-interest overlap (`profiles.interests` intersection, same pattern as
-  `compatibility.js`/`ChatScreen.js`'s existing shared-interest suggestions), the existing
-  `getFirstTimerAttendeeIds()` flag, or "Organizer" for the host. Falls back to "Going to
-  {title}" rather than fabricating a reason when none of those apply.
+- **Who You'll Meet**: up to 5 fellow approved attendees, each showing *every* true honest fact
+  that applies (stacked, not just the first match — matches the vision doc's own example, where
+  Sarah gets both a shared-interest line and "First time here" at once): real shared-interest
+  overlap (`profiles.interests` intersection, same pattern as `compatibility.js`/
+  `ChatScreen.js`'s existing shared-interest suggestions), the existing
+  `getFirstTimerAttendeeIds()` flag, and for the host specifically "Organizer" plus a real
+  `getHostStats()` "Hosted N gatherings" line (same RPC already shown on Detail). Falls back to
+  "Going to {title}" only when nothing else applies. The vision doc's "Lives nearby" line for
+  non-host attendees was **not** built — checked live, `profiles` has no lat/lng/location column
+  at all, so there is no real per-attendee proximity signal to draw from.
 - **Ice Breakers**: static, category-keyed conversation starters
   (`src/constants/gatheringHubContent.js`) — deliberately not a real AI/LLM call, same
   no-new-API-cost tradeoff already made for Home's `getHomeInsight()`. Tapping one deep-links to
@@ -73,7 +78,15 @@ against the live database via `set_config('request.jwt.claims', ...)`.
   in `timeContext.js`, so they prefill `CreateGathering` the same way Home's quick-action chips
   do) plus "Join next week" (browses `Gatherings`). Requires a new `navigation` prop, now passed
   from both its call sites (`HomeScreen.js`, `GatheringHubScreen.js`); skips straight to closing
-  if no `navigation` prop is given, so nothing breaks for any caller that doesn't pass one.
+  if no `navigation` prop is given, so nothing breaks for any caller that doesn't pass one. The
+  vision doc's exact rating copy ("Did tonight make your day better?" / Absolutely / Yes) was
+  **not** substituted in — the modal's existing "How was it?" four-option scale (loved it/good/
+  okay/not for me, from an earlier pass) is a different, already-human-framed question, and
+  changing its wording wasn't attempted since the wording doesn't feed `get_host_reputation`
+  (that RPC reads `felt_welcoming`/`would_attend_again` from the separate inline
+  `GatheringFeedbackPrompt` widget, not `satisfaction_rating`) — no functional coupling, just an
+  intentionally unmodified pre-existing question left as the user finds it. Revisit only if the
+  literal copy actually matters to whoever's reading this.
 - Two real, pre-existing bugs found and fixed while building this (unrelated to the feature,
   same pattern as the duplicate-import fix from the Gathering Detail pass):
   - `SelectGatheringLocationScreen.js` had a leftover `Alert.alert('DEBUG', ...)` firing on
