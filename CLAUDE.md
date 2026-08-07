@@ -86,14 +86,19 @@ seven previously-unconfirmed items now checked, none left unverified**:
   audit here (grepping for `loyalt|reward.?point|tier|streak|unlock|threshold`, all unrelated
   hits) was accurate — confirmed again via a dedicated research pass before building — zero
   loyalty/points/tier/group-unlock mechanics existed anywhere.
-- **Settings** (#16) — **Payments: partial gap; Business Mode: real gap.** Real sections
-  confirmed in `SettingsScreen.js`: Looking For, Appearance, Language, Notifications, Privacy,
-  Discovery Preferences, Account, Connect, Safety, Reflection Tools, Account & Billing, Help &
-  Legal. "Account & Billing" (line 814) has exactly one row — "Manage Subscription" →
-  `Paywall` — no payment-methods list or billing-history/receipts UI. No personal/business
-  account-view toggle exists at all; what's there instead is a "Partner With Us" application
-  row plus admin-only Business Dashboard/Requests rows — a business-partner *application*
-  flow, not a business-mode *switch* for an existing business account.
+- **Settings** (#16) — **Payments: still a partial gap. Business Mode: the original audit line
+  was wrong — closed this session, see "Outstanding: Settings Business Mode link" below.** Real
+  sections confirmed in `SettingsScreen.js`: Looking For, Appearance, Language, Notifications,
+  Privacy, Discovery Preferences, Account, Connect, Safety, Reflection Tools, Account & Billing,
+  Help & Legal. "Account & Billing" (line 814) has exactly one row — "Manage Subscription" →
+  `Paywall` — no payment-methods list or billing-history/receipts UI, still a real gap. The
+  "no personal/business toggle exists at all" claim was **false** — `ProfileScreen.js:510-520`
+  already had a real, fully-wired "🏪 Switch to Business" button (gated on
+  `profiles.managed_partner_id`, added `git log`-confirmed **Jul 31 2026, a week before this
+  Aug 7 audit**), navigating to `BusinessDashboard`, which itself loads via the caller's own
+  `getMyManagedPartner()` — not gated on admin status internally. The audit only ever checked
+  `SettingsScreen.js` and never grepped `ProfileScreen.js`, same class of miss this file has now
+  caught four separate times (Safety, AI Concierge, Business RPC ownership, now this).
 - **Profile** (#5) — **closed this session, see "Outstanding: Memory Vault → Profile link"
   below.** `ProfileScreen.js:432-437` has a real, prominent "📖 View Your Timeline" button
   (`navigation.navigate('Timeline')`) — Timeline is one tap from Profile, satisfies the doc.
@@ -203,6 +208,34 @@ to production (`enmosvippabmuqslzrox`) and applied there, not just written local
   non-Premium account and confirm the "This is a Premium feature." message surfaces cleanly;
   and confirm hitting the shared daily AI-use cap surfaces the 429 message correctly instead of
   a raw error.
+
+## Outstanding: Settings Business Mode link (closes roadmap #16 Business Mode half)
+
+The real "personal ↔ business" switch already existed before this session (`ProfileScreen.js`'s
+"🏪 Switch to Business" button, `managesBusiness` gated on `profiles.managed_partner_id`) — the
+roadmap audit's claim that no toggle existed at all was wrong, corrected above. What was
+actually missing, confirmed by reading `SettingsScreen.js` directly: its own Business Dashboard
+row was gated on `isAdmin` only, with zero awareness of `managed_partner_id` — a non-admin
+business owner had no path into their dashboard from Settings at all (Profile was their only
+way in), and the "Partner With Us" row always showed the application flow even to someone
+who's already an approved partner.
+
+- `SettingsScreen.js` now loads `managed_partner_id` from the same already-fetched `profiles`
+  row (`select('*')` at line 80 already returned it — just wasn't read into state) into a new
+  `managesBusiness` boolean, mirroring `ProfileScreen.js`'s own naming/pattern exactly.
+- The "Partner With Us" row now conditionally renders as "🏪 Manage Your Business" →
+  `BusinessDashboard` when `managesBusiness` is true, falling back to the original "Partner With
+  Us" → `BusinessPartnerApply` application flow otherwise — so an existing partner is never
+  shown an "apply to become a partner" prompt for a business they already run.
+  The existing `isAdmin`-gated "Business Dashboard (Admin)" row was left untouched (an admin who
+  also happens to manage a business will now see both rows — a minor, acceptable overlap, not a
+  new bug — the admin row's own purpose was never about the caller's own business specifically).
+- Verified via a babel compile of the touched file and a full `npx expo export --platform ios`
+  (1837 modules, unchanged — an edit to an existing file, no new files this pass).
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check: a
+  regular user sees "Partner With Us" as before, an approved business owner sees "🏪 Manage Your
+  Business" and it correctly opens their own dashboard, and an admin who is also a business
+  owner sees both rows without confusion.
 
 ## Outstanding: Rewards (closes roadmap #11)
 

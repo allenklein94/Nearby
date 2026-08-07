@@ -52,6 +52,7 @@ export default function SettingsScreen({ navigation }) {
   const [e164NewPhone, setE164NewPhone] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [managesBusiness, setManagesBusiness] = useState(false);
 
   useEffect(() => {
     load();
@@ -94,6 +95,7 @@ export default function SettingsScreen({ navigation }) {
       setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
+      setManagesBusiness(!!data.managed_partner_id);
     }
   }
 
@@ -880,16 +882,29 @@ export default function SettingsScreen({ navigation }) {
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('BusinessPartnerApply')}
-          activeOpacity={0.85}
-          accessibilityLabel="Apply to partner your business"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>Partner With Us</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
+        {managesBusiness ? (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('BusinessDashboard')}
+            activeOpacity={0.85}
+            accessibilityLabel="Manage your business"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>🏪 Manage Your Business</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('BusinessPartnerApply')}
+            activeOpacity={0.85}
+            accessibilityLabel="Apply to partner your business"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>Partner With Us</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
         {isAdmin && (
           <TouchableOpacity
             style={styles.rowButtonCard}
