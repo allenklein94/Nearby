@@ -16,9 +16,7 @@ exists but doesn't do the thing):
 - **Unified Map Experience** (#10) — `GatheringsMapView.js` plots gatherings + brand deals +
   public stories only. No people, no communities, no businesses-as-such, no "live activity"
   layer.
-- **Insights** (#13, user-facing "you've attended 18 gatherings") — no dedicated screen. Real
-  stats exist but are scattered inside `ProfileScreen.js` (`getProfileQuickStats`/
-  `getEarnedProfileStats`), not surfaced as their own Insights experience.
+- **Insights** (#13) — **closed this session, see "Outstanding: Insights screen" below.**
 - **Safety — emergency contact + check-in** (#15, half of it) — reporting, blocking, and ID
   verification all exist (`AdminReportsScreen.js`, `BlockedUsersScreen.js`,
   `IdVerificationScreen.js`). Emergency contact and a safety check-in flow do not exist
@@ -127,6 +125,34 @@ This is the change that was in progress when the codespace restarted mid-session
 - **Not done yet**: no manual run-through in a simulator/device. Next session should check
   the list renders real matches/counts, tapping through opens the right per-match vault,
   and the zero-matches empty state.
+
+## Outstanding: Insights screen (closes roadmap #13)
+
+Closed against the confirmed real gap: no dedicated Insights screen existed, real stats
+were scattered inside `ProfileScreen.js` (`getProfileQuickStats`/`getEarnedProfileStats`).
+Verified via a full `npx expo export --platform ios` (1828 modules, two more than the prior
+1826 baseline — the new `InsightsScreen.js` + `insights.js`), not yet a simulator/device run.
+
+- New `src/services/insights.js` — `getInsightsStats()` is purely an aggregator, no new
+  queries beyond one extra: reuses `getProfileQuickStats()`/`getEarnedProfileStats()`/
+  `getAchievements()` as-is, adds `hostedCount`/`communitiesCreated`/`memberSince` (each a
+  single real count/column already used elsewhere in this file, e.g. `getAchievements`'s own
+  internal `hostedCount` query, just now also returned instead of staying internal), and a
+  `vibeBreakdown` — real per-`interest_tag` counts across the caller's own past approved
+  `gathering_interest` rows, same source table `getEarnedProfileStats`'s `favoriteVibe` already
+  reads, just kept as a full breakdown instead of collapsed to the single top tag.
+- New `src/screens/InsightsScreen.js` + `Insights` route (`RootNavigator.js`), reachable from
+  a new "📊 Your Insights" row on `ProfileScreen.js`, same `timelineLink` style as the Timeline
+  and Memory Vault rows added directly above it. Shows: a stat grid (gatherings attended/
+  hosted, communities joined, friends made), favorite vibe/usually-active (same earned-stats
+  cards already on Profile), a "what you've been up to" bar breakdown per category using the
+  existing `categoryStyleFor()` icons/colors, and the full achievements grid — unlike
+  Profile's grid (earned-only), this one also renders locked achievements at reduced opacity
+  so there's an honest "N/total" count, since every achievement's earn condition is already a
+  real, non-fabricated threshold (`getAchievements()`'s own existing convention).
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check a
+  new-user account (all-zero/empty state, no vibe breakdown, no achievements) and an
+  established account with real history render correctly.
 
 ## Outstanding: Business Profile (public-facing screen, closes roadmap #9)
 
