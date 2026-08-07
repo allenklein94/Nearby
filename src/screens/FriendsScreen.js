@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest, getSuggestedFriends } from '../services/friends';
+import { getMyCircles, createCircle, deleteCircle, addFriendToCircle, removeFriendFromCircle } from '../services/friendCircles';
 import { findFriendsFromContacts } from '../services/contactsImport';
 import StoriesRow from '../components/StoriesRow';
 import { Share } from 'react-native';
@@ -22,12 +23,22 @@ export default function FriendsScreen({ navigation }) {
   const [requestedIds, setRequestedIds] = useState({});
   const [notOnAppContacts, setNotOnAppContacts] = useState([]);
   const [suggestedFriends, setSuggestedFriends] = useState([]);
+  const [circles, setCircles] = useState([]);
+  const [selectedCircleId, setSelectedCircleId] = useState(null);
+  const [newCircleModalVisible, setNewCircleModalVisible] = useState(false);
+  const [newCircleName, setNewCircleName] = useState('');
+  const [manageCirclesFor, setManageCirclesFor] = useState(null);
+
+  const loadCircles = useCallback(async () => {
+    setCircles(await getMyCircles());
+  }, []);
 
   const load = useCallback(async () => {
     const [friendsList, pendingList, suggested] = await Promise.all([getMyFriends(), getPendingFriendRequests(), getSuggestedFriends()]);
     setFriends(friendsList);
     setPending(pendingList);
     setSuggestedFriends(suggested);
+    loadCircles();
 
     const all = [...friendsList, ...pendingList, ...suggested.map((s) => ({ id: s.suggested_id, photo_url: s.photo_url }))];
     const urlEntries = await Promise.all(
@@ -102,11 +113,55 @@ export default function FriendsScreen({ navigation }) {
     }
   }
 
+  async function handleCreateCircle() {
+    const name = newCircleName.trim();
+    if (!name) return;
+    try {
+      await createCircle(name);
+      setNewCircleName('');
+      setNewCircleModalVisible(false);
+      loadCircles();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  function confirmDeleteCircle(circle) {
+    Alert.alert(`Delete "${circle.name}"?`, 'This only removes the circle, not the friends in it.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          if (selectedCircleId === circle.id) setSelectedCircleId(null);
+          await deleteCircle(circle.id);
+          loadCircles();
+        },
+      },
+    ]);
+  }
+
+  async function handleToggleCircleMembership(circle, friendId) {
+    const isMember = circle.memberIds.includes(friendId);
+    try {
+      if (isMember) {
+        await removeFriendFromCircle(circle.id, friendId);
+      } else {
+        await addFriendToCircle(circle.id, friendId);
+      }
+      loadCircles();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StoriesRow />
       <FlatList
-        data={friends.filter((f) => !friendSearch.trim() || f.display_name?.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
+        data={friends
+          .filter((f) => !friendSearch.trim() || f.display_name?.toLowerCase().includes(friendSearch.trim().toLowerCase()))
+          .filter((f) => !selectedCircleId || circles.find((c) => c.id === selectedCircleId)?.memberIds.includes(f.id))}
         keyExtractor={(item) => item.friendshipId}
         contentContainerStyle={{ padding: spacing.lg }}
         ListHeaderComponent={
@@ -270,7 +325,42 @@ export default function FriendsScreen({ navigation }) {
                 <View style={styles.divider} />
               </>
             )}
-            <Text style={styles.sectionHeader}>Your Friends ({friends.length})</Text>
+            {(circles.length > 0 || friends.length > 0) && (
+              <>
+                <Text style={styles.sectionHeader}>Circles</Text>
+                <View style={styles.circlesRow}>
+                  {circles.map((circle) => {
+                    const active = selectedCircleId === circle.id;
+                    return (
+                      <TouchableOpacity
+                        key={circle.id}
+                        style={[styles.circleChip, active && styles.circleChipActive]}
+                        onPress={() => setSelectedCircleId(active ? null : circle.id)}
+                        onLongPress={() => confirmDeleteCircle(circle)}
+                        accessibilityLabel={`${circle.name}, ${circle.memberIds.length} friends. Long press to delete.`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                      >
+                        <Text style={[styles.circleChipText, active && styles.circleChipTextActive]}>
+                          {circle.name} ({circle.memberIds.length})
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity
+                    style={styles.newCircleChip}
+                    onPress={() => setNewCircleModalVisible(true)}
+                    accessibilityLabel="Create a new circle"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.newCircleChipText}>+ New Circle</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+            <Text style={styles.sectionHeader}>
+              {selectedCircleId ? circles.find((c) => c.id === selectedCircleId)?.name : `Your Friends (${friends.length})`}
+            </Text>
           </>
         }
         ListEmptyComponent={
@@ -284,21 +374,83 @@ export default function FriendsScreen({ navigation }) {
           )
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.friendRow}
-            onPress={() => navigation.navigate('ViewProfile', { userId: item.id })}
-            accessibilityLabel={`View ${item.display_name}'s profile`}
-            accessibilityRole="button"
-          >
-            {photoUrls[item.id] ? (
-              <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]} />
+          <View style={styles.friendRow}>
+            <TouchableOpacity
+              style={styles.personInfo}
+              onPress={() => navigation.navigate('ViewProfile', { userId: item.id })}
+              accessibilityLabel={`View ${item.display_name}'s profile`}
+              accessibilityRole="button"
+            >
+              {photoUrls[item.id] ? (
+                <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]} />
+              )}
+              <Text style={styles.personName}>{item.display_name}</Text>
+            </TouchableOpacity>
+            {circles.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setManageCirclesFor(item)}
+                accessibilityLabel={`Manage circles for ${item.display_name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.circleTagIcon}>🏷️</Text>
+              </TouchableOpacity>
             )}
-            <Text style={styles.personName}>{item.display_name}</Text>
-          </TouchableOpacity>
+          </View>
         )}
       />
+
+      <Modal visible={newCircleModalVisible} animationType="slide" transparent onRequestClose={() => setNewCircleModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>New Circle</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. Work, Fitness, Family, Travel"
+              placeholderTextColor={colors.textTertiary}
+              value={newCircleName}
+              onChangeText={setNewCircleName}
+              autoFocus
+              accessibilityLabel="Circle name"
+            />
+            <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85}>
+              <Text style={styles.modalButtonText}>Create</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={!!manageCirclesFor} animationType="slide" transparent onRequestClose={() => setManageCirclesFor(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Circles for {manageCirclesFor?.display_name}</Text>
+            {circles.length === 0 && <Text style={styles.emptyText}>No circles yet — create one from the Friends screen first.</Text>}
+            {circles.map((circle) => {
+              const isMember = manageCirclesFor && circle.memberIds.includes(manageCirclesFor.id);
+              return (
+                <TouchableOpacity
+                  key={circle.id}
+                  style={styles.circleToggleRow}
+                  onPress={() => handleToggleCircleMembership(circle, manageCirclesFor.id)}
+                  accessibilityLabel={`${circle.name}, ${isMember ? 'in this circle' : 'not in this circle'}`}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isMember }}
+                >
+                  <Text style={styles.circleToggleCheck}>{isMember ? '✓' : ''}</Text>
+                  <Text style={styles.circleToggleName}>{circle.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity onPress={() => setManageCirclesFor(null)} style={{ marginTop: spacing.md }}>
+              <Text style={styles.modalCancelText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -325,9 +477,36 @@ const getStyles = (colors) => StyleSheet.create({
   requestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   personInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   friendRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
+  circleTagIcon: { fontSize: 16, paddingHorizontal: spacing.sm },
+  circlesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  circleChip: {
+    backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+  },
+  circleChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  circleChipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  circleChipTextActive: { color: '#fff' },
+  newCircleChip: {
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+  },
+  newCircleChipText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  modalTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
+  modalInput: {
+    backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md,
+    padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
+  },
+  modalButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
+  modalButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  modalCancelText: { color: colors.textTertiary, textAlign: 'center' },
+  circleToggleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
+  circleToggleCheck: { width: 24, color: colors.primary, fontWeight: '800', fontSize: 16 },
+  circleToggleName: { color: colors.textPrimary, fontSize: 15 },
   avatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},
   personName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },

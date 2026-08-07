@@ -36,8 +36,9 @@ exists but doesn't do the thing):
   heuristics instead, per this file's own existing entries. Needs its own explicit review
   (cost, latency, prompt-injection surface via user-generated titles/descriptions) before
   building, not a silent bolt-on.
-- **Friend Circles** (Phase 5) — `FriendsScreen.js` exists (flat friends list) but no grouping
-  concept (Work/Fitness/Family/Travel) anywhere in the schema or UI.
+- **Friend Circles** (Phase 5) — **closed this session, see "Outstanding: Friend Circles"
+  below.** `FriendsScreen.js` was a flat friends list with no grouping concept (Work/Fitness/
+  Family/Travel) anywhere in the schema or UI.
 - **Momentum** (Phase 5) — no "social momentum" signal/screen anywhere.
 - **Empty-state audit** — **done this session, see "Outstanding: Empty-state audit" below.**
 
@@ -103,6 +104,53 @@ seven previously-unconfirmed items now checked, none left unverified**:
   the same `get_host_stats`/`get_host_reputation` RPCs used elsewhere, mutual friends, shared
   music/interests. No follower/following counts, no feed layout — nothing resembling a
   generic social-network profile. No fabricated numbers found.
+
+## Outstanding: Friend Circles (closes Phase 5 "Friend Circles" gap)
+
+Closed against the confirmed real gap: `FriendsScreen.js` was a flat list with no grouping
+concept (Work/Fitness/Family/Travel) anywhere in the schema or UI. This is real, useful,
+no-invented-signal work — unlike AI Concierge/Momentum below, nothing here needed an LLM call
+or a fabricated metric, so it was built directly instead of flagged for a separate review.
+**This was the change in progress when the codespace restarted mid-session** — found
+`src/services/friendCircles.js` (new) and a modified `src/screens/FriendsScreen.js` already
+finished but uncommitted, plus an unapplied `20260807_friend_circles.sql`. Verified and
+committed this session, not written from scratch.
+
+- New `friend_circles`/`friend_circle_members` tables (`20260807_friend_circles.sql`) — a join
+  table, not a column on friendships, since one friend can belong to several circles (e.g.
+  "Work" and "Fitness" at once) and a circle only ever makes sense relative to its owner's own
+  friend list. `friend_user_id` is intentionally not constrained to an existing friendship row —
+  a lightweight personal label, not a second relationship table to keep in sync. RLS on
+  `friend_circles` is the standard `auth.uid() = user_id` owner-only shape; `friend_circle_members`
+  is owned indirectly through its parent circle's `user_id`, the same indirect-ownership pattern
+  already used elsewhere in this schema for join/detail tables. **Found already applied to
+  production** (`enmosvippabmuqslzrox`) from before the restart — confirmed live via the
+  Supabase Management API rather than re-applying blind (a second `create table` would have
+  errored, which is how this was caught). Re-verified the live column list and both RLS
+  policies match the migration file exactly, then independently re-proved the isolation
+  end-to-end via `set_config('request.jwt.claims', ...)` as two different real profile rows: user
+  A can create a circle and add a member, user B genuinely gets zero rows back querying that
+  circle by id directly.
+- `src/services/friendCircles.js` — plain CRUD (`getMyCircles`/`createCircle`/`deleteCircle`/
+  `addFriendToCircle`/`removeFriendFromCircle`), no RPCs needed since ownership is fully covered
+  by RLS. `getMyCircles()` embeds `friend_circle_members(friend_user_id)` in one query rather
+  than a second round trip, mapped down to a flat `memberIds` array per circle.
+  `addFriendToCircle` swallows Postgres `23505` (unique-violation) so re-adding an already-
+  present member is a harmless no-op instead of a thrown error.
+  **Deliberately not a member-limit-enforcing feature** — no cap on circle count or members per
+  circle, matching this schema's general lack of arbitrary limits elsewhere.
+- `FriendsScreen.js` gained a horizontal "Circles" chip row (tap to filter the friends list to
+  that circle, long-press to delete with a confirm alert), a "+ New Circle" chip opening a
+  create-name modal, and a 🏷️ tag icon per friend row opening a manage-membership modal
+  (checkbox-style toggle per circle). No new route/screen — everything is inline on the
+  existing `Friends` route, since circles are a lens over the same friends list, not a
+  separate surface. The chip row and tag icon are both conditionally rendered (only when
+  circles/friends exist) so a user with none sees the screen exactly as before.
+- Verified via a full `npx expo export --platform ios` (1831 modules, one more than the prior
+  1830 baseline — the new `friendCircles.js`), not yet a simulator/device run.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check:
+  creating a circle, adding/removing friends via the tag icon, filtering by a circle chip,
+  long-press delete, and that a brand-new user with zero circles sees an unchanged screen.
 
 ## Outstanding: Memory Vault → Profile link (closes roadmap #5 partial gap)
 
