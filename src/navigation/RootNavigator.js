@@ -46,6 +46,7 @@ import GatheringHubScreen from '../screens/GatheringHubScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
+import BillingScreen from '../screens/BillingScreen';
 import AdminReportsScreen from '../screens/AdminReportsScreen';
 import ViewProfileScreen from '../screens/ViewProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -253,6 +254,7 @@ export default function RootNavigator() {
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
+            <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: true, title: 'Billing', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
             <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: 'Profile', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

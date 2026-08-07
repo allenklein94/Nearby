@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Linking, Platform } from 'react-native';
-import { getOfferings, purchasePackage, restorePurchases, isPremium } from '../services/purchases';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { getOfferings, purchasePackage, restorePurchases, isPremium, openSubscriptionManagement } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -62,10 +62,7 @@ export default function PaywallScreen({ navigation }) {
   }
 
   function openNativeSubscriptionManagement() {
-    const url = Platform.OS === 'ios'
-      ? 'itms-apps://apps.apple.com/account/subscriptions'
-      : 'https://play.google.com/store/account/subscriptions';
-    Linking.openURL(url).catch(() => {
+    openSubscriptionManagement(null).catch(() => {
       Alert.alert('Could not open', 'Please open your device Settings app and look under Subscriptions to manage your plan.');
     });
   }

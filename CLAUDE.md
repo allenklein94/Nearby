@@ -115,6 +115,71 @@ seven previously-unconfirmed items now checked, none left unverified**:
   music/interests. No follower/following counts, no feed layout — nothing resembling a
   generic social-network profile. No fabricated numbers found.
 
+## Outstanding: Consumer Billing screen (closes remainder of roadmap #16 Payments)
+
+Closed the last real piece of roadmap #16: `SettingsScreen.js`'s "Account & Billing" section
+had exactly one row ("Manage Subscription" → `Paywall`), with "no payment-methods list or
+billing-history/receipts UI" — flagged as a real gap in the Settings audit above and again in
+the "Outstanding: Billing / Monetization" section further below (that section is the
+**business/partner** side — contracts, invoices, Stripe-not-started — this is the unrelated
+**consumer subscription** side, i.e. what a regular user sees about their own Premium plan).
+
+- **Before building anything, checked whether `profiles.is_premium` was even reliable, since a
+  local grep found `purchases.js`'s `purchasePackage`/`isPremium`/`restorePurchases` only ever
+  read/write RevenueCat's own client-side entitlement state and never touch Supabase at all —
+  which would mean a real paying customer's `profiles.is_premium` (the column every actual
+  server-side gate reads, e.g. `ai-concierge`'s premium check, the two RLS policies in
+  `schema.sql`) could stay permanently `false` even after a successful purchase. **This turned
+  out to already be solved**, just not visible locally — same class of miss this file has now
+  flagged five separate times (Safety, AI Concierge, Business RPC ownership, Settings Business
+  Mode, now this): production already has a `set_premium_status(user_id, new_status)` SECURITY
+  DEFINER RPC (granted only to `service_role`/`postgres`, confirmed via the Management API) and
+  an already-deployed, active `revenuecat-webhook` Edge Function (`verify_jwt: false`, since
+  RevenueCat calls it directly rather than as a user — authenticated instead via a
+  `REVENUECAT_WEBHOOK_SECRET` Supabase secret checked against the request's `Authorization`
+  header) that correctly maps real RevenueCat webhook events to `is_premium`: grants on
+  `INITIAL_PURCHASE`/`RENEWAL`/`UNCANCELLATION`/`NON_RENEWING_PURCHASE`/`PRODUCT_CHANGE`,
+  revokes only on `EXPIRATION` (correctly *not* on bare `CANCELLATION`, since a cancelled
+  subscriber keeps access until the paid period actually runs out). Neither this RPC nor this
+  function exist in local `supabase/schema.sql` or `supabase/functions/` — pulled the real
+  source via the Management API's function-body endpoint, same technique used to recover the
+  other "empty local stub, real deployed code" functions noted elsewhere in this file. No
+  backend work was needed here; this was purely a verification pass that de-risked building UI
+  on top of `is_premium` at all.
+- New `getSubscriptionDetails()` / `openSubscriptionManagement()` in `src/services/purchases.js`
+  — real fields straight off RevenueCat's own `CustomerInfo`/active-entitlement object (active
+  status, `store`, `willRenew`, `latestPurchaseDate`, `expirationDate`, `isSandbox`,
+  top-level `managementURL`), nothing invented. `openSubscriptionManagement()` prefers
+  RevenueCat's own `managementURL` (correct even for non-App-Store/Play-Store cases) and only
+  falls back to the plain per-platform subscriptions-page URL `PaywallScreen.js` already used
+  when RevenueCat doesn't have one. `PaywallScreen.js`'s own local, now-duplicate
+  `openNativeSubscriptionManagement` helper was pointed at this shared function instead of
+  keeping a second copy of the same fallback URLs.
+- New `src/screens/BillingScreen.js` + `Billing` route (`RootNavigator.js`, same
+  `headerShown`/title/style convention as `Rewards`/`Momentum`/`EmergencyContacts`).
+  `SettingsScreen.js`'s "Manage Subscription" row now opens this instead of jumping straight to
+  `Paywall` — free users still land on a real "Upgrade to Premium" CTA → `Paywall` from here (no
+  behavior lost), Premium users instead see real plan detail (since-date, renews/ends date with
+  honest "auto-renew is off" wording when `willRenew` is false, which store it's billed through,
+  a sandbox/test-purchase flag when applicable) plus working "Manage Subscription" and "Restore
+  Purchases" actions.
+- **Payment Methods / Billing History — deliberately not built as a data list**, same
+  "don't fabricate" convention as the Emergency Contacts and business-billing sections
+  elsewhere in this file: this app bills through native in-app-purchase (RevenueCat wrapping
+  StoreKit/Play Billing), so Apple/Google hold the actual card and the actual itemized charge
+  history — this app never receives either. `BillingScreen` says so plainly in both sections
+  and points at the real store subscription page instead of inventing local receipt rows.
+- Verified via a full `npx expo export --platform ios` (1838 modules, one more than the prior
+  1837 baseline — the new `BillingScreen.js`, everything else is edits to existing files).
+- **Not done yet**: no manual run-through in a simulator/device, and specifically — same
+  limitation already noted under AI Concierge — this sandbox has no real signed-in premium
+  account to exercise the "already Premium" branch against, so the active-subscription
+  rendering (dates, store label, manage/restore buttons) is verified by reading the code against
+  RevenueCat's real SDK shape, not by an actual live purchase. Next session should check: a free
+  account sees "Free plan" + "Upgrade to Premium" → `Paywall`, a real Premium account sees
+  correct real dates/store/renewal wording, "Manage Subscription" actually opens the right store
+  page, and "Restore Purchases" round-trips correctly on both iOS and Android.
+
 ## Outstanding: AI Concierge (closes Phase 5 "AI Concierge" gap)
 
 Closed against the confirmed real gap (a natural-language "find me something tonight" flow),

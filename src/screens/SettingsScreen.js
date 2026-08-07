@@ -827,12 +827,12 @@ export default function SettingsScreen({ navigation }) {
         <Text style={styles.sectionLabel} accessibilityRole="header">Account & Billing</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('Paywall')}
+          onPress={() => navigation.navigate('Billing')}
           activeOpacity={0.85}
           accessibilityLabel={t('settings.manageSubscription')}
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>{t('settings.manageSubscription')}</Text>
+          <Text style={styles.rowButtonText}>💳 {t('settings.manageSubscription')}</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
