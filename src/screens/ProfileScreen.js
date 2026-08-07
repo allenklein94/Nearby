@@ -437,6 +437,16 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>📖 View Your Timeline</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('MemoryVaultIndex')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your memory vaults, one per match"
+          accessibilityRole="button"
+        >
+          <Text style={styles.timelineLinkText}>💫 Memory Vault</Text>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (

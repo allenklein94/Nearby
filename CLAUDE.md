@@ -83,16 +83,14 @@ seven previously-unconfirmed items now checked, none left unverified**:
   account-view toggle exists at all; what's there instead is a "Partner With Us" application
   row plus admin-only Business Dashboard/Requests rows — a business-partner *application*
   flow, not a business-mode *switch* for an existing business account.
-- **Profile** (#5) — **partial gap.** `ProfileScreen.js:432-437` has a real, prominent
-  "📖 View Your Timeline" button (`navigation.navigate('Timeline')`) — Timeline is one tap from
-  Profile, satisfies the doc. **Memory Vault is not linked from Profile at all** — zero
-  references to it in `ProfileScreen.js`; it's only reachable from `ChatScreen.js:427` as a
-  per-match "💫 Memory Vault" option, i.e. a per-conversation feature, not a profile
-  sub-section. If the doc's intent is "Profile houses both," this is a real, narrow gap: add a
-  Memory Vault entry point to `ProfileScreen.js` (e.g. next to the Timeline button). Otherwise
-  everything else about Profile matches the doc — quick-stats row, earned stats, achievements
-  grid, photo gallery, prompts, connection-goal chips, full identity fields — all real,
-  DB-backed, no placeholders.
+- **Profile** (#5) — **closed this session, see "Outstanding: Memory Vault → Profile link"
+  below.** `ProfileScreen.js:432-437` has a real, prominent "📖 View Your Timeline" button
+  (`navigation.navigate('Timeline')`) — Timeline is one tap from Profile, satisfies the doc.
+  Memory Vault was not linked from Profile at all before this pass — it was only reachable from
+  `ChatScreen.js:427` as a per-match "💫 Memory Vault" option, i.e. a per-conversation feature,
+  not a profile sub-section. Everything else about Profile already matched the doc — quick-stats
+  row, earned stats, achievements grid, photo gallery, prompts, connection-goal chips, full
+  identity fields — all real, DB-backed, no placeholders.
 - **People Profile** (#8) — **matches doc intent.** `ViewProfileScreen.js` is genuinely
   compatibility/vibe-oriented: a real compatibility %/report (`generateCompatibilityReport()`
   in `services/compatibility.js`, explicitly disabled for friends — "a dating-style
@@ -100,6 +98,35 @@ seven previously-unconfirmed items now checked, none left unverified**:
   the same `get_host_stats`/`get_host_reputation` RPCs used elsewhere, mutual friends, shared
   music/interests. No follower/following counts, no feed layout — nothing resembling a
   generic social-network profile. No fabricated numbers found.
+
+## Outstanding: Memory Vault → Profile link (closes roadmap #5 partial gap)
+
+This is the change that was in progress when the codespace restarted mid-session (found
+`src/services/memoryVault.js` modified but uncommitted, with a finished but unwired
+`getMyMatchesWithMemoryCounts()` already written). Finished and committed this session.
+
+- Memory Vault is per-match (`memory_vault_items.match_id`), so there's no single "your"
+  vault to deep-link Profile straight into — `getMyMatchesWithMemoryCounts()` in
+  `services/memoryVault.js` instead returns every match the caller has, each with a real
+  per-match memory count, mirroring how Timeline is reached from Profile as an aggregate
+  view rather than a single record. Query intentionally has no explicit `user_a`/`user_b`
+  filter — same pattern already used by `MatchesScreen.js`, safe because `matches` RLS
+  (`supabase/schema.sql`) already scopes SELECT to rows where the caller is `user_a` or
+  `user_b`; confirmed by reading the policy directly rather than assuming.
+- New `src/screens/MemoryVaultIndexScreen.js` + `MemoryVaultIndex` route
+  (`RootNavigator.js`) — a simple list of matches (avatar via the existing
+  `getSignedPhotoUrl`, same pattern as `MatchesScreen.js`) each showing its real memory
+  count, tapping through to the existing per-match `MemoryVaultScreen` (unchanged) with
+  `matchId`/`matchName`, the same params `ChatScreen.js`'s entry point already passes.
+  Real empty state included ("No matches yet...") rather than left blank.
+- `ProfileScreen.js` gained a "💫 Memory Vault" row directly under the existing "📖 View
+  Your Timeline" link, same `timelineLink` style reused rather than a new one invented,
+  navigating to `MemoryVaultIndex`.
+- Verified via a full `npx expo export --platform ios` (1826 modules, one more than the
+  prior 1825 baseline — the new screen file), not yet a simulator/device run.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check
+  the list renders real matches/counts, tapping through opens the right per-match vault,
+  and the zero-matches empty state.
 
 ## Outstanding: Business Profile (public-facing screen, closes roadmap #9)
 
