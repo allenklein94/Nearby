@@ -36,24 +36,68 @@ exists but doesn't do the thing):
   major screen before the full version). Not done as a deliberate pass; some screens have ad
   hoc empty states (e.g. `PlacesScreen.js`'s location-denied state), most are unaudited.
 
-**Likely fine, not re-verified against the doc's exact sub-bullets** — screens exist and are
-substantial, but nobody has checked them line-by-line against the doc since:
-- **Profile** (#5) — `ProfileScreen.js` (986 lines) has real stats/achievements; Memories and
-  Timeline live as separate screens (`MemoryVaultScreen.js`, `TimelineScreen.js`), unconfirmed
-  whether that split matches what the doc means by "Profile contains Memories/Timeline."
-- **Community Screen** (#7) — `CommunityDetailScreen.js` + `CommunityChatScreen.js` exist;
-  Leaders/Calendar sub-features unconfirmed.
-- **People Profile** (#8) — `ViewProfileScreen.js` exists; unconfirmed whether its framing
-  actually reads as "would I enjoy hanging out with this person" vs. a followers-style layout.
-- **Business Profile** (#9) — `BusinessDashboardScreen.js` is the *owner's* dashboard. A
-  public-facing profile a regular user browses to (gatherings/rewards/reviews/photos for that
-  business) is unconfirmed to exist as a distinct screen.
-- **Rewards** (#11) — perks + real billing exist (`BrandOffersScreen.js`, billing section
-  below); loyalty and group-unlock mechanics unconfirmed.
-- **Business Community CRM** (#12) — partially covered by `BusinessDashboardScreen.js`; full
-  attendance/analytics CRM depth unconfirmed.
-- **Settings** (#16) — `SettingsScreen.js` exists; unconfirmed whether Payments/Business Mode
-  sections match the doc's scope.
+**Verified in a follow-up audit pass (Aug 7 2026, same day, after the initial doc check) — all
+seven previously-unconfirmed items now checked, none left unverified**:
+- **Community Screen** (#7) — **real gap.** `CommunityDetailScreen.js` only tracks a boolean
+  `isCreator` to hide the Join button (lines 17, 29) — no members list, no leader/admin badge
+  UI anywhere, even though `community_members.role` (`services/communities.js:37`) already
+  stores `'creator'` per member (the data exists, the screen just never queries/renders it
+  as a list). "Upcoming Gatherings" (lines 144-153) is a flat filtered/sorted list, not a
+  calendar/month-grid view. Both Leaders and Calendar are genuinely absent, not just unaudited.
+- **Business Profile** (#9) — **real gap.** Traced every tap target that names a business:
+  `BrandOffersScreen.js:142` partner name is plain non-tappable `Text`; the only nearby button
+  goes to `BusinessConversation` (private chat), not a profile.
+  `GatheringDetailScreen.js:295-299`'s Community Perk card shows the partner name as plain
+  text too. `BusinessHostBadge.js:26-29` ("🏪 Hosted by {partnerName}") is a static `View` with
+  no `onPress` at all. `RootNavigator.js` has no `BusinessProfile`/`PartnerProfile` route —
+  only `BusinessDashboard` (owner-only), `BusinessPartnerApply`, `AdminBusinessRequests`,
+  `BusinessConversation`. Zero path from any business name to a public profile of that
+  business currently exists anywhere in the app.
+- **Business Community CRM** (#12) — **partial gap.** Richer than "unconfirmed" suggested:
+  `BusinessDashboardScreen.js` has real aggregate analytics — `get_business_dashboard_stats`
+  (followers/redemptions + month-over-month via `get_business_growth`, lines 332-370),
+  `get_gathering_attendee_breakdown` (new vs. returning attendees per gathering, 117-123/
+  430-434), a "Most Engaged" top-members leaderboard via `getBusinessTopMembers` (455-465),
+  and `getBusinessVisitFrequency`/top-interests insights (469-494) — all real RPCs, not
+  placeholders. What's missing for true CRM depth: the "Most Engaged" rows are static, no
+  drill-in to an individual customer's visit history or contact info, and outreach is limited
+  to one broadcast "Post Update to Followers" — no per-customer CRM record or targeted
+  outreach tool.
+- **Rewards** (#11) — **both sub-mechanics are real gaps.** Grepped `src/` and
+  `supabase/migrations/` for `loyalt|reward.?point|tier|streak` — every hit is unrelated
+  (geofencing "tier," subscription "free-tier," gathering-attendance streaks, which are a
+  different feature). Zero loyalty/points/tier mechanics tied to rewards/perks anywhere, no
+  schema columns for it. Same for group-unlock: grepped `unlock|threshold|refer.*friend|
+  invite.*unlock` — the only real `unlock` code is `getUnlockedPerksCount()`
+  (`homeDashboard.js:259-272`), which just counts currently-active `brand_offers` rows, no
+  member/friend-count threshold logic anywhere. Both would need new schema (a points ledger
+  or a member-count-gated offer flag) — deliberately not stubbed with fabricated numbers,
+  consistent with this file's "no invented numbers" convention.
+- **Settings** (#16) — **Payments: partial gap; Business Mode: real gap.** Real sections
+  confirmed in `SettingsScreen.js`: Looking For, Appearance, Language, Notifications, Privacy,
+  Discovery Preferences, Account, Connect, Safety, Reflection Tools, Account & Billing, Help &
+  Legal. "Account & Billing" (line 814) has exactly one row — "Manage Subscription" →
+  `Paywall` — no payment-methods list or billing-history/receipts UI. No personal/business
+  account-view toggle exists at all; what's there instead is a "Partner With Us" application
+  row plus admin-only Business Dashboard/Requests rows — a business-partner *application*
+  flow, not a business-mode *switch* for an existing business account.
+- **Profile** (#5) — **partial gap.** `ProfileScreen.js:432-437` has a real, prominent
+  "📖 View Your Timeline" button (`navigation.navigate('Timeline')`) — Timeline is one tap from
+  Profile, satisfies the doc. **Memory Vault is not linked from Profile at all** — zero
+  references to it in `ProfileScreen.js`; it's only reachable from `ChatScreen.js:427` as a
+  per-match "💫 Memory Vault" option, i.e. a per-conversation feature, not a profile
+  sub-section. If the doc's intent is "Profile houses both," this is a real, narrow gap: add a
+  Memory Vault entry point to `ProfileScreen.js` (e.g. next to the Timeline button). Otherwise
+  everything else about Profile matches the doc — quick-stats row, earned stats, achievements
+  grid, photo gallery, prompts, connection-goal chips, full identity fields — all real,
+  DB-backed, no placeholders.
+- **People Profile** (#8) — **matches doc intent.** `ViewProfileScreen.js` is genuinely
+  compatibility/vibe-oriented: a real compatibility %/report (`generateCompatibilityReport()`
+  in `services/compatibility.js`, explicitly disabled for friends — "a dating-style
+  compatibility score doesn't make sense for a friend's profile"), host stats/reputation via
+  the same `get_host_stats`/`get_host_reputation` RPCs used elsewhere, mutual friends, shared
+  music/interests. No follower/following counts, no feed layout — nothing resembling a
+  generic social-network profile. No fabricated numbers found.
 
 ## Outstanding: Discover mini-app (unified search/filter/map/list + recommendations)
 
