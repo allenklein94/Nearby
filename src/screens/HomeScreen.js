@@ -1,28 +1,34 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHomeDashboard, getSocialForecast, getContinueYourCommunity, getUnlockedPerksCount } from '../services/homeDashboard';
+import { getHomeDashboard, getSocialForecast, getContinueYourCommunity, getUnlockedPerksCount, getHomeInsight } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
-import StartSomethingModal from '../components/StartSomethingModal';
+import StartSomethingModal, { SUB_OPTIONS } from '../components/StartSomethingModal';
+import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { getGreeting } from '../utils/timeContext';
+import { getGreeting, getTimePeriod, getQuickPrompts } from '../utils/timeContext';
+
+const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
+const PERIOD_OPPORTUNITY_WORD = { morning: 'today', afternoon: 'today', evening: 'tonight', weekend: 'this weekend' };
 
 export default function HomeScreen({ navigation }) {
-  const { colors } = useTheme();
+  const { colors, shadow } = useTheme();
   const styles = getStyles(colors);
   const [dashboard, setDashboard] = useState(null);
   const [myName, setMyName] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
+  const [quickCategory, setQuickCategory] = useState(null);
   const [socialForecast, setSocialForecast] = useState(null);
   const [continueCommunity, setContinueCommunity] = useState(null);
   const [perksCount, setPerksCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
+  const period = getTimePeriod();
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -70,6 +76,20 @@ export default function HomeScreen({ navigation }) {
     setRefreshing(false);
   }
 
+  function closeStartModal() {
+    setStartModalVisible(false);
+    setQuickCategory(null);
+  }
+
+  function handleQuickAction(item) {
+    if (SUB_OPTIONS[item.label]) {
+      setQuickCategory(item);
+      setStartModalVisible(true);
+      return;
+    }
+    navigation.navigate('CreateGathering', { quickStartTitle: item.label, quickStartCategory: item.category });
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -81,10 +101,60 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        contentContainerStyle={{ padding: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
+        {dashboard?.gatheringsTodayCount > 0 && (
+          <Text style={styles.opportunityLine}>
+            You have {dashboard.gatheringsTodayCount} great {dashboard.gatheringsTodayCount === 1 ? 'opportunity' : 'opportunities'} {PERIOD_OPPORTUNITY_WORD[period]}.
+          </Text>
+        )}
+        {(() => {
+          const insight = getHomeInsight(dashboard, socialForecast);
+          return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
+        })()}
+
+        <Text style={styles.sectionHeader}>{PERIOD_SECTION_LABELS[period]}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+          {getQuickPrompts(period).map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.quickActionChip}
+              onPress={() => handleQuickAction(item)}
+              activeOpacity={0.85}
+              accessibilityLabel={item.label}
+              accessibilityRole="button"
+            >
+              <Text style={styles.quickActionIcon}>{item.icon}</Text>
+              <Text style={styles.quickActionLabel}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {dashboard?.happeningNow?.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>🔥 Happening Now</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
+              {dashboard.happeningNow.map((g) => {
+                const style = categoryStyleFor(g.interest_tag);
+                return (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[styles.happeningNowChip, { borderColor: style.color }]}
+                    onPress={() => navigation.navigate('Gatherings')}
+                    activeOpacity={0.85}
+                    accessibilityLabel={`${g.title}, ${g.interest_tag ?? 'General'}, happening now`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.happeningNowIcon}>{style.icon}</Text>
+                    <Text style={styles.happeningNowLabel} numberOfLines={1}>{g.title}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
 
         {socialForecast && (
           <View style={styles.forecastCard}>
@@ -168,15 +238,6 @@ export default function HomeScreen({ navigation }) {
             ))}
           </>
         )}
-
-        <TouchableOpacity
-          style={styles.startSomethingButton}
-          onPress={() => setStartModalVisible(true)}
-          accessibilityLabel="Start something spontaneous"
-          accessibilityRole="button"
-        >
-          <Text style={styles.startSomethingText}>+ Start Something</Text>
-        </TouchableOpacity>
 
         <View style={styles.card}>
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
@@ -275,10 +336,21 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </ScrollView>
 
+      <TouchableOpacity
+        style={[styles.fab, shadow.button]}
+        onPress={() => setStartModalVisible(true)}
+        activeOpacity={0.85}
+        accessibilityLabel="Start something spontaneous"
+        accessibilityRole="button"
+      >
+        <Text style={styles.fabText}>+ Start Something</Text>
+      </TouchableOpacity>
+
       <StartSomethingModal
         visible={startModalVisible}
-        onClose={() => setStartModalVisible(false)}
+        onClose={closeStartModal}
         navigation={navigation}
+        initialCategory={quickCategory}
       />
       <GatheringFeedbackModal
         visible={!!unratedGathering}
@@ -291,7 +363,26 @@ export default function HomeScreen({ navigation }) {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  greeting: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
+  greeting: { ...typography.title, color: colors.textPrimary, marginBottom: 2 },
+  opportunityLine: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
+  insightLine: { color: colors.primary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
+  quickActionChip: {
+    alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginRight: spacing.sm, minWidth: 84,
+  },
+  quickActionIcon: { fontSize: 24, marginBottom: 4 },
+  quickActionLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  happeningNowChip: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1.5,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginRight: spacing.sm, maxWidth: 180,
+  },
+  happeningNowIcon: { fontSize: 16, marginRight: 6 },
+  happeningNowLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  fab: {
+    position: 'absolute', right: spacing.lg, bottom: spacing.lg,
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+  },
+  fabText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   continueCommunityCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
@@ -318,11 +409,6 @@ const getStyles = (colors) => StyleSheet.create({
   },
   sinceAwayTitle: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
   sinceAwayItem: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
-  startSomethingButton: {
-    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
-    alignItems: 'center', marginBottom: spacing.lg,
-  },
-  startSomethingText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.lg },
   cardRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
   cardIcon: { fontSize: 20, marginRight: spacing.sm },

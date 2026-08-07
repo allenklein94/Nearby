@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -6,7 +6,7 @@ import { getQuickPrompts } from '../utils/timeContext';
 
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
-const SUB_OPTIONS = {
+export const SUB_OPTIONS = {
   Dinner: [
     { icon: '🍕', label: 'Pizza' },
     { icon: '🌮', label: 'Mexican' },
@@ -18,10 +18,16 @@ const SUB_OPTIONS = {
   ],
 };
 
-export default function StartSomethingModal({ visible, onClose, navigation }) {
+export default function StartSomethingModal({ visible, onClose, navigation, initialCategory = null }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [activeCategory, setActiveCategory] = useState(null);
+
+  useEffect(() => {
+    if (visible && initialCategory) {
+      setActiveCategory(initialCategory);
+    }
+  }, [visible, initialCategory]);
 
   function handleClose() {
     setActiveCategory(null);

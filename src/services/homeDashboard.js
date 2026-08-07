@@ -290,6 +290,21 @@ export async function getHomeDashboard() {
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
 
+  // Genuinely in-progress or about to start — not "today" broadly, but
+  // right now. No end time exists on gatherings, so "in progress" is
+  // approximated as started within the last 2 hours; "about to start"
+  // is the next 30 minutes.
+  const HAPPENING_NOW_AFTER_MS = 30 * 60 * 1000;
+  const HAPPENING_NOW_BEFORE_MS = 2 * 60 * 60 * 1000;
+  const nowMs = Date.now();
+  const happeningNow = nearbyGatherings
+    .filter((g) => {
+      const startMs = new Date(g.scheduled_at).getTime();
+      return startMs - nowMs <= HAPPENING_NOW_AFTER_MS && nowMs - startMs <= HAPPENING_NOW_BEFORE_MS;
+    })
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 6);
+
   // A single, genuine best pick rather than another list — scored on
   // real signals only (attendance, closeness, actual shared
   // interest), with honest reasons attached rather than invented
@@ -438,10 +453,33 @@ export async function getHomeDashboard() {
     mostRecentSighting,
     unreadCount,
     trendingGatherings,
+    happeningNow,
     bestPick,
     sinceAway,
     weeklyRecap,
     upcomingPlans,
     friendsActivity,
   };
+}
+
+// A single honest sentence, not a chatbot — picked from real, already-
+// computed dashboard signals in priority order. No invented content:
+// if none of these signals are true, no line is shown at all, same
+// philosophy as the rest of this file (quietCard, sinceAway, etc.).
+export function getHomeInsight(dashboard, socialForecast) {
+  if (!dashboard) return null;
+
+  if (dashboard.friendsActivity?.length >= 2) {
+    return `${dashboard.friendsActivity.length} of your friends are already making plans.`;
+  }
+  if (dashboard.bestPick) {
+    return 'Tonight looks like a great night to meet someone new.';
+  }
+  if (socialForecast?.forecast_label && /good|great|perfect|clear|sunny/i.test(socialForecast.forecast_label)) {
+    return 'Looks like a perfect evening for something outdoors.';
+  }
+  if (dashboard.happeningNow?.length > 0) {
+    return `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing is' : 'things are'} happening near you right now.`;
+  }
+  return null;
 }

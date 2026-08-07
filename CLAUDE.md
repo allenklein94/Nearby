@@ -74,6 +74,43 @@ per-partner billing math running end-to-end on a schedule, but no money actually
 
 ## Recently completed, for context (do not re-build)
 
+- Home screen "dream redesign" gaps, closed against a user-supplied vision doc (checked
+  feature-by-feature against actual code first — several items in the doc were already partly
+  built under different names, e.g. "Continue Your Story" ≈ existing "Continue Your Community"):
+  - **Happening Now**: `getHomeDashboard()` in `homeDashboard.js` now also returns
+    `happeningNow` — gatherings from the same already-fetched `nearbyGatherings` list whose
+    `scheduled_at` falls in [-30min, +2h] around now (no end-time field exists on gatherings,
+    so "in progress" is approximated). Rendered as a horizontal chip row using
+    `categoryStyleFor()` for icons, no extra query.
+  - **Time-of-day quick actions**: `getQuickPrompts()` (already existed in `timeContext.js`,
+    previously only surfaced one layer deep inside `StartSomethingModal`) is now also rendered
+    directly on Home as a visible chip row under a period-aware header (`Good Morning` /
+    `This Afternoon` / `Tonight` / `This Weekend`). Tapping a chip either deep-links straight to
+    `CreateGathering` with a prefilled title/category, or — for the one prompt with sub-options
+    (`Dinner` → Pizza/Mexican/etc.) — opens `StartSomethingModal` pre-set to that category via
+    a new `initialCategory` prop, reusing the modal's existing decision tree instead of
+    duplicating it. `StartSomethingModal`'s `SUB_OPTIONS` map is now exported so Home can check
+    membership without hardcoding which labels have sub-menus.
+  - **One AI sentence**: deliberately **not** a real LLM call — `getHomeInsight()` in
+    `homeDashboard.js` is a pure, no-I/O function that picks one honest sentence from signals
+    the dashboard already computed (friends making plans → best pick exists → good weather
+    forecast → things happening now), in that priority order, returning `null` if none apply.
+    This was an explicit tradeoff discussed with the user: no new Edge Function, no API key,
+    no per-request cost, and it matches this file's existing "no invented numbers" convention
+    (see `getHomeDashboard()`'s own comments on `bestPick`/`weeklyRecap`/`sinceAway`) rather than
+    introducing a genuinely novel-but-untethered-from-reality text generator.
+  - **"You have N opportunities" greeting line**: reuses the already-computed
+    `gatheringsTodayCount`, not a new number — only shown when > 0, period-aware wording
+    ("today" / "tonight" / "this weekend").
+  - **Floating action button**: the "+ Start Something" button moved from an inline
+    scroll-flow button to a real `position: 'absolute'` FAB pinned bottom-right over the
+    ScrollView (matching the existing bottom-anchored-bar pattern already used in
+    `DiscoveryScreen.js`), with extra `paddingBottom` added to the scroll content so the last
+    card isn't hidden behind it.
+  - Deliberately left alone: the "92% Match" hero-card framing and "unlocked because 8 members
+    joined" perk copy from the original vision doc were **not** built — both would require
+    fabricating numbers the codebase has no real signal for, which conflicts with the
+    established convention throughout `homeDashboard.js` of never inventing a metric.
 - Gathering detail redesign: three schema pieces (`20260807_gathering_detail_vibe_and_photo.sql`,
   `20260807_gathering_questions.sql`, `20260807_gathering_intents.sql`, all applied and
   verified live) plus full frontend wiring, built in one pass after a codespace restart
