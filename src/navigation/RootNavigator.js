@@ -33,6 +33,7 @@ import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 import BusinessPartnerApplyScreen from '../screens/BusinessPartnerApplyScreen';
 import AdminBusinessRequestsScreen from '../screens/AdminBusinessRequestsScreen';
 import BusinessConversationScreen from '../screens/BusinessConversationScreen';
+import BusinessProfileScreen from '../screens/BusinessProfileScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
 import PlacesScreen from '../screens/PlacesScreen';
 import TimelineScreen from '../screens/TimelineScreen';
@@ -289,6 +290,7 @@ export default function RootNavigator() {
             <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'Partner With Us', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessConversation" component={BusinessConversationScreen} options={({ route }) => ({ headerShown: true, title: route.params?.partnerName ?? 'Message', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: 'Edit Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />

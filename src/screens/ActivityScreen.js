@@ -278,7 +278,12 @@ export default function ActivityScreen({ navigation }) {
             if (item.type === 'business_update') {
               const u = item.raw;
               return (
-                <View style={styles.row} accessibilityLabel={`${u.brand_partners?.name}: ${u.title}`}>
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: u.partner_id })}
+                  accessibilityLabel={`${u.brand_partners?.name}: ${u.title}`}
+                  accessibilityRole="button"
+                >
                   <View style={[styles.rowAvatar, styles.avatarPlaceholder, { justifyContent: 'center', alignItems: 'center' }]}>
                     <Text style={{ fontSize: 20 }}>📣</Text>
                   </View>
@@ -286,7 +291,7 @@ export default function ActivityScreen({ navigation }) {
                     <Text style={styles.rowTitle}>{u.brand_partners?.name}: {u.title}</Text>
                     {u.body ? <Text style={styles.rowSubtitle}>{u.body}</Text> : null}
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             }
 

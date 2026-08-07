@@ -133,15 +133,22 @@ export default function BrandOffersScreen({ navigation }) {
           return (
             <View key={offer.id} style={styles.card}>
               <View style={styles.cardHeader}>
-                {offer.brand_partners?.logo_url ? (
-                  <Image source={{ uri: offer.brand_partners.logo_url }} style={styles.logo} />
-                ) : (
-                  <View style={[styles.logo, styles.logoPlaceholder]} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.partnerName}>{offer.brand_partners?.name}</Text>
-                  <Text style={styles.offerTitle}>{offer.title}</Text>
-                </View>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
+                  accessibilityLabel={`View ${offer.brand_partners?.name}'s business profile`}
+                  accessibilityRole="button"
+                >
+                  {offer.brand_partners?.logo_url ? (
+                    <Image source={{ uri: offer.brand_partners.logo_url }} style={styles.logo} />
+                  ) : (
+                    <View style={[styles.logo, styles.logoPlaceholder]} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.partnerName}>{offer.brand_partners?.name}</Text>
+                    <Text style={styles.offerTitle}>{offer.title}</Text>
+                  </View>
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => navigation.navigate('BusinessConversation', { partnerId: offer.partner_id, partnerName: offer.brand_partners?.name })}
                   accessibilityLabel={`Message ${offer.brand_partners?.name}`}

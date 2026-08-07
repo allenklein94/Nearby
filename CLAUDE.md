@@ -44,7 +44,8 @@ seven previously-unconfirmed items now checked, none left unverified**:
   stores `'creator'` per member (the data exists, the screen just never queries/renders it
   as a list). "Upcoming Gatherings" (lines 144-153) is a flat filtered/sorted list, not a
   calendar/month-grid view. Both Leaders and Calendar are genuinely absent, not just unaudited.
-- **Business Profile** (#9) — **real gap.** Traced every tap target that names a business:
+- **Business Profile** (#9) — **real gap, closed later this same session — see the "Outstanding:
+  Business Profile" section below.** Traced every tap target that names a business:
   `BrandOffersScreen.js:142` partner name is plain non-tappable `Text`; the only nearby button
   goes to `BusinessConversation` (private chat), not a profile.
   `GatheringDetailScreen.js:295-299`'s Community Perk card shows the partner name as plain
@@ -98,6 +99,75 @@ seven previously-unconfirmed items now checked, none left unverified**:
   the same `get_host_stats`/`get_host_reputation` RPCs used elsewhere, mutual friends, shared
   music/interests. No follower/following counts, no feed layout — nothing resembling a
   generic social-network profile. No fabricated numbers found.
+
+## Outstanding: Business Profile (public-facing screen, closes roadmap #9)
+
+Closed against the confirmed real gap from the audit above: no public-facing business profile
+existed anywhere — every tap target naming a business (offer cards, gathering "Community Perk"
+badges, `BusinessHostBadge`) was either static text or routed straight to a private chat. Core
+build is done and committed; **not yet manually tested in a running app** — verified via
+`@babel/core` compile of every touched file and a full `npx expo export --platform ios` (1824
+modules, one more than the prior clean 1823-module baseline), not a simulator/device run.
+
+- New `src/screens/BusinessProfileScreen.js` + `BusinessProfile` route (`RootNavigator.js`,
+  `headerTransparent` matching `GatheringDetail`/`CommunityDetail`'s convention), reachable from
+  five places that previously dead-ended or had no path at all: `BrandOffersScreen.js`'s
+  logo/partner-name block (was plain text), `GatheringDetailScreen.js`'s Community Perk card's
+  "at {partner}" line (was plain text), `BusinessHostBadge.js` (gained an optional `navigation`
+  prop — wraps itself in a `TouchableOpacity` only when passed one, so any caller that omits it
+  keeps the old static badge; wired from both its actual callers, `GatheringsScreen.js` and
+  `CommunitiesScreen.js`), `CommunityDetailScreen.js` (added a "View Business Profile →" link
+  next to the existing follow-business button, for communities backed by a business), and
+  `ActivityScreen.js`'s business-update notice rows (were a plain, non-tappable `View`;
+  `getFollowedBusinessUpdates()`'s select gained `partner_id` since it wasn't being fetched
+  before, so there was nothing to navigate with).
+- Real data only, no fabricated fields:
+  - **Header**: `brand_partners.name`/`logo_url`/`description`/`address` (all pre-existing
+    columns), plus a real follower count pulled from `get_business_dashboard_stats` — only
+    `total_followers` is used from that RPC's response; its redemption-count/repeat-redeemer
+    fields are the owner's own business-performance metrics and were deliberately left off a
+    page any regular user can browse to, even though the RPC itself has no ownership check
+    (grants execute to `authenticated`, not scoped to the caller — confirmed live via the
+    Supabase Management API, `pg_get_functiondef`).
+  - **Follow/Message**: reuses `isFollowingBusiness`/`followBusiness`/`unfollowBusiness` and
+    routes Message to the existing `BusinessConversation` screen — no new mechanism.
+  - **"What People Say"**: new `getBusinessLovedTags()`/`getBusinessReputation()` in
+    `services/gatherings.js`, the exact same honest-aggregate pattern `getHostLovedTags()`/
+    `get_host_reputation` already established for individual hosts (welcoming %, would-attend-
+    again %, categorical "what people loved" tags from `gathering_feedback.great_because`) —
+    just keyed on `gatherings.hosting_partner_id` instead of `host_id`, since a business isn't a
+    `profiles` row and the existing per-host RPCs can't take a partner id. Computed client-side
+    rather than as a new RPC (`gathering_feedback` is already publicly SELECTable, same
+    justification the original per-host comment gives). Renders nothing until a business has at
+    least one review — same "no feedback yet" convention as the individual-host version.
+  - **Perks**: new `getBusinessActiveOffers()` in `services/brandOffers.js` — standing
+    (non-gathering-tied) active offers for that partner, with real scarcity counts
+    (`getRedemptionCounts`) and a working redeem button (`redeemOffer()`, same function
+    `BrandOffersScreen` uses) — not a read-only preview.
+  - **Upcoming Gatherings**: new `getBusinessPublicGatherings()`, deliberately filtered to
+    `is_public: true` — a business's private/women-only gatherings (if any exist) don't leak
+    onto a page anyone can browse to, unlike the owner-only `getMyBusinessGatherings()` (left
+    untouched) which correctly shows everything to the owner.
+  - **Photos**: no photo-gallery field exists on `brand_partners` (only `logo_url` — confirmed
+    live via `information_schema.columns`), so rather than fabricate one, this pulls real
+    `cover_photo_path` images from the business's own upcoming gatherings (via the existing
+    `getSignedGatheringPhotoUrl()`, same signed-URL pattern already used everywhere else cover
+    photos are shown) — genuine sourced content, not an invented upload feature.
+- **Deliberately not built**: `get_business_top_members` (a real, pre-existing RPC already used
+  by the owner's dashboard) returns named individuals' `display_name` + attendance counts —
+  fine for an owner's own dashboard, not something to surface to arbitrary browsing users, so it
+  was excluded from this public screen even though the RPC itself has no ownership gate. A true
+  per-customer CRM view, and actually locking down the owner-facing business RPCs to check
+  `managed_partner_id` server-side (several — `get_business_dashboard_stats`, `_growth`,
+  `_top_members`, `_visit_frequency`, `_insights` — currently trust the caller-supplied
+  `partner_id_param` with no ownership check, grants execute to any `authenticated` user), are
+  both separate, more sensitive changes — not attempted here, flagged for a future security pass
+  since it's a real gap between "no client currently calls this except the owner's own screen"
+  and "actually enforced."
+- **Not done yet**: no manual run-through in a simulator/device. Next session should click
+  through all five entry points, confirm follow/unfollow and redeem actually round-trip, and
+  check both a business with no reviews yet (section should render nothing) and one with real
+  `gathering_feedback` data.
 
 ## Outstanding: Discover mini-app (unified search/filter/map/list + recommendations)
 

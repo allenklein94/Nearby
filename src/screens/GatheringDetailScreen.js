@@ -295,7 +295,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <View style={styles.perkCard}>
               <Text style={styles.perkKicker}>🎁 Community Perk</Text>
               <Text style={styles.perkTitle}>{offer.title}</Text>
-              {offer.brand_partners?.name && <Text style={styles.perkSub}>at {offer.brand_partners.name}</Text>}
+              {offer.brand_partners?.name && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
+                  accessibilityLabel={`View ${offer.brand_partners.name}'s business profile`}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.perkSub, styles.perkSubLink]}>at {offer.brand_partners.name}</Text>
+                </TouchableOpacity>
+              )}
               {offer.description ? <Text style={styles.perkDesc}>{offer.description}</Text> : null}
             </View>
           )}
@@ -454,6 +462,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   perkKicker: { color: '#f59e0b', fontSize: 11, fontWeight: '700', marginBottom: 2 },
   perkTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
   perkSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  perkSubLink: { color: colors.primary, fontWeight: '600' },
   perkDesc: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
   organizerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   organizerAvatar: { width: 44, height: 44, borderRadius: 22 },

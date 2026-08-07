@@ -822,7 +822,7 @@ export default function GatheringsScreen({ navigation, route }) {
                   ) : null;
                 })()}
                 <NewcomerBadge gatheringId={item.id} />
-                <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} />
+                <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
                 <RecurringBadge recurrenceRule={item.recurrence_rule} />
                 <GatheringOfferBadge gatheringId={item.id} />
                 {item.description ? <Text style={styles.description}>{item.description}</Text> : null}

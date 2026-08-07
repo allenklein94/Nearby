@@ -160,7 +160,7 @@ export async function getFollowedBusinessUpdates() {
 
   const { data, error } = await supabase
     .from('business_updates')
-    .select('id, title, body, created_at, brand_partners(name)')
+    .select('id, title, body, created_at, partner_id, brand_partners(name)')
     .in('partner_id', partnerIds)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -294,6 +294,61 @@ export async function updateBusinessAddress(partnerId, address) {
     .update({ address, latitude: lat, longitude: lng })
     .eq('id', partnerId);
   if (error) throw error;
+}
+
+export async function getBusinessProfile(partnerId) {
+  const { data, error } = await supabase.from('brand_partners').select('*').eq('id', partnerId).single();
+  if (error) {
+    console.error('getBusinessProfile error', error);
+    return null;
+  }
+  return data;
+}
+
+export async function getBusinessFollowerCount(partnerId) {
+  // get_business_dashboard_stats also returns redemption/repeat-redeemer
+  // figures — those are the owner's own business-performance metrics, not
+  // something a regular user browsing a public profile should see, so only
+  // total_followers is pulled out of it here.
+  const { data, error } = await supabase.rpc('get_business_dashboard_stats', { partner_id_param: partnerId });
+  if (error) {
+    console.error('getBusinessFollowerCount error', error);
+    return 0;
+  }
+  return data?.[0]?.total_followers ?? 0;
+}
+
+export async function getBusinessPublicGatherings(partnerId) {
+  // Public profile only — a business's private/women-only gatherings
+  // (if any) stay out of a page anyone can browse to.
+  const { data, error } = await supabase
+    .from('gatherings')
+    .select('id, title, scheduled_at, interest_tag, cover_photo_path')
+    .eq('hosting_partner_id', partnerId)
+    .eq('is_public', true)
+    .gte('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true });
+  if (error) {
+    console.error('getBusinessPublicGatherings error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function getBusinessActiveOffers(partnerId) {
+  const { data, error } = await supabase
+    .from('brand_offers')
+    .select('*')
+    .eq('partner_id', partnerId)
+    .eq('active', true)
+    .is('gathering_id', null)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('getBusinessActiveOffers error', error);
+    return [];
+  }
+  return data ?? [];
 }
 
 export async function getMyManagedPartner() {

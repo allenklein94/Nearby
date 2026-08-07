@@ -116,17 +116,27 @@ export default function CommunityDetailScreen({ route, navigation }) {
         )}
 
         {community.hosting_partner_id && (
-          <TouchableOpacity
-            style={[styles.chatButton, followingBusiness && styles.leaveButton]}
-            onPress={handleToggleFollowBusiness}
-            activeOpacity={0.85}
-            accessibilityLabel={followingBusiness ? 'Unfollow this business' : 'Follow this business'}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.chatButtonText, followingBusiness && styles.leaveButtonText]}>
-              {followingBusiness ? '✓ Following' : '🏪 Follow This Business'}
-            </Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={[styles.chatButton, followingBusiness && styles.leaveButton]}
+              onPress={handleToggleFollowBusiness}
+              activeOpacity={0.85}
+              accessibilityLabel={followingBusiness ? 'Unfollow this business' : 'Follow this business'}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.chatButtonText, followingBusiness && styles.leaveButtonText]}>
+                {followingBusiness ? '✓ Following' : '🏪 Follow This Business'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('BusinessProfile', { partnerId: community.hosting_partner_id })}
+              accessibilityLabel="View business profile"
+              accessibilityRole="button"
+              style={{ marginBottom: spacing.lg }}
+            >
+              <Text style={styles.businessProfileLink}>View Business Profile →</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         {isMember && (
@@ -170,6 +180,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   leaveButtonText: { color: colors.textSecondary },
   chatButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.lg },
   chatButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  businessProfileLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   gatheringCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },

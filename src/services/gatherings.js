@@ -861,6 +861,57 @@ export async function getHostLovedTags(hostId) {
     .map(([tag]) => GREAT_BECAUSE_LABELS[tag] ?? tag);
 }
 
+// Business-hosted equivalent of getHostLovedTags/getHostReputation — same
+// honest-aggregate approach, keyed on hosting_partner_id instead of
+// host_id since a business isn't a profiles row. No new RPC/migration:
+// gathering_feedback is already publicly SELECTable, same as the per-host
+// version above.
+export async function getBusinessLovedTags(partnerId) {
+  const { data, error } = await supabase
+    .from('gathering_feedback')
+    .select('great_because, gatherings!inner(hosting_partner_id)')
+    .eq('gatherings.hosting_partner_id', partnerId);
+
+  if (error) {
+    console.error('getBusinessLovedTags error', error);
+    return [];
+  }
+
+  const counts = {};
+  for (const row of data ?? []) {
+    for (const tag of row.great_because ?? []) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([tag]) => GREAT_BECAUSE_LABELS[tag] ?? tag);
+}
+
+export async function getBusinessReputation(partnerId) {
+  const { data, error } = await supabase
+    .from('gathering_feedback')
+    .select('felt_welcoming, would_attend_again, gatherings!inner(hosting_partner_id)')
+    .eq('gatherings.hosting_partner_id', partnerId);
+
+  if (error) {
+    console.error('getBusinessReputation error', error);
+    return null;
+  }
+
+  const rows = data ?? [];
+  const welcomingRated = rows.filter((r) => r.felt_welcoming !== null);
+  const returnRated = rows.filter((r) => r.would_attend_again !== null);
+
+  return {
+    welcomingPct: welcomingRated.length ? Math.round((100 * welcomingRated.filter((r) => r.felt_welcoming).length) / welcomingRated.length) : null,
+    wouldReturnPct: returnRated.length ? Math.round((100 * returnRated.filter((r) => r.would_attend_again).length) / returnRated.length) : null,
+    feedbackCount: rows.length,
+  };
+}
+
 export async function stopRecurringSeries(gatheringId) {
   const { error } = await supabase.from('gatherings').update({ series_stopped: true }).eq('id', gatheringId);
   if (error) throw error;

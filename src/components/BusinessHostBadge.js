@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 
 // Self-contained, like NewcomerBadge — fetches its own data so it
 // can drop into a gathering card without touching that screen's
-// larger, already-verified render logic.
-export default function BusinessHostBadge({ hostingPartnerId }) {
+// larger, already-verified render logic. `navigation` is optional —
+// callers that don't pass it just get a static, non-tappable badge.
+export default function BusinessHostBadge({ hostingPartnerId, navigation }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [partnerName, setPartnerName] = useState(null);
@@ -23,10 +24,19 @@ export default function BusinessHostBadge({ hostingPartnerId }) {
 
   if (!partnerName) return null;
 
+  const Wrapper = navigation ? TouchableOpacity : View;
+  const wrapperProps = navigation
+    ? {
+        onPress: () => navigation.navigate('BusinessProfile', { partnerId: hostingPartnerId }),
+        accessibilityLabel: `View ${partnerName}'s business profile`,
+        accessibilityRole: 'button',
+      }
+    : {};
+
   return (
-    <View style={styles.badge}>
+    <Wrapper style={styles.badge} {...wrapperProps}>
       <Text style={styles.text}>🏪 Hosted by {partnerName}</Text>
-    </View>
+    </Wrapper>
   );
 }
 

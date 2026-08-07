@@ -124,7 +124,7 @@ export default function CommunitiesScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{item.name}</Text>
                   <Text style={styles.cardMeta}>{memberCounts[item.id] ?? 0} members</Text>
-                  <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} />
+                  <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
                 </View>
               </TouchableOpacity>
               <TouchableOpacity
