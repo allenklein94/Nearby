@@ -279,7 +279,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.sectionHeader}>⭐ Best Pick Tonight</Text>
             <TouchableOpacity
               style={styles.bestPickCard}
-              onPress={() => navigation.navigate('Gatherings')}
+              onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
               accessibilityLabel={`${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
               accessibilityRole="button"
             >

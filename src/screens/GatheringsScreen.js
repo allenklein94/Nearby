@@ -725,16 +725,7 @@ export default function GatheringsScreen({ navigation, route }) {
             stories={mapStories}
             storyPhotoUrls={mapStoryPhotoUrls}
             userLocation={userLocation}
-            onSelectGathering={(gathering) => {
-              Alert.alert(
-                gathering.title,
-                `Hosted by ${gathering.host?.display_name}\n${gathering.distanceLabel}${gathering.description ? '\n\n' + gathering.description : ''}`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: t('gatherings.imInterested'), onPress: () => setIntentModalGathering(gathering) },
-                ]
-              );
-            }}
+            onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
             onSelectStory={(story) => {
               Alert.alert('Public Story', 'View this story?', [
                 { text: 'Cancel', style: 'cancel' },
@@ -792,10 +783,15 @@ export default function GatheringsScreen({ navigation, route }) {
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
                   {photoUrls[item.id] && <Image source={{ uri: photoUrls[item.id] }} style={styles.hostAvatar} accessibilityLabel={`${item.host?.display_name}'s photo`} />}
-                  <View style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1 }}
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+                    accessibilityLabel={`View details for ${item.title}`}
+                    accessibilityRole="button"
+                  >
                     <Text style={styles.title}>{item.title}</Text>
                     <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.moreButton}
                     onPress={() => setReportTarget({ id: item.host_id, name: item.host?.display_name })}
@@ -906,13 +902,7 @@ export default function GatheringsScreen({ navigation, route }) {
           <GatheringsMapView
             gatherings={attending.upcoming}
             userLocation={userLocation}
-            onSelectGathering={(gathering) => {
-              Alert.alert(
-                gathering.title,
-                `Hosted by ${gathering.host?.display_name}${gathering.description ? '\n\n' + gathering.description : ''}`,
-                [{ text: 'OK' }]
-              );
-            }}
+            onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
           />
         </View>
       ) : tab === 'attending' && (
@@ -973,10 +963,15 @@ export default function GatheringsScreen({ navigation, route }) {
                     <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                       <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                     </View>
-                    <View style={{ flex: 1 }}>
+                    <TouchableOpacity
+                      style={{ flex: 1 }}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+                      accessibilityLabel={`View details for ${item.title}`}
+                      accessibilityRole="button"
+                    >
                       <Text style={styles.title}>{item.title}</Text>
                       <Text style={styles.hostName}>{t('gatherings.hostedBy')} {item.host?.display_name}</Text>
-                    </View>
+                    </TouchableOpacity>
                     <Text style={styles.expandChevron}>{isExpanded ? '⌃' : '⌄'}</Text>
                   </View>
                   {(() => {
@@ -1066,13 +1061,7 @@ export default function GatheringsScreen({ navigation, route }) {
           <GatheringsMapView
             gatherings={hosting.upcoming}
             userLocation={userLocation}
-            onSelectGathering={(gathering) => {
-              Alert.alert(
-                gathering.title,
-                gathering.description || 'No description',
-                [{ text: 'OK' }]
-              );
-            }}
+            onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
           />
         </View>
       ) : tab === 'hosting' && (
@@ -1123,7 +1112,14 @@ export default function GatheringsScreen({ navigation, route }) {
                   <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
                   </View>
-                  <Text style={[styles.title, { flex: 1 }]}>{item.title}</Text>
+                  <TouchableOpacity
+                    style={{ flex: 1 }}
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+                    accessibilityLabel={`View details for ${item.title}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.title}>{item.title}</Text>
+                  </TouchableOpacity>
                   {!isPast && myFriendIds.size > 0 && (
                     <TouchableOpacity
                       onPress={() => setInviteModalGathering(item)}

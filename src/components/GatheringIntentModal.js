@@ -16,7 +16,7 @@ const INTENT_OPTIONS = [
 // aggregate (see gathering_intents' RLS: no update-by-host or aggregate
 // RPC exists on purpose). Asked right before joining so it captures what
 // someone's actually hoping for, not what they'd say for an audience.
-export default function GatheringIntentModal({ visible, gathering, onClose, onConfirm }) {
+export default function GatheringIntentModal({ visible, gathering, onClose, onConfirm, confirmLabel = "I'm Interested" }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [selected, setSelected] = useState(null);
@@ -75,10 +75,10 @@ export default function GatheringIntentModal({ visible, gathering, onClose, onCo
             onPress={handleConfirm}
             disabled={submitting}
             activeOpacity={0.85}
-            accessibilityLabel={submitting ? "Joining" : "I'm interested"}
+            accessibilityLabel={submitting ? 'Joining' : confirmLabel}
             accessibilityRole="button"
           >
-            <Text style={styles.submitButtonText}>{submitting ? 'Joining...' : "I'm Interested"}</Text>
+            <Text style={styles.submitButtonText}>{submitting ? 'Joining...' : confirmLabel}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.sm }} accessibilityLabel="Cancel" accessibilityRole="button">
             <Text style={styles.skipText}>Cancel</Text>

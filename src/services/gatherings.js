@@ -694,6 +694,162 @@ export async function getMyGatheringIntent(gatheringId) {
   return data?.intent ?? null;
 }
 
+export async function getGatheringById(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data, error } = await supabase
+    .from('gatherings')
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(id, display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, profiles(id, display_name, photo_url))`)
+    .eq('id', gatheringId)
+    .single();
+
+  if (error) {
+    console.error('getGatheringById error', error);
+    return null;
+  }
+
+  const { data: myProfile } = userId
+    ? await supabase.from('profiles').select('interests').eq('id', userId).single()
+    : { data: null };
+  const myInterests = myProfile?.interests ?? [];
+
+  const approvedAttendees = (data.attendees ?? [])
+    .filter((a) => a.status === 'approved')
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  const myInterest = (data.attendees ?? []).find((a) => a.user_id === userId) ?? null;
+
+  let distanceLabel = null;
+  let distanceMiles = null;
+  const { status: locStatus } = await Location.getForegroundPermissionsAsync();
+  if (locStatus === 'granted') {
+    const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+    if (location) {
+      const { data: distances } = await supabase.rpc('get_gathering_distances', {
+        my_lat: location.coords.latitude,
+        my_lng: location.coords.longitude,
+        gathering_ids: [gatheringId],
+      });
+      distanceMiles = distances?.[0]?.distance_miles ?? null;
+      distanceLabel = distanceMiles !== null
+        ? (distanceMiles < 0.1 ? 'Very close' : `${distanceMiles.toFixed(1)} mi away`)
+        : null;
+    }
+  }
+
+  return {
+    ...data,
+    approvedAttendees,
+    myStatus: myInterest?.status ?? null,
+    isHost: data.host_id === userId,
+    matchesYourInterests: data.interest_tag ? myInterests.includes(data.interest_tag) : false,
+    distanceLabel,
+    distanceMiles,
+  };
+}
+
+// Honest, derivable "first timer" signal: someone who has no other
+// *past* approved gathering anywhere — not a fabricated stat. Relies
+// on the same "anyone can see approved attendees" RLS policy that
+// already powers getFellowAttendees, so no new RPC is needed.
+export async function getFirstTimerAttendeeIds(gatheringId, attendeeUserIds) {
+  if (!attendeeUserIds || attendeeUserIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('gathering_interest')
+    .select('user_id, gatherings!inner(scheduled_at)')
+    .in('user_id', attendeeUserIds)
+    .eq('status', 'approved')
+    .neq('gathering_id', gatheringId)
+    .lt('gatherings.scheduled_at', new Date().toISOString());
+
+  if (error) {
+    console.error('getFirstTimerAttendeeIds error', error);
+    return [];
+  }
+
+  const attendedBefore = new Set((data ?? []).map((r) => r.user_id));
+  return attendeeUserIds.filter((id) => !attendedBefore.has(id));
+}
+
+// Shared by the Home screen's single "best pick" and the gathering
+// detail screen's "Why this fits you" section — real signals only
+// (attendance, distance, interest match, real flags), never an
+// invented percentage or preference claim.
+export function getGatheringFitReasons(gathering, { firstTimerCount = 0 } = {}) {
+  const reasons = [];
+  let score = 0;
+  const attendeeCount = gathering.approvedAttendees?.length ?? 0;
+
+  if (attendeeCount > 0) {
+    score += Math.min(attendeeCount, 10);
+    reasons.push(`${attendeeCount} ${attendeeCount === 1 ? 'person' : 'people'} attending`);
+  }
+  if (gathering.matchesYourInterests) {
+    score += 5;
+    reasons.push('Matches your interests');
+  }
+  if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2 && gathering.distanceLabel) {
+    score += 3;
+    reasons.push(gathering.distanceLabel);
+  }
+  const scheduled = new Date(gathering.scheduled_at);
+  const now = new Date();
+  const isToday = scheduled.getFullYear() === now.getFullYear() && scheduled.getMonth() === now.getMonth() && scheduled.getDate() === now.getDate();
+  if (isToday) {
+    score += 2;
+    reasons.push('Happening today');
+  }
+  if (gathering.beginner_friendly) {
+    score += 1;
+    reasons.push('Beginner friendly');
+  }
+  if (firstTimerCount > 0) {
+    score += 1;
+    reasons.push(`${firstTimerCount} ${firstTimerCount === 1 ? 'attendee is' : 'attendees are'} also first-timers`);
+  }
+
+  return { score, reasons };
+}
+
+const GREAT_BECAUSE_LABELS = {
+  people: 'The people',
+  location: 'The location',
+  activity: 'The activity',
+  conversation: 'Great conversations',
+  host: 'The host',
+};
+
+// Real aggregate of past attendees' own categorical feedback for this
+// host's gatherings — no free-text testimonial exists in the schema,
+// so this is the honest equivalent of "what people loved" rather than
+// a fabricated quote. `gathering_feedback` is publicly SELECTable
+// (see its RLS), so no new RPC is needed.
+export async function getHostLovedTags(hostId) {
+  const { data, error } = await supabase
+    .from('gathering_feedback')
+    .select('great_because, gatherings!inner(host_id)')
+    .eq('gatherings.host_id', hostId);
+
+  if (error) {
+    console.error('getHostLovedTags error', error);
+    return [];
+  }
+
+  const counts = {};
+  for (const row of data ?? []) {
+    for (const tag of row.great_because ?? []) {
+      counts[tag] = (counts[tag] ?? 0) + 1;
+    }
+  }
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([tag]) => GREAT_BECAUSE_LABELS[tag] ?? tag);
+}
+
 export async function stopRecurringSeries(gatheringId) {
   const { error } = await supabase.from('gatherings').update({ series_stopped: true }).eq('id', gatheringId);
   if (error) throw error;

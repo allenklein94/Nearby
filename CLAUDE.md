@@ -4,6 +4,99 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Gathering Detail Screen ("Can I see myself here?" redesign)
+
+Closed against a second user-supplied vision doc — this one about what happens after tapping
+into a single gathering. Core build is done and committed; **not yet manually tested in a
+running app** (no simulator/device session run this pass), so treat as "should work, verify
+before considering this fully closed."
+
+- The vision doc assumed an immersive full-screen "you tapped in" experience. That screen
+  **did not exist at all** before this pass — gatherings only ever expanded in place inside
+  the `GatheringsScreen.js` FlatList rows (still true, left alone). Confirmed with the user
+  that the right move was a real dedicated screen, not a bigger expand-card, since several
+  vision-doc pieces (a true full-bleed hero, a distinct post-join state) can't work as an
+  in-list expansion.
+- New `src/screens/GatheringDetailScreen.js` + `GatheringDetail` route (`RootNavigator.js`),
+  reusing the same `headerTransparent` full-bleed pattern already established by
+  `Gatherings`/`CommunityDetail`. Wired from every existing entry point that names a specific
+  gathering: the title/host row on all three `GatheringsScreen` tabs (nearby/attending/hosting),
+  all three map-view marker taps (previously just `Alert.alert` summaries — replaced with real
+  navigation, net simplification), and Home's `bestPick` card (previously navigated to the
+  generic `Gatherings` list with **no gathering id at all** — now deep-links to the specific
+  gathering).
+- Sections, each backed by real data, no invented numbers (same convention as the Home
+  redesign's `bestPick`/`weeklyRecap`):
+  - **Hero**: true full-bleed `cover_photo_path` image; a category-colored/icon fallback block
+    (not a stock photo) when a gathering has none.
+  - **"Why this fits you"**: `getGatheringFitReasons()`, a new shared pure function in
+    `services/gatherings.js`. This *replaces* the reason-scoring logic that used to live only
+    inline inside `homeDashboard.js`'s `bestPick` block — Home's best pick now calls the same
+    function, so the two surfaces can't drift. Net behavior change on Home: `bestPick` reasons
+    can now also include "Beginner friendly" (real flag, wasn't scored before); first-timer
+    count is intentionally *not* computed for Home's pick (would mean an extra query per
+    candidate gathering just to rank one) — only the detail screen, for its single gathering,
+    computes that.
+  - **Who's Going**: real avatars/names, plus an honest first-timer count via new
+    `getFirstTimerAttendeeIds()` — someone who has zero other *past* approved gatherings
+    anywhere, derived from `gathering_interest` (which is already publicly readable for
+    approved rows), not a new RPC. Vision doc's "N people coming alone" was **not** built —
+    no real signal exists for it (no "attending together" concept in the schema) and this
+    codebase's convention is to skip rather than fabricate.
+  - **The Vibe**: `energy_level`/`conversation_level`/`group_size_feel` now render as an actual
+    read-only 5-dot fill (matching `EditGatheringScreen`'s edit-mode picker's low/high labels —
+    "Chill ↔ High energy" etc.) instead of the plain "Energy 3/5" text badge that's still used
+    in the in-place list-card expansion.
+  - **Timeline**: `timeline_steps` now render with a connector-dot visual instead of plain text
+    lines (again, only on the new screen — the list-card version is untouched).
+  - **Community Perk**: expanded `GatheringOfferBadge`'s single-line badge into a full card
+    (title, business name, description) using the same `getGatheringOffer()` /
+    `gathering_id`-scoped `brand_offers` row that already existed.
+  - **Meet the Organizer**: `getHostStats()`/`getHostReputation()` (existing RPCs, previously
+    only ever rendered on `ViewProfileScreen`) now also shown inline on the detail screen. Added
+    **"What people loved"**: a new `getHostLovedTags()` in `services/gatherings.js`, aggregating
+    the real `great_because` tag array across a host's past `gathering_feedback` rows (that
+    table is publicly SELECTable per its RLS, so no new RPC needed) into e.g. "The people · Great
+    conversations · The host". This is the honest equivalent of the vision doc's "what people
+    loved" quotes — there is **no free-text field anywhere** in `gathering_feedback` (confirmed
+    against the live schema), so literal testimonial quotes were not built; this is real
+    aggregate categorical data standing in for them, most useful for a host with an established
+    track record and correctly renders as nothing for a new host with no feedback yet.
+  - **Questions**: reused `GatheringQnA` as-is.
+  - **Join CTA**: big button, honest copy — "JOIN GATHERING" for `is_public` gatherings (real
+    auto-approve), "REQUEST TO JOIN" for host-approval gatherings (was "I'm Interested" for
+    both cases in the list-card flow, which is still true there — untouched, still valid).
+    `GatheringIntentModal` gained a `confirmLabel` prop (default unchanged) so the two screens
+    can each show honest, context-correct copy without duplicating the modal.
+  - **Post-join state**: no more `Alert.alert("You're In!")` — the detail screen re-fetches
+    after joining and renders a real in-screen "You're in! 🎉" panel with a "Say Hello" button
+    that deep-links straight into `GatheringChat` for that specific gathering (the old Alert's
+    "Send a Message" button went to the generic `Matches` screen, not the gathering's own
+    chat — that gap is now closed, only on this new screen). Host viewers see a "you're hosting
+    this" banner instead of a join button; pending (awaiting host approval) viewers see a
+    plain status panel. No leave/cancel-request action was added — out of scope, doesn't exist
+    in the list-card flow either.
+  - Skipped per the "don't fabricate" decision: star-rating widgets (reputation is real
+    percentage text, not a 0–5 star signal the schema doesn't have) and the vision doc's
+    specific "you'll probably enjoy coffee afterwards, 6 attendees usually continue here" —
+    no continuation/attendance-linking data exists to back a claim that specific.
+- While verifying files before this build, found and fixed a real, already-committed bug
+  unrelated to this feature: `RootNavigator.js` had a duplicate `import OnboardingQuestionsScreen`
+  (two lines, same specifier) — invalid ES module syntax that would have failed to bundle at
+  all. Introduced by commit `58478501`, whose own message claimed to *remove* a duplicate route
+  but the diff shows it *added* this one — looks like a mismerge from an interrupted session.
+  Fixed as a one-line deletion since it blocked the whole app, not just this feature.
+- **Not done yet**: no manual run-through in a simulator/device this pass. What *was* verified:
+  every touched file compiles via `@babel/core`, a full production Metro export
+  (`npx expo export --platform ios`, 1821 modules) built clean with no resolution errors, and
+  every new/changed Supabase query shape (the `getGatheringById` joins, `getFirstTimerAttendeeIds`,
+  `getHostLovedTags`) was run directly against the live production schema to confirm the
+  columns/foreign keys/RLS assumptions are real, not just plausible-looking. What's still
+  unverified is purely visual/UX: next session should launch the app and click through —
+  tap-in from all three `GatheringsScreen` tabs, the Home best-pick card, and both a public
+  and a host-approval gathering's join flow — to confirm the layout and the post-join panel
+  actually look right, not just that the code runs.
+
 ## Outstanding: Billing / Monetization (contract + invoice generation + scheduling now live, Stripe still not started)
 
 The brand-matching business model (businesses offer targeted, quantity-limited discounts;

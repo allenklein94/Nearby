@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
-import { getNearbyGatherings } from './gatherings';
+import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -312,30 +312,7 @@ export async function getHomeDashboard() {
   // doesn't pretend an ordinary night is special.
   let bestPick = null;
   if (nearbyGatherings.length > 0) {
-    const scored = nearbyGatherings.map((g) => {
-      const attendeeCount = g.approvedAttendees?.length ?? 0;
-      const reasons = [];
-      let score = 0;
-
-      if (attendeeCount > 0) {
-        score += Math.min(attendeeCount, 10);
-        reasons.push(`${attendeeCount} ${attendeeCount === 1 ? 'person' : 'people'} attending`);
-      }
-      if (g.matchesYourInterests) {
-        score += 5;
-        reasons.push('Matches your interests');
-      }
-      if (g.distanceMiles !== null && g.distanceMiles < 2) {
-        score += 3;
-        reasons.push(g.distanceLabel);
-      }
-      if (isToday(g.scheduled_at)) {
-        score += 2;
-        reasons.push('Happening today');
-      }
-
-      return { gathering: g, score, reasons };
-    });
+    const scored = nearbyGatherings.map((g) => ({ gathering: g, ...getGatheringFitReasons(g) }));
 
     const top = scored.sort((a, b) => b.score - a.score)[0];
     if (top && top.score >= 5) {
