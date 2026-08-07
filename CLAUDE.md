@@ -4,6 +4,63 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Discover mini-app (unified search/filter/map/list + recommendations)
+
+Closed against a user-pasted external roadmap doc (Aug 7 2026) that prioritized "Discover" as
+the single biggest remaining screen — a search/filter/People/Gatherings/Communities/Places/
+Perks/map-list-card/AI-recommendations mini-app. Before building, checked that doc against the
+actual repo state and found most of its other "build next"/"phase 2/3/5" items (Gathering
+Detail, Gathering Hub, Inbox, Profile/"You", Community screens, Rewards/billing, even Timeline/
+Memory Vault) already built and committed — the doc was stale. Discover was correctly identified
+as the one real gap: `DiscoverHubScreen.js` was a thin 2-card router (Meet People → `Nearby`,
+Gatherings → `Gatherings`) plus a stories carousel, not a browsable/searchable surface. **Core
+build is done and committed; not yet manually tested in a running app** — same caveat as every
+other entry in this file: verified via `@babel/core` compile of both touched files and a full
+`npx expo export --platform ios` (1823 modules, same count as prior clean passes), not a
+simulator/device run.
+
+- `DiscoverHubScreen.js` rebuilt in place (same route, no navigation changes needed) into a real
+  unified surface over the four already-listable/searchable content types — **not** including
+  People. People were deliberately kept as their own entry card, not folded into unified text
+  search: this is a proximity dating app, and searching nearby people by name is a stalking
+  vector nothing else in this codebase has ever built; Browse/Crossed Paths on the dedicated
+  `Nearby` screen stays the only way to find people.
+- **Search**: one text box filters `getNearbyGatherings('wide')` (title/description),
+  `getPublicCommunities()` (name/description), and `getActiveOffers()` (title/business name/
+  description) client-side against already-fetched data — no new queries for those three. Places
+  is the exception: Google Places is a metered external API, so it's only queried (debounced
+  350ms) when the Places filter is active, or when a search of 2+ characters is typed with
+  location granted. `searchNearbyPlaces()` in `services/places.js` gained an optional `keyword`
+  param passed straight through to Google's Nearby Search `keyword=` parameter — a real,
+  pre-existing Google API capability, not a new fabricated signal.
+- **Filters**: a type chip row (All / Gatherings / Communities / Places / Perks) scopes which
+  sections render; Places additionally gets its own category chips (coffee/restaurants/parks/
+  hubs, same `PLACE_CATEGORIES` as `PlacesScreen.js`) since Google's Nearby Search requires a
+  `type`. Communities already-joined by the caller are excluded (checked via `getMyCommunities()`
+  against `getPublicCommunities()`), matching `CommunitiesScreen.js`'s own existing convention.
+- **Map/List views**: list is default; map (shown only when the type filter is All/Gatherings/
+  Perks, since Communities/Places have no map story) reuses `GatheringsMapView.js` completely
+  unmodified — gatherings via their existing fuzzed coordinates, perks via `brand_offers`' own
+  real lat/lng (same `mapDeals` pattern already used by `GatheringsScreen.js`). **Card view was
+  not built** — `DiscoveryScreen.js` already owns a dedicated swipe-card interaction for people,
+  and a generic "everything" card view has no single natural gesture across four differently-
+  shaped content types; scoped out rather than built shallow.
+- **"Recommended for you"**: reuses `getGatheringFitReasons()` (the existing shared scorer
+  already powering Home's `bestPick` and `GatheringDetailScreen`) against the same
+  already-fetched gathering list — real interest/distance/attendance/beginner-friendly signals,
+  score ≥ 5 threshold, top 3, exact same convention as Home. This **is** the "AI recommendations"
+  line item from the roadmap doc — a real signal-based scorer, not a new LLM call. No genuine
+  natural-language "AI Concierge" was built or attempted; that would be this codebase's first
+  actual LLM integration and needs its own explicit review (cost, latency, prompt-injection
+  surface via user-generated gathering titles/descriptions), not a silent addition here.
+- Existing working functionality preserved during the rebuild: the "Tonight" / "This Weekend"
+  quick-shortcut cards (→ `Gatherings` with `initialDateFilter`) and the Gathering Memories /
+  Public Stories Near You sections are all still present, unchanged in behavior.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should click
+  through: unified search across all four types, the type filter chips, list↔map toggle, Places
+  category chips with real location, and confirm the Recommended section's reasons render
+  correctly, on both iOS and Android.
+
 ## Outstanding: Gathering Hub ("What happens after you tap Join?" redesign)
 
 Closed against a third user-supplied vision doc (forwarded email, Jul 30 2026) describing a

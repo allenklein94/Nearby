@@ -13,9 +13,10 @@ const PLACE_TYPES = {
 // Real venues from Google Places, not invented or gathering-derived
 // data — this is genuine place discovery, distinct from (and
 // complementary to) browsing gatherings the app already knows about.
-export async function searchNearbyPlaces(latitude, longitude, category) {
+export async function searchNearbyPlaces(latitude, longitude, category, keyword = null) {
   const placeType = PLACE_TYPES[category] ?? 'point_of_interest';
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=8000&type=${placeType}&key=${GOOGLE_MAPS_API_KEY}`;
+  const keywordParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : '';
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=8000&type=${placeType}${keywordParam}&key=${GOOGLE_MAPS_API_KEY}`;
 
   const response = await fetch(url);
   const data = await response.json();
