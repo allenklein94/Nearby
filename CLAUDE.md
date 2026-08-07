@@ -39,9 +39,7 @@ exists but doesn't do the thing):
 - **Friend Circles** (Phase 5) — `FriendsScreen.js` exists (flat friends list) but no grouping
   concept (Work/Fitness/Family/Travel) anywhere in the schema or UI.
 - **Momentum** (Phase 5) — no "social momentum" signal/screen anywhere.
-- **Empty-state audit** — the doc's own closing suggestion (design an empty state for every
-  major screen before the full version). Not done as a deliberate pass; some screens have ad
-  hoc empty states (e.g. `PlacesScreen.js`'s location-denied state), most are unaudited.
+- **Empty-state audit** — **done this session, see "Outstanding: Empty-state audit" below.**
 
 **Verified in a follow-up audit pass (Aug 7 2026, same day, after the initial doc check) — all
 seven previously-unconfirmed items now checked, none left unverified**:
@@ -255,6 +253,40 @@ this pass only edited existing files, no new ones). Not yet a simulator/device r
   live-now badge (may need to manually create a test gathering scheduled a few minutes out to
   actually observe it, given the window-timing limitation above), and that tapping a business
   pin correctly opens its `BusinessProfileScreen`.
+
+## Outstanding: Empty-state audit (closes the roadmap doc's closing suggestion)
+
+Grepped every one of the 67 files in `src/screens/` for existing empty-state handling
+(`empty`/`.length === 0`/"nothing found"/"no ... yet"/"none yet" patterns) to separate real
+gaps from screens that already had something. Verified via a full `npx expo export --platform
+ios` (1830 modules, unchanged — one file edited, no new files). Not yet a simulator/device run.
+
+- **Result: most major user-facing screens already had a real empty state** — Home ("Quiet
+  night nearby"), Discover, Gatherings, Matches, Inbox, Notices, Communities, Friends,
+  Activity, Timeline, Places (already flagged in this file as the one known example), Brand
+  Offers/Perks, Discovery — all genuine, pre-existing, not fabricated for this pass. The
+  original audit line above assumed "most are unaudited" without actually checking; that
+  assumption was wrong, same class of miss as the Safety section's correction above.
+- **Two real, silent gaps found and fixed**, both in `CommunityDetailScreen.js` (built earlier
+  this session, in the Community Leaders + Calendar pass): the "Leaders & Members" and
+  "Upcoming Gatherings" sections were each guarded by `.length > 0` with no `else` — a brand
+  new or quiet community would show neither section at all, with nothing telling the viewer
+  why. Both now render their header plus a real, honest one-line message ("No members to show
+  yet." / "Nothing on the calendar yet — be the first to plan something.") when empty, instead
+  of silently vanishing.
+- **Deliberately left alone**: many other screens (`GatheringDetailScreen.js`'s "Who's Going",
+  `BusinessProfileScreen.js`'s perks/photos/reviews sections, etc.) also render nothing when
+  their underlying data is empty — but this is this codebase's own established, repeated
+  convention (e.g. `getHostLovedTags()`'s doc comment: "correctly renders as nothing for a new
+  host with no feedback yet"), not an oversight. Adding a generic "nothing here yet" banner to
+  every one of those would go against a pattern the codebase has consistently and intentionally
+  chosen elsewhere. Only touched the two cases above, where the missing section had a
+  persistent, expected header a user would otherwise wonder had disappeared.
+- **Not exhaustively covered**: admin-only screens (`AdminReportsScreen.js`, etc.), one-off
+  relationship tools (`RehearsalRoomScreen.js`, `StressTestScreen.js`, etc.), and pure forms
+  (`CreateGatheringScreen.js`, `EditGatheringScreen.js`, onboarding) were intentionally not
+  audited — they're either low-traffic, admin-facing, or have no empty-list concept to begin
+  with, not "major screens" in the roadmap doc's sense.
 
 ## Outstanding: Business Profile (public-facing screen, closes roadmap #9)
 

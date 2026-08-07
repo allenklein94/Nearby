@@ -184,6 +184,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
+        {members.length === 0 && (
+          <>
+            <Text style={styles.sectionHeader}>Leaders & Members</Text>
+            <Text style={styles.emptyText}>No members to show yet.</Text>
+          </>
+        )}
         {members.length > 0 && (
           <>
             <Text style={styles.sectionHeader}>Leaders & Members ({memberCount})</Text>
@@ -220,6 +226,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </>
         )}
 
+        {gatherings.length === 0 && (
+          <>
+            <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
+            <Text style={styles.emptyText}>Nothing on the calendar yet — be the first to plan something.</Text>
+          </>
+        )}
         {gatherings.length > 0 && (
           <>
             <View style={styles.gatheringsHeaderRow}>
@@ -281,6 +293,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chatButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   businessProfileLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  emptyText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.lg },
   gatheringCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   gatheringMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
