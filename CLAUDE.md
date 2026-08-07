@@ -13,9 +13,9 @@ gets silently forgotten:
 
 **Confirmed NOT built** (checked directly — grepped for it, found nothing, or the screen
 exists but doesn't do the thing):
-- **Unified Map Experience** (#10) — `GatheringsMapView.js` plots gatherings + brand deals +
-  public stories only. No people, no communities, no businesses-as-such, no "live activity"
-  layer.
+- **Unified Map Experience** (#10) — **closed this session as far as it honestly can be, see
+  "Outstanding: Unified Map" below** — real businesses and a live-activity layer were added;
+  people and communities were deliberately not, for reasons documented there.
 - **Insights** (#13) — **closed this session, see "Outstanding: Insights screen" below.**
 - **Safety — emergency contact + check-in** (#15) — **closed this session, see "Outstanding:
   Emergency Contacts" below — and the original audit line here was partly wrong, worth
@@ -207,6 +207,54 @@ Verified via a full `npx expo export --platform ios` (1830 modules, two more tha
   adding/removing a contact, that the SMS composer actually opens pre-addressed and pre-filled
   on a real device (the `sms:` deep link can't be verified from this sandboxed environment),
   and that the share-sheet fallback still works with zero contacts saved.
+
+## Outstanding: Unified Map (closes roadmap #10, partially — see below)
+
+Closed as far as this codebase's own privacy/data conventions honestly allow. Verified via a
+full `npx expo export --platform ios` (1830 modules — unchanged from the prior baseline, since
+this pass only edited existing files, no new ones). Not yet a simulator/device run.
+
+- **Businesses layer**: new `getNearbyBusinesses()` in `services/brandOffers.js` — every
+  active `brand_partners` row with real coordinates, not just ones currently running an offer
+  (previously the map only ever showed a business indirectly, via a deal pin). No new RPC:
+  `brand_partners`' existing RLS (`Anyone can view active partners`, `using (active = true)`)
+  already makes every active business's row, including its real lat/lng, fully public — same
+  "legitimate public business location" justification `GatheringsMapView.js`'s own existing
+  comment already gives for deal pins. Distance filtering is a plain client-side approximation
+  (equirectangular, not full haversine — plenty accurate at the 50-mile radius this uses) since,
+  unlike gatherings/offers, there's no private coordinate here that needs to stay server-side.
+  `GatheringsMapView.js` gained a `businesses`/`onSelectBusiness` prop pair (both optional,
+  default empty/no-op, so `GatheringsScreen.js`'s existing use of the same component is
+  unaffected), rendering a 🏪 pin that opens the `BusinessProfileScreen` built earlier this
+  session. Wired into `DiscoverHubScreen.js`'s map view, shown alongside deals under the same
+  Perks/All filter scope.
+- **Live activity layer**: gatherings whose `scheduled_at` falls in the same "happening now"
+  window Home's own `getHomeDashboard()` already uses ([-30min, +2h] of now) now render with a
+  red pin and a "🔴 LIVE NOW" callout badge instead of their normal category color. Reuses the
+  same signal, not a new one — inherits that function's one known limitation (the underlying
+  `getNearbyGatherings()` query itself excludes anything with `scheduled_at` already in the
+  past, so in practice this can only ever flag a gathering about to start within 30 minutes,
+  never one that's been running for up to 2 hours — a pre-existing gap in Home's own
+  `happeningNow`, not something newly introduced here; left as-is rather than changing a
+  query several other features already depend on, out of scope for this pass).
+- **People were deliberately not added, and this is a hard privacy constraint, not just an
+  unbuilt feature.** Checked `services/proximity.js` directly: this app never gives the client
+  another person's coordinates, not even fuzzed — "crossed paths" is computed entirely
+  server-side by comparing coarse rounded-location buckets via the `report-presence` Edge
+  Function, and `profiles` itself has no lat/lng column at all (already confirmed in the
+  Gathering Hub section above, re-confirmed here). There is no real coordinate anywhere in this
+  codebase to honestly plot for an individual person. Same reasoning the Gathering Hub section
+  already used to reject a GPS-based "Live Mode."
+- **Communities were deliberately not added either — no fabrication, just no real data.**
+  Checked `services/communities.js`: communities have no location field anywhere in the schema.
+  They're topic-based, not place-based, so there's no real coordinate to plot — inventing one
+  (e.g. centroid of members' fuzzed areas) would mean fabricating a signal this app has
+  otherwise been careful never to invent.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check the
+  businesses layer renders alongside deals without visual overlap/clutter in a dense area, the
+  live-now badge (may need to manually create a test gathering scheduled a few minutes out to
+  actually observe it, given the window-timing limitation above), and that tapping a business
+  pin correctly opens its `BusinessProfileScreen`.
 
 ## Outstanding: Business Profile (public-facing screen, closes roadmap #9)
 

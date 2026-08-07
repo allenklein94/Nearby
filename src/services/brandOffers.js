@@ -86,6 +86,38 @@ export async function getActiveOffers(myLat = null, myLng = null) {
   });
 }
 
+// Every nearby active business, not just ones currently running an offer —
+// brand_partners' own RLS ("Anyone can view active partners") already makes
+// active=true rows fully public, same justification GatheringsMapView's own
+// comment already gives for plotting deals with real coordinates: a
+// business address is a legitimate public location, not a private
+// individual's whereabouts. No RPC needed (unlike offers/gatherings, which
+// route distance math server-side to avoid ever shipping a person's exact
+// coordinates to the client) — there's no such coordinate to protect here.
+export async function getNearbyBusinesses(myLat, myLng, radiusMiles = 50) {
+  const { data, error } = await supabase
+    .from('brand_partners')
+    .select('id, name, logo_url, latitude, longitude')
+    .eq('active', true)
+    .not('latitude', 'is', null)
+    .not('longitude', 'is', null);
+
+  if (error) {
+    console.error('getNearbyBusinesses error', error);
+    return [];
+  }
+
+  if (myLat == null || myLng == null) return data ?? [];
+
+  const milesPerDegreeLat = 69;
+  return (data ?? []).filter((b) => {
+    const dLat = (b.latitude - myLat) * milesPerDegreeLat;
+    const dLng = (b.longitude - myLng) * milesPerDegreeLat * Math.cos((myLat * Math.PI) / 180);
+    const approxMiles = Math.sqrt(dLat * dLat + dLng * dLng);
+    return approxMiles <= radiusMiles;
+  });
+}
+
 export async function getGatheringOffer(gatheringId) {
   const { data, error } = await supabase
     .from('brand_offers')

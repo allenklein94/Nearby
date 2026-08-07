@@ -7,7 +7,7 @@ import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped 
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities } from '../services/communities';
-import { getActiveOffers } from '../services/brandOffers';
+import { getActiveOffers, getNearbyBusinesses } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl } from '../services/places';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
@@ -66,6 +66,7 @@ export default function DiscoverHubScreen({ navigation }) {
   const [gatherings, setGatherings] = useState([]);
   const [communities, setCommunities] = useState([]);
   const [offers, setOffers] = useState([]);
+  const [businesses, setBusinesses] = useState([]);
   const [places, setPlaces] = useState([]);
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
 
@@ -94,17 +95,19 @@ export default function DiscoverHubScreen({ navigation }) {
         }
       }
 
-      const [gatheringsData, publicCommunities, myCommunities, offersData] = await Promise.all([
+      const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData] = await Promise.all([
         getNearbyGatherings('wide'),
         getPublicCommunities(),
         getMyCommunities(),
         getActiveOffers(loc?.latitude ?? null, loc?.longitude ?? null),
+        getNearbyBusinesses(loc?.latitude ?? null, loc?.longitude ?? null),
       ]);
 
       const joinedCommunityIds = new Set(myCommunities.map((c) => c.id));
       setGatherings(gatheringsData);
       setCommunities(publicCommunities.filter((c) => !joinedCommunityIds.has(c.id)));
       setOffers(offersData);
+      setBusinesses(businessesData);
 
       const coverEntries = await Promise.all(
         gatheringsData.map(async (g) => {
@@ -202,6 +205,7 @@ export default function DiscoverHubScreen({ navigation }) {
   const placesToShow = isAll ? places.slice(0, PREVIEW_COUNT) : places;
 
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
+  const mapBusinesses = showPerks ? businesses : [];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -283,9 +287,11 @@ export default function DiscoverHubScreen({ navigation }) {
           <GatheringsMapView
             gatherings={showGatherings ? filteredGatherings : []}
             deals={mapDeals}
+            businesses={mapBusinesses}
             userLocation={userLocation}
             onSelectGathering={(g) => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
             onSelectDeal={() => navigation.navigate('BrandOffers')}
+            onSelectBusiness={(b) => navigation.navigate('BusinessProfile', { partnerId: b.id })}
           />
         </View>
       ) : (
