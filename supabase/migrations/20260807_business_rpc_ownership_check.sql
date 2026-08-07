@@ -195,7 +195,7 @@ as $function$
   select count(*) from business_followers where brand_partner_id = partner_id_param;
 $function$;
 
-revoke all on function public.get_business_follower_count(uuid) from public;
+revoke all on function public.get_business_follower_count(uuid) from public, anon;
 grant execute on function public.get_business_follower_count(uuid) to authenticated;
 
 -- Per-customer drill-in for the "Most Engaged" list (CRM depth, roadmap #12)
@@ -224,5 +224,5 @@ begin
 end;
 $function$;
 
-revoke all on function public.get_business_member_gathering_history(uuid, uuid) from public;
+revoke all on function public.get_business_member_gathering_history(uuid, uuid) from public, anon;
 grant execute on function public.get_business_member_gathering_history(uuid, uuid) to authenticated;

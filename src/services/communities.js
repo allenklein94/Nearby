@@ -132,6 +132,33 @@ export async function sendCommunityMessage(communityId, body) {
   if (error) throw error;
 }
 
+export async function getCommunityMembers(communityId) {
+  // RLS on community_members only shows the full roster for public
+  // communities or to the community's own creator — anyone else viewing a
+  // private community only sees their own row. That's a real privacy
+  // constraint from the schema, not a bug in this function.
+  const { data, error } = await supabase
+    .from('community_members')
+    .select('user_id, role, joined_at, profiles(display_name, photo_url)')
+    .eq('community_id', communityId)
+    .order('joined_at', { ascending: true });
+
+  if (error) {
+    console.error('getCommunityMembers error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function setCommunityMemberRole(communityId, memberUserId, role) {
+  const { error } = await supabase.rpc('set_community_member_role', {
+    community_id_param: communityId,
+    member_id_param: memberUserId,
+    new_role: role,
+  });
+  if (error) throw error;
+}
+
 export async function getCommunityGatherings(communityId) {
   const { data, error } = await supabase
     .from('gatherings')

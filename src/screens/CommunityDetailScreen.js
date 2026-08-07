@@ -1,12 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings } from '../services/communities';
+import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness } from '../services/brandOffers';
+import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import CommunityCalendar from '../components/CommunityCalendar';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+
+const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
   const { communityId, communityName } = route.params;
@@ -19,6 +23,11 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followingBusiness, setFollowingBusiness] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [memberPhotoUrls, setMemberPhotoUrls] = useState({});
+  const [changingRoleFor, setChangingRoleFor] = useState(null);
+  const [viewMode, setViewMode] = useState('list');
+  const [selectedDate, setSelectedDate] = useState(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
@@ -36,6 +45,18 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
     const upcoming = await getCommunityGatherings(communityId);
     setGatherings(upcoming.filter((g) => new Date(g.scheduled_at) >= new Date()));
+
+    const memberList = await getCommunityMembers(communityId);
+    setMembers(memberList);
+    const urlEntries = await Promise.all(
+      memberList.map(async (m) => {
+        const path = m.profiles?.photo_url;
+        if (!path) return null;
+        const url = await getSignedPhotoUrl(path);
+        return [m.user_id, url];
+      })
+    );
+    setMemberPhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
 
     if (data?.hosting_partner_id) {
       const following = await isFollowingBusiness(data.hosting_partner_id);
@@ -62,6 +83,18 @@ export default function CommunityDetailScreen({ route, navigation }) {
     } catch (e) {
       Alert.alert('Error', e.message);
     }
+  }
+
+  async function handleToggleLeader(member) {
+    const newRole = member.role === 'leader' ? 'member' : 'leader';
+    setChangingRoleFor(member.user_id);
+    try {
+      await setCommunityMemberRole(communityId, member.user_id, newRole);
+      setMembers((prev) => prev.map((m) => (m.user_id === member.user_id ? { ...m, role: newRole } : m)));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setChangingRoleFor(null);
   }
 
   async function handleJoinLeave() {
@@ -151,10 +184,76 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
+        {members.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>Leaders & Members ({memberCount})</Text>
+            {members.map((m) => {
+              const photoUrl = memberPhotoUrls[m.user_id];
+              return (
+                <View key={m.user_id} style={styles.memberRow}>
+                  {photoUrl ? (
+                    <Image source={{ uri: photoUrl }} style={styles.memberAvatar} />
+                  ) : (
+                    <View style={[styles.memberAvatar, styles.memberAvatarPlaceholder]} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.memberName}>{m.profiles?.display_name ?? 'Member'}</Text>
+                    <Text style={[styles.memberRoleBadge, m.role === 'creator' && styles.memberRoleCreator, m.role === 'leader' && styles.memberRoleLeader]}>
+                      {ROLE_LABELS[m.role] ?? m.role}
+                    </Text>
+                  </View>
+                  {isCreator && m.role !== 'creator' && (
+                    <TouchableOpacity
+                      onPress={() => handleToggleLeader(m)}
+                      disabled={changingRoleFor === m.user_id}
+                      accessibilityLabel={m.role === 'leader' ? `Remove ${m.profiles?.display_name} as leader` : `Make ${m.profiles?.display_name} a leader`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.memberActionLink}>
+                        {changingRoleFor === m.user_id ? '...' : m.role === 'leader' ? 'Remove Leader' : 'Make Leader'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
+          </>
+        )}
+
         {gatherings.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
-            {gatherings.map((g) => (
+            <View style={styles.gatheringsHeaderRow}>
+              <Text style={styles.sectionHeader}>Upcoming Gatherings</Text>
+              <View style={styles.viewToggle}>
+                <TouchableOpacity
+                  style={[styles.viewToggleButton, viewMode === 'list' && styles.viewToggleButtonActive]}
+                  onPress={() => setViewMode('list')}
+                  accessibilityLabel="List view"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: viewMode === 'list' }}
+                >
+                  <Text style={[styles.viewToggleText, viewMode === 'list' && styles.viewToggleTextActive]}>List</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.viewToggleButton, viewMode === 'calendar' && styles.viewToggleButtonActive]}
+                  onPress={() => setViewMode('calendar')}
+                  accessibilityLabel="Calendar view"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: viewMode === 'calendar' }}
+                >
+                  <Text style={[styles.viewToggleText, viewMode === 'calendar' && styles.viewToggleTextActive]}>Calendar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {viewMode === 'calendar' && (
+              <CommunityCalendar gatherings={gatherings} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+            )}
+
+            {(viewMode === 'calendar' && selectedDate
+              ? gatherings.filter((g) => new Date(g.scheduled_at).toDateString() === selectedDate.toDateString())
+              : gatherings
+            ).map((g) => (
               <View key={g.id} style={styles.gatheringCard}>
                 <Text style={styles.gatheringTitle}>{g.title}</Text>
                 <Text style={styles.gatheringMeta}>{formatDate(g.scheduled_at)}</Text>
@@ -185,4 +284,18 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   gatheringCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   gatheringMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  memberRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.sm, marginBottom: spacing.sm },
+  memberAvatar: { width: 36, height: 36, borderRadius: 18, marginRight: spacing.sm },
+  memberAvatarPlaceholder: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border },
+  memberName: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  memberRoleBadge: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
+  memberRoleCreator: { color: colors.primary, fontWeight: '700' },
+  memberRoleLeader: { color: colors.primary, fontWeight: '600' },
+  memberActionLink: { color: colors.primary, fontSize: 11, fontWeight: '700' },
+  gatheringsHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  viewToggle: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm },
+  viewToggleButton: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full },
+  viewToggleButtonActive: { backgroundColor: colors.primary },
+  viewToggleText: { color: colors.textTertiary, fontSize: 11, fontWeight: '700' },
+  viewToggleTextActive: { color: '#fff' },
 });

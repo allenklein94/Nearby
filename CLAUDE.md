@@ -38,12 +38,13 @@ exists but doesn't do the thing):
 
 **Verified in a follow-up audit pass (Aug 7 2026, same day, after the initial doc check) — all
 seven previously-unconfirmed items now checked, none left unverified**:
-- **Community Screen** (#7) — **real gap.** `CommunityDetailScreen.js` only tracks a boolean
-  `isCreator` to hide the Join button (lines 17, 29) — no members list, no leader/admin badge
-  UI anywhere, even though `community_members.role` (`services/communities.js:37`) already
-  stores `'creator'` per member (the data exists, the screen just never queries/renders it
-  as a list). "Upcoming Gatherings" (lines 144-153) is a flat filtered/sorted list, not a
-  calendar/month-grid view. Both Leaders and Calendar are genuinely absent, not just unaudited.
+- **Community Screen** (#7) — **real gap, closed later this same session — see the section
+  below.** `CommunityDetailScreen.js` only tracks a boolean `isCreator` to hide the Join button
+  (lines 17, 29) — no members list, no leader/admin badge UI anywhere, even though
+  `community_members.role` (`services/communities.js:37`) already stores `'creator'` per member
+  (the data exists, the screen just never queries/renders it as a list). "Upcoming Gatherings"
+  (lines 144-153) is a flat filtered/sorted list, not a calendar/month-grid view. Both Leaders
+  and Calendar are genuinely absent, not just unaudited.
 - **Business Profile** (#9) — **real gap, closed later this same session — see the "Outstanding:
   Business Profile" section below.** Traced every tap target that names a business:
   `BrandOffersScreen.js:142` partner name is plain non-tappable `Text`; the only nearby button
@@ -220,6 +221,49 @@ Frontend changes verified via `@babel/core` compile and a full `npx expo export 
   returns nothing), tap Message on a member with no prior conversation and confirm it opens a
   blank thread correctly, and confirm a non-owner account calling these RPCs directly (e.g. via
   a manually crafted request) genuinely gets zero/empty back now.
+
+## Outstanding: Community Leaders + Calendar (closes roadmap #7)
+
+Closed the confirmed real gap from the audit: no members list, no leader/admin concept
+surfaced anywhere, and "Upcoming Gatherings" was a flat list with no calendar view. Applied to
+production and verified via `@babel/core` compile + a full `npx expo export --platform ios`
+(1825 modules, one more than the prior 1824 — the new `CommunityCalendar.js` component).
+
+- **Leaders**: `community_members.role` already distinguished `'creator'` from `'member'`, but
+  nothing let a creator designate a leader, and there was no UPDATE policy or RPC on
+  `community_members` at all. New `set_community_member_role()` SECURITY DEFINER RPC
+  (`20260807_community_leaders.sql`) — checks the caller is the community's own creator, that
+  the target member exists and isn't the creator, then updates their role to `'leader'` or back
+  to `'member'`. `CommunityDetailScreen.js` gained a real "Leaders & Members" section
+  (`getCommunityMembers()`, new in `services/communities.js`) with avatars, role badges, and — 
+  creator view only — a "Make Leader"/"Remove Leader" toggle per member. RLS on
+  `community_members` only shows the full roster for public communities or to the creator (a
+  regular member of a private community only sees their own row) — that's an existing, real
+  privacy constraint from the schema, left as-is; the new members list just renders whatever RLS
+  actually returns rather than working around it.
+- **Calendar**: new `src/components/CommunityCalendar.js` — a real month grid (prev/next month
+  nav, dots on days with an actual `scheduled_at` gathering, tap a day to filter), not a
+  relabeled list. `CommunityDetailScreen.js` gained a List/Calendar toggle above "Upcoming
+  Gatherings"; List mode is unchanged from before, Calendar mode shows the grid and filters the
+  list below to the tapped date.
+- **Caught and fixed my own mistake while applying this**: the new `set_community_member_role`
+  RPC (and, on review, the two new RPCs from the section above —
+  `get_business_follower_count`/`get_business_member_gathering_history`) were only revoked
+  `from public`, not `from public, anon` — this file's own "Known conventions" section has
+  always said to revoke from both. Postgres/Supabase's default-privileges setup grants new
+  functions execute directly to the `anon` role (not just via the `PUBLIC` pseudo-role), so
+  `revoke ... from public` alone left all three callable by a fully unauthenticated caller.
+  Caught by re-checking `has_function_privilege('anon', ...)` after applying instead of assuming
+  the revoke worked; fixed live via a follow-up `revoke ... from anon` and corrected in both
+  migration files so a fresh apply gets it right the first time. None of the three leaked data to
+  an anon caller in practice (each still checks `auth.uid()`-based ownership internally, and an
+  anon session has no matching row), but it violated defense-in-depth and this file's own stated
+  rule, so worth being explicit about here rather than quietly folding the fix in.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should click
+  through: promote/demote a member as the creator (and confirm a non-creator genuinely can't,
+  even by calling the RPC directly), toggle List↔Calendar, tap a day with a dot and confirm the
+  list below filters correctly, and check a private community as a non-creator member (should
+  only see your own row in the members list — confirm that reads as reasonable, not broken).
 
 ## Outstanding: Discover mini-app (unified search/filter/map/list + recommendations)
 
