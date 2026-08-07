@@ -12,7 +12,8 @@ import {
   getRedemptionCounts,
   redeemOffer,
 } from '../services/brandOffers';
-import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
+import { getCommunityMemberCount } from '../services/communities';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -33,6 +34,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [gatherings, setGatherings] = useState([]);
   const [offers, setOffers] = useState([]);
   const [redemptionCounts, setRedemptionCounts] = useState({});
+  const [unlockProgress, setUnlockProgress] = useState({});
   const [redeemingId, setRedeemingId] = useState(null);
   const [lovedTags, setLovedTags] = useState([]);
   const [reputation, setReputation] = useState(null);
@@ -60,6 +62,16 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
     if (activeOffers.length > 0) {
       getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
+    }
+
+    const lockedOffers = activeOffers.filter((o) => o.unlock_scope != null);
+    if (lockedOffers.length > 0) {
+      Promise.all(
+        lockedOffers.map(async (o) => [
+          o.id,
+          o.unlock_scope === 'community' ? await getCommunityMemberCount(o.unlock_community_id) : await getApprovedAttendeeCount(o.gathering_id),
+        ])
+      ).then((entries) => setUnlockProgress(Object.fromEntries(entries)));
     }
 
     const withCovers = upcomingGatherings.filter((g) => g.cover_photo_path).slice(0, 6);
@@ -102,6 +114,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
         Alert.alert("You've already redeemed this");
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
         Alert.alert('Sorry, this offer is fully claimed');
+      } else if (e.message === 'OFFER_LOCKED') {
+        Alert.alert('Not unlocked yet', 'This offer needs more people to join first — check back soon.');
       } else {
         Alert.alert('Error', e.message);
       }
@@ -189,27 +203,43 @@ export default function BusinessProfileScreen({ route, navigation }) {
         {offers.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>Perks</Text>
-            {offers.map((offer) => (
-              <View key={offer.id} style={styles.offerCard}>
-                <Text style={styles.offerTitle}>{offer.title}</Text>
-                {offer.description ? <Text style={styles.offerDesc}>{offer.description}</Text> : null}
-                {offer.redemption_limit != null && (
-                  <Text style={styles.scarcityText}>
-                    {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} spots left
-                  </Text>
-                )}
-                <TouchableOpacity
-                  style={styles.redeemButton}
-                  onPress={() => handleRedeem(offer)}
-                  disabled={redeemingId === offer.id}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`Redeem ${offer.title}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? 'Redeeming...' : 'Redeem'}</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
+            {offers.map((offer) => {
+              const isLocked = offer.unlock_scope != null && (unlockProgress[offer.id] ?? 0) < offer.unlock_min_members;
+              return (
+                <View key={offer.id} style={styles.offerCard}>
+                  <Text style={styles.offerTitle}>{offer.title}</Text>
+                  {offer.description ? <Text style={styles.offerDesc}>{offer.description}</Text> : null}
+                  {offer.redemption_limit != null && (
+                    <Text style={styles.scarcityText}>
+                      {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} spots left
+                    </Text>
+                  )}
+                  {offer.unlock_scope != null && (
+                    <Text style={styles.scarcityText}>
+                      {isLocked
+                        ? `🔒 Unlocks at ${offer.unlock_min_members} ${offer.unlock_scope === 'community' ? 'community members' : 'attendees'} (${unlockProgress[offer.id] ?? 0}/${offer.unlock_min_members} so far)`
+                        : '🔓 Unlocked'}
+                    </Text>
+                  )}
+                  {isLocked ? (
+                    <View style={[styles.redeemButton, styles.lockedButton]}>
+                      <Text style={styles.lockedButtonText}>Locked</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.redeemButton}
+                      onPress={() => handleRedeem(offer)}
+                      disabled={redeemingId === offer.id}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`Redeem ${offer.title}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.redeemButtonText}>{redeemingId === offer.id ? 'Redeeming...' : 'Redeem'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -268,6 +298,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   scarcityText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   redeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  lockedButton: { backgroundColor: colors.surfaceElevated },
+  lockedButtonText: { color: colors.textTertiary, fontWeight: '700', fontSize: 13 },
   gatheringCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringIcon: { fontSize: 22, marginRight: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },

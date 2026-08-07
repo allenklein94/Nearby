@@ -51,6 +51,9 @@ export default function BusinessDashboardScreen() {
   const [offerGatheringId, setOfferGatheringId] = useState(null);
   const [newRedemptionLimit, setNewRedemptionLimit] = useState('');
   const [newTargetInterestTag, setNewTargetInterestTag] = useState('');
+  const [unlockEnabled, setUnlockEnabled] = useState(false);
+  const [unlockCommunityId, setUnlockCommunityId] = useState(null);
+  const [newUnlockMinMembers, setNewUnlockMinMembers] = useState('');
   const [growth, setGrowth] = useState(null);
   const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
   const [conversations, setConversations] = useState([]);
@@ -252,8 +255,18 @@ export default function BusinessDashboardScreen() {
     if (!titleCheck.safe) {
       return Alert.alert('Title not allowed', 'Please revise and try again.');
     }
+    if (unlockEnabled) {
+      const minMembers = parseInt(newUnlockMinMembers.trim(), 10);
+      if (!minMembers || minMembers < 1) {
+        return Alert.alert('Minimum required', 'Enter how many members are needed to unlock this offer.');
+      }
+      if (!offerGatheringId && !unlockCommunityId) {
+        return Alert.alert('Pick a community', 'Choose which of your communities this offer unlocks with.');
+      }
+    }
     setSubmitting(true);
     try {
+      const unlockScope = unlockEnabled ? (offerGatheringId ? 'gathering' : 'community') : null;
       await createBusinessOffer({
         partnerId: selectedPartner.id,
         title: newTitle.trim(),
@@ -263,6 +276,9 @@ export default function BusinessDashboardScreen() {
         gatheringId: offerGatheringId,
         redemptionLimit: newRedemptionLimit.trim() ? parseInt(newRedemptionLimit.trim(), 10) : null,
         targetInterestTag: newTargetInterestTag.trim() || null,
+        unlockScope,
+        unlockCommunityId: unlockScope === 'community' ? unlockCommunityId : null,
+        unlockMinMembers: unlockScope ? parseInt(newUnlockMinMembers.trim(), 10) : null,
       });
       setCreateModalVisible(false);
       setNewTitle('');
@@ -271,6 +287,9 @@ export default function BusinessDashboardScreen() {
       setOfferGatheringId(null);
       setNewRedemptionLimit('');
       setNewTargetInterestTag('');
+      setUnlockEnabled(false);
+      setUnlockCommunityId(null);
+      setNewUnlockMinMembers('');
       loadOffers(selectedPartner.id);
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -567,6 +586,11 @@ export default function BusinessDashboardScreen() {
                         <Text style={styles.offerRedemptionCount}>
                           {offerRedemptionCounts[offer.id] ?? 0} redeemed{offer.redemption_limit != null ? ` of ${offer.redemption_limit}` : ''}
                         </Text>
+                        {offer.unlock_scope != null && (
+                          <Text style={styles.breakdownText}>
+                            🔒 Unlocks at {offer.unlock_min_members} {offer.unlock_scope === 'community' ? 'community members' : 'approved attendees'}
+                          </Text>
+                        )}
                       </View>
                       <Switch
                         value={offer.active}
@@ -673,6 +697,51 @@ export default function BusinessDashboardScreen() {
                 onChangeText={setNewTargetInterestTag}
                 accessibilityLabel="Target interest tag, optional"
               />
+
+              <View style={[styles.toggleRow, { marginTop: spacing.md }]}>
+                <Text style={styles.toggleRowLabel}>
+                  {offerGatheringId ? 'Require a minimum number of attendees' : 'Require a community to hit a member goal'}
+                </Text>
+                <Switch
+                  value={unlockEnabled}
+                  onValueChange={setUnlockEnabled}
+                  accessibilityLabel={`Group unlock, ${unlockEnabled ? 'on' : 'off'}, tap to toggle`}
+                />
+              </View>
+
+              {unlockEnabled && (
+                <>
+                  {!offerGatheringId && (
+                    communities.length === 0 ? (
+                      <Text style={styles.offerDescription}>You need a community to gate this offer on — create one from the Create tab first.</Text>
+                    ) : (
+                      <View style={styles.chipRow}>
+                        {communities.map((c) => (
+                          <TouchableOpacity
+                            key={c.id}
+                            style={[styles.chip, unlockCommunityId === c.id && styles.chipSelected]}
+                            onPress={() => setUnlockCommunityId(c.id)}
+                            accessibilityLabel={`${c.name}, ${c.memberCount} members${unlockCommunityId === c.id ? ', selected' : ''}`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={[styles.chipText, unlockCommunityId === c.id && styles.chipTextSelected]}>{c.name} ({c.memberCount})</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )
+                  )}
+                  <TextInput
+                    style={[styles.input, { marginTop: spacing.sm }]}
+                    placeholder={offerGatheringId ? 'Attendees needed to unlock, e.g. 10' : 'Members needed to unlock, e.g. 10'}
+                    placeholderTextColor={colors.textTertiary}
+                    value={newUnlockMinMembers}
+                    onChangeText={(t) => setNewUnlockMinMembers(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    accessibilityLabel="Minimum members or attendees to unlock this offer"
+                  />
+                </>
+              )}
+
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleCreateOffer}
@@ -855,4 +924,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  toggleRowLabel: { ...typography.body, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
+  chip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
 });

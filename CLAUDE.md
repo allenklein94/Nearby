@@ -82,16 +82,10 @@ seven previously-unconfirmed items now checked, none left unverified**:
   drill-in to an individual customer's visit history or contact info, and outreach is limited
   to one broadcast "Post Update to Followers" — no per-customer CRM record or targeted
   outreach tool.
-- **Rewards** (#11) — **both sub-mechanics are real gaps.** Grepped `src/` and
-  `supabase/migrations/` for `loyalt|reward.?point|tier|streak` — every hit is unrelated
-  (geofencing "tier," subscription "free-tier," gathering-attendance streaks, which are a
-  different feature). Zero loyalty/points/tier mechanics tied to rewards/perks anywhere, no
-  schema columns for it. Same for group-unlock: grepped `unlock|threshold|refer.*friend|
-  invite.*unlock` — the only real `unlock` code is `getUnlockedPerksCount()`
-  (`homeDashboard.js:259-272`), which just counts currently-active `brand_offers` rows, no
-  member/friend-count threshold logic anywhere. Both would need new schema (a points ledger
-  or a member-count-gated offer flag) — deliberately not stubbed with fabricated numbers,
-  consistent with this file's "no invented numbers" convention.
+- **Rewards** (#11) — **closed this session, see "Outstanding: Rewards" below.** The original
+  audit here (grepping for `loyalt|reward.?point|tier|streak|unlock|threshold`, all unrelated
+  hits) was accurate — confirmed again via a dedicated research pass before building — zero
+  loyalty/points/tier/group-unlock mechanics existed anywhere.
 - **Settings** (#16) — **Payments: partial gap; Business Mode: real gap.** Real sections
   confirmed in `SettingsScreen.js`: Looking For, Appearance, Language, Notifications, Privacy,
   Discovery Preferences, Account, Connect, Safety, Reflection Tools, Account & Billing, Help &
@@ -209,6 +203,84 @@ to production (`enmosvippabmuqslzrox`) and applied there, not just written local
   non-Premium account and confirm the "This is a Premium feature." message surfaces cleanly;
   and confirm hitting the shared daily AI-use cap surfaces the 429 message correctly instead of
   a raw error.
+
+## Outstanding: Rewards (closes roadmap #11)
+
+Closed against the confirmed real gap: zero loyalty/points/tier or group-unlock mechanics
+existed anywhere (re-confirmed via a dedicated research pass before building, not just reused
+from the original audit). Design was discussed with the user first — three real decisions
+(what earns points, what a tier unlocks, which entities can gate group-unlock) were resolved
+before writing any schema, same practice as AI Concierge's prompt-injection discussion above.
+Applied to production (`enmosvippabmuqslzrox`) and verified live end-to-end before committing —
+not just a schema-shape check.
+
+- **Points/tiers — deliberately the smaller half, no new schema at all.** Points are a live
+  count of the caller's own `offer_redemptions` rows (`getMyRewardStatus()` in new
+  `src/services/rewards.js`) — RLS already scopes that table's SELECT to `auth.uid() = user_id`
+  (the same access `getMyRedemptions()` in `brandOffers.js` already relies on), so no ledger
+  table, no `trusted_update`-guarded counter column, no race condition to guard against. Three
+  fixed thresholds (Bronze 5 / Silver 15 / Gold 30 redemptions) map to a cosmetic badge only —
+  explicitly **not** wired to unlock anything else, per the user's own choice when asked. New
+  `src/screens/RewardsScreen.js` + `Rewards` route (`RootNavigator.js`), reachable from a new
+  "🎁 Your Rewards" row on `ProfileScreen.js`, same `timelineLink` style as the Momentum/
+  Insights/Memory Vault rows above it — a tier card with a progress bar to the next tier, and a
+  full tier list with reached/unreached state. **Deliberately not folded into Momentum**
+  (attendance streaks/deltas) even though both are "derived signal, no fabrication" features —
+  keeping Rewards scoped to perks specifically avoids two screens reading the same underlying
+  rows into two different-shaped numbers; this was an explicit tradeoff surfaced to the user
+  before building, who chose to keep the scope narrow.
+- **Group-unlock** (`20260807_rewards_group_unlock.sql`): `brand_offers` gained
+  `unlock_scope` (`'community' | 'gathering' | null`), `unlock_community_id` (new FK to
+  `communities`), and `unlock_min_members` — null/null/null on every pre-existing row, fully
+  backward compatible. A `'gathering'`-scoped offer reuses the *existing* `gathering_id` column
+  already on `brand_offers` (the one that powers gathering-tied "Community Perk" offers) rather
+  than adding a second FK — a gathering-linked offer just optionally also gets a real minimum-
+  approved-attendee gate. A `brand_offers_unlock_shape_check` constraint keeps the three columns
+  internally consistent (scope requires its threshold and its matching linked id) so a malformed
+  row can't be inserted even outside the app. **Enforced server-side, not just in the UI**: a new
+  `enforce_offer_unlock_threshold()` BEFORE INSERT trigger on `offer_redemptions` counts real
+  `community_members` rows (community scope) or real `gathering_interest.status='approved'` rows
+  (gathering scope) and raises `'OFFER_LOCKED'` if the count is under threshold — the same
+  recognizable-error-message pattern `redeemOffer()`'s callers already handle for
+  `ALREADY_REDEEMED`/`REDEMPTION_LIMIT_REACHED`, so both `BrandOffersScreen.js` and
+  `BusinessProfileScreen.js` now catch it with a clear "needs more people to join first" message
+  instead of a raw error. Both screens also show live unlock progress ("6/10 members joined")
+  and swap the redeem button for a disabled "Locked" state while the threshold isn't met, reusing
+  `getCommunityMemberCount()` (already existed, `communities.js`) and a new
+  `getApprovedAttendeeCount()` (`gatherings.js`, same one-line `count`-only pattern). Businesses
+  set the threshold when creating an offer (`BusinessDashboardScreen.js`'s create-offer modal
+  gained a group-unlock toggle — a community picker with real member counts for standing offers,
+  or a plain attendee-count input for offers attached via the existing "+ Attach Reward" flow on
+  a specific gathering).
+- **While building this, found the "+ Attach Reward" gathering-offer flow had never actually
+  been wired to a picker** — `offerGatheringId` state existed and was passed through to
+  `createBusinessOffer()`, but the only way it was ever set was the per-gathering "+ Attach
+  Reward" button already in the Gatherings tab (`BusinessDashboardScreen.js:441-450`, pre-
+  existing, unmodified) — there was never a bare "pick any gathering" dropdown in the general
+  "+ Create Offer" modal. Not a bug — the attach-from-the-gathering-row flow is a complete, real
+  path — but worth noting so a future session doesn't assume a picker is missing and add a
+  redundant one.
+- **Verified live end-to-end before committing, not just schema application**: created real
+  test offers/communities/redemptions against production
+  (`brand_partners` row `Coastal Coffee`, `67dd3d6d-f36b-4b20-8a80-ac980baecc30`, the same test
+  partner used by the billing section below) and confirmed via direct SQL — a gathering-scoped
+  offer's redemption is genuinely rejected (`OFFER_LOCKED`) when the real approved-attendee count
+  is under threshold and genuinely succeeds once it's met; same for a community-scoped offer
+  after adding a second real `community_members` row; the `brand_offers_unlock_shape_check`
+  constraint genuinely rejects an inconsistent insert (scope set without its matching id); and
+  `getMyRewardStatus()`'s RLS-scoped count genuinely returns 5 (crossing into Bronze) for a
+  profile with 5 real redemptions and genuinely returns 0 for a different profile querying at the
+  same time — confirmed the isolation, not just the happy path. All test data (offers,
+  redemptions, one test community) deleted afterward; production is back to its pre-test state
+  (this project has almost no real data yet — 0 communities, 0 offers, 1 partner, 4 profiles at
+  the time of this pass, so every scenario above had to be constructed, not found).
+- **Not done yet**: no manual run-through in a simulator/device. Next session should check:
+  creating a standing offer with a community-unlock threshold and a gathering-attached offer with
+  an attendee-count threshold from the dashboard, that both correctly show live progress and a
+  disabled "Locked" state on `BrandOffersScreen`/`BusinessProfileScreen` before their threshold is
+  met and unlock in real time after it's crossed, and that the Rewards screen renders correctly
+  for a brand-new account (no tier yet, 5-to-go progress bar) versus one with real redemption
+  history.
 
 ## Outstanding: Friend Circles (closes Phase 5 "Friend Circles" gap)
 

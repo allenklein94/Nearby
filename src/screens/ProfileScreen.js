@@ -467,6 +467,16 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>🔥 Your Momentum</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Rewards')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your rewards tier"
+          accessibilityRole="button"
+        >
+          <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (

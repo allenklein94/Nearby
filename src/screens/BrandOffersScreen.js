@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Act
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts } from '../services/brandOffers';
+import { getCommunityMemberCount } from '../services/communities';
+import { getApprovedAttendeeCount } from '../services/gatherings';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -20,6 +22,7 @@ export default function BrandOffersScreen({ navigation }) {
   const [redeemingId, setRedeemingId] = useState(null);
   const [followingStatus, setFollowingStatus] = useState({});
   const [redemptionCounts, setRedemptionCounts] = useState({});
+  const [unlockProgress, setUnlockProgress] = useState({});
 
   const load = useCallback(async () => {
     let myLat = null;
@@ -44,6 +47,15 @@ export default function BrandOffersScreen({ navigation }) {
     const limitedOfferIds = offersData.filter((o) => o.redemption_limit != null).map((o) => o.id);
     const counts = await getRedemptionCounts(limitedOfferIds);
     setRedemptionCounts(counts);
+
+    const lockedOffers = offersData.filter((o) => o.unlock_scope != null);
+    const progressEntries = await Promise.all(
+      lockedOffers.map(async (o) => [
+        o.id,
+        o.unlock_scope === 'community' ? await getCommunityMemberCount(o.unlock_community_id) : await getApprovedAttendeeCount(o.gathering_id),
+      ])
+    );
+    setUnlockProgress(Object.fromEntries(progressEntries));
   }, []);
 
   // Reload on focus, not just mount — offers can change (new ones
@@ -95,6 +107,8 @@ export default function BrandOffersScreen({ navigation }) {
         Alert.alert('Already redeemed', "You've already claimed this offer.");
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
         Alert.alert('Offer fully claimed', "This offer's limited spots have all been claimed.");
+      } else if (e.message === 'OFFER_LOCKED') {
+        Alert.alert('Not unlocked yet', "This offer needs more people to join first — check back soon.");
       } else {
         Alert.alert('Error', e.message);
       }
@@ -130,6 +144,7 @@ export default function BrandOffersScreen({ navigation }) {
 
         {offers.map((offer) => {
           const alreadyRedeemed = redeemedIds.includes(offer.id);
+          const isLocked = offer.unlock_scope != null && (unlockProgress[offer.id] ?? 0) < offer.unlock_min_members;
           return (
             <View key={offer.id} style={styles.card}>
               <View style={styles.cardHeader}>
@@ -163,6 +178,13 @@ export default function BrandOffersScreen({ navigation }) {
                   {Math.max(0, offer.redemption_limit - (redemptionCounts[offer.id] ?? 0))} of {offer.redemption_limit} spots left
                 </Text>
               )}
+              {offer.unlock_scope != null && (
+                <Text style={styles.scarcityText}>
+                  {isLocked
+                    ? `🔒 Unlocks at ${offer.unlock_min_members} ${offer.unlock_scope === 'community' ? 'community members' : 'attendees'} (${unlockProgress[offer.id] ?? 0}/${offer.unlock_min_members} so far)`
+                    : `🔓 Unlocked — ${offer.unlock_scope === 'community' ? 'community' : 'gathering'} goal reached`}
+                </Text>
+              )}
               <TouchableOpacity
                 onPress={async () => {
                   const currentlyFollowing = followingStatus[offer.partner_id];
@@ -187,6 +209,10 @@ export default function BrandOffersScreen({ navigation }) {
               {alreadyRedeemed ? (
                 <View style={styles.redeemedBadge}>
                   <Text style={styles.redeemedBadgeText}>{t('brandOffers.redeemed')}</Text>
+                </View>
+              ) : isLocked ? (
+                <View style={[styles.redeemButton, styles.lockedButton]}>
+                  <Text style={styles.lockedButtonText}>Locked</Text>
                 </View>
               ) : (
                 <TouchableOpacity
@@ -231,4 +257,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   redeemedBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   redeemedBadgeText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  lockedButton: { backgroundColor: colors.surfaceElevated },
+  lockedButtonText: { color: colors.textTertiary, fontWeight: '700', fontSize: 14 },
 });

@@ -948,3 +948,14 @@ export async function getGatheringMeetupPoint(gatheringId) {
   if (!point || point.latitude == null || point.longitude == null) return null;
   return { latitude: point.latitude, longitude: point.longitude };
 }
+
+export async function getApprovedAttendeeCount(gatheringId) {
+  const { count, error } = await supabase
+    .from('gathering_interest')
+    .select('id', { count: 'exact', head: true })
+    .eq('gathering_id', gatheringId)
+    .eq('status', 'approved');
+
+  if (error) return 0;
+  return count ?? 0;
+}

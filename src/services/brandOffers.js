@@ -423,7 +423,7 @@ export async function getMyBusinessOffers(partnerId) {
   return data ?? [];
 }
 
-export async function createBusinessOffer({ partnerId, title, description, rewardType, redemptionInstructions, gatheringId = null, redemptionLimit = null, targetInterestTag = null }) {
+export async function createBusinessOffer({ partnerId, title, description, rewardType, redemptionInstructions, gatheringId = null, redemptionLimit = null, targetInterestTag = null, unlockScope = null, unlockCommunityId = null, unlockMinMembers = null }) {
   // Gathering-specific rewards default to expiring 48 hours after
   // the gathering itself — without this, an offer attached to one
   // event would otherwise stay redeemable forever, since it has no
@@ -449,6 +449,9 @@ export async function createBusinessOffer({ partnerId, title, description, rewar
       expires_at: expiresAt,
       redemption_limit: redemptionLimit,
       target_interest_tag: targetInterestTag,
+      unlock_scope: unlockScope,
+      unlock_community_id: unlockScope === 'community' ? unlockCommunityId : null,
+      unlock_min_members: unlockScope ? unlockMinMembers : null,
     });
 
   if (error) throw error;
