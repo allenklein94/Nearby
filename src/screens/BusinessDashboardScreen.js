@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency } from '../services/brandOffers';
+import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -44,6 +44,9 @@ export default function BusinessDashboardScreen() {
   const [postingUpdate, setPostingUpdate] = useState(false);
   const [needsAttention, setNeedsAttention] = useState([]);
   const [topMembers, setTopMembers] = useState([]);
+  const [expandedMemberId, setExpandedMemberId] = useState(null);
+  const [memberHistories, setMemberHistories] = useState({});
+  const [loadingMemberHistory, setLoadingMemberHistory] = useState(false);
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [offerGatheringId, setOfferGatheringId] = useState(null);
   const [newRedemptionLimit, setNewRedemptionLimit] = useState('');
@@ -160,6 +163,25 @@ export default function BusinessDashboardScreen() {
   async function loadTopMembers(partnerId) {
     const results = await getBusinessTopMembers(partnerId);
     setTopMembers(results);
+  }
+
+  async function handleToggleMemberHistory(member) {
+    if (expandedMemberId === member.user_id) {
+      setExpandedMemberId(null);
+      return;
+    }
+    setExpandedMemberId(member.user_id);
+    if (!memberHistories[member.user_id]) {
+      setLoadingMemberHistory(true);
+      const history = await getBusinessMemberGatheringHistory(selectedPartner.id, member.user_id);
+      setMemberHistories((prev) => ({ ...prev, [member.user_id]: history }));
+      setLoadingMemberHistory(false);
+    }
+  }
+
+  function handleMessageMember(member) {
+    setSection('inbox_modal');
+    openConversation({ userId: member.user_id, displayName: member.display_name });
   }
 
   async function loadVisitFrequency(partnerId) {
@@ -456,10 +478,36 @@ export default function BusinessDashboardScreen() {
                   <>
                     <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Most Engaged</Text>
                     {topMembers.map((m, i) => (
-                      <View key={m.user_id} style={styles.gatheringRow}>
+                      <TouchableOpacity
+                        key={m.user_id}
+                        style={styles.gatheringRow}
+                        onPress={() => handleToggleMemberHistory(m)}
+                        accessibilityLabel={`${m.display_name}, ${m.gatherings_attended} gatherings attended, tap to see visit history`}
+                        accessibilityRole="button"
+                      >
                         <Text style={styles.offerTitle}>{i + 1}. {m.display_name}</Text>
                         <Text style={styles.offerDescription}>{m.gatherings_attended} gathering{m.gatherings_attended === 1 ? '' : 's'} attended</Text>
-                      </View>
+                        {expandedMemberId === m.user_id && (
+                          <View style={styles.memberHistoryPanel}>
+                            {loadingMemberHistory && !memberHistories[m.user_id] ? (
+                              <ActivityIndicator color={colors.primary} size="small" />
+                            ) : (
+                              (memberHistories[m.user_id] ?? []).map((g) => (
+                                <Text key={g.gathering_id} style={styles.memberHistoryLine}>
+                                  • {g.title} — {formatDate(g.scheduled_at)}
+                                </Text>
+                              ))
+                            )}
+                            <TouchableOpacity
+                              onPress={() => handleMessageMember(m)}
+                              accessibilityLabel={`Message ${m.display_name}`}
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.messageMemberLink}>💬 Message {m.display_name}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </TouchableOpacity>
                     ))}
                   </>
                 )}
@@ -780,6 +828,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   taskRow: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.xs },
   taskText: { color: colors.textPrimary, fontSize: 13 },
   attachRewardText: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
+  memberHistoryPanel: { marginTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
+  memberHistoryLine: { color: colors.textSecondary, fontSize: 12, marginBottom: 2 },
+  messageMemberLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: spacing.sm },
   growthCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginTop: spacing.md,

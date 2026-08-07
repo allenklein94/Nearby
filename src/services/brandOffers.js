@@ -117,6 +117,18 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+export async function getBusinessMemberGatheringHistory(partnerId, memberId) {
+  const { data, error } = await supabase.rpc('get_business_member_gathering_history', {
+    partner_id_param: partnerId,
+    member_id_param: memberId,
+  });
+  if (error) {
+    console.error('getBusinessMemberGatheringHistory error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getBusinessTopMembers(partnerId) {
   const { data, error } = await supabase.rpc('get_business_top_members', { partner_id_param: partnerId });
   if (error) {
@@ -306,16 +318,18 @@ export async function getBusinessProfile(partnerId) {
 }
 
 export async function getBusinessFollowerCount(partnerId) {
-  // get_business_dashboard_stats also returns redemption/repeat-redeemer
-  // figures — those are the owner's own business-performance metrics, not
-  // something a regular user browsing a public profile should see, so only
-  // total_followers is pulled out of it here.
-  const { data, error } = await supabase.rpc('get_business_dashboard_stats', { partner_id_param: partnerId });
+  // Deliberately calls the narrow get_business_follower_count() RPC, not
+  // get_business_dashboard_stats — that one now checks the caller actually
+  // owns the partner (see 20260807_business_rpc_ownership_check.sql) and
+  // returns zero for anyone else, since it also carries redemption/repeat-
+  // redeemer figures that are the owner's own business-performance metrics,
+  // not something a regular user browsing a public profile should see.
+  const { data, error } = await supabase.rpc('get_business_follower_count', { partner_id_param: partnerId });
   if (error) {
     console.error('getBusinessFollowerCount error', error);
     return 0;
   }
-  return data?.[0]?.total_followers ?? 0;
+  return data ?? 0;
 }
 
 export async function getBusinessPublicGatherings(partnerId) {

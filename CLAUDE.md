@@ -163,11 +163,63 @@ modules, one more than the prior clean 1823-module baseline), not a simulator/de
   `partner_id_param` with no ownership check, grants execute to any `authenticated` user), are
   both separate, more sensitive changes — not attempted here, flagged for a future security pass
   since it's a real gap between "no client currently calls this except the owner's own screen"
-  and "actually enforced."
+  and "actually enforced." **Both closed later this same session — see the section immediately
+  below.**
 - **Not done yet**: no manual run-through in a simulator/device. Next session should click
   through all five entry points, confirm follow/unfollow and redeem actually round-trip, and
   check both a business with no reviews yet (section should render nothing) and one with real
   `gathering_feedback` data.
+
+## Outstanding: Business RPC ownership check (security fix) + CRM member drill-in (closes #12 partial gap)
+
+Closed the security gap flagged in the section above, then built on top of the now-locked-down
+functions to close the rest of roadmap #12 (Business Community CRM). Applied to production
+(`enmosvippabmuqslzrox`) and verified live via the Supabase Management API — both the
+`profiles.managed_partner_id = auth.uid()`'s row ownership predicate and `auth.uid()` itself
+resolving correctly from `set_config('request.jwt.claims', ...)` were confirmed directly (the
+underlying tables have zero real follower/redemption/attendee rows yet in production, so the
+functions' actual outputs read as zero for both an owner and non-owner right now — the ownership
+*predicate* itself was verified independently since the data can't yet distinguish the two).
+Frontend changes verified via `@babel/core` compile and a full `npx expo export --platform ios`
+(1824 modules, same count as the Business Profile pass — no new files this time, edits only).
+
+- **Security fix** (`20260807_business_rpc_ownership_check.sql`): `get_business_dashboard_stats`,
+  `get_business_growth`, `get_business_top_members`, `get_business_visit_frequency`, and
+  `get_business_insights` were all SECURITY DEFINER functions granted to any `authenticated`
+  user with no check that the caller actually owned `partner_id_param` — `BusinessDashboardScreen.js`
+  only ever calling them with the caller's own `managed_partner_id` was a UI convention, not real
+  access control. `get_business_top_members` in particular returns named individuals'
+  `display_name` + attendance count, so this was a real PII leak: any logged-in user who knew or
+  guessed a `partner_id` could pull another business's follower/redemption counts and top-
+  attendee list. Each function now checks `exists (select 1 from profiles where id = auth.uid()
+  and managed_partner_id = partner_id_param)` up front and returns empty/zero/null instead of
+  raising, matching this codebase's existing RLS convention of "just don't show it" rather than
+  leaking existence via an error message.
+- Since `get_business_dashboard_stats`'s `total_followers` was the one piece of that data
+  legitimately shown on the public `BusinessProfileScreen` (added earlier this session), a new,
+  deliberately narrow `get_business_follower_count(partner_id)` was added alongside — public-safe,
+  no ownership check, returns only a count, no revenue/attendee data. `getBusinessFollowerCount()`
+  in `services/brandOffers.js` now calls that instead.
+- **CRM member drill-in** (closes the rest of #12): new `get_business_member_gathering_history()`
+  RPC (same ownership check, owner-only) plus `getBusinessMemberGatheringHistory()` in
+  `services/brandOffers.js`. `BusinessDashboardScreen.js`'s "Most Engaged" list rows are now
+  tappable — expanding a member shows their real per-gathering visit history at this business
+  (title + date, sourced from the same `gathering_interest`/`gatherings` join the leaderboard
+  itself already uses) and a "💬 Message" link that opens the existing inbox conversation UI
+  (`openConversation()`, reused as-is) pre-targeted at that member, including members with no
+  prior conversation — real targeted outreach, not just the existing mass-broadcast "Post Update
+  to Followers." This was the specific gap the earlier audit called out: "no per-customer CRM
+  record, no drill-down... outreach is limited to one broadcast."
+- **Deliberately not built**: a persistent CRM record (notes/tags/contact history stored against
+  a member beyond what's derivable from real attendance data), and per-customer analytics beyond
+  visit history (e.g. lifetime redemption value) — both would need new schema, and nothing here
+  needed one; this stays within "real data, better surfaced," the same bar as everything else in
+  this file.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should click
+  through: expand a top-member row (visit history renders, or an empty state if the RPC legitimately
+  returns nothing), tap Message on a member with no prior conversation and confirm it opens a
+  blank thread correctly, and confirm a non-owner account calling these RPCs directly (e.g. via
+  a manually crafted request) genuinely gets zero/empty back now.
 
 ## Outstanding: Discover mini-app (unified search/filter/map/list + recommendations)
 
