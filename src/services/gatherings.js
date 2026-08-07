@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -15,7 +17,7 @@ function wideArea(latitude, longitude) {
 
 const WIDE_TIER_MAX_MILES = 15;
 
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path';
 
 export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
@@ -193,7 +195,7 @@ export async function getMyGatherings() {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select('id, title, description, interest_tag, scheduled_at, show_on_map, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
+    .select('id, title, description, interest_tag, scheduled_at, show_on_map, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
     .eq('host_id', userId)
     .order('scheduled_at', { ascending: true });
 
@@ -245,7 +247,7 @@ export async function getMyAttendingGatherings() {
 
   const { data, error } = await supabase
     .from('gathering_interest')
-    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
+    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
     .eq('user_id', userId)
     .eq('status', 'approved')
     .order('id', { ascending: false });
@@ -524,13 +526,172 @@ export async function getAllPendingRequests() {
   return data ?? [];
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps }) {
   const { error } = await supabase
     .from('gatherings')
-    .update({ title, description, scheduled_at: scheduledAt })
+    .update({
+      title,
+      description,
+      scheduled_at: scheduledAt,
+      energy_level: energyLevel,
+      conversation_level: conversationLevel,
+      group_size_feel: groupSizeFeel,
+      beginner_friendly: beginnerFriendly,
+      timeline_steps: timelineSteps,
+    })
     .eq('id', gatheringId);
 
   if (error) throw error;
+}
+
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function base64ToUint8Array(base64) {
+  const clean = base64.replace(/[^A-Za-z0-9+/]/g, '');
+  const bytes = [];
+  let buffer = 0;
+  let bits = 0;
+  for (let i = 0; i < clean.length; i++) {
+    const c = BASE64_CHARS.indexOf(clean[i]);
+    if (c === -1) continue;
+    buffer = (buffer << 6) | c;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buffer >> bits) & 0xff);
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+export async function pickGatheringCoverPhoto() {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    throw new Error('Photo library access is needed to choose a cover photo.');
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [16, 9],
+    quality: 0.8,
+  });
+
+  if (result.canceled) return null;
+  return result.assets[0];
+}
+
+export async function uploadGatheringCoverPhoto(gatheringId, asset) {
+  const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' });
+
+  if (!base64 || base64.length === 0) {
+    throw new Error('Could not read the selected photo. Please try a different one.');
+  }
+
+  const bytes = base64ToUint8Array(base64);
+  const path = `${gatheringId}/cover-${Date.now()}.jpg`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('gathering-photos')
+    .upload(path, bytes, { contentType: 'image/jpeg' });
+
+  if (uploadError) throw uploadError;
+
+  await supabase.from('gatherings').update({ cover_photo_path: path }).eq('id', gatheringId);
+
+  return path;
+}
+
+export async function getSignedGatheringPhotoUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from('gathering-photos')
+    .createSignedUrl(path, 3600);
+  if (error) return null;
+  return data.signedUrl;
+}
+
+export async function getGatheringQuestions(gatheringId) {
+  const { data, error } = await supabase
+    .from('gathering_questions')
+    .select('id, question_body, answer_body, answered_at, created_at, asker_id, asker:profiles!gathering_questions_asker_id_fkey(display_name)')
+    .eq('gathering_id', gatheringId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getGatheringQuestions error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function askGatheringQuestion(gatheringId, questionBody) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data: gathering } = await supabase
+    .from('gatherings')
+    .select('host_id')
+    .eq('id', gatheringId)
+    .single();
+
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', userId)
+    .eq('blocked_id', gathering?.host_id)
+    .maybeSingle();
+
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', gathering?.host_id)
+    .eq('blocked_id', userId)
+    .maybeSingle();
+
+  if (blockedByMe || blockedMe) {
+    throw new Error("You can't ask a question on this gathering.");
+  }
+
+  const { error } = await supabase
+    .from('gathering_questions')
+    .insert({ gathering_id: gatheringId, asker_id: userId, question_body: questionBody });
+
+  if (error) throw error;
+}
+
+export async function answerGatheringQuestion(questionId, answerBody) {
+  const { error } = await supabase
+    .from('gathering_questions')
+    .update({ answer_body: answerBody, answered_at: new Date().toISOString() })
+    .eq('id', questionId);
+
+  if (error) throw error;
+}
+
+export async function setGatheringIntent(gatheringId, intent) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { error } = await supabase
+    .from('gathering_intents')
+    .upsert({ gathering_id: gatheringId, user_id: userId, intent }, { onConflict: 'gathering_id,user_id' });
+
+  if (error) throw error;
+}
+
+export async function getMyGatheringIntent(gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { data } = await supabase
+    .from('gathering_intents')
+    .select('intent')
+    .eq('gathering_id', gatheringId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  return data?.intent ?? null;
 }
 
 export async function stopRecurringSeries(gatheringId) {

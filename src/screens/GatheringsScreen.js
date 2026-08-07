@@ -10,10 +10,13 @@ import BusinessHostBadge from '../components/BusinessHostBadge';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import RecurringBadge from '../components/RecurringBadge';
 import GatheringOfferBadge from '../components/GatheringOfferBadge';
+import GatheringIntentModal from '../components/GatheringIntentModal';
+import GatheringQnA from '../components/GatheringQnA';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
+import { getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -124,6 +127,8 @@ export default function GatheringsScreen({ navigation, route }) {
   const [hostingPastExpanded, setHostingPastExpanded] = useState(false);
   const [attendingPastSort, setAttendingPastSort] = useState('newest');
   const [hostingPastSort, setHostingPastSort] = useState('newest');
+  const [intentModalGathering, setIntentModalGathering] = useState(null);
+  const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
 
   const load = useCallback(async () => {
     const [nearbyResults, hostingResults, attendingResults, topCats] = await Promise.all([
@@ -139,9 +144,9 @@ export default function GatheringsScreen({ navigation, route }) {
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
-      const myId = sessionData?.session?.user?.id;
-      if (myId) {
-        const { data: myProfile } = await supabase.from('profiles').select('wide_area').eq('id', myId).single();
+      const sessionUserId = sessionData?.session?.user?.id;
+      if (sessionUserId) {
+        const { data: myProfile } = await supabase.from('profiles').select('wide_area').eq('id', sessionUserId).single();
         if (myProfile?.wide_area) {
           const { data: trending } = await supabase.rpc('get_trending_gathering_ids', { area_param: myProfile.wide_area });
           setTrendingIds((trending ?? []).map((t) => t.id));
@@ -176,6 +181,16 @@ export default function GatheringsScreen({ navigation, route }) {
       )
     );
     setAttendeePhotoUrls(Object.fromEntries(attendeeUrlEntries.filter(Boolean)));
+
+    const coverPhotoGatherings = [...nearbyResults, ...hostingResults.upcoming, ...attendingResults.upcoming];
+    const coverUrlEntries = await Promise.all(
+      coverPhotoGatherings.map(async (g) => {
+        if (!g.cover_photo_path) return null;
+        const url = await getSignedGatheringPhotoUrl(g.cover_photo_path);
+        return [g.id, url];
+      })
+    );
+    setCoverPhotoUrls(Object.fromEntries(coverUrlEntries.filter(Boolean)));
 
     const [offersData, redemptionsData] = await Promise.all([getActiveOffers(), getMyRedemptions()]);
     const unredeemed = offersData.filter((o) => !redemptionsData.includes(o.id));
@@ -395,6 +410,32 @@ export default function GatheringsScreen({ navigation, route }) {
   function formatDate(iso) {
     const d = new Date(iso);
     return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  function renderVibeDetails(item) {
+    const hasVibe = item.energy_level != null || item.conversation_level != null || item.group_size_feel != null
+      || item.beginner_friendly || (item.timeline_steps?.length > 0);
+    if (!hasVibe) return null;
+
+    return (
+      <View style={styles.vibeSection}>
+        {(item.energy_level != null || item.conversation_level != null || item.group_size_feel != null) && (
+          <View style={styles.vibeRow}>
+            {item.energy_level != null && <Text style={styles.vibeBadgeText}>⚡ Energy {item.energy_level}/5</Text>}
+            {item.conversation_level != null && <Text style={styles.vibeBadgeText}>💬 Chat {item.conversation_level}/5</Text>}
+            {item.group_size_feel != null && <Text style={styles.vibeBadgeText}>👥 Group {item.group_size_feel}/5</Text>}
+          </View>
+        )}
+        {item.beginner_friendly && <Text style={styles.beginnerText}>🔰 Beginner friendly</Text>}
+        {item.timeline_steps?.length > 0 && (
+          <View style={{ marginTop: spacing.xs }}>
+            {item.timeline_steps.map((step, i) => (
+              <Text key={i} style={styles.timelineText}>{step.time ? `${step.time} · ` : ''}{step.label}</Text>
+            ))}
+          </View>
+        )}
+      </View>
+    );
   }
 
   function toggleForYou() {
@@ -690,7 +731,7 @@ export default function GatheringsScreen({ navigation, route }) {
                 `Hosted by ${gathering.host?.display_name}\n${gathering.distanceLabel}${gathering.description ? '\n\n' + gathering.description : ''}`,
                 [
                   { text: 'Cancel', style: 'cancel' },
-                  { text: t('gatherings.imInterested'), onPress: () => handleExpressInterest(gathering.id) },
+                  { text: t('gatherings.imInterested'), onPress: () => setIntentModalGathering(gathering) },
                 ]
               );
             }}
@@ -740,6 +781,9 @@ export default function GatheringsScreen({ navigation, route }) {
             return (
               <AnimatedListItem index={index}>
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
+                {coverPhotoUrls[item.id] && (
+                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
+                )}
                 <View style={styles.cardTopRow}>
                   <View
                     style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}
@@ -791,6 +835,21 @@ export default function GatheringsScreen({ navigation, route }) {
                   {item.distanceLabel && <Text style={styles.distance}>· {item.distanceLabel}</Text>}
                 </View>
 
+                <TouchableOpacity
+                  onPress={() => toggleExpandGathering(item.id)}
+                  accessibilityLabel={`${expandedGathering === item.id ? 'Hide' : 'Show'} details and questions for ${item.title}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: expandedGathering === item.id }}
+                >
+                  <Text style={styles.detailsToggleText}>{expandedGathering === item.id ? 'Hide details ⌃' : 'Details & questions ⌄'}</Text>
+                </TouchableOpacity>
+                {expandedGathering === item.id && (
+                  <View>
+                    {renderVibeDetails(item)}
+                    <GatheringQnA gatheringId={item.id} isHost={false} />
+                  </View>
+                )}
+
                 {item.approvedAttendees?.length > 0 && (
                   <View style={styles.attendeesRow}>
                     <View style={styles.attendeeAvatars}>
@@ -816,7 +875,7 @@ export default function GatheringsScreen({ navigation, route }) {
                 <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                   <TouchableOpacity
                     style={[styles.interestButton, { backgroundColor: categoryStyle.color, flex: 1 }]}
-                    onPress={() => handleExpressInterest(item.id)}
+                    onPress={() => setIntentModalGathering(item)}
                     activeOpacity={0.85}
                     accessibilityLabel={`Express interest in ${item.title}`}
                     accessibilityRole="button"
@@ -899,6 +958,9 @@ export default function GatheringsScreen({ navigation, route }) {
             const fellows = fellowAttendees[item.id] ?? [];
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
+                {coverPhotoUrls[item.id] && (
+                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
+                )}
                 <TouchableOpacity
                   onPress={() => !isPast && toggleExpandGathering(item.id)}
                   disabled={isPast}
@@ -944,6 +1006,12 @@ export default function GatheringsScreen({ navigation, route }) {
                   >
                     <Text style={styles.groupChatButtonText}>💬 Group Chat</Text>
                   </TouchableOpacity>
+                )}
+                {isExpanded && !isPast && (
+                  <View>
+                    {renderVibeDetails(item)}
+                    <GatheringQnA gatheringId={item.id} isHost={false} />
+                  </View>
                 )}
                 {isExpanded && !isPast && (
                   <View style={styles.fellowSection}>
@@ -1048,6 +1116,9 @@ export default function GatheringsScreen({ navigation, route }) {
             const categoryStyle = categoryStyleFor(item.interest_tag);
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
+                {coverPhotoUrls[item.id] && (
+                  <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
+                )}
                 <View style={styles.cardTopRow}>
                   <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
@@ -1117,6 +1188,8 @@ export default function GatheringsScreen({ navigation, route }) {
                 ) : (
                   <Text style={styles.noInterestText}>{t('gatherings.noInterestYet')}</Text>
                 )}
+                {!isPast && renderVibeDetails(item)}
+                {!isPast && <GatheringQnA gatheringId={item.id} isHost />}
               </View>
             );
           }}
@@ -1142,6 +1215,17 @@ export default function GatheringsScreen({ navigation, route }) {
         onClose={() => setInviteModalGathering(null)}
         gatheringId={inviteModalGathering?.id}
         gatheringTitle={inviteModalGathering?.title}
+      />
+
+      <GatheringIntentModal
+        visible={!!intentModalGathering}
+        gathering={intentModalGathering}
+        onClose={() => setIntentModalGathering(null)}
+        onConfirm={() => {
+          const gathering = intentModalGathering;
+          setIntentModalGathering(null);
+          if (gathering) handleExpressInterest(gathering.id);
+        }}
       />
     </SafeAreaView>
   );
@@ -1242,6 +1326,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
   matchCard: { borderColor: colors.primary },
+  coverPhoto: { width: '100%', height: 140, borderRadius: radius.md, marginBottom: spacing.sm, backgroundColor: colors.surfaceElevated },
+  detailsToggleText: { color: colors.primary, fontSize: 12, fontWeight: '700', marginBottom: spacing.sm },
+  vibeSection: { marginBottom: spacing.sm },
+  vibeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xs },
+  vibeBadgeText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  beginnerText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: spacing.xs },
+  timelineText: { color: colors.textTertiary, fontSize: 12, lineHeight: 17 },
   cardTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   categoryBadge: { width: 36, height: 36, borderRadius: radius.md, justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm },
   categoryBadgeIcon: { fontSize: 18 },

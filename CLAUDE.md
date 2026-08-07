@@ -41,6 +41,15 @@ per-partner billing math running end-to-end on a schedule, but no money actually
   rate applies — e.g. "100 included, $0.75 each after" — instead of billing from redemption
   #1. Both billing functions compute `billable_count = greatest(count - included_units, 0)`
   and multiply that by `redemption_fee`, not the raw count. `flat_monthly`/`custom` ignore it.
+- Fixed a real bug in both billing functions (`20260807_billing_contract_window_bound.sql`,
+  applied and verified live): the redemption lookup was bounded only by the invoicing
+  period, not by the contract's own `contract_start`/`contract_end`. A contract starting
+  mid-month would have swept in — and permanently stamped `invoice_id` on — redemptions
+  from before it existed; one ending mid-month would do the same for redemptions after it
+  lapsed. Now both clip the window with `greatest(period_start, contract_start)` /
+  `least(period_end, coalesce(contract_end, period_end))` before aggregating. Didn't show
+  up in the Coastal Coffee verification below since that contract is open-ended and
+  predates all its redemptions — re-verified $20.00/0-redemptions unaffected after the fix.
 - One test contract exists: partner **Coastal Coffee** (`67dd3d6d-f36b-4b20-8a80-ac980baecc30`),
   contract `787d5b41-...`, `hybrid` billing, `$20/month` + `$1/redemption`, `included_units: 0`,
   open-ended, `auto_renew: true`. Verified end-to-end (simulating the real caller via
@@ -65,6 +74,36 @@ per-partner billing math running end-to-end on a schedule, but no money actually
 
 ## Recently completed, for context (do not re-build)
 
+- Gathering detail redesign: three schema pieces (`20260807_gathering_detail_vibe_and_photo.sql`,
+  `20260807_gathering_questions.sql`, `20260807_gathering_intents.sql`, all applied and
+  verified live) plus full frontend wiring, built in one pass after a codespace restart
+  interrupted the session partway through (schema files existed but were unapplied and
+  completely unwired — this closed that gap):
+  - `gatherings` gained `energy_level`/`conversation_level`/`group_size_feel` (1-5, nullable),
+    `beginner_friendly` (default `true`), `timeline_steps` (jsonb array, max 8, `{time, label}`),
+    and `cover_photo_path` (private `gathering-photos` storage bucket, host-only upload,
+    `${gatheringId}/cover-*.jpg` path convention matching the `profile-photos`/`stories`
+    RLS-by-folder pattern). Editable via `EditGatheringScreen.js` (1-5 tap-to-select scale
+    pickers, a beginner-friendly `Switch`, an add/remove timeline step list, a cover photo
+    picker reusing the `photos.js` base64-upload pattern — `fetch().blob()` silently produces
+    0-byte files on iOS for local file URIs, so this stays on `FileSystem.readAsStringAsync`
+    + a hand-rolled base64 decoder like the other upload paths). Displayed on gathering cards
+    in `GatheringsScreen.js` (cover photo always shown when present; vibe/timeline behind a
+    new "Details & questions" expand toggle on nearby cards, folded into the existing expand
+    section on attending cards, always-visible on hosting cards).
+  - `gathering_questions`: public Q&A, anyone can ask, only the host can answer (`GatheringQnA.js`,
+    a shared component mounted with `isHost` toggled per tab — `nearby`/`attending` pass `false`,
+    `hosting` passes `true` unconditionally since that list is already scoped to the caller's
+    own gatherings). Both ask and answer run through `checkTextModeration` first, matching the
+    rest of the codebase's text-input conventions.
+  - `gathering_intents`: the private pre-join "what are you hoping for tonight?" signal —
+    deliberately **never surfaced to the host**, not even in aggregate (no such RPC exists;
+    don't add one without a separate explicit review, per the migration's own comment).
+    `GatheringIntentModal.js` intercepts both "I'm Interested" entry points (the nearby-tab
+    button and the map-view marker alert) before the existing `handleExpressInterest` fires,
+    and pre-fills a user's previous answer via `getMyGatheringIntent` so re-opening it isn't
+    a blank slate. Saving the intent never blocks joining — failures are swallowed with a
+    console log, same as the existing post-gathering feedback modal's philosophy.
 - Full security audit: RLS on every table, all Edge Functions, all storage buckets, 38+
   functions found with unintended PUBLIC/anon execute access (fixed), several race conditions
   in rate-limiting triggers fixed with `SELECT ... FOR UPDATE`.
