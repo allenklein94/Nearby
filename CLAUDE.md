@@ -13,16 +13,6 @@ gets silently forgotten:
 
 **Confirmed NOT built** (checked directly — grepped for it, found nothing, or the screen
 exists but doesn't do the thing):
-- **Create Flow as a guided multi-step wizard** — doc's vision: What do you want to do? →
-  Choose activity → Date & time → Location → Public/private → Invite friends → Preview →
-  Publish. What actually exists: `CreateHubScreen.js` (simple link hub) → single-screen
-  `CreateGatheringScreen.js` with every field on one form, no preview step, and **no way to
-  invite specific friends to a gathering at all** — `notifications.js` has a rendering `case
-  'gathering_invite':` with nothing anywhere in the codebase that ever creates one; it's dead/
-  vestigial. Also found (while reading this screen for this exact gap): `CreateGatheringScreen.js`
-  line 35 has `uuseEffect(() => {...})` — a typo'd `useEffect` call, which is not a defined
-  identifier. This throws a `ReferenceError` on every render, meaning **the whole "Host a
-  Gathering" flow is currently broken/crashing in production**, unrelated to any doc gap.
 - **Unified Map Experience** (#10) — `GatheringsMapView.js` plots gatherings + brand deals +
   public stories only. No people, no communities, no businesses-as-such, no "live activity"
   layer.
@@ -121,6 +111,50 @@ simulator/device run.
   through: unified search across all four types, the type filter chips, list↔map toggle, Places
   category chips with real location, and confirm the Recommended section's reasons render
   correctly, on both iOS and Android.
+
+## Outstanding: Create Flow (guided multi-step wizard)
+
+Closed against the same Aug 7 2026 external roadmap doc as Discover — its vision for Create was
+What do you want to do? → Choose activity → Date & time → Location → Public/private → Invite
+friends → Preview → Publish (8-10 screens). What existed before this pass: `CreateHubScreen.js`
+(a simple link hub, already covers "what do you want to do") → single-screen
+`CreateGatheringScreen.js` with every field crammed onto one form, no preview, no invite step.
+**Core build is done and committed; not yet manually tested in a running app** — same standing
+caveat as every other entry here: verified via `@babel/core` compile and a full
+`npx expo export --platform ios` (1823 modules, clean), not a simulator/device run.
+
+- Found a real, pre-existing, unrelated bug while reading this screen for this exact gap:
+  `CreateGatheringScreen.js` line 35 had `uuseEffect(() => {...})` — a typo'd `useEffect` call.
+  `uuseEffect` is not a defined identifier, so this threw a `ReferenceError` on every render —
+  **the entire "Host a Gathering" flow was crashing in production** before this fix, unrelated
+  to the wizard work itself. Fixed as a one-character-prefix deletion.
+- `CreateGatheringScreen.js` rebuilt into a real 4-step paginated wizard (single screen, local
+  `step` state + a dot/label progress row, not 8 separate nav routes — a guided flow needs a
+  guided *sequence*, not necessarily 8 distinct screens/routes, and this avoids adding 7 new
+  routes for what's fundamentally one form's worth of state):
+  1. **What** — title, description, category chips (unchanged fields, moved here)
+  2. **When** — date/time picker, repeat cadence (unchanged fields, moved here)
+  3. **Where & Who** — location picker, public/private, map visibility (private-only), women-only
+     (unchanged fields, moved here)
+  4. **Preview** — new: a real read-only summary card (category icon/color, formatted date +
+     repeat cadence, location status, public/private + map-visibility copy, women-only flag)
+     rendered from the same state that's about to be submitted — nothing invented, no
+     placeholder numbers. Publish button here calls the same `createGathering()` as before.
+  Per-step validation gates `Next` (title required on step 1, future date required on step 2),
+  matching the original form's validation, just moved to the step where each field lives.
+- **"Invite friends" was deliberately not built as a step.** While scoping this, found that
+  `notifications.js`'s `case 'gathering_invite':` (push-tap routing) is dead code — nothing
+  anywhere in the codebase, client or migrations, ever sends a notification of that type. There
+  is no `notifications` table, no gathering-invite table, and no trigger/edge-function wiring
+  for it; `supabase/functions/send-push` exists but nothing calls it for this. Building a real
+  "invite a specific friend to this gathering" feature needs new schema + RLS + a real delivery
+  path (push and/or in-app), which is a distinct, fully-scoped feature in its own right — not
+  something to fake with a friend-picker UI that doesn't actually notify anyone. Treat as its
+  own future gap, same category as the AI Concierge and unified Map Experience noted above.
+- **Not done yet**: no manual run-through in a simulator/device. Next session should click
+  through all 4 steps including Back navigation, the location picker round-trip (step 3 →
+  `SelectGatheringLocation` → back, confirming step state survives), and Publish, on both iOS
+  and Android.
 
 ## Outstanding: Gathering Hub ("What happens after you tap Join?" redesign)
 
