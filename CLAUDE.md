@@ -118,6 +118,35 @@ passes this prop, so `HomeScreen.js`'s own time-adaptive use of the same modal i
 unaffected. This removes the separate "Host a Gathering" direct-to-blank-wizard card — the
 modal's existing "Something Else" chip already covers that exact case.
 
+**Part 3 status: DONE.** `create-assistant` deployed to production and confirmed
+`verify_jwt: true` via the Management API (not assumed — this is the exact footgun this
+section already flagged, and it didn't recur this time). `CreateHubScreen.js` rebuilt to the
+three cards plus the NL box; `CREATE_HUB_OPTIONS` added to `StartSomethingModal.js` as
+described. `CreateCommunityScreen.js` gained `quickStartTitle`/`quickStartCategory` route-param
+prefill (didn't exist before — only `CreateGatheringScreen.js` had it), so the Assistant's
+`community` intent has somewhere real to land. The business-partner card routes to
+`RequestBusinessPartnerScreen` with `initialBusinessQuery` prefilled from the Assistant's
+`businessName` — that param was already built into the screen before this pass, just unused
+until now. Verified via a full `npx expo export --platform ios` (1842 modules, one more than
+the 1841 baseline from the Part 2 commit — the one new `createAssistant.js` service file).
+Committed and pushed (`d6225286`). **Not done yet, same standing gap as `ai-concierge`**: the
+actual Anthropic call path was never exercised end-to-end — confirmed the function is live and
+the gateway correctly 401s an unauthenticated request, but reaching the real classification
+logic needs a signed-in session this sandbox can't mint. Also not done: no manual
+simulator/device run-through of the new `CreateHubScreen` (all three cards, the NL box's
+`gathering`/`community`/`business_partner`/`unclear` branches, and the `StartSomethingModal`
+opening with the new fixed option set instead of the time-adaptive one).
+
+**Overall status of this whole plan (Parts 1–3): DONE, build-wise.** Part 1 (schema) was
+verified end-to-end against production in the commit that introduced it (`73f27539`). Parts 2
+and 3 are described with their own status notes above. What's left across all three, gathered
+in one place so it isn't scattered: a real simulator/device click-through (sending a
+partnership request from all three entry points — Create tab, `GatheringDetailScreen`,
+`CommunityDetailScreen` — approving/declining from `BusinessDashboardScreen`, and exercising
+the Create Assistant's four intent branches with a real premium-less session), and confirming
+the `create-assistant` Anthropic call itself succeeds end-to-end with real output shape once a
+real session is available.
+
 **Deliberately out of scope, flag rather than silently build**: a "Business AI Assistant"
 (a chat-style analytics tool for business owners — "why did attendance drop," "create a
 promotion") is a real, distinct future feature per the user's own 3-tier free/premium/
