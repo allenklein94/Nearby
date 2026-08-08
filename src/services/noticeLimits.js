@@ -12,9 +12,8 @@ export async function checkNoticeLimit(isUserPremium) {
   // Referral bonus notices are consumed first, before counting
   // against the daily free limit — a real, immediate benefit rather
   // than something abstract.
-  const { data: profile } = await supabase.from('profiles').select('bonus_notices').eq('id', userId).single();
-  if ((profile?.bonus_notices ?? 0) > 0) {
-    await supabase.from('profiles').update({ bonus_notices: profile.bonus_notices - 1 }).eq('id', userId);
+  const { data: usedBonus, error: spendError } = await supabase.rpc('spend_bonus_notice');
+  if (!spendError && usedBonus) {
     return { allowed: true, usedBonus: true };
   }
 

@@ -279,14 +279,48 @@ role only — so adding it to the guarded list has no risk of breaking a real fl
   not found or already reviewed`). All test submissions deleted and the test profile's
   `photo_verified` reset to `false` afterward. Verified via a full `npx expo export --platform
   ios` (1839 modules, unchanged — an edit to an existing screen, no new client files).
-- **`bonus_notices` self-edit exploit — still not fixed**, flagged above, left for a future
-  pass since it needs the two legitimate call sites (`noticeLimits.js`'s spend,
-  `referrals.js`'s earn) converted to a safe write path at the same time the column gets
-  guarded, not attempted together with the admin-verification fix in this same pass.
-- **Not done yet**: no manual run-through in a simulator/device for the new RPC wiring — next
-  session should click through `AdminVerificationScreen` as a real admin account with a real
-  pending submission and confirm the approve/reject buttons behave correctly in the UI, not
-  just via direct RPC calls.
+- **`bonus_notices` self-edit exploit — fixed in a follow-up pass after a codespace restart.**
+  The codespace restarted mid-fix; on restart, `git status` showed a clean working tree except
+  one untracked, already-fully-written file — `20260808_protect_bonus_notices.sql` — matching
+  exactly the fix this file had flagged as deliberately deferred. The migration itself was
+  complete (both RPCs, both trigger-guard additions) but had never been applied to production,
+  and `noticeLimits.js`/`referrals.js` still had their original direct-write client code, so the
+  guard alone would have silently broken the real spend/earn flows had it been applied without
+  the client change — exactly the risk the original deferral was written to avoid. Finished the
+  other half and applied: `checkNoticeLimit()` in `noticeLimits.js` now calls
+  `supabase.rpc('spend_bonus_notice')` instead of a client read-then-write; `redeemReferralCode()`
+  in `referrals.js` is now a thin wrapper around `supabase.rpc('grant_referral_bonus', {
+  code_param })`, collapsing five separate client round-trips (lookup, insert, two profile
+  updates split across two read-then-write pairs) into one atomic server-side call — also
+  closes a real read-then-write race the old code had (two concurrent redemptions could both
+  read the same `bonus_notices` count before either wrote it back). `redeemReferralCode`'s now-
+  unused `newUserId` param was dropped and its one caller (`InviteFriendsScreen.js`) updated to
+  match, since the RPC reads `auth.uid()` server-side instead.
+  Applied `20260808_protect_bonus_notices.sql` to production (`enmosvippabmuqslzrox`) via the
+  Management API. **Verified live end-to-end, not just applied**: confirmed both new functions
+  are `SECURITY DEFINER` with `authenticated`-only execute (`anon` correctly excluded); as the
+  real profile `Claude` (3 real bonus notices at the time), called `spend_bonus_notice()` and
+  confirmed a genuine decrement to 2; immediately after, attempted the exact old exploit — a
+  direct `update profiles set bonus_notices = 9999` as that same session — and confirmed it was
+  silently reverted to 2, matching the established `is_premium`/`is_admin` guarded-column
+  behavior; confirmed `spend_bonus_notice()` correctly returns `false` (no-op) for a real
+  profile already at 0. For `grant_referral_bonus`, confirmed a self-referral attempt is
+  rejected (`You can't use your own referral code`), confirmed a second redemption attempt by
+  an already-referred real profile correctly hits the pre-existing `23505` unique-violation
+  anti-fraud gate, and ran one genuine new redemption end-to-end (a real never-referred profile
+  redeeming a real referrer's code) — confirmed both sides' `bonus_notices` incremented by 3 and
+  `referred_by` was set correctly on the referred profile. All test state (the one new
+  redemption, both profiles' `bonus_notices`, `Claude`'s spent notice) reverted afterward via
+  `trusted_update` back to exactly its pre-test values — confirmed via a final read that
+  production matches its pre-test snapshot. Verified via a full `npx expo export --platform
+  ios` (1839 modules, unchanged — edits to existing files only, no new client files).
+- **Not done yet**: no manual run-through in a simulator/device for either this fix or the
+  admin-verification RPC wiring above — next session should click through `AdminVerificationScreen`
+  as a real admin account with a real pending submission and confirm approve/reject behave
+  correctly in the UI, and separately confirm in the real app that spending a Notice via a
+  bonus (not the daily free allotment) still decrements correctly and that redeeming a referral
+  code in `InviteFriendsScreen` still shows its existing "You've both received 3 bonus Notices"
+  success alert — not just via direct RPC calls.
 
 ## Outstanding: Invite People (gathering + community)
 

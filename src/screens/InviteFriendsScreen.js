@@ -58,7 +58,7 @@ export default function InviteFriendsScreen() {
     if (!redeemInput.trim()) return;
     setRedeeming(true);
     try {
-      await redeemReferralCode(userId, redeemInput);
+      await redeemReferralCode(redeemInput);
       posthog.capture('referral_code_redeemed');
       Alert.alert('Success!', "You've both received 3 bonus Notices.");
       setRedeemInput('');
