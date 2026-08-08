@@ -200,6 +200,21 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
+        {(isMember || isCreator) && (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => navigation.navigate('CreateGathering', {
+              initialVisibility: 'community',
+              initialCommunityId: communityId,
+            })}
+            activeOpacity={0.85}
+            accessibilityLabel={`Host a gathering for ${community?.name}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.chatButtonText}>🎉 Host a Gathering for This Community</Text>
+          </TouchableOpacity>
+        )}
+
         {(isCreator || members.some((m) => m.user_id === myId && m.role === 'leader')) && (
           <TouchableOpacity
             style={styles.chatButton}

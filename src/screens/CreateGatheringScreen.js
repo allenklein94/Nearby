@@ -146,6 +146,21 @@ export default function CreateGatheringScreen({ navigation, route }) {
     }
   }, [route.params?.quickStartTitle, route.params?.quickStartCategory]);
 
+  // Reached from a specific CommunityDetailScreen's "Host a Gathering" entry
+  // point — carries that community's context into the same one Create flow
+  // instead of making the user re-pick it on the Who step.
+  useEffect(() => {
+    if (route.params?.initialVisibility) {
+      setVisibility(route.params.initialVisibility);
+      if (route.params.initialVisibility === 'community') {
+        loadCommunities();
+      }
+    }
+    if (route.params?.initialCommunityId) {
+      setCommunityId(route.params.initialCommunityId);
+    }
+  }, [route.params?.initialVisibility, route.params?.initialCommunityId]);
+
   async function loadCommunities() {
     if (myCommunities.length > 0 || loadingCommunities) return;
     setLoadingCommunities(true);
