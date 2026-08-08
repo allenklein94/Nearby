@@ -4,6 +4,114 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Create Consolidation + Create Assistant + Business Partnership Requests (IN PROGRESS — plan written before code, in case of restart)
+
+Started Aug 8 2026, after the `bonus_notices` exploit fix (see below) was finished and
+pushed. The user re-raised the Aug 7 vision-doc email's Create-tab feedback ("Create should
+become one screen... 'Make a plan' and 'Start a gathering' are basically the same") and,
+through a live design discussion, landed on a bigger and more specific scope than the email
+implied. **Read this section fully before assuming any part of it is done** — it was
+written as a plan *before* implementation started, specifically so nothing is lost if the
+codespace restarts mid-build (this session has restarted several times already). Check
+git log / the actual files for what's actually landed vs. still just planned here.
+
+**Decisions locked in during the discussion, not to be re-litigated without asking again:**
+1. Collapse the Create tab's overlapping "Start Something" / "Host a Gathering" cards into
+   one "Start a Gathering" entry point.
+2. Add a free, unbranded natural-language "Tell us what you're thinking" box that routes to
+   the right creation flow with fields prefilled. **Explicitly not premium-gated and
+   explicitly never labeled "AI" anywhere in the UI** — user's own reasoning: "the user
+   doesn't care that AI is powering it... Premium should sell convenience and intelligence,
+   not permission to participate in your core ecosystem." This is a new, separate, smaller
+   feature ("Create Assistant") from the existing premium-gated AI Concierge — not an
+   expansion of Concierge, and Concierge's own gating/behavior is unchanged.
+3. Build the actual feature behind "Partner with a Business" that the user's own example
+   needs: "I want to get 20 people together at this restaurant... business can approve
+   afterward." **Confirmed by direct code investigation this does not exist today** — the
+   existing `BusinessPartnerApplyScreen` → `business_partner_requests` → admin-review flow
+   (used by the "Partner With Us" row gated to organizers in an earlier pass this session)
+   is a generic, app-wide "onboard a new business as a partner" application with zero
+   connection to any specific gathering/community. User explicitly chose to build the real
+   gathering/community-specific proposal+approval flow, not just relabel/un-gate that
+   existing generic form.
+
+**Part 1 — new schema** (`supabase/migrations/20260808_business_partnership_requests.sql`,
+not yet written as of this section being committed): `business_partnership_requests` table
+(`requester_id`, `target_type`: `'gathering'|'community'`, `target_id`, `partner_id` FK
+`brand_partners`, `message`, `status`: `'pending'|'approved'|'declined'`, `reviewed_at`) —
+polymorphic target shape matching the existing `social_invites` convention. RLS: SELECT
+scoped to the requester or the target business's own owner
+(`profiles.managed_partner_id = partner_id`), no direct client INSERT/UPDATE — both go
+through two new SECURITY DEFINER RPCs: `request_business_partnership(target_type,
+target_id, partner_id, message)` (verifies caller actually owns/hosts the target, verifies
+`partner_id` is real/active, rejects a duplicate pending request for the same pair) and
+`respond_to_business_partnership_request(request_id, approve)` (verifies caller owns
+`partner_id`, guards against double-review, sets `hosting_partner_id` on the target row
+atomically on approve). **Before writing these**: check live whether `gatherings`/
+`communities`' existing owner-scoped UPDATE RLS already lets a host self-set their own
+`hosting_partner_id` to an arbitrary partner id with no consent check — if so, that's a
+pre-existing exploit of the same shape as this session's other guarded-column fixes, worth
+closing in the same pass. **Deliberately out of scope**: a business not yet in the app
+can't be targeted this way (no account to approve with) — directed to the existing generic
+apply flow instead, not a second parallel admin-mediated path.
+
+**Part 2 — business search + request UI**: `getActivePartnersByName()` (name search over
+active `brand_partners`) and `getMyPartnershipTargets()` (caller's own hosted upcoming
+gatherings + created/led communities) in relevant services. New
+`RequestBusinessPartnerScreen.js` + route, reachable two ways: from the top-level Create
+tab (target picker first, since no specific gathering/community is implied) and from a new
+"🤝 Request a Business Partner" link on `GatheringDetailScreen.js` (host view) and
+`CommunityDetailScreen.js` (creator/leader view) — same multi-entry-point pattern already
+established for "Invite friends" earlier this session, skipping the target-picker step
+since the target is already known there. `BusinessDashboardScreen.js` gains a "Partnership
+Requests" section (pending requests for the caller's own `managed_partner_id`,
+Approve/Decline). Notify the requester on both outcomes via the existing `send-push`
+mechanism (same one `invite_friend_to_gathering` already uses).
+
+**Part 3 — Create Assistant**: new `supabase/functions/create-assistant/index.ts` — same
+bearer-token auth pattern as every existing `generate-*`/`ai-concierge` function, but **no
+premium check** (the one deliberate exception to that convention in this codebase). Still
+calls `check_and_increment_ai_use` with `daily_limit: 150` (matching the existing
+per-message-feature ceiling, not the single-shot 50 — meant to feel unlimited to a normal
+user; the shared counter is a pure cost/abuse safety net, never surfaced or marketed as a
+limit). `claude-haiku-4-5-20251001`, `max_tokens: 300`. Classifies the user's own free text
+(low injection surface — this is the caller's own input, not content written by other
+users, unlike Concierge) into `intent: 'gathering'|'community'|'business_partner'|
+'unclear'` plus best-effort `title`/`category` (re-validated server-side against a
+hardcoded copy of `CreateGatheringScreen.js`'s real `INTEREST_OPTIONS` list) and
+`businessName` when relevant. **No date/time extraction** — deliberately not attempted,
+parsing relative dates like "Friday night" reliably is fragile; the user still picks
+date/time normally on the gathering wizard's own step. `CreateHubScreen.js` rebuilt to
+three cards (🎉 Start a Gathering / 👥 Create a Community / 🤝 Partner with a Business) plus
+a "💡 Tell us what you're thinking" input row underneath, subtext "We'll help you turn it
+into a plan," routing by returned `intent` to the right prefilled screen. "Start a
+Gathering" opens the existing `StartSomethingModal` with a new optional `topLevelOptions`
+prop overriding its default time-of-day-adaptive list with a fixed Coffee/Dinner/Walk/
+Sports/Games/Music/Volunteer/Something Else set (mapped to real existing `INTEREST_OPTIONS`
+category tags — Coffee/Foodie/Outdoors/Sports/Gaming/Music/Volunteering) — no other caller
+passes this prop, so `HomeScreen.js`'s own time-adaptive use of the same modal is
+unaffected. This removes the separate "Host a Gathering" direct-to-blank-wizard card — the
+modal's existing "Something Else" chip already covers that exact case.
+
+**Deliberately out of scope, flag rather than silently build**: a "Business AI Assistant"
+(a chat-style analytics tool for business owners — "why did attendance drop," "create a
+promotion") is a real, distinct future feature per the user's own 3-tier free/premium/
+business breakdown discussed live, not attempted in this pass.
+
+**Verification plan for this pass**: live-check the `hosting_partner_id` RLS question above
+before writing the RPCs; apply the new migration to production
+(`enmosvippabmuqslzrox`) via the Management API and verify end-to-end via
+`set_config('request.jwt.claims', ...)` as real profiles (owner can request, duplicate
+rejected, non-owner rejected, target business can approve/decline, non-owner of that
+partner cannot, approve sets `hosting_partner_id`, decline doesn't) — clean up all test
+state afterward, matching this session's established convention; deploy
+`create-assistant` and confirm `verify_jwt: true` explicitly rather than assuming (the CLI
+left `ai-concierge` on `false` by default on first deploy last time); full
+`npx expo export --platform ios` after each meaningful increment, checking the module count
+against the 1839 baseline. No manual simulator run-through is possible in this sandboxed
+environment (standing limitation everywhere in this file) — flagged for next session same
+as every other entry here.
+
 ## Aug 8 2026 — codespace restarts mid-session, work continued from a forwarded email
 
 The user forwarded an email (sent from the prior Claude Code session, cut off mid-task by
