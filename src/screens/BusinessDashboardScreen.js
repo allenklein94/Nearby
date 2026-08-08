@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory } from '../services/brandOffers';
+import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -48,6 +49,8 @@ export default function BusinessDashboardScreen() {
   const [memberHistories, setMemberHistories] = useState({});
   const [loadingMemberHistory, setLoadingMemberHistory] = useState(false);
   const [visitFrequency, setVisitFrequency] = useState(null);
+  const [partnershipRequests, setPartnershipRequests] = useState([]);
+  const [respondingToRequestId, setRespondingToRequestId] = useState(null);
   const [offerGatheringId, setOfferGatheringId] = useState(null);
   const [newRedemptionLimit, setNewRedemptionLimit] = useState('');
   const [newTargetInterestTag, setNewTargetInterestTag] = useState('');
@@ -98,9 +101,26 @@ export default function BusinessDashboardScreen() {
         loadNeedsAttention(selectedPartner.id);
         loadTopMembers(selectedPartner.id);
         loadVisitFrequency(selectedPartner.id);
+        loadPartnershipRequests(selectedPartner.id);
       }
     }, [selectedPartner])
   );
+
+  async function loadPartnershipRequests(partnerId) {
+    const results = await getPendingPartnershipRequestsForPartner(partnerId);
+    setPartnershipRequests(results);
+  }
+
+  async function handleRespondToPartnershipRequest(requestId, approve) {
+    setRespondingToRequestId(requestId);
+    try {
+      await respondToBusinessPartnershipRequest(requestId, approve);
+      setPartnershipRequests((prev) => prev.filter((r) => r.id !== requestId));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setRespondingToRequestId(null);
+  }
 
   async function loadStats(partnerId) {
     setLoading(true);
@@ -481,6 +501,41 @@ export default function BusinessDashboardScreen() {
 
             {section === 'community' && (
               <>
+                {partnershipRequests.length > 0 && (
+                  <>
+                    <Text style={styles.sectionHeader}>Partnership Requests</Text>
+                    {partnershipRequests.map((r) => (
+                      <View key={r.id} style={styles.gatheringRow}>
+                        <Text style={styles.offerTitle}>
+                          {r.requesterName ?? 'Someone'} wants to partner {r.targetType === 'gathering' ? 'for' : 'with'} {r.targetTitle ?? `their ${r.targetType}`}
+                        </Text>
+                        <Text style={styles.breakdownText}>{r.targetType === 'gathering' ? '🎉 Gathering' : '👥 Community'}</Text>
+                        {r.message ? <Text style={styles.offerDescription}>"{r.message}"</Text> : null}
+                        <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
+                            onPress={() => handleRespondToPartnershipRequest(r.id, true)}
+                            disabled={respondingToRequestId === r.id}
+                            accessibilityLabel={`Approve partnership request from ${r.requesterName ?? 'requester'}`}
+                            accessibilityRole="button"
+                          >
+                            {respondingToRequestId === r.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.smallActionButtonText}>Approve</Text>}
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                            onPress={() => handleRespondToPartnershipRequest(r.id, false)}
+                            disabled={respondingToRequestId === r.id}
+                            accessibilityLabel={`Decline partnership request from ${r.requesterName ?? 'requester'}`}
+                            accessibilityRole="button"
+                          >
+                            <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Decline</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </>
+                )}
+
                 {communities.length === 0 ? (
                   <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
                 ) : (
@@ -900,6 +955,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   memberHistoryPanel: { marginTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
   memberHistoryLine: { color: colors.textSecondary, fontSize: 12, marginBottom: 2 },
   messageMemberLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: spacing.sm },
+  smallActionButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', minWidth: 80 },
+  smallActionButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   growthCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md, marginTop: spacing.md,

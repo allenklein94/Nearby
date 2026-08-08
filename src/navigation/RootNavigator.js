@@ -31,6 +31,7 @@ import CommunityDetailScreen from '../screens/CommunityDetailScreen';
 import CommunityChatScreen from '../screens/CommunityChatScreen';
 import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 import BusinessPartnerApplyScreen from '../screens/BusinessPartnerApplyScreen';
+import RequestBusinessPartnerScreen from '../screens/RequestBusinessPartnerScreen';
 import AdminBusinessRequestsScreen from '../screens/AdminBusinessRequestsScreen';
 import BusinessConversationScreen from '../screens/BusinessConversationScreen';
 import BusinessProfileScreen from '../screens/BusinessProfileScreen';
@@ -302,6 +303,7 @@ export default function RootNavigator() {
             <Stack.Screen name="CommunityChat" component={CommunityChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.communityName ?? 'Community Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'Partner With Us', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RequestBusinessPartner" component={RequestBusinessPartnerScreen} options={{ headerShown: true, title: 'Request a Business Partner', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessConversation" component={BusinessConversationScreen} options={({ route }) => ({ headerShown: true, title: route.params?.partnerName ?? 'Message', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

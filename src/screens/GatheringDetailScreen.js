@@ -360,6 +360,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>🤝 Invite friends →</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('RequestBusinessPartner', { targetType: 'gathering', targetId: gatheringId, targetTitle: gathering.title })}
+                style={{ marginTop: spacing.xs }}
+                accessibilityLabel="Request a business partner for this gathering"
+                accessibilityRole="button"
+              >
+                <Text style={styles.hostBannerLink}>🤝 Request a Business Partner →</Text>
+              </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'approved' ? (
             <View style={styles.youreInPanel}>

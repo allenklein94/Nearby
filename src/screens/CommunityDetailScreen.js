@@ -20,6 +20,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [community, setCommunity] = useState(null);
   const [isMember, setIsMember] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [myId, setMyId] = useState(null);
   const [memberCount, setMemberCount] = useState(0);
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
+    setMyId(myId);
     setIsCreator(data?.creator_id === myId);
 
     const mine = await getMyCommunities();
@@ -195,6 +197,18 @@ export default function CommunityDetailScreen({ route, navigation }) {
             accessibilityRole="button"
           >
             <Text style={styles.chatButtonText}>🤝 Invite Friends</Text>
+          </TouchableOpacity>
+        )}
+
+        {(isCreator || members.some((m) => m.user_id === myId && m.role === 'leader')) && (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => navigation.navigate('RequestBusinessPartner', { targetType: 'community', targetId: communityId, targetTitle: community?.name })}
+            activeOpacity={0.85}
+            accessibilityLabel="Request a business partner for this community"
+            accessibilityRole="button"
+          >
+            <Text style={styles.chatButtonText}>🤝 Request a Business Partner</Text>
           </TouchableOpacity>
         )}
 

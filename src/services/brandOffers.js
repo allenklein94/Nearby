@@ -118,6 +118,27 @@ export async function getNearbyBusinesses(myLat, myLng, radiusMiles = 50) {
   });
 }
 
+// Name search for the business-partnership-request flow (services/
+// businessPartnerships.js) — deliberately no location filter, since this is
+// a deliberate name lookup, not proximity browsing like getNearbyBusinesses.
+export async function getActivePartnersByName(query) {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const { data, error } = await supabase
+    .from('brand_partners')
+    .select('id, name, logo_url')
+    .eq('active', true)
+    .ilike('name', `%${trimmed}%`)
+    .limit(20);
+
+  if (error) {
+    console.error('getActivePartnersByName error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getGatheringOffer(gatheringId) {
   const { data, error } = await supabase
     .from('brand_offers')
