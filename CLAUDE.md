@@ -4,6 +4,162 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 8 2026 — Capacity / Waitlist (closes the one Create 2.0 item deliberately deferred)
+
+The user asked to "continue" this after a codespace restart, believing it was mid-build.
+**It wasn't** — `git status` was clean and `git log` showed no capacity/waitlist commits
+anywhere; a grep across `src/` and `supabase/` turned up nothing but the one comment in
+`CreateGatheringScreen.js` flagging it as deferred. Create 2.0's own plan (see that section
+below) had explicitly excluded this from the core loop per the user's own words ("everything
+else can come later") — so before writing anything, the four real design questions that plan
+had left open were put back to the user rather than assumed: real waitlist queue vs. display-
+only cap, auto-promote vs. host-approval on a spot opening, whether capacity applies to public-
+only or both public and host-approval gatherings, and the bucket set for the picker. User chose:
+real waitlist queue, auto-promote, both gathering types, and the original mockup's 2-4/5-10/10+/
+No Limit buckets.
+
+**A real prerequisite gap, found before writing schema**: there was no way for anyone to leave
+a gathering anywhere in this app — confirmed by reading `services/gatherings.js` in full and
+grepping for `decline`/`leave`/`cancel`/`remove_attendee`, all empty (this matches the existing
+"Gathering Hub" section's own note: "No leave/cancel-request action was added — out of scope").
+Without a leave path, "auto-promote when a spot opens" would have shipped as dead code — a spot
+could never open. Building `leave_gathering()` was therefore not scope creep, it was the
+mechanic's own precondition.
+
+**The "10+" bucket doesn't have a single hard number**, but a real enforced cap needs one — this
+wasn't resolved by re-asking (already a 4-question round), it was resolved directly: picking
+"10+" reveals a plain +/− stepper (default 15, editable) rather than leaving the cap ambiguous.
+"2-4"/"5-10" map to their bucket's upper bound (4/10). "No Limit" stores `null`, preserving every
+pre-existing gathering's real behavior exactly (default for the field).
+
+**Schema** (`20260808_gathering_capacity_waitlist.sql`, applied to production and verified
+live end-to-end before committing): `gatherings.capacity` integer, nullable, `check (capacity
+is null or capacity > 0)`. Three rewritten/new SECURITY DEFINER RPCs, all locking the
+`gatherings` row `for update` first since capacity is a genuine scarcity resource — unlike this
+app's privacy gates, which are deliberately "RLS wide open, client is the real gate" throughout
+this schema, two people racing for the literal last spot is a real concurrency bug if unlocked:
+- **`join_gathering(gathering_id)`** — replaces the old client-side branching
+  (`express_interest_public` RPC for public gatherings + a direct client insert for
+  host-approval ones) with one unified, capacity-aware function. Counts current `approved` rows
+  under the lock; at/over capacity always waitlists regardless of public/host-approval ("no
+  spot available" is the same fact either way); under capacity keeps today's exact behavior
+  (public auto-approves, host-approval stays pending). Idempotent — a repeat call for an
+  existing active request returns that request's real status instead of erroring.
+- **`approve_gathering_interest(interest_id)`** — return type changed from a bare `uuid` to
+  `jsonb` (`{status, match_id}`), since approving a pending request can now honestly result in
+  `'waitlisted'` (the gathering filled up between the request and the host's review) as well as
+  `'approved'` — the old bare-uuid return had no way to signal that, which would have shown the
+  host a false "Approved!" for someone who was actually just waitlisted. Every call site
+  (`GatheringsScreen.js`, `InboxScreen.js`) now checks `status` and shows the honest message.
+- **`leave_gathering(gathering_id)`** — new. Deletes the caller's own row; if it was `'approved'`
+  and `capacity` is set, promotes the earliest `'waitlisted'` row (`order by created_at asc`,
+  locked) to `'approved'` and creates the match, same `least`/`greatest`/`on conflict` pattern
+  every other match-creating RPC in this schema already uses. Deliberately rejects leaving a
+  gathering whose `scheduled_at` is already in the past — you can't "un-attend" something that
+  already happened, and this keeps Momentum/Insights/achievements' real attendance history
+  honest rather than retroactively erasable.
+- **`notify_gathering_approved()`** trigger extended (not a new manual push call in any of the
+  three RPCs above) to cover the two new transitions this feature introduces: `waitlisted →
+  approved` ("A spot opened up!") and `pending → waitlisted` ("Added to the waitlist" — the
+  host tried to approve but the gathering had filled up first). It already fired on every
+  `approved`-from-`pending` UPDATE and already respects `notify_matches`, so extending its
+  `if` condition was simpler and more consistent than duplicating push-sending logic inside
+  three different RPCs.
+- **A real, closed security gap, found while designing `join_gathering`**: the existing
+  `gathering_interest` INSERT RLS policy's `with_check` allowed a client to insert **any**
+  status value, not just `'pending'`, whenever the target gathering was `is_public` — `(status
+  = 'pending') OR (gathering.is_public)`. That was a harmless quirk before (the RPC was the only
+  real path to `'approved'` anyway), but it becomes a genuine capacity-bypass exploit once
+  `'approved'` is a scarce, capacity-gated status — a client could `insert ... status='approved'`
+  directly and skip the waitlist entirely. Tightened the policy to require `status = 'pending'`
+  unconditionally; the old `express_interest_public()` RPC (fully superseded by
+  `join_gathering()`, confirmed nothing else in the schema called it via a live `prosrc` search
+  before dropping) was dropped rather than left around as a second capacity-bypass vector.
+  Verified live, both directions: a direct `insert ... status='approved'` for a public gathering
+  now correctly gets rejected with a real RLS violation; a direct `insert ... status='pending'`
+  for the caller's own id still succeeds unchanged (the one legitimate use RLS still needs to
+  allow, even though the app itself now only ever calls `join_gathering()`).
+
+**Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied —
+same `set_config('request.jwt.claims', ...)`-as-real-profiles convention as every other RLS/RPC
+change in this file, using the 4 real profiles (`Allen` as host, `Claude` and `Google voice` as
+joiners): a public gathering with `capacity: 1` — first joiner auto-approved, second correctly
+waitlisted; first joiner calling `leave_gathering` correctly auto-promoted the waitlisted second
+joiner and created their match; a host-approval gathering with `capacity: 1` — both joiners
+correctly landed `pending` (capacity doesn't block a request, only approval), host approving the
+first succeeded, host approving the second correctly returned `{status: 'waitlisted'}` instead
+of approving over capacity; `leave_gathering` on an already-past test gathering correctly
+raised `'This gathering has already happened'`. All test gatherings deleted afterward
+(`gathering_interest` rows cascade-deleted with them); final table counts (5 gatherings / 3
+`gathering_interest` / 2 `matches`) matched the pre-test baseline exactly.
+
+**A real mistake made and fixed during that verification, disclosed plainly rather than
+glossed over**: the cleanup query for test `matches` rows was scoped by `source_gathering_id
+in (my 3 test ids)`, which was correct in isolation — but `join_gathering`'s own `on conflict
+(user_a, user_b) do update set source_gathering_id = ... where matches.source_gathering_id is
+null` clause had, as a side effect of testing, retargeted two **pre-existing** production match
+rows (`Claude`↔`Allen` and `Google voice`↔`Allen`, both real matches surviving from earlier
+sessions' `is_blocked` testing, both with a null `source_gathering_id` before my test touched
+them) to point at my test gathering's id — which then made them match my own "only delete test
+rows" filter and get deleted along with the real test data. Caught immediately by re-checking
+`matches` count (2 → 0, not the expected "2 fewer than after my test additions"). Both pairs
+were recreated (`insert into matches (user_a, user_b, source_gathering_id) values (..., null)`)
+to restore their most-likely pre-test state; `messages` was already empty for both pairs (these
+match rows were themselves artifacts of earlier RPC-level test sessions, not real
+conversations) so no chat history was destroyed, but **the two recreated rows have new UUIDs,
+not their originals** — a real, disclosed limitation of the recovery, not a silent "fixed."
+Final table counts matched baseline exactly after the fix. Lesson for next time: when a test
+touches a table via an `on conflict do update` path, re-verify counts *before* running a
+"delete anything matching my test ids" cleanup, since the update may have pulled pre-existing
+rows into that filter's scope.
+
+**Client changes**: `services/gatherings.js` — `capacity` added to `SAFE_GATHERING_FIELDS` and
+`createGathering()`'s params; `expressInterest()`/`approveInterest()` rewritten for the new RPC
+shapes (both now return `{status, matchId/match_id}` instead of the old ad hoc shapes); new
+`leaveGathering()`. `getGatheringById()` now also returns `isFull` and `waitlistCount` (the
+latter only accurate for the host or the caller's own row, since `gathering_interest`'s RLS only
+surfaces other people's non-approved rows to the host — not shown to non-host viewers for that
+reason). `CreateGatheringScreen.js` gained the capacity picker in its existing collapsed "More
+options" section (optional, defaults to No Limit — doesn't disrupt the just-shipped 5-step
+flow), plus a capacity line in the Publish preview. `GatheringDetailScreen.js` gained: a
+"X/Y spots filled" / "🔒 Full" line, a `JOIN WAITLIST` button + label when full (was always
+`JOIN GATHERING`/`REQUEST TO JOIN`), a waitlisted post-join panel with its own honest copy and a
+"Leave Waitlist" action, a "Leave Gathering" action on the existing approved "You're in!" panel
+(the first leave entry point anywhere in the app), and a host-only "Waitlisted" stat added to
+the existing Going/Interested/Messages countdown row. `GatheringsScreen.js` and
+`InboxScreen.js`'s approve/join handlers updated for the new return shapes, showing an honest
+"gathering is full — added to the waitlist" message instead of a false "Approved!"/"You're In!".
+
+**Also deleted `src/services/distance.js`**, found while auditing every `expressInterest`/
+`approveInterest` call site: a fully dead, superseded module (its own `createGathering`/
+`getNearbyGatherings`/`getMyGatherings`/`expressInterest`/`approveInterest`, none matching the
+current schema — e.g. querying a flat `area` string equality instead of the real distance RPCs)
+with a broken self-import (`import { distanceRangeLabel } from './distance'` inside
+`distance.js` itself) and confirmed zero importers anywhere in the repo. Not otherwise related
+to this pass; deleted as a safe, clearly-dead-code cleanup while already in this file.
+
+**Deliberately not built, scope boundaries stated plainly**:
+- Capacity/waitlist counts were **not** added to `GatheringsScreen.js`'s card-list layouts
+  (nearby/attending/hosting tabs) — that screen's own `SAFE_GATHERING_FIELDS`-adjacent selects
+  are separate, hand-written field lists (not the shared const), and wiring capacity display
+  into all three card layouts is a distinct, separable UI pass. `GatheringDetailScreen.js` (the
+  screen this whole redesign already treats as the real "can I get in" surface) has the full
+  experience; the list cards do not.
+- No "Leave Gathering" entry point was added to `GatheringHubScreen.js` — `GatheringDetailScreen`
+  already covers it for every real path into a gathering (Hub is reached either through Detail
+  or by re-navigating to Detail already being the natural place for this destructive action to
+  live), so a second identical action inside Hub would be pure duplication, not a gap.
+- `leave_gathering`'s promotion path only fires when the leaver's own status was `'approved'` —
+  a waitlisted person leaving just removes them from the queue (correct; there's no spot to
+  free), and a pending person leaving a host-approval gathering likewise doesn't trigger
+  promotion (correct; they never held a spot).
+- **Not done yet, same standing gap as everywhere else in this file**: no manual simulator/
+  device run-through. Next session should click through: creating a gathering with each
+  capacity bucket (including the 10+ stepper), joining a full public gathering as a second
+  account (waitlist copy + button label), leaving an approved gathering as a third account and
+  confirming a real push notification lands for whoever gets promoted, and a host approving a
+  pending request into a full host-approval gathering (waitlisted-instead-of-approved copy).
+
 ## Aug 8 2026 — deep-link + route-param + mode-gating follow-up audit
 
 Direct follow-up to the connectivity audit below, asked explicitly: "is everything deep linked
@@ -358,12 +514,12 @@ convention as every other plan-first section in this file.
   celebrate yet, still pending) or invite-only (already came in via a direct invite).
 
 **Deliberately deferred, flagged rather than silently built partial:**
-- Capacity ("How many people?" 2–4/5–10/10+/No Limit) and everything downstream of it
-  (attendance-approaching-capacity suggestions — "reserve more tables," waitlist, rewards). The
-  final 5-decision framing the user gave explicitly excludes this from the core loop
-  ("everything else can come later"), and a real waitlist needs new schema + real state
-  machine (a `gathering_interest` status beyond pending/approved/declined) — not a shallow
-  UI-only version.
+- ~~Capacity ("How many people?" 2–4/5–10/10+/No Limit) and a real waitlist~~ — **built later,
+  see the "Aug 8 2026 — Capacity / Waitlist" section at the top of this file** for the full
+  design discussion (real waitlist queue, auto-promote, applies to both public and
+  host-approval gatherings) and what shipped. Attendance-approaching-capacity suggestions
+  ("reserve more tables") specifically were **not** part of that build and remain deferred —
+  no "you're almost full" nudge exists.
 - AI-generated personalized cover photos — explicit "later, once the product has traction"
   per the user's own words.
 - True proximity/interest-based stranger invite suggestions — explicitly rejected (locked

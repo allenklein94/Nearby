@@ -8,6 +8,7 @@ import {
   getFirstTimerAttendeeIds,
   getGatheringFitReasons,
   expressInterest,
+  leaveGathering,
   getHostStats,
   getHostReputation,
   getHostLovedTags,
@@ -55,6 +56,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [lovedTags, setLovedTags] = useState([]);
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [countdownStats, setCountdownStats] = useState(null);
 
@@ -91,7 +93,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
         getPendingInterestCount(gatheringId),
         getGatheringMessageCount(gatheringId),
       ]);
-      setCountdownStats({ going, interested, messages });
+      setCountdownStats({ going, interested, messages, waitlisted: g.waitlistCount });
     } else {
       setCountdownStats(null);
     }
@@ -139,13 +141,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
     setJoining(true);
     try {
-      await expressInterest(gatheringId);
-      posthog.capture('gathering_interest_expressed', { source: 'detail_screen' });
-      if (gathering.is_public) {
+      const result = await expressInterest(gatheringId);
+      posthog.capture('gathering_interest_expressed', { source: 'detail_screen', status: result.status });
+      if (result.status === 'approved') {
         // Auto-approved gatherings land straight in the Gathering Hub —
         // the live, day-of experience — rather than back on this
-        // persuade-you-to-join page. Host-approval gatherings stay here
-        // showing the pending panel, since there's nothing to enter yet.
+        // persuade-you-to-join page. Host-approval and waitlisted joins
+        // stay here (pending panel / waitlisted panel), since there's
+        // nothing live to enter yet either way.
         navigation.replace('GatheringHub', { gatheringId, justJoined: true });
         return;
       }
@@ -154,6 +157,33 @@ export default function GatheringDetailScreen({ route, navigation }) {
       Alert.alert('Error', e.message);
     }
     setJoining(false);
+  }
+
+  function confirmLeave() {
+    Alert.alert(
+      'Leave this gathering?',
+      gathering.myStatus === 'approved'
+        ? "If someone's waiting on the waitlist, they'll take your spot."
+        : "You'll be removed from the waitlist.",
+      [
+        { text: 'Stay', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            setLeaving(true);
+            try {
+              await leaveGathering(gatheringId);
+              posthog.capture('gathering_left');
+              await load();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+            setLeaving(false);
+          },
+        },
+      ]
+    );
   }
 
   if (loading) {
@@ -200,6 +230,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
           <Text style={styles.metaLine}>
             {formatDate(gathering.scheduled_at)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
+
+          {gathering.capacity != null && (
+            <Text style={styles.capacityLine}>
+              {gathering.isFull
+                ? `🔒 Full — ${gathering.approvedAttendees.length}/${gathering.capacity} spots taken`
+                : `${gathering.approvedAttendees.length}/${gathering.capacity} spots filled`}
+            </Text>
+          )}
           <TouchableOpacity
             onPress={() => navigation.navigate('ViewProfile', { userId: gathering.host_id })}
             style={styles.hostLineRow}
@@ -378,6 +416,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     <Text style={styles.countdownNumber}>{countdownStats.messages}</Text>
                     <Text style={styles.countdownLabel}>Messages</Text>
                   </View>
+                  {gathering.capacity != null && countdownStats.waitlisted > 0 && (
+                    <>
+                      <View style={styles.countdownDivider} />
+                      <View style={styles.countdownStat}>
+                        <Text style={styles.countdownNumber}>{countdownStats.waitlisted}</Text>
+                        <Text style={styles.countdownLabel}>Waitlisted</Text>
+                      </View>
+                    </>
+                  )}
                 </View>
               )}
               <TouchableOpacity
@@ -433,6 +480,28 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.sayHelloLink}>🤝 Invite friends</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={confirmLeave}
+                disabled={leaving}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Leave this gathering"
+                accessibilityRole="button"
+              >
+                <Text style={styles.leaveLink}>{leaving ? 'Leaving...' : 'Leave Gathering'}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : gathering.myStatus === 'waitlisted' ? (
+            <View style={styles.pendingPanel}>
+              <Text style={styles.pendingText}>🕒 You're on the waitlist — we'll let you know if a spot opens up.</Text>
+              <TouchableOpacity
+                onPress={confirmLeave}
+                disabled={leaving}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Leave the waitlist"
+                accessibilityRole="button"
+              >
+                <Text style={styles.leaveLink}>{leaving ? 'Leaving...' : 'Leave Waitlist'}</Text>
+              </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
@@ -448,10 +517,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
               onPress={() => setIntentModalVisible(true)}
               disabled={joining}
               activeOpacity={0.85}
-              accessibilityLabel={gathering.is_public ? 'Join Gathering' : 'Request to Join'}
+              accessibilityLabel={gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')}
               accessibilityRole="button"
             >
-              <Text style={styles.joinButtonText}>{joining ? 'Joining...' : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}</Text>
+              <Text style={styles.joinButtonText}>
+                {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -462,7 +533,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
         gathering={gathering}
         onClose={() => setIntentModalVisible(false)}
         onConfirm={handleConfirmIntent}
-        confirmLabel={gathering.is_public ? 'Join Gathering' : 'Request to Join'}
+        confirmLabel={gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')}
       />
 
       <InviteFriendsModal
@@ -490,6 +561,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   categoryBadgeIcon: { fontSize: 16 },
   title: { ...typography.title, color: colors.textPrimary, flex: 1 },
   metaLine: { color: colors.textSecondary, fontSize: 14, marginTop: spacing.xs },
+  capacityLine: { color: colors.textTertiary, fontSize: 13, fontWeight: '600', marginTop: 2 },
   hostLineRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.xs },
   hostAvatarSmall: { width: 22, height: 22, borderRadius: 11 },
   hostAvatarPlaceholder: { backgroundColor: colors.border },
@@ -563,6 +635,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   sayHelloButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg },
   sayHelloButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   sayHelloLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  leaveLink: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
   pendingPanel: {
     marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, alignItems: 'center',

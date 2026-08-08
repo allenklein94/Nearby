@@ -319,7 +319,9 @@ export default function GatheringsScreen({ navigation, route }) {
     try {
       const result = await expressInterest(gatheringId);
       posthog.capture('gathering_interest_expressed');
-      if (result?.autoApproved) {
+      if (result?.status === 'waitlisted') {
+        Alert.alert("You're on the waitlist", "This gathering is full right now — we'll let you know if a spot opens up.");
+      } else if (result?.autoApproved) {
         Alert.alert("You're In! ✓", "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.", [
           { text: 'Keep Browsing', style: 'cancel' },
           { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
@@ -335,8 +337,12 @@ export default function GatheringsScreen({ navigation, route }) {
 
   async function handleApprove(interest) {
     try {
-      await approveInterest(interest.id);
-      Alert.alert('Approved!', 'A match was created — you can now chat with them.');
+      const result = await approveInterest(interest.id);
+      if (result?.status === 'waitlisted') {
+        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
+      } else {
+        Alert.alert('Approved!', 'A match was created — you can now chat with them.');
+      }
       load();
     } catch (e) {
       Alert.alert('Error', e.message);

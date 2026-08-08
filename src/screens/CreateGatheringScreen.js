@@ -26,6 +26,18 @@ const VISIBILITY_OPTIONS = [
   { key: 'invite_only', icon: '🔒', label: 'Invite Only', hint: "Only people you personally invite — you'll approve each person" },
 ];
 
+// Capacity buckets match the original mockup language. "10+" doesn't map to
+// a single hard number on its own, but a real waitlist needs one to
+// enforce — so picking it reveals a plain stepper (default 15, editable)
+// rather than leaving the cap ambiguous. See CLAUDE.md's "Outstanding:
+// Capacity / Waitlist" section for the full design discussion.
+const CAPACITY_OPTIONS = [
+  { key: 'no_limit', label: 'No Limit' },
+  { key: '2-4', label: '2-4 people', capacity: 4 },
+  { key: '5-10', label: '5-10 people', capacity: 10 },
+  { key: '10+', label: '10+ people' },
+];
+
 const WHEN_PRESETS = [
   { key: 'now', icon: '⚡', label: 'Now' },
   { key: 'tonight', icon: '🌙', label: 'Tonight' },
@@ -85,8 +97,12 @@ function walkTimeLabel(miles) {
 // Same route, same createGathering() call, every existing caller
 // (StartSomethingModal, CreateHubScreen's grid, the Create Assistant)
 // keeps working unmodified. See CLAUDE.md's "Create 2.0" section for
-// the full design discussion and what was deliberately deferred
-// (capacity/waitlist, a true skip-location state, AI-picked date/time).
+// the full design discussion and what was deliberately deferred (a true
+// skip-location state, AI-picked date/time). Capacity/waitlist, also
+// originally deferred there, was built later — see CLAUDE.md's
+// "Outstanding: Capacity / Waitlist" section — and lives in "More
+// options" below (optional, defaults to No Limit, matching every
+// pre-existing gathering's real behavior).
 export default function CreateGatheringScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const { t } = useLanguage();
@@ -128,6 +144,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [showOnMap, setShowOnMap] = useState(true);
   const [womenOnly, setWomenOnly] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState(null);
+  const [capacityOption, setCapacityOption] = useState('no_limit');
+  const [capacityCustom, setCapacityCustom] = useState(15);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -227,6 +245,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
   const stepKey = STEP_DEFS[step].key;
 
+  const capacityValue = capacityOption === 'no_limit'
+    ? null
+    : capacityOption === '10+'
+      ? Math.max(10, capacityCustom)
+      : CAPACITY_OPTIONS.find((c) => c.key === capacityOption)?.capacity ?? null;
+
   function goNext() {
     if (stepKey === 'what' && !title.trim()) {
       return Alert.alert('Title required', 'Give your gathering a short title.');
@@ -282,6 +306,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         recurrenceRule: recurrenceRule || null,
         visibility,
         communityId: visibility === 'community' ? communityId : null,
+        capacity: capacityValue,
       });
       navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName });
     } catch (e) {
@@ -572,6 +597,50 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })}
                 </View>
 
+                <Text style={styles.label}>How many people?</Text>
+                <View style={styles.chipsWrap}>
+                  {CAPACITY_OPTIONS.map((option) => {
+                    const selected = capacityOption === option.key;
+                    return (
+                      <TouchableOpacity
+                        key={option.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setCapacityOption(option.key); }}
+                        activeOpacity={0.8}
+                        accessibilityLabel={option.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {capacityOption === '10+' && (
+                  <View style={styles.stepperRow}>
+                    <TouchableOpacity
+                      onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => Math.max(10, n - 1)); }}
+                      style={styles.stepperButton}
+                      accessibilityLabel="Decrease capacity"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.stepperButtonText}>−</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.stepperValue}>{capacityCustom} people</Text>
+                    <TouchableOpacity
+                      onPress={() => { Haptics.selectionAsync(); setCapacityCustom((n) => n + 1); }}
+                      style={styles.stepperButton}
+                      accessibilityLabel="Increase capacity"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.stepperButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {capacityOption !== 'no_limit' && (
+                  <Text style={styles.helperText}>Once full, new joins go to a waitlist — if a spot opens, the next person in line is added automatically.</Text>
+                )}
+
                 {visibility === 'invite_only' && (
                   <>
                     <Text style={styles.label}>Map Visibility</Text>
@@ -649,6 +718,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>♀️</Text>
                 <Text style={styles.previewRowText}>Women-only gathering</Text>
+              </View>
+            )}
+            {capacityValue != null && (
+              <View style={styles.previewRow}>
+                <Text style={styles.previewRowIcon}>👥</Text>
+                <Text style={styles.previewRowText}>Up to {capacityValue} people — waitlist after that</Text>
               </View>
             )}
           </View>
@@ -776,6 +851,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   mapPinLink: { color: colors.primary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   moreOptionsToggle: { marginTop: spacing.md, marginBottom: spacing.xs },
   moreOptionsToggleText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.sm },
+  stepperButton: {
+    width: 36, height: 36, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepperButtonText: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
+  stepperValue: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   previewCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.border, padding: spacing.lg, ...shadow.card,

@@ -19,9 +19,9 @@ function wideArea(latitude, longitude) {
 
 const WIDE_TIER_MAX_MILES = 15;
 
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -58,6 +58,7 @@ export async function createGathering({ title, description, interestTag, schedul
       recurring_series_id: recurrenceRule ? crypto.randomUUID() : null,
       visibility,
       community_id: visibility === 'community' ? communityId : null,
+      capacity,
     })
     .select()
     .single();
@@ -358,54 +359,35 @@ export async function getFellowAttendees(gatheringId) {
   return (data ?? []).filter((row) => row.profiles && !excludedUserIds.has(row.user_id));
 }
 
+// Capacity-aware join, replacing the old client-side branching (public
+// vs. host-approval) — join_gathering() now decides approved/pending/
+// waitlisted server-side, atomically, under a row lock (see CLAUDE.md's
+// "Outstanding: Capacity / Waitlist" section). All the safety checks that
+// used to happen here client-side (self-join, blocks) now live inside the
+// RPC too, since it needs to hold the lock across all of them anyway.
 export async function expressInterest(gatheringId) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
-
-  const { data: gathering } = await supabase
-    .from('gatherings')
-    .select('host_id, is_public')
-    .eq('id', gatheringId)
-    .single();
-
-  if (gathering?.host_id === userId) {
-    throw new Error("You can't express interest in your own gathering.");
-  }
-
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
-    .select('id')
-    .eq('blocker_id', userId)
-    .eq('blocked_id', gathering?.host_id)
-    .maybeSingle();
-
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('id')
-    .eq('blocker_id', gathering?.host_id)
-    .eq('blocked_id', userId)
-    .maybeSingle();
-
-  if (blockedByMe || blockedMe) {
-    throw new Error("You can't express interest in this gathering.");
-  }
-
-  if (gathering?.is_public) {
-    const { error: rpcError } = await supabase.rpc('express_interest_public', { gathering_id_param: gatheringId });
-    if (rpcError) throw rpcError;
-    return { autoApproved: true };
-  }
-
-  const { error } = await supabase
-    .from('gathering_interest')
-    .insert({ gathering_id: gatheringId, user_id: userId, status: 'pending' });
-
+  const { data, error } = await supabase.rpc('join_gathering', { gathering_id_param: gatheringId });
   if (error) throw error;
-  return { autoApproved: false };
+  return { status: data.status, matchId: data.match_id, autoApproved: data.status === 'approved' };
 }
 
+// Return shape changed from a bare match-id uuid to { status, match_id } —
+// approving a pending request can now honestly result in 'waitlisted'
+// (the gathering filled up between the request and the host's review),
+// not just 'approved'. Callers should check `status` before assuming success.
 export async function approveInterest(interestId) {
   const { data, error } = await supabase.rpc('approve_gathering_interest', { interest_id: interestId });
+  if (error) throw error;
+  return data;
+}
+
+// New: previously there was no way for anyone to leave a gathering once
+// approved/pending/waitlisted anywhere in this app. If capacity is set and
+// the caller was 'approved', the earliest waitlisted person is
+// automatically promoted (server-side, see leave_gathering()'s own
+// locking). Only allowed before the gathering happens.
+export async function leaveGathering(gatheringId) {
+  const { data, error } = await supabase.rpc('leave_gathering', { gathering_id_param: gatheringId });
   if (error) throw error;
   return data;
 }
@@ -742,6 +724,14 @@ export async function getGatheringById(gatheringId) {
 
   const myInterest = (data.attendees ?? []).find((a) => a.user_id === userId) ?? null;
   const isHost = data.host_id === userId;
+  const isFull = data.capacity != null && approvedAttendees.length >= data.capacity;
+  // Only accurate for the host or the caller's own row — RLS only
+  // surfaces other people's non-approved rows to the host (see
+  // "Users see own interest or gatherings they host" on gathering_interest),
+  // so a non-host, non-waitlisted viewer's `attendees` array has no other
+  // waitlisted rows to count here. Not shown to non-host viewers for that
+  // reason (see GatheringDetailScreen).
+  const waitlistCount = (data.attendees ?? []).filter((a) => a.status === 'waitlisted').length;
 
   // Create 2.0's invite_only visibility: RLS deliberately doesn't block a
   // direct fetch-by-id (matches how "private" is_public=false gatherings
@@ -796,6 +786,8 @@ export async function getGatheringById(gatheringId) {
     myStatus: myInterest?.status ?? null,
     myAttendee: myInterest,
     isHost,
+    isFull,
+    waitlistCount,
     hasInviteOnlyAccess,
     matchesYourInterests: data.interest_tag ? myInterests.includes(data.interest_tag) : false,
     distanceLabel,

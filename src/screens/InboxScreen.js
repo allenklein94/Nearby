@@ -130,7 +130,10 @@ export default function InboxScreen(props) {
 
   async function handleApprove(request) {
     try {
-      await approveInterest(request.id);
+      const result = await approveInterest(request.id);
+      if (result?.status === 'waitlisted') {
+        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
+      }
       loadRequests();
     } catch (e) {
       Alert.alert('Error', e.message);
