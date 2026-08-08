@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { isPremiumOnServer } from './purchases';
 
 // Crossed Paths itself stays unlimited — it's inherently
 // self-limiting by real-world proximity, and hiding real crossings
@@ -7,8 +8,8 @@ import { supabase } from './supabase';
 // Premium-style daily viewing cap.
 const FREE_DAILY_BROWSE_VIEW_LIMIT = 30;
 
-export async function checkAndCountBrowseView(userId, newProfilesCount, isPremiumUser) {
-  if (isPremiumUser || newProfilesCount === 0) {
+export async function checkAndCountBrowseView(userId, newProfilesCount) {
+  if (newProfilesCount === 0 || await isPremiumOnServer(userId)) {
     return { allowed: true };
   }
 

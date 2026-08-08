@@ -1,13 +1,14 @@
 import { supabase } from './supabase';
+import { isPremiumOnServer } from './purchases';
 
 const FREE_NOTICE_DAILY_LIMIT = 5;
 const FREE_WAVE_WEEKLY_LIMIT = 1;
 
-export async function checkNoticeLimit(isUserPremium) {
-  if (isUserPremium) return { allowed: true };
-
+export async function checkNoticeLimit() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
+
+  if (await isPremiumOnServer(userId)) return { allowed: true };
 
   // Referral bonus notices are consumed first, before counting
   // against the daily free limit — a real, immediate benefit rather
@@ -39,11 +40,11 @@ export async function checkNoticeLimit(isUserPremium) {
   return { allowed: true };
 }
 
-export async function checkWaveLimit(isUserPremium) {
-  if (isUserPremium) return { allowed: true };
-
+export async function checkWaveLimit() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
+
+  if (await isPremiumOnServer(userId)) return { allowed: true };
 
   const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 

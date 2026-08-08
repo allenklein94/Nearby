@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { isPremiumOnServer } from './purchases';
 
 const FREE_DAILY_VOICE_NOTE_LIMIT = 3;
 
@@ -6,14 +7,14 @@ const FREE_DAILY_VOICE_NOTE_LIMIT = 3;
 // file, unlike text messages — a reasonable, low-friction place for
 // a free-tier limit that doesn't touch actual relationship-building
 // (text messaging remains completely unlimited).
-export async function checkVoiceNoteLimit(isPremiumUser) {
-  if (isPremiumUser) {
-    return { allowed: true };
-  }
-
+export async function checkVoiceNoteLimit() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return { allowed: true };
+
+  if (await isPremiumOnServer(userId)) {
+    return { allowed: true };
+  }
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

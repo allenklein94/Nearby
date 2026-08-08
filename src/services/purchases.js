@@ -1,4 +1,5 @@
 import { Platform, Linking } from 'react-native';
+import { supabase } from './supabase';
 
 let Purchases = null;
 try {
@@ -30,6 +31,24 @@ export async function isPremium() {
   if (!Purchases) return false;
   const customerInfo = await Purchases.getCustomerInfo();
   return customerInfo.entitlements.active['premium'] !== undefined;
+}
+
+// Every free-tier daily-limit check in this app (Notices, Waves, Browse
+// views, gathering-interest expressions, voice notes) used to trust a
+// client-supplied `isPremium()` boolean — local RevenueCat SDK/cache
+// state, not verified against anything server-side — to bypass its rate
+// limit entirely. A stale cache or spoofed client state silently
+// defeated every one of those caps with no backstop, unlike this app's
+// AI-generation Edge Functions, which already gate on a real server-side
+// `profiles.is_premium` read. This is the real column, reliably kept in
+// sync by the `revenuecat-webhook` function (see CLAUDE.md's "Consumer
+// Billing" section) — querying it directly here closes that gap for all
+// five limit checks in one place instead of duplicating the same query
+// five times.
+export async function isPremiumOnServer(userId) {
+  if (!userId) return false;
+  const { data } = await supabase.from('profiles').select('is_premium').eq('id', userId).maybeSingle();
+  return !!data?.is_premium;
 }
 
 export async function restorePurchases() {

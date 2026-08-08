@@ -18,7 +18,6 @@ import {
 import { getSignedPhotoUrl } from '../services/photos';
 import { getGatheringOffer } from '../services/brandOffers';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
-import { isPremium } from '../services/purchases';
 import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -125,8 +124,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   async function handleConfirmIntent() {
     setIntentModalVisible(false);
 
-    const isUserPremium = await isPremium().catch(() => false);
-    const limitCheck = await checkGatheringInterestLimit(isUserPremium);
+    const limitCheck = await checkGatheringInterestLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
         'Daily limit reached',

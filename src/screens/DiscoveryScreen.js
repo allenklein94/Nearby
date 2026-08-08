@@ -155,7 +155,7 @@ export default function DiscoveryScreen({ navigation }) {
     const results = await getBrowseMatches(offset);
 
     if (myUserId) {
-      const limitCheck = await checkAndCountBrowseView(myUserId, results.length, isUserPremium);
+      const limitCheck = await checkAndCountBrowseView(myUserId, results.length);
       if (!limitCheck.allowed) {
         setBrowseHasMore(false);
         Alert.alert(
@@ -314,7 +314,7 @@ export default function DiscoveryScreen({ navigation }) {
   }
 
   async function sendNotice(toUserId, isWave = false) {
-    const limitCheck = isWave ? await checkWaveLimit(isUserPremium) : await checkNoticeLimit(isUserPremium);
+    const limitCheck = isWave ? await checkWaveLimit() : await checkNoticeLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
         isWave ? 'Weekly Wave used' : 'Daily limit reached',

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { isPremiumOnServer } from './purchases';
 
 // Deliberately more generous than the Notice limit — expressing
 // interest in a gathering is a lower-commitment action than sending
@@ -7,14 +8,14 @@ import { supabase } from './supabase';
 // whole Gatherings strategy depends on.
 const FREE_DAILY_GATHERING_INTEREST_LIMIT = 10;
 
-export async function checkGatheringInterestLimit(isPremiumUser) {
-  if (isPremiumUser) {
-    return { allowed: true };
-  }
-
+export async function checkGatheringInterestLimit() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return { allowed: true };
+
+  if (await isPremiumOnServer(userId)) {
+    return { allowed: true };
+  }
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);

@@ -702,7 +702,7 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   async function handleStartRecording() {
-    const limitCheck = await checkVoiceNoteLimit(isUserPremium);
+    const limitCheck = await checkVoiceNoteLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
         'Daily limit reached',

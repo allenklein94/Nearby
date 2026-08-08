@@ -13,7 +13,6 @@ import GatheringOfferBadge from '../components/GatheringOfferBadge';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import GatheringQnA from '../components/GatheringQnA';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
-import { isPremium } from '../services/purchases';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getSignedGatheringPhotoUrl } from '../services/gatherings';
@@ -304,8 +303,7 @@ export default function GatheringsScreen({ navigation, route }) {
   }
 
   async function handleExpressInterest(gatheringId) {
-    const isUserPremium = await isPremium().catch(() => false);
-    const limitCheck = await checkGatheringInterestLimit(isUserPremium);
+    const limitCheck = await checkGatheringInterestLimit();
     if (!limitCheck.allowed) {
       Alert.alert(
         'Daily limit reached',
