@@ -959,3 +959,31 @@ export async function getApprovedAttendeeCount(gatheringId) {
   if (error) return 0;
   return count ?? 0;
 }
+
+// A lightweight companion to getMyGatherings/getMyAttendingGatherings (both
+// heavier — fuzzed coordinates, full attendee lists — more than a chat-list
+// row needs) for Inbox's Messages tab, which previously had no way to reach
+// gathering group chats at all (only reachable from deep inside
+// GatheringDetail/GatheringHub/GatheringsScreen). Covers gatherings from
+// the last 7 days through anything upcoming — a chat can still be live
+// shortly after the event, not just before it.
+export async function getMyGatheringChats() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ data: hosting }, { data: attending }] = await Promise.all([
+    supabase.from('gatherings').select('id, title, scheduled_at').eq('host_id', myId).gte('scheduled_at', since),
+    supabase.from('gathering_interest').select('gatherings(id, title, scheduled_at)').eq('user_id', myId).eq('status', 'approved'),
+  ]);
+
+  const byId = new Map();
+  for (const g of hosting ?? []) byId.set(g.id, g);
+  for (const row of attending ?? []) {
+    if (row.gatherings && new Date(row.gatherings.scheduled_at) >= new Date(since)) byId.set(row.gatherings.id, row.gatherings);
+  }
+
+  return [...byId.values()].sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+}

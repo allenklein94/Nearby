@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, Image, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import MatchesScreen from './MatchesScreen';
 import ActivityScreen from './ActivityScreen';
-import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
+import { getAllPendingRequests, approveInterest, getUpcomingReminders, getMyGatheringChats } from '../services/gatherings';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
+import { getMyCommunities } from '../services/communities';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
@@ -31,6 +32,7 @@ export default function InboxScreen(props) {
   const [loadingSocialInvites, setLoadingSocialInvites] = useState(true);
   const [reminders, setReminders] = useState([]);
   const [loadingReminders, setLoadingReminders] = useState(true);
+  const [groupChats, setGroupChats] = useState([]);
 
   const loadRequests = useCallback(async () => {
     try {
@@ -85,13 +87,26 @@ export default function InboxScreen(props) {
     }
   }, []);
 
+  const loadGroupChats = useCallback(async () => {
+    try {
+      const [gatheringChats, communities] = await Promise.all([getMyGatheringChats(), getMyCommunities()]);
+      setGroupChats([
+        ...gatheringChats.map((g) => ({ kind: 'gathering', id: g.id, title: g.title })),
+        ...communities.map((c) => ({ kind: 'community', id: c.id, title: c.name })),
+      ]);
+    } catch (e) {
+      console.error('loadGroupChats failed', e);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadRequests();
       loadInvitations();
       loadSocialInvites();
       loadReminders();
-    }, [loadRequests, loadInvitations, loadSocialInvites, loadReminders])
+      loadGroupChats();
+    }, [loadRequests, loadInvitations, loadSocialInvites, loadReminders, loadGroupChats])
   );
 
   function formatTimeUntil(iso) {
@@ -200,7 +215,35 @@ export default function InboxScreen(props) {
         </TouchableOpacity>
       </View>
       <View style={{ flex: 1 }}>
-        {section === 'messages' && <MatchesScreen {...props} />}
+        {section === 'messages' && (
+          <>
+            {groupChats.length > 0 && (
+              <View style={styles.groupChatsRow}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.sm }}>
+                  {groupChats.map((chat) => (
+                    <TouchableOpacity
+                      key={`${chat.kind}-${chat.id}`}
+                      style={styles.groupChatChip}
+                      onPress={() => props.navigation?.navigate(
+                        chat.kind === 'gathering' ? 'GatheringChat' : 'CommunityChat',
+                        chat.kind === 'gathering'
+                          ? { gatheringId: chat.id, gatheringTitle: chat.title }
+                          : { communityId: chat.id, communityName: chat.title }
+                      )}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`Open ${chat.title} group chat`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.groupChatChipIcon}>{chat.kind === 'gathering' ? '🎉' : '🏘️'}</Text>
+                      <Text style={styles.groupChatChipText} numberOfLines={1}>{chat.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+            <MatchesScreen {...props} />
+          </>
+        )}
         {section === 'activity' && <ActivityScreen {...props} />}
         {section === 'invitations' && (
           <FlatList
@@ -345,6 +388,13 @@ const getStyles = (colors) => StyleSheet.create({
   approveButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   declineButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginRight: spacing.xs },
   declineButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
+  groupChatsRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  groupChatChip: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, maxWidth: 160,
+  },
+  groupChatChipIcon: { fontSize: 14, marginRight: 4 },
+  groupChatChipText: { color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
