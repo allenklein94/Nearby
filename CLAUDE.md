@@ -240,21 +240,25 @@ nothing lost)**:
     gathering-aware) / Share Link (same `nearby://gathering/{id}` deep link as the confirmation
     screen) / Skip.
   - **Curated cover photos**: new `src/constants/gatheringCoverPhotos.js`, a `category → real
-    image URL` map. Sourced and verified 15 of the schema's 25 `interest_tag` categories this
-    pass (the 7 reachable from the primary Create 2.0 icon grid — Coffee/Foodie/Outdoors/Sports/
-    Gaming/Music/Volunteering — plus 8 more common ones: Movies/Hiking/Yoga/Wine/Dancing/
-    Fitness/Travel/Reading). Every URL was checked with a real HTTP request (200 status +
-    `image/*` content-type via `curl -I`, a more direct verification than routing through
-    WebFetch's HTML-to-markdown pipeline for what's actually binary image content) **and**
-    downloaded and visually inspected before being hardcoded — this caught two real mismatches
-    that would otherwise have shipped silently wrong: an initial "Dancing" candidate turned out
-    to be a mountain-silhouette yoga pose, and a second "Dancing" candidate turned out to be a
-    neon sign reading "you are what you listen to." Both dropped in favor of a third candidate
-    that's a real dance photo, confirmed visually. The remaining 10 categories (Art, Photography,
-    Cooking, Dogs, Cats, Concerts, Museums, Meditation, Running, Faith & Spirituality) have no
-    sourced image this pass — deliberately left to fall back to the existing icon/color block
-    rather than guessed, matching the plan's own "verify, don't assume" instruction. Wired as a
-    fallback (real uploaded `cover_photo_path` still wins when present) into both
+    image URL` map. Every URL was checked with a real HTTP request (200 status + `image/*`
+    content-type via `curl -I`, a more direct verification than routing through WebFetch's
+    HTML-to-markdown pipeline for what's actually binary image content) **and** downloaded and
+    visually inspected before being hardcoded — this caught several real mismatches that would
+    otherwise have shipped silently wrong: two "Dancing" candidates turned out to be a
+    mountain-silhouette yoga pose and a neon sign reading "you are what you listen to" (dropped
+    for a third, confirmed real dance photo); an initial "Cats" candidate (a cat in sunglasses)
+    was swapped for a more neutral shot. Initially sourced 15 of the 25 `interest_tag`
+    categories (the 7 reachable from the primary Create 2.0 icon grid — Coffee/Foodie/Outdoors/
+    Sports/Gaming/Music/Volunteering — plus 8 more common ones: Movies/Hiking/Yoga/Wine/Dancing/
+    Fitness/Travel/Reading); a follow-up pass the same day sourced 9 more (Art, Photography,
+    Cooking, Dogs, Cats, Concerts, Museums, Meditation, Running) — **24 of 25 categories now
+    covered.** The one still deliberately unsourced is **Faith & Spirituality**: tried 9
+    candidates (a church interior, an open Bible, a "JESUS" worship-concert sign, a mislabeled
+    yoga-pose silhouette photo, a forest road, others) and every one either didn't match or was
+    specific to one religion — forcing a single-denomination photo onto a category meant to span
+    all faiths would be a worse outcome than no photo at all, so this one category is left to
+    fall back to the existing icon/color block on purpose, not from running out of effort.
+    Wired as a fallback (real uploaded `cover_photo_path` still wins when present) into both
     `GatheringDetailScreen.js`'s hero and all three of `GatheringsScreen.js`'s card layouts
     (nearby/attending/hosting tabs).
   - Also verified the `nearby://gathering/:gatheringId` `linking` config

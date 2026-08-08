@@ -3,11 +3,18 @@
 // Not AI-generated (locked decision #2 in the Create 2.0 plan) -- static
 // stock imagery, one per category. Every URL here was checked with a real
 // HTTP request (200 + image/* content-type) and visually inspected before
-// being hardcoded, not guessed -- two initial candidates (for Dancing) were
-// dropped after visual inspection turned out to be a mountain-silhouette
-// yoga pose and a neon sign, not dancing. Categories not listed here
-// deliberately have no verified image sourced this pass -- they fall back
-// to the existing icon/color block, never a broken or mismatched photo.
+// being hardcoded, not guessed -- several initial candidates were dropped
+// after visual inspection turned out wrong: two "Dancing" candidates were
+// actually a mountain-silhouette yoga pose and a neon sign; a "Cats"
+// candidate (sunglasses on a cat) was swapped for a more neutral shot; a
+// "Faith & Spirituality" attempt was abandoned entirely after 9 candidates
+// (church interior, open Bible, a "JESUS" worship-concert sign, a
+// mislabeled yoga-pose silhouette, others) turned out either wrong or
+// specific to one religion -- forcing a single-denomination photo onto a
+// category meant to span all faiths would be worse than no photo, so it's
+// deliberately left unsourced. `Faith & Spirituality` and every other
+// category not listed here fall back to the existing icon/color block,
+// never a broken or mismatched photo.
 export const CATEGORY_COVER_PHOTOS = {
   Coffee: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&q=80',
   Foodie: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=80',
@@ -24,6 +31,15 @@ export const CATEGORY_COVER_PHOTOS = {
   Fitness: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&q=80',
   Travel: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80',
   Reading: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=1200&q=80',
+  Art: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=1200&q=80',
+  Photography: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=1200&q=80',
+  Cooking: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1200&q=80',
+  Dogs: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200&q=80',
+  Cats: 'https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=1200&q=80',
+  Concerts: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1200&q=80',
+  Museums: 'https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=1200&q=80',
+  Meditation: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200&q=80',
+  Running: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1200&q=80',
 };
 
 export function curatedCoverPhotoFor(interestTag) {
