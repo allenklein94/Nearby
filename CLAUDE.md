@@ -4,6 +4,194 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Frictionless Gathering Creation Redesign ("Create 2.0") — IN PROGRESS, plan written before code
+
+Started Aug 8 2026, immediately after the Create Consolidation pass (3-card `CreateHubScreen`
++ `create-assistant` NL box, commit `6bd736a2`) shipped. The user pasted a detailed, fully
+worked-out redesign vision for the whole gathering-creation flow — this supersedes and
+partially replaces that just-shipped pass, not layers on top of it. **Read this whole section
+before assuming anything is built** — written before implementation, same restart-safety
+convention as every other plan-first section in this file.
+
+**Locked decisions, given directly by the user, not to be re-litigated:**
+1. AI never infers/assigns a specific date or time from free text. AI may suggest
+   title/category/location/description; the user always explicitly picks date/time through
+   deterministic UI (preset buttons + a picker), never a parsed guess.
+2. Cover photos: curated/static imagery per category, **not** AI-generated. No new image-gen
+   API, no per-gathering cost. Keep the existing icon/color fallback wherever a category has no
+   curated image. AI-generated personalized covers explicitly deferred to a future premium
+   feature, not attempted now.
+3. No proximity/interest-based stranger surfacing, anywhere. This preserves the existing
+   standing rule (Discover's unified search already excludes People for this exact reason —
+   see the Discover mini-app section below). The post-create growth prompt is **"Invite
+   Connections"**, limited to people the organizer already has an established connection with
+   (accepted friends), optionally enriched with real shared-context ("you both belong to
+   Downtown Runners," "you attended Coffee Club together") — never nearby strangers, even ones
+   the recommendation engine would score as a good match.
+4. Full scope, one pass — not just the core loop. But scope itself must not creep: capacity/
+   waitlist/"reserve more tables" mechanics are explicitly deferred (see below), and several
+   literal mockup details were deliberately adjusted for schema-honesty reasons (also below) —
+   flagged rather than silently faked.
+
+**What "Create" becomes, architecturally:**
+
+- **`CreateHubScreen.js` rebuilt again** — this time to the real primary surface: "What would
+  you like to do today?" plus a large-button icon grid (Coffee / Dinner / Walk / Sports /
+  Movie / Game Night / Music / Volunteer / Something Else), inline on the screen, not behind a
+  modal tap. The just-shipped persistent "Tell us what you're thinking" NL row is **removed** —
+  free text now lives specifically behind the "Something Else" tile (matches the vision's own
+  reasoning: a grid of things people actually say, plus one honest catch-all, not a grid *and*
+  a redundant always-visible text box). Create a Community / Partner with a Business / Manage
+  Your Business move to a small, de-emphasized secondary row below the grid — still real,
+  still needed features, just not what this screen is *about* anymore.
+- **`StartSomethingModal.js`'s `CREATE_HUB_OPTIONS`/`SUB_OPTIONS` constants are reused as the
+  data source** for this grid (single source of truth for the option list), but rendered
+  inline on `CreateHubScreen` with its own JSX — not by opening the modal. `StartSomethingModal`
+  itself is untouched and keeps its existing modal behavior for `HomeScreen.js`'s time-adaptive
+  quick actions, which this redesign doesn't touch.
+- **"Something Else" behavior**: tapping it reveals an inline "What do you have in mind?" text
+  box on `CreateHubScreen` (no navigation away) and calls the existing `create-assistant`
+  function (`classifyCreateRequest`, built last pass). Routes by returned `intent` exactly like
+  the just-removed NL box did — `gathering` → into the new flow below with title/category
+  prefilled but shown for confirmation (not skipped, since an AI guess deserves a look before
+  publish, unlike a literal icon tap); `community` → `CreateCommunity` prefilled; `business_partner`
+  → `RequestBusinessPartner` prefilled; `unclear` → still proceeds into the gathering flow with
+  the typed text as a literal title and no category, rather than a dead-end error, since the
+  user already told us it's *something* by tapping this tile.
+- **`CreateGatheringScreen.js` rebuilt in place** (same route, same `createGathering()` call,
+  every existing caller — `StartSomethingModal`, the old NL flow, now `CreateHubScreen`'s grid
+  — keeps working unmodified) into the conversational one-decision-per-screen flow:
+  1. **What** — skipped entirely when reached via a literal icon-grid tap (`fromQuickPick: true`
+     route param; title/category already known). Shown, prefilled-but-editable, when reached via
+     "Something Else"/AI or with no preset at all (e.g. deep-linked in some other way).
+  2. **Who should discover this?** — 🌍 Everyone / 👥 Friends / 🏘 Community / 🔒 Invite Only.
+     This is genuinely new (see schema below), not a reword of the existing Public/Private
+     toggle — audience/discovery-scope and auto-join/approval are two different axes that were
+     previously conflated into one `is_public` boolean.
+  3. **When** — Now / Tonight / Tomorrow / Pick a Date, each either sets a sensible default time
+     immediately or opens the existing native date/time picker. Fully deterministic per decision
+     #1 above — no AI involvement at all in this step.
+  4. **Where** — 📍 Near Me (current location, today's default behavior) / 🔍 Choose a Place
+     (new — "Popular Nearby" real venue suggestions, see below). **The mockup's third option,
+     "I'll Decide Later," is deliberately not built as a true skip-location state** — `gatherings.
+     precise_lat/lng` being nullable in the schema doesn't mean the rest of the app tolerates a
+     null-coordinate gathering (`createGathering()`'s own `localArea()`/`wideArea()` computation,
+     `get_gathering_distances`, the map layer, `get_gathering_meetup_point` all assume real
+     coordinates) — making location genuinely optional is a real structural change touching many
+     call sites, not a per-screen tweak, so it's flagged here rather than faked with a state nothing
+     downstream actually handles. "Near Me" already ​covers the same underlying want (don't make me
+     think about location right now).
+  5. **Anything people should know?** (optional, existing `description` field — zero new schema,
+     kept as one skippable step since "ask only what's necessary" doesn't mean "delete a field
+     that already existed and costs nothing to leave optional").
+     A collapsed **"More options"** section on this same step holds the fields the new flow
+     doesn't surface by default — recurrence, map visibility (private-only), women-only — so
+     nothing the old wizard could do is actually lost, it's just no longer a forced decision.
+  6. **Publish** — real preview card (unchanged concept from the just-replaced wizard's step 4,
+     kept), button reads **"Start Gathering"** instead of the old `t('gatherings.postButton')`
+     copy (check what that translation key currently says and update it, not just override
+     English inline — this app has a language-switching layer, `LanguageContext`).
+- **`visibility` — new column, new filtering funnel (the one genuinely new piece of schema
+  this whole redesign needs)**: `gatherings.visibility` text, `check (visibility in ('everyone',
+  'friends', 'community', 'invite_only'))`, `default 'everyone'` (every existing row backfills
+  to `'everyone'`, matching today's actual behavior exactly — zero behavior change for anything
+  already posted). `is_public` is untouched and keeps its existing meaning (auto-join vs.
+  host-approval) — the new flow always sets `is_public: true` for `everyone`/`friends`/
+  `community` (frictionless, matches the whole point of this redesign) and `is_public: false`
+  for `invite_only` (host-approval as a belt-and-suspenders fallback — see enforcement below).
+  `community_id` is set when `visibility = 'community'`, from a picker scoped to communities the
+  caller is a member of (via already-existing `getMyCommunities()` — empty state if they belong
+  to none, same graceful-empty convention as `RequestBusinessPartnerScreen`).
+  **Enforcement, matching this app's established privacy convention exactly** (confirmed live:
+  `gatherings`' RLS is `"Anyone can view gatherings" using (true)` — this app has *never*
+  enforced gathering privacy via RLS, only via which query results a screen actually surfaces,
+  e.g. today's "private" gatherings are still fully SELECTable by anyone, they just don't
+  auto-join). Consistent with that: `getNearbyGatherings()` (the single funnel behind
+  `GatheringsScreen`, `DiscoverHubScreen`'s search, and the map — confirmed all three already
+  route through this one function) gets a new filter pass — `friends` visibility included only
+  if the viewer is an accepted friend of `host_id` (`getMyFriends()`, already fetched
+  elsewhere), `community` included only if the viewer is a member of `community_id`
+  (`getMyCommunities()`), `invite_only` always excluded from this list entirely. Direct fetch by
+  known id (`getGatheringById`, what `GatheringDetailScreen` actually uses) is **not**
+  visibility-filtered — a shared link or an accepted invite always works for the person holding
+  it, matching how "private" gatherings already work today. For `invite_only` specifically,
+  `GatheringDetailScreen`'s Join CTA is additionally gated client-side on the viewer having a
+  real accepted `social_invites` row for that gathering (or being the host) — real UI
+  enforcement reusing data that already exists, no new RPC. **Not attempted**: a
+  server-side/RPC-level block on a determined caller directly hitting the join RPC with a raw
+  gathering id they weren't invited to — same risk posture this app already accepts elsewhere
+  (RLS wide open, UI is the actual gate), flagged rather than silently assumed airtight.
+- **"Popular Nearby" venue suggestions** (Where step, "Choose a Place"): reuses
+  `services/places.js`'s existing `searchNearbyPlaces(lat, lng, category, keyword)` — real
+  Google Places data, not invented. Walk-time ("7 minutes") is a plain client-side approximation
+  from straight-line distance at an assumed walking pace — same "equirectangular, not full
+  haversine, plenty accurate at this scale" convention the Unified Map section already
+  established, **not** a new call to Google's paid Distance Matrix API. Tapping a suggestion
+  sets the gathering's location to that real place; the place name is shown in the Where
+  confirmation line, title is left as whatever the user typed (not silently rewritten).
+- **Curated cover photos**: category → image mapping, used as the hero on `GatheringDetailScreen`
+  and gathering cards whenever a host hasn't uploaded a real `cover_photo_path`. **Real, verified
+  image URLs only** — this pass will use `WebFetch` to confirm each candidate URL actually
+  resolves to an image before it's hardcoded into the app, the same "verify, don't assume"
+  posture used everywhere else in this file (e.g. checking `verify_jwt` live instead of trusting
+  the CLI default). Falls back to the existing icon/color block for any category without a
+  verified image — never a broken image URL. If verified real images can't be sourced this pass,
+  this piece is explicitly deferred (flagged, not fabricated) rather than shipping a guessed
+  Unsplash photo ID that might 404.
+- **Confirmation screen**: replaces the current plain `Alert.alert('Posted!', ...)` on submit.
+  "🎉 Your gathering is live! Now let's help people discover it." with two real actions —
+  **Share Gathering** (native share sheet with a real deep link, `nearby://gathering/{id}` —
+  this needs an actual `linking` config added to `NavigationContainer` in `RootNavigator.js`,
+  which doesn't exist at all today; without it a "shareable link" would silently do nothing when
+  tapped, which is exactly the class of dead-feature bug this file has caught and fixed
+  repeatedly elsewhere, e.g. the dead `gathering_invite` push case. Scoped to just the
+  `GatheringDetail` path this pass, not a general deep-linking overhaul) and **Invite
+  Connections** (friends-only picker per locked decision #3, reusing `getMyFriends()` +
+  `sendInvite('gathering', ...)` from the existing `services/invites.js` social-invite system —
+  no new invite mechanism. Enriched where honestly possible with real shared-context lines via
+  a new small query: shared `community_members` rows or a shared *past* `gathering_interest`
+  history between the organizer and each friend — real signals, not fabricated).
+- **Organizer countdown card**: a compact "People Going / Interested / Messages" card, real
+  counts from data `GatheringDetailScreen` already fetches (`approvedAttendees.length`, pending
+  count, and a new simple `gathering_messages` count-only query) — added to the host banner on
+  `GatheringDetailScreen`, not a separate new screen (this app doesn't have a per-gathering
+  analytics surface anywhere else either, and one gathering's countdown card doesn't need one).
+- **Post-join growth prompt**: "Want to bring someone?" shown once, right after a *public*
+  (auto-join) gathering join succeeds, before landing on the normal post-join panel — Invite a
+  Friend (opens the existing `InviteFriendsModal`, already gathering-aware) / Share Link (native
+  share, same deep link as above) / Skip. Not shown for host-approval joins (nothing to
+  celebrate yet, still pending) or invite-only (already came in via a direct invite).
+
+**Deliberately deferred, flagged rather than silently built partial:**
+- Capacity ("How many people?" 2–4/5–10/10+/No Limit) and everything downstream of it
+  (attendance-approaching-capacity suggestions — "reserve more tables," waitlist, rewards). The
+  final 5-decision framing the user gave explicitly excludes this from the core loop
+  ("everything else can come later"), and a real waitlist needs new schema + real state
+  machine (a `gathering_interest` status beyond pending/approved/declined) — not a shallow
+  UI-only version.
+- AI-generated personalized cover photos — explicit "later, once the product has traction"
+  per the user's own words.
+- True proximity/interest-based stranger invite suggestions — explicitly rejected (locked
+  decision #3), not a "maybe later," a standing rule reaffirmed.
+- Server-side/RPC-level enforcement that a non-invited stranger truly cannot join an
+  invite-only gathering by calling the join RPC directly with a known id — client-side gated
+  only this pass, matching this app's existing privacy-enforcement posture elsewhere but worth
+  hardening later.
+
+**Verification plan**: apply the `visibility` migration to production
+(`enmosvippabmuqslzrox`) and confirm the backfill via a direct query (every existing row reads
+`'everyone'`); verify the new `getNearbyGatherings()` filter live with real friend/community
+pairs the same way this session has verified every other RLS-adjacent change (`set_config(
+'request.jwt.claims', ...)` as real profiles — friend-visible gathering shows for a friend and
+not for a stranger, same for community); confirm the new `linking` config actually routes a
+`nearby://gathering/<id>` URL to `GatheringDetail` (`Linking.openURL` from a dev shell, or the
+`npx uri-scheme` helper if available — no simulator in this sandbox, so this is the closest
+verifiable proxy); full `npx expo export --platform ios` after each meaningful increment,
+checking the module count against the 1842 baseline from the last pass. **Standing limitation,
+same as every other entry in this file**: no manual simulator/device run-through is possible
+here — flagged for next session same as always, but this pass's plan is written specifically so
+each piece is independently verifiable via direct SQL/API checks even without one.
+
 ## Outstanding: Create Consolidation + Create Assistant + Business Partnership Requests (IN PROGRESS — plan written before code, in case of restart)
 
 Started Aug 8 2026, after the `bonus_notices` exploit fix (see below) was finished and
