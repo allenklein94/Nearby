@@ -50,23 +50,15 @@ export default function AdminVerificationScreen() {
   async function handleDecision(submission, approved) {
     setProcessingId(submission.id);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const reviewerId = sessionData?.session?.user?.id;
-
-      const { error: updateError } = await supabase
-        .from('id_verification_submissions')
-        .update({ status: approved ? 'approved' : 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: reviewerId })
-        .eq('id', submission.id);
-
-      if (updateError) throw updateError;
-
-      if (approved) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ photo_verified: true })
-          .eq('id', submission.user_id);
-        if (profileError) throw profileError;
-      }
+      // Both the submission status and the submitter's own photo_verified
+      // flag are set atomically server-side (admin_approve_id_verification) --
+      // profiles has no client-updatable admin bypass, so a direct cross-user
+      // update from here would silently affect 0 rows.
+      const { error } = await supabase.rpc('admin_approve_id_verification', {
+        submission_id_param: submission.id,
+        approved,
+      });
+      if (error) throw error;
 
       load();
     } catch (e) {

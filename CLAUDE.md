@@ -249,7 +249,7 @@ role only — so adding it to the guarded list has no risk of breaking a real fl
   `auth.uid()`'s own `is_admin` internally) doing both the submission-status update and the
   target's `photo_verified` update atomically, matching this codebase's established
   admin-action-via-RPC pattern, rather than opening a broad admin bypass UPDATE policy on all of
-  `profiles`.
+  `profiles`. **Fixed later this same pass, see below.**
 - **Also found, not yet fixed, lower severity**: `bonus_notices` (a real, spendable resource —
   see `noticeLimits.js`/`referrals.js`) is written directly from client-side JS in both the
   spend path (`noticeLimits.js`) and the earn path (`referrals.js`'s +3 on a valid referral),
@@ -261,10 +261,32 @@ role only — so adding it to the guarded list has no risk of breaking a real fl
   real spend/earn flows too; the correct fix needs those two call sites converted to SECURITY
   DEFINER RPCs (or wrapped in `trusted_update` some other safe way) at the same time as the
   column gets protected, not attempted in this same pass to avoid shipping a half-done fix.
-- **Not done yet**: same standing gap — no manual run-through in a simulator/device. This pass
-  was pure backend verification (direct SQL against production, immediately reverted each time);
-  no client file was touched. Next session should pick up the two flagged-but-unfixed items
-  above (the broken admin verification approval, and the `bonus_notices` self-edit exploit).
+- **Broken admin verification approval — fixed later this same pass**: new
+  `admin_approve_id_verification(submission_id, approved)` SECURITY DEFINER RPC
+  (`20260808_admin_approve_id_verification.sql`) does both writes atomically — checks
+  `auth.uid()`'s own `is_admin` first (raises if not), updates
+  `id_verification_submissions.status`/`reviewed_at`/`reviewed_by` (guarded by `status =
+  'pending'` so a submission can't be double-reviewed), then on approval sets
+  `app.trusted_update` and writes the submitter's `profiles.photo_verified = true`.
+  `AdminVerificationScreen.js`'s `handleDecision()` now calls this RPC instead of the two raw
+  table writes. **Verified live and end-to-end for real** (not just the RLS-block proof from
+  the finding above): created a real pending submission for one real profile, called the RPC as
+  the other real profile (Allen — genuinely `is_admin = true` in production, not a test flag) —
+  the submission correctly flipped to `approved` with real `reviewed_by`/`reviewed_at`, and the
+  submitter's `photo_verified` correctly flipped to `true` in the same call. Separately
+  confirmed a true non-admin calling the RPC is rejected (`Only admins can review verification
+  submissions`), and that re-approving an already-reviewed submission is rejected (`Submission
+  not found or already reviewed`). All test submissions deleted and the test profile's
+  `photo_verified` reset to `false` afterward. Verified via a full `npx expo export --platform
+  ios` (1839 modules, unchanged — an edit to an existing screen, no new client files).
+- **`bonus_notices` self-edit exploit — still not fixed**, flagged above, left for a future
+  pass since it needs the two legitimate call sites (`noticeLimits.js`'s spend,
+  `referrals.js`'s earn) converted to a safe write path at the same time the column gets
+  guarded, not attempted together with the admin-verification fix in this same pass.
+- **Not done yet**: no manual run-through in a simulator/device for the new RPC wiring — next
+  session should click through `AdminVerificationScreen` as a real admin account with a real
+  pending submission and confirm the approve/reject buttons behave correctly in the UI, not
+  just via direct RPC calls.
 
 ## Outstanding: Invite People (gathering + community)
 
