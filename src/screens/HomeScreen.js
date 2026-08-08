@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight } from '../services/homeDashboard';
+import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
@@ -27,6 +27,7 @@ export default function HomeScreen({ navigation }) {
   const [socialForecast, setSocialForecast] = useState(null);
   const [continueCommunities, setContinueCommunities] = useState([]);
   const [perksCount, setPerksCount] = useState(0);
+  const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
   const period = getTimePeriod();
 
@@ -47,6 +48,8 @@ export default function HomeScreen({ navigation }) {
       setPerksCount(perks);
       const unrated = await getMostRecentUnratedGathering();
       setUnratedGathering(unrated);
+      const pendingInvites = await getPendingInvitesCount(myId);
+      setPendingInvitesCount(pendingInvites);
     } catch (e) {
       // These are supplementary cards, not core functionality — a
       // failure here should never block social forecast/location
@@ -114,6 +117,21 @@ export default function HomeScreen({ navigation }) {
           const insight = getHomeInsight(dashboard, socialForecast);
           return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
         })()}
+
+        {pendingInvitesCount > 0 && (
+          <TouchableOpacity
+            style={styles.pendingInvitesBanner}
+            onPress={() => navigation.navigate('Matches', { initialSection: 'invitations' })}
+            activeOpacity={0.85}
+            accessibilityLabel={`${pendingInvitesCount} pending invite${pendingInvitesCount === 1 ? '' : 's'} and requests`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.pendingInvitesBannerText}>
+              🤝 {pendingInvitesCount} pending invite{pendingInvitesCount === 1 ? '' : 's'} &amp; request{pendingInvitesCount === 1 ? '' : 's'}
+            </Text>
+            <Text style={styles.pendingInvitesBannerArrow}>›</Text>
+          </TouchableOpacity>
+        )}
 
         <Text style={styles.sectionHeader}>{PERIOD_SECTION_LABELS[period]}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
@@ -403,6 +421,13 @@ const getStyles = (colors) => StyleSheet.create({
   },
   perksBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   perksBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
+  pendingInvitesBanner: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  pendingInvitesBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  pendingInvitesBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,

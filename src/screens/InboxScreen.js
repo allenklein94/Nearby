@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, Image, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import MatchesScreen from './MatchesScreen';
@@ -22,7 +22,18 @@ import { spacing, radius } from '../theme';
 export default function InboxScreen(props) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [section, setSection] = useState('messages');
+  const [section, setSection] = useState(props.route?.params?.initialSection ?? 'messages');
+
+  // The tab navigator keeps InboxScreen mounted, so a fresh navigation into
+  // it (e.g. from Home's pending-invites banner) with a new initialSection
+  // param wouldn't otherwise be seen — useState's initial value only
+  // applies on first mount. Re-applies only when the param itself changes,
+  // so a manual tab switch afterward isn't overridden by a stale re-focus.
+  useEffect(() => {
+    if (props.route?.params?.initialSection) {
+      setSection(props.route.params.initialSection);
+    }
+  }, [props.route?.params?.initialSection]);
   const [requests, setRequests] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loadingRequests, setLoadingRequests] = useState(true);

@@ -97,13 +97,27 @@ export async function getInboxUnreadCount() {
   // since pending gathering-join requests (for hosts), pending friend
   // requests, and pending gathering/community invites all live in Inbox
   // too but never moved this number.
+  const pendingCount = await getPendingInvitesCount(myId);
+
+  return unreadMessages + newActivity + pendingCount;
+}
+
+// Pending gathering-join requests (for hosts), pending friend requests,
+// and pending gathering/community invites — the three things Inbox's
+// Requests/Invites tabs actually surface, kept separate from
+// getInboxUnreadCount()'s messages/notices so Home can show a real
+// "N pending invites" banner without also counting unread chat messages.
+export async function getPendingInvitesCount(myIdParam) {
+  const myId = myIdParam ?? (await supabase.auth.getSession()).data?.session?.user?.id;
+  if (!myId) return 0;
+
   const [{ count: pendingRequestCount }, { count: pendingFriendRequestCount }, { count: pendingInviteCount }] = await Promise.all([
     supabase.from('gathering_interest').select('id, gatherings!inner(host_id)', { count: 'exact', head: true }).eq('status', 'pending').eq('gatherings.host_id', myId),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'pending').neq('requested_by', myId).or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('social_invites').select('id', { count: 'exact', head: true }).eq('invitee_id', myId).eq('status', 'pending'),
   ]);
 
-  return unreadMessages + newActivity + (pendingRequestCount ?? 0) + (pendingFriendRequestCount ?? 0) + (pendingInviteCount ?? 0);
+  return (pendingRequestCount ?? 0) + (pendingFriendRequestCount ?? 0) + (pendingInviteCount ?? 0);
 }
 
 export async function getSocialForecast(latitude, longitude) {
