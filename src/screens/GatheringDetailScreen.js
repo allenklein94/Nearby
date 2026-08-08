@@ -18,6 +18,7 @@ import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import { isPremium } from '../services/purchases';
 import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
+import InviteFriendsModal from '../components/InviteFriendsModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -51,6 +52,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [lovedTags, setLovedTags] = useState([]);
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     const g = await getGatheringById(gatheringId);
@@ -350,6 +352,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>Manage attendees →</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setInviteModalVisible(true)}
+                style={{ marginTop: spacing.xs }}
+                accessibilityLabel="Invite friends to this gathering"
+                accessibilityRole="button"
+              >
+                <Text style={styles.hostBannerLink}>🤝 Invite friends →</Text>
+              </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'approved' ? (
             <View style={styles.youreInPanel}>
@@ -371,6 +381,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 accessibilityRole="button"
               >
                 <Text style={styles.sayHelloLink}>💬 Say Hello</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setInviteModalVisible(true)}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Invite friends to this gathering"
+                accessibilityRole="button"
+              >
+                <Text style={styles.sayHelloLink}>🤝 Invite friends</Text>
               </TouchableOpacity>
             </View>
           ) : gathering.myStatus === 'pending' ? (
@@ -398,6 +416,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
         onClose={() => setIntentModalVisible(false)}
         onConfirm={handleConfirmIntent}
         confirmLabel={gathering.is_public ? 'Join Gathering' : 'Request to Join'}
+      />
+
+      <InviteFriendsModal
+        visible={inviteModalVisible}
+        onClose={() => setInviteModalVisible(false)}
+        gatheringId={gatheringId}
+        gatheringTitle={gathering.title}
       />
     </View>
   );

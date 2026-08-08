@@ -7,6 +7,7 @@ import { isFollowingBusiness, followBusiness, unfollowBusiness } from '../servic
 import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
+import InviteFriendsModal from '../components/InviteFriendsModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -28,6 +29,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [changingRoleFor, setChangingRoleFor] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [selectedDate, setSelectedDate] = useState(null);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
@@ -184,6 +186,18 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
+        {(isMember || isCreator) && (
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => setInviteModalVisible(true)}
+            activeOpacity={0.85}
+            accessibilityLabel="Invite friends to this community"
+            accessibilityRole="button"
+          >
+            <Text style={styles.chatButtonText}>🤝 Invite Friends</Text>
+          </TouchableOpacity>
+        )}
+
         {members.length === 0 && (
           <>
             <Text style={styles.sectionHeader}>Leaders & Members</Text>
@@ -274,6 +288,14 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </>
         )}
       </ScrollView>
+
+      <InviteFriendsModal
+        visible={inviteModalVisible}
+        onClose={() => setInviteModalVisible(false)}
+        inviteType="community"
+        targetId={communityId}
+        targetTitle={community.name}
+      />
     </SafeAreaView>
   );
 }

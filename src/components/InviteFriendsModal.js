@@ -3,12 +3,27 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert
 import { getMyFriends } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
+import { sendInvite } from '../services/invites';
 import * as Haptics from 'expo-haptics';
 import AnimatedListItem from './AnimatedListItem';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-export default function InviteFriendsModal({ visible, onClose, gatheringId, gatheringTitle }) {
+// Gathering invites go through the older, gathering-specific
+// invite_friend_to_gathering RPC (women-only + blocks-aware, already
+// wired here before this component also learned to invite to
+// communities) — kept as-is rather than folded into the newer generic
+// social_invites path, so nothing about its existing safety checks
+// changes. Community invites use the newer generic path since no
+// gathering-specific RPC exists for them.
+export default function InviteFriendsModal({
+  visible, onClose,
+  gatheringId, gatheringTitle,
+  inviteType = 'gathering', targetId, targetTitle,
+}) {
+  const resolvedType = gatheringId ? 'gathering' : inviteType;
+  const resolvedTargetId = gatheringId ?? targetId;
+  const resolvedTargetTitle = gatheringTitle ?? targetTitle;
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [friends, setFriends] = useState([]);
@@ -43,11 +58,15 @@ export default function InviteFriendsModal({ visible, onClose, gatheringId, gath
   async function handleInvite(friendId) {
     setInvitingId(friendId);
     try {
-      const { error } = await supabase.rpc('invite_friend_to_gathering', {
-        gathering_id_param: gatheringId,
-        friend_id_param: friendId,
-      });
-      if (error) throw error;
+      if (resolvedType === 'gathering') {
+        const { error } = await supabase.rpc('invite_friend_to_gathering', {
+          gathering_id_param: resolvedTargetId,
+          friend_id_param: friendId,
+        });
+        if (error) throw error;
+      } else {
+        await sendInvite('community', resolvedTargetId, friendId);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setInvitedIds((prev) => ({ ...prev, [friendId]: true }));
     } catch (e) {
@@ -61,7 +80,7 @@ export default function InviteFriendsModal({ visible, onClose, gatheringId, gath
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>Invite Friends</Text>
-          <Text style={styles.subtitle}>to "{gatheringTitle}"</Text>
+          <Text style={styles.subtitle}>to "{resolvedTargetTitle}"</Text>
 
           {loading ? (
             <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
