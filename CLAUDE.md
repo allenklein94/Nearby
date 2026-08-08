@@ -178,19 +178,64 @@ convention as every other plan-first section in this file.
   only this pass, matching this app's existing privacy-enforcement posture elsewhere but worth
   hardening later.
 
+**Build status (this pass, after a codespace restart interrupted the session right after the
+schema migration landed — picked back up from `git log`/`git status`, working tree was clean,
+nothing lost)**:
+
+- **Done**: `gatherings.visibility` migration (applied to production, confirmed via direct
+  query in a prior pass). `CreateHubScreen.js` rebuilt to the real icon-grid primary surface —
+  `CREATE_HUB_OPTIONS` rendered inline with this screen's own JSX (not via
+  `StartSomethingModal`), including inline sub-option handling for `SUB_OPTIONS` entries (e.g.
+  Dinner → Pizza/Mexican/etc.) so nothing from the old modal-driven grid was silently dropped;
+  "Something Else" reveals an inline text box calling `classifyCreateRequest` with the
+  `gathering`/`community`/`business_partner`/`unclear` routing exactly as spec'd (unclear →
+  proceeds into the gathering flow with the typed text as a literal title); Community/Business
+  moved to a de-emphasized secondary text-link row below the grid. `CreateGatheringScreen.js`
+  rebuilt in place to the real one-decision-per-screen flow (What[skippable via
+  `fromQuickPick`] → Who → When → Where → Details[+collapsed More options] → Publish), same
+  route/`createGathering()` call every existing caller already uses. `createGathering()` and
+  `SAFE_GATHERING_FIELDS` in `services/gatherings.js` now carry `visibility`/`community_id`.
+  `getNearbyGatherings()` now filters by `visibility` (friends via `getMyFriends()`, community
+  via `getMyCommunities()`, `invite_only` always excluded) — **not yet live-verified against
+  production with real friend/community pairs**, see below. New
+  `GatheringConfirmationScreen.js` + route replaces the old `Alert.alert('Posted!', ...)` —
+  Share Gathering (real `Share.share` with the `nearby://gathering/{id}` deep link) and Invite
+  Connections (friends-only, enriched with real shared-context via new
+  `getFriendsWithSharedContext()` in `gatherings.js` — shared community or shared past
+  gathering, sent via the existing `sendInvite('gathering', ...)` from `services/invites.js`,
+  distinct from `InviteFriendsModal`'s older `invite_friend_to_gathering` push-based path used
+  elsewhere). Real `linking` config added to `NavigationContainer` in `RootNavigator.js`
+  (`nearby://` prefix, already the configured `app.json` scheme; `GatheringDetail:
+  'gathering/:gatheringId'` — scoped to just this one path, not a general deep-linking
+  overhaul). `postButton` translation key updated to "Start Gathering" (and its equivalent) in
+  all 11 languages, not just English inline. Verified via a full `npx expo export --platform
+  ios` (1843 modules, one more than the 1842 baseline — the one new
+  `GatheringConfirmationScreen.js`).
+- **Not done yet**: the community picker (Who step) and Popular Nearby places (Where step) are
+  built and wired but not yet exercised against a real account with real communities/a real
+  location. The `GatheringDetailScreen.js` Join CTA gating for `invite_only` (accepted
+  `social_invites` row or host), the organizer countdown card, the post-join "Want to bring
+  someone?" growth prompt, and the curated cover-photo mapping are **all still outstanding** —
+  see the task list this session is working from (visible in conversation, not persisted here
+  independently). If a restart happens again mid-way through those, check `git log` against
+  this file's own task descriptions above to see exactly which of the remaining pieces already
+  landed.
+
 **Verification plan**: apply the `visibility` migration to production
 (`enmosvippabmuqslzrox`) and confirm the backfill via a direct query (every existing row reads
-`'everyone'`); verify the new `getNearbyGatherings()` filter live with real friend/community
-pairs the same way this session has verified every other RLS-adjacent change (`set_config(
-'request.jwt.claims', ...)` as real profiles — friend-visible gathering shows for a friend and
-not for a stranger, same for community); confirm the new `linking` config actually routes a
+`'everyone'`) — **done, confirmed in a prior pass**; verify the new `getNearbyGatherings()`
+filter live with real friend/community pairs the same way this session has verified every
+other RLS-adjacent change (`set_config('request.jwt.claims', ...)` as real profiles —
+friend-visible gathering shows for a friend and not for a stranger, same for community) — **not
+yet done, still outstanding**; confirm the new `linking` config actually routes a
 `nearby://gathering/<id>` URL to `GatheringDetail` (`Linking.openURL` from a dev shell, or the
 `npx uri-scheme` helper if available — no simulator in this sandbox, so this is the closest
-verifiable proxy); full `npx expo export --platform ios` after each meaningful increment,
-checking the module count against the 1842 baseline from the last pass. **Standing limitation,
-same as every other entry in this file**: no manual simulator/device run-through is possible
-here — flagged for next session same as always, but this pass's plan is written specifically so
-each piece is independently verifiable via direct SQL/API checks even without one.
+verifiable proxy) — **not yet done**; full `npx expo export --platform ios` after each
+meaningful increment, checking the module count against the 1842 baseline from the last pass —
+**done for this increment (1843)**. **Standing limitation, same as every other entry in this
+file**: no manual simulator/device run-through is possible here — flagged for next session same
+as always, but this pass's plan is written specifically so each piece is independently
+verifiable via direct SQL/API checks even without one.
 
 ## Outstanding: Create Consolidation + Create Assistant + Business Partnership Requests (IN PROGRESS — plan written before code, in case of restart)
 

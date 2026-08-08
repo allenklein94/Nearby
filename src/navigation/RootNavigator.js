@@ -53,6 +53,7 @@ import ViewProfileScreen from '../screens/ViewProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LegalScreen from '../screens/LegalScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
+import GatheringConfirmationScreen from '../screens/GatheringConfirmationScreen';
 import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
 import TripPlanningScreen from '../screens/TripPlanningScreen';
 import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
@@ -89,6 +90,22 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 export const navigationRef = createNavigationContainerRef();
+
+// Real deep linking, scoped to just the GatheringDetail path this pass
+// (Create 2.0's "Share Gathering" action needs an actual working link,
+// not a URL that silently does nothing when tapped — the same class of
+// dead-feature bug this codebase has caught and fixed before, e.g. the
+// dead gathering_invite push case). "nearby" is already the configured
+// scheme in app.json. Not a general deep-linking overhaul — no other
+// route is wired up here.
+const linking = {
+  prefixes: ['nearby://'],
+  config: {
+    screens: {
+      GatheringDetail: 'gathering/:gatheringId',
+    },
+  },
+};
 
 const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
@@ -238,7 +255,7 @@ export default function RootNavigator() {
   if (loading || (session && profileLoading)) return null;
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!session ? (
           <>
@@ -261,6 +278,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: 'Host a Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="GatheringConfirmation" component={GatheringConfirmationScreen} options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
             <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: 'Shared Playlist', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: 'Plan a Trip', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SharedDecisions" component={SharedDecisionsScreen} options={{ headerShown: true, title: 'Big Picture', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

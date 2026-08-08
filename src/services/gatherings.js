@@ -2,6 +2,8 @@ import { supabase } from './supabase';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import { getMyFriends } from './friends';
+import { getMyCommunities } from './communities';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -17,9 +19,9 @@ function wideArea(latitude, longitude) {
 
 const WIDE_TIER_MAX_MILES = 15;
 
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -54,6 +56,8 @@ export async function createGathering({ title, description, interestTag, schedul
       women_only: womenOnly,
       recurrence_rule: recurrenceRule,
       recurring_series_id: recurrenceRule ? crypto.randomUUID() : null,
+      visibility,
+      community_id: visibility === 'community' ? communityId : null,
     })
     .select()
     .single();
@@ -93,6 +97,16 @@ export async function getNearbyGatherings(tier = 'local') {
   const myGender = (myProfile?.gender || myProfile?.basics?.gender || '').toLowerCase();
   const isWoman = ['female', 'woman'].includes((myGender ?? '').toLowerCase());
 
+  // Create 2.0's discovery-scope filter, run against the same
+  // already-fetched list rather than a new query per gathering — same
+  // "filter the funnel client-side" pattern as women_only/blocks above.
+  // invite_only is always excluded here; a shared link or accepted
+  // invite still works via getGatheringById, matching how "private"
+  // (is_public=false) gatherings have always behaved.
+  const [myFriends, myCommunities] = await Promise.all([getMyFriends(), getMyCommunities()]);
+  const friendIds = new Set(myFriends.map((f) => f.id));
+  const communityIds = new Set(myCommunities.map((c) => c.id));
+
   const { data, error } = await supabase
     .from('gatherings')
     .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, profiles(display_name, photo_url))`)
@@ -107,7 +121,15 @@ export async function getNearbyGatherings(tier = 'local') {
 
   const filtered = (data ?? [])
     .filter((gathering) => !excludedHostIds.has(gathering.host_id))
-    .filter((gathering) => !gathering.women_only || isWoman);
+    .filter((gathering) => !gathering.women_only || isWoman)
+    .filter((gathering) => {
+      switch (gathering.visibility) {
+        case 'friends': return friendIds.has(gathering.host_id);
+        case 'community': return gathering.community_id && communityIds.has(gathering.community_id);
+        case 'invite_only': return false;
+        default: return true;
+      }
+    });
 
   const gatheringIds = filtered.map((g) => g.id);
   let distanceById = {};
@@ -958,6 +980,72 @@ export async function getApprovedAttendeeCount(gatheringId) {
 
   if (error) return 0;
   return count ?? 0;
+}
+
+export async function getPendingInterestCount(gatheringId) {
+  const { count, error } = await supabase
+    .from('gathering_interest')
+    .select('id', { count: 'exact', head: true })
+    .eq('gathering_id', gatheringId)
+    .eq('status', 'pending');
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+// Count-only, for the organizer countdown card — a real number
+// without pulling every message body down just to know how many exist.
+export async function getGatheringMessageCount(gatheringId) {
+  const { count, error } = await supabase
+    .from('gathering_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('gathering_id', gatheringId);
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+// Confirmation screen's "Invite Connections" — friends only (locked
+// decision #3: no proximity/stranger surfacing here, ever), enriched
+// with real shared-context where it honestly exists: a shared
+// community, or a past gathering both the organizer and that friend
+// were approved attendees of. Never fabricated, never "nearby."
+export async function getFriendsWithSharedContext(hostId) {
+  const friends = await getMyFriends();
+  if (friends.length === 0) return [];
+  const friendIds = friends.map((f) => f.id);
+
+  const [{ data: hostCommunities }, { data: friendCommunities }, { data: hostPastGatherings }, { data: friendPastGatherings }] = await Promise.all([
+    supabase.from('community_members').select('community_id, communities(name)').eq('user_id', hostId),
+    supabase.from('community_members').select('community_id, user_id').in('user_id', friendIds),
+    supabase.from('gathering_interest').select('gathering_id, gatherings(title)').eq('user_id', hostId).eq('status', 'approved'),
+    supabase.from('gathering_interest').select('gathering_id, user_id').in('user_id', friendIds).eq('status', 'approved'),
+  ]);
+
+  const hostCommunityNameById = Object.fromEntries((hostCommunities ?? []).filter((r) => r.communities).map((r) => [r.community_id, r.communities.name]));
+  const hostGatheringTitleById = Object.fromEntries((hostPastGatherings ?? []).filter((r) => r.gatherings).map((r) => [r.gathering_id, r.gatherings.title]));
+
+  const sharedCommunityByFriend = {};
+  for (const row of friendCommunities ?? []) {
+    if (hostCommunityNameById[row.community_id]) {
+      sharedCommunityByFriend[row.user_id] = hostCommunityNameById[row.community_id];
+    }
+  }
+  const sharedGatheringByFriend = {};
+  for (const row of friendPastGatherings ?? []) {
+    if (hostGatheringTitleById[row.gathering_id]) {
+      sharedGatheringByFriend[row.user_id] = hostGatheringTitleById[row.gathering_id];
+    }
+  }
+
+  return friends.map((f) => {
+    const communityName = sharedCommunityByFriend[f.id];
+    const gatheringTitle = sharedGatheringByFriend[f.id];
+    let context = null;
+    if (communityName) context = `You both belong to ${communityName}`;
+    else if (gatheringTitle) context = `You attended ${gatheringTitle} together`;
+    return { ...f, sharedContext: context };
+  });
 }
 
 // A lightweight companion to getMyGatherings/getMyAttendingGatherings (both

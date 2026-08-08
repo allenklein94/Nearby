@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
+import { getMyCommunities } from '../services/communities';
+import { searchNearbyPlaces } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -16,29 +19,112 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running',
 ];
 
-const STEPS = ['What', 'When', 'Where & Who', 'Preview'];
+const VISIBILITY_OPTIONS = [
+  { key: 'everyone', icon: '🌍', label: 'Everyone', hint: 'Anyone nearby can discover this' },
+  { key: 'friends', icon: '👥', label: 'Friends', hint: 'Only your friends can find this' },
+  { key: 'community', icon: '🏘', label: 'Community', hint: 'Only members of one of your communities' },
+  { key: 'invite_only', icon: '🔒', label: 'Invite Only', hint: "Only people you personally invite — you'll approve each person" },
+];
 
-// A real guided multi-step flow — What → When → Where & Who → Preview
-// — instead of every field on one long form. "Invite friends" (from
-// the roadmap doc this closes) was deliberately not added as a step:
-// there is no working delivery mechanism for it anywhere in this
-// codebase. notifications.js already has a `case 'gathering_invite':`
-// tap-routing entry, but nothing anywhere ever sends one — no table,
-// no trigger, no push. Building a real version needs its own schema/
-// RLS/push-wiring pass, not a step bolted onto this one. See CLAUDE.md.
+const WHEN_PRESETS = [
+  { key: 'now', icon: '⚡', label: 'Now' },
+  { key: 'tonight', icon: '🌙', label: 'Tonight' },
+  { key: 'tomorrow', icon: '☀️', label: 'Tomorrow' },
+  { key: 'custom', icon: '🗓️', label: 'Pick a Date' },
+];
+
+function dateForPreset(preset) {
+  const now = new Date();
+  if (preset === 'now') return new Date(now.getTime() + 15 * 60 * 1000);
+  if (preset === 'tonight') {
+    const d = new Date(now);
+    d.setHours(19, 0, 0, 0);
+    if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 1);
+    return d;
+  }
+  if (preset === 'tomorrow') {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    d.setHours(12, 0, 0, 0);
+    return d;
+  }
+  return new Date(now.getTime() + 60 * 60 * 1000);
+}
+
+// Real venue category mapping — same PLACE_CATEGORIES key set
+// DiscoverHubScreen's Places filter already uses (coffee/restaurants/
+// parks/hubs), since that's what searchNearbyPlaces (Google Places)
+// actually accepts. A gathering category with no obvious match falls
+// back to "hubs" rather than guessing.
+function googlePlaceCategoryFor(interestTag) {
+  if (interestTag === 'Coffee') return 'coffee';
+  if (['Foodie', 'Wine', 'Cooking'].includes(interestTag)) return 'restaurants';
+  if (['Outdoors', 'Hiking', 'Running', 'Yoga', 'Sports'].includes(interestTag)) return 'parks';
+  return 'hubs';
+}
+
+// Plain equirectangular approximation, not a Distance Matrix API call —
+// same convention already established for the Unified Map's business
+// layer (services/brandOffers.js's getNearbyBusinesses) and plenty
+// accurate at walking-distance scale.
+function approxMiles(lat1, lng1, lat2, lng2) {
+  const milesPerDegreeLat = 69;
+  const dLat = (lat2 - lat1) * milesPerDegreeLat;
+  const dLng = (lng2 - lng1) * milesPerDegreeLat * Math.cos((lat1 * Math.PI) / 180);
+  return Math.sqrt(dLat * dLat + dLng * dLng);
+}
+
+function walkTimeLabel(miles) {
+  const minutes = Math.max(1, Math.round(miles * 20));
+  return `${minutes} min walk`;
+}
+
+// The conversational, one-decision-per-screen rebuild ("Create 2.0") —
+// What (skippable via fromQuickPick) → Who should discover this? → When
+// → Where → Anything people should know? (+ More options) → Publish.
+// Same route, same createGathering() call, every existing caller
+// (StartSomethingModal, CreateHubScreen's grid, the Create Assistant)
+// keeps working unmodified. See CLAUDE.md's "Create 2.0" section for
+// the full design discussion and what was deliberately deferred
+// (capacity/waitlist, a true skip-location state, AI-picked date/time).
 export default function CreateGatheringScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
+
+  const skipWhat = !!route.params?.fromQuickPick && !!route.params?.quickStartTitle;
+  const STEP_DEFS = [
+    { key: 'what', label: 'What' },
+    { key: 'who', label: 'Who' },
+    { key: 'when', label: 'When' },
+    { key: 'where', label: 'Where' },
+    { key: 'details', label: 'Details' },
+    { key: 'publish', label: 'Publish' },
+  ].filter((s) => !(s.key === 'what' && skipWhat));
+
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [interestTag, setInterestTag] = useState(null);
-  const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 60 * 60 * 1000));
-  const [showPicker, setShowPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [isPublic, setIsPublic] = useState(true);
+
+  const [visibility, setVisibility] = useState('everyone');
+  const [communityId, setCommunityId] = useState(null);
+  const [myCommunities, setMyCommunities] = useState([]);
+  const [loadingCommunities, setLoadingCommunities] = useState(false);
+
+  const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 60 * 60 * 1000));
+  const [whenPreset, setWhenPreset] = useState(null);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const [locationMode, setLocationMode] = useState('near_me');
   const [customLocation, setCustomLocation] = useState(null);
+  const [placeName, setPlaceName] = useState(null);
+  const [myLocation, setMyLocation] = useState(null);
+  const [popularPlaces, setPopularPlaces] = useState(null);
+  const [loadingPlaces, setLoadingPlaces] = useState(false);
+
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showOnMap, setShowOnMap] = useState(true);
   const [womenOnly, setWomenOnly] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState(null);
@@ -46,6 +132,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
       setCustomLocation({ latitude: route.params.selectedLat, longitude: route.params.selectedLng });
+      setPlaceName(null);
+      setLocationMode('choose_place');
     }
   }, [route.params?.selectedLat, route.params?.selectedLng]);
 
@@ -58,15 +146,90 @@ export default function CreateGatheringScreen({ navigation, route }) {
     }
   }, [route.params?.quickStartTitle, route.params?.quickStartCategory]);
 
+  async function loadCommunities() {
+    if (myCommunities.length > 0 || loadingCommunities) return;
+    setLoadingCommunities(true);
+    const list = await getMyCommunities();
+    setMyCommunities(list);
+    setLoadingCommunities(false);
+  }
+
+  async function loadPopularPlaces() {
+    if (popularPlaces !== null || loadingPlaces) return;
+    setLoadingPlaces(true);
+    try {
+      let loc = myLocation;
+      if (!loc) {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setPopularPlaces([]);
+          setLoadingPlaces(false);
+          return;
+        }
+        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+        setMyLocation(loc);
+      }
+      const places = await searchNearbyPlaces(loc.latitude, loc.longitude, googlePlaceCategoryFor(interestTag));
+      setPopularPlaces(places.slice(0, 8));
+    } catch (e) {
+      setPopularPlaces([]);
+    }
+    setLoadingPlaces(false);
+  }
+
+  function pickPreset(preset) {
+    Haptics.selectionAsync();
+    setWhenPreset(preset);
+    if (preset === 'custom') {
+      setShowPicker(true);
+      return;
+    }
+    setScheduledAt(dateForPreset(preset));
+  }
+
+  function pickVisibility(key) {
+    Haptics.selectionAsync();
+    setVisibility(key);
+    if (key === 'community') loadCommunities();
+  }
+
+  function pickLocationMode(mode) {
+    Haptics.selectionAsync();
+    setLocationMode(mode);
+    if (mode === 'choose_place') loadPopularPlaces();
+    else {
+      setCustomLocation(null);
+      setPlaceName(null);
+    }
+  }
+
+  function pickPlace(place) {
+    Haptics.selectionAsync();
+    setCustomLocation({ latitude: place.latitude, longitude: place.longitude });
+    setPlaceName(place.name);
+  }
+
+  const stepKey = STEP_DEFS[step].key;
+
   function goNext() {
-    if (step === 0 && !title.trim()) {
+    if (stepKey === 'what' && !title.trim()) {
       return Alert.alert('Title required', 'Give your gathering a short title.');
     }
-    if (step === 1 && scheduledAt.getTime() <= Date.now()) {
-      return Alert.alert('Pick a future time', "Your gathering's date and time needs to be in the future.");
+    if (stepKey === 'who' && visibility === 'community' && !communityId) {
+      if (!loadingCommunities && myCommunities.length === 0) {
+        return Alert.alert('No communities yet', "You're not a member of any community yet — pick a different option, or join a community first.");
+      }
+      return Alert.alert('Pick a community', 'Choose which community can discover this gathering.');
+    }
+    if (stepKey === 'when' && (!whenPreset || scheduledAt.getTime() <= Date.now())) {
+      return Alert.alert('Pick a time', "Your gathering's date and time needs to be in the future.");
+    }
+    if (stepKey === 'where' && locationMode === 'choose_place' && !customLocation) {
+      return Alert.alert('Pick a place', 'Choose a suggested spot, or switch to "Near Me".');
     }
     Haptics.selectionAsync();
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
   }
   function goBack() {
     if (step === 0) {
@@ -91,7 +254,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
     setSubmitting(true);
     try {
-      await createGathering({
+      const isPublic = visibility !== 'invite_only';
+      const created = await createGathering({
         title: title.trim(),
         description: description.trim() || null,
         interestTag,
@@ -101,9 +265,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
         showOnMap: isPublic ? true : showOnMap,
         womenOnly,
         recurrenceRule: recurrenceRule || null,
+        visibility,
+        communityId: visibility === 'community' ? communityId : null,
       });
-      Alert.alert('Posted!', 'Your gathering is now visible to people nearby.');
-      navigation.goBack();
+      navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName });
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -111,6 +276,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   }
 
   const selectedStyle = interestTag ? categoryStyleFor(interestTag) : null;
+  const selectedVisibility = VISIBILITY_OPTIONS.find((v) => v.key === visibility);
+  const selectedCommunity = myCommunities.find((c) => c.id === communityId);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -119,16 +286,16 @@ export default function CreateGatheringScreen({ navigation, route }) {
         <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>
         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
 
-        <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}>
-          {STEPS.map((label, i) => (
-            <View key={label} style={styles.progressStep}>
+        <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEP_DEFS.length}: ${STEP_DEFS[step].label}`}>
+          {STEP_DEFS.map((s, i) => (
+            <View key={s.key} style={styles.progressStep}>
               <View style={[styles.progressDot, i <= step && styles.progressDotActive]} />
-              <Text style={[styles.progressLabel, i === step && styles.progressLabelActive]}>{label}</Text>
+              <Text style={[styles.progressLabel, i === step && styles.progressLabelActive]}>{s.label}</Text>
             </View>
           ))}
         </View>
 
-        {step === 0 && (
+        {stepKey === 'what' && (
           <>
             <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
             <TextInput
@@ -140,7 +307,210 @@ export default function CreateGatheringScreen({ navigation, route }) {
               accessibilityLabel="Gathering title"
             />
 
-            <Text style={styles.label}>{t('gatherings.descriptionLabel')}</Text>
+            <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
+            <View style={styles.chipsWrap}>
+              {INTEREST_OPTIONS.map((option) => {
+                const style = categoryStyleFor(option);
+                const isSelected = interestTag === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.chip, isSelected && { backgroundColor: style.color, borderColor: style.color }]}
+                    onPress={() => setInterestTag(interestTag === option ? null : option)}
+                    activeOpacity={0.8}
+                    accessibilityLabel={`Category: ${option}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{style.icon} {option}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {stepKey === 'who' && (
+          <>
+            <Text style={styles.label}>Who should discover this?</Text>
+            {VISIBILITY_OPTIONS.map((opt) => {
+              const selected = visibility === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[styles.optionCard, selected && styles.optionCardActive]}
+                  onPress={() => pickVisibility(opt.key)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${opt.label} — ${opt.hint}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={styles.optionCardIcon}>{opt.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.optionCardTitle, selected && styles.optionCardTitleActive]}>{opt.label}</Text>
+                    <Text style={styles.optionCardHint}>{opt.hint}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {visibility === 'community' && (
+              loadingCommunities ? (
+                <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
+              ) : myCommunities.length === 0 ? (
+                <Text style={styles.helperText}>You're not a member of any community yet.</Text>
+              ) : (
+                <View style={{ marginTop: spacing.sm }}>
+                  {myCommunities.map((c) => {
+                    const selected = communityId === c.id;
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[styles.communityRow, selected && styles.optionCardActive]}
+                        onPress={() => { Haptics.selectionAsync(); setCommunityId(c.id); }}
+                        activeOpacity={0.85}
+                        accessibilityLabel={c.name}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.communityRowText, selected && styles.optionCardTitleActive]}>{c.name}</Text>
+                        {selected && <Text style={styles.checkmark}>✓</Text>}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )
+            )}
+          </>
+        )}
+
+        {stepKey === 'when' && (
+          <>
+            <Text style={styles.label}>When?</Text>
+            <View style={styles.chipsWrap}>
+              {WHEN_PRESETS.map((p) => {
+                const selected = whenPreset === p.key;
+                return (
+                  <TouchableOpacity
+                    key={p.key}
+                    style={[styles.presetButton, selected && styles.presetButtonActive]}
+                    onPress={() => pickPreset(p.key)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={p.label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={styles.presetIcon}>{p.icon}</Text>
+                    <Text style={[styles.presetLabel, selected && styles.presetLabelActive]}>{p.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {whenPreset && (
+              <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.whenResultRow} accessibilityLabel="Adjust the exact time" accessibilityRole="button">
+                <Text style={styles.whenResultText}>
+                  {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                </Text>
+                <Text style={styles.whenAdjustLink}>✏️ Adjust</Text>
+              </TouchableOpacity>
+            )}
+            {showPicker && (
+              <DateTimePicker
+                value={scheduledAt}
+                mode="datetime"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={isDark ? 'dark' : 'light'}
+                minimumDate={new Date()}
+                onChange={(event, selectedDate) => {
+                  setShowPicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    setScheduledAt(selectedDate);
+                    setWhenPreset('custom');
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {stepKey === 'where' && (
+          <>
+            <Text style={styles.label}>Where?</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+              <TouchableOpacity
+                style={[styles.publicToggle, locationMode === 'near_me' && styles.publicToggleActive]}
+                onPress={() => pickLocationMode('near_me')}
+                activeOpacity={0.85}
+                accessibilityLabel="Near Me — use your current location"
+                accessibilityRole="button"
+                accessibilityState={{ selected: locationMode === 'near_me' }}
+              >
+                <Text style={[styles.publicToggleText, locationMode === 'near_me' && styles.publicToggleTextActive]}>📍 Near Me</Text>
+                <Text style={[styles.publicToggleHint, locationMode === 'near_me' && styles.publicToggleHintActive]}>Your current location</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.publicToggle, locationMode === 'choose_place' && styles.publicToggleActive]}
+                onPress={() => pickLocationMode('choose_place')}
+                activeOpacity={0.85}
+                accessibilityLabel="Choose a Place — pick a real nearby venue"
+                accessibilityRole="button"
+                accessibilityState={{ selected: locationMode === 'choose_place' }}
+              >
+                <Text style={[styles.publicToggleText, locationMode === 'choose_place' && styles.publicToggleTextActive]}>🔍 Choose a Place</Text>
+                <Text style={[styles.publicToggleHint, locationMode === 'choose_place' && styles.publicToggleHintActive]}>Pick a real spot nearby</Text>
+              </TouchableOpacity>
+            </View>
+
+            {locationMode === 'choose_place' && (
+              <View>
+                <Text style={styles.subLabel}>Popular Nearby</Text>
+                {loadingPlaces ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
+                ) : (popularPlaces ?? []).length === 0 ? (
+                  <Text style={styles.helperText}>No nearby places found — try "Near Me" instead, or drop a pin below.</Text>
+                ) : (
+                  popularPlaces.map((place) => {
+                    const selected = placeName === place.name && customLocation?.latitude === place.latitude;
+                    const miles = myLocation ? approxMiles(myLocation.latitude, myLocation.longitude, place.latitude, place.longitude) : null;
+                    return (
+                      <TouchableOpacity
+                        key={place.placeId}
+                        style={[styles.placeRow, selected && styles.optionCardActive]}
+                        onPress={() => pickPlace(place)}
+                        activeOpacity={0.85}
+                        accessibilityLabel={place.name}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.placeRowTitle, selected && styles.optionCardTitleActive]}>{place.name}</Text>
+                          <Text style={styles.placeRowSub}>{miles !== null ? walkTimeLabel(miles) : place.address}</Text>
+                        </View>
+                        {selected && <Text style={styles.checkmark}>✓</Text>}
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('SelectGatheringLocation', {
+                    initialLat: customLocation?.latitude,
+                    initialLng: customLocation?.longitude,
+                  })}
+                  style={{ marginTop: spacing.sm }}
+                  accessibilityLabel="Drop a pin on the map instead"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.mapPinLink}>📍 Or drop a pin on the map</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        )}
+
+        {stepKey === 'details' && (
+          <>
+            <Text style={styles.label}>Anything people should know?</Text>
             <TextInput
               style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
               placeholder={t('gatherings.descriptionPlaceholder')}
@@ -151,178 +521,88 @@ export default function CreateGatheringScreen({ navigation, route }) {
               accessibilityLabel="Gathering description, optional"
             />
 
-            <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
-            <View style={styles.chipsWrap}>
-              {INTEREST_OPTIONS.map((option) => {
-                const style = categoryStyleFor(option);
-                const isSelected = interestTag === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.chip,
-                      isSelected && { backgroundColor: style.color, borderColor: style.color },
-                    ]}
-                    onPress={() => setInterestTag(interestTag === option ? null : option)}
-                    activeOpacity={0.8}
-                    accessibilityLabel={`Category: ${option}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
-                      {style.icon} {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <Text style={styles.label}>{t('gatherings.whenLabel')}</Text>
             <TouchableOpacity
-              style={styles.input}
-              onPress={() => setShowPicker(true)}
-              accessibilityLabel={`When: ${scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}
+              onPress={() => setShowMoreOptions((v) => !v)}
+              style={styles.moreOptionsToggle}
+              accessibilityLabel={showMoreOptions ? 'Hide more options' : 'Show more options'}
               accessibilityRole="button"
             >
-              <Text style={{ color: colors.textPrimary }}>
-                {scheduledAt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-              </Text>
-            </TouchableOpacity>
-            {showPicker && (
-              <DateTimePicker
-                value={scheduledAt}
-                mode="datetime"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                themeVariant={isDark ? 'dark' : 'light'}
-                minimumDate={new Date()}
-                onChange={(event, selectedDate) => {
-                  setShowPicker(Platform.OS === 'ios');
-                  if (selectedDate) setScheduledAt(selectedDate);
-                }}
-              />
-            )}
-
-            <Text style={styles.label}>Repeats</Text>
-            <View style={styles.chipsWrap}>
-              {[
-                { key: null, label: "Doesn't repeat" },
-                { key: 'weekly', label: 'Weekly' },
-                { key: 'biweekly', label: 'Every 2 weeks' },
-                { key: 'monthly', label: 'Monthly' },
-              ].map((option) => {
-                const selected = recurrenceRule === option.key;
-                return (
-                  <TouchableOpacity
-                    key={option.label}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                    onPress={() => setRecurrenceRule(option.key)}
-                    activeOpacity={0.8}
-                    accessibilityLabel={option.label}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                  >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-            {recurrenceRule && (
-              <Text style={styles.helperText}>A new one will be created automatically after each one passes.</Text>
-            )}
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <Text style={styles.label}>Where</Text>
-            <TouchableOpacity
-              style={styles.input}
-              onPress={() => navigation.navigate('SelectGatheringLocation', {
-                initialLat: customLocation?.latitude,
-                initialLng: customLocation?.longitude,
-              })}
-              accessibilityLabel={customLocation ? 'Location set, tap to change' : 'Set the gathering location, defaults to your current location if not set'}
-              accessibilityRole="button"
-            >
-              <Text style={{ color: customLocation ? colors.textPrimary : colors.textTertiary }}>
-                {customLocation ? '📍 Custom location set — tap to change' : '📍 Use my current location (tap to set a different spot)'}
-              </Text>
+              <Text style={styles.moreOptionsToggleText}>{showMoreOptions ? '▾' : '▸'} More options</Text>
             </TouchableOpacity>
 
-            <Text style={styles.label}>Who can join</Text>
-            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
-              <TouchableOpacity
-                style={[styles.publicToggle, isPublic && styles.publicToggleActive]}
-                onPress={() => { Haptics.selectionAsync(); setIsPublic(true); }}
-                activeOpacity={0.85}
-                accessibilityLabel="Public - anyone interested joins automatically, no approval needed"
-                accessibilityRole="button"
-                accessibilityState={{ selected: isPublic }}
-              >
-                <Text style={[styles.publicToggleText, isPublic && styles.publicToggleTextActive]}>🌍 Public</Text>
-                <Text style={[styles.publicToggleHint, isPublic && styles.publicToggleHintActive]}>Anyone interested joins instantly</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.publicToggle, !isPublic && styles.publicToggleActive]}
-                onPress={() => { Haptics.selectionAsync(); setIsPublic(false); }}
-                activeOpacity={0.85}
-                accessibilityLabel="Private - you approve each person before they join"
-                accessibilityRole="button"
-                accessibilityState={{ selected: !isPublic }}
-              >
-                <Text style={[styles.publicToggleText, !isPublic && styles.publicToggleTextActive]}>🔒 Private</Text>
-                <Text style={[styles.publicToggleHint, !isPublic && styles.publicToggleHintActive]}>You approve each person</Text>
-              </TouchableOpacity>
-            </View>
-
-            {!isPublic && (
+            {showMoreOptions && (
               <>
-                <Text style={styles.label}>Map Visibility</Text>
-                <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
-                  <TouchableOpacity
-                    style={[styles.publicToggle, showOnMap && styles.publicToggleActive]}
-                    onPress={() => { Haptics.selectionAsync(); setShowOnMap(true); }}
-                    activeOpacity={0.85}
-                    accessibilityLabel="Show an approximate pin on the map"
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: showOnMap }}
-                  >
-                    <Text style={[styles.publicToggleText, showOnMap && styles.publicToggleTextActive]}>🗺️ On Map</Text>
-                    <Text style={[styles.publicToggleHint, showOnMap && styles.publicToggleHintActive]}>Approximate pin shown</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.publicToggle, !showOnMap && styles.publicToggleActive]}
-                    onPress={() => { Haptics.selectionAsync(); setShowOnMap(false); }}
-                    activeOpacity={0.85}
-                    accessibilityLabel="Hide from the map entirely, only visible in list search"
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: !showOnMap }}
-                  >
-                    <Text style={[styles.publicToggleText, !showOnMap && styles.publicToggleTextActive]}>🚫 Off Map</Text>
-                    <Text style={[styles.publicToggleHint, !showOnMap && styles.publicToggleHintActive]}>List only, hidden from map</Text>
-                  </TouchableOpacity>
+                <Text style={styles.label}>Repeats</Text>
+                <View style={styles.chipsWrap}>
+                  {[
+                    { key: null, label: "Doesn't repeat" },
+                    { key: 'weekly', label: 'Weekly' },
+                    { key: 'biweekly', label: 'Every 2 weeks' },
+                    { key: 'monthly', label: 'Monthly' },
+                  ].map((option) => {
+                    const selected = recurrenceRule === option.key;
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setRecurrenceRule(option.key)}
+                        activeOpacity={0.8}
+                        accessibilityLabel={option.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
+
+                {visibility === 'invite_only' && (
+                  <>
+                    <Text style={styles.label}>Map Visibility</Text>
+                    <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
+                      <TouchableOpacity
+                        style={[styles.publicToggle, showOnMap && styles.publicToggleActive]}
+                        onPress={() => { Haptics.selectionAsync(); setShowOnMap(true); }}
+                        activeOpacity={0.85}
+                        accessibilityLabel="Show an approximate pin on the map"
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: showOnMap }}
+                      >
+                        <Text style={[styles.publicToggleText, showOnMap && styles.publicToggleTextActive]}>🗺️ On Map</Text>
+                        <Text style={[styles.publicToggleHint, showOnMap && styles.publicToggleHintActive]}>Approximate pin shown</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.publicToggle, !showOnMap && styles.publicToggleActive]}
+                        onPress={() => { Haptics.selectionAsync(); setShowOnMap(false); }}
+                        activeOpacity={0.85}
+                        accessibilityLabel="Hide from the map entirely, only visible in list search"
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: !showOnMap }}
+                      >
+                        <Text style={[styles.publicToggleText, !showOnMap && styles.publicToggleTextActive]}>🚫 Off Map</Text>
+                        <Text style={[styles.publicToggleHint, !showOnMap && styles.publicToggleHintActive]}>List only, hidden from map</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
+
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setWomenOnly(!womenOnly); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: womenOnly }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
+                </TouchableOpacity>
               </>
             )}
-
-            <TouchableOpacity
-              style={styles.womenOnlyToggle}
-              onPress={() => { Haptics.selectionAsync(); setWomenOnly(!womenOnly); }}
-              activeOpacity={0.85}
-              accessibilityLabel={womenOnly ? 'Women-only gathering, tap to make open to everyone' : 'Open to everyone, tap to make women-only'}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: womenOnly }}
-            >
-              <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
-            </TouchableOpacity>
           </>
         )}
 
-        {step === 3 && (
+        {stepKey === 'publish' && (
           <View style={styles.previewCard}>
             <View style={styles.previewHeaderRow}>
               <Text style={styles.previewIcon}>{selectedStyle ? selectedStyle.icon : '🎉'}</Text>
@@ -341,12 +621,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
             </View>
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>📍</Text>
-              <Text style={styles.previewRowText}>{customLocation ? 'Custom location set' : 'Your current location'}</Text>
+              <Text style={styles.previewRowText}>{placeName ? placeName : customLocation ? 'Custom location set' : 'Your current location'}</Text>
             </View>
             <View style={styles.previewRow}>
-              <Text style={styles.previewRowIcon}>{isPublic ? '🌍' : '🔒'}</Text>
+              <Text style={styles.previewRowIcon}>{selectedVisibility?.icon}</Text>
               <Text style={styles.previewRowText}>
-                {isPublic ? 'Public — anyone interested joins instantly' : `Private — you approve each person${!showOnMap ? ', hidden from map' : ''}`}
+                {selectedVisibility?.label}{visibility === 'community' && selectedCommunity ? ` — ${selectedCommunity.name}` : ''}
+                {visibility === 'invite_only' ? `${!showOnMap ? ', hidden from map' : ''}` : ''}
               </Text>
             </View>
             {womenOnly && (
@@ -368,7 +649,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           >
             <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
           </TouchableOpacity>
-          {step < STEPS.length - 1 ? (
+          {step < STEP_DEFS.length - 1 ? (
             <TouchableOpacity
               style={[styles.nextButton, selectedStyle && { backgroundColor: selectedStyle.color }]}
               onPress={goNext}
@@ -408,6 +689,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   progressLabel: { fontSize: 10, color: colors.textTertiary, fontWeight: '600' },
   progressLabelActive: { color: colors.primary },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
+  subLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.sm, fontSize: 12 },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
@@ -441,6 +723,44 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginBottom: spacing.lg,
   },
   womenOnlyToggleText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
+  optionCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
+  },
+  optionCardActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  optionCardIcon: { fontSize: 24, marginRight: spacing.md },
+  optionCardTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
+  optionCardTitleActive: { color: colors.primary },
+  optionCardHint: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  communityRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.xs,
+  },
+  communityRowText: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
+  checkmark: { color: colors.primary, fontWeight: '800', fontSize: 16 },
+  presetButton: {
+    width: '48%', flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+  },
+  presetButtonActive: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  presetIcon: { fontSize: 18, marginRight: spacing.xs },
+  presetLabel: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
+  presetLabelActive: { color: colors.primary },
+  whenResultRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+  },
+  whenResultText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600' },
+  whenAdjustLink: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  placeRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.surface,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.xs,
+  },
+  placeRowTitle: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
+  placeRowSub: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  mapPinLink: { color: colors.primary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  moreOptionsToggle: { marginTop: spacing.md, marginBottom: spacing.xs },
+  moreOptionsToggleText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   previewCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.border, padding: spacing.lg, ...shadow.card,
