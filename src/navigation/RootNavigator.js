@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import { View, Image, StyleSheet, Animated, TouchableOpacity, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -107,6 +107,30 @@ const linking = {
     },
   },
 };
+
+// GatheringDetail (like every screen but Onboarding/Login/CompleteProfile)
+// only exists in the Stack.Navigator tree once session && profileComplete
+// are both true (see the conditional Stack.Screen block below) — so
+// NavigationContainer's own `linking` resolution above has nothing to
+// navigate to for a tapped nearby://gathering/:id link from someone not
+// yet signed in, which is exactly the audience "Share Gathering"/"Share
+// Link" actually targets (GatheringConfirmationScreen.js,
+// GatheringHubScreen.js). Without this, that link would silently do
+// nothing for a not-yet-authenticated recipient — the same class of
+// dead-link bug this file has already caught and fixed once for this
+// exact feature. Captured independently of NavigationContainer's own
+// linking so it survives across the auth-state screen swap: stash the
+// target gatheringId, then consume it once the authenticated stack is
+// actually mounted (mirrors the existing just_completed_signup pattern
+// below). Harmless if it also fires for an already-authenticated tap —
+// navigating to a screen you're already on with the same params is a
+// no-op, not a duplicate entry.
+const PENDING_GATHERING_LINK_KEY = 'pending_deep_link_gathering_id';
+
+function gatheringIdFromUrl(url) {
+  const match = /gathering\/([^/?#]+)/.exec(url ?? '');
+  return match ? match[1] : null;
+}
 
 const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
@@ -229,8 +253,32 @@ function MainTabs() {
 export default function RootNavigator() {
   const { session, loading, profileComplete, profileLoading } = useAuth();
   const { colors } = useTheme();
+
+  // Runs once, independent of auth state, so a nearby://gathering/:id link
+  // tapped before signing in (or mid-onboarding) isn't lost — see the
+  // PENDING_GATHERING_LINK_KEY comment above the linking config.
+  useEffect(() => {
+    function stashIfGathering(url) {
+      const gatheringId = gatheringIdFromUrl(url);
+      if (gatheringId) AsyncStorage.setItem(PENDING_GATHERING_LINK_KEY, gatheringId);
+    }
+    Linking.getInitialURL().then(stashIfGathering);
+    const subscription = Linking.addEventListener('url', ({ url }) => stashIfGathering(url));
+    return () => subscription.remove();
+  }, []);
+
   useEffect(() => {
     if (session && profileComplete) {
+      AsyncStorage.getItem(PENDING_GATHERING_LINK_KEY).then((gatheringId) => {
+        if (gatheringId) {
+          AsyncStorage.removeItem(PENDING_GATHERING_LINK_KEY);
+          setTimeout(() => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('GatheringDetail', { gatheringId });
+            }
+          }, 300);
+        }
+      });
       initPurchases(session.user.id);
       registerForPushNotifications(session.user.id);
       startBackgroundPresenceReporting();
