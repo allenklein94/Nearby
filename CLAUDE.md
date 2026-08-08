@@ -97,6 +97,50 @@ up mid-way ever happens again.
   OCR text around it stayed too garbled to extract a concrete, checkable claim even on a second
   look. Flagged, not silently acted on or dropped.
 
+## Aug 8 2026 — second restart, found and fixed a real block-check gap
+
+Codespace restarted again (roughly the 15-minute cadence noted throughout this session).
+`git status` was clean and `git log` matched `origin/main` exactly — nothing from the prior
+pass was lost, everything through "Document the follow-up pass" (`6f4515f3`) was already
+committed and pushed. Re-verified the two riskiest just-shipped pieces directly against
+production (`enmosvippabmuqslzrox`) before doing anything new: `social_invites`/
+`friend_circles`/`emergency_contacts`/`partner_contracts`/`business_invoices` tables all exist
+live, and `invite_friend_to_gathering`'s deployed source matches the repo's migration exactly,
+including the `social_invites` insert added in the prior follow-up pass.
+
+While re-reading that function to confirm it, found a real, previously-uncaught bug of the
+same shape as the "missing blocks check" bug already documented above:
+`invite_friend_to_gathering` checks blocks between the gathering's **host** and the invitee,
+but never between the **inviter** (`auth.uid()`) and the invitee — the exact check
+`send_social_invite` already has correctly (`(blocker_id = auth.uid() and blocked_id =
+invitee_id_param) or (blocker_id = invitee_id_param and blocked_id = auth.uid())`). Since
+blocking someone doesn't remove an existing accepted friendship (confirmed live — no trigger
+on `blocks` touches `friendships`), a user could still gathering-invite someone they've
+blocked, or who has blocked them, as long as neither party had blocked the gathering's host —
+the host-check alone doesn't cover the inviter/invitee relationship at all.
+
+- Fixed in `20260808_gathering_invite_inviter_block_check.sql`: added the same
+  auth.uid()-vs-invitee blocks check `send_social_invite` uses, ahead of the existing
+  host-vs-invitee check (both now run; neither replaces the other — a host-blocked case and an
+  inviter-blocked case are both real, independent reasons to reject). Applied directly to
+  production via the Management API.
+- **Verified live, not just applied**: confirmed `authenticated` retained execute (`anon` still
+  correctly cannot) after the `CREATE OR REPLACE`. Using the two real non-test profiles that
+  already had an accepted friendship in production (`Claude` / `Allen`), inserted a real block
+  row (`Claude` blocked `Allen`), then called the function as `Claude` via
+  `set_config('request.jwt.claims', ...)` inviting `Allen` to a real gathering **that `Allen`
+  themselves hosts** — chosen specifically so the pre-existing host-check (host vs. invitee,
+  same person here) couldn't mask whether the *new* check was doing anything. Got back
+  `ERROR: This person cannot be invited`, confirming the new check fired. Deleted the test
+  block row afterward and confirmed both `blocks` and `social_invites` were left exactly as
+  before the test (the exception rolled back before the `social_invites` insert ever ran, so
+  there was nothing to clean up there beyond the block row itself).
+- **Not done yet**: same standing gap as the rest of this file — no manual run-through in a
+  simulator/device. This was a pure backend/RPC-level fix (no client file touched), so there's
+  no new UI surface to click through; next session should just confirm a real blocked pair
+  still can't gathering-invite each other end-to-end through the actual `InviteFriendsModal` UI,
+  not only via direct RPC calls.
+
 ## Outstanding: Invite People (gathering + community)
 
 Scope, per the correction above: gatherings already had a real invite mechanism
