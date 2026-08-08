@@ -85,6 +85,7 @@ import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScr
 import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
 import QuickFilterCustomizeScreen from '../screens/QuickFilterCustomizeScreen';
+import MusicModeScreen from '../screens/MusicModeScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -295,6 +296,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Rewards" component={RewardsScreen} options={{ headerShown: true, title: 'Your Rewards', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AIConcierge" component={AIConciergeScreen} options={{ headerShown: true, title: 'AI Concierge', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: 'Emergency Contacts', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: 'Music Mode', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: 'Chemistry Check-In', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: 'Chemistry Diary', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="StressTest" component={StressTestScreen} options={{ headerShown: true, title: 'What If...', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

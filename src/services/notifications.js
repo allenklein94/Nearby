@@ -95,12 +95,16 @@ function routeNotificationTap(data) {
       }
       break;
     case 'wave':
-      navigationRef.navigate('MainTabs', { screen: 'Notices' });
+      navigationRef.navigate('Notices');
       break;
     case 'gathering_interest':
     case 'gathering_invite':
     case 'gathering_reminder':
-      navigationRef.navigate('MainTabs', { screen: 'Gatherings' });
+      if (data.gathering_id) {
+        navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id });
+      } else {
+        navigationRef.navigate('Gatherings');
+      }
       break;
     case 'friend_request':
     case 'friend_accepted':

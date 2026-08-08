@@ -477,6 +477,26 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Billing')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your subscription and billing"
+          accessibilityRole="button"
+        >
+          <Text style={styles.timelineLinkText}>💳 Billing</Text>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('EmergencyContacts')}
+          activeOpacity={0.85}
+          accessibilityLabel="Manage your emergency contacts"
+          accessibilityRole="button"
+        >
+          <Text style={styles.timelineLinkText}>🛡️ Emergency Contacts</Text>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (

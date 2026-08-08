@@ -18,7 +18,7 @@ const SECTIONS = [
   { key: 'business', icon: '⚙️', label: 'Business' },
 ];
 
-export default function BusinessDashboardScreen() {
+export default function BusinessDashboardScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [section, setSection] = useState('home');
@@ -456,6 +456,16 @@ export default function BusinessDashboardScreen() {
                   >
                     <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
                   </TouchableOpacity>
+
+                  {selectedPartner && (
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('BusinessProfile', { partnerId: selectedPartner.id })}
+                      accessibilityLabel="View your public business profile"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.viewProfileLink}>👀 View Public Profile →</Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : (
                 <Text style={styles.emptyText}>No data yet for this business.</Text>
@@ -927,6 +937,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     alignItems: 'center', marginTop: spacing.xl,
   },
   postUpdateButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  viewProfileLink: { color: colors.primary, fontWeight: '600', fontSize: 14, textAlign: 'center', marginTop: spacing.md },
   createOfferButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, alignSelf: 'flex-start', marginBottom: spacing.md },
   createOfferButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   offerCard: {
