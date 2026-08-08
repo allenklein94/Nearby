@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import StartSomethingModal from '../components/StartSomethingModal';
+import { supabase } from '../services/supabase';
+import { getHostStats } from '../services/gatherings';
+import { getMyCommunities } from '../services/communities';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -11,6 +15,37 @@ export default function CreateHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [startModalVisible, setStartModalVisible] = useState(false);
+  const [managesBusiness, setManagesBusiness] = useState(false);
+  const [isOrganizer, setIsOrganizer] = useState(false);
+
+  // "Partner With Us" was previously shown to every user regardless of
+  // whether they organize anything — gated here on a real signal (hosted
+  // a gathering, or leads/created a community), same "already a partner"
+  // swap SettingsScreen.js's Business Mode row already does, so an
+  // existing partner isn't shown the apply flow for a business they
+  // already run.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const myId = sessionData?.session?.user?.id;
+        if (!myId) return;
+
+        const [{ data: profile }, hostStats, myCommunities] = await Promise.all([
+          supabase.from('profiles').select('managed_partner_id').eq('id', myId).single(),
+          getHostStats(myId),
+          getMyCommunities(),
+        ]);
+        if (cancelled) return;
+
+        setManagesBusiness(!!profile?.managed_partner_id);
+        const leadsCommunity = myCommunities.some((c) => c.myRole === 'creator' || c.myRole === 'leader');
+        setIsOrganizer((hostStats?.gatherings_hosted ?? 0) > 0 || leadsCommunity);
+      })();
+      return () => { cancelled = true; };
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -62,20 +97,37 @@ export default function CreateHubScreen({ navigation }) {
         <Text style={styles.cardChevron}>›</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('BusinessPartnerApply')}
-        activeOpacity={0.85}
-        accessibilityLabel="Partner with a business"
-        accessibilityRole="button"
-      >
-        <Text style={styles.cardIcon}>🏪</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Partner With Us</Text>
-          <Text style={styles.cardSubtitle}>Bring your business into the community</Text>
-        </View>
-        <Text style={styles.cardChevron}>›</Text>
-      </TouchableOpacity>
+      {managesBusiness ? (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => navigation.navigate('BusinessDashboard')}
+          activeOpacity={0.85}
+          accessibilityLabel="Manage your business"
+          accessibilityRole="button"
+        >
+          <Text style={styles.cardIcon}>🏪</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>Manage Your Business</Text>
+            <Text style={styles.cardSubtitle}>Open your business dashboard</Text>
+          </View>
+          <Text style={styles.cardChevron}>›</Text>
+        </TouchableOpacity>
+      ) : isOrganizer ? (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => navigation.navigate('BusinessPartnerApply')}
+          activeOpacity={0.85}
+          accessibilityLabel="Partner with a business"
+          accessibilityRole="button"
+        >
+          <Text style={styles.cardIcon}>🏪</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardTitle}>Partner With Us</Text>
+            <Text style={styles.cardSubtitle}>Bring your business into the community</Text>
+          </View>
+          <Text style={styles.cardChevron}>›</Text>
+        </TouchableOpacity>
+      ) : null}
 
       <StartSomethingModal
         visible={startModalVisible}
