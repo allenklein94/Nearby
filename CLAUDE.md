@@ -4,6 +4,124 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 8 2026 — codespace restarts mid-session, work continued from a forwarded email
+
+The user forwarded an email (sent from the prior Claude Code session, cut off mid-task by
+hitting its session usage limit — visible in the email body as "You've hit your session
+limit") containing feedback on a 5-tab IA (Home / Discover / Create / Inbox / Profile) checked
+against a user-articulated "flywheel" vision. The email text was OCR-garbled from a
+screenshot/email-client copy-paste, so **treat the email as a lead to re-verify against the
+actual repo, not as ground truth** — same posture this file has always taken toward external
+docs. Working tree was clean on restart (`git status` showed nothing uncommitted, nothing
+lost) — the crashed session had only gotten as far as writing a task list, no files existed
+yet. The 8-item task list visible in the email (from a `TaskList`-style dump) was: correct
+CLAUDE.md about the invite system, build an invites schema + RPCs, add `services/invites.js`,
+generalize `InviteFriendsModal` for gathering+community, plus 4 more truncated by the OCR.
+
+Re-verified each claim in the email directly against the repo before building anything (per
+this file's own long-standing rule):
+- **"Invite people doesn't exist as a feature at all... this is the biggest real gap"** — 
+  **partially wrong, and it's the same class of miss this file has now caught six separate
+  times (Safety, AI Concierge, Business RPC ownership, Settings Business Mode, Consumer
+  Billing, now this).** A real, working, already-deployed `invite_friend_to_gathering()`
+  SECURITY DEFINER RPC exists in production — checks the invitee is an accepted friend, blocks
+  a women-only gathering from inviting a non-woman, checks neither party has blocked the
+  host, then sends a real push notification via `send-push` with
+  `data: {type: 'gathering_invite', gathering_id}` (the exact push type
+  `notifications.js`'s `case 'gathering_invite':` deep-link handler already exists for — that
+  handler was flagged as dead code in the "Outstanding: Create Flow" section below; **that
+  flag was wrong too**, corrected here). It's wired to a real 🤝 "Invite friends" button on
+  two of `GatheringsScreen.js`'s three tabs (nearby, attending — not hosting) via
+  `src/components/InviteFriendsModal.js`, which was sitting there the whole time under a name
+  distinct from `InviteFriendsScreen.js`/`InviteFriends` route (that one's the app-referral-code
+  screen — a third, unrelated "invite" name in this codebase, worth being careful about).
+  **What's actually true and still missing**: this gathering-invite path (a) doesn't exist at
+  all for **communities** — confirmed zero `Invite` references anywhere in
+  `CommunityDetailScreen.js`/`CommunitiesScreen.js`, no RPC — a real, confirmed gap; (b) isn't
+  reachable from the newer `GatheringDetailScreen.js` (only the older list-card `GatheringsScreen`
+  tabs have it) or from the hosting tab; (c) is push-only/fire-and-forget with no persisted
+  row anywhere, so there's no way to show "pending gathering invites" in Inbox even if you
+  wanted to (only a tapped push can surface it, and if the push is missed/denied, the invite
+  is simply gone).
+- **"No 'Trending nearby' on Discover"** — confirmed true. `Trending` exists on `HomeScreen.js`
+  and `GatheringsScreen.js`, not on `DiscoverHubScreen.js`.
+- **"'Partner with a business' shown to everyone, not gated to organizers"** — confirmed true,
+  read directly: `CreateHubScreen.js`'s "Partner With Us" row has no gating at all.
+- **"Inbox 'Invitations' is mislabeled — shows friend requests"** — confirmed true, but with a
+  nuance: `InboxScreen.js`'s "🤝 Invites" tab renders real `getPendingFriendRequests()` rows
+  with honest per-row copy ("wants to be friends") — not fabricated or silently mislabeled at
+  the row level, just a tab name broader than what it actually shows, and (per the point
+  above) it has no way to show real gathering/community invites even though at least one of
+  those (gatherings) already exists elsewhere in the app.
+- **"No group/event chats surfaced in Inbox"** — confirmed true. `MatchesScreen.js` (Inbox's
+  Messages tab) has zero references to gathering chat or community chat; both exist but are
+  only reachable from deep inside `GatheringDetailScreen`/`GatheringHubScreen`/
+  `CommunityDetailScreen`.
+- **"Home community-updates section only shows one community"** — confirmed true:
+  `HomeScreen.js`'s "🏘️ Continue Your Community" section (line ~175) surfaces a single
+  community, not one per joined community.
+- Not yet re-verified against the repo: "no invitations shown on Home" and "Create should
+  become one screen across all communities" (the OCR text around these was too garbled to
+  extract a concrete, checkable claim) — flagged here rather than silently acted on or
+  silently dropped.
+
+Given real gaps confirmed above, work resumed on the **community half** of invites (the
+gathering half already has a real, safer, working mechanism — reusing it rather than building
+a second, weaker parallel path). See "Outstanding: Invite People" below for what actually got
+built this pass, kept current as work continues across codespace restarts. Committing and
+pushing after each meaningful increment, since this codespace has been restarting roughly
+every 15 minutes.
+
+## Outstanding: Invite People (gathering + community)
+
+**In progress as of this restart-recovery pass — check git log for what's actually landed
+before assuming anything below is done.** Scope, per the correction above: gatherings already
+had a real invite mechanism (`invite_friend_to_gathering` + `InviteFriendsModal`, on
+`GatheringsScreen.js`'s nearby/attending tabs) — left that mechanism in place rather than
+replacing it, since it already has women-only and blocks safety checks a naive rebuild would
+have to duplicate exactly to stay as safe. New work targets what was actually missing:
+community invites, a persisted (not push-only) invite record so Inbox can list something real,
+and reaching `GatheringDetailScreen`/`CommunityDetailScreen` where no invite entry point
+existed at all.
+
+- **New `social_invites` table** (`20260808_social_invites.sql`, applied to production and
+  verified live via `set_config('request.jwt.claims', ...)` as real profile rows — friend
+  invite succeeds, non-friend invite rejected, only the real invitee can respond, double-respond
+  rejected, all test rows cleaned up after): one polymorphic table (`invite_type`:
+  `'gathering' | 'community'`, `target_id`) rather than two separate tables, since both shapes
+  are identical and a single Inbox list needs to read both without a union query. Two SECURITY
+  DEFINER RPCs, `send_social_invite`/`respond_to_social_invite`, matching this codebase's
+  established "no direct client INSERT/UPDATE, real checks inside the function" pattern (e.g.
+  `set_community_member_role`). `send_social_invite` initially shipped **without** a blocks
+  check — caught by comparing against `invite_friend_to_gathering`'s own blocks check right
+  after finding that function existed, fixed same-session in
+  `20260808_social_invites_block_check.sql`, verified live (a blocked pair's invite is now
+  rejected) — every other invite-adjacent write in this codebase (`sendFriendRequest`,
+  `invite_friend_to_gathering`) already checked blocks; this one initially didn't.
+  Friends-only enforcement (same "no stalking vector" reasoning as Discover's unified search
+  deliberately excluding People) applies to both invite types, even though communities have no
+  women-only concept to also check.
+- **`src/services/invites.js`**: `sendInvite`/`respondToInvite` (thin RPC wrappers),
+  `getMyReceivedInvites()` — fetches pending `social_invites` for the caller, then two batched
+  follow-up queries (gatherings/communities by id) to resolve real target titles, since
+  `social_invites` deliberately doesn't denormalize a copy of the title onto the row.
+- **Not yet done** (tracked in this session's task list, check `TaskList` / this file's git
+  history for current status): generalizing `InviteFriendsModal.js` to also drive community
+  invites via `sendInvite('community', ...)` (keeping its existing `gatheringId`/
+  `gatheringTitle` props working unchanged for `GatheringsScreen.js`'s existing usage, adding
+  `inviteType`/`targetId`/`targetTitle` for the new community case); adding an Invite entry
+  point to `GatheringDetailScreen.js` (reusing the existing `invite_friend_to_gathering` path,
+  not the new generic one) and `CommunityDetailScreen.js` (the new generic path); wiring
+  `InboxScreen.js`'s Invites tab to also list real community invites from
+  `getMyReceivedInvites()` alongside the existing friend requests, with accept deep-linking
+  into `CommunityDetail` and decline just clearing the row.
+- **Deliberately not attempted this pass**: persisting gathering invites into `social_invites`
+  too (would mean either duplicating `invite_friend_to_gathering`'s safety checks into
+  `send_social_invite` and routing gathering invites through the new generic path instead, or
+  maintaining two parallel gathering-invite mechanisms — both are real follow-up work, not
+  something to rush through given the safety checks involved, flagged here rather than done
+  halfway).
+
 ## Known gaps against the Aug 7 2026 external roadmap doc
 
 The user pasted an external 16-item roadmap doc (plus a "Phase 5 (Magic)" wishlist) on
