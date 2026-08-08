@@ -1,29 +1,29 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import StartSomethingModal from '../components/StartSomethingModal';
+import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import { supabase } from '../services/supabase';
-import { getHostStats } from '../services/gatherings';
-import { getMyCommunities } from '../services/communities';
+import { classifyCreateRequest } from '../services/createAssistant';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-// A dedicated action hub — the "I want to do something" tab,
-// distinct from Discover's "let me look around" browsing. Reuses
-// the same Start Something quick-picks already built for Home.
+// A dedicated action hub — the "I want to do something" tab, distinct from
+// Discover's "let me look around" browsing. Three entry points (Start a
+// Gathering / Create a Community / Partner with a Business) plus a free-text
+// Create Assistant box that classifies intent and routes with fields
+// prefilled — never labeled "AI" anywhere in this screen, per the user's
+// own call that Premium should sell convenience/intelligence, not
+// permission to use Create at all. "Start Something" and "Host a Gathering"
+// (two previously separate cards) are now one — StartSomethingModal's
+// existing "Something Else" chip already covers the blank-wizard case.
 export default function CreateHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [managesBusiness, setManagesBusiness] = useState(false);
-  const [isOrganizer, setIsOrganizer] = useState(false);
+  const [assistantText, setAssistantText] = useState('');
+  const [thinking, setThinking] = useState(false);
 
-  // "Partner With Us" was previously shown to every user regardless of
-  // whether they organize anything — gated here on a real signal (hosted
-  // a gathering, or leads/created a community), same "already a partner"
-  // swap SettingsScreen.js's Business Mode row already does, so an
-  // existing partner isn't shown the apply flow for a business they
-  // already run.
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -32,109 +32,135 @@ export default function CreateHubScreen({ navigation }) {
         const myId = sessionData?.session?.user?.id;
         if (!myId) return;
 
-        const [{ data: profile }, hostStats, myCommunities] = await Promise.all([
-          supabase.from('profiles').select('managed_partner_id').eq('id', myId).single(),
-          getHostStats(myId),
-          getMyCommunities(),
-        ]);
+        const { data: profile } = await supabase.from('profiles').select('managed_partner_id').eq('id', myId).single();
         if (cancelled) return;
-
         setManagesBusiness(!!profile?.managed_partner_id);
-        const leadsCommunity = myCommunities.some((c) => c.myRole === 'creator' || c.myRole === 'leader');
-        setIsOrganizer((hostStats?.gatherings_hosted ?? 0) > 0 || leadsCommunity);
       })();
       return () => { cancelled = true; };
     }, [])
   );
 
+  async function handleAskAssistant() {
+    if (!assistantText.trim()) return;
+    setThinking(true);
+    try {
+      const result = await classifyCreateRequest(assistantText.trim());
+      setAssistantText('');
+      if (result.intent === 'gathering') {
+        navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
+      } else if (result.intent === 'community') {
+        navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
+      } else if (result.intent === 'business_partner') {
+        navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
+      } else {
+        Alert.alert("Not quite sure", "We couldn't tell what you're planning — try one of the options above, or describe it a bit differently.");
+      }
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setThinking(false);
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Create</Text>
-      <Text style={styles.subtitle}>What do you want to do?</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Create</Text>
+        <Text style={styles.subtitle}>What do you want to do?</Text>
 
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => setStartModalVisible(true)}
-        activeOpacity={0.85}
-        accessibilityLabel="Start something spontaneous"
-        accessibilityRole="button"
-      >
-        <Text style={styles.cardIcon}>⚡</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Start Something</Text>
-          <Text style={styles.cardSubtitle}>Coffee, food, a walk — spontaneous plans</Text>
-        </View>
-        <Text style={styles.cardChevron}>›</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('CreateGathering')}
-        activeOpacity={0.85}
-        accessibilityLabel="Host a full gathering"
-        accessibilityRole="button"
-      >
-        <Text style={styles.cardIcon}>🎉</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Host a Gathering</Text>
-          <Text style={styles.cardSubtitle}>Plan something bigger, set a time and place</Text>
-        </View>
-        <Text style={styles.cardChevron}>›</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('CreateCommunity')}
-        activeOpacity={0.85}
-        accessibilityLabel="Create a community"
-        accessibilityRole="button"
-      >
-        <Text style={styles.cardIcon}>🏘️</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Create a Community</Text>
-          <Text style={styles.cardSubtitle}>Build an ongoing group around a shared interest</Text>
-        </View>
-        <Text style={styles.cardChevron}>›</Text>
-      </TouchableOpacity>
-
-      {managesBusiness ? (
         <TouchableOpacity
           style={styles.card}
-          onPress={() => navigation.navigate('BusinessDashboard')}
+          onPress={() => setStartModalVisible(true)}
           activeOpacity={0.85}
-          accessibilityLabel="Manage your business"
+          accessibilityLabel="Start a gathering"
           accessibilityRole="button"
         >
-          <Text style={styles.cardIcon}>🏪</Text>
+          <Text style={styles.cardIcon}>🎉</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Manage Your Business</Text>
-            <Text style={styles.cardSubtitle}>Open your business dashboard</Text>
+            <Text style={styles.cardTitle}>Start a Gathering</Text>
+            <Text style={styles.cardSubtitle}>Coffee, dinner, a walk — plan something to do together</Text>
           </View>
           <Text style={styles.cardChevron}>›</Text>
         </TouchableOpacity>
-      ) : isOrganizer ? (
+
         <TouchableOpacity
           style={styles.card}
-          onPress={() => navigation.navigate('BusinessPartnerApply')}
+          onPress={() => navigation.navigate('CreateCommunity')}
           activeOpacity={0.85}
-          accessibilityLabel="Partner with a business"
+          accessibilityLabel="Create a community"
           accessibilityRole="button"
         >
-          <Text style={styles.cardIcon}>🏪</Text>
+          <Text style={styles.cardIcon}>👥</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Partner With Us</Text>
-            <Text style={styles.cardSubtitle}>Bring your business into the community</Text>
+            <Text style={styles.cardTitle}>Create a Community</Text>
+            <Text style={styles.cardSubtitle}>Build an ongoing group around a shared interest</Text>
           </View>
           <Text style={styles.cardChevron}>›</Text>
         </TouchableOpacity>
-      ) : null}
 
-      <StartSomethingModal
-        visible={startModalVisible}
-        onClose={() => setStartModalVisible(false)}
-        navigation={navigation}
-      />
-    </SafeAreaView>
+        {managesBusiness ? (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('BusinessDashboard')}
+            activeOpacity={0.85}
+            accessibilityLabel="Manage your business"
+            accessibilityRole="button"
+          >
+            <Text style={styles.cardIcon}>🏪</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Manage Your Business</Text>
+              <Text style={styles.cardSubtitle}>Open your business dashboard</Text>
+            </View>
+            <Text style={styles.cardChevron}>›</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('RequestBusinessPartner')}
+            activeOpacity={0.85}
+            accessibilityLabel="Partner with a business"
+            accessibilityRole="button"
+          >
+            <Text style={styles.cardIcon}>🤝</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>Partner with a Business</Text>
+              <Text style={styles.cardSubtitle}>Get a real business involved in your gathering or community</Text>
+            </View>
+            <Text style={styles.cardChevron}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        <Text style={styles.assistantLabel}>💡 Tell us what you're thinking</Text>
+        <Text style={styles.assistantSubtext}>We'll help you turn it into a plan.</Text>
+        <View style={styles.assistantRow}>
+          <TextInput
+            style={styles.assistantInput}
+            placeholder='e.g. "get some people together for coffee this weekend"'
+            placeholderTextColor={colors.textTertiary}
+            value={assistantText}
+            onChangeText={setAssistantText}
+            onSubmitEditing={handleAskAssistant}
+            returnKeyType="go"
+            accessibilityLabel="Tell us what you're thinking"
+          />
+          <TouchableOpacity
+            style={styles.assistantButton}
+            onPress={handleAskAssistant}
+            disabled={thinking || !assistantText.trim()}
+            accessibilityLabel="Submit"
+            accessibilityRole="button"
+          >
+            {thinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.assistantButtonText}>→</Text>}
+          </TouchableOpacity>
+        </View>
+
+        <StartSomethingModal
+          visible={startModalVisible}
+          onClose={() => setStartModalVisible(false)}
+          navigation={navigation}
+          topLevelOptions={CREATE_HUB_OPTIONS}
+        />
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -151,4 +177,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardTitle: { ...typography.headline, color: colors.textPrimary },
   cardSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   cardChevron: { color: colors.textTertiary, fontSize: 24 },
+  assistantLabel: { ...typography.headline, color: colors.textPrimary, marginTop: spacing.lg },
+  assistantSubtext: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.sm },
+  assistantRow: { flexDirection: 'row', alignItems: 'center' },
+  assistantInput: {
+    flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, color: colors.textPrimary, ...typography.body, marginRight: spacing.sm,
+  },
+  assistantButton: {
+    backgroundColor: colors.primary, borderRadius: radius.md, width: 48, height: 48,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  assistantButtonText: { color: '#fff', fontSize: 20, fontWeight: '700' },
 });

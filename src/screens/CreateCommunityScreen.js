@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { createCommunity } from '../services/communities';
 import { checkTextModeration } from '../services/textModeration';
@@ -13,7 +13,7 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality',
 ];
 
-export default function CreateCommunityScreen({ navigation }) {
+export default function CreateCommunityScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [name, setName] = useState('');
@@ -21,6 +21,18 @@ export default function CreateCommunityScreen({ navigation }) {
   const [interestTag, setInterestTag] = useState(null);
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Prefill from CreateHubScreen's Create Assistant, same
+  // quickStartTitle/quickStartCategory param shape CreateGatheringScreen
+  // already accepts from StartSomethingModal.
+  useEffect(() => {
+    if (route?.params?.quickStartTitle) {
+      setName(route.params.quickStartTitle);
+    }
+    if (route?.params?.quickStartCategory && INTEREST_OPTIONS.includes(route.params.quickStartCategory)) {
+      setInterestTag(route.params.quickStartCategory);
+    }
+  }, [route?.params?.quickStartTitle, route?.params?.quickStartCategory]);
 
   async function submit() {
     if (!name.trim()) {

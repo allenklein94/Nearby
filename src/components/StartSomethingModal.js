@@ -6,6 +6,21 @@ import { getQuickPrompts } from '../utils/timeContext';
 
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
+// Fixed, non-time-adaptive option set for CreateHubScreen's "Start a
+// Gathering" card — unlike the default getQuickPrompts() list (which
+// changes by time of day), Create is reached at any hour and needs a
+// stable set. Categories map to real existing INTEREST_OPTIONS tags.
+export const CREATE_HUB_OPTIONS = [
+  { icon: '☕', label: 'Coffee', category: 'Coffee' },
+  { icon: '🍽️', label: 'Dinner', category: 'Foodie' },
+  { icon: '🚶', label: 'Walk', category: 'Outdoors' },
+  { icon: '🏐', label: 'Sports', category: 'Sports' },
+  { icon: '🎮', label: 'Games', category: 'Gaming' },
+  { icon: '🎵', label: 'Music', category: 'Music' },
+  { icon: '🤝', label: 'Volunteer', category: 'Volunteering' },
+  SOMETHING_ELSE,
+];
+
 export const SUB_OPTIONS = {
   Dinner: [
     { icon: '🍕', label: 'Pizza' },
@@ -18,7 +33,7 @@ export const SUB_OPTIONS = {
   ],
 };
 
-export default function StartSomethingModal({ visible, onClose, navigation, initialCategory = null }) {
+export default function StartSomethingModal({ visible, onClose, navigation, initialCategory = null, topLevelOptions = null }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -59,7 +74,7 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
     });
   }
 
-  const options = activeCategory ? SUB_OPTIONS[activeCategory.label] : [...getQuickPrompts(), SOMETHING_ELSE];
+  const options = activeCategory ? SUB_OPTIONS[activeCategory.label] : topLevelOptions ?? [...getQuickPrompts(), SOMETHING_ELSE];
   const title = activeCategory ? `What kind of ${activeCategory.label.toLowerCase()}?` : 'I want to...';
 
   return (
