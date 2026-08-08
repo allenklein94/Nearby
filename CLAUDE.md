@@ -90,9 +90,12 @@ up mid-way ever happens again.
   `getMyGatheringChats()` in `gatherings.js` + the existing `getMyCommunities()`;
   `MatchesScreen.js` itself untouched, same "thin wrapper, don't risk the working internals"
   approach `InboxScreen.js` already uses for Messages/Activity).
-- **Not re-verified this pass**: the email's "no invitations shown on Home" and "Create should
-  become one screen across all communities" claims — the OCR text around both was too garbled
-  to extract a concrete, checkable claim (see above). Flagged, not silently acted on or dropped.
+- **Follow-up pass, same day**: "no invitations shown on Home" is now closed too — see the
+  "Follow-up pass" bullet under "Outstanding: Invite People" below (Home gained a real pending-
+  invites banner, and the Inbox tab badge itself was undercounting for the same reason).
+  "Create should become one screen across all communities" is **still not re-verified** — the
+  OCR text around it stayed too garbled to extract a concrete, checkable claim even on a second
+  look. Flagged, not silently acted on or dropped.
 
 ## Outstanding: Invite People (gathering + community)
 
@@ -145,20 +148,30 @@ push-only) invite record so Inbox can list something real, and reaching
   pass (1839 modules throughout, one more than the prior 1838 Billing-pass baseline — only
   `invites.js` is a new module; every other file touched in this pass was an edit, not an
   addition, so the count held steady across all of them).
-- **Deliberately not attempted this pass**: persisting gathering invites into `social_invites`
-  too (would mean either duplicating `invite_friend_to_gathering`'s safety checks into
-  `send_social_invite` and routing gathering invites through the new generic path instead, or
-  maintaining two parallel gathering-invite mechanisms — both are real follow-up work, not
-  something to rush through given the safety checks involved, flagged here rather than done
-  halfway). Gathering invites therefore still won't show up in Inbox's Invites tab — only
-  community invites will (push notification is the only signal for a gathering invite, same
-  as before this pass).
+- **Follow-up pass, same day**: the "deliberately not attempted" gap above (gathering invites
+  not persisting into `social_invites`, only ever a fire-and-forget push) was closed —
+  `invite_friend_to_gathering` now also inserts a real `social_invites` row (`ON CONFLICT DO
+  NOTHING` against the same partial unique index `send_social_invite` uses), same function,
+  same friends/women-only/blocks checks, unchanged. Verified live: grants survived the
+  `CREATE OR REPLACE`, and a real invite call now produces a real pending row. Both invite
+  paths now show up in Inbox's Invites tab identically.
+- **Also found and fixed while following up**: `getInboxUnreadCount()` (the function behind the
+  Inbox tab's badge number) only ever summed unread messages + new notices — it never counted
+  pending gathering-join requests, pending friend requests, or pending invites, so the badge
+  undercounted what Inbox actually had waiting. Factored the three pending counts into a new
+  `getPendingInvitesCount()`, used by both the badge and a new "🤝 N pending invites & requests"
+  banner on `HomeScreen.js` (same visual pattern as the existing perks banner) — this also
+  closes the vision-doc email's "no invitations shown on Home" claim, which the first pass
+  through this file had flagged as unverifiable due to OCR garbling. `InboxScreen.js` gained an
+  `initialSection` route param so the banner can deep-link straight to the Invites tab (needed
+  because the tab navigator keeps `InboxScreen` mounted, so a plain `useState` initial value
+  wouldn't see a fresh navigation's param on an already-visited tab).
 - **Not done yet**: no manual run-through in a simulator/device for any of the invite work, the
-  Trending/Partner-gating/Home-communities/Inbox-group-chats fixes above, or the two schema
-  migrations beyond the direct SQL verification already run against production. Next session
-  should click through: sending a gathering invite from `GatheringDetailScreen` and a community
-  invite from `CommunityDetailScreen` as two real friended accounts, confirming both show up
-  correctly (or don't, for the gathering case) in the recipient's Inbox Invites tab, accepting a
+  Trending/Partner-gating/Home-communities/Inbox-group-chats fixes above, or the follow-up pass,
+  beyond the direct SQL verification already run against production. Next session should click
+  through: sending a gathering invite from `GatheringDetailScreen` and a community invite from
+  `CommunityDetailScreen` as two real friended accounts, confirming both now show up correctly
+  in the recipient's Inbox Invites tab and in the Home banner/tab badge count, accepting a
   community invite and confirming it deep-links into the right `CommunityDetail`, the new
   Trending section on Discover, "Partner With Us" visibility for an organizer vs. a non-
   organizer account, Home showing multiple communities for a multi-community account, and the
