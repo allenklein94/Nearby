@@ -65,24 +65,44 @@ this file's own long-standing rule):
   extract a concrete, checkable claim) — flagged here rather than silently acted on or
   silently dropped.
 
-Given real gaps confirmed above, work resumed on the **community half** of invites (the
-gathering half already has a real, safer, working mechanism — reusing it rather than building
-a second, weaker parallel path). See "Outstanding: Invite People" below for what actually got
-built this pass, kept current as work continues across codespace restarts. Committing and
-pushing after each meaningful increment, since this codespace has been restarting roughly
-every 15 minutes.
+Given real gaps confirmed above, all six re-verified-true items were closed this pass — see
+"Outstanding: Invite People" and the four bullets after it below. Committed and pushed after
+each individual increment (not batched at the end), since this codespace was restarting
+roughly every 15 minutes throughout — check git log for the granular sequence if picking this
+up mid-way ever happens again.
+
+- **Trending on Discover, gated "Partner With Us", Home's community-updates limit, and
+  group-chat surfacing in Inbox — all closed this pass, each its own commit**:
+  `DiscoverHubScreen.js` gained a "🔥 Trending Near You" section using the exact same signal
+  Home's own trending already uses (top 3 gatherings by approved-attendee count, from the
+  gathering list Discover already fetches for search — no new query).
+  `CreateHubScreen.js`'s "Partner With Us" row is now gated on a real organizer signal (hosted
+  a gathering, or leads/created a community via `community_members.role`) — hidden for a user
+  with neither, and swapped to "🏪 Manage Your Business" → `BusinessDashboard` for an existing
+  partner (same swap `SettingsScreen.js`'s Business Mode row already does), instead of showing
+  the apply flow to literally everyone. `getContinueYourCommunity()` (Home's "🏘️ Continue Your
+  Community") was hardcoded `.limit(1)` to the single most-recently-joined community regardless
+  of how many the user belonged to — now `getContinueYourCommunities()`, fetching every joined
+  community and ranking by real recent activity (unread message count in the last 24h), showing
+  up to 3. `InboxScreen.js`'s Messages tab (`MatchesScreen`) had zero awareness of gathering or
+  community group chats — both exist and work, just weren't reachable from Inbox at all — added
+  a horizontal "Group Chats" chip row above the existing matches list (new lightweight
+  `getMyGatheringChats()` in `gatherings.js` + the existing `getMyCommunities()`;
+  `MatchesScreen.js` itself untouched, same "thin wrapper, don't risk the working internals"
+  approach `InboxScreen.js` already uses for Messages/Activity).
+- **Not re-verified this pass**: the email's "no invitations shown on Home" and "Create should
+  become one screen across all communities" claims — the OCR text around both was too garbled
+  to extract a concrete, checkable claim (see above). Flagged, not silently acted on or dropped.
 
 ## Outstanding: Invite People (gathering + community)
 
-**In progress as of this restart-recovery pass — check git log for what's actually landed
-before assuming anything below is done.** Scope, per the correction above: gatherings already
-had a real invite mechanism (`invite_friend_to_gathering` + `InviteFriendsModal`, on
-`GatheringsScreen.js`'s nearby/attending tabs) — left that mechanism in place rather than
-replacing it, since it already has women-only and blocks safety checks a naive rebuild would
-have to duplicate exactly to stay as safe. New work targets what was actually missing:
-community invites, a persisted (not push-only) invite record so Inbox can list something real,
-and reaching `GatheringDetailScreen`/`CommunityDetailScreen` where no invite entry point
-existed at all.
+Scope, per the correction above: gatherings already had a real invite mechanism
+(`invite_friend_to_gathering` + `InviteFriendsModal`, on `GatheringsScreen.js`'s nearby/
+attending tabs) — left that mechanism in place rather than replacing it, since it already has
+women-only and blocks safety checks a naive rebuild would have to duplicate exactly to stay as
+safe. New work targeted what was actually missing: community invites, a persisted (not
+push-only) invite record so Inbox can list something real, and reaching
+`GatheringDetailScreen`/`CommunityDetailScreen` where no invite entry point existed at all.
 
 - **New `social_invites` table** (`20260808_social_invites.sql`, applied to production and
   verified live via `set_config('request.jwt.claims', ...)` as real profile rows — friend
@@ -105,22 +125,44 @@ existed at all.
   `getMyReceivedInvites()` — fetches pending `social_invites` for the caller, then two batched
   follow-up queries (gatherings/communities by id) to resolve real target titles, since
   `social_invites` deliberately doesn't denormalize a copy of the title onto the row.
-- **Not yet done** (tracked in this session's task list, check `TaskList` / this file's git
-  history for current status): generalizing `InviteFriendsModal.js` to also drive community
-  invites via `sendInvite('community', ...)` (keeping its existing `gatheringId`/
-  `gatheringTitle` props working unchanged for `GatheringsScreen.js`'s existing usage, adding
-  `inviteType`/`targetId`/`targetTitle` for the new community case); adding an Invite entry
-  point to `GatheringDetailScreen.js` (reusing the existing `invite_friend_to_gathering` path,
-  not the new generic one) and `CommunityDetailScreen.js` (the new generic path); wiring
-  `InboxScreen.js`'s Invites tab to also list real community invites from
-  `getMyReceivedInvites()` alongside the existing friend requests, with accept deep-linking
-  into `CommunityDetail` and decline just clearing the row.
+- **`InviteFriendsModal.js` generalized**: now accepts `inviteType`/`targetId`/`targetTitle`
+  alongside its original `gatheringId`/`gatheringTitle` props (kept working byte-for-byte
+  unchanged for `GatheringsScreen.js`'s existing usage — `gatheringId` truthy still means
+  gathering, still calls `invite_friend_to_gathering`). Community invites go through the new
+  `sendInvite('community', ...)`.
+- **Entry points added**: `GatheringDetailScreen.js` gained a "🤝 Invite friends" link in both
+  the host banner and the post-join "You're in!" panel (previously had none at all — only the
+  older `GatheringsScreen` list-card tabs did). `CommunityDetailScreen.js` gained an "🤝 Invite
+  Friends" button for members/creator, next to the existing Community Chat button (communities
+  had zero invite mechanism before this).
+- **`InboxScreen.js`'s Invites tab wired up**: now shows a combined list — real friend
+  requests (unchanged) plus real pending `social_invites` rows from `getMyReceivedInvites()`,
+  each tagged by `kind` and rendered accordingly. Social invites get Accept/Decline (friend
+  requests stay Accept-only, matching the original); accepting deep-links straight into
+  `GatheringDetail`/`CommunityDetail` via `respond_to_social_invite` + navigation. The tab's
+  badge count and empty-state copy were updated to reflect both sources honestly.
+- Verified via a full `npx expo export --platform ios` after every single increment in this
+  pass (1839 modules throughout, one more than the prior 1838 Billing-pass baseline — only
+  `invites.js` is a new module; every other file touched in this pass was an edit, not an
+  addition, so the count held steady across all of them).
 - **Deliberately not attempted this pass**: persisting gathering invites into `social_invites`
   too (would mean either duplicating `invite_friend_to_gathering`'s safety checks into
   `send_social_invite` and routing gathering invites through the new generic path instead, or
   maintaining two parallel gathering-invite mechanisms — both are real follow-up work, not
   something to rush through given the safety checks involved, flagged here rather than done
-  halfway).
+  halfway). Gathering invites therefore still won't show up in Inbox's Invites tab — only
+  community invites will (push notification is the only signal for a gathering invite, same
+  as before this pass).
+- **Not done yet**: no manual run-through in a simulator/device for any of the invite work, the
+  Trending/Partner-gating/Home-communities/Inbox-group-chats fixes above, or the two schema
+  migrations beyond the direct SQL verification already run against production. Next session
+  should click through: sending a gathering invite from `GatheringDetailScreen` and a community
+  invite from `CommunityDetailScreen` as two real friended accounts, confirming both show up
+  correctly (or don't, for the gathering case) in the recipient's Inbox Invites tab, accepting a
+  community invite and confirming it deep-links into the right `CommunityDetail`, the new
+  Trending section on Discover, "Partner With Us" visibility for an organizer vs. a non-
+  organizer account, Home showing multiple communities for a multi-community account, and the
+  Group Chats row in Inbox for an account with real upcoming gatherings and communities.
 
 ## Known gaps against the Aug 7 2026 external roadmap doc
 
