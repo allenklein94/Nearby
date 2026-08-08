@@ -204,6 +204,68 @@ scenario the whole `blocks` feature exists to prevent.
   running app, even though their `is_blocked()` usage was verified correct via the same shared
   fix — none of them were individually re-tested end-to-end the way `matches`/`messages` were.
 
+## Aug 8 2026 — same session, found and fixed a critical admin self-escalation bug
+
+Kept auditing after the two fixes above, per direct instruction. Went looking for the same
+"missing column guard" class of bug systematically: `prevent_self_premium_edit()` (this file's
+own "Known conventions" section: privileged `profiles` columns are protected by this trigger,
+real writes must set `app.trusted_update`) has an explicit, hardcoded column whitelist —
+checked every column on `profiles` against that whitelist rather than assuming it was complete.
+
+**`is_admin` was not in the guarded list.** `profiles`' only UPDATE policy is `auth.uid() =
+id` with no column-level restriction, so nothing besides this trigger stood between a normal
+user and their own `is_admin` flag. **Verified live, carefully, on a real (genuinely
+non-admin) profile**: called `update profiles set is_admin = true where id = <that profile>`
+as that profile's own session — it succeeded, really setting `is_admin = true`. Reverted within
+the same breath (a service-role `trusted_update` call back to `false`) before doing anything
+else. This is the most severe finding of the whole session: full admin access (`AdminReportsScreen`,
+`AdminBusinessRequests`, `AdminVerificationScreen`, every `is_admin`-gated RPC) was one client-side
+`.update()` call away for any authenticated user. Grepped all of `src/` first to confirm zero
+legitimate code path ever sets `is_admin` — it's meant to be granted by hand via the service
+role only — so adding it to the guarded list has no risk of breaking a real flow.
+- Fixed in `20260808_protect_is_admin_column.sql`: added `is_admin` to
+  `prevent_self_premium_edit()`'s guarded-column list, identical shape to every other entry
+  (`is_premium`, `managed_partner_id`, etc.) — silently reverts the client's attempted value
+  back to `old.is_admin` unless `app.trusted_update` is set.
+- **Verified live, both directions**: re-ran the exact same self-escalation attempt — the
+  `UPDATE ... RETURNING` now comes back with `is_admin: false` even though the client asked for
+  `true` (silently reverted, matching the established `is_premium` behavior, not an error).
+  Separately confirmed the legitimate `trusted_update` path (how a real admin grant is meant to
+  happen) still works unchanged.
+- **While proving the live exploit, also found a second, separate, real bug** (not a security
+  hole, a silently-broken feature): `AdminVerificationScreen.js`'s approve action tries to set
+  `photo_verified = true` on the *submitter's* profile (`.eq('id', submission.user_id)`) — a
+  different row than the reviewing admin's own. `profiles` has exactly one UPDATE policy
+  (`auth.uid() = id`) and **no admin bypass for UPDATE at all** (only a SELECT bypass,
+  `check_is_admin(auth.uid())`, exists). Verified live: granted a real profile `is_admin = true`
+  via `trusted_update` (simulating a genuine admin session), then attempted that same cross-user
+  update as that admin — it silently affected 0 rows (Supabase's `.update()` doesn't error on a
+  no-op RLS-blocked write). **Net effect: approving an ID verification submission today marks
+  the submission `approved` but never actually grants the user their verified badge** — a
+  currently-broken safety/trust feature, not yet fixed. No real submissions exist in production
+  yet (`id_verification_submissions` is empty) so this hasn't visibly bitten anyone, but it will
+  the first time someone actually submits. Flagged here rather than fixed in the same pass —
+  the correct fix is a new SECURITY DEFINER RPC (e.g. `admin_approve_id_verification`, checking
+  `auth.uid()`'s own `is_admin` internally) doing both the submission-status update and the
+  target's `photo_verified` update atomically, matching this codebase's established
+  admin-action-via-RPC pattern, rather than opening a broad admin bypass UPDATE policy on all of
+  `profiles`.
+- **Also found, not yet fixed, lower severity**: `bonus_notices` (a real, spendable resource —
+  see `noticeLimits.js`/`referrals.js`) is written directly from client-side JS in both the
+  spend path (`noticeLimits.js`) and the earn path (`referrals.js`'s +3 on a valid referral),
+  neither wrapped in `trusted_update`. Since it's also absent from the same guarded-column list,
+  a user could set their own `bonus_notices` to an arbitrary number directly, bypassing the real
+  `referral_redemptions`-gated earn flow entirely — a currency exploit, not a privilege
+  escalation. Not fixed this pass because, unlike `is_admin`, this one **does** have legitimate
+  client-side writers — naively adding it to the trigger's guard list would silently break the
+  real spend/earn flows too; the correct fix needs those two call sites converted to SECURITY
+  DEFINER RPCs (or wrapped in `trusted_update` some other safe way) at the same time as the
+  column gets protected, not attempted in this same pass to avoid shipping a half-done fix.
+- **Not done yet**: same standing gap — no manual run-through in a simulator/device. This pass
+  was pure backend verification (direct SQL against production, immediately reverted each time);
+  no client file was touched. Next session should pick up the two flagged-but-unfixed items
+  above (the broken admin verification approval, and the `bonus_notices` self-edit exploit).
+
 ## Outstanding: Invite People (gathering + community)
 
 Scope, per the correction above: gatherings already had a real invite mechanism
