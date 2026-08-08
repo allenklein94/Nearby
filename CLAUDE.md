@@ -4,6 +4,87 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 8 2026 — deep-link + route-param + mode-gating follow-up audit
+
+Direct follow-up to the connectivity audit below, asked explicitly: "is everything deep linked
+properly... does every feature connect the way it's supposed to between modes tabs features."
+Two more passes, both found real issues:
+
+**Deep linking — found and fixed a real gap in the just-shipped `nearby://gathering/:id` link
+itself.** `GatheringDetail` (like every screen but `Onboarding`/`Login`/`CompleteProfile`) only
+exists in `RootNavigator.js`'s `Stack.Navigator` once `session && profileComplete` are both
+true (the conditional three-way screen-set swap at the top of the render). `NavigationContainer`'s
+own `linking` config has nothing to resolve a tapped link to until that authenticated screen set
+is actually mounted — so a shared gathering link tapped by someone **not yet signed in** (exactly
+who `GatheringConfirmationScreen.js`'s "Share Gathering" and `GatheringHubScreen.js`'s "Share
+Link" are aimed at — a friend being invited, not someone already using the app) silently did
+nothing. Same class of dead-link bug this file already caught and fixed once for this exact
+feature (adding the `linking` config in the first place), just one auth-state layer deeper, and
+missed the first time because that pass's own verification (`getStateFromPath()` called directly
+against the `linking.config` object) checked the URL-to-route-name mapping in isolation, never
+whether that route is actually reachable in the live, auth-gated navigator tree.
+Fixed in `RootNavigator.js`: captures the target `gatheringId` independently of
+`NavigationContainer` (`Linking.getInitialURL()` + a foreground `'url'` event listener) into
+`AsyncStorage`, then consumes and clears it once the authenticated stack actually mounts —
+mirrors the existing `just_completed_signup` pending-navigation pattern already in the same
+file. Confirmed via a full audit of every `Linking.openURL`/`Share.share` call site in `src/`
+that this is the *only* internal `nearby://` deep link constructed anywhere (the referral-code
+share in `InviteFriendsScreen.js` shares a plain redeemable code + App Store link, not an
+internal route, so it doesn't need this treatment; every other `Linking.openURL` call is an
+external URL — Google Maps, Spotify, YouTube, `sms:`, legal pages — none of which route through
+this app's own navigator).
+
+**Connectivity audit, round 2 — route-param contracts + mode gating.** Checked the highest-
+traffic screens' `route.params` destructuring against every real call site (param name/shape
+mismatches that wouldn't crash, just silently pass wrong or missing data) — **found none**; every
+caller across `GatheringDetail`/`GatheringHub`/`CommunityDetail`/`Chat`/`ViewProfile`/
+`BusinessProfile`/`MemoryVault`/`GatheringChat`/`CommunityChat`/`BusinessConversation`/
+`RequestBusinessPartner`/`CreateGathering`/`CreateCommunity` passes exactly the keys each screen
+reads. Then checked mode-gating consistency (premium/business/admin) across every entry point to
+each:
+- **Premium — a real, systemic client-trust gap, now closed.** `checkNoticeLimit`/
+  `checkWaveLimit` (`noticeLimits.js`), `checkAndCountBrowseView` (`browseLimits.js`),
+  `checkGatheringInterestLimit` (`gatheringLimits.js`), and `checkVoiceNoteLimit`
+  (`voiceNoteLimits.js`) — all five of this app's free-tier daily-limit checks — bypassed their
+  cap entirely on a client-supplied `isPremium`/`isUserPremium` boolean, sourced from local
+  RevenueCat SDK/cache state (`isPremium()` in `purchases.js`) and never re-verified
+  server-side. Pulled the live definition of `increment_browse_views` (the one of the five
+  backed by an RPC rather than a plain client query) via the Management API to confirm it has no
+  premium check of its own either — it blindly trusts the `daily_limit` param it's given. Net
+  effect: a stale or spoofed local premium flag silently defeated all five caps with zero
+  backstop, unlike this app's AI-generation Edge Functions (`ai-concierge`, `generate-icebreaker`,
+  etc.), which already gate on a real server-side `profiles.is_premium` read. Fixed by adding
+  `isPremiumOnServer(userId)` to `purchases.js` — one real query against `profiles.is_premium`
+  (kept reliably in sync by the `revenuecat-webhook` function, see the "Consumer Billing" section
+  below) — and pointing all five checks at it instead of their caller. Dropped the
+  now-unnecessary `isPremium`/`isUserPremium` argument from each function and its call sites in
+  `DiscoveryScreen.js`/`ChatScreen.js`/`GatheringsScreen.js`/`GatheringDetailScreen.js`; the two
+  screens that also use a local `isPremium()` result for cosmetic UI (showing/hiding
+  premium-only buttons) kept that unrelated client-side state untouched.
+- **Business mode — confirmed genuinely gated, both visually and functionally, no action
+  needed.** `CreateHubScreen.js`, `ProfileScreen.js`, and `SettingsScreen.js` all independently
+  read the same `profiles.managed_partner_id` to decide whether to show a "Manage Your Business"
+  entry point. Critically, `BusinessDashboardScreen.js` itself also resolves the caller's own
+  managed partner via `getMyManagedPartner()` (scoped to the caller's own session) on every
+  mount regardless of how it was reached — so even a direct `navigation.navigate(
+  'BusinessDashboard')` bypassing every hidden button still correctly renders "No business found
+  for this account" instead of leaking another business's data.
+- **Admin — confirmed genuinely gated, no action needed.** `SettingsScreen.js` gates all three
+  admin nav rows on a real, trigger-protected `profiles.is_admin` read. None of the three admin
+  screens has an internal admin check of its own — they rely entirely on RLS — so the real
+  question was whether that RLS is actually safe for a non-admin who navigates there directly.
+  `AdminReportsScreen.js`'s case was already known-safe (`schema.sql` has a real "own reports
+  only" policy alongside the admin one). `AdminBusinessRequestsScreen.js`
+  (`business_partner_requests`) and `AdminVerificationScreen.js` (`id_verification_submissions`)
+  don't have their policies captured in any local migration — pulled both live via the
+  Management API rather than leaving it an open question: both have the identical safe shape,
+  `requester_id = auth.uid()` / `user_id = auth.uid()` **OR** `is_admin`, so a non-admin
+  navigating directly gets their own rows only (or none), never another user's data or the real
+  admin queue.
+
+Verified via a full `npx expo export --platform ios` after each fix (1845 modules throughout —
+the deep-link and premium fixes were edits to existing files only).
+
 ## Aug 8 2026 — full navigation-connectivity audit + outstanding-item review
 
 Asked directly: "what other outstanding items are there... does every feature connect the way
