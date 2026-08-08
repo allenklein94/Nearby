@@ -196,8 +196,9 @@ nothing lost)**:
   route/`createGathering()` call every existing caller already uses. `createGathering()` and
   `SAFE_GATHERING_FIELDS` in `services/gatherings.js` now carry `visibility`/`community_id`.
   `getNearbyGatherings()` now filters by `visibility` (friends via `getMyFriends()`, community
-  via `getMyCommunities()`, `invite_only` always excluded) — **not yet live-verified against
-  production with real friend/community pairs**, see below. New
+  via `getMyCommunities()`, `invite_only` always excluded) — **live-verified against production
+  with real friend/community pairs, see below (two unrelated critical bugs found and fixed in
+  the process).** New
   `GatheringConfirmationScreen.js` + route replaces the old `Alert.alert('Posted!', ...)` —
   Share Gathering (real `Share.share` with the `nearby://gathering/{id}` deep link) and Invite
   Connections (friends-only, enriched with real shared-context via new
@@ -226,8 +227,8 @@ nothing lost)**:
 `'everyone'`) — **done, confirmed in a prior pass**; verify the new `getNearbyGatherings()`
 filter live with real friend/community pairs the same way this session has verified every
 other RLS-adjacent change (`set_config('request.jwt.claims', ...)` as real profiles —
-friend-visible gathering shows for a friend and not for a stranger, same for community) — **not
-yet done, still outstanding**; confirm the new `linking` config actually routes a
+friend-visible gathering shows for a friend and not for a stranger, same for community) — **done
+this pass, see the two-bugs writeup immediately below**; confirm the new `linking` config actually routes a
 `nearby://gathering/<id>` URL to `GatheringDetail` (`Linking.openURL` from a dev shell, or the
 `npx uri-scheme` helper if available — no simulator in this sandbox, so this is the closest
 verifiable proxy) — **not yet done**; full `npx expo export --platform ios` after each
@@ -236,6 +237,75 @@ meaningful increment, checking the module count against the 1842 baseline from t
 file**: no manual simulator/device run-through is possible here — flagged for next session same
 as always, but this pass's plan is written specifically so each piece is independently
 verifiable via direct SQL/API checks even without one.
+
+**Two critical, previously-undetected production bugs found and fixed while doing this
+verification — both unrelated to Create 2.0 itself, but found because this was the first time
+`getNearbyGatherings()`'s new visibility filter was actually exercised end-to-end as a real
+`authenticated`-role caller rather than via a SECURITY DEFINER RPC or a superuser session, which
+is exactly the gap the "no manual simulator run-through" limitation has been flagging as a risk
+throughout this whole file:**
+1. **`gatherings` had no `SELECT` grant for the `authenticated` role at all**
+   (`20260808_fix_gatherings_select_grant.sql`). Confirmed directly:
+   `has_table_privilege('authenticated','gatherings','SELECT')` was `false`, and the table's raw
+   ACL (`authenticated=awdDxtm`) was missing the `r` bit that every sibling table
+   (`communities`, `matches`, `gathering_interest` — all `ardDxtm`) has. This is independent of
+   and prior to RLS — every direct `.from('gatherings').select(...)` call in
+   `services/gatherings.js` (`getNearbyGatherings`, `getGatheringById`, `getMyGatherings`,
+   `getMyAttendingGatherings`, etc. — none of these are RPCs) would fail with "permission denied
+   for table gatherings" for **every real signed-in user**, unconditionally. Not present in
+   `schema.sql` or any migration as an explicit grant/revoke, so there's no way to tell from git
+   history how long this has been broken — this table's very first migration never explicitly
+   granted it, and evidently no other migration ever did either. Fixed with a plain
+   `grant select on public.gatherings to authenticated;`, applied to production and reverified
+   (`has_table_privilege` now `true`, ACL now matches siblings).
+2. **`community_members`'s SELECT RLS policy was genuinely, unconditionally circular with
+   `communities`'s SELECT policy** (`20260808_fix_community_members_rls_recursion.sql`).
+   `community_members`' policy did `EXISTS (select 1 from communities c where ... and (c.is_public
+   or c.creator_id = auth.uid()))`; `communities`' policy did `... or EXISTS (select 1 from
+   community_members cm where cm.community_id = communities.id and cm.user_id = auth.uid())` —
+   each table's RLS check depends on evaluating the other's RLS-protected read, forever. Because
+   the `community_members` policy's clauses are ORed with the EXISTS branch listed *first*,
+   Postgres's left-to-right evaluation means this recursion isn't avoided even for the simplest
+   possible query, `select * from community_members where user_id = auth.uid()` — i.e. exactly
+   what `getMyCommunities()` runs, and the Who step of the new gathering wizard's community
+   picker depends on that. **Confirmed live, in complete isolation** (a single statement, a
+   fresh session, nothing else mixed in): `set role authenticated; select 1 from
+   community_members where user_id = '<a real id>' limit 1;` → `ERROR: 42P17: infinite recursion
+   detected in policy for relation "community_members"`, every single time. This means the
+   entire Communities feature — `getMyCommunities()`, `CommunitiesScreen.js`,
+   `CommunityDetailScreen.js`'s member list, the Community Leaders feature, and now also this
+   pass's community-visibility picker — has been completely broken for every real user this
+   whole time, with nothing to catch it since it needs a real `authenticated`-role query to
+   surface (every prior "verified live" pass in this file either used SECURITY DEFINER RPCs,
+   which bypass this entirely, or ran as `postgres` without `SET ROLE authenticated`, which
+   bypasses RLS altogether as the table owner). Fixed the same way this session already fixed
+   the identical shape of bug for `is_blocked()`: added a new `is_community_visible_to(
+   community_id, user_id)` `SECURITY DEFINER` function (internal `auth.uid() = user_id_param`
+   guard, same defensive pattern as `is_blocked()`, revoked from `public`/`anon`, granted to
+   `authenticated` only) that reads `communities` directly, bypassing RLS instead of
+   re-triggering it, and pointed `community_members`'s SELECT policy at that function instead of
+   the raw subquery. Only one side of the cycle needed breaking. **Verified live, exhaustively**:
+   the original failing query now succeeds for a real member; a stranger querying a public test
+   community's membership sees the full roster (correct — public); the same stranger querying
+   the same community after flipping it private sees nothing (correct — matches the pre-existing,
+   deliberate "a regular member of a private community only sees their own row" constraint the
+   Community Leaders section already documented, unchanged by this fix); the community's own
+   creator still sees the full private roster; a direct RPC probe of `is_community_visible_to`
+   for a pair not involving the caller returns `false`, not a leak; `anon`/`public` confirmed
+   without execute on the new function. All test rows (a temporary community, two memberships,
+   three temporary gatherings covering `friends`/`community`/`invite_only`) deleted afterward —
+   confirmed production back to its exact pre-test state (5 gatherings, all `everyone`, 0
+   communities, 0 members).
+   Along the way, also positively confirmed the actual thing this verification pass set out to
+   check: the `gatherings_visibility_check` constraint genuinely rejects an invalid value
+   (tried `'bogus'`, got a real `23514` violation), `community_id`'s FK to `communities` is real
+   (`on delete set null`), and — with both bugs above fixed — a friend-visibility gathering and
+   a community-visibility gathering are both visible via direct table access to the friend/
+   member they're scoped to, exactly as `getNearbyGatherings()`'s client-side filter assumes;
+   `invite_only` and non-friend/non-member visibility were not separately re-tested here since
+   RLS is deliberately wide-open either way (`"Anyone can view gatherings" using (true)`,
+   confirmed unchanged) — the actual exclusion has always been the client-side filter logic
+   itself, already read and confirmed correct in `getNearbyGatherings()`.
 
 ## Outstanding: Create Consolidation + Create Assistant + Business Partnership Requests (IN PROGRESS — plan written before code, in case of restart)
 

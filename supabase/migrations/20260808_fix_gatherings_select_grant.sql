@@ -1,0 +1,16 @@
+-- Found while live-verifying the Create 2.0 visibility filter: `gatherings`
+-- was missing a table-level SELECT grant for the `authenticated` role --
+-- every sibling table (communities, matches, gathering_interest) has
+-- authenticated=ardDxtm, gatherings alone had authenticated=awdDxtm (the
+-- 'r' bit missing). This is independent of and prior to RLS -- with no
+-- SELECT grant, every direct `.from('gatherings').select(...)` call in
+-- services/gatherings.js (getNearbyGatherings, getGatheringById,
+-- getMyGatherings, getMyAttendingGatherings, etc.) would fail with
+-- "permission denied for table gatherings" for every real signed-in user,
+-- regardless of what any RLS policy allows. Confirmed live via
+-- has_table_privilege('authenticated','gatherings','SELECT') = false before
+-- this fix, and via a real SET ROLE authenticated query failing with
+-- exactly that error. Grants aren't recorded anywhere in schema.sql or an
+-- earlier migration for this table, so there's no way to know how long this
+-- has been broken -- flagged here rather than guessed at.
+grant select on public.gatherings to authenticated;
