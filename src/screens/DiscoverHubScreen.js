@@ -192,6 +192,16 @@ export default function DiscoverHubScreen({ navigation }) {
         .slice(0, 3)
     : [];
 
+  // Same signal/threshold Home's own "🔥 Trending Near You" already uses
+  // (homeDashboard.js's trendingGatherings) — Discover had no trending
+  // section at all before this, even though the underlying gathering
+  // list is already fetched here for search.
+  const trending = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
+    ? [...filteredGatherings]
+        .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
+        .slice(0, 3)
+    : [];
+
   const showGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
   const showCommunities = typeFilter === 'all' || typeFilter === 'communities';
   const showPlaces = typeFilter === 'all' || typeFilter === 'places';
@@ -373,6 +383,33 @@ export default function DiscoverHubScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
                     <Text style={styles.cardSubtitle} numberOfLines={1}>{g.fit.reasons.join(' · ')}</Text>
+                  </View>
+                  <Text style={styles.cardChevron}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+
+          {trending.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>🔥 Trending Near You</Text>
+              {trending.map((g) => (
+                <TouchableOpacity
+                  key={g.id}
+                  style={styles.card}
+                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${g.title}, ${g.approvedAttendees?.length ?? 0} attending`}
+                  accessibilityRole="button"
+                >
+                  {coverPhotoUrls[g.id] ? (
+                    <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
+                  ) : (
+                    <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>{g.title}</Text>
+                    <Text style={styles.cardSubtitle}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>

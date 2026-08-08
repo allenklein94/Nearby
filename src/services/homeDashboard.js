@@ -117,29 +117,40 @@ export async function getSocialForecast(latitude, longitude) {
   return data?.[0] ?? null;
 }
 
-export async function getContinueYourCommunity() {
+// Was capped to a single most-recently-joined community (.limit(1)) —
+// a user in several communities only ever saw one on Home, no matter how
+// active the others were. Now surfaces up to 3, across every community
+// the caller has joined, ranked by real recent activity (unread message
+// count) rather than just join recency — matches the "top 3" truncation
+// convention already used elsewhere on this dashboard (trendingGatherings,
+// bestPick candidates).
+export async function getContinueYourCommunities() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
-  if (!myId) return null;
+  if (!myId) return [];
 
   const { data: memberships } = await supabase
     .from('community_members')
     .select('community_id, joined_at, communities(id, name, cover_photo_url)')
     .eq('user_id', myId)
-    .order('joined_at', { ascending: false })
-    .limit(1);
+    .order('joined_at', { ascending: false });
 
-  if (!memberships || memberships.length === 0) return null;
-  const community = memberships[0].communities;
-  if (!community) return null;
+  const communities = (memberships ?? []).map((m) => m.communities).filter(Boolean);
+  if (communities.length === 0) return [];
 
-  const { count: unreadCount } = await supabase
-    .from('community_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('community_id', community.id)
-    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const withActivity = await Promise.all(
+    communities.map(async (community) => {
+      const { count: unreadCount } = await supabase
+        .from('community_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('community_id', community.id)
+        .gte('created_at', since);
+      return { id: community.id, name: community.name, coverPhotoUrl: community.cover_photo_url, recentMessageCount: unreadCount ?? 0 };
+    })
+  );
 
-  return { id: community.id, name: community.name, coverPhotoUrl: community.cover_photo_url, recentMessageCount: unreadCount ?? 0 };
+  return withActivity.sort((a, b) => b.recentMessageCount - a.recentMessageCount).slice(0, 3);
 }
 
 export async function getEarnedProfileStats() {

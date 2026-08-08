@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHomeDashboard, getSocialForecast, getContinueYourCommunity, getUnlockedPerksCount, getHomeInsight } from '../services/homeDashboard';
+import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
@@ -25,7 +25,7 @@ export default function HomeScreen({ navigation }) {
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [quickCategory, setQuickCategory] = useState(null);
   const [socialForecast, setSocialForecast] = useState(null);
-  const [continueCommunity, setContinueCommunity] = useState(null);
+  const [continueCommunities, setContinueCommunities] = useState([]);
   const [perksCount, setPerksCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
   const period = getTimePeriod();
@@ -41,8 +41,8 @@ export default function HomeScreen({ navigation }) {
     setDashboard(result);
     setLoading(false);
     try {
-      const community = await getContinueYourCommunity();
-      setContinueCommunity(community);
+      const communities = await getContinueYourCommunities();
+      setContinueCommunities(communities);
       const perks = await getUnlockedPerksCount();
       setPerksCount(perks);
       const unrated = await getMostRecentUnratedGathering();
@@ -164,20 +164,25 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        {continueCommunity && (
-          <TouchableOpacity
-            style={styles.continueCommunityCard}
-            onPress={() => navigation.navigate('CommunityDetail', { communityId: continueCommunity.id })}
-            activeOpacity={0.85}
-            accessibilityLabel={`Continue ${continueCommunity.name}${continueCommunity.recentMessageCount > 0 ? `, ${continueCommunity.recentMessageCount} recent messages` : ''}`}
-            accessibilityRole="button"
-          >
-            <Text style={styles.continueCommunityLabel}>🏘️ Continue Your Community</Text>
-            <Text style={styles.continueCommunityName}>{continueCommunity.name}</Text>
-            {continueCommunity.recentMessageCount > 0 && (
-              <Text style={styles.continueCommunityDetail}>{continueCommunity.recentMessageCount} new message{continueCommunity.recentMessageCount === 1 ? '' : 's'} in the last day</Text>
-            )}
-          </TouchableOpacity>
+        {continueCommunities.length > 0 && (
+          <>
+            <Text style={styles.continueCommunityLabel}>🏘️ Continue Your Communities</Text>
+            {continueCommunities.map((community) => (
+              <TouchableOpacity
+                key={community.id}
+                style={styles.continueCommunityCard}
+                onPress={() => navigation.navigate('CommunityDetail', { communityId: community.id })}
+                activeOpacity={0.85}
+                accessibilityLabel={`Continue ${community.name}${community.recentMessageCount > 0 ? `, ${community.recentMessageCount} recent messages` : ''}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.continueCommunityName}>{community.name}</Text>
+                {community.recentMessageCount > 0 && (
+                  <Text style={styles.continueCommunityDetail}>{community.recentMessageCount} new message{community.recentMessageCount === 1 ? '' : 's'} in the last day</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </>
         )}
         {perksCount > 0 && (
           <TouchableOpacity
