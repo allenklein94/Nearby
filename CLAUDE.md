@@ -68,6 +68,31 @@ Requests" section (pending requests for the caller's own `managed_partner_id`,
 Approve/Decline). Notify the requester on both outcomes via the existing `send-push`
 mechanism (same one `invite_friend_to_gathering` already uses).
 
+**Part 2 status: DONE except the top-level Create-tab entry point** (that one's wired
+together with the Part 3 `CreateHubScreen` rebuild below, since both land in the same file
+at once). `services/businessPartnerships.js` and `RequestBusinessPartnerScreen.js` were
+already fully written before a codespace restart, just never wired in — confirmed this pass
+that the `business_partnership_requests` migration (Part 1) was already live in production
+(`request_business_partnership`/`respond_to_business_partnership_request` both exist per
+`pg_proc`), so no re-application was needed. This pass added: the `RequestBusinessPartner`
+route in `RootNavigator.js`; the "🤝 Request a Business Partner" link in
+`GatheringDetailScreen.js`'s host banner (`targetType: 'gathering'`); the same link in
+`CommunityDetailScreen.js`, gated on `isCreator || isLeader` (added a `myId` state var and
+derived `isLeader` from the already-fetched `members` list, matching the RPC's own
+`role in ('creator','leader')` check); and the Partnership Requests section in
+`BusinessDashboardScreen.js`'s Community tab (`getPendingPartnershipRequestsForPartner` +
+Approve/Decline via `respondToBusinessPartnershipRequest`, removing the row from local state
+on success rather than a full reload). **Found and fixed a real bug while wiring the
+dashboard section**: `RequestBusinessPartnerScreen.js` referenced `colors.surfaceAlt`, which
+doesn't exist anywhere in `theme.js` (only `background`/`surface`/`surfaceElevated`/etc.) —
+would have rendered `undefined` as a background color. Fixed there and avoided copying the
+same mistake into the new dashboard styles (`surfaceElevated` used instead). Verified via a
+full `npx expo export --platform ios` (1841 modules, two more than the prior 1839 baseline —
+the two new files from before the restart, no new files this pass). Committed and pushed
+(`05fcb48b`). **Not done yet**: no manual run-through in a simulator/device — next session
+should click through sending a request from both entry points and approving/declining from
+the dashboard as a real business owner account.
+
 **Part 3 — Create Assistant**: new `supabase/functions/create-assistant/index.ts` — same
 bearer-token auth pattern as every existing `generate-*`/`ai-concierge` function, but **no
 premium check** (the one deliberate exception to that convention in this codebase). Still
