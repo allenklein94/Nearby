@@ -4,6 +4,120 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 8 2026 — full navigation-connectivity audit + outstanding-item review
+
+Asked directly: "what other outstanding items are there... does every feature connect the way
+it's supposed to? from all tabs should connect to each other where needed." Given how much of
+this file already reads "DONE, build-wise" with only "no manual simulator run" as the
+remaining gap (a limitation this sandbox genuinely can't close), the actual useful work here
+was twofold: (1) a systematic connectivity audit — not another per-feature spot check, an
+actual diff of every registered route against every real `navigate()`/`replace()`/`push()`
+call in the app — and (2) a pass through every "Outstanding"/"deferred"/"not attempted" item
+elsewhere in this file to separate what's genuinely still buildable from what was a deliberate
+product-scope decision not to be silently re-opened.
+
+**Connectivity audit findings, all fixed this pass:**
+- **`MusicModeScreen.js` was fully built (Spotify OAuth, top-tracks, favorite-track picker)
+  and already had a real "🎵 Music Mode" button pointing at it from `SettingsScreen.js:717`
+  (`navigation.navigate('MusicMode')`) — but the screen was never imported or registered in
+  `RootNavigator.js`. Tapping that button threw a real "not handled by any navigator" crash.**
+  Wired in (import + `Stack.Screen`), matching the existing registration pattern exactly. This
+  is the same class of miss this file has caught repeatedly elsewhere (a real feature sitting
+  finished but silently disconnected) — just never grepped for systematically until now.
+- **`routeNotificationTap()` in `services/notifications.js` couldn't actually route
+  `wave`/`gathering_interest`/`gathering_invite`/`gathering_reminder` push taps anywhere
+  correct.** It called `navigationRef.navigate('MainTabs', { screen: 'Notices' | 'Gatherings'
+  })` — nested-route syntax that only works if `Notices`/`Gatherings` are children of the
+  `MainTabs` tab navigator. They're not — `MainTabs`' `Tab.Navigator` only holds
+  `Home`/`Discover`/`Create`/`Matches`/`Profile` (`RootNavigator.js:219-223`); `Notices` and
+  `Gatherings` are sibling top-level `Stack.Screen`s. The two correctly-written calls two lines
+  away in the same function (`navigationRef.navigate('Chat', ...)`, `navigationRef.navigate(
+  'Friends')`) target top-level screens directly, which is what gave this away. Fixed to
+  navigate to the top-level screen name directly; gathering pushes now also deep-link straight
+  to the specific `GatheringDetail` when the push payload has a `gathering_id` (matching how
+  the match/message case already deep-links to a specific `Chat` instead of a generic list) —
+  confirmed `gathering_invite`'s payload does carry `gathering_id`
+  (`20260808_gathering_invite_persists.sql`) so this isn't a fabricated field. Whether
+  `gathering_interest`/`gathering_reminder` pushes are actually sent from anywhere live
+  (production Edge Functions/cron, not visible in local migrations) wasn't re-verified — same
+  "local stub, real deployed code" gap this file has flagged before — but the routing logic is
+  correct either way now, falling back to the plain `Gatherings` list when no id is present.
+- **`BusinessDashboardScreen.js` took zero navigation props and had zero `navigate()` calls
+  anywhere in its ~990 lines** — a business owner managing their own dashboard had no way back
+  to their own public `BusinessProfileScreen` (built earlier this session) or anywhere else.
+  Added the `navigation` prop and a "👀 View Public Profile →" link under the Community Health
+  stats.
+- **`ProfileScreen.js`'s quick-links column** (Timeline / Memory Vault / Insights / Momentum /
+  Rewards, all the identical `timelineLink` row style) **omitted Billing and Emergency
+  Contacts**, both of which follow the exact same pattern but were only reachable two taps deep
+  via Settings. Added both rows for consistency — nothing about Settings' own rows changed.
+- Confirmed clean elsewhere: all 5 bottom tabs wired correctly; no genuinely orphaned content
+  screens (registered but unreachable from anywhere real); `GatheringDetailScreen` ↔
+  `ViewProfile`/`BusinessProfile`, `CommunityDetailScreen` ↔ `BusinessProfile`/
+  `RequestBusinessPartner`, and `InboxScreen`'s invite-accept deep-links into
+  `GatheringDetail`/`CommunityDetail` all check out; every optional-`navigation`-prop component
+  (`BusinessHostBadge`, `DateCheckInModal`, `GatheringFeedbackModal`) has its prop actually
+  passed at every real call site, so none of those features are silently disabled in practice.
+
+**Resolved the one item flagged since the Aug 8 vision-doc pass as never re-verified**
+("Create should become one screen across all communities" — the OCR-garbled email claim that
+was never checkable against a concrete assertion): investigated what a real gap in this shape
+would look like, and found one — `CreateGatheringScreen.js` had no way to receive an initial
+`visibility`/`communityId` from a caller, and `CommunityDetailScreen.js` had no "create a
+gathering for this community" entry point at all, so starting a gathering from inside a
+specific community meant re-picking that same community from scratch on the wizard's own Who
+step instead of carrying the context you were already in. Fixed: `CreateGatheringScreen.js`
+now reads `initialVisibility`/`initialCommunityId` route params (pre-selecting the community
+and pre-loading `myCommunities` so the Publish-step summary renders its real name immediately,
+not just its id), and `CommunityDetailScreen.js` gained a "🎉 Host a Gathering for This
+Community" button (members/creator) that passes them. This is the same one Create flow every
+other entry point already uses — no new screen, no forked logic.
+
+**Reviewed every other "Outstanding"/deferred item in this file to check what's genuinely still
+open vs. a deliberate scope decision** (so this pass doesn't silently reopen something the user
+already explicitly chose to defer, per this file's own standing "flag, don't silently build
+partial" rule):
+- **Stripe integration** (billing section) — still not started, and deliberately not attempted
+  this pass. This needs a real external account, real API credentials, and real money moving —
+  not something to set up autonomously without the user present for that decision.
+- **Capacity/waitlist mechanics** (Create 2.0) — still deliberately deferred; needs new schema
+  and a real state machine beyond pending/approved/declined, explicitly excluded from the
+  "core loop" scope when Create 2.0 was designed.
+- **AI-generated personalized cover photos** — still explicitly deferred to a future premium
+  feature per the user's own words ("later, once the product has traction").
+- **Business AI Assistant** (chat-style analytics for business owners) — still a distinct,
+  not-yet-started future feature per the 3-tier discussion, not folded into this pass.
+- **True "I'll Decide Later" skip-location state** (Create 2.0's Where step) — still not
+  built; making location genuinely optional touches `createGathering()`'s own distance
+  computation, `get_gathering_distances`, the map layer, and `get_gathering_meetup_point` — a
+  real structural change, not a per-screen tweak, left flagged rather than half-built.
+  "Near Me" already covers the same underlying want.
+- **Server-side/RPC-level enforcement that a non-invited stranger can't join an `invite_only`
+  gathering by calling the join RPC directly** — checked this again directly this pass
+  (`expressInterest()` in `services/gatherings.js`): for `invite_only` gatherings `is_public`
+  is `false`, so a direct call still only ever inserts a `pending` `gathering_interest` row
+  requiring the host's own manual approval — the same outcome as any other host-approval
+  gathering, not an actual auto-join bypass. This matches the app's already-stated, already-
+  accepted risk posture elsewhere ("RLS wide open, UI is the actual gate") rather than being a
+  fresh hole, so it was left as-is rather than hardened uninvited.
+- **Payment Methods / Billing History as a real data list** — still deliberately not built;
+  this app bills through native in-app-purchase, so Apple/Google hold the actual charge
+  history, not this app.
+- No other section in this file described a concrete, still-open, code-completable gap that
+  didn't fall into one of the above categories or the standing "no manual simulator run-through
+  is possible in this sandboxed environment" limitation repeated throughout.
+
+**Not done, same standing gap as literally everywhere else in this file**: no manual
+simulator/device run-through. What was verified this pass: a full `npx expo export --platform
+ios` after each increment (1844 → 1845 modules — the one new module is `MusicModeScreen.js`,
+now actually reachable from the bundle graph for the first time since it was written; every
+other file touched was an edit, not an addition). The navigation-graph findings above were
+found by a direct, exhaustive diff of registered routes vs. real `navigate()` call sites, not
+by spot-checking — next session should still click through the four fixed paths in a running
+app (Settings → Music Mode, tapping a real gathering-invite push notification, Business
+Dashboard → View Public Profile, and Profile's new Billing/Emergency Contacts rows) to confirm
+they render correctly, not just that they resolve to a valid route.
+
 ## Outstanding: Frictionless Gathering Creation Redesign ("Create 2.0") — DONE, build-wise
 
 Started Aug 8 2026, immediately after the Create Consolidation pass (3-card `CreateHubScreen`
