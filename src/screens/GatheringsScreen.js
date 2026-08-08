@@ -27,6 +27,7 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -772,9 +773,11 @@ export default function GatheringsScreen({ navigation, route }) {
             return (
               <AnimatedListItem index={index}>
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, item.matchesYourInterests && styles.matchCard]}>
-                {coverPhotoUrls[item.id] && (
+                {coverPhotoUrls[item.id] ? (
                   <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
-                )}
+                ) : curatedCoverPhotoFor(item.interest_tag) ? (
+                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={`${item.interest_tag} cover photo`} />
+                ) : null}
                 <View style={styles.cardTopRow}>
                   <View
                     style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}
@@ -948,9 +951,11 @@ export default function GatheringsScreen({ navigation, route }) {
             const fellows = fellowAttendees[item.id] ?? [];
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
-                {coverPhotoUrls[item.id] && (
+                {coverPhotoUrls[item.id] ? (
                   <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
-                )}
+                ) : curatedCoverPhotoFor(item.interest_tag) ? (
+                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={`${item.interest_tag} cover photo`} />
+                ) : null}
                 <TouchableOpacity
                   onPress={() => !isPast && toggleExpandGathering(item.id)}
                   disabled={isPast}
@@ -1105,9 +1110,11 @@ export default function GatheringsScreen({ navigation, route }) {
             const categoryStyle = categoryStyleFor(item.interest_tag);
             return (
               <View style={[styles.card, { borderLeftColor: categoryStyle.color, borderLeftWidth: 4 }, isPast && styles.pastCard]}>
-                {coverPhotoUrls[item.id] && (
+                {coverPhotoUrls[item.id] ? (
                   <Image source={{ uri: coverPhotoUrls[item.id] }} style={styles.coverPhoto} accessibilityLabel={`${item.title} cover photo`} />
-                )}
+                ) : curatedCoverPhotoFor(item.interest_tag) ? (
+                  <Image source={{ uri: curatedCoverPhotoFor(item.interest_tag) }} style={styles.coverPhoto} accessibilityLabel={`${item.interest_tag} cover photo`} />
+                ) : null}
                 <View style={styles.cardTopRow}>
                   <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
                     <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>

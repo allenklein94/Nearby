@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Frictionless Gathering Creation Redesign ("Create 2.0") — IN PROGRESS, plan written before code
+## Outstanding: Frictionless Gathering Creation Redesign ("Create 2.0") — DONE, build-wise
 
 Started Aug 8 2026, immediately after the Create Consolidation pass (3-card `CreateHubScreen`
 + `create-assistant` NL box, commit `6bd736a2`) shipped. The user pasted a detailed, fully
@@ -212,15 +212,61 @@ nothing lost)**:
   all 11 languages, not just English inline. Verified via a full `npx expo export --platform
   ios` (1843 modules, one more than the 1842 baseline — the one new
   `GatheringConfirmationScreen.js`).
-- **Not done yet**: the community picker (Who step) and Popular Nearby places (Where step) are
-  built and wired but not yet exercised against a real account with real communities/a real
-  location. The `GatheringDetailScreen.js` Join CTA gating for `invite_only` (accepted
-  `social_invites` row or host), the organizer countdown card, the post-join "Want to bring
-  someone?" growth prompt, and the curated cover-photo mapping are **all still outstanding** —
-  see the task list this session is working from (visible in conversation, not persisted here
-  independently). If a restart happens again mid-way through those, check `git log` against
-  this file's own task descriptions above to see exactly which of the remaining pieces already
-  landed.
+- **Second increment, same day (picked back up after another codespace restart interrupted the
+  session mid-verification — see the two-bugs writeup above for what that verification pass
+  found first).** Closed all four remaining pieces. Still true from the prior increment and not
+  re-tested this pass: the community picker (Who step) and Popular Nearby places (Where step)
+  are built and wired but not yet exercised against a real account with real communities/a real
+  location — same standing "no manual simulator run-through" gap as everything else in this
+  file, see the very bottom of this section.
+  - **`GatheringDetailScreen.js` Join CTA gating for `invite_only`**: `getGatheringById()` in
+    `services/gatherings.js` now also computes `hasInviteOnlyAccess` — `true` for the host,
+    otherwise a direct check for a real accepted `social_invites` row (`invite_type='gathering'`,
+    matching `target_id`/`invitee_id`, `status='accepted'`) — RLS already lets the invitee
+    SELECT their own invite rows directly, no new RPC needed. The detail screen's join-CTA area
+    now shows an honest "🔒 This gathering is invite-only. Ask {host} for an invite." panel
+    instead of a Join/Request button when this is `false`, matching the plan's "client-side
+    gated only this pass" enforcement posture exactly.
+  - **Organizer countdown card**: a compact "Going / Interested / Messages" row added to
+    `GatheringDetailScreen.js`'s host banner, using the three count-only functions
+    (`getApprovedAttendeeCount`, `getPendingInterestCount`, `getGatheringMessageCount`) that were
+    already written in `services/gatherings.js` from the prior increment but never actually
+    called from a screen — fetched alongside the rest of `load()`, host-only.
+  - **Post-join "Want to bring someone?" growth prompt**: added to `GatheringHubScreen.js`
+    (not `GatheringDetailScreen` — `justJoined` is only ever passed to Hub, and only after a
+    real `is_public` auto-join succeeds, so it's already naturally excluded for host-approval
+    and `invite_only` joins with no extra gating needed). Shown once, right after the existing
+    2.2s "You're In! 🎉" banner closes: Invite a Friend (reuses `InviteFriendsModal`, already
+    gathering-aware) / Share Link (same `nearby://gathering/{id}` deep link as the confirmation
+    screen) / Skip.
+  - **Curated cover photos**: new `src/constants/gatheringCoverPhotos.js`, a `category → real
+    image URL` map. Sourced and verified 15 of the schema's 25 `interest_tag` categories this
+    pass (the 7 reachable from the primary Create 2.0 icon grid — Coffee/Foodie/Outdoors/Sports/
+    Gaming/Music/Volunteering — plus 8 more common ones: Movies/Hiking/Yoga/Wine/Dancing/
+    Fitness/Travel/Reading). Every URL was checked with a real HTTP request (200 status +
+    `image/*` content-type via `curl -I`, a more direct verification than routing through
+    WebFetch's HTML-to-markdown pipeline for what's actually binary image content) **and**
+    downloaded and visually inspected before being hardcoded — this caught two real mismatches
+    that would otherwise have shipped silently wrong: an initial "Dancing" candidate turned out
+    to be a mountain-silhouette yoga pose, and a second "Dancing" candidate turned out to be a
+    neon sign reading "you are what you listen to." Both dropped in favor of a third candidate
+    that's a real dance photo, confirmed visually. The remaining 10 categories (Art, Photography,
+    Cooking, Dogs, Cats, Concerts, Museums, Meditation, Running, Faith & Spirituality) have no
+    sourced image this pass — deliberately left to fall back to the existing icon/color block
+    rather than guessed, matching the plan's own "verify, don't assume" instruction. Wired as a
+    fallback (real uploaded `cover_photo_path` still wins when present) into both
+    `GatheringDetailScreen.js`'s hero and all three of `GatheringsScreen.js`'s card layouts
+    (nearby/attending/hosting tabs).
+  - Also verified the `nearby://gathering/:gatheringId` `linking` config
+    (`RootNavigator.js`) more rigorously than a simulator run-through could have this pass:
+    called React Navigation's own `getStateFromPath()` directly (`@react-navigation/core`,
+    the actual library code the app runs, not a guess) against the real `linking.config` object
+    with both a plain id and a real UUID-shaped id — both correctly resolved to
+    `{ name: 'GatheringDetail', params: { gatheringId: '<id>' } }`, confirming the path-parsing
+    logic itself is correct independent of not having a simulator to tap the link in.
+  - Verified via a full `npx expo export --platform ios` (1844 modules, one more than the 1843
+    baseline — the one new `gatheringCoverPhotos.js`, everything else this increment was edits
+    to existing files).
 
 **Verification plan**: apply the `visibility` migration to production
 (`enmosvippabmuqslzrox`) and confirm the backfill via a direct query (every existing row reads
@@ -229,11 +275,14 @@ filter live with real friend/community pairs the same way this session has verif
 other RLS-adjacent change (`set_config('request.jwt.claims', ...)` as real profiles —
 friend-visible gathering shows for a friend and not for a stranger, same for community) — **done
 this pass, see the two-bugs writeup immediately below**; confirm the new `linking` config actually routes a
-`nearby://gathering/<id>` URL to `GatheringDetail` (`Linking.openURL` from a dev shell, or the
-`npx uri-scheme` helper if available — no simulator in this sandbox, so this is the closest
-verifiable proxy) — **not yet done**; full `npx expo export --platform ios` after each
-meaningful increment, checking the module count against the 1842 baseline from the last pass —
-**done for this increment (1843)**. **Standing limitation, same as every other entry in this
+`nearby://gathering/<id>` URL to `GatheringDetail` — **done this pass**, via React Navigation's
+own `getStateFromPath()` called directly against the real `linking.config` (see the second-
+increment bullets above) rather than the originally-planned `Linking.openURL`/`npx uri-scheme`
+dev-shell proxy, since there's still no simulator in this sandbox but this is a strictly more
+direct verification of the same thing (the actual URL-to-route parsing logic, not just a
+"something happened" signal); full `npx expo export --platform ios` after each meaningful
+increment, checking the module count against the 1842 baseline from the last pass — **done for
+both increments (1843, then 1844)**. **Standing limitation, same as every other entry in this
 file**: no manual simulator/device run-through is possible here — flagged for next session same
 as always, but this pass's plan is written specifically so each piece is independently
 verifiable via direct SQL/API checks even without one.

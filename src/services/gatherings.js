@@ -741,6 +741,29 @@ export async function getGatheringById(gatheringId) {
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
   const myInterest = (data.attendees ?? []).find((a) => a.user_id === userId) ?? null;
+  const isHost = data.host_id === userId;
+
+  // Create 2.0's invite_only visibility: RLS deliberately doesn't block a
+  // direct fetch-by-id (matches how "private" is_public=false gatherings
+  // have always worked — see the migration's own comment), so the Join CTA
+  // itself is the real gate here, client-side, same enforcement posture as
+  // everywhere else in this schema. A real accepted social_invites row (or
+  // being the host) is required; nothing else grants access.
+  let hasInviteOnlyAccess = true;
+  if (data.visibility === 'invite_only' && !isHost) {
+    hasInviteOnlyAccess = false;
+    if (userId) {
+      const { data: acceptedInvite } = await supabase
+        .from('social_invites')
+        .select('id')
+        .eq('invite_type', 'gathering')
+        .eq('target_id', gatheringId)
+        .eq('invitee_id', userId)
+        .eq('status', 'accepted')
+        .maybeSingle();
+      hasInviteOnlyAccess = !!acceptedInvite;
+    }
+  }
 
   let distanceLabel = null;
   let distanceMiles = null;
@@ -772,7 +795,8 @@ export async function getGatheringById(gatheringId) {
     approvedAttendees,
     myStatus: myInterest?.status ?? null,
     myAttendee: myInterest,
-    isHost: data.host_id === userId,
+    isHost,
+    hasInviteOnlyAccess,
     matchesYourInterests: data.interest_tag ? myInterests.includes(data.interest_tag) : false,
     distanceLabel,
     distanceMiles,

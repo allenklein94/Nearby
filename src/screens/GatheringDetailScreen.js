@@ -11,6 +11,9 @@ import {
   getHostStats,
   getHostReputation,
   getHostLovedTags,
+  getApprovedAttendeeCount,
+  getPendingInterestCount,
+  getGatheringMessageCount,
 } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getGatheringOffer } from '../services/brandOffers';
@@ -20,6 +23,7 @@ import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -53,6 +57,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [countdownStats, setCountdownStats] = useState(null);
 
   const load = useCallback(async () => {
     const g = await getGatheringById(gatheringId);
@@ -79,6 +84,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
     if (g.host_id) {
       getHostLovedTags(g.host_id).then(setLovedTags);
+    }
+
+    if (g.isHost) {
+      const [going, interested, messages] = await Promise.all([
+        getApprovedAttendeeCount(gatheringId),
+        getPendingInterestCount(gatheringId),
+        getGatheringMessageCount(gatheringId),
+      ]);
+      setCountdownStats({ going, interested, messages });
+    } else {
+      setCountdownStats(null);
     }
 
     if (g.approvedAttendees?.length > 0) {
@@ -161,12 +177,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const categoryStyle = categoryStyleFor(gathering.interest_tag);
   const { reasons } = getGatheringFitReasons(gathering, { firstTimerCount });
   const hasVibe = VIBE_SCALES.some((scale) => gathering[scale.key] != null);
+  const curatedCover = curatedCoverPhotoFor(gathering.interest_tag);
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl * 2 }}>
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} style={styles.hero} accessibilityLabel={`${gathering.title} cover photo`} />
+        ) : curatedCover ? (
+          <Image source={{ uri: curatedCover }} style={styles.hero} accessibilityLabel={`${gathering.interest_tag} cover photo`} />
         ) : (
           <View style={[styles.hero, styles.heroFallback, { backgroundColor: categoryStyle.color + '30' }]}>
             <Text style={styles.heroFallbackIcon}>{categoryStyle.icon}</Text>
@@ -345,6 +364,24 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {gathering.isHost ? (
             <View style={styles.hostBanner}>
               <Text style={styles.hostBannerText}>You're hosting this gathering.</Text>
+              {countdownStats && (
+                <View style={styles.countdownRow}>
+                  <View style={styles.countdownStat}>
+                    <Text style={styles.countdownNumber}>{countdownStats.going}</Text>
+                    <Text style={styles.countdownLabel}>Going</Text>
+                  </View>
+                  <View style={styles.countdownDivider} />
+                  <View style={styles.countdownStat}>
+                    <Text style={styles.countdownNumber}>{countdownStats.interested}</Text>
+                    <Text style={styles.countdownLabel}>Interested</Text>
+                  </View>
+                  <View style={styles.countdownDivider} />
+                  <View style={styles.countdownStat}>
+                    <Text style={styles.countdownNumber}>{countdownStats.messages}</Text>
+                    <Text style={styles.countdownLabel}>Messages</Text>
+                  </View>
+                </View>
+              )}
               <TouchableOpacity
                 onPress={() => navigation.navigate('Gatherings')}
                 accessibilityLabel="Manage attendees"
@@ -402,6 +439,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
               <Text style={styles.pendingText}>You're interested — the host will review and let you know.</Text>
+            </View>
+          ) : gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess ? (
+            <View style={styles.pendingPanel}>
+              <Text style={styles.pendingText}>🔒 This gathering is invite-only. Ask {gathering.host?.display_name} for an invite to join.</Text>
             </View>
           ) : (
             <TouchableOpacity
@@ -507,6 +548,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   hostBannerText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.xs },
   hostBannerLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  countdownRow: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.lg, paddingVertical: spacing.sm, width: '100%', marginVertical: spacing.sm,
+  },
+  countdownStat: { flex: 1, alignItems: 'center' },
+  countdownNumber: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
+  countdownLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', marginTop: 2 },
+  countdownDivider: { width: 1, height: 28, backgroundColor: colors.border },
   youreInPanel: {
     marginTop: spacing.xl, backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.lg, alignItems: 'center',

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -16,6 +16,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { iceBreakersFor, prepTipsFor } from '../constants/gatheringHubContent';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
+import InviteFriendsModal from '../components/InviteFriendsModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -54,6 +55,8 @@ export default function GatheringHubScreen({ route, navigation }) {
   const [onMyWayBusy, setOnMyWayBusy] = useState(false);
   const [checkInBusy, setCheckInBusy] = useState(false);
   const [showJoinedBanner, setShowJoinedBanner] = useState(!!justJoined);
+  const [showGrowthPrompt, setShowGrowthPrompt] = useState(false);
+  const [growthInviteModalVisible, setGrowthInviteModalVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
   const [hostStats, setHostStats] = useState(null);
 
@@ -102,9 +105,29 @@ export default function GatheringHubScreen({ route, navigation }) {
 
   useEffect(() => {
     if (!showJoinedBanner) return;
-    const t = setTimeout(() => setShowJoinedBanner(false), 2200);
+    const t = setTimeout(() => {
+      setShowJoinedBanner(false);
+      // Shown once, right after a public (auto-join) join succeeds --
+      // justJoined is only ever passed for that case (GatheringDetailScreen
+      // only navigates here with it after an is_public join), so it's
+      // never shown for host-approval (nothing to celebrate yet, still
+      // pending) or invite_only (came in via a direct invite already).
+      setShowGrowthPrompt(true);
+    }, 2200);
     return () => clearTimeout(t);
   }, [showJoinedBanner]);
+
+  async function handleGrowthShareLink() {
+    try {
+      await Share.share({
+        message: `Join me: ${gathering?.title ?? 'this gathering'} — nearby://gathering/${gatheringId}`,
+        url: `nearby://gathering/${gatheringId}`,
+      });
+    } catch (e) {
+      // Share sheet cancellation isn't an error worth surfacing.
+    }
+    setShowGrowthPrompt(false);
+  }
 
   async function handleOnMyWay() {
     setOnMyWayBusy(true);
@@ -195,6 +218,33 @@ export default function GatheringHubScreen({ route, navigation }) {
             <Text style={styles.joinedBannerSub}>{gathering.title}</Text>
             {countdown && <Text style={styles.joinedBannerSub}>{countdown}</Text>}
             <Text style={styles.joinedBannerFoot}>We'll help you have a great time.</Text>
+          </View>
+        )}
+
+        {showGrowthPrompt && (
+          <View style={[styles.growthPrompt, { borderColor: categoryStyle.color }]}>
+            <Text style={styles.growthPromptTitle}>Want to bring someone?</Text>
+            <TouchableOpacity
+              style={[styles.growthAction, { backgroundColor: categoryStyle.color }]}
+              onPress={() => setGrowthInviteModalVisible(true)}
+              activeOpacity={0.85}
+              accessibilityLabel="Invite a Friend"
+              accessibilityRole="button"
+            >
+              <Text style={styles.growthActionText}>🤝 Invite a Friend</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.growthAction, styles.growthActionSecondary]}
+              onPress={handleGrowthShareLink}
+              activeOpacity={0.85}
+              accessibilityLabel="Share Link"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.growthActionText, styles.growthActionTextSecondary]}>🔗 Share Link</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowGrowthPrompt(false)} style={{ marginTop: spacing.xs }} accessibilityLabel="Skip" accessibilityRole="button">
+              <Text style={styles.growthSkip}>Skip</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -377,6 +427,16 @@ export default function GatheringHubScreen({ route, navigation }) {
         navigation={navigation}
         onClose={() => setFeedbackVisible(false)}
       />
+
+      <InviteFriendsModal
+        visible={growthInviteModalVisible}
+        onClose={() => {
+          setGrowthInviteModalVisible(false);
+          setShowGrowthPrompt(false);
+        }}
+        gatheringId={gatheringId}
+        gatheringTitle={gathering.title}
+      />
     </View>
   );
 }
@@ -389,6 +449,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   joinedBannerTitle: { ...typography.title, color: colors.textPrimary },
   joinedBannerSub: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 2 },
   joinedBannerFoot: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.sm },
+  growthPrompt: {
+    borderRadius: radius.lg, borderWidth: 1.5, padding: spacing.lg, alignItems: 'center',
+    marginBottom: spacing.lg, backgroundColor: colors.surface,
+  },
+  growthPromptTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
+  growthAction: { width: '100%', borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.sm },
+  growthActionSecondary: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border },
+  growthActionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  growthActionTextSecondary: { color: colors.textPrimary },
+  growthSkip: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   categoryBadge: { width: 40, height: 40, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   categoryBadgeIcon: { fontSize: 20 },
