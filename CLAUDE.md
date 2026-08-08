@@ -141,6 +141,69 @@ the host-check alone doesn't cover the inviter/invitee relationship at all.
   still can't gathering-invite each other end-to-end through the actual `InviteFriendsModal` UI,
   not only via direct RPC calls.
 
+## Aug 8 2026 — same session, found and fixed a systemic block-enforcement bug (`is_blocked`)
+
+Asked to keep auditing after the fix above. Read `BusinessDashboardScreen.js` (open in the
+user's editor) end to end looking for bugs in the newest, most-churned file, which led to
+checking the CRM messaging path's RLS. Found that `business_messages` had **no blocks check at
+all** on either INSERT policy ("Business owners can reply..." / "Followers can message a
+business they follow") — unlike the plain `messages` table, whose own INSERT policy already
+checks `not is_blocked(m.user_a, m.user_b)`. Wrote `20260808_business_messages_block_check.sql`
+to add the same check to both policies, using the existing shared `is_blocked()` helper.
+
+**While verifying that fix live, found something much bigger**: the test (a real block row,
+then attempting the now-guarded INSERT as the blocked business owner) still went through —
+the new check didn't fire. Root cause: `is_blocked(user_1, user_2)` is a plain SQL function,
+not `SECURITY DEFINER`, so when it queries the `blocks` table it runs under the **calling
+role's own RLS**, not a privileged bypass. `blocks`' own SELECT policy is `auth.uid() =
+blocker_id` only (intentional elsewhere — the blocked party isn't supposed to be able to tell
+they were blocked, e.g. `getMyBlockedUsers()` only ever lists blocks *the caller created*). Net
+effect: whenever the **blocked party** (not the blocker) is the one performing the RLS-checked
+action, `is_blocked()` silently returns `false`, because from their own session's point of
+view the block row doesn't exist to select. This isn't specific to the new `business_messages`
+policies — `is_blocked()` is referenced by **~10 policies total**: `matches` SELECT, `messages`
+SELECT + INSERT, `notices` SELECT (×2), `sightings` SELECT, `shared_playlist_items` SELECT +
+INSERT. Confirmed the real-world impact directly against production, not just theorized it:
+using the same two real profiles as the fix above (`Claude` blocked `Allen`, a real pre-existing
+match already existed between them from Jul 28), as `Allen` (the blocked party) `is_blocked(
+Claude, Allen)` returned `false`, the blocked match was still fully visible in `Allen`'s own
+`select * from matches`, and `Allen` could still successfully `INSERT` into `messages` for that
+match — **a blocked user could still see and message the person who blocked them**, the exact
+scenario the whole `blocks` feature exists to prevent.
+- Fixed in `20260808_is_blocked_security_definer.sql`: made `is_blocked` `SECURITY DEFINER`
+  (pinned `search_path`) so it sees the real `blocks` table regardless of which side of the
+  block the caller is on. To avoid this becoming a *new* leak — an authenticated user directly
+  RPC-calling `is_blocked(x, y)` to probe arbitrary pairs, including using it to detect "does
+  this stranger have me blocked," which the app has never exposed anywhere — added an internal
+  guard: it only ever returns a real answer when `auth.uid()` is one of the two supplied ids,
+  `false` otherwise. Checked every one of the ~10 existing policy expressions first to confirm
+  this is safe: every single one already independently requires `auth.uid()` = one of the same
+  two ids via its own `AND` clause, so the guard changes nothing that was already working.
+  Revoked `anon`/`public` execute (both had it before this fix, almost certainly just the
+  default-privileges grant this file's own "Known conventions" section already warns about,
+  not intentional), left `authenticated` only.
+- **Verified live, exhaustively, not just theorized**: re-ran the exact prior failing
+  `business_messages` insert as the blocked party — now correctly rejected. Directly compared
+  `is_blocked()`'s answer for the same real pair from both sides (blocker: `true`, correctly
+  unchanged; blocked party: `true`, was `false` before the fix) and confirmed the new guard
+  returns `false` for a pair not involving the caller at all (tested `Allen` probing an
+  unrelated third profile). Re-confirmed against the real `matches`/`messages` tables
+  specifically (not just the new `business_messages` policies this session actually touched):
+  while the test block was live, `Allen`'s own match list correctly dropped the blocked match
+  (an unrelated second real match stayed visible, proving this wasn't a blanket empty-result
+  bug), and `Allen`'s attempted `INSERT` into `messages` for that match was correctly rejected;
+  removing the block made the match reappear. All test rows (`blocks`, `business_followers`,
+  the one `business_messages` row that leaked through *before* the fix landed) deleted
+  afterward — confirmed all three tables empty again, production back to its pre-test state.
+- **Not done yet**: no manual run-through in a simulator/device (same standing gap as
+  everywhere else in this file) — this was entirely a backend RLS/function fix, no client file
+  touched. Next session should confirm in the running app: block someone you have a real
+  match/conversation with, confirm their messages/match genuinely disappear from your own UI
+  (not just via direct SQL), and confirm they can no longer send you a message or a business
+  reply. Also worth a broader look at `notices`/`sightings`/`shared_playlist_items` in the
+  running app, even though their `is_blocked()` usage was verified correct via the same shared
+  fix — none of them were individually re-tested end-to-end the way `matches`/`messages` were.
+
 ## Outstanding: Invite People (gathering + community)
 
 Scope, per the correction above: gatherings already had a real invite mechanism
