@@ -97,6 +97,26 @@ on a claim without checking it against the live code first):
    input this app needs is the 5-persona device QA pass below, which only a session with real
    device/simulator access (or the user directly) can actually run.
 
+**Explicit status of the second AI's own numbered P1 list, since it doesn't map 1:1 onto the
+plan above** (asked directly after this pass landed — recorded here so it's never ambiguous on
+a future resume):
+- **#4 Hardcoded URLs — DONE**, see step 1 above.
+- **#5 Pending-join withdraw request — DONE**, see step 2 above.
+- **#6 Client-side non-indexed search — deliberately NOT done, and correctly so.** The second
+  AI's own framing was "don't overengineer today if the dataset is tiny, but keep it on the
+  roadmap" — so nothing was built. Specifically refers to `DiscoverHubScreen.js`'s unified
+  search, which filters already-fetched gathering/community/offer lists client-side rather than
+  querying Postgres with a real text-search index — fine at this app's current real data volume
+  (a handful of rows per table), becomes a real cost/latency problem once those lists grow large
+  enough that "fetch everything, filter on-device" stops being cheap. No action item until then;
+  tracked here so it isn't silently forgotten either.
+- **#7 FeaturesOverview tap-through — not applicable, the second AI's premise didn't hold up on
+  inspection.** Confirmed by reading `FeaturesOverviewScreen.js` directly: it's a static
+  expand/collapse reference glossary (tap a category header → see plain-text feature
+  descriptions) with zero `navigation.navigate` calls anywhere in the file — there is no
+  "buttons that don't do anything" to fix or remove, because there are no buttons that claim to
+  go anywhere in the first place. Nothing built or changed for this item.
+
 **Device QA script — for whenever a real device pass happens, not something this sandboxed
 session can run itself. Kept here so it survives to that point regardless of how many sessions
 or restarts happen between now and then.**
