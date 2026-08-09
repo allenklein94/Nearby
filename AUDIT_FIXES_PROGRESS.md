@@ -11,7 +11,7 @@ often in this project).
 | 3 | Full schema pull, commit to git | DONE |
 | 4 | Re-verify is_blocked() live | DONE |
 | 5 | Re-verify business RPC ownership checks live | DONE |
-| 6 | Shared send-and-recover-on-failure for 4 chat screens | not started |
+| 6 | Shared send-and-recover-on-failure for 4 chat screens | DONE |
 | 7 | Proof-of-redemption mechanism for business perks | not started |
 | 8 | Payment processor decision (Stripe or explicit deprioritize) | not started |
 | 9 | Outbound CTAs + streak/tier push notification | not started |
@@ -75,3 +75,20 @@ just trusting the script's own tally. This is a one-time historical-baseline sna
 replacement for `supabase/migrations/` — the file's own header says so, and future schema
 changes should still go through a real migration file per this repo's standing (and
 previously not-held-to) convention.
+
+**Item 6** — new `src/hooks/useChatComposer.js`, one shared hook used by all 4 chat-style
+screens (`ChatScreen.js`, `CommunityChatScreen.js`, `GatheringChatScreen.js`,
+`BusinessConversationScreen.js`). Previously each screen cleared its composer immediately and
+swallowed a send failure with a "silently fail... would be nicer but simple for now" comment —
+same bug, written 4 times. The hook's `send(sendFn)` clears the composer optimistically, but on
+a thrown error from `sendFn` it restores the exact drafted text (so the same Send button is a
+real retry, no separate retry UI needed) and sets a visible `sendError` string each screen
+renders as a small banner above the input row. `ChatScreen.js`'s version is the one real
+non-mechanical merge: it keeps its pre-send moderation check and haptic outside the hook
+(unrelated to network failure) and, inside `sendFn`, now removes the optimistic message bubble
+on failure before rethrowing — previously a failed insert left a "sent" bubble on screen
+forever with just a `console.error`, no visible sign anything was wrong.
+`GatheringChatScreen.js`'s existing `draftText` route-param prefill (for the Gathering Hub's
+ice-breaker deep link) maps directly onto the hook's `initialText` param, unchanged. Verified
+via a full `npx expo export --platform ios` (clean) and a `@babel/core` compile of all 5
+touched files.

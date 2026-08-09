@@ -16,6 +16,7 @@ import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import ActionSheetModal from '../components/ActionSheetModal';
+import useChatComposer from '../hooks/useChatComposer';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
@@ -107,7 +108,7 @@ export default function ChatScreen({ route, navigation }) {
   const posthog = usePostHog();
   const headerHeight = useHeaderHeight();
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
+  const { text, setText, send, sendError } = useChatComposer();
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
   const [gatheringTitle, setGatheringTitle] = useState(null);
@@ -823,51 +824,56 @@ export default function ChatScreen({ route, navigation }) {
 
   async function sendMessage() {
     if (!text.trim()) return;
-    const body = text.trim();
 
-    const moderationResult = await checkTextModeration(body);
+    const moderationResult = await checkTextModeration(text.trim());
     if (!moderationResult.safe) {
       Alert.alert(t('chat.messageBlocked'), t('chat.messageBlockedText'));
       return;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setText('');
 
-    const optimisticMessage = {
-      id: `optimistic-${Date.now()}`,
-      match_id: matchId,
-      sender_id: userId,
-      body,
-      gif_url: null,
-      audio_url: null,
-      read_at: null,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimisticMessage]);
-    setIsStalled(false);
+    await send(async (body) => {
+      const optimisticMessage = {
+        id: `optimistic-${Date.now()}`,
+        match_id: matchId,
+        sender_id: userId,
+        body,
+        gif_url: null,
+        audio_url: null,
+        read_at: null,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
+      setIsStalled(false);
 
-    const { data, error } = await supabase
-      .from('messages')
-      .insert({ match_id: matchId, sender_id: userId, body })
-      .select()
-      .single();
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .insert({ match_id: matchId, sender_id: userId, body })
+          .select()
+          .single();
 
-    if (error) {
-      console.error('sendMessage error', error);
-      return;
-    }
+        if (error) throw error;
 
-    // Recorded as a permanent fact on the match itself, not derived
-    // from the current messages list — a disappearing message can
-    // vanish afterward, but "did they ever send the first message"
-    // needs to stay true forever once it's genuinely happened.
-    if (userId === designatedFirstMessengerId) {
-      await supabase.from('matches').update({ first_message_sent: true }).eq('id', matchId).select();
-    }
+        // Recorded as a permanent fact on the match itself, not derived
+        // from the current messages list — a disappearing message can
+        // vanish afterward, but "did they ever send the first message"
+        // needs to stay true forever once it's genuinely happened.
+        if (userId === designatedFirstMessengerId) {
+          await supabase.from('matches').update({ first_message_sent: true }).eq('id', matchId).select();
+        }
 
-    posthog.capture('message_sent');
-    setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+        posthog.capture('message_sent');
+        setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+      } catch (e) {
+        // Remove the optimistic bubble so a failed send doesn't look like
+        // it went through — the hook restores the draft and shows a real
+        // error instead of silently dropping the message.
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id));
+        throw e;
+      }
+    });
   }
 
   async function sendGif(gifUrl) {
@@ -1186,6 +1192,12 @@ export default function ChatScreen({ route, navigation }) {
           </View>
         )}
 
+        {!!sendError && (
+          <View style={styles.sendErrorBanner}>
+            <Text style={styles.sendErrorText}>{sendError}</Text>
+          </View>
+        )}
+
         {isBlockedFromSending ? (
           <View style={styles.blockedRow}>
             <Text style={styles.blockedText}>
@@ -1370,6 +1382,8 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surfaceElevated,
   },
   blockedText: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  sendErrorBanner: { paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  sendErrorText: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

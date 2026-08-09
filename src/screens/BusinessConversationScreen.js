@@ -5,13 +5,14 @@ import { getConversationWithBusiness, sendMessageToBusiness } from '../services/
 import ReportBlockModal from '../components/ReportBlockModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
+import useChatComposer from '../hooks/useChatComposer';
 
 export default function BusinessConversationScreen({ route, navigation }) {
   const { partnerId, partnerName } = route.params;
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
+  const { text, setText, send, sendError } = useChatComposer();
   const [reportTarget, setReportTarget] = useState(null);
 
   const load = useCallback(async () => {
@@ -50,15 +51,10 @@ export default function BusinessConversationScreen({ route, navigation }) {
   }
 
   async function handleSend() {
-    if (!text.trim()) return;
-    const body = text.trim();
-    setText('');
-    try {
+    await send(async (body) => {
       await sendMessageToBusiness(partnerId, body);
       await load();
-    } catch (e) {
-      // fail quietly, message stays in composer would be nicer but simple for now
-    }
+    });
   }
 
   return (
@@ -80,6 +76,11 @@ export default function BusinessConversationScreen({ route, navigation }) {
             </View>
           )}
         />
+        {!!sendError && (
+          <View style={styles.sendErrorBanner}>
+            <Text style={styles.sendErrorText}>{sendError}</Text>
+          </View>
+        )}
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
@@ -119,6 +120,8 @@ const getStyles = (colors) => StyleSheet.create({
   bubbleFromBusiness: { backgroundColor: colors.surface, alignSelf: 'flex-start', borderColor: colors.border },
   bubbleText: { color: '#fff', fontSize: 14 },
   bubbleTextFromBusiness: { color: colors.textPrimary, fontSize: 14 },
+  sendErrorBanner: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  sendErrorText: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   input: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.textPrimary, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },

@@ -8,6 +8,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { Alert } from 'react-native';
+import useChatComposer from '../hooks/useChatComposer';
 
 export default function GatheringChatScreen({ route }) {
   const { gatheringId, gatheringTitle, draftText } = route.params;
@@ -86,7 +87,7 @@ export default function GatheringChatScreen({ route }) {
   }
   const styles = getStyles(colors);
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState(draftText ?? '');
+  const { text, setText, send, sendError } = useChatComposer(draftText ?? '');
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
@@ -114,17 +115,11 @@ export default function GatheringChatScreen({ route }) {
   }, [load]);
 
   async function handleSend() {
-    if (!text.trim()) return;
-    const body = text.trim();
-    setText('');
-    try {
+    await send(async (body) => {
       await sendGatheringMessage(gatheringId, body);
       await load();
       listRef.current?.scrollToEnd({ animated: true });
-    } catch (e) {
-      // silently fail, message stays in composer would be nicer but
-      // keeping this simple for now
-    }
+    });
   }
 
   return (
@@ -171,6 +166,11 @@ export default function GatheringChatScreen({ route }) {
           }}
         />
 
+        {!!sendError && (
+          <View style={styles.sendErrorBanner}>
+            <Text style={styles.sendErrorText}>{sendError}</Text>
+          </View>
+        )}
         <View style={styles.inputRow}>
           <TouchableOpacity
             onPress={handlePostStory}
@@ -228,6 +228,8 @@ const getStyles = (colors) => StyleSheet.create({
   bubbleMe: { backgroundColor: colors.primary, borderColor: colors.primary },
   bubbleText: { color: colors.textPrimary, fontSize: 14 },
   bubbleTextMe: { color: '#fff' },
+  sendErrorBanner: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  sendErrorText: { color: colors.danger, fontSize: 12, textAlign: 'center' },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
   input: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.textPrimary, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
