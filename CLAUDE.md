@@ -4,6 +4,67 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 9 2026 — prioritized the remaining PRODUCT_AUDIT items, fixed the top one (business-request double-review gap)
+
+Asked directly to prioritize what's left. Cross-checked `PRODUCT_AUDIT/AUDIT_CHANGELOG.md`'s
+"STILL PRESENT" list (from the Aug 9 refresh) against the rest of this file rather than trusting
+it at face value — several of those items (withdraw-request, client-side search, the 12-file
+hardcoded-URL scope) had already been closed later the same day and the changelog itself hadn't
+been touched since. The genuinely-still-open list, ranked: (1) `AdminBusinessRequestsScreen.js`'s
+Approve(RPC)/Deny(raw update) asymmetry — investigated and found a real, previously-undocumented
+bug underneath the inconsistency, fixed this pass, see below; (2) Stripe/payment processor —
+deliberately deferred, needs the user present for a real external account; (3) AI-generated
+cover photos, true skip-location in Create, the three large-file refactors — all previously
+flagged as deliberate, real-structural-change deferrals, not oversights, left untouched; (4) the
+5-persona device QA pass — blocked, this sandbox has never had device/simulator access; (5)
+`ChemistryDiaryListScreen`'s profile-entry-point gap and non-indexed offers search — real but
+low-priority, small scope, left as previously flagged. User chose to fix item 1 now.
+
+**`AdminBusinessRequestsScreen.js` double-review gap — DONE.** The audit's own framing was
+"Approve goes through an RPC, Deny is a raw client `.update()` — an integrity asymmetry."
+Checked live RLS on `business_partner_requests` first: the raw `.update()` was never actually a
+security hole (the table's only UPDATE policy is `is_admin = true`, confirmed via
+`pg_policies`) — but reading `approve_business_partner_request()`'s actual body turned up a real,
+more serious bug the "asymmetry" framing had obscured: it never checked the request was still
+`'pending'` before running. Two admins approving the same request concurrently, or a single
+retried call, would have created a **second** `brand_partners` row, re-set the requester's
+`managed_partner_id`, and re-linked their gatherings/communities a second time — a real
+double-approval bug, not just a style inconsistency.
+- Fixed in `20260809_business_request_review_guard.sql`: `approve_business_partner_request()`
+  now only matches a row where `status = 'pending'`, raising `'Request not found or already
+  reviewed'` otherwise — same guard shape `admin_approve_id_verification()` already established
+  for the identical double-review risk on ID verification. New
+  `deny_business_partner_request(request_id_param)` RPC, same admin check + pending guard, gives
+  Deny the same shape as Approve instead of a raw table write with different guarantees.
+  `AdminBusinessRequestsScreen.js`'s `handleDeny()` now calls it instead of the direct
+  `.update()`.
+- **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+  `deny_business_partner_request` grants (`authenticated` yes, `anon` no) and that
+  `approve_business_partner_request`'s existing grants survived the `CREATE OR REPLACE`. Real
+  end-to-end test with two disposable test requests: a non-admin's deny attempt correctly
+  rejected; the real admin's (`Allen`) deny succeeded; the same admin denying the *same* request
+  again correctly rejected (`Request not found or already reviewed`); the real admin's approve
+  of a second test request succeeded (real `brand_partners` row created, `managed_partner_id`
+  set correctly); **re-running that exact approve call a second time — the literal double-
+  approval bug this fix targets — correctly rejected, and confirmed via a direct count that no
+  second `brand_partners` row was created** (the bug this fix exists to prevent, proven to
+  actually be prevented, not just that the guard clause exists). All test rows deleted and
+  `managed_partner_id` reset afterward; confirmed production back to its exact pre-test baseline.
+- **Verified via a real from-scratch migration replay**, per this file's migration-discipline
+  rule: pulled a fresh `supabase/postgres:15.1.0.147` container (this one needed ~60s for its own
+  background init scripts — `pgsodium`/`supabase_vault`/`pg_graphql` — to finish before the
+  schema reset would hold; two earlier attempts that didn't wait long enough hit transient
+  extension/init errors unrelated to this migration, resolved by just waiting longer, not by
+  changing anything in the file), dropped and recreated an empty `public` schema, patched the
+  two known image-version gaps, ran the full `supabase/migrations/` folder in order — exit 0,
+  all 6 files applied cleanly including this one, both new/changed functions confirmed to exist
+  afterward. Container removed.
+- Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+  was an edit to an existing screen plus one new migration, no new client files).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through of the admin screen's Approve/Deny buttons — next session should confirm both still
+  work correctly in the running app as a real admin account.
+
 ## Aug 9 2026 — second AI's post-refresh review: shift from build→audit loop to hardening + device QA — plan steps 1-4 DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section

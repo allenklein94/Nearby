@@ -50,7 +50,7 @@ export default function AdminBusinessRequestsScreen() {
   async function handleDeny(request) {
     setProcessingIds((prev) => ({ ...prev, [request.id]: true }));
     try {
-      await supabase.from('business_partner_requests').update({ status: 'denied', reviewed_at: new Date().toISOString() }).eq('id', request.id);
+      await supabase.rpc('deny_business_partner_request', { request_id_param: request.id });
       load();
     } catch (e) {
       Alert.alert('Error', e.message);
