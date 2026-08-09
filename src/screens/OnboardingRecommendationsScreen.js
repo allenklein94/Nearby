@@ -48,7 +48,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
               <TouchableOpacity
                 key={r.id}
                 style={styles.card}
-                onPress={() => navigation.navigate('MainTabs')}
+                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: r.id })}
                 activeOpacity={0.85}
                 accessibilityLabel={`${r.title}, ${formatDate(r.scheduled_at)}`}
                 accessibilityRole="button"
