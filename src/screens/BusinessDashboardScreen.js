@@ -694,7 +694,8 @@ export default function BusinessDashboardScreen({ navigation }) {
             )}
 
             {section === 'insights' && (
-              (insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
+              <>
+              {(insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
                   {estimatedOwed.billingModel && estimatedOwed.billingModel !== 'custom' && (
                     <View style={styles.estimatedOwedBanner}>
@@ -721,7 +722,16 @@ export default function BusinessDashboardScreen({ navigation }) {
                 </View>
               ) : (
                 <Text style={styles.emptyText}>Not enough activity yet to show real insights.</Text>
-              )
+              )}
+              <TouchableOpacity
+                style={[styles.createOfferButton, { marginTop: spacing.lg }]}
+                onPress={() => navigation.navigate('BusinessAIAssistant', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
+                accessibilityLabel="Ask the AI Assistant about your business"
+                accessibilityRole="button"
+              >
+                <Text style={styles.createOfferButtonText}>✨ Ask the AI Assistant</Text>
+              </TouchableOpacity>
+              </>
             )}
 
             {section === 'business' && (

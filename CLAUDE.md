@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Remaining PRODUCT_AUDIT polish bugs + almost-full nudge + CRM notes + Business AI Assistant (Aug 9 2026) — items 1, 3, 4 DONE, rest in progress
+## Outstanding: Remaining PRODUCT_AUDIT polish bugs + almost-full nudge + CRM notes + Business AI Assistant (Aug 9 2026) — DONE, all six items closed
 
 **Status, updated as each piece lands (see plan below for full detail on each item)**:
 - Item 1 (small polish bugs: dead `NoticesScreen.js`, dangling `MatchesScreen` import,
@@ -70,8 +70,55 @@ session has the same context as the chat session that built most of this.
   correctly returned zero rows (RLS isolation, not just the RPC-level check); deleted the test
   row afterward via `delete_business_customer_note` and confirmed the table is back to 0 rows.
   Verified via a full `npx expo export --platform ios` (clean build).
-- Item 6 (Business AI Assistant) — not yet started as of this status update, see the plan below
-  for exact design.
+- Item 6 (Business AI Assistant) — **DONE**. New `supabase/functions/business-ai-assistant/
+  index.ts`, deployed to production and confirmed `verify_jwt: true` via the Management API
+  (correct on first deploy this time, not left `false` like `ai-concierge`'s first deploy was).
+  Gated on business ownership (`profiles.managed_partner_id === partnerId`, read via the
+  service-role client, same pattern `ai-concierge` already uses for its own `is_premium` read)
+  instead of premium — this is an owner-tiered feature, not a premium one. Rate-limited via the
+  same shared `check_and_increment_ai_use`, `daily_limit: 150` (the per-message-feature
+  convention, matching `translate-message`/`rehearsal-chat` — a business owner asking several
+  follow-ups in one session is the expected shape here, not a single one-off generation like
+  `create-assistant`'s 150-used-as-"feels-unlimited" reasoning, still the same number for a
+  different reason). **A real, non-obvious wiring problem found and solved while building
+  this**: the four business-stats RPCs (`get_business_dashboard_stats`/`_growth`/`_insights`/
+  `_visit_frequency`) all internally gate on `auth.uid() = ` the caller's own
+  `managed_partner_id` (the Aug 7 ownership fix) — calling them from the Edge Function via the
+  service-role client would resolve `auth.uid()` to null and silently return empty data, not an
+  error, which would have shipped a assistant that always says "no data" without ever surfacing
+  why. Fixed by calling those four RPCs through a second client scoped to the caller's own
+  bearer token (`SUPABASE_ANON_KEY` + the original `Authorization` header passed through) —
+  the exact same shape `BusinessDashboardScreen.js` itself already uses to call these RPCs, so
+  `auth.uid()` resolves correctly via PostgREST's own JWT handling; the service-role client is
+  still used for the auth/ownership/rate-limit steps, which don't need a user-scoped `auth.uid()`.
+  Only real, already-aggregated numbers (no raw PII, no other users' free text) cross into the
+  prompt, wrapped in an explicit `<business_stats>`/`<owner_question>` data boundary — smaller
+  injection surface than `ai-concierge`'s candidate-title problem, since there's no
+  user-generated content from other users anywhere in this prompt. New
+  `src/services/businessAI.js` (`askBusinessAssistant(partnerId, question)`) +
+  `src/screens/BusinessAIAssistantScreen.js` (a real chat-thread UI, local-state only — no
+  conversation persisted server-side, matching `create-assistant`/`ai-concierge`'s stateless
+  single-question shape, just rendered as a running local thread instead of a one-shot result)
+  + `BusinessAIAssistant` route (`RootNavigator.js`), reachable from a new "✨ Ask the AI
+  Assistant" button on `BusinessDashboardScreen.js`'s Insights tab (shown regardless of whether
+  there's enough activity for the static insights card above it to render, since the assistant
+  itself honestly says so when there isn't rather than needing to be hidden). **Verified**:
+  confirmed the deployed function's `verify_jwt: true` directly via the Management API: and that
+  the gateway correctly 401s an unauthenticated request (`curl`). **Not done, same standing gap
+  as `ai-concierge`/`create-assistant`**: the actual Anthropic call path (ownership check →
+  rate limit → the four-RPC fetch → the real model response) was not exercised end-to-end —
+  this sandbox has no way to mint a real signed-in session's access token. Confidence rests on
+  matching the already-proven-in-production `create-assistant`/`ai-concierge` pattern
+  line-for-line plus the ownership/auth.uid() fix reasoned through above, not a direct test of
+  this specific function's success path. Verified via a full `npx expo export --platform ios`
+  (clean build).
+
+**Standing limitation, same as everywhere else in this file**: no manual simulator/device
+run-through for any of the client-side pieces in this whole section (Edit Profile modal, CRM
+notes field, almost-full nudge, non-app-user share action, AI Assistant chat screen) — flagged
+for next session same as always. Everything schema/RPC-level was verified live against
+production with real test data and cleaned up afterward, per this file's established
+convention.
 
 
 
