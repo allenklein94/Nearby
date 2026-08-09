@@ -5,8 +5,8 @@ import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
-import { getNearbyGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
-import { getPublicCommunities, getMyCommunities } from '../services/communities';
+import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
+import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl } from '../services/places';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -74,6 +74,17 @@ export default function DiscoverHubScreen({ navigation }) {
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const placesRequestId = useRef(0);
 
+  // Real search results for gatherings/communities, fetched server-side via
+  // searchGatherings()/searchPublicCommunities() (indexed ILIKE queries)
+  // instead of filtering the already-fetched `gatherings`/`communities`
+  // arrays client-side. Only populated once a real search is active — see
+  // the debounced effect below.
+  const [searchedGatherings, setSearchedGatherings] = useState([]);
+  const [searchedCommunities, setSearchedCommunities] = useState([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+  const searchRequestId = useRef(0);
+  const joinedCommunityIdsRef = useRef(new Set());
+
   useFocusEffect(
     useCallback(() => {
       loadPublicStories();
@@ -104,6 +115,7 @@ export default function DiscoverHubScreen({ navigation }) {
       ]);
 
       const joinedCommunityIds = new Set(myCommunities.map((c) => c.id));
+      joinedCommunityIdsRef.current = joinedCommunityIds;
       setGatherings(gatheringsData);
       setCommunities(publicCommunities.filter((c) => !joinedCommunityIds.has(c.id)));
       setOffers(offersData);
@@ -146,6 +158,38 @@ export default function DiscoverHubScreen({ navigation }) {
     return () => clearTimeout(timer);
   }, [typeFilter, placesCategory, searchQuery, userLocation]);
 
+  // Real gathering/community search, server-side and indexed (trigram GIN
+  // indexes, 20260809_indexed_text_search.sql) rather than downloading every
+  // future gathering / public community and filtering it client-side.
+  // Same 2-character minimum and 350ms debounce as the Places search above,
+  // for the same reason — no query fired on every keystroke.
+  useEffect(() => {
+    const term = searchQuery.trim();
+    if (term.length < 2) {
+      setSearchedGatherings([]);
+      setSearchedCommunities([]);
+      return;
+    }
+    const thisRequestId = ++searchRequestId.current;
+    const timer = setTimeout(async () => {
+      setLoadingSearch(true);
+      try {
+        const [gatheringResults, communityResults] = await Promise.all([
+          searchGatherings(term, 'wide'),
+          searchPublicCommunities(term),
+        ]);
+        if (thisRequestId === searchRequestId.current) {
+          setSearchedGatherings(gatheringResults);
+          setSearchedCommunities(communityResults.filter((c) => !joinedCommunityIdsRef.current.has(c.id)));
+        }
+      } catch (e) {
+        console.error('Discover search failed', e);
+      }
+      if (thisRequestId === searchRequestId.current) setLoadingSearch(false);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   async function loadPublicStories() {
     try {
       const grouped = await getPublicStoriesGrouped();
@@ -172,14 +216,26 @@ export default function DiscoverHubScreen({ navigation }) {
   }
 
   const q = searchQuery.trim().toLowerCase();
-  const isSearching = q.length > 0;
+  // 2-character minimum, matching the Places search's own established
+  // threshold (and the debounced effect above, which only fires a real
+  // gatherings/communities query at this same length) — a single keystroke
+  // doesn't count as "searching" anywhere else on this screen either.
+  const isSearching = q.length >= 2;
 
-  const filteredGatherings = gatherings.filter((g) =>
-    !q || g.title?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q)
-  );
-  const filteredCommunities = communities.filter((c) =>
-    !q || c.name?.toLowerCase().includes(q) || c.description?.toLowerCase().includes(q)
-  );
+  // Gatherings/communities: real server-side, indexed search results
+  // (searchedGatherings/searchedCommunities, populated by the debounced
+  // effect above) once actively searching, instead of client-side
+  // .filter().includes() over the full already-fetched browse lists.
+  const filteredGatherings = isSearching ? searchedGatherings : gatherings;
+  const filteredCommunities = isSearching ? searchedCommunities : communities;
+  // Offers stay client-side: getActiveOffers()'s base query is already
+  // narrow (active, non-gathering offers only), the real business-partner
+  // count this app will have for a long while keeps that list small, and
+  // matching brand_partners.name server-side would need a genuine
+  // cross-table search (PostgREST's .or() can't OR a condition on a joined
+  // table against one on the base table in a single request) — not worth
+  // building for a list this size. Flagged here rather than silently
+  // left unexplained.
   const filteredOffers = offers.filter((o) =>
     !q || o.title?.toLowerCase().includes(q) || o.brand_partners?.name?.toLowerCase().includes(q) || o.description?.toLowerCase().includes(q)
   );
@@ -417,7 +473,21 @@ export default function DiscoverHubScreen({ navigation }) {
             </>
           )}
 
-          {showGatherings && gatheringsToShow.length > 0 && (
+          {showGatherings && isSearching && loadingSearch && (
+            <>
+              <Text style={styles.sectionHeader}>Gatherings</Text>
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+            </>
+          )}
+
+          {showGatherings && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Gatherings</Text>
+              <Text style={styles.emptyText}>No gatherings match "{searchQuery.trim()}".</Text>
+            </>
+          )}
+
+          {showGatherings && !(isSearching && loadingSearch) && gatheringsToShow.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
               {gatheringsToShow.map((g) => (
@@ -449,7 +519,21 @@ export default function DiscoverHubScreen({ navigation }) {
             </>
           )}
 
-          {showCommunities && communitiesToShow.length > 0 && (
+          {showCommunities && isSearching && loadingSearch && (
+            <>
+              <Text style={styles.sectionHeader}>Communities</Text>
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+            </>
+          )}
+
+          {showCommunities && isSearching && !loadingSearch && communitiesToShow.length === 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Communities</Text>
+              <Text style={styles.emptyText}>No communities match "{searchQuery.trim()}".</Text>
+            </>
+          )}
+
+          {showCommunities && !(isSearching && loadingSearch) && communitiesToShow.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>Communities</Text>
               {communitiesToShow.map((c) => (

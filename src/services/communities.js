@@ -97,7 +97,7 @@ export async function getMyCommunities() {
 export async function getPublicCommunities() {
   const { data, error } = await supabase
     .from('communities')
-    .select('id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id')
+    .select(PUBLIC_COMMUNITY_SELECT)
     .eq('is_public', true)
     .order('created_at', { ascending: false });
 
@@ -106,6 +106,35 @@ export async function getPublicCommunities() {
     return [];
   }
   return data ?? [];
+}
+
+const PUBLIC_COMMUNITY_SELECT = 'id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id';
+
+// Real, indexed, server-side search — used by DiscoverHubScreen's search box
+// instead of downloading every public community and filtering client-side.
+// Backed by the trigram GIN indexes added in 20260809_indexed_text_search.sql.
+// Base filter (is_public = true) matches getPublicCommunities() exactly, so
+// search can never surface a private community the caller isn't a member of.
+export async function searchPublicCommunities(queryText) {
+  const term = (queryText ?? '').trim();
+  if (!term) return [];
+  const escaped = term.replace(/[%_]/g, '\\$&');
+
+  const baseQuery = () => supabase
+    .from('communities')
+    .select(PUBLIC_COMMUNITY_SELECT)
+    .eq('is_public', true);
+
+  const [nameRes, descriptionRes] = await Promise.all([
+    baseQuery().ilike('name', `%${escaped}%`),
+    baseQuery().ilike('description', `%${escaped}%`),
+  ]);
+  if (nameRes.error) console.error('searchPublicCommunities name error', nameRes.error);
+  if (descriptionRes.error) console.error('searchPublicCommunities description error', descriptionRes.error);
+
+  const byId = new Map();
+  for (const row of [...(nameRes.data ?? []), ...(descriptionRes.data ?? [])]) byId.set(row.id, row);
+  return [...byId.values()];
 }
 
 export async function getCommunityMemberCount(communityId) {

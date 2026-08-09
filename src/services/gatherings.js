@@ -68,70 +68,53 @@ export async function createGathering({ title, description, interestTag, schedul
 
 const LOCAL_TIER_MAX_MILES = 1;
 
-export async function getNearbyGatherings(tier = 'local') {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
+const NEARBY_GATHERING_SELECT = `${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, profiles(display_name, photo_url))`;
 
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== 'granted') return [];
-
-  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  const myLat = location.coords.latitude;
-  const myLng = location.coords.longitude;
-
-  const { data: blockedByMe } = await supabase
-    .from('blocks')
-    .select('blocked_id')
-    .eq('blocker_id', userId);
-  const { data: blockedMe } = await supabase
-    .from('blocks')
-    .select('blocker_id')
-    .eq('blocked_id', userId);
-
-  const excludedHostIds = new Set([
-    ...(blockedByMe ?? []).map((b) => b.blocked_id),
-    ...(blockedMe ?? []).map((b) => b.blocker_id),
+// Shared by getNearbyGatherings() and searchGatherings() so the two entry
+// points can never drift on who's allowed to see what — blocks, women-only,
+// and the Create 2.0 discovery-scope funnel (friends/community/invite_only)
+// are all real, privacy-relevant checks that must apply identically
+// regardless of whether the caller arrived via plain browse or via search.
+async function fetchGatheringVisibilityContext(userId) {
+  const [blockedByMeRes, blockedMeRes, profileRes, myFriends, myCommunities] = await Promise.all([
+    supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
+    supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
+    supabase.from('profiles').select('interests, gender, basics').eq('id', userId).single(),
+    getMyFriends(),
+    getMyCommunities(),
   ]);
 
-  const { data: myProfile } = await supabase.from('profiles').select('interests, gender, basics').eq('id', userId).single();
-  const myInterests = myProfile?.interests ?? [];
-  const myGender = (myProfile?.gender || myProfile?.basics?.gender || '').toLowerCase();
-  const isWoman = ['female', 'woman'].includes((myGender ?? '').toLowerCase());
-
-  // Create 2.0's discovery-scope filter, run against the same
-  // already-fetched list rather than a new query per gathering — same
-  // "filter the funnel client-side" pattern as women_only/blocks above.
-  // invite_only is always excluded here; a shared link or accepted
-  // invite still works via getGatheringById, matching how "private"
-  // (is_public=false) gatherings have always behaved.
-  const [myFriends, myCommunities] = await Promise.all([getMyFriends(), getMyCommunities()]);
+  const excludedHostIds = new Set([
+    ...(blockedByMeRes.data ?? []).map((b) => b.blocked_id),
+    ...(blockedMeRes.data ?? []).map((b) => b.blocker_id),
+  ]);
+  const myInterests = profileRes.data?.interests ?? [];
+  const myGender = (profileRes.data?.gender || profileRes.data?.basics?.gender || '').toLowerCase();
+  const isWoman = ['female', 'woman'].includes(myGender);
   const friendIds = new Set(myFriends.map((f) => f.id));
   const communityIds = new Set(myCommunities.map((c) => c.id));
 
-  const { data, error } = await supabase
-    .from('gatherings')
-    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, profiles(display_name, photo_url))`)
-    .neq('host_id', userId)
-    .gt('scheduled_at', new Date().toISOString())
-    .order('scheduled_at', { ascending: true });
+  return { excludedHostIds, myInterests, isWoman, friendIds, communityIds };
+}
 
-  if (error) {
-    console.error('getNearbyGatherings error', error);
-    return [];
-  }
-
-  const filtered = (data ?? [])
-    .filter((gathering) => !excludedHostIds.has(gathering.host_id))
-    .filter((gathering) => !gathering.women_only || isWoman)
+// invite_only is always excluded here; a shared link or accepted invite
+// still works via getGatheringById, matching how "private" (is_public=false)
+// gatherings have always behaved.
+function applyGatheringVisibilityFilters(rows, context) {
+  return rows
+    .filter((gathering) => !context.excludedHostIds.has(gathering.host_id))
+    .filter((gathering) => !gathering.women_only || context.isWoman)
     .filter((gathering) => {
       switch (gathering.visibility) {
-        case 'friends': return friendIds.has(gathering.host_id);
-        case 'community': return gathering.community_id && communityIds.has(gathering.community_id);
+        case 'friends': return context.friendIds.has(gathering.host_id);
+        case 'community': return gathering.community_id && context.communityIds.has(gathering.community_id);
         case 'invite_only': return false;
         default: return true;
       }
     });
+}
 
+async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInterests, tier) {
   const gatheringIds = filtered.map((g) => g.id);
   let distanceById = {};
   if (gatheringIds.length > 0) {
@@ -170,6 +153,88 @@ export async function getNearbyGatherings(tier = 'local') {
     })
     .filter((gathering) => gathering.is_public || gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
     .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
+}
+
+export async function getNearbyGatherings(tier = 'local') {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') return [];
+
+  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const myLat = location.coords.latitude;
+  const myLng = location.coords.longitude;
+
+  const context = await fetchGatheringVisibilityContext(userId);
+
+  const { data, error } = await supabase
+    .from('gatherings')
+    .select(NEARBY_GATHERING_SELECT)
+    .neq('host_id', userId)
+    .gt('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true });
+
+  if (error) {
+    console.error('getNearbyGatherings error', error);
+    return [];
+  }
+
+  const filtered = applyGatheringVisibilityFilters(data ?? [], context);
+  return enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier);
+}
+
+// Real, indexed, server-side search — used by DiscoverHubScreen's search box
+// instead of downloading every future gathering and filtering it client-side
+// with a plain .includes() substring check. The ILIKE queries below are
+// backed by the trigram GIN indexes added in
+// 20260809_indexed_text_search.sql. Reuses the exact same
+// applyGatheringVisibilityFilters() pipeline as getNearbyGatherings() so a
+// search can never surface a gathering plain browse would have excluded
+// (a blocked host, a friends/community-only gathering the caller doesn't
+// qualify for, an invite_only gathering).
+export async function searchGatherings(queryText, tier = 'wide') {
+  const term = (queryText ?? '').trim();
+  if (!term) return [];
+  // Escape ILIKE's own wildcard characters so a literal % or _ typed by the
+  // user is matched literally, not treated as a wildcard.
+  const escaped = term.replace(/[%_]/g, '\\$&');
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') return [];
+
+  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const myLat = location.coords.latitude;
+  const myLng = location.coords.longitude;
+
+  const context = await fetchGatheringVisibilityContext(userId);
+
+  const baseQuery = () => supabase
+    .from('gatherings')
+    .select(NEARBY_GATHERING_SELECT)
+    .neq('host_id', userId)
+    .gt('scheduled_at', new Date().toISOString());
+
+  // Two separate ILIKE queries merged client-side, rather than one .or(...)
+  // string built from user input — PostgREST's .or() filter syntax gives
+  // comma/parenthesis special meaning, and building that string out of raw
+  // search text is an unnecessary parsing/injection surface to introduce
+  // for what a plain .ilike() call already does safely per-column.
+  const [titleRes, descriptionRes] = await Promise.all([
+    baseQuery().ilike('title', `%${escaped}%`),
+    baseQuery().ilike('description', `%${escaped}%`),
+  ]);
+  if (titleRes.error) console.error('searchGatherings title error', titleRes.error);
+  if (descriptionRes.error) console.error('searchGatherings description error', descriptionRes.error);
+
+  const byId = new Map();
+  for (const row of [...(titleRes.data ?? []), ...(descriptionRes.data ?? [])]) byId.set(row.id, row);
+
+  const filtered = applyGatheringVisibilityFilters([...byId.values()], context);
+  return enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier);
 }
 
 export async function getMyTopGatheringCategories() {

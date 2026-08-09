@@ -102,14 +102,60 @@ plan above** (asked directly after this pass landed — recorded here so it's ne
 a future resume):
 - **#4 Hardcoded URLs — DONE**, see step 1 above.
 - **#5 Pending-join withdraw request — DONE**, see step 2 above.
-- **#6 Client-side non-indexed search — deliberately NOT done, and correctly so.** The second
-  AI's own framing was "don't overengineer today if the dataset is tiny, but keep it on the
-  roadmap" — so nothing was built. Specifically refers to `DiscoverHubScreen.js`'s unified
-  search, which filters already-fetched gathering/community/offer lists client-side rather than
-  querying Postgres with a real text-search index — fine at this app's current real data volume
-  (a handful of rows per table), becomes a real cost/latency problem once those lists grow large
-  enough that "fetch everything, filter on-device" stops being cheap. No action item until then;
-  tracked here so it isn't silently forgotten either.
+- **#6 Client-side non-indexed search — DONE, built when the user asked to do it now rather
+  than wait.** `DiscoverHubScreen.js`'s unified search previously filtered the already-fetched
+  full `gatherings`/`communities` arrays client-side with a plain lowercase `.includes()`
+  substring check, unconditionally downloaded regardless of whether the user was searching at
+  all. Scoped deliberately to gatherings + communities only (see the offers note below).
+  - **Schema** (`20260809_indexed_text_search.sql`): enabled `pg_trgm`, added GIN trigram
+    indexes on `gatherings.title`, `gatherings.description`, `communities.name`,
+    `communities.description`. Applied to production and verified two ways: confirmed the
+    extension and all 4 indexes exist live via `pg_extension`/`pg_indexes`, then inserted a
+    real temporary gathering + community with a distinctive title/name/description
+    (`ZzxSearchVerify...`), ran the actual `ILIKE '%zzxsearchverify%'` queries against both
+    columns on each table and got real matches, confirmed a non-matching term correctly
+    returned zero rows, and — with `set enable_seqscan = off` — confirmed via `EXPLAIN` that
+    Postgres's planner genuinely chooses `Bitmap Index Scan on gatherings_title_trgm_idx` /
+    `communities_name_trgm_idx` for this exact query shape, not just that the index exists
+    unused. Both test rows deleted afterward; production confirmed back to its exact pre-test
+    baseline (5 gatherings, 0 communities). Also replayed the full `supabase/migrations/`
+    folder against a truly empty database (the Docker method from the new migration-discipline
+    rule below) — exit 0, all 4 files applied cleanly in order, this migration included.
+  - **`services/gatherings.js` refactored**, not just extended: `getNearbyGatherings()`'s
+    blocks/women-only/friends-or-community-or-invite-only visibility pipeline was factored out
+    into shared `fetchGatheringVisibilityContext()` / `applyGatheringVisibilityFilters()` /
+    `enrichGatheringsWithDistanceAndSort()` helpers, so the new `searchGatherings(queryText,
+    tier)` reuses the exact same privacy-relevant filtering on its server-side-narrowed row set
+    — a search can never surface a gathering plain browse would have excluded (a blocked host,
+    a friends/community-only gathering the caller doesn't qualify for, an invite-only
+    gathering). Runs two separate `.ilike()` queries (title, description) and merges by id in
+    JS, rather than building a `.or('title.ilike....,description.ilike....')` string out of raw
+    user input — PostgREST's `.or()` syntax gives comma/parenthesis real meaning, and a plain
+    per-column `.ilike()` call sidesteps that parsing surface entirely. ILIKE's own `%`/`_`
+    wildcards are escaped so a literal percent sign or underscore typed by a user is matched
+    literally.
+  - **`services/communities.js`**: new `searchPublicCommunities(queryText)`, same two-query
+    merge shape, scoped to `is_public = true` — identical base filter to the existing
+    `getPublicCommunities()` (now also using the same shared `PUBLIC_COMMUNITY_SELECT`
+    constant), so search can't surface a private community the caller isn't a member of.
+  - **`DiscoverHubScreen.js`**: new debounced effect (350ms, 2-character minimum — matching the
+    screen's own pre-existing Places search threshold exactly) calls both search functions and
+    stores results separately from the always-fetched browse lists; `filteredGatherings`/
+    `filteredCommunities` read from the search results while actively searching, the untouched
+    full lists otherwise. Added a loading spinner + honest "No gatherings/communities match
+    "..."" empty state for both sections while searching, mirroring the Places section's own
+    existing loading/empty pattern exactly (previously, only Places had this — Gatherings/
+    Communities just silently rendered nothing while search results were empty either way).
+  - **Offers deliberately left on client-side filtering, not overlooked**: `getActiveOffers()`'s
+    base query is already narrow (active, non-gathering offers only), the real number of
+    business partners this app will have stays small for a long while by nature of the
+    business model, and matching `brand_offers.title`/`description` *and*
+    `brand_partners.name` server-side would need a genuine cross-table search — PostgREST's
+    `.or()` can't OR a condition on a joined table against the base table in one request, so
+    this would need a new Postgres function, not just an indexed column. Not worth building for
+    a list this size; flagged in the code itself, not silently left unexplained.
+  - Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+    pass only edited existing files).
 - **#7 FeaturesOverview tap-through — not applicable, the second AI's premise didn't hold up on
   inspection.** Confirmed by reading `FeaturesOverviewScreen.js` directly: it's a static
   expand/collapse reference glossary (tap a category header → see plain-text feature
