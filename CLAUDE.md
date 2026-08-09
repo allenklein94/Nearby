@@ -4,6 +4,98 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: PRODUCT_AUDIT fixes (Aug 9 2026) — NOT STARTED
+
+A full read-only product/UX/architecture audit was built at `/workspaces/Nearby/PRODUCT_AUDIT/`
+(13 files + `AUDIT_SUMMARY.json`, zipped copy at `PRODUCT_AUDIT.zip` in both the repo root and
+inside that folder) for the user to hand to a *different* AI for independent critique. No
+application code was touched to produce it. Full detail, citations, and file/line references for
+every item below live in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (ranked P0/P1/P2) and
+`PRODUCT_AUDIT/AI_HANDOFF.md` — this section is the fix-it to-do list distilled from that audit,
+written here specifically so a fresh session (post-restart) picks it up automatically the same
+way every other section in this file works, rather than depending on this conversation's memory.
+**None of the 10 items below have been started yet as of this write-up.**
+
+Before starting any of these: re-read the relevant `PRODUCT_AUDIT/` file first (the audit itself
+may be stale by the time this is picked up if the app has changed in the meantime), and follow
+this file's own standing rule of verifying a claim against the live code/production before
+building on top of it rather than trusting the audit at face value.
+
+**P0 — fix these first (actively broken or high-severity today):**
+
+1. **`ChatScreen.js` ships a debug overlay to real users in production.** A condition meant to
+   gate dev-only UI (`__DEV__ === undefined ? null : <debug overlay>`, roughly line 1078) is
+   structurally always false — `__DEV__` is always a defined boolean, never `undefined` — so a
+   red/yellow debug overlay printing internal message state renders on every message bubble for
+   every real user, and a failed image load shows the literal string `"DEBUG: Image failed to
+   actually render (onError fired)"` instead of a normal error (around line 1099). Fix: correct
+   the condition to a real `__DEV__` check (or just delete the debug branch). Trivial, highest
+   user-visible impact of anything found.
+2. **Device-test the 13-button `Alert.alert()` in `ChatScreen.js`'s "Do Something Together"
+   menu on real Android hardware before doing anything else with the relationship-longevity
+   feature set.** React Native's `Alert.alert` is documented as unreliable beyond 3 buttons on
+   Android. If it's genuinely broken there, 6 of 11 relationship-tool screens
+   (`RelationshipConstitution`, `StressTest`, `SharedDecisions`, `SharedPlaylist`,
+   `TripPlanning`, `TimelinePlanner`) plus the write-side of `RelationshipLegacy` and direct
+   `MemoryVault` access may be functionally unreachable for a real chunk of users, not just
+   hard to find. If confirmed broken, replace with a real menu component (action sheet /
+   bottom sheet), not another native `Alert`.
+3. **Stand up a real, version-controlled schema before building anything else on top of the
+   current one.** Per `PRODUCT_AUDIT/DATABASE_AND_DATA_MODEL.md`, ~45 of ~53 real production
+   tables have no `CREATE TABLE` anywhere in this git repo — only in the live database. At
+   minimum, do a one-time full schema pull (Management API or `pg_dump`) and commit it, then
+   hold the line going forward that every future schema change gets a real local migration file
+   (this file's own past sessions have repeatedly applied schema changes live via the
+   Management API without always leaving a local migration — that practice is what created this
+   gap and should stop).
+4. **Re-verify live, today, that the `is_blocked()` fix actually holds in production.** Per this
+   file's own Aug 8 2026 "is_blocked" section, a blocked user could previously still see/message
+   the person who blocked them; described there as fixed, but never independently re-tested by
+   any session since. Re-run that same live test (real block row, real blocked-party session,
+   confirm `matches`/`messages` correctly exclude the blocked pair) before trusting it further.
+5. **Re-verify live, today, that the business-RPC ownership-check fixes actually hold.** Per
+   this file's "Business RPC ownership check" section, `get_business_dashboard_stats` and
+   siblings previously leaked another business's follower/redemption/named-attendee data to any
+   authenticated caller who guessed a `partner_id`; described there as fixed, never
+   independently re-tested since by a real non-owner account.
+6. **Fix the silent-send-failure pattern, once, in a shared place, across all 4 chat-style
+   screens** (`ChatScreen.js`, `CommunityChatScreen.js`, `GatheringChatScreen.js`,
+   `BusinessConversationScreen.js`) — each currently clears the composer before the network call
+   resolves and swallows a failure with no visible error, retry, or restored draft text. Don't
+   fix this 4 separate times; factor the send-and-recover-on-failure logic into one place all
+   four can share.
+
+**P1 — important, do next:**
+
+7. **Decide and build a real proof-of-redemption mechanism for business perks** before scaling
+   the business-billing side any further — no such mechanism was found anywhere in the code, and
+   the billing math (item 3 below, sort of — see `business_invoices`) depends on redemption
+   counts being trustworthy.
+8. **Either integrate a real payment processor for business billing, or explicitly deprioritize
+   the feature.** `business_invoices` rows accumulate in `draft` status forever today — the
+   contract-based billing math genuinely runs on a monthly cron job (per the "Billing /
+   Monetization" section below), but nothing has ever actually charged a business. Don't build
+   more billing sophistication on top of this until collection exists.
+9. **Add outbound CTAs to `InsightsScreen.js`, `MomentumScreen.js`, and `RewardsScreen.js`, and
+   build one real proactive "you're on a streak" / "you're close to a tier" push notification.**
+   All three screens already compute real, honest signal (no fabricated numbers) with nothing
+   downstream acting on it — this is the cheapest, highest-leverage fix in the whole list, since
+   the hard part (the data) already exists.
+10. **Give the relationship-longevity tools that survive item 2's device test a real entry point
+    from `SettingsScreen.js`**, matching the pattern already used for their 5 siblings that are
+    already listed there (Rehearsal Room, Chemistry Diary, Goodbye Archive, Legacy Library,
+    Emergency Kit). The pattern exists in the same file; it just wasn't extended to all 11 tools.
+
+**Lower priority, same list, not detailed here again**: business self-serve onboarding
+(profile self-editing is admittedly unbuilt per `BusinessDashboardScreen.js`'s own UI copy), no
+path to invite a non-app-user to a specific gathering (only a generic app referral exists), no
+nudge to join the community behind a gathering just attended, `NoticesScreen.js` fully dead code,
+`MatchesScreen`'s dangling `RootNavigator.js` import, hardcoded backend URLs/keys inline in
+`LoginScreen.js`/`ProfileScreen.js`/`RehearsalRoomScreen.js`, `PlacesScreen.js`'s broken empty
+state (malformed `ListEmptyComponent` prop), `OnboardingRecommendationsScreen.js`'s
+recommendation cards all navigating identically regardless of which was tapped. Full detail on
+every one of these is in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (items 11-20 there).
+
 ## Aug 8 2026 — Capacity / Waitlist (closes the one Create 2.0 item deliberately deferred)
 
 The user asked to "continue" this after a codespace restart, believing it was mid-build.

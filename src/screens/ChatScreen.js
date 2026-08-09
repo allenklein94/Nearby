@@ -15,6 +15,7 @@ import { randomExperiment } from '../constants/relationshipExperiments';
 import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
+import ActionSheetModal from '../components/ActionSheetModal';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
@@ -112,6 +113,8 @@ export default function ChatScreen({ route, navigation }) {
   const [gatheringTitle, setGatheringTitle] = useState(null);
   const [isRomanticMatch, setIsRomanticMatch] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [togetherMenuVisible, setTogetherMenuVisible] = useState(false);
+  const [courageMenuVisible, setCourageMenuVisible] = useState(false);
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
   const [checkInModalVisible, setCheckInModalVisible] = useState(false);
   const [isUserPremium, setIsUserPremium] = useState(false);
@@ -413,26 +416,26 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   function showTogetherMenu() {
-    Alert.alert(
-      'Do Something Together',
-      '',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: '🎵 Shared Playlist', onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
-        { text: '🧳 Plan a Trip', onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
-        { text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
-        { text: '💡 Suggest an Activity', onPress: showRandomExperiment },
-        { text: '💌 Leave Relationship Wisdom', onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
-        { text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
-        { text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
-        { text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
-        { text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
-        { text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
-        { text: '🦁 Help Me Say It', onPress: showCourageMenu },
-        { text: '🌆 Suggest a Date Night', onPress: suggestDateNight },
-      ]
-    );
+    setTogetherMenuVisible(true);
   }
+
+  // Real menu options, not an Alert.alert button list — RN's Alert is
+  // documented as unreliable beyond ~3 buttons on Android, and this menu
+  // has 12 real destinations, so it renders via ActionSheetModal instead.
+  const togetherMenuOptions = [
+    { key: 'playlist', text: '🎵 Shared Playlist', onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'trip', text: '🧳 Plan a Trip', onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'bigpicture', text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'experiment', text: '💡 Suggest an Activity', onPress: showRandomExperiment },
+    { key: 'legacy', text: '💌 Leave Relationship Wisdom', onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'timeline', text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'memoryvault', text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'chemistry', text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
+    { key: 'stresstest', text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'constitution', text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'courage', text: '🦁 Help Me Say It', onPress: showCourageMenu },
+    { key: 'datenight', text: '🌆 Suggest a Date Night', onPress: suggestDateNight },
+  ];
 
   async function suggestDateNight() {
     try {
@@ -485,28 +488,23 @@ export default function ChatScreen({ route, navigation }) {
   }
 
   function showCourageMenu() {
-    // "Ask them out" / "Say I'm interested" only make sense for a
-    // genuinely romantic match — offering them in a friend or
-    // gathering-sourced chat would be genuinely wrong. Setting a
-    // boundary is universal, so that one stays either way.
-    const romanticOptions = isRomanticMatch
-      ? [
-          { text: 'Ask them out', onPress: () => getCourageMessage('ask_out') },
-          { text: "Say I'm interested", onPress: () => getCourageMessage('say_interested') },
-          { text: "Say I'm not interested", onPress: () => getCourageMessage('say_not_interested') },
-        ]
-      : [];
-
-    Alert.alert(
-      'Help Me Say It',
-      "What are you trying to say? I'll help you find the words.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: "Set a boundary", onPress: () => getCourageMessage('set_boundary') },
-        ...romanticOptions,
-      ]
-    );
+    setCourageMenuVisible(true);
   }
+
+  // "Ask them out" / "Say I'm interested" only make sense for a
+  // genuinely romantic match — offering them in a friend or
+  // gathering-sourced chat would be genuinely wrong. Setting a
+  // boundary is universal, so that one stays either way.
+  const courageMenuOptions = [
+    { key: 'boundary', text: 'Set a boundary', onPress: () => getCourageMessage('set_boundary') },
+    ...(isRomanticMatch
+      ? [
+          { key: 'ask_out', text: 'Ask them out', onPress: () => getCourageMessage('ask_out') },
+          { key: 'say_interested', text: "Say I'm interested", onPress: () => getCourageMessage('say_interested') },
+          { key: 'say_not_interested', text: "Say I'm not interested", onPress: () => getCourageMessage('say_not_interested') },
+        ]
+      : []),
+  ];
 
   async function getCourageMessage(goal) {
     try {
@@ -1075,11 +1073,6 @@ export default function ChatScreen({ route, navigation }) {
             return (
               <AnimatedMessageBubble isNew={isNewMessage}>
               <View style={[styles.bubbleRow, isMe ? styles.rowRight : styles.rowLeft]}>
-                {__DEV__ === undefined ? null : (
-                  <Text style={{ color: 'red', fontSize: 8, backgroundColor: 'yellow' }}>
-                    DEBUG: audio={String(!!item.audio_url)} media={String(!!item.media_url)} gif={String(!!item.gif_url)} mediaUrlState={String(mediaUrls[item.id])}
-                  </Text>
-                )}
                 {item.audio_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={1}>
                     <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
@@ -1096,7 +1089,7 @@ export default function ChatScreen({ route, navigation }) {
                       </View>
                     ) : imageLoadFailed[item.id] ? (
                       <View style={[styles.gifBubble, { justifyContent: 'center', alignItems: 'center', padding: spacing.md }]}>
-                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>DEBUG: Image failed to actually render (onError fired)</Text>
+                        <Text style={{ color: colors.textTertiary, fontSize: 12, textAlign: 'center' }}>Couldn't load photo</Text>
                       </View>
                     ) : item.media_type === 'video' ? (
                       <Video
@@ -1316,6 +1309,21 @@ export default function ChatScreen({ route, navigation }) {
         }}
         reportedUserId={otherUser?.id}
         reportedUserName={otherUser?.display_name}
+      />
+
+      <ActionSheetModal
+        visible={togetherMenuVisible}
+        onClose={() => setTogetherMenuVisible(false)}
+        title="Do Something Together"
+        options={togetherMenuOptions}
+      />
+
+      <ActionSheetModal
+        visible={courageMenuVisible}
+        onClose={() => setCourageMenuVisible(false)}
+        title="Help Me Say It"
+        message="What are you trying to say? I'll help you find the words."
+        options={courageMenuOptions}
       />
     </SafeAreaView>
   );
