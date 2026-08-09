@@ -213,6 +213,77 @@ real gap to point at"): the trace found four real gaps and this pass closed thre
 community from a gathering") is a genuinely new feature, not a wiring fix, and was deliberately
 left for an explicit future decision rather than built from this trace's own momentum.
 
+## Outstanding: "Start a Community from This Gathering" (Aug 9 2026) — IN PROGRESS, plan written before code
+
+The user explicitly asked to build the one gap the flywheel trace found and deliberately left
+unbuilt (leg 5b above): no path exists to found a brand-new community seeded from a one-off
+gathering's own real attendees. Written before implementation, same restart-safety convention as
+every other plan-first section in this file — if a codespace restart hits mid-build, check
+`git status`/`git log` for what actually landed vs. what's still just this plan.
+
+**Real constraint that shapes the whole design**: `community_members`'s INSERT policy only ever
+allows `user_id = auth.uid()` (self-insert) — confirmed by re-reading the policy pulled during
+the flywheel trace (leg 4's writeup above) — so there is no way, even as the new community's own
+creator, to directly add another real person as a member without their own consent. Auto-seeding
+membership from the attendee list is therefore not just an ethical choice, it's not technically
+possible without going around RLS — so this has to be invite-based, reusing the existing real
+`social_invites` system (`sendInvite('community', ...)` → `send_social_invite` RPC), not a new
+membership-insert path. `send_social_invite` also already enforces its own real friendship +
+blocks checks (documented in the "Outstanding: Invite People" section further below) — inviting
+a gathering attendee who isn't a real friend of the host isn't just undesirable, it will
+genuinely be rejected by the RPC, so the host-side logic pre-filters to real friends only rather
+than attempting (and silently swallowing) invites that would fail.
+
+**Locked design, resolved directly rather than re-asked (matches this session's own "resolve
+directly when the shape of the answer is clear" practice elsewhere in this file)**:
+1. **Entry point**: a new "🏘️ Start a Community from This Gathering →" link in
+   `GatheringDetailScreen.js`'s existing host banner (same link style already used for "🤝
+   Invite friends →" and "🤝 Request a Business Partner →"), host-only, shown only when the
+   gathering has no `community_id` already (no point spinning up a second community for a
+   gathering already tied to one) and the gathering's `scheduled_at` is genuinely in the past
+   (this is a "the connection was made, now formalize it" action — matches the trace leg's own
+   name, "post-gathering"). **Not** placed on `GatheringHubScreen` — that screen's own
+   post-gathering feedback flow is explicitly attendee-only (`!g.isHost` guard,
+   `GatheringHubScreen.js:95`), so the host never actually sees `GatheringFeedbackModal` at all;
+   `GatheringDetailScreen`'s host banner is the one surface a host reliably revisits regardless
+   of before/after the event.
+2. **Prefill, not a new form**: tapping it navigates to the existing `CreateCommunity` route
+   with new params — `seedFromGatheringId: gatheringId`, plus the same `quickStartTitle`/
+   `quickStartCategory` shape `CreateCommunityScreen.js` already reads from the Create
+   Assistant, prefilled from the gathering's own title/`interest_tag`. No new screen.
+3. **Seeding, after real creation succeeds**: new `seedCommunityFromGathering(communityId,
+   gatheringId)` in `services/communities.js` — fetches the gathering's real approved
+   `gathering_interest` rows (same "approved rows are publicly readable" RLS this schema already
+   relies on elsewhere, e.g. `getFirstTimerAttendeeIds`), cross-references against the host's
+   own real friends via the already-existing `filterToMyFriends()` helper
+   (`services/friends.js:114`) — no new friendship-check logic invented — then calls the
+   existing `sendInvite('community', communityId, friendId)` for each real friend
+   (`Promise.allSettled`, so one failure — e.g. a race where a friendship was revoked between
+   fetch and send — doesn't block the rest; the RPC's own `on conflict do nothing` already makes
+   a duplicate send harmless). Returns `{ invitedCount, totalAttendeeCount }` — both real counts,
+   nothing invented.
+4. **Honest result copy, not a blanket "invited!" message**: `CreateCommunityScreen.js` shows a
+   real summary before navigating to `CommunityDetail` — if some attendees weren't real friends
+   yet, says so plainly ("N of M attendees invited — the rest aren't your friends yet; add them
+   to invite them here too") rather than silently dropping them with no explanation. Matches this
+   file's own standing "no invented numbers, no silent gaps" convention.
+5. **Deliberately not done**: the just-finished gathering itself is **not** retroactively
+   modified (no `community_id` backfill onto the past gathering, no visibility change) — this is
+   a spinoff action, not a backfill, and retroactively changing a past gathering's own visibility
+   scoping is out of scope and not something this feature needs to do its one real job. A
+   non-friend attendee is never auto-added or invited around the friendship gate — no exception
+   carved into `send_social_invite` for this flow specifically; it uses the exact same
+   friends-only enforcement every other community invite already goes through.
+
+**Verification plan**: full `npx expo export --platform ios` after the client changes land;
+live end-to-end verification against production (`enmosvippabmuqslzrox`) via
+`set_config('request.jwt.claims', ...)` as real profiles — a real past gathering with a mix of
+friend and non-friend approved attendees, confirming the resulting community gets real invites
+only for the real friends and an honest count for the rest — then all test rows cleaned up,
+matching this session's established convention for every other schema-adjacent verification in
+this file. This section will be updated to DONE with the real build/verification writeup once
+it lands, not left as this plan.
+
 ## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — DONE
 
 Written before implementation, same restart-safety convention as every other plan-first
