@@ -9,8 +9,8 @@ often in this project).
 | 1 | ChatScreen debug overlay always-on | DONE |
 | 2 | 13-button Alert.alert → real menu component | DONE |
 | 3 | Full schema pull, commit to git | not started |
-| 4 | Re-verify is_blocked() live | not started |
-| 5 | Re-verify business RPC ownership checks live | not started |
+| 4 | Re-verify is_blocked() live | DONE |
+| 5 | Re-verify business RPC ownership checks live | DONE |
 | 6 | Shared send-and-recover-on-failure for 4 chat screens | not started |
 | 7 | Proof-of-redemption mechanism for business perks | not started |
 | 8 | Payment processor decision (Stripe or explicit deprioritize) | not started |
@@ -31,3 +31,27 @@ Device-testing on real Android hardware still isn't possible from this sandbox, 
 removes the actual risk (a native Alert with many buttons) regardless of what a device test
 would have shown, so item 2 is closed rather than left blocked on a test this environment can't
 run.
+
+**Item 4** — re-verified live against production (`enmosvippabmuqslzrox`), no code changes
+needed, fix still holds. Confirmed `is_blocked()` is still `SECURITY DEFINER` with
+`search_path=public` pinned. Real test: inserted a real `blocks` row (Claude blocked Allen,
+the same real pair with a real pre-existing match), then as Allen (the *blocked* party) —
+`is_blocked(Claude, Allen)` correctly returns `true`, `select * from matches` correctly omits
+the blocked pair's match (only the unrelated Google-voice↔Allen match returned), and a direct
+`insert into messages` for the blocked match correctly raises a real RLS violation
+(`42501`). Also re-checked `business_messages`' three policies still reference `is_blocked()`
+inline — confirmed via `pg_policy`. Test block row deleted afterward; `matches` count back to
+2, `blocks` back to 0.
+
+**Item 5** — re-verified live, no code changes needed, fix still holds. Confirmed
+`get_business_dashboard_stats`/`_growth`/`_top_members`/`_visit_frequency`/`_insights` all
+still have the `exists (... managed_partner_id = partner_id_param)` ownership guard in their
+`prosrc`, and confirmed all 7 business RPCs (including `get_business_follower_count` and
+`get_business_member_gathering_history` from the CRM follow-up) have `anon` execute correctly
+revoked, `authenticated` correctly granted. Since production has almost no real data, ran a
+real differential test rather than just reading zeros both ways: inserted a real
+`business_followers` row for Coastal Coffee, called `get_business_dashboard_stats` as the real
+owner (Allen) — got `total_followers: 1` — and as a real non-owner (Claude) — got
+`total_followers: 0` for the same partner id, proving the ownership check actually
+discriminates, not just that the table happens to be empty. Test follower row deleted
+afterward.
