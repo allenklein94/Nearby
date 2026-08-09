@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -28,6 +28,11 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null, includedUnits: 0, billableCount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
+  const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
+  const [editNameInput, setEditNameInput] = useState('');
+  const [editDescriptionInput, setEditDescriptionInput] = useState('');
+  const [editLogoUrlInput, setEditLogoUrlInput] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [offers, setOffers] = useState([]);
@@ -88,6 +93,30 @@ export default function BusinessDashboardScreen({ navigation }) {
       Alert.alert('Error', e.message);
     }
     setSavingAddress(false);
+  }
+
+  async function handleSaveProfile() {
+    if (!editNameInput.trim()) return;
+    setSavingProfile(true);
+    try {
+      await updateBusinessProfile(selectedPartner.id, {
+        name: editNameInput.trim(),
+        description: editDescriptionInput.trim() || null,
+        address: selectedPartner.address ?? null,
+        logoUrl: editLogoUrlInput.trim() || null,
+      });
+      setSelectedPartner((prev) => ({
+        ...prev,
+        name: editNameInput.trim(),
+        description: editDescriptionInput.trim() || null,
+        logo_url: editLogoUrlInput.trim() || null,
+      }));
+      setEditProfileModalVisible(false);
+      Alert.alert('Saved', 'Your business profile has been updated.');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingProfile(false);
   }
 
   useFocusEffect(
@@ -720,7 +749,24 @@ export default function BusinessDashboardScreen({ navigation }) {
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
-                  <Text style={styles.offerDescription}>Editing business profile details isn't available yet — contact support to make changes for now.</Text>
+                  {selectedPartner?.description ? (
+                    <Text style={styles.offerDescription}>{selectedPartner.description}</Text>
+                  ) : (
+                    <Text style={styles.offerDescription}>No description yet.</Text>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditNameInput(selectedPartner?.name ?? '');
+                      setEditDescriptionInput(selectedPartner?.description ?? '');
+                      setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
+                      setEditProfileModalVisible(true);
+                    }}
+                    style={{ marginTop: spacing.sm }}
+                    accessibilityLabel="Edit business profile"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.messageMemberLink}>✏️ Edit Profile</Text>
+                  </TouchableOpacity>
                 </View>
               </>
             )}
@@ -900,6 +946,53 @@ export default function BusinessDashboardScreen({ navigation }) {
                 <Text style={styles.submitButtonText}>{savingAddress ? 'Saving...' : 'Save Address'}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setAddressModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+      <Modal visible={editProfileModalVisible} animationType="slide" transparent onRequestClose={() => setEditProfileModalVisible(false)}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Edit Business Profile</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Business name"
+                placeholderTextColor={colors.textTertiary}
+                value={editNameInput}
+                onChangeText={setEditNameInput}
+                accessibilityLabel="Business name"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm, minHeight: 80 }]}
+                placeholder="Description"
+                placeholderTextColor={colors.textTertiary}
+                value={editDescriptionInput}
+                onChangeText={setEditDescriptionInput}
+                multiline
+                accessibilityLabel="Business description"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Logo image URL (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={editLogoUrlInput}
+                onChangeText={setEditLogoUrlInput}
+                autoCapitalize="none"
+                accessibilityLabel="Logo URL"
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSaveProfile}
+                disabled={savingProfile || !editNameInput.trim()}
+                accessibilityLabel={savingProfile ? 'Saving' : 'Save profile'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{savingProfile ? 'Saving...' : 'Save Profile'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setEditProfileModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </View>

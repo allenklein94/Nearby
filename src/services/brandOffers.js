@@ -361,7 +361,7 @@ export async function replyAsBusinessOwner(partnerId, conversationWithId, body) 
   if (error) throw error;
 }
 
-export async function updateBusinessAddress(partnerId, address) {
+async function geocodeAddress(address) {
   const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
   const response = await fetch(
     `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
@@ -371,11 +371,52 @@ export async function updateBusinessAddress(partnerId, address) {
     throw new Error("Couldn't find that address. Try being more specific.");
   }
   const { lat, lng } = result.results[0].geometry.location;
+  return { latitude: lat, longitude: lng };
+}
 
-  const { error } = await supabase
-    .from('brand_partners')
-    .update({ address, latitude: lat, longitude: lng })
-    .eq('id', partnerId);
+// brand_partners has no UPDATE RLS policy at all (confirmed live) -- both of
+// these route through the update_business_profile() SECURITY DEFINER RPC
+// (20260809_business_profile_self_edit.sql), which checks the caller's own
+// managed_partner_id, rather than a raw client .update() that would silently
+// no-op under RLS's default deny.
+export async function updateBusinessAddress(partnerId, address) {
+  const { latitude, longitude } = await geocodeAddress(address);
+  const current = await getBusinessProfile(partnerId);
+  const { error } = await supabase.rpc('update_business_profile', {
+    partner_id_param: partnerId,
+    name_param: current?.name,
+    description_param: current?.description ?? null,
+    address_param: address,
+    latitude_param: latitude,
+    longitude_param: longitude,
+    logo_url_param: current?.logo_url ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl }) {
+  const current = await getBusinessProfile(partnerId);
+  let latitude = current?.latitude ?? null;
+  let longitude = current?.longitude ?? null;
+  const addressChanged = (address ?? '') !== (current?.address ?? '');
+  if (addressChanged) {
+    if (address && address.trim()) {
+      ({ latitude, longitude } = await geocodeAddress(address));
+    } else {
+      latitude = null;
+      longitude = null;
+    }
+  }
+
+  const { error } = await supabase.rpc('update_business_profile', {
+    partner_id_param: partnerId,
+    name_param: name,
+    description_param: description ?? null,
+    address_param: address ?? null,
+    latitude_param: latitude,
+    longitude_param: longitude,
+    logo_url_param: logoUrl ?? null,
+  });
   if (error) throw error;
 }
 

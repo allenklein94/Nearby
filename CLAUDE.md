@@ -32,11 +32,29 @@ session has the same context as the chat session that built most of this.
   `spotsLeft <= max(2, ceil(capacity * 0.2))` and not already full — a real, small-integer
   threshold in the same spirit as this file's other non-fabricated thresholds (e.g. Rewards'
   fixed tier counts), not an invented percentage dressed up as a signal.
-- Items 2 (business self-serve profile editing), 5 (CRM notes/tags — renumbered from the plan's
-  item 8), 6 (Business AI Assistant — renumbered from item 9) — not yet started as of this
-  status update, see the plan below for exact design. Verified via a full
-  `npx expo export --platform ios` after the items-1/3/4 increment above (clean build, no
-  resolution errors) before committing that piece separately from the rest.
+- Item 2 (business self-serve profile editing) — **DONE**, and a real, previously-unknown bug
+  fixed underneath it. Confirmed live via `pg_policies` before writing anything: `brand_partners`
+  had zero UPDATE policy of any kind (RLS enabled, one SELECT-only policy) — meaning the
+  pre-existing `updateBusinessAddress()` raw client `.update()` call (wired to the dashboard's
+  address banner/modal) has never actually written anything for any real owner, silently no-op'd
+  by RLS's default deny this whole time. New `update_business_profile(partner_id, name,
+  description, address, latitude, longitude, logo_url)` SECURITY DEFINER RPC
+  (`20260809_business_profile_self_edit.sql`, checks `profiles.managed_partner_id =
+  partner_id_param`) fixes that silently-broken path (`updateBusinessAddress()` now routes
+  through it) and backs a new `updateBusinessProfile()` for name/description/logo — the address
+  field itself stays on the existing, now-actually-working address banner/modal rather than
+  duplicating that flow into the new one. New "✏️ Edit Profile" button + modal on
+  `BusinessDashboardScreen.js`'s Business Profile card (name/description/logo URL — `logo_url`
+  is stored and rendered everywhere as a plain public URL string, confirmed via grep, so no
+  storage bucket needed) replaces the old static "isn't available yet" message. **Verified live
+  against production**, not just applied: as the real business owner (`Allen`, managing
+  `Coastal Coffee`), the RPC genuinely updated `brand_partners`; the identical call as a
+  non-owner (`Claude`) was correctly rejected (`You do not manage this business`); test edits
+  reverted to the exact pre-test row afterward. Verified via a full `npx expo export --platform
+  ios` (clean build).
+- Items 5 (CRM notes/tags — renumbered from the plan's item 8), 6 (Business AI Assistant —
+  renumbered from item 9) — not yet started as of this status update, see the plan below for
+  exact design.
 
 
 
