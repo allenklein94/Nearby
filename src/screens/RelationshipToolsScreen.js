@@ -7,13 +7,13 @@ import ActionSheetModal from '../components/ActionSheetModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-// The 6 relationship-longevity tools that only make sense in the context
+// The 8 relationship-longevity tools that only make sense in the context
 // of a specific match (unlike Rehearsal Room / Chemistry Diary / Goodbye
 // Archive / Legacy Library / Emergency Kit, which are personal and already
-// have their own SettingsScreen row) — previously reachable only from
-// inside ChatScreen's "Do Something Together" menu, with no path in from
-// Settings at all. This screen is that missing entry point: pick a match,
-// then pick a tool for that match.
+// have their own SettingsScreen row) — matches every entry in ChatScreen's
+// "Do Something Together" menu exactly, so this screen is a real second
+// entry point, not a partial one. Pick a match, then pick a tool for that
+// match.
 const MATCH_TOOLS = [
   { key: 'constitution', text: '📜 Our Constitution', route: 'RelationshipConstitution' },
   { key: 'stresstest', text: '🧪 What If... Scenarios', route: 'StressTest' },
@@ -21,6 +21,8 @@ const MATCH_TOOLS = [
   { key: 'playlist', text: '🎵 Shared Playlist', route: 'SharedPlaylist' },
   { key: 'trip', text: '🧳 Plan a Trip', route: 'TripPlanning' },
   { key: 'timeline', text: '🗓️ Timeline Thoughts', route: 'TimelinePlanner' },
+  { key: 'legacy', text: '💌 Leave Relationship Wisdom', route: 'RelationshipLegacy' },
+  { key: 'memoryvault', text: '💫 Memory Vault', route: 'MemoryVault' },
 ];
 
 export default function RelationshipToolsScreen({ navigation }) {

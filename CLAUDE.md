@@ -4,6 +4,67 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — plan, not yet built
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file — a codespace restart mid-build should lose nothing, since this section
+records the plan and the two builds below record real status once they land.
+
+Context: after all 10 `PRODUCT_AUDIT` items closed (previous section), the user shared a
+second AI's independent review of the same audit package and asked for a reaction + plan. That
+review's alarm was mostly stale (everything in its P0 list was already fixed and verified live
+against production the same day — see the section below for the receipts), but two of its
+points survived scrutiny as real, currently-open gaps, confirmed by reading the actual code
+rather than taking the review at its word:
+
+1. **Invite-only gathering join has no server-side enforcement.** `join_gathering()`
+   (`20260808_gathering_capacity_waitlist.sql`) never reads `gatherings.visibility` at all —
+   for an `invite_only` gathering it silently falls through to the same branch as any other
+   host-approval gathering (`is_public` is `false`, so it inserts a `pending` row). This was
+   already known and explicitly flagged as accepted risk in the Create 2.0 section further
+   below ("Not attempted: a server-side/RPC-level block on a determined caller directly hitting
+   the join RPC... same risk posture this app already accepts elsewhere"), but re-reviewing it
+   now: a stranger who was never invited can still land a real `pending` row in an invite-only
+   host's approval queue by calling the RPC directly (UI gates the button, not the RPC) — if
+   that host approves without checking, an uninvited stranger gets in. Worth actually closing,
+   not just re-flagging a third time. **Checked the adjacent worry too and it's a non-issue**:
+   `joinCommunity()` in `services/communities.js` is a raw client insert with zero gating in the
+   JS itself, but `community_members`'s real INSERT policy (pulled from
+   `full_schema_pull_2026-08-09.sql`) already requires `c.is_public = true OR c.creator_id =
+   auth.uid()` server-side — private-community join is already correctly RLS-enforced, nothing
+   to fix there.
+   **Plan**: add an `invite_only` check to `join_gathering()` — if `gatherings.visibility =
+   'invite_only'` and the caller isn't the host, require a real accepted `social_invites` row
+   (`invite_type = 'gathering'`, `target_id = gathering_id_param`, `invitee_id = auth.uid()`,
+   `status = 'accepted'`), else raise the same honest rejection message
+   `GatheringDetailScreen.js`'s client-side gate already shows. Apply to production, verify live
+   both ways (accepted invitee succeeds, uninvited stranger rejected), matching this file's
+   established verify-live convention.
+2. **The 11 relationship-longevity tools are reachable but not coherent.** Audit item 10
+   already gave 6 of them (`RelationshipConstitution`/`StressTest`/`SharedDecisions`/
+   `SharedPlaylist`/`TripPlanning`/`TimelinePlanner`) a real entry point —
+   `RelationshipToolsScreen.js` (pick a match, then pick a tool), linked from Settings. But
+   checked its `MATCH_TOOLS` list directly against `ChatScreen.js`'s own `showTogetherMenu()`
+   (the original, still-working entry point) and found it's missing 2 of that menu's 8 items —
+   `RelationshipLegacy` ("Leave Relationship Wisdom") and `MemoryVault` — so this new Settings
+   path isn't yet at parity with the one that already existed. More broadly, the 5 personal
+   tools (Rehearsal Room, Chemistry Diary, Goodbye Archive, Legacy Library, Emergency Kit) and
+   the match-scoped `RelationshipToolsScreen` sit as 6+ separate flat rows under Settings'
+   "Reflection Tools" heading, plus Memory Vault's own index is a separate row under Profile —
+   functionally complete, but reads as a pile of destinations, not a suite. This matches the
+   second AI's specific critique and it holds up on inspection.
+   **Plan**: (a) fix the parity gap first — add `RelationshipLegacy` and `MemoryVault` to
+   `RelationshipToolsScreen`'s `MATCH_TOOLS`, small and low-risk. (b) Build one consolidated
+   hub screen grouping personal tools and the match-tools picker into real sections (not 6+
+   flat Settings rows), and point Settings' "Reflection Tools" section at that one entry point
+   instead. Keep every existing route/screen unchanged underneath — this is a navigation/
+   organization layer on top of already-working screens, not a rebuild of any of them.
+
+**Deliberately not in this pass, matching the second AI's own "stop expanding" instinct and my
+agreement with it**: no new relationship-tool screens, no AI Concierge work, no Stripe/payment
+processor, no simulator/device run-through (explicitly skipped per direct instruction this
+pass — noted as a standing gap, not silently dropped).
+
 ## Outstanding: PRODUCT_AUDIT fixes (Aug 9 2026) — DONE, all 10 items closed
 
 **Status update, same day**: all 10 items below are now closed — 8 built/fixed, 2 (items 2 and
