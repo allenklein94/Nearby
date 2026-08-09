@@ -163,6 +163,47 @@ a future resume):
   "buttons that don't do anything" to fix or remove, because there are no buttons that claim to
   go anywhere in the first place. Nothing built or changed for this item.
 
+**Follow-up, same day: `GatheringsScreen.js` wired to the same indexed `searchGatherings()`
+built for #6, plus a real architectural gap flagged (not fixed) while doing it.** After #6
+landed, noticed `GatheringsScreen.js` has its own separate search box over the exact same
+`gatherings` table `DiscoverHubScreen.js`'s search was just fixed on — it was still doing the
+old unindexed client-side `.toLowerCase().includes()` filter over the already-fetched `nearby`
+array. Asked the user whether to wire it now (cheap reuse of the function already built) or
+leave it queued; user said do it now. This was mid-build when a codespace restart hit —
+resumed cleanly, `git status` showed the in-progress edit to `GatheringsScreen.js` still
+present and uncommitted, finished from there.
+- `GatheringsScreen.js` now imports `searchGatherings` and runs the identical debounced
+  (350ms, 2-character minimum) pattern `DiscoverHubScreen.js` already uses — a
+  `gatheringSearchRequestId` ref guards against a slow earlier request overwriting a newer one's
+  results (matters more here than on Discover since this screen's `radiusTier` toggle can also
+  fire a re-search mid-flight). Passes the screen's own `radiusTier` (Local ~1mi / Wider Area
+  ~15mi) straight through to `searchGatherings(term, tier)` — search now genuinely respects
+  whichever radius the user has selected, not just browse. `filteredNearby` reads from the real
+  search results while `searchQuery.trim().length >= 2`, the untouched full `nearby` list
+  otherwise; the existing category/trending/date filters still apply on top of either source
+  unchanged — search only ever replaced the old text-match `.filter()`, nothing else in the
+  funnel. Added a loading spinner + honest `No gatherings match "..."` empty state, matching the
+  pattern #6 already established on Discover.
+- Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+  was an edit to an existing file only, same as #6).
+
+**Real, deliberately-unfixed architectural gap flagged while doing this pass — read before
+assuming search is the only cost problem here.** Both #6's fix and this follow-up only indexed
+the *search box* query path. The *browse* path both screens use whenever the user isn't
+actively searching — `getNearbyGatherings()` — has no radius or row-count bound at the SQL
+level at all: it downloads literally every future row in the entire `gatherings` table,
+unconditionally, then does all distance and visibility filtering in JavaScript on the client.
+This is invisible today because production has 5 real gatherings total, but at real scale this
+is the actual "download 50,000 rows" problem, and it's a bigger issue than the search box was —
+search was a missing index (mechanical, safe to fix in isolation); this is the browse funnel's
+own fundamental shape. Deliberately not fixed in this pass or #6 — it touches distance
+computation, the map layer, and this app's whole "RLS wide open, client is the real gate"
+visibility posture (see the Create 2.0 section's own description of that convention) — a real
+structural change, not an index, and not something to build silently as a side effect of a
+search-box fix. Given production's actual current scale (5 gatherings, 0 communities, 0 offers
+— confirmed again this pass), this is correctly not urgent and should not block the device QA
+pass below; flagged here so it isn't lost, not treated as blocking.
+
 **Device QA script — for whenever a real device pass happens, not something this sandboxed
 session can run itself. Kept here so it survives to that point regardless of how many sessions
 or restarts happen between now and then.**

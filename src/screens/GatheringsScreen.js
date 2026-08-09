@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
+import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -118,6 +118,13 @@ export default function GatheringsScreen({ navigation, route }) {
   const [myFriendIds, setMyFriendIds] = useState(new Set());
   const [inviteModalGathering, setInviteModalGathering] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  // Real server-side, indexed search results (searchGatherings(), the same
+  // trigram-indexed function DiscoverHubScreen uses) instead of filtering
+  // the already-fetched `nearby` array client-side — see the debounced
+  // effect below.
+  const [searchedNearby, setSearchedNearby] = useState([]);
+  const [loadingGatheringSearch, setLoadingGatheringSearch] = useState(false);
+  const gatheringSearchRequestId = useRef(0);
   const [userLocation, setUserLocation] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const [mapDeals, setMapDeals] = useState([]);
@@ -231,6 +238,29 @@ export default function GatheringsScreen({ navigation, route }) {
       load();
     }, [load])
   );
+
+  // Same 2-character minimum / 350ms debounce as DiscoverHubScreen's own
+  // search — respects radiusTier so switching Local/Wider Area while
+  // actively searching re-queries at the right radius.
+  useEffect(() => {
+    const term = searchQuery.trim();
+    if (term.length < 2) {
+      setSearchedNearby([]);
+      return;
+    }
+    const thisRequestId = ++gatheringSearchRequestId.current;
+    const timer = setTimeout(async () => {
+      setLoadingGatheringSearch(true);
+      try {
+        const results = await searchGatherings(term, radiusTier);
+        if (thisRequestId === gatheringSearchRequestId.current) setSearchedNearby(results);
+      } catch (e) {
+        console.error('Gatherings search failed', e);
+      }
+      if (thisRequestId === gatheringSearchRequestId.current) setLoadingGatheringSearch(false);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery, radiusTier]);
 
   React.useEffect(() => {
     let channel;
@@ -466,15 +496,16 @@ export default function GatheringsScreen({ navigation, route }) {
   const dateSummaryLabel = DATE_OPTIONS.find((d) => d.key === dateFilter)?.label ?? 'Anytime';
   const categorySummary = forYouActive ? 'For You' : (interestFilter || 'All Categories');
 
-  const filteredNearby = nearby
+  // Real server-side search results (searchedNearby) once actively
+  // searching (2+ characters — matches the debounced effect above), the
+  // untouched full nearby list otherwise. The other filters (category,
+  // trending, date) still apply on top either way — search only replaces
+  // the old client-side title/description text match, not the whole funnel.
+  const isSearchingGatherings = searchQuery.trim().length >= 2;
+  const filteredNearby = (isSearchingGatherings ? searchedNearby : nearby)
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => !trendingActive || trendingIds.includes(g.id))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
-    .filter((g) => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.trim().toLowerCase();
-      return g.title?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q);
-    })
     .sort((a, b) => {
       if (!forYouActive) return 0;
       const aRank = topCategories.indexOf(a.interest_tag);
@@ -755,6 +786,8 @@ export default function GatheringsScreen({ navigation, route }) {
             }}
           />
         </View>
+      ) : tab === 'nearby' && isSearchingGatherings && loadingGatheringSearch ? (
+        <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
       ) : tab === 'nearby' && (
         <FlatList
           data={filteredNearby}
@@ -769,7 +802,7 @@ export default function GatheringsScreen({ navigation, route }) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>{forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby'))}</Text>
+              <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
             </View>
           }
           renderItem={({ item, index }) => {
