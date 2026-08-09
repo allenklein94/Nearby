@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — plan, not yet built
+## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — DONE
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file — a codespace restart mid-build should lose nothing, since this section
@@ -60,10 +60,49 @@ rather than taking the review at its word:
    instead. Keep every existing route/screen unchanged underneath — this is a navigation/
    organization layer on top of already-working screens, not a rebuild of any of them.
 
-**Deliberately not in this pass, matching the second AI's own "stop expanding" instinct and my
-agreement with it**: no new relationship-tool screens, no AI Concierge work, no Stripe/payment
-processor, no simulator/device run-through (explicitly skipped per direct instruction this
-pass — noted as a standing gap, not silently dropped).
+**Build status: both pieces done, applied, and verified live.**
+
+- **Invite-only join hardening** (`20260809_join_gathering_invite_only_check.sql`): added the
+  planned `invite_only` check to `join_gathering()` — a caller who isn't the host now needs a
+  real accepted `social_invites` row (`invite_type='gathering'`, matching `target_id`/
+  `invitee_id`, `status='accepted'`) or the call raises `'This gathering is invite-only. Ask
+  the host for an invite.'` before it ever reaches the capacity/women-only/blocks checks below
+  it. Applied to production (`enmosvippabmuqslzrox`) and verified live end-to-end, not just
+  applied: confirmed the function still grants `authenticated` only (not `anon`); created a
+  real test `invite_only` gathering hosted by a real profile (`Allen`); called `join_gathering`
+  directly as a different real, genuinely-uninvited profile (`Claude`) via
+  `set_config('request.jwt.claims', ...)` — correctly rejected; inserted a real accepted
+  `social_invites` row for that same pair, retried the identical call — correctly succeeded
+  (`{status: 'pending'}`, matching host-approval behavior for every other host-approval
+  gathering). All test rows (`gathering_interest`, `social_invites`, the test gathering itself)
+  deleted afterward, confirmed zero leftover. Checked the adjacent community-join concern in
+  the same pass and confirmed it needs no fix — see the plan bullet above.
+- **Relationship hub**: new `src/screens/RelationshipHubScreen.js` + `RelationshipHub` route
+  (`RootNavigator.js`), two real sections — "With Someone" (the existing match-scoped
+  `RelationshipToolsScreen` picker, Memory Vault index) and "On Your Own" (Rehearsal Room,
+  Chemistry Diary, Private Reflections/Goodbye Archive, Relationship Wisdom/Legacy Library,
+  Emergency Kit) — replacing the 6 flat rows previously spread across `SettingsScreen.js`'s
+  "Reflection Tools" section and the separate "Emergency Kit" row above it. `SettingsScreen.js`
+  now has one "❤️ Relationship" row in their place; every underlying screen/route is completely
+  unchanged, this is a navigation/organization layer only. `RelationshipEmergencyKit` moved
+  into the hub (it's relationship-specific content); `EmergencyContacts` stayed under Settings'
+  "Safety" section where it already was (personal safety, not relationship-specific — used for
+  date check-ins with anyone, not tied to a match). `ProfileScreen.js`'s own separate "💫 Memory
+  Vault" row was left as-is — two entry points to the same index screen, same established
+  multi-entry-point pattern used elsewhere in this file (e.g. gathering invites reachable from
+  both Detail and the list tabs).
+- **Parity fix**: `RelationshipToolsScreen.js`'s `MATCH_TOOLS` gained the 2 items it was
+  missing relative to `ChatScreen.js`'s own `showTogetherMenu()` — `RelationshipLegacy` ("Leave
+  Relationship Wisdom") and `MemoryVault` — both take the same `matchId`/`matchName` params
+  every other entry already does, confirmed by reading both screens' `route.params`
+  destructuring before adding them.
+- Verified via a full `npx expo export --platform ios` — built clean, no resolution errors.
+- **Deliberately not done, per direct instruction this pass**: no simulator/device run-through
+  (explicitly skipped, not silently dropped — standing gap, same as everywhere else in this
+  file). No new relationship-tool screens, no AI Concierge work, no Stripe/payment processor —
+  matching the second AI's own "stop expanding" instinct, which this pass agreed with. Next
+  session should click through: the invite-only join flow end-to-end in the real app (not just
+  via direct RPC), and the new Relationship hub's two sections from Settings.
 
 ## Outstanding: PRODUCT_AUDIT fixes (Aug 9 2026) — DONE, all 10 items closed
 

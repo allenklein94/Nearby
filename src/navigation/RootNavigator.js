@@ -63,6 +63,7 @@ import GoodbyeArchiveEntryScreen from '../screens/GoodbyeArchiveEntryScreen';
 import GoodbyeArchiveListScreen from '../screens/GoodbyeArchiveListScreen';
 import RelationshipEmergencyKitScreen from '../screens/RelationshipEmergencyKitScreen';
 import RelationshipToolsScreen from '../screens/RelationshipToolsScreen';
+import RelationshipHubScreen from '../screens/RelationshipHubScreen';
 import TimelinePlannerScreen from '../screens/TimelinePlannerScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import MemoryVaultIndexScreen from '../screens/MemoryVaultIndexScreen';
@@ -338,6 +339,7 @@ export default function RootNavigator() {
             <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: 'Private Reflections', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: 'Emergency Kit', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipTools" component={RelationshipToolsScreen} options={{ headerShown: true, title: 'Relationship Tools', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="RelationshipHub" component={RelationshipHubScreen} options={{ headerShown: true, title: 'Relationship', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: 'Timeline', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: 'Memory Vault', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVaultIndex" component={MemoryVaultIndexScreen} options={{ headerShown: true, title: 'Memory Vaults', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

@@ -770,68 +770,12 @@ export default function SettingsScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('RelationshipEmergencyKit')}
+          onPress={() => navigation.navigate('RelationshipHub')}
           activeOpacity={0.85}
-          accessibilityLabel="Relationship Emergency Kit"
+          accessibilityLabel="Relationship, tools and reflection for a specific match or on your own"
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>🧰 Emergency Kit</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.sectionLabel} accessibilityRole="header">Reflection Tools</Text>
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('RehearsalRoom')}
-          activeOpacity={0.85}
-          accessibilityLabel="Rehearsal Room, practice hard conversations"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🎭 Rehearsal Room</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('ChemistryDiaryList')}
-          activeOpacity={0.85}
-          accessibilityLabel="Your chemistry diary"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>📔 Chemistry Diary</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('GoodbyeArchiveList')}
-          activeOpacity={0.85}
-          accessibilityLabel="Your private reflections"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🌙 Private Reflections</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('LegacyLibrary')}
-          activeOpacity={0.85}
-          accessibilityLabel="Relationship Wisdom library"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>💌 Relationship Wisdom</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('RelationshipTools')}
-          activeOpacity={0.85}
-          accessibilityLabel="Relationship tools, shared with a specific match"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🧩 Relationship Tools</Text>
+          <Text style={styles.rowButtonText}>❤️ Relationship</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
