@@ -463,6 +463,20 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>🤝 Request a Business Partner →</Text>
               </TouchableOpacity>
+              {!gathering.community_id && new Date(gathering.scheduled_at) < new Date() && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('CreateCommunity', {
+                    seedFromGatheringId: gatheringId,
+                    quickStartTitle: gathering.title,
+                    quickStartCategory: gathering.interest_tag,
+                  })}
+                  style={{ marginTop: spacing.xs }}
+                  accessibilityLabel="Start a community from this gathering"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.hostBannerLink}>🏘️ Start a Community from This Gathering →</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : gathering.myStatus === 'approved' ? (
             <View style={styles.youreInPanel}>

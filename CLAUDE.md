@@ -213,7 +213,7 @@ real gap to point at"): the trace found four real gaps and this pass closed thre
 community from a gathering") is a genuinely new feature, not a wiring fix, and was deliberately
 left for an explicit future decision rather than built from this trace's own momentum.
 
-## Outstanding: "Start a Community from This Gathering" (Aug 9 2026) — IN PROGRESS, plan written before code
+## Outstanding: "Start a Community from This Gathering" (Aug 9 2026) — DONE
 
 The user explicitly asked to build the one gap the flywheel trace found and deliberately left
 unbuilt (leg 5b above): no path exists to found a brand-new community seeded from a one-off
@@ -275,14 +275,53 @@ directly when the shape of the answer is clear" practice elsewhere in this file)
    carved into `send_social_invite` for this flow specifically; it uses the exact same
    friends-only enforcement every other community invite already goes through.
 
-**Verification plan**: full `npx expo export --platform ios` after the client changes land;
-live end-to-end verification against production (`enmosvippabmuqslzrox`) via
-`set_config('request.jwt.claims', ...)` as real profiles — a real past gathering with a mix of
-friend and non-friend approved attendees, confirming the resulting community gets real invites
-only for the real friends and an honest count for the rest — then all test rows cleaned up,
-matching this session's established convention for every other schema-adjacent verification in
-this file. This section will be updated to DONE with the real build/verification writeup once
-it lands, not left as this plan.
+**Built exactly as planned above, no design changes during implementation.** New
+`seedCommunityFromGathering(communityId, gatheringId)` in `services/communities.js` — fetches
+real approved `gathering_interest` rows for the gathering, cross-references against
+`filterToMyFriends()` (`services/friends.js:114`, already existed, reused as-is), then
+`Promise.allSettled`s `sendInvite('community', ...)` for each real friend. `CreateCommunityScreen.js`
+reads a new `route.params.seedFromGatheringId` and calls it right after a successful
+`createCommunity()`, showing one of three honest result messages (all invited / some invited,
+add the rest as friends / none were friends yet) before navigating to `CommunityDetail` — no
+message at all if the gathering had zero real attendees, matching this file's "no invented
+numbers" convention. `GatheringDetailScreen.js`'s host banner gained the "🏘️ Start a Community
+from This Gathering →" link (same style as the existing "🤝 Invite friends"/"🤝 Request a
+Business Partner" links directly above it), gated on `!gathering.community_id && new
+Date(gathering.scheduled_at) < new Date()` — host-only, and only for a gathering not already
+tied to a community, only once it's actually happened.
+
+**Verified live end-to-end against production (`enmosvippabmuqslzrox`), not just applied.**
+Created a real past test gathering hosted by `Allen` with two real approved attendees: `Claude`
+(a genuine pre-existing accepted friend of `Allen`) and `Allen Klein` (genuinely not a friend of
+`Allen` — confirmed directly against the real `friendships` table before picking these two, only
+one accepted friendship exists in production right now, `Claude`↔`Allen`). Created a real test
+community as `Allen`, then ran the exact same friend-check query
+`filterToMyFriends`/`seedCommunityFromGathering` performs (`gathering_interest` approved rows
+joined against a live `friendships` accepted-status check, both scoped to `auth.uid()` via
+`set_config('request.jwt.claims', ...)` as `Allen`'s real session) — correctly identified
+`Claude` as a friend and `Allen Klein` as not. Called the real `send_social_invite` RPC for
+`Claude` as `Allen` — succeeded, produced a real pending `social_invites` row. **Separately
+confirmed the safety net behind the pre-filter actually holds**, not just the pre-filter itself:
+attempted the identical `send_social_invite` call for the non-friend `Allen Klein` as `Allen` —
+correctly rejected with the RPC's own real `'You can only invite friends'` error, confirming
+that even if the client-side pre-filter had a bug, the invite could never actually reach a
+non-friend. This exact outcome (`invitedCount: 1, totalAttendeeCount: 2`) matches the "Invited 1
+of 2 attendees... add the rest as friends" branch of the result copy. Didn't re-verify the
+invite-accept → real membership path itself here — that's the exact mechanism leg 4 of the
+flywheel trace already proved live end-to-end (including that the resulting member can actually
+post in `community_messages`), and this feature reuses it completely unchanged, nothing new to
+re-prove there. All test rows (gathering, both `gathering_interest` rows, the community, its
+membership row, the one `social_invites` row) deleted afterward; confirmed production back to
+its exact pre-test state (0 test communities, 0 test gatherings, 0 invites).
+
+Verified via a full `npx expo export --platform ios` — built clean, no resolution errors.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through. Next session should click through: tap "Start a Community from This Gathering" on a
+real past hosted gathering, confirm the prefilled title/category, confirm the result alert's
+three message branches render correctly for a gathering with all-friend / mixed / no-friend
+attendees, and confirm the link is genuinely absent for an upcoming (not-yet-past) gathering and
+for a gathering already tied to a community.
 
 ## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — DONE
 

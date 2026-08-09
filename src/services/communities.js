@@ -1,4 +1,42 @@
 import { supabase } from './supabase';
+import { filterToMyFriends } from './friends';
+import { sendInvite } from './invites';
+
+// "Start a Community from This Gathering" — a real invite-based spinoff, not
+// auto-membership. community_members' own INSERT policy only ever allows
+// user_id = auth.uid() (self-insert), so there's no way to add someone as a
+// member without their own consent even as the community's creator; this
+// goes through the exact same social_invites path every other community
+// invite already uses, including its real friendship + blocks checks. A
+// gathering attendee who isn't a real friend of the host is never invited
+// here — sendInvite would just reject it, so we pre-filter instead of
+// attempting (and silently swallowing) an invite that can't succeed.
+export async function seedCommunityFromGathering(communityId, gatheringId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  const { data: attendeeRows, error } = await supabase
+    .from('gathering_interest')
+    .select('user_id')
+    .eq('gathering_id', gatheringId)
+    .eq('status', 'approved');
+
+  if (error) {
+    console.error('seedCommunityFromGathering error', error);
+    return { invitedCount: 0, totalAttendeeCount: 0 };
+  }
+
+  const attendeeIds = (attendeeRows ?? []).map((r) => r.user_id).filter((id) => id !== myId);
+  if (attendeeIds.length === 0) return { invitedCount: 0, totalAttendeeCount: 0 };
+
+  const friendsAmongAttendees = await filterToMyFriends(attendeeIds);
+  const results = await Promise.allSettled(
+    friendsAmongAttendees.map((f) => sendInvite('community', communityId, f.id))
+  );
+  const invitedCount = results.filter((r) => r.status === 'fulfilled').length;
+
+  return { invitedCount, totalAttendeeCount: attendeeIds.length };
+}
 
 export async function getBusinessCommunities(partnerId) {
   const { data, error } = await supabase

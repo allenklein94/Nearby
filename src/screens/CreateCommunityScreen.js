@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
-import { createCommunity } from '../services/communities';
+import { createCommunity, seedCommunityFromGathering } from '../services/communities';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -58,6 +58,20 @@ export default function CreateCommunityScreen({ navigation, route }) {
         interestTag,
         isPublic,
       });
+
+      const seedGatheringId = route?.params?.seedFromGatheringId;
+      if (seedGatheringId) {
+        const { invitedCount, totalAttendeeCount } = await seedCommunityFromGathering(community.id, seedGatheringId);
+        if (totalAttendeeCount > 0) {
+          const message = invitedCount === totalAttendeeCount
+            ? `Invited all ${invitedCount} attendee${invitedCount === 1 ? '' : 's'} who are already your friends.`
+            : invitedCount > 0
+              ? `Invited ${invitedCount} of ${totalAttendeeCount} attendees who are already your friends. Add the rest as friends to invite them here too.`
+              : "None of this gathering's attendees are your friends yet — add them as friends to invite them here.";
+          Alert.alert('Community created! 🎉', message);
+        }
+      }
+
       navigation.replace('CommunityDetail', { communityId: community.id, communityName: community.name });
     } catch (e) {
       Alert.alert('Error', e.message);
