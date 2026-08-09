@@ -4,6 +4,62 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 9 2026 — schema-reproducibility regression found during audit refresh (fixed)
+
+While re-verifying the flywheel trace as part of the `PRODUCT_AUDIT` refresh (see the section
+immediately below), found that the Aug 9 schema-baseline fix's own central claim — "a fresh
+empty Supabase project can be rebuilt from committed files alone" — had silently regressed
+since it was proven true. `supabase/migrations/20260809_social_invite_community_join.sql`
+(the flywheel trace's own leg-4 fix, private-community invite-accept → real membership) was
+committed alongside a patch to `supabase/migrations/00000000000000_baseline.sql` that baked the
+identical fix directly into the baseline's own `community_members` INSERT policy (same commit,
+`428ae572`) — but the live migration file was never moved to `supabase/migrations_archive/`
+the way this exact class of problem is supposed to be handled (this is the identical conflict
+shape the original baseline-fix session found and fixed once already for the `visibility`/
+`capacity` columns). Net effect: a fresh replay of `supabase/migrations/` in order would create
+the policy via the baseline, then fail on the incremental migration's own `create policy` for
+the same policy name — Postgres's `CREATE POLICY` has no `IF NOT EXISTS` clause. Production
+itself was never affected (the policy is already correctly live there); this only broke
+rebuilding a *new* empty project from committed files.
+
+**Confirmed with a real replay, not just by reading the SQL** (same Docker method as the
+original baseline verification — `supabase/postgres:15.1.0.147`, a truly empty `public` schema,
+the two known image-version column patches — `auth.users.phone`, `storage.buckets.public` —
+applied to the test container only): applying the live `supabase/migrations/` folder in order
+(baseline → `20260809_business_customer_notes.sql` → `20260809_business_profile_self_edit.sql`)
+now succeeds with exit code 0 end-to-end. **Negative control**: re-applied the archived file on
+top of that same already-migrated state and confirmed it fails exactly as predicted —
+`ERROR: policy "Users can join public communities, invited communities, or thei" for table
+"community_members" already exists` — proving the fix (not something else) is what resolves it.
+The other two live post-baseline migrations (`20260809_business_customer_notes.sql`,
+`20260809_business_profile_self_edit.sql`) were checked too and are genuinely fine — neither
+table/function exists in the baseline, so they're correctly incremental, no duplication.
+
+**Fixed**: moved `supabase/migrations/20260809_social_invite_community_join.sql` to
+`supabase/migrations_archive/` (`git mv`) — the fix it contains is already fully present in the
+baseline, so nothing is lost, only the duplicate live copy is removed from the replay path.
+Container removed afterward, nothing persisted beyond the verification itself.
+
+## Outstanding: PRODUCT_AUDIT full refresh (Aug 9 2026) — IN PROGRESS
+
+The user asked for a complete refresh of `/workspaces/Nearby/PRODUCT_AUDIT/` against the
+**current** repo — 21 commits / 69 files / +14443/-461 lines have landed since that audit was
+written (commit `d96f10cf`), so it's genuinely stale, not a rubber-stamp re-run. Explicit rules:
+current repo is sole source of truth (old audit is a diffing baseline only, never evidence
+something still holds); every previously-identified issue gets a real FIXED/STILL PRESENT/
+PARTIALLY FIXED/NO LONGER APPLICABLE/COULD NOT VERIFY classification verified against current
+implementation; read-only, no application code changes; overwrite the 13 existing
+`PRODUCT_AUDIT/*.md`+`.json` files in place (no second folder); add one new file,
+`AUDIT_CHANGELOG.md`, kept across future refreshes unlike the other 13; max 2 concurrent agents.
+
+**Full plan and live status tracked in `PRODUCT_AUDIT/REFRESH_PROGRESS.md`** — read that file
+first if picking this up after a restart, don't re-derive the plan from scratch. Short version:
+2 parallel background research agents (A: codebase re-scan + technical-debt scan + old-audit
+diff/classification; B: live Supabase re-verification of RLS/ownership/security claims,
+including today's newest RPCs and whether the schema baseline still covers every migration
+added since Aug 9), plus a from-scratch flywheel-trace re-verification done directly (not
+delegated) since it needs judgment across many files, all synthesized into the 14 target files.
+
 ## Aug 9 2026 — push-notification cold-start tap silently dropped (fixed)
 
 Asked directly to verify whether a `gathering_invite` push tap actually reaches an invite-only
