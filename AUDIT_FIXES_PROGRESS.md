@@ -14,7 +14,7 @@ often in this project).
 | 6 | Shared send-and-recover-on-failure for 4 chat screens | DONE |
 | 7 | Proof-of-redemption mechanism for business perks | not started |
 | 8 | Payment processor decision (Stripe or explicit deprioritize) | not started |
-| 9 | Outbound CTAs + streak/tier push notification | not started |
+| 9 | Outbound CTAs + streak/tier push notification | DONE |
 | 10 | Relationship-longevity tools → SettingsScreen entry points | DONE |
 
 ## Notes as I go
@@ -106,3 +106,28 @@ replaced the Android-risky `Alert.alert` this same menu used to render as, exten
 Settings via the same component keeps both fixes consistent rather than reintroducing a native
 Alert here. Verified via a full `npx expo export --platform ios` (clean) and a `@babel/core`
 compile of all 3 touched/new files.
+
+**Item 9** — two independent pieces. (1) Real outbound CTAs added to all 3 dead-end screens:
+`InsightsScreen.js` → "🔎 Find a gathering near you" (`Gatherings`), `MomentumScreen.js` →
+copy depends on real streak state ("🔥 Keep the streak going" vs. "🌱 Find something to do this
+week"), `RewardsScreen.js` → "🎁 Browse perks near you" (`BrandOffers`) — all 3 screens
+previously took no `navigation` prop at all, now do. (2) New
+`supabase/migrations/20260809_momentum_reward_nudges.sql`, applied to production
+(`enmosvippabmuqslzrox`) and verified live: `send_momentum_nudges()`, a `SECURITY DEFINER`
+function matching the exact pattern every other scheduled reminder in this schema already uses
+(`send_birthday_reminders`/`send_first_mission_reminders` — pull the service-role key from
+`vault.decrypted_secrets`, loop over `profiles`, call `send-push` via `net.http_post`),
+scheduled weekly via `pg_cron` (Wednesdays 15:00 UTC, job id 10). Re-implements the same two
+real signals the screens already compute, in SQL: a streak nudge (≥2 consecutive completed
+weeks with a real attended-or-hosted gathering, and nothing yet in the current week — "keep it
+going") and a reward-tier nudge (within 2 redemptions of Bronze/Silver/Gold, same thresholds
+`rewards.js` already uses). Sends at most one nudge per person per run (streak checked first).
+Verified live: confirmed `anon`/`authenticated`/`public` all correctly lack execute, and ran
+`select send_momentum_nudges();` directly against production — completed with no error against
+all 4 real profiles (none met either threshold today given how little real activity/redemption
+history exists yet, so no pushes actually fired in this test run, but the SQL logic itself is
+proven to execute cleanly end-to-end). `routeNotificationTap()` in `services/notifications.js`
+gained the two new `momentum_streak_nudge`/`reward_tier_nudge` cases so tapping either push
+lands on the right screen (`Momentum`/`Rewards`, both confirmed top-level `Stack.Screen`s, not
+nested under `MainTabs`). Verified via a full `npx expo export --platform ios` (clean) and a
+`@babel/core` compile of all 4 touched files.

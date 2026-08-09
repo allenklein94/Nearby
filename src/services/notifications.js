@@ -110,6 +110,12 @@ function routeNotificationTap(data) {
     case 'friend_accepted':
       navigationRef.navigate('Friends');
       break;
+    case 'momentum_streak_nudge':
+      navigationRef.navigate('Momentum');
+      break;
+    case 'reward_tier_nudge':
+      navigationRef.navigate('Rewards');
+      break;
     default:
       break;
   }

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getInsightsStats } from '../services/insights';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -12,7 +12,7 @@ function formatMemberSince(iso) {
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
-export default function InsightsScreen() {
+export default function InsightsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [stats, setStats] = useState(null);
@@ -140,6 +140,16 @@ export default function InsightsScreen() {
             </View>
           ))}
         </View>
+
+        <TouchableOpacity
+          style={styles.ctaButton}
+          onPress={() => navigation.navigate('Gatherings')}
+          activeOpacity={0.85}
+          accessibilityLabel="Find a gathering near you"
+          accessibilityRole="button"
+        >
+          <Text style={styles.ctaButtonText}>🔎 Find a gathering near you</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -188,4 +198,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   achievementIcon: { fontSize: 24, marginBottom: 4 },
   achievementIconLocked: { opacity: 0.5 },
   achievementLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', textAlign: 'center' },
+  ctaButton: {
+    backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md,
+    alignItems: 'center', marginTop: spacing.lg,
+  },
+  ctaButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

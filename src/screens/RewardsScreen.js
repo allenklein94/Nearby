@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyRewardStatus } from '../services/rewards';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function RewardsScreen() {
+export default function RewardsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [status, setStatus] = useState(null);
@@ -90,6 +90,16 @@ export default function RewardsScreen() {
         <Text style={styles.footnote}>
           Points come from offers you've actually redeemed — no separate points to track or spend, just a badge for how much you've used what's nearby.
         </Text>
+
+        <TouchableOpacity
+          style={styles.ctaButton}
+          onPress={() => navigation.navigate('BrandOffers')}
+          activeOpacity={0.85}
+          accessibilityLabel="Browse perks near you"
+          accessibilityRole="button"
+        >
+          <Text style={styles.ctaButtonText}>🎁 Browse perks near you</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -120,4 +130,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tierRowThreshold: { color: colors.textTertiary, fontSize: 12 },
   tierRowCheck: { color: colors.success, fontSize: 16, fontWeight: '700' },
   footnote: { color: colors.textTertiary, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingHorizontal: spacing.md },
+  ctaButton: {
+    backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md,
+    alignItems: 'center', marginTop: spacing.lg,
+  },
+  ctaButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMomentumStats } from '../services/momentum';
 import { useTheme } from '../context/ThemeContext';
@@ -16,7 +16,7 @@ function weekLabel(iso) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function MomentumScreen() {
+export default function MomentumScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [stats, setStats] = useState(null);
@@ -118,6 +118,18 @@ export default function MomentumScreen() {
             );
           })}
         </View>
+
+        <TouchableOpacity
+          style={styles.ctaButton}
+          onPress={() => navigation.navigate('Gatherings')}
+          activeOpacity={0.85}
+          accessibilityLabel={stats.currentStreak > 0 ? 'Keep your streak going' : 'Find something to do this week'}
+          accessibilityRole="button"
+        >
+          <Text style={styles.ctaButtonText}>
+            {stats.currentStreak > 0 ? '🔥 Keep the streak going' : '🌱 Find something to do this week'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -155,4 +167,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   deltaUp: { color: colors.success },
   deltaDown: { color: colors.danger },
   deltaPrevious: { color: colors.textTertiary, fontSize: 12 },
+  ctaButton: {
+    backgroundColor: colors.primary, borderRadius: radius.lg, paddingVertical: spacing.md,
+    alignItems: 'center', marginTop: spacing.md,
+  },
+  ctaButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });
