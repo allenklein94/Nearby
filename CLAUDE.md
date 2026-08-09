@@ -52,9 +52,26 @@ session has the same context as the chat session that built most of this.
   non-owner (`Claude`) was correctly rejected (`You do not manage this business`); test edits
   reverted to the exact pre-test row afterward. Verified via a full `npx expo export --platform
   ios` (clean build).
-- Items 5 (CRM notes/tags — renumbered from the plan's item 8), 6 (Business AI Assistant —
-  renumbered from item 9) — not yet started as of this status update, see the plan below for
-  exact design.
+- Item 5 (CRM notes/tags) — **DONE**. New `business_customer_notes` table
+  (`20260809_business_customer_notes.sql`, `partner_id`/`customer_user_id`/`note`/`tags text[]`,
+  `unique(partner_id, customer_user_id)`) with a SELECT-only RLS policy scoped via
+  `profiles.managed_partner_id` (identical shape to `business_invoices`/`partner_contracts`'s
+  existing owner-scoped SELECT policies, confirmed live before writing this migration) and two
+  SECURITY DEFINER RPCs (`upsert_business_customer_note`/`delete_business_customer_note`, same
+  ownership check, revoked from `public`/`anon`) — no direct client INSERT/UPDATE, matching this
+  schema's established convention for owner-scoped tables. `BusinessDashboardScreen.js`'s
+  existing "Most Engaged" member drill-in (the same expanded panel that already shows visit
+  history from `get_business_member_gathering_history`) gained an editable "Notes (only you can
+  see this)" text field and a comma-separated tags field with a Save action, loaded/saved via
+  new `getBusinessCustomerNote`/`saveBusinessCustomerNote` in `brandOffers.js`. **Verified live
+  against production**: as the real owner (`Allen`), upserted a real note for a real customer
+  (`Claude`) — succeeded; the identical call as a non-owner (`Claude` themself) was correctly
+  rejected (`You do not manage this business`), and the non-owner's own `SELECT` on the table
+  correctly returned zero rows (RLS isolation, not just the RPC-level check); deleted the test
+  row afterward via `delete_business_customer_note` and confirmed the table is back to 0 rows.
+  Verified via a full `npx expo export --platform ios` (clean build).
+- Item 6 (Business AI Assistant) — not yet started as of this status update, see the plan below
+  for exact design.
 
 
 

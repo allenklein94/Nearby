@@ -200,6 +200,38 @@ export async function getBusinessMemberGatheringHistory(partnerId, memberId) {
   return data ?? [];
 }
 
+export async function getBusinessCustomerNote(partnerId, customerUserId) {
+  const { data, error } = await supabase
+    .from('business_customer_notes')
+    .select('note, tags')
+    .eq('partner_id', partnerId)
+    .eq('customer_user_id', customerUserId)
+    .maybeSingle();
+  if (error) {
+    console.error('getBusinessCustomerNote error', error);
+    return null;
+  }
+  return data;
+}
+
+export async function saveBusinessCustomerNote(partnerId, customerUserId, note, tags) {
+  const { error } = await supabase.rpc('upsert_business_customer_note', {
+    partner_id_param: partnerId,
+    customer_user_id_param: customerUserId,
+    note_param: note || null,
+    tags_param: tags ?? [],
+  });
+  if (error) throw error;
+}
+
+export async function deleteBusinessCustomerNote(partnerId, customerUserId) {
+  const { error } = await supabase.rpc('delete_business_customer_note', {
+    partner_id_param: partnerId,
+    customer_user_id_param: customerUserId,
+  });
+  if (error) throw error;
+}
+
 export async function getBusinessTopMembers(partnerId) {
   const { data, error } = await supabase.rpc('get_business_top_members', { partner_id_param: partnerId });
   if (error) {

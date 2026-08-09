@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory } from '../services/brandOffers';
+import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
@@ -53,6 +53,9 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [expandedMemberId, setExpandedMemberId] = useState(null);
   const [memberHistories, setMemberHistories] = useState({});
   const [loadingMemberHistory, setLoadingMemberHistory] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [tagsDraft, setTagsDraft] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [partnershipRequests, setPartnershipRequests] = useState([]);
   const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
@@ -231,6 +234,20 @@ export default function BusinessDashboardScreen({ navigation }) {
       setMemberHistories((prev) => ({ ...prev, [member.user_id]: history }));
       setLoadingMemberHistory(false);
     }
+    const existingNote = await getBusinessCustomerNote(selectedPartner.id, member.user_id);
+    setNoteDraft(existingNote?.note ?? '');
+    setTagsDraft((existingNote?.tags ?? []).join(', '));
+  }
+
+  async function handleSaveNote(member) {
+    setSavingNote(true);
+    try {
+      const tags = tagsDraft.split(',').map((t) => t.trim()).filter(Boolean);
+      await saveBusinessCustomerNote(selectedPartner.id, member.user_id, noteDraft.trim() || null, tags);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingNote(false);
   }
 
   function handleMessageMember(member) {
@@ -638,6 +655,34 @@ export default function BusinessDashboardScreen({ navigation }) {
                               accessibilityRole="button"
                             >
                               <Text style={styles.messageMemberLink}>💬 Message {m.display_name}</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.notesLabel}>Notes (only you can see this)</Text>
+                            <TextInput
+                              style={styles.notesInput}
+                              placeholder="e.g. Regular, prefers the window table..."
+                              placeholderTextColor={colors.textTertiary}
+                              value={noteDraft}
+                              onChangeText={setNoteDraft}
+                              multiline
+                              accessibilityLabel={`Notes about ${m.display_name}`}
+                            />
+                            <TextInput
+                              style={[styles.notesInput, { marginTop: spacing.xs }]}
+                              placeholder="Tags, comma separated (e.g. vip, regular)"
+                              placeholderTextColor={colors.textTertiary}
+                              value={tagsDraft}
+                              onChangeText={setTagsDraft}
+                              autoCapitalize="none"
+                              accessibilityLabel={`Tags for ${m.display_name}`}
+                            />
+                            <TouchableOpacity
+                              onPress={() => handleSaveNote(m)}
+                              disabled={savingNote}
+                              style={{ marginTop: spacing.xs }}
+                              accessibilityLabel="Save note"
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.messageMemberLink}>{savingNote ? 'Saving...' : '💾 Save Note'}</Text>
                             </TouchableOpacity>
                           </View>
                         )}
@@ -1110,6 +1155,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   memberHistoryPanel: { marginTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.sm },
   memberHistoryLine: { color: colors.textSecondary, fontSize: 12, marginBottom: 2 },
   messageMemberLink: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: spacing.sm },
+  notesLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', marginTop: spacing.md, textTransform: 'uppercase' },
+  notesInput: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.sm, fontSize: 13, borderWidth: 1, borderColor: colors.border, marginTop: spacing.xs, minHeight: 40 },
   smallActionButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', minWidth: 80 },
   smallActionButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   growthCard: {
