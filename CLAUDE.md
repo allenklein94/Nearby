@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: schema baseline fix + flywheel trace audit (Aug 9 2026) — part 1 DONE, part 2 in progress
+## Outstanding: schema baseline fix + flywheel trace audit (Aug 9 2026) — part 1 DONE, part 2 DONE
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file. Context: the user directly challenged whether `full_schema_pull_
@@ -525,13 +525,15 @@ building on top of it rather than trusting the audit at face value.
 
 **Lower priority, same list, not detailed here again**: business self-serve onboarding
 (profile self-editing is admittedly unbuilt per `BusinessDashboardScreen.js`'s own UI copy), no
-path to invite a non-app-user to a specific gathering (only a generic app referral exists), no
-nudge to join the community behind a gathering just attended, `NoticesScreen.js` fully dead code,
-`MatchesScreen`'s dangling `RootNavigator.js` import, hardcoded backend URLs/keys inline in
-`LoginScreen.js`/`ProfileScreen.js`/`RehearsalRoomScreen.js`, `PlacesScreen.js`'s broken empty
-state (malformed `ListEmptyComponent` prop), `OnboardingRecommendationsScreen.js`'s
-recommendation cards all navigating identically regardless of which was tapped. Full detail on
-every one of these is in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (items 11-20 there).
+path to invite a non-app-user to a specific gathering (only a generic app referral exists),
+`NoticesScreen.js` fully dead code, `MatchesScreen`'s dangling `RootNavigator.js` import,
+hardcoded backend URLs/keys inline in `LoginScreen.js`/`ProfileScreen.js`/
+`RehearsalRoomScreen.js`, `PlacesScreen.js`'s broken empty state (malformed `ListEmptyComponent`
+prop). Full detail on every one of these is in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md`
+(items 11-20 there). **Two items originally on this list are now closed, both via the Aug 9 2026
+flywheel trace audit above — not re-detailed here**: `OnboardingRecommendationsScreen.js`'s
+recommendation cards not deep-linking (trace leg 1) and no nudge to join the community behind a
+gathering just attended (trace leg 5's `GatheringDetailScreen` community card).
 
 ## Aug 8 2026 — Capacity / Waitlist (closes the one Create 2.0 item deliberately deferred)
 
@@ -1240,7 +1242,7 @@ throughout this whole file:**
    confirmed unchanged) — the actual exclusion has always been the client-side filter logic
    itself, already read and confirmed correct in `getNearbyGatherings()`.
 
-## Outstanding: Create Consolidation + Create Assistant + Business Partnership Requests (IN PROGRESS — plan written before code, in case of restart)
+## Outstanding: Create Consolidation + Create Assistant + Business Partnership Requests — DONE, build-wise (plan written before code, in case of restart)
 
 Started Aug 8 2026, after the `bonus_notices` exploit fix (see below) was finished and
 pushed. The user re-raised the Aug 7 vision-doc email's Create-tab feedback ("Create should
