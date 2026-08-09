@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Alert } from 'react-native';
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -141,7 +141,7 @@ export async function uploadExtraPhoto(userId, asset, position) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
 
-  fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/moderate-photo', {
+  fetch(functionUrl('moderate-photo'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -18,7 +18,7 @@
 
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 import { calculateCompatibility } from './compatibility';
 import { getMyActiveLiveTrackingSession } from './liveTracking';
 
@@ -57,7 +57,7 @@ async function sendPresenceReport(latitude, longitude) {
   const userId = sessionData?.session?.user?.id;
   if (!token || !userId) return;
 
-  await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/report-presence', {
+  await fetch(functionUrl('report-presence'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

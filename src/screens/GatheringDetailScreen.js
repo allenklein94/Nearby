@@ -160,21 +160,24 @@ export default function GatheringDetailScreen({ route, navigation }) {
   }
 
   function confirmLeave() {
+    const isPending = gathering.myStatus === 'pending';
     Alert.alert(
-      'Leave this gathering?',
+      isPending ? 'Withdraw your request?' : 'Leave this gathering?',
       gathering.myStatus === 'approved'
         ? "If someone's waiting on the waitlist, they'll take your spot."
+        : isPending
+        ? "The host won't see your request anymore."
         : "You'll be removed from the waitlist.",
       [
         { text: 'Stay', style: 'cancel' },
         {
-          text: 'Leave',
+          text: isPending ? 'Withdraw' : 'Leave',
           style: 'destructive',
           onPress: async () => {
             setLeaving(true);
             try {
               await leaveGathering(gatheringId);
-              posthog.capture('gathering_left');
+              posthog.capture(isPending ? 'gathering_request_withdrawn' : 'gathering_left');
               await load();
             } catch (e) {
               Alert.alert('Error', e.message);
@@ -544,6 +547,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
           ) : gathering.myStatus === 'pending' ? (
             <View style={styles.pendingPanel}>
               <Text style={styles.pendingText}>You're interested — the host will review and let you know.</Text>
+              <TouchableOpacity
+                onPress={confirmLeave}
+                disabled={leaving}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Withdraw your request to join"
+                accessibilityRole="button"
+              >
+                <Text style={styles.leaveLink}>{leaving ? 'Withdrawing...' : 'Withdraw Request'}</Text>
+              </TouchableOpacity>
             </View>
           ) : gathering.visibility === 'invite_only' && !gathering.hasInviteOnlyAccess ? (
             <View style={styles.pendingPanel}>

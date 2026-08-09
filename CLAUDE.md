@@ -4,6 +4,121 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 9 2026 — second AI's post-refresh review: shift from build→audit loop to hardening + device QA — plan steps 1-4 DONE
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file. After the `PRODUCT_AUDIT` refresh (all 20 flywheel-trace legs re-verified, no new
+BROKEN/MISSING transitions, every P0 from the original audit confirmed fixed), the user shared a
+second AI's reaction. Its core call — the build→audit→build loop has run its course; the core
+product loop is now substantially connected; the next phase is real-device QA, not more
+features — is agreed with, no reservation. Also agreed without reservation: no Stripe work yet,
+no new giant audit, no AI Concierge expansion, no Stories 2.0/new tabs, defer large-file
+refactors (`GatheringsScreen`/`ChatScreen`/`BusinessDashboardScreen`) until actually touching
+those areas rather than refactoring for its own sake, business partnership stays admin-gated for
+now (a deliberate decision, not a code change).
+
+**One correction to the second AI's framing, important for how this actually gets executed**:
+"device QA" is not something a Claude Code session can perform — this sandbox has never had
+simulator/device access, the single most-repeated standing limitation in this entire file. So
+the roadmap isn't "Claude does device QA next" — it's "Claude closes out the remaining
+code-level items below, then this file's job is done until a real device pass (the user's own,
+or a future session with real device access) finds something concrete to fix." The 5-persona
+test script is captured below so it survives to whenever that pass actually happens, not
+something this session runs itself.
+
+**Verified every concrete claim in the second AI's message directly against the repo before
+committing to this plan** (same standing rule as every other section in this file — don't build
+on a claim without checking it against the live code first):
+- **Hardcoded backend URLs — confirmed accurate, matches the "12 more files" claim almost
+  exactly.** Grepped for the literal `enmosvippabmuqslzrox.supabase.co` string across `src/`:
+  12 files / 13 call sites remain beyond the 3 already fixed earlier today —
+  `CompatibilityReportModal.js`, `ChatScreen.js` (3 sites: courage-message/translate-message/
+  generate-icebreaker), `account.js`, `aiConcierge.js`, `createAssistant.js`, `dataExport.js`,
+  `extraPhotos.js`, `photos.js`, `presenceStatus.js`, `proximity.js`, `textModeration.js`, and
+  one more found while checking (next bullet). All of them hit Edge Functions, so all trivially
+  reduce to the same `functionUrl()` helper already centralized in `services/supabase.js`
+  earlier today for the first 3 — mechanical, no new pattern needed.
+- **Found while checking, unrelated to the URL issue itself**: `src/services/src/
+  services/textModeration.js` — a genuine accidental nested-directory duplicate (byte-identical
+  to the real `src/services/textModeration.js`, save a trailing newline), confirmed zero
+  importers anywhere in `src/`. Pure dead cruft from some past copy/paste mistake; delete
+  alongside the URL cleanup pass since it's already been found.
+- **Pending-join "withdraw request" gap — confirmed real, and cheaper to fix than it sounds.**
+  `GatheringDetailScreen.js`'s `approved` and `waitlisted` post-join panels both already have a
+  real, working "Leave Gathering"/"Leave Waitlist" button wired to `leaveGathering()` — and
+  `leave_gathering()` (the underlying RPC, built in the Aug 8 Capacity/Waitlist pass) already
+  deletes the caller's own `gathering_interest` row regardless of its status, not just
+  `approved`. The `pending` panel (host-approval, awaiting review — around line 544-546) has no
+  such button at all, only static text ("You're interested — the host will review and let you
+  know."). Since the RPC already supports this status, this is a pure client-side wiring gap,
+  not new schema/RPC work: add the same `confirmLeave`/`leaveGathering()` action to the pending
+  panel, relabeled "Withdraw Request."
+- **`FeaturesOverviewScreen` — the second AI's premise doesn't hold up, nothing to fix here.**
+  Read the screen directly: it's a static expand/collapse reference glossary ("tap a category to
+  see what's inside" — plain text descriptions per feature, zero `navigation.navigate` calls
+  anywhere in the file). There are no dead tap-throughs to make work or remove. Dropped from the
+  plan rather than silently acted on.
+- **Chemistry Diary — real gap, but narrower than described.** A working entry point already
+  exists: `ChatScreen.js`'s "Together" menu has "📔 Log a Chemistry Check-In" →
+  `ChemistryDiaryEntry`. The actual gap: `ChemistryDiaryListScreen.js`'s own empty-state copy
+  promises "Add an entry any time... from their profile or a chat," but only the chat half is
+  real — `ViewProfileScreen.js` has zero references to Chemistry Diary anywhere. Genuinely P2
+  per the second AI's own ranking; not touched in this pass, just corrected here for accuracy so
+  a future session doesn't assume the whole feature is unreachable.
+- **Migration discipline — agreed, worth codifying as a standing rule, not just this one-time
+  fix.** See item 3 below.
+
+**Plan, in order — steps 1-5 DONE this pass:**
+1. **DONE.** Centralized the remaining 12 hardcoded URLs onto the existing `functionUrl()`
+   helper: `CompatibilityReportModal.js`, `ChatScreen.js` (3 call sites), `account.js`,
+   `aiConcierge.js`, `createAssistant.js`, `dataExport.js`, `extraPhotos.js`, `photos.js`,
+   `presenceStatus.js`, `proximity.js`, `textModeration.js` — each gained `functionUrl` on its
+   existing `supabase` import and swapped its literal URL for `functionUrl('function-name')`.
+   Confirmed via a repo-wide grep afterward that `enmosvippabmuqslzrox.supabase.co` appears
+   nowhere in `src/` except the one `SUPABASE_URL` constant in `services/supabase.js` itself.
+   Deleted the stray duplicate `src/services/src/services/textModeration.js` (confirmed zero
+   importers before deleting).
+2. **DONE.** Added a "Withdraw Request" action to `GatheringDetailScreen.js`'s `pending` panel,
+   reusing `confirmLeave`/`leaveGathering()` — no new RPC needed, `leave_gathering()` already
+   deletes the caller's own row for any status. `confirmLeave()` itself gained a real `pending`
+   branch (was previously binary approved-vs-waitlisted only) so the confirmation alert shows
+   honest copy for this case too — "Withdraw your request?" / "The host won't see your request
+   anymore." — instead of the waitlist-specific wording that would have been wrong here.
+3. **DONE.** Added the migration-discipline rule to "Known conventions" (bottom of this file):
+   one migration file per schema change, verified via a clean-database replay (the
+   `supabase/postgres:15.1.0.147` Docker method) before being considered done, not just applied
+   to production.
+4. Business partnership approval stays admin-gated — no code change; decision recorded.
+5. **DONE.** Full `npx expo export --platform ios` — clean, 1850 modules (unchanged from the
+   pre-existing baseline: this pass only edited existing files and removed one file that was
+   already outside the bundle graph, so no module-count change was expected). Committed and
+   pushed.
+6. **Standing going forward**: no further autonomous feature work after this. The next real
+   input this app needs is the 5-persona device QA pass below, which only a session with real
+   device/simulator access (or the user directly) can actually run.
+
+**Device QA script — for whenever a real device pass happens, not something this sandboxed
+session can run itself. Kept here so it survives to that point regardless of how many sessions
+or restarts happen between now and then.**
+
+- **Person 1, brand-new user**: sign up → onboarding → Home → Discover → find a gathering → join
+  → invite someone → receive the notification → chat → attend → community → return later. Note
+  every point of hesitation.
+- **Person 2, gathering organizer**: create a gathering (category → date/time → location →
+  publish) → invite → watch participants come in → chat → modify/cancel → post-gathering flow.
+- **Person 3, community user**: discover a community → join → view it → chat → create a
+  gathering from inside it → participate.
+- **Person 4, business**: business onboarding → business profile → partnership request/approval
+  → offer a perk → a user redeems it → confirmation code → dashboard shows the redemption.
+- **Person 5, stranger/safety test — the most important one**: block, unblock, a private
+  gathering, an invite-only gathering, a private community, messaging permissions, location
+  visibility, removing someone, reporting, leaving a gathering/community. Actively try to break
+  the privacy model, not just click through it.
+- **Kill-the-app test, both iOS and Android**: start an important flow, force-close the app,
+  reopen, tap the notification/deep link that was pending, confirm it lands exactly where it
+  should. This directly exercises the Aug 9 cold-start push-tap fix documented below — proving
+  it on a real device is the one thing that fix has never actually had.
+
 ## Aug 9 2026 — schema-reproducibility regression found during audit refresh (fixed)
 
 While re-verifying the flywheel trace as part of the `PRODUCT_AUDIT` refresh (see the section
@@ -3409,3 +3524,16 @@ per-partner billing math running end-to-end on a schedule, but no money actually
 - Direct SELECT on `offer_redemptions` is scoped to each user's own rows only (RLS) — always
   go through a SECURITY DEFINER RPC (e.g., `get_offer_redemption_counts`,
   `count_redemptions_since`) to get true aggregate counts.
+- **Migration discipline** (added Aug 9 2026, after the schema-reproducibility regression found
+  and fixed during the `PRODUCT_AUDIT` refresh — see that section above for the full incident):
+  every schema change ships as **exactly one** migration file in `supabase/migrations/` — never
+  both a live migration *and* a duplicate hand-patch baked into `00000000000000_baseline.sql`/
+  `full_schema_pull_2026-08-09.sql` in the same change, which is the exact shape of the
+  regression that slipped through once already. Before considering a schema change done, replay
+  it against a truly empty database — not just apply it to production — using the same method
+  already proven in this file: pull the real `supabase/postgres:15.1.0.147` Docker image, drop
+  and recreate an empty `public` schema, run the full `supabase/migrations/` folder in order
+  with `psql -v ON_ERROR_STOP=1`, confirm exit code 0. This is the only way to actually prove
+  "a fresh empty Supabase project can be rebuilt from committed files alone" rather than assert
+  it — verifying against live production alone cannot catch a baseline/migration conflict, since
+  production was never rebuilt from these files in the first place.

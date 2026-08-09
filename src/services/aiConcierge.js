@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 import { getNearbyGatherings } from './gatherings';
 import { getPublicCommunities } from './communities';
 import { getActiveOffers } from './brandOffers';
@@ -52,7 +52,7 @@ export async function askConcierge(queryText, location) {
     })),
   ].slice(0, MAX_CANDIDATES);
 
-  const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/ai-concierge', {
+  const response = await fetch(functionUrl('ai-concierge'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

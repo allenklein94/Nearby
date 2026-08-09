@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 
 // The Create Assistant -- a free, unbranded natural-language box on
 // CreateHubScreen that classifies what the user's typing into an intent
@@ -13,7 +13,7 @@ export async function classifyCreateRequest(text) {
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('Sign in to use this.');
 
-  const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/create-assistant', {
+  const response = await fetch(functionUrl('create-assistant'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

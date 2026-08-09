@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, ActivityIndicator } from 'react-native';
-import { supabase } from '../services/supabase';
+import { supabase, functionUrl } from '../services/supabase';
 import { generateCompatibilityCompass, generateFrictionPoints } from '../services/compatibility';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { useTheme } from '../context/ThemeContext';
@@ -36,7 +36,7 @@ export default function CompatibilityReportModal({ visible, onClose, report, the
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-introduction', {
+      const response = await fetch(functionUrl('generate-introduction'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio, Video } from 'expo-av';
-import { supabase } from '../services/supabase';
+import { supabase, functionUrl } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { isPremium } from '../services/purchases';
 import { updateBadgeCount } from '../services/notifications';
@@ -512,7 +512,7 @@ export default function ChatScreen({ route, navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-courage-message', {
+      const response = await fetch(functionUrl('generate-courage-message'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -667,7 +667,7 @@ export default function ChatScreen({ route, navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/translate-message', {
+      const response = await fetch(functionUrl('translate-message'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -797,7 +797,7 @@ export default function ChatScreen({ route, navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-icebreaker', {
+      const response = await fetch(functionUrl('generate-icebreaker'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

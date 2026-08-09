@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 
 // Calls the delete-account Edge Function, which permanently removes the
 // user's profile, uploaded photo, and all associated app data (cascaded
@@ -12,7 +12,7 @@ export async function deleteAccount() {
     throw new Error('No active session.');
   }
 
-  const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/delete-account', {
+  const response = await fetch(functionUrl('delete-account'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });

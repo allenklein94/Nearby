@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Alert } from 'react-native';
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 
 // Offers both camera and library — most competitor apps let you take
 // a photo directly rather than only picking from an existing camera
@@ -119,7 +119,7 @@ export async function uploadProfilePhoto(userId, asset) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
 
-  fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/moderate-photo', {
+  fetch(functionUrl('moderate-photo'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   }).catch((err) => console.error('moderate-photo trigger failed', err));
