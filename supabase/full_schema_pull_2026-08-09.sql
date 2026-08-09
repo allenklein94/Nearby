@@ -5189,14 +5189,21 @@ create policy "Members visible to other members and the public if community is"
   for select
   to public
   using ((is_community_visible_to(community_id, auth.uid()) OR (user_id = auth.uid())));
-create policy "Users can join public communities, or their own community regar"
+-- Patched 2026-08-09 (flywheel trace audit) to add a third insert path: a
+-- real accepted social_invites row for this exact (community, invitee) pair
+-- -- previously an invitee could accept a private-community invite but had
+-- no actual way to join, since the only two paths were "public" or "the
+-- creator". See CLAUDE.md's flywheel trace audit section.
+create policy "Users can join public communities, invited communities, or thei"
   on public.community_members
   as permissive
   for insert
   to authenticated
-  with check (((user_id = auth.uid()) AND (EXISTS ( SELECT 1
+  with check (((user_id = auth.uid()) AND ((EXISTS ( SELECT 1
    FROM communities c
-  WHERE ((c.id = community_members.community_id) AND ((c.is_public = true) OR (c.creator_id = auth.uid()))))) AND (((role = 'creator'::text) AND (EXISTS ( SELECT 1
+  WHERE ((c.id = community_members.community_id) AND ((c.is_public = true) OR (c.creator_id = auth.uid()))))) OR (EXISTS ( SELECT 1
+   FROM social_invites si
+  WHERE ((si.invite_type = 'community'::text) AND (si.target_id = community_members.community_id) AND (si.invitee_id = auth.uid()) AND (si.status = 'accepted'::text))))) AND (((role = 'creator'::text) AND (EXISTS ( SELECT 1
    FROM communities c
   WHERE ((c.id = community_members.community_id) AND (c.creator_id = auth.uid()))))) OR (role = 'member'::text))));
 create policy "Users can leave communities themselves"
