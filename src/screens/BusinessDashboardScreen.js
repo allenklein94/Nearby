@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -50,6 +50,8 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [loadingMemberHistory, setLoadingMemberHistory] = useState(false);
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [partnershipRequests, setPartnershipRequests] = useState([]);
+  const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
+  const [confirmingCode, setConfirmingCode] = useState(false);
   const [respondingToRequestId, setRespondingToRequestId] = useState(null);
   const [offerGatheringId, setOfferGatheringId] = useState(null);
   const [newRedemptionLimit, setNewRedemptionLimit] = useState('');
@@ -323,6 +325,25 @@ export default function BusinessDashboardScreen({ navigation }) {
       loadOffers(selectedPartner.id);
     } catch (e) {
       Alert.alert('Error', e.message);
+    }
+  }
+
+  async function handleConfirmRedemption() {
+    if (!redemptionCodeInput.trim()) return;
+    setConfirmingCode(true);
+    try {
+      const result = await confirmOfferRedemption(redemptionCodeInput);
+      if (result.success) {
+        Alert.alert('Confirmed', `${result.redeemedByName ?? 'This customer'}'s redemption of "${result.offerTitle}" is confirmed.`);
+        setRedemptionCodeInput('');
+        loadOffers(selectedPartner.id);
+      } else {
+        Alert.alert('Not confirmed', result.error || "That code doesn't match a pending redemption.");
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setConfirmingCode(false);
     }
   }
 
@@ -665,6 +686,36 @@ export default function BusinessDashboardScreen({ navigation }) {
                     </View>
                   ))
                 )}
+
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Confirm a Redemption</Text>
+                <Text style={styles.offerDescription}>
+                  Ask the customer for the 6-digit code they were shown when they redeemed, and enter it here to confirm the visit really happened. Only confirmed redemptions count toward billing.
+                </Text>
+                <View style={[styles.gatheringRow, { marginTop: spacing.sm, flexDirection: 'row', alignItems: 'center' }]}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="6-digit code"
+                    placeholderTextColor={colors.textTertiary}
+                    value={redemptionCodeInput}
+                    onChangeText={(t) => setRedemptionCodeInput(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                    accessibilityLabel="Redemption confirmation code"
+                  />
+                  <TouchableOpacity
+                    style={[styles.createOfferButton, { marginBottom: 0, marginLeft: spacing.sm, opacity: confirmingCode || !redemptionCodeInput.trim() ? 0.6 : 1 }]}
+                    onPress={handleConfirmRedemption}
+                    disabled={confirmingCode || !redemptionCodeInput.trim()}
+                    accessibilityLabel="Confirm redemption code"
+                    accessibilityRole="button"
+                  >
+                    {confirmingCode ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.createOfferButtonText}>Confirm</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
 
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
                 <View style={styles.gatheringRow}>

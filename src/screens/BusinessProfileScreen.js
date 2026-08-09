@@ -106,9 +106,9 @@ export default function BusinessProfileScreen({ route, navigation }) {
   async function handleRedeem(offer) {
     setRedeemingId(offer.id);
     try {
-      await redeemOffer(offer.id);
+      const { confirmationCode } = await redeemOffer(offer.id);
       setRedemptionCounts((prev) => ({ ...prev, [offer.id]: (prev[offer.id] ?? 0) + 1 }));
-      Alert.alert('Redeemed!', `Show this to staff at ${partner?.name}: ${offer.redemption_instructions ?? offer.title}`);
+      Alert.alert('Redeemed!', `Show staff at ${partner?.name} this code to confirm: ${confirmationCode}`);
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
         Alert.alert("You've already redeemed this");

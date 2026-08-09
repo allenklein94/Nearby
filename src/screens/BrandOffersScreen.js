@@ -75,11 +75,11 @@ export default function BrandOffersScreen({ navigation }) {
   async function handleRedeem(offer) {
     setRedeemingId(offer.id);
     try {
-      await redeemOffer(offer.id);
+      const { confirmationCode } = await redeemOffer(offer.id);
       posthog.capture('brand_offer_redeemed', { offer_id: offer.id, partner: offer.brand_partners?.name });
       Alert.alert(
         'Redeemed!',
-        offer.redemption_instructions || 'Check your account for details on how to use this.',
+        `Show staff this code to confirm: ${confirmationCode}\n\n${offer.redemption_instructions || 'Check your account for details on how to use this.'}`,
         [
           {
             text: 'Continue',

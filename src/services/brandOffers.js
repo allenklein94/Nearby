@@ -527,9 +527,16 @@ export async function redeemOffer(offerId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
-  const { error } = await supabase
+  // A claim isn't proof a redemption actually happened — the returned
+  // confirmation_code is what the business owner enters (via
+  // confirmOfferRedemption) to attest the visit was real. Only confirmed
+  // redemptions count toward billing (see get_partner_billing_estimate /
+  // generate_monthly_invoices).
+  const { data, error } = await supabase
     .from('offer_redemptions')
-    .insert({ offer_id: offerId, user_id: userId });
+    .insert({ offer_id: offerId, user_id: userId })
+    .select('confirmation_code')
+    .single();
 
   if (error) {
     if (error.code === '23505') {
@@ -540,4 +547,12 @@ export async function redeemOffer(offerId) {
     }
     throw error;
   }
+
+  return { confirmationCode: data.confirmation_code };
+}
+
+export async function confirmOfferRedemption(code) {
+  const { data, error } = await supabase.rpc('confirm_offer_redemption', { code_param: code.trim() });
+  if (error) throw error;
+  return data;
 }

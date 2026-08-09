@@ -4,7 +4,26 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: PRODUCT_AUDIT fixes (Aug 9 2026) — NOT STARTED
+## Outstanding: PRODUCT_AUDIT fixes (Aug 9 2026) — DONE, all 10 items closed
+
+**Status update, same day**: all 10 items below are now closed — 8 built/fixed, 2 (items 2 and
+8) closed as deliberate, documented decisions rather than code changes (see their own bullets
+and `AUDIT_FIXES_PROGRESS.md` for the full blow-by-blow, kept incrementally updated across this
+session's several codespace restarts so nothing here depended on this conversation's memory).
+The numbered list below is left as originally written (the audit's own framing) — read
+`AUDIT_FIXES_PROGRESS.md` for what actually shipped for each, since several items (particularly
+7) turned out to already be mostly built from before a restart and only needed finishing/
+verifying, not built from scratch. **Item 7** (proof-of-redemption for business perks): a real
+6-digit confirmation-code flow — claiming an offer returns a code shown to the user, the
+business owner enters it on a new "Confirm a Redemption" card in `BusinessDashboardScreen.js`
+to confirm the visit really happened, and only `confirmed_at is not null` redemptions count
+toward billing now (both `generate_monthly_invoices`/`get_partner_billing_estimate`). Migration
+and most client wiring were already live from before this session's restart; verified
+end-to-end against production including the closed self-confirm exploit path (a direct insert
+setting `confirmed_at`/`confirmed_by` is rejected by RLS). **Item 8** (payment processor):
+deliberately deprioritized, not built — same standing rule as the "Outstanding: Billing /
+Monetization" section further below (real money, real external account, needs the user
+present for that decision, not something to set up autonomously).
 
 A full read-only product/UX/architecture audit was built at `/workspaces/Nearby/PRODUCT_AUDIT/`
 (13 files + `AUDIT_SUMMARY.json`, zipped copy at `PRODUCT_AUDIT.zip` in both the repo root and
@@ -14,7 +33,6 @@ every item below live in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (ranked P0
 `PRODUCT_AUDIT/AI_HANDOFF.md` — this section is the fix-it to-do list distilled from that audit,
 written here specifically so a fresh session (post-restart) picks it up automatically the same
 way every other section in this file works, rather than depending on this conversation's memory.
-**None of the 10 items below have been started yet as of this write-up.**
 
 Before starting any of these: re-read the relevant `PRODUCT_AUDIT/` file first (the audit itself
 may be stale by the time this is picked up if the app has changed in the meantime), and follow
