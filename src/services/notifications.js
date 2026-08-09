@@ -1,8 +1,18 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { navigationRef } from '../navigation/RootNavigator';
+
+// A push tap can arrive (via getLastNotificationResponseAsync, below) before
+// the authenticated stack is mounted — e.g. the app was fully closed and the
+// tap is what's launching it. navigationRef isn't ready yet at that point, so
+// the tap is stashed here and replayed once RootNavigator's own session/
+// profileComplete effect confirms the stack exists — same PENDING_GATHERING_
+// LINK_KEY pattern RootNavigator already uses for a nearby:// link tapped
+// before sign-in.
+const PENDING_NOTIFICATION_TAP_KEY = 'pending_notification_tap';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -78,8 +88,12 @@ export async function updateBadgeCount(userId) {
 // to work independent of any specific screen already being mounted —
 // that's why it uses the exported navigationRef rather than a
 // component-level navigation prop.
-function routeNotificationTap(data) {
-  if (!data || !navigationRef.isReady()) return;
+export function routeNotificationTap(data) {
+  if (!data) return;
+  if (!navigationRef.isReady()) {
+    AsyncStorage.setItem(PENDING_NOTIFICATION_TAP_KEY, JSON.stringify(data));
+    return;
+  }
 
   switch (data.type) {
     case 'match':
@@ -119,6 +133,15 @@ function routeNotificationTap(data) {
     default:
       break;
   }
+}
+
+// Called from RootNavigator once session && profileComplete, so a tap that
+// arrived before the authenticated stack existed isn't lost.
+export async function consumePendingNotificationTap() {
+  const raw = await AsyncStorage.getItem(PENDING_NOTIFICATION_TAP_KEY);
+  if (!raw) return;
+  await AsyncStorage.removeItem(PENDING_NOTIFICATION_TAP_KEY);
+  routeNotificationTap(JSON.parse(raw));
 }
 
 // Call once, high in the component tree (App.js), to start listening

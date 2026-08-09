@@ -4,6 +4,35 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 9 2026 — push-notification cold-start tap silently dropped (fixed)
+
+Asked directly to verify whether a `gathering_invite` push tap actually reaches an invite-only
+gathering correctly. The invite-only access check itself (`getGatheringById()`,
+`services/gatherings.js:742-756`) turned out to be sound and reachability-independent — it
+re-queries a real accepted `social_invites` row fresh on every load, regardless of how the
+screen was opened. **The real bug was upstream, and broader than the invite-only case**: any
+push tap (`gathering_invite`, but also `match`/`message`/`wave`/`friend_request`/etc.) that
+launched the app from a **fully closed state** was silently dropped. `routeNotificationTap()`
+(`services/notifications.js`) bailed out with `if (!navigationRef.isReady()) return;`, but
+`App.js`'s `setupNotificationTapHandling()` calls `getLastNotificationResponseAsync()`
+immediately on mount — well before the authenticated stack (which needs `session &&
+profileComplete`) is mounted. This is the identical class of bug already found and fixed for the
+`nearby://gathering/:id` deep link in the Aug 8 2026 audit (see that section below) — that fix
+was never extended to push taps.
+
+**Fixed**, mirroring the existing `PENDING_GATHERING_LINK_KEY` pattern exactly:
+`routeNotificationTap()` (now exported) stashes the tap payload to AsyncStorage instead of
+dropping it when `navigationRef` isn't ready; a new `consumePendingNotificationTap()` replays it
+from `RootNavigator.js`'s existing `session && profileComplete` effect (same 300ms `setTimeout`
+delay already used for the pending-gathering-link consume). Warm/backgrounded taps are
+unaffected — that path already worked, since `navigationRef` is already ready by the time a
+running app's listener fires.
+
+Verified via a full `npx expo export --platform ios` (1850 modules, unchanged — edits to
+`services/notifications.js` and `RootNavigator.js` only, no new files). **Not done yet, same
+standing gap as everywhere else in this file**: no on-device verification of an actual cold-start
+push tap — this sandbox has no way to kill the app and deliver a real push to trigger it.
+
 ## Outstanding: Remaining PRODUCT_AUDIT polish bugs + almost-full nudge + CRM notes + Business AI Assistant (Aug 9 2026) — DONE, all six items closed
 
 **Status, updated as each piece lands (see plan below for full detail on each item)**:

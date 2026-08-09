@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { registerForPushNotifications, updateBadgeCount } from '../services/notifications';
+import { registerForPushNotifications, updateBadgeCount, consumePendingNotificationTap } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
 import { supabase } from '../services/supabase';
@@ -284,6 +284,9 @@ export default function RootNavigator() {
       registerForPushNotifications(session.user.id);
       startBackgroundPresenceReporting();
       updateBadgeCount(session.user.id);
+      setTimeout(() => {
+        consumePendingNotificationTap();
+      }, 300);
       // Checked and cleared here so the recommendations screen only
       // ever shows once, right after a fresh signup — every
       // subsequent app open goes straight to MainTabs as normal.
