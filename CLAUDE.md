@@ -4,6 +4,36 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 9 2026 — item 5 of the prioritized list: ChemistryDiaryListScreen profile-entry-point gap — DONE (half of it — see scope note)
+
+Asked directly to do item 5 from the prioritized list below, if small. It's actually two
+separate sub-items bundled under one bullet; only one of them is genuinely small, so only that
+one was built:
+
+- **Profile-entry-point gap — DONE, small.** `ChemistryDiaryListScreen.js`'s own empty state
+  promises an entry can be added "from their profile or a chat" — the chat half was already real
+  (`ChatScreen.js`'s "📔 Log a Chemistry Check-In" row, navigating to `ChemistryDiaryEntry` with
+  just `{ aboutDisplayName }`), but `ViewProfileScreen.js` had zero references to Chemistry Diary
+  anywhere, confirmed via grep before touching anything. Fixed: `ViewProfileScreen.js` gained the
+  identical "📔 Log a Chemistry Check-In" link (same route, same single `aboutDisplayName` param,
+  sourced from the already-loaded `profile.display_name` — no new query), placed right under the
+  existing Add Friend button, shown for any non-own profile (matches this being a personal
+  reflection tool with no friendship gate on the chat entry point either, so none was added here).
+- **Non-indexed offers search — deliberately NOT done, not actually small.** This is the same
+  gap already flagged and deliberately left in the Aug 9 "second AI's post-refresh review"
+  section below: fixing it for real needs a genuine cross-table search (`brand_offers.title`/
+  `description` **and** `brand_partners.name`) that PostgREST's `.or()` can't express in one
+  request across a join — it would need a new Postgres function, not just an index or a client
+  wiring change. That's a real, if small-in-user-impact, schema change — out of scope for "if
+  small," and this app's real number of business partners stays small enough that the cost of
+  leaving it client-side-filtered is low. Left exactly as previously flagged, not silently
+  attempted or dropped.
+- Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+  was an edit to an existing screen only).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through — next session should confirm the new link on a real (non-self) profile actually
+  opens the Chemistry Check-In modal with the right name prefilled.
+
 ## Aug 9 2026 — prioritized the remaining PRODUCT_AUDIT items, fixed the top one (business-request double-review gap)
 
 Asked directly to prioritize what's left. Cross-checked `PRODUCT_AUDIT/AUDIT_CHANGELOG.md`'s

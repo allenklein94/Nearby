@@ -301,6 +301,17 @@ export default function ViewProfileScreen({ route, navigation }) {
             </TouchableOpacity>
           )}
 
+          {!isOwnProfile && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: profile.display_name })}
+              accessibilityLabel={`Log a chemistry check-in about ${profile.display_name}`}
+              accessibilityRole="button"
+              style={styles.chemistryDiaryLink}
+            >
+              <Text style={styles.chemistryDiaryLinkText}>📔 Log a Chemistry Check-In</Text>
+            </TouchableOpacity>
+          )}
+
           {mutualFriends.length > 0 && (
             <Text style={styles.mutualFriendsText}>
               🤝 {mutualFriends.length === 1
@@ -499,6 +510,8 @@ const getStyles = (colors) => StyleSheet.create({
   },
   addFriendButtonSent: { borderColor: colors.success },
   addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  chemistryDiaryLink: { alignSelf: 'flex-start', marginBottom: spacing.md },
+  chemistryDiaryLinkText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   mutualFriendsText: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
   trackRowDisplay: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
