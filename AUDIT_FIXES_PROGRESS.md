@@ -15,7 +15,7 @@ often in this project).
 | 7 | Proof-of-redemption mechanism for business perks | not started |
 | 8 | Payment processor decision (Stripe or explicit deprioritize) | not started |
 | 9 | Outbound CTAs + streak/tier push notification | not started |
-| 10 | Relationship-longevity tools → SettingsScreen entry points | not started |
+| 10 | Relationship-longevity tools → SettingsScreen entry points | DONE |
 
 ## Notes as I go
 
@@ -92,3 +92,17 @@ forever with just a `console.error`, no visible sign anything was wrong.
 ice-breaker deep link) maps directly onto the hook's `initialText` param, unchanged. Verified
 via a full `npx expo export --platform ios` (clean) and a `@babel/core` compile of all 5
 touched files.
+
+**Item 10** — new `src/screens/RelationshipToolsScreen.js` + `RelationshipTools` route, added
+to `SettingsScreen.js`'s "Reflection Tools" section as a 6th row alongside the 5 already there
+(Rehearsal Room, Chemistry Diary, Private Reflections, Relationship Wisdom, Emergency Kit).
+The 6 missing tools (`RelationshipConstitution`, `StressTest`, `SharedDecisions`,
+`SharedPlaylist`, `TripPlanning`, `TimelinePlanner`) all require a real `{matchId, matchName}`
+— unlike their 5 siblings, which are personal/global — so this couldn't just be 6 more flat
+rows; the new screen is a match picker (reusing the same matches-list pattern
+`MemoryVaultIndexScreen.js` already established) that opens the new `ActionSheetModal` (from
+item 2) scoped to whichever match is tapped, listing all 6 tools by name. Now that item 2 has
+replaced the Android-risky `Alert.alert` this same menu used to render as, extending it into
+Settings via the same component keeps both fixes consistent rather than reintroducing a native
+Alert here. Verified via a full `npx expo export --platform ios` (clean) and a `@babel/core`
+compile of all 3 touched/new files.

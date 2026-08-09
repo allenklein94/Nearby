@@ -824,6 +824,17 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('RelationshipTools')}
+          activeOpacity={0.85}
+          accessibilityLabel="Relationship tools, shared with a specific match"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🧩 Relationship Tools</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
         <Text style={styles.sectionLabel} accessibilityRole="header">Account & Billing</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
