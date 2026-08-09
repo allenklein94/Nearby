@@ -133,9 +133,9 @@ the relevant file (`PRODUCT_OVERVIEW.md`, `DATABASE_AND_DATA_MODEL.md`, `SCREEN_
 
 - All 13 pre-existing `PRODUCT_AUDIT/*.md`/`.json` files were overwritten in place with this
   refresh's findings — no second folder was created.
-- `PRODUCT_AUDIT.zip` (the packaged copy of the original 13-file audit) was **not** regenerated
-  this refresh — it is now stale relative to the files in this folder. Flagged here rather than
-  silently left inconsistent; regenerate it if a fresh zip handoff is needed.
+- `PRODUCT_AUDIT.zip` was regenerated after the user asked for it directly — now contains the
+  refreshed 13 files plus this changelog (14 total), matching the original's file structure
+  (each entry nested under a `PRODUCT_AUDIT/` folder inside the zip).
 - `PROGRESS.md` (the original audit's own build-scratch file) was left untouched — it documents
   how the *original* audit was built, not a claim about current app state, so it doesn't need
   refreshing.
