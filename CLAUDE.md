@@ -4,6 +4,153 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Remaining PRODUCT_AUDIT polish bugs + almost-full nudge + CRM notes + Business AI Assistant (Aug 9 2026) — items 1, 3, 4 DONE, rest in progress
+
+**Status, updated as each piece lands (see plan below for full detail on each item)**:
+- Item 1 (small polish bugs: dead `NoticesScreen.js`, dangling `MatchesScreen` import,
+  malformed `PlacesScreen.js` empty state, hardcoded backend URLs) — **DONE**, all four fixed.
+  `NoticesScreen.js` deleted outright (309 lines, confirmed zero live references — the
+  `'Notices'` route has always rendered `ActivityScreen`, not this file); the same import line
+  in `RootNavigator.js` removed. `RootNavigator.js`'s dangling `MatchesScreen` import line
+  removed (the screen itself is untouched — still used correctly by `InboxScreen.js`).
+  `PlacesScreen.js`'s split `ListEmpty`/`Component` props joined into one real
+  `ListEmptyComponent`. New `functionUrl(name)` helper added to `services/supabase.js`
+  (wraps the same `SUPABASE_URL` constant already used for the Supabase client itself);
+  `LoginScreen.js`/`RehearsalRoomScreen.js`/`ProfileScreen.js` now call
+  `functionUrl('review-login'|'rehearsal-chat'|'generate-strengths')` instead of each hardcoding
+  the full `https://enmosvippabmuqslzrox.supabase.co/functions/v1/...` URL a second time.
+- Item 3 (invite a non-app-user to a specific gathering) — **DONE**. `InviteFriendsModal.js`
+  gained a "📤 Invite someone not on Nearby yet" link (gathering type only), doing the identical
+  `Share.share({ message, url: 'nearby://gathering/{id}' })` call
+  `GatheringConfirmationScreen.js`'s `handleShare()` already uses — same one deep link, no new
+  schema, reused from both places the modal already opens (`GatheringDetailScreen`'s host
+  banner and post-join panel).
+- Item 4 ("you're almost full" nudge) — **DONE**. `GatheringDetailScreen.js`'s host banner now
+  shows a real "🔥 Almost full — only N spots left" line, computed from the same
+  `gathering.capacity`/`gathering.approvedAttendees.length`/`gathering.isFull` already in scope
+  a few lines up for the existing spots-filled line — no new query. Threshold:
+  `spotsLeft <= max(2, ceil(capacity * 0.2))` and not already full — a real, small-integer
+  threshold in the same spirit as this file's other non-fabricated thresholds (e.g. Rewards'
+  fixed tier counts), not an invented percentage dressed up as a signal.
+- Items 2 (business self-serve profile editing), 5 (CRM notes/tags — renumbered from the plan's
+  item 8), 6 (Business AI Assistant — renumbered from item 9) — not yet started as of this
+  status update, see the plan below for exact design. Verified via a full
+  `npx expo export --platform ios` after the items-1/3/4 increment above (clean build, no
+  resolution errors) before committing that piece separately from the rest.
+
+
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file — if a codespace restart hits mid-build, check `git status`/`git log` for
+what actually landed vs. what's still just this plan. The user asked directly (by email) to
+close out the remaining items from `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (items 11-20,
+listed but never fixed) plus three items already flagged as deliberately-deferred elsewhere in
+this file: the capacity "you're almost full" nudge (Capacity/Waitlist section, top of file),
+persistent per-customer CRM notes (Business RPC ownership + CRM section), and a Business AI
+Assistant (flagged as a distinct future feature in both the Create Consolidation and Rewards
+sections).
+
+**Scope, confirmed by reading each file directly before planning, not assumed from the audit
+text**:
+1. **`NoticesScreen.js` is genuinely fully dead code** — confirmed: `RootNavigator.js`'s
+   `'Notices'` route (`RootNavigator.js:368`) actually renders `ActivityScreen`, not
+   `NoticesScreen`; the only references to `NoticesScreen` itself are its own file and an
+   unused import in `RootNavigator.js:42`. Every `navigation.navigate('Notices')` call site
+   (`notifications.js`, `ActivityBell.js`) has always landed on `ActivityScreen`. Deleting the
+   file and its dangling import removes 309 lines of code nothing can ever reach.
+2. **`RootNavigator.js`'s `MatchesScreen` import (`line 43`) is a genuine dangling import** —
+   confirmed via grep: never used as a `<Stack.Screen component={MatchesScreen}>` anywhere in
+   that file. `MatchesScreen` is real and used, just only ever imported directly by
+   `InboxScreen.js`, which embeds it inline as a tab — `RootNavigator.js` never needed its own
+   copy. Delete the one unused import line only; the screen itself is untouched.
+3. **`PlacesScreen.js`'s `ListEmptyComponent` prop is genuinely malformed** — confirmed at
+   `PlacesScreen.js:107-108`: the prop name is split across a line break as `ListEmpty` then
+   `Component={...}` on the next line, which JSX parses as two separate props
+   (`ListEmpty={true}` + a stray `Component` prop `FlatList` doesn't read) instead of one
+   `ListEmptyComponent` — so the empty state has never actually rendered. Fix: join back into
+   one `ListEmptyComponent={...}` prop.
+4. **Hardcoded backend URLs** (`LoginScreen.js:55`, `RehearsalRoomScreen.js:51`,
+   `ProfileScreen.js:158`, all `https://enmosvippabmuqslzrox.supabase.co/functions/v1/...`) —
+   the project ref is already centralized once in `services/supabase.js`'s `SUPABASE_URL`
+   constant; these three call sites just never imported it. Fix: export a
+   `functionUrl(name)` helper from `services/supabase.js` and point all three at it instead of
+   a second hardcoded copy of the same domain.
+5. **Business self-serve profile editing is unbuilt, and worse than the audit line implies —
+   found a second, real, live bug underneath it while investigating.** `BusinessDashboardScreen.js`'s
+   own "Business Profile" card (line 723) says plainly "Editing business profile details isn't
+   available yet." But the address-edit path that *does* exist (`updateBusinessAddress()` in
+   `brandOffers.js`, wired to `addressModalVisible`) does a raw client `.update()` on
+   `brand_partners` directly — and **`brand_partners` has zero UPDATE policy in its RLS**
+   (confirmed live: `pg_policies` shows exactly one policy, `SELECT`-only for `active = true`
+   rows; RLS is enabled with `relrowsecurity = true`). Default-deny means that update call has
+   never actually written anything for any real owner — the existing address-edit UI has been
+   silently broken this whole time, not just missing the rest of the fields. Fix: one real
+   `update_business_profile(partner_id, name, description, address, latitude, longitude,
+   logo_url)` SECURITY DEFINER RPC (checks `profiles.managed_partner_id = partner_id_param`
+   for the caller, same ownership-check shape as the Aug 7 business-RPC security fix), replacing
+   both the broken raw address update and the "not available yet" message with one real edit
+   form (name/description/address/logo URL — `logo_url` is already stored and rendered as a
+   plain public URL string everywhere it's used, confirmed via grep, so no new storage bucket
+   is needed for this pass).
+6. **No way to invite a non-app-user to a specific gathering** — confirmed: `InviteFriendsModal.js`
+   only ever invites existing in-app friends via RPC. The real deep link this needs already
+   exists (`nearby://gathering/{id}`, the same one `GatheringConfirmationScreen.js`'s
+   `handleShare()` already uses via `Share.share()`), just not exposed from the invite modal
+   itself. Fix: add a "📤 Invite someone not on Nearby yet" action to `InviteFriendsModal.js`
+   (gathering type only) doing the identical `Share.share()` call — one shared entry point,
+   reused everywhere the modal already opens (`GatheringDetailScreen`'s host banner and
+   post-join panel), no new schema.
+7. **"You're almost full" capacity nudge** — the waitlist/capacity system itself
+   (`join_gathering`/`leave_gathering`, live since the Aug 8 Capacity/Waitlist build) never got
+   this specific suggestion. `GatheringDetailScreen.js`'s host banner already has real
+   `gathering.capacity`/`gathering.approvedAttendees.length`/`gathering.isFull` in scope (used
+   a few lines up for the existing "X/Y spots filled" line) — add a real, non-full,
+   spots-remaining nudge computed from those same numbers, no new query, no fabricated
+   threshold percentage invented from nothing (using the same kind of real small-integer
+   threshold this file already uses elsewhere, e.g. Rewards' fixed tier counts).
+8. **Persistent per-customer CRM notes/tags** — `get_business_member_gathering_history` (visit
+   history drill-in, closed in the Business RPC ownership section) already exists; free-text
+   notes/tags per customer don't. New `business_customer_notes` table (`partner_id`,
+   `customer_user_id`, `note` text, `tags` text[], `unique(partner_id, customer_user_id)`),
+   RLS `SELECT`-only via `profiles.managed_partner_id = partner_id` (identical shape to
+   `business_invoices`/`partner_contracts`'s existing owner-scoped SELECT policies, confirmed by
+   reading both live), writes only through two new SECURITY DEFINER RPCs
+   (`upsert_business_customer_note`/`delete_business_customer_note`, same ownership check,
+   revoked from `public`/`anon`) — matching this schema's established "no direct client
+   INSERT/UPDATE on an owner-scoped table" convention. Wired into
+   `BusinessDashboardScreen.js`'s existing "Most Engaged" member drill-in (the same expanded
+   panel that already shows visit history) as an editable notes/tags field, not a new screen.
+9. **Business AI Assistant** — genuinely new, matches the distinct future feature already
+   flagged (not folded into Concierge) in both the Create Consolidation and Rewards sections
+   above. New `supabase/functions/business-ai-assistant/index.ts`, modeled directly on
+   `create-assistant/index.ts`'s real, already-deployed pattern (bearer-token auth via a
+   service-role `auth.getUser()` call, `check_and_increment_ai_use` rate limiting,
+   `claude-haiku-4-5-20251001`) but gated on **business ownership** instead of premium/no-gate —
+   checks the caller's own `profiles.managed_partner_id` matches the `partnerId` the request
+   claims before doing anything, the same ownership check this session's other business-RPC
+   fixes already established, not a new pattern invented for this. Feeds the model only
+   real, already-computed aggregate numbers (via the existing `get_business_dashboard_stats`/
+   `get_business_growth`/`get_business_insights`/`get_business_visit_frequency` RPCs, called
+   server-side inside the function with the service-role client, not client-supplied) — no raw
+   customer PII, no free-text user content crosses into the prompt, so this has a materially
+   smaller injection surface than `ai-concierge`'s candidate-title problem. New
+   `src/services/businessAI.js` (`askBusinessAssistant(partnerId, question)`) +
+   `src/screens/BusinessAIAssistantScreen.js` (single chat-style thread, no history persisted
+   server-side — same "stateless single question in, single answer out" shape as
+   `create-assistant`/`ai-concierge`, not a new multi-turn conversation table), reachable from a
+   new "✨ Ask the AI Assistant" row on `BusinessDashboardScreen.js`'s Insights tab.
+
+**Verification plan, matching this file's own established convention**: apply all new
+migrations to production (`enmosvippabmuqslzrox`) via the Management API and verify live with
+real test data (business-profile-edit ownership check both directions, CRM note upsert/delete
+scoped correctly, non-owner rejected) — clean up test rows afterward; deploy
+`business-ai-assistant` and confirm `verify_jwt: true` explicitly (checking the actual deployed
+setting, not assuming the CLI default matches, per this file's own repeatedly-learned lesson);
+full `npx expo export --platform ios` after each meaningful increment; commit and push after
+each logical increment, not batched at the end, in case of a mid-session restart. **Standing
+limitation, same as everywhere else in this file**: no manual simulator/device run-through —
+flagged for next session same as always.
+
 ## Outstanding: schema baseline fix + flywheel trace audit (Aug 9 2026) — part 1 DONE, part 2 DONE
 
 Written before implementation, same restart-safety convention as every other plan-first

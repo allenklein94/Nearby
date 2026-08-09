@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert, ActivityIndicator, Share } from 'react-native';
 import { getMyFriends } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
@@ -75,6 +75,17 @@ export default function InviteFriendsModal({
     setInvitingId(null);
   }
 
+  async function handleShareWithNonUser() {
+    try {
+      await Share.share({
+        message: `Join me: ${resolvedTargetTitle ?? 'my gathering'} — nearby://gathering/${resolvedTargetId}`,
+        url: `nearby://gathering/${resolvedTargetId}`,
+      });
+    } catch (e) {
+      // Share sheet dismissal/cancel throws on some platforms -- not a real error.
+    }
+  }
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -120,6 +131,17 @@ export default function InviteFriendsModal({
             />
           )}
 
+          {resolvedType === 'gathering' && (
+            <TouchableOpacity
+              onPress={handleShareWithNonUser}
+              style={{ marginTop: spacing.md }}
+              accessibilityLabel="Invite someone not on Nearby yet"
+              accessibilityRole="button"
+            >
+              <Text style={styles.shareLink}>📤 Invite someone not on Nearby yet</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.lg }}>
             <Text style={styles.closeText}>Done</Text>
           </TouchableOpacity>
@@ -142,5 +164,6 @@ const getStyles = (colors) => StyleSheet.create({
   inviteButtonSent: { backgroundColor: colors.success },
   inviteButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl, lineHeight: 20 },
+  shareLink: { color: colors.primary, textAlign: 'center', fontSize: 14, fontWeight: '600' },
   closeText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
 });

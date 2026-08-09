@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
-import { supabase } from '../services/supabase';
+import { supabase, functionUrl } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -48,7 +48,7 @@ export default function RehearsalRoomScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/rehearsal-chat', {
+      const response = await fetch(functionUrl('rehearsal-chat'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

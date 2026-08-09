@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { supabase } from '../services/supabase';
+import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -52,7 +52,7 @@ export default function LoginScreen() {
 
     if (isReviewerNumber(phoneInput)) {
       try {
-        const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/review-login', {
+        const response = await fetch(functionUrl('review-login'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

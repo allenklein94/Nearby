@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager } from 'react-native';
-import { supabase } from '../services/supabase';
+import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
@@ -155,7 +155,7 @@ export default function ProfileScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
 
-      const response = await fetch('https://enmosvippabmuqslzrox.supabase.co/functions/v1/generate-strengths', {
+      const response = await fetch(functionUrl('generate-strengths'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

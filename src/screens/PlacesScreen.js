@@ -104,8 +104,7 @@ export default function PlacesScreen() {
           data={places}
           keyExtractor={(item) => item.placeId}
           contentContainerStyle={{ padding: spacing.lg }}
-          ListEmpty
-          Component={
+          ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔍</Text>
               <Text style={styles.emptyText}>Nothing found nearby in this category.</Text>

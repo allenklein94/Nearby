@@ -440,6 +440,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   )}
                 </View>
               )}
+              {gathering.capacity != null && !gathering.isFull && (
+                (() => {
+                  const spotsLeft = gathering.capacity - gathering.approvedAttendees.length;
+                  const almostFullThreshold = Math.max(2, Math.ceil(gathering.capacity * 0.2));
+                  return spotsLeft > 0 && spotsLeft <= almostFullThreshold ? (
+                    <Text style={styles.almostFullNudge}>
+                      🔥 Almost full — only {spotsLeft} spot{spotsLeft === 1 ? '' : 's'} left. Invite more people before it fills up!
+                    </Text>
+                  ) : null;
+                })()
+              )}
               <TouchableOpacity
                 onPress={() => navigation.navigate('Gatherings')}
                 accessibilityLabel="Manage attendees"
@@ -589,6 +600,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary, flex: 1 },
   metaLine: { color: colors.textSecondary, fontSize: 14, marginTop: spacing.xs },
   capacityLine: { color: colors.textTertiary, fontSize: 13, fontWeight: '600', marginTop: 2 },
+  almostFullNudge: { color: colors.primary, fontSize: 13, fontWeight: '700', marginTop: spacing.sm },
   hostLineRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.xs },
   hostAvatarSmall: { width: 22, height: 22, borderRadius: 11 },
   hostAvatarPlaceholder: { backgroundColor: colors.border },

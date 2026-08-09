@@ -39,8 +39,6 @@ import EditGatheringScreen from '../screens/EditGatheringScreen';
 import PlacesScreen from '../screens/PlacesScreen';
 import TimelineScreen from '../screens/TimelineScreen';
 import ActivityScreen from '../screens/ActivityScreen';
-import NoticesScreen from '../screens/NoticesScreen';
-import MatchesScreen from '../screens/MatchesScreen';
 import GatheringsScreen from '../screens/GatheringsScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
 import GatheringHubScreen from '../screens/GatheringHubScreen';

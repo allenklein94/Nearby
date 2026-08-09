@@ -13,3 +13,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     detectSessionInUrl: false,
   },
 });
+
+export function functionUrl(name) {
+  return `${SUPABASE_URL}/functions/v1/${name}`;
+}
