@@ -365,6 +365,19 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           )}
 
+          {gathering.community && (
+            <TouchableOpacity
+              style={styles.communityCard}
+              onPress={() => navigation.navigate('CommunityDetail', { communityId: gathering.community.id, communityName: gathering.community.name })}
+              accessibilityLabel={`View the ${gathering.community.name} community`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.communityKicker}>🏘️ Part of a community</Text>
+              <Text style={styles.communityTitle}>{gathering.community.name}</Text>
+              <Text style={styles.communitySub}>View community →</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Meet the Organizer</Text>
             <TouchableOpacity
@@ -608,6 +621,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   perkSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   perkSubLink: { color: colors.primary, fontWeight: '600' },
   perkDesc: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
+  communityCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginTop: spacing.lg,
+  },
+  communityKicker: { color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 2 },
+  communityTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  communitySub: { color: colors.primary, fontSize: 13, marginTop: 2, fontWeight: '600' },
   organizerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   organizerAvatar: { width: 44, height: 44, borderRadius: 22 },
   organizerName: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },

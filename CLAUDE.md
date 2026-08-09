@@ -143,10 +143,75 @@ only touched the two baseline-copy files.
 
 **Part 1 is now genuinely complete**, in the strong sense the original challenge asked for: a
 fresh empty Supabase project really can be rebuilt from committed files alone, proven by actually
-doing it, not asserted. **Part 2 (flywheel trace audit) starts next, same session** — see below
-for build status once it lands; this file will be updated and committed incrementally as each
-leg of the trace is completed, per standing restart-safety practice, rather than in one batch at
-the end.
+doing it, not asserted.
+
+**Part 2 (flywheel trace audit): DONE — all 8 legs traced, real code reading only, no
+simulator, per standing instruction.** Full leg-by-leg detail with file/line citations lives in
+`FLYWHEEL_TRACE_PROGRESS.md` (kept as the incrementally-updated scratch record, per this file's
+own restart-safety convention — survived one restart mid-trace already, picked back up cleanly
+from that file plus `git log`). Summary here, distilled:
+
+- **Leg 1** (discover a gathering): real bug found + fixed —
+  `OnboardingRecommendationsScreen.js`'s recommendation cards all navigated to the generic
+  `MainTabs` regardless of which gathering was tapped; now deep-links to the real
+  `GatheringDetail`.
+- **Legs 2-3** (join; invite a connection): re-verified, no gap — `join_gathering()`'s full
+  check stack (capacity/invite_only/women_only/blocks) and the invite RPCs'
+  friendship/blocks/push/persisted-row behavior all confirmed correct by reading the live
+  function bodies directly.
+- **Leg 4** (invitee responds → conversation surfaces): real, live-confirmed BROKEN case found
+  + fixed — accepting a private-community invite flipped the invite's own status but
+  `community_members`'s INSERT policy had no path for an invited-and-accepted friend, so the
+  actual join failed with a raw RLS error. Added a third INSERT path for a real accepted
+  `social_invites` row; verified live both directions, including that the newly-real member
+  could actually post in `community_messages`.
+- **Leg 5** (post-gathering → connection becomes a community): real gap found + fixed for the
+  *linked*-community case — a gathering already scoped to a real community
+  (`visibility='community'`) showed no sign of that community anywhere on
+  `GatheringDetailScreen`, even though `community_id` was already being fetched. Added a real
+  "🏘️ Part of a community" card linking to `CommunityDetail`, verified live (correctly shows for
+  a public community, correctly shows nothing for a private one the viewer isn't a member of —
+  matches RLS, not a bug). **A second, bigger sub-gap was found and deliberately left unbuilt**:
+  there's no path anywhere to found a *new* community seeded from a one-off gathering's own
+  attendee list — `createCommunity()` takes no seed-members param, nothing on the post-gathering
+  feedback flow offers it. Real, trace-confirmed gap, but a genuinely new feature (UI, product
+  judgment on who gets auto-added vs. invited, when to even offer it) rather than a wiring fix —
+  flagged for an explicit future decision, not built from this trace's own guess.
+- **Leg 6** (community creates its own gathering): re-verified, no gap —
+  `CommunityDetailScreen`'s "Host a Gathering for This Community" button correctly carries
+  `initialVisibility`/`initialCommunityId` into the existing Create wizard, already closed in
+  an earlier pass.
+- **Leg 7** (business/perk enters the loop): real gap found + fixed — a business's
+  community-scoped standing perk (`brand_offers.unlock_community_id`, the Rewards group-unlock
+  feature) was completely invisible to that community's own members; the only two ways to ever
+  see it were already knowing to check that specific business's profile or stumbling on it in
+  the general offers list. Added `getCommunityOffers()` + a real "🎁 Community Perks" section on
+  `CommunityDetailScreen` (locked/unlocked copy, live member-count progress, working redeem
+  button, same `OFFER_LOCKED`/`ALREADY_REDEEMED` handling `BrandOffersScreen` already has).
+  Verified live end-to-end: a real offer locked at 3 members correctly rejected redemption at 2,
+  correctly succeeded (with a real confirmation code) once a 3rd real member joined.
+- **Leg 8** (user returns afterward): re-verified, no gap. Home's pull-back signals
+  (`sinceAway`/`friendsActivity`/`weeklyRecap`/pending-invites banner/continue-your-communities)
+  are all genuinely wired to real rendering, none orphaned. Confirmed **live against
+  production** (not just read from a migration file) that `send-momentum-reward-nudges` and
+  `send-gathering-reminders` are real, active, scheduled `cron.job` rows with real signal-based
+  logic (not placeholders) and real, client-routable push payloads — this also closes a
+  standing "not yet re-verified" item from the Aug 8 navigation-connectivity audit
+  (`gathering_reminder` pushes' actual live delivery).
+
+**Every schema-touching fix in this pass (legs 4, 7's redemption trigger check) was verified
+live against production with real test data, cleaned up afterward** — same convention as every
+other RLS/RPC change in this file. Client-only fixes (legs 1, 5's community card, 7's perks
+section) were verified via a full `npx expo export --platform ios` after each (1849 modules by
+the end of this pass) plus, where the change touched a query shape, a direct live check of that
+exact query under real RLS via `set_config('request.jwt.claims', ...)`.
+
+**Per the plan's own stated boundary** ("no new feature builds until the trace actually finds a
+real gap to point at"): the trace found four real gaps and this pass closed three of them
+(small, contained, wiring-shaped fixes — surfacing already-fetched data, adding a missing query
++ section reusing an already-established pattern). The fourth (leg 5's "found a brand-new
+community from a gathering") is a genuinely new feature, not a wiring fix, and was deliberately
+left for an explicit future decision rather than built from this trace's own momentum.
 
 ## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — DONE
 

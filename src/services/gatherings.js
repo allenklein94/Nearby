@@ -704,7 +704,7 @@ export async function getGatheringById(gatheringId) {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(id, display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, on_my_way_at, checked_in_at, profiles(id, display_name, photo_url, interests))`)
+    .select(`${SAFE_GATHERING_FIELDS}, host:profiles!gatherings_host_id_fkey(id, display_name, photo_url), attendees:gathering_interest(status, user_id, created_at, on_my_way_at, checked_in_at, profiles(id, display_name, photo_url, interests)), community:communities(id, name, is_public)`)
     .eq('id', gatheringId)
     .single();
 

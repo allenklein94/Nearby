@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Ale
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole } from '../services/communities';
-import { isFollowingBusiness, followBusiness, unfollowBusiness } from '../services/brandOffers';
+import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer } from '../services/brandOffers';
 import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
@@ -31,6 +31,9 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [viewMode, setViewMode] = useState('list');
   const [selectedDate, setSelectedDate] = useState(null);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [offers, setOffers] = useState([]);
+  const [redeemedOfferIds, setRedeemedOfferIds] = useState([]);
+  const [redeemingOfferId, setRedeemingOfferId] = useState(null);
 
   const load = useCallback(async () => {
     const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
@@ -67,8 +70,32 @@ export default function CommunityDetailScreen({ route, navigation }) {
       setFollowingBusiness(following);
     }
 
+    const [communityOffers, myRedemptions] = await Promise.all([getCommunityOffers(communityId), getMyRedemptions()]);
+    setOffers(communityOffers);
+    setRedeemedOfferIds(myRedemptions);
+
     setLoading(false);
   }, [communityId]);
+
+  async function handleRedeemOffer(offer) {
+    setRedeemingOfferId(offer.id);
+    try {
+      const { confirmationCode } = await redeemOffer(offer.id);
+      Alert.alert('Redeemed!', `Show staff this code to confirm: ${confirmationCode}\n\n${offer.redemption_instructions || 'Check your account for details on how to use this.'}`);
+      load();
+    } catch (e) {
+      if (e.message === 'ALREADY_REDEEMED') {
+        Alert.alert('Already redeemed', "You've already claimed this offer.");
+      } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
+        Alert.alert('Offer fully claimed', "This offer's limited spots have all been claimed.");
+      } else if (e.message === 'OFFER_LOCKED') {
+        Alert.alert('Not unlocked yet', "This community needs more members to unlock this perk.");
+      } else {
+        Alert.alert('Error', e.message);
+      }
+    }
+    setRedeemingOfferId(null);
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -173,6 +200,54 @@ export default function CommunityDetailScreen({ route, navigation }) {
             >
               <Text style={styles.businessProfileLink}>View Business Profile →</Text>
             </TouchableOpacity>
+          </>
+        )}
+
+        {offers.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>🎁 Community Perks</Text>
+            {offers.map((offer) => {
+              const isLocked = memberCount < offer.unlock_min_members;
+              const alreadyRedeemed = redeemedOfferIds.includes(offer.id);
+              return (
+                <View key={offer.id} style={styles.perkCard}>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
+                    accessibilityLabel={`View ${offer.brand_partners?.name}'s business profile`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.perkSubLink}>{offer.brand_partners?.name}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.perkTitle}>{offer.title}</Text>
+                  {offer.description ? <Text style={styles.perkDesc}>{offer.description}</Text> : null}
+                  <Text style={styles.perkUnlockText}>
+                    {isLocked
+                      ? `🔒 Unlocks at ${offer.unlock_min_members} members (${memberCount}/${offer.unlock_min_members} so far)`
+                      : '🔓 Unlocked — community goal reached'}
+                  </Text>
+                  {alreadyRedeemed ? (
+                    <View style={styles.perkRedeemedBadge}>
+                      <Text style={styles.perkRedeemedBadgeText}>Redeemed</Text>
+                    </View>
+                  ) : isLocked ? (
+                    <View style={[styles.perkRedeemButton, styles.perkLockedButton]}>
+                      <Text style={styles.perkLockedButtonText}>Locked</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.perkRedeemButton}
+                      onPress={() => handleRedeemOffer(offer)}
+                      disabled={redeemingOfferId === offer.id}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`Redeem ${offer.title}, from ${offer.brand_partners?.name}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.perkRedeemButtonText}>{redeemingOfferId === offer.id ? 'Redeeming...' : 'Redeem'}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            })}
           </>
         )}
 
@@ -345,6 +420,20 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   businessProfileLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.lg },
+  perkCard: {
+    backgroundColor: '#f59e0b15', borderRadius: radius.lg, borderWidth: 1, borderColor: '#f59e0b',
+    padding: spacing.md, marginBottom: spacing.sm,
+  },
+  perkSubLink: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  perkTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', marginTop: 2 },
+  perkDesc: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
+  perkUnlockText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: spacing.sm },
+  perkRedeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
+  perkRedeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  perkLockedButton: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  perkLockedButtonText: { color: colors.textTertiary, fontWeight: '700', fontSize: 13 },
+  perkRedeemedBadge: { backgroundColor: colors.surface, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
+  perkRedeemedBadgeText: { color: colors.textTertiary, fontWeight: '700', fontSize: 13 },
   gatheringCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   gatheringMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },

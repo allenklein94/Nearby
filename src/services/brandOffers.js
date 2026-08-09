@@ -154,6 +154,24 @@ export async function getGatheringOffer(gatheringId) {
   return data;
 }
 
+// Standing offers a business has scoped to this specific community via
+// unlock_community_id (Rewards' group-unlock feature) — independent of
+// whether the community itself is hosting_partner_id-linked to that same
+// business, since a perk can target any community's member count.
+export async function getCommunityOffers(communityId) {
+  const { data, error } = await supabase
+    .from('brand_offers')
+    .select('*, brand_partners(name, logo_url)')
+    .eq('unlock_community_id', communityId)
+    .eq('active', true);
+
+  if (error) {
+    console.error('getCommunityOffers error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getMyRedemptions() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
