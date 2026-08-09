@@ -4,6 +4,68 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: schema baseline fix + flywheel trace audit (Aug 9 2026) — plan, not yet built
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file. Context: the user directly challenged whether `full_schema_pull_
+2026-08-09.sql` (committed as audit item 3's fix, see below) actually makes this repo able to
+recreate production from an empty Supabase project using only committed files. Investigated
+directly rather than assuming — the answer is **no**, confirmed with a concrete, provable
+conflict, not a guess:
+
+- `full_schema_pull_2026-08-09.sql`'s own `create table gatherings` statement already has
+  `visibility` and `capacity` merged directly into the column list (it's a flattened,
+  fully-merged point-in-time snapshot). But `supabase/migrations/20260808_gathering_
+  visibility.sql` and `20260808_gathering_capacity_waitlist.sql` both `alter table gatherings
+  add column ...` for those same two columns. Replaying those migrations on top of the pull on
+  a fresh project would hit `ERROR: column "visibility" of relation "gatherings" already
+  exists`. The pull and the migrations folder are two disconnected artifacts, not a base +
+  incremental history.
+- The pull is also already stale within the same day it was generated: it was committed
+  *before* `20260809_offer_redemption_proof.sql` (the proof-of-redemption confirmation-code
+  system) and `20260809_momentum_reward_nudges.sql`, and before this session's own
+  `20260809_join_gathering_invite_only_check.sql`. Confirmed directly — zero hits for
+  `confirmation_code` anywhere in the pull.
+- `supabase/migrations/` only goes back to Aug 6 2026 — everything before that (the original
+  ~45 of ~53 real tables) has no migration at all, only the flattened pull. So the migrations
+  folder alone can't rebuild from empty either; it assumes a base state nothing in the repo
+  creates.
+
+**Plan, part 1 — schema baseline fix:**
+1. Patch `full_schema_pull_2026-08-09.sql` with the objects that drifted since it was
+   generated (`offer_redemptions` table + `confirm_offer_redemption` + updated
+   `generate_monthly_invoices`/`get_partner_billing_estimate`, `send_momentum_nudges` + its
+   cron job, and `join_gathering`'s new invite_only check) — queried fresh from live production
+   via the Management API, not copied from migration files (a migration file only shows one
+   incremental change; the live function/table definition is the actual current truth after
+   however many migrations touched it).
+2. Re-timestamp the patched file as the real earliest migration
+   (`supabase/migrations/00000000000000_baseline.sql`) so a real migration replay starts from
+   it, matching standard Supabase CLI "squashed baseline" convention.
+3. Move the 31 dated migrations from Aug 6–9 (now fully baked into the baseline) out of the
+   live `supabase/migrations/` replay path into `supabase/migrations_archive/` — kept for
+   historical/changelog reading, not left where a real replay would double-apply them and
+   conflict, same conflict class as the `visibility`/`capacity` example above.
+4. Going forward, every new schema change is a real migration timestamped after the baseline —
+   the existing "Known conventions" section's rule already says this; the missing piece was
+   always a trustworthy zero point to measure "after" from.
+
+**Plan, part 2 — flywheel trace audit**: once the schema fix lands, trace the actual golden
+path as a real code-reading audit (navigation params, RPC calls, screen wiring — the same
+method behind every "connectivity audit" already in this file), not a simulator run (explicitly
+still out of scope per direct instruction). Every transition below gets a real verdict — WORKS /
+PARTIAL / MISSING / BROKEN — with a file/line citation, not a guess:
+new user opens the app → discovers a gathering → gathering detail → join → invite an existing
+connection → where the invite lands → invitee responds → resulting conversation surfaces →
+post-gathering → connection becomes a community → community creates its own gathering →
+business/perk enters the loop → user returns afterward.
+
+**Not doing yet, per direct instruction / the second AI's own "stop expanding" framing already
+agreed with**: no new feature builds (Invite People / Inbox / Create are already substantially
+built per this file's own history — see the "second AI's review" reply in-session for the
+citations) until the trace audit above actually finds a real gap to point at, rather than
+guessing one from outside the repo a third time.
+
 ## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — DONE
 
 Written before implementation, same restart-safety convention as every other plan-first
