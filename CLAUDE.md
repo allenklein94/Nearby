@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: schema baseline fix + flywheel trace audit (Aug 9 2026) — plan, not yet built
+## Outstanding: schema baseline fix + flywheel trace audit (Aug 9 2026) — part 1 DONE, part 2 in progress
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file. Context: the user directly challenged whether `full_schema_pull_
@@ -65,6 +65,88 @@ agreed with**: no new feature builds (Invite People / Inbox / Create are already
 built per this file's own history — see the "second AI's review" reply in-session for the
 citations) until the trace audit above actually finds a real gap to point at, rather than
 guessing one from outside the repo a third time.
+
+**Part 1 build status: DONE, and verified more rigorously than this file's usual "verified live
+against production" convention — this pass verified against a real, throwaway, truly empty
+database, which is the actual claim being made ("this file alone rebuilds production from
+nothing"), something no production-verification technique can prove by itself.**
+
+Picked back up after a codespace restart interrupted the build mid-way — a session update
+forwarded by email (visible above the task list) showed the prior session had already found
+part of this the hard way: tables in the original pull were ordered alphabetically, not by FK
+dependency (`blocks` referenced `profiles` from ~1500 lines before `profiles` was even
+created), confirmed a topological sort was possible (no dependency cycles), and was mid-way
+through a second, deeper problem ("also fail on an empty database... let me restructure
+properly") when the restart hit. On restart, `git status` showed the migration-archive renames
+already staged and two candidate schema files sitting locally: `supabase/migrations/
+00000000000000_baseline.sql` (untracked, an earlier attempt) and a modified, newer
+`supabase/full_schema_pull_2026-08-09.sql` (edited 82 seconds after the baseline copy — the
+"let me restructure properly" pass). Rather than guess which one was further along, checked
+both directly: a script-driven table-by-table FK-dependency audit of `full_schema_pull`
+confirmed its table order was **already correctly topologically sorted, zero FK-ordering
+errors** — so the prior session's alphabetical-order fix had actually landed successfully in
+that file before the restart hit.
+
+**But table order wasn't the only "fail on an empty database" problem, which is almost
+certainly the deeper issue the prior session's last message ("also fail... let me restructure
+properly") was about finding.** Every table's `CREATE POLICY` and `CREATE TRIGGER` statements
+stayed physically inline right after their own table, inside the TABLES section of the file —
+while the SECURITY DEFINER helper functions many of those policies call (`is_blocked()`,
+`is_community_visible_to()`, `check_is_admin()`, `has_mutual_notice()`) and the functions every
+trigger's `EXECUTE FUNCTION` clause names both live in a separate FUNCTIONS section much further
+down the same file. Confirmed this is a real, table-ordering-independent second bug, not a guess:
+`CREATE POLICY`/`CREATE TRIGGER` both validate that every object their expression references
+already exists at creation time (unlike a plpgsql function body, which is only syntax-checked,
+not validated against the catalog, until first execution) — so on a truly fresh project, the
+very first policy referencing a not-yet-defined helper function (e.g. `business_messages`' own
+policy calling `is_blocked()`) would fail immediately, regardless of how correctly the tables
+themselves were ordered. Wrote a script-driven, content-preserving reorder: every table's
+`CREATE TABLE`/`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`/`CREATE INDEX` statements stayed in
+the TABLES section (none of those depend on a function existing); every `CREATE POLICY` and
+`CREATE TRIGGER` statement was deferred (same per-table grouping/comments, same relative table
+order) into two new sections placed after FUNCTIONS: "ROW LEVEL SECURITY POLICIES" and
+"TRIGGERS". Verified this was a pure reorder, not a rewrite, two ways before trusting it: every
+`create table`/`create policy`/`CREATE TRIGGER`/`create index` statement-start count matched
+exactly between the before/after files (52/132/36/9), and a full multiset diff of every
+non-blank, non-marker-comment line in both files came back with **zero** lines lost or altered
+— the only lines present in the new file and not the old are the six new explanatory comment
+lines documenting the fix itself.
+
+**Verified by actually applying the file to a truly empty database, not just static analysis of
+the SQL text — the single most direct way to prove the file's own central claim.** Docker was
+available in this sandbox; pulled the real `supabase/postgres:15.1.0.147` image (the actual
+Supabase Postgres distribution — ships `pg_cron`/`pg_net`/`supabase_vault`/a real `auth` schema
+with `auth.uid()`/a real `storage` schema, not a bare vanilla `postgres` image that would fail
+for unrelated reasons and prove nothing), dropped and recreated an empty `public` schema to
+simulate a genuinely fresh project, and ran `psql -v ON_ERROR_STOP=1 -f full_schema_pull_
+2026-08-09.sql` directly. **First real run surfaced the policy/trigger ordering bug itself**
+(the fix above was written and verified through exactly this loop, not proven correct by
+inspection alone). After the fix, hit two further failures, both confirmed to be the test
+image's own outdated schema version, not a bug in this file: `auth.users` was missing a `phone`
+column (referenced by one function) and `storage.buckets` was missing a `public` column
+(referenced by the bucket-seeding inserts) — both real, long-standing columns in current
+production Supabase, just absent from this older pinned GoTrue/Storage version. Patched both
+onto the *test container only* with two plain `ALTER TABLE ADD COLUMN IF NOT EXISTS`
+statements (not a change to the committed file), then re-ran the entire file from a freshly
+recreated empty schema one more time for a clean, single, unbroken pass. **Result: exit code 0,
+zero errors, every object landed** — 52 tables, 103 functions, 119 distinct policies, 36
+triggers, 10 cron jobs, 5 storage buckets, matching the source file's own real counts exactly.
+Container removed afterward, nothing persisted beyond the verification itself.
+
+Both `supabase/full_schema_pull_2026-08-09.sql` and `supabase/migrations/
+00000000000000_baseline.sql` were updated with this same final, verified content (kept
+byte-for-byte in sync, confirmed via `diff`) plus a new header block documenting this exact
+fix and verification method, so a future session re-reading the file's own comments gets the
+same story this section tells. The 31 archived migrations under `supabase/migrations_archive/`
+and their staged renames (already in progress before the restart) are unaffected — this pass
+only touched the two baseline-copy files.
+
+**Part 1 is now genuinely complete**, in the strong sense the original challenge asked for: a
+fresh empty Supabase project really can be rebuilt from committed files alone, proven by actually
+doing it, not asserted. **Part 2 (flywheel trace audit) starts next, same session** — see below
+for build status once it lands; this file will be updated and committed incrementally as each
+leg of the trace is completed, per standing restart-safety practice, rather than in one batch at
+the end.
 
 ## Outstanding: Relationship hub consolidation + invite-only join hardening (Aug 9 2026) — DONE
 
