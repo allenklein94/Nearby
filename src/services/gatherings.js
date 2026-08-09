@@ -155,6 +155,19 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
     .sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999));
 }
 
+// Bounded at the SQL level, not a full-table download — see
+// 20260809_bounded_nearby_gatherings.sql. is_public gatherings are
+// deliberately visible regardless of distance (commit dd576983: lower
+// commitment, no approval needed, wide visibility is the intended design —
+// still enforced below by enrichGatheringsWithDistanceAndSort()'s own
+// `gathering.is_public || gathering.distanceMiles <= maxMiles` filter), so
+// this can't be a plain radius query; get_bounded_nearby_gathering_ids()
+// replicates that exact rule server-side (public rows pass regardless of
+// distance, private/host-approval rows are geographically bounded) and caps
+// everything with a hard row-count LIMIT ordered by soonest-upcoming, so
+// the candidate-id fetch can never grow unbounded with the table. The
+// second query below then only ever selects full row data (with joins) for
+// those bounded candidate ids, not the entire table.
 export async function getNearbyGatherings(tier = 'local') {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
@@ -167,12 +180,24 @@ export async function getNearbyGatherings(tier = 'local') {
   const myLng = location.coords.longitude;
 
   const context = await fetchGatheringVisibilityContext(userId);
+  const maxMiles = tier === 'local' ? LOCAL_TIER_MAX_MILES : WIDE_TIER_MAX_MILES;
+
+  const { data: candidateRows, error: candidateError } = await supabase.rpc('get_bounded_nearby_gathering_ids', {
+    my_lat: myLat,
+    my_lng: myLng,
+    max_miles: maxMiles,
+  });
+  if (candidateError) {
+    console.error('get_bounded_nearby_gathering_ids error', candidateError);
+    return [];
+  }
+  const candidateIds = (candidateRows ?? []).map((r) => r.id);
+  if (candidateIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from('gatherings')
     .select(NEARBY_GATHERING_SELECT)
-    .neq('host_id', userId)
-    .gt('scheduled_at', new Date().toISOString())
+    .in('id', candidateIds)
     .order('scheduled_at', { ascending: true });
 
   if (error) {

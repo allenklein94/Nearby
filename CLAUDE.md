@@ -193,16 +193,79 @@ the *search box* query path. The *browse* path both screens use whenever the use
 actively searching — `getNearbyGatherings()` — has no radius or row-count bound at the SQL
 level at all: it downloads literally every future row in the entire `gatherings` table,
 unconditionally, then does all distance and visibility filtering in JavaScript on the client.
-This is invisible today because production has 5 real gatherings total, but at real scale this
-is the actual "download 50,000 rows" problem, and it's a bigger issue than the search box was —
-search was a missing index (mechanical, safe to fix in isolation); this is the browse funnel's
-own fundamental shape. Deliberately not fixed in this pass or #6 — it touches distance
-computation, the map layer, and this app's whole "RLS wide open, client is the real gate"
-visibility posture (see the Create 2.0 section's own description of that convention) — a real
-structural change, not an index, and not something to build silently as a side effect of a
-search-box fix. Given production's actual current scale (5 gatherings, 0 communities, 0 offers
-— confirmed again this pass), this is correctly not urgent and should not block the device QA
-pass below; flagged here so it isn't lost, not treated as blocking.
+This was invisible today because production has 5 real gatherings total, but at real scale this
+is the actual "download 50,000 rows" problem, and it was a bigger issue than the search box was —
+search was a missing index (mechanical, safe to fix in isolation); this was the browse funnel's
+own fundamental shape. **Fixed later the same day, see below** — the user asked directly to
+close this out rather than leave it queued.
+
+**`getNearbyGatherings()` SQL-level bound — DONE, same day, follow-up to the section above.**
+A plain `WHERE within max_miles` radius bound couldn't be the fix on its own — checked git
+history first before writing anything, and found this app has an explicit, deliberate product
+decision on the books already: commit `dd576983` ("Public gatherings are now visible regardless
+of distance, private gatherings stay tiered by radius"), still enforced today in
+`enrichGatheringsWithDistanceAndSort()`'s own `gathering.is_public || gathering.distanceMiles <=
+maxMiles` filter. A naive radius-bounded query would have silently broken that and hidden public
+gatherings the app is supposed to keep showing network-wide — the kind of silent behavior change
+this file's own conventions warn against. The real fix had to replicate that exact rule
+server-side, not just add a distance clause.
+- **Migration** (`20260809_bounded_nearby_gatherings.sql`): new `get_bounded_nearby_gathering_ids
+  (my_lat, my_lng, max_miles, row_limit default 500)` SECURITY DEFINER function — `is_public`
+  rows pass through regardless of distance (matching `dd576983` exactly), non-public
+  (host-approval) rows are geographically bounded by `max_miles` via a real bounding-box
+  pre-filter on `precise_lat`/`precise_lng` (1 degree latitude ≈ 69 miles, same style of
+  approximation this file already uses elsewhere, e.g. Create 2.0's walk-time estimate) followed
+  by the same exact haversine formula `get_gathering_distances()` already uses for the final
+  precise check — and every path is capped by a hard `row_limit`, ordered by soonest-upcoming,
+  so the query can never return more than `row_limit` ids regardless of table size. Two new
+  indexes, `gatherings_scheduled_at_idx` and `gatherings_precise_lat_lng_idx` — with the former,
+  Postgres can satisfy `scheduled_at > now() order by scheduled_at asc limit row_limit` with an
+  index scan that stops once `row_limit` matches are found, instead of a full sequential scan +
+  in-memory sort of the whole table; the latter backs the bounding-box pre-filter. Only ever
+  returns `id` (never `precise_lat`/`precise_lng` themselves) — same privacy posture
+  `get_gathering_distances()` already established. `auth.uid()` is read internally rather than
+  taken as a parameter, matching this file's own established RPC-ownership convention (e.g. the
+  `check_and_increment_ai_use`/business-RPC fixes) rather than trusting a client-supplied caller
+  id. Granted to `authenticated` only, revoked from `public`/`anon`.
+- **`getNearbyGatherings()` rewritten** to call this RPC first to get a bounded candidate-id
+  list, then does a second `.in('id', candidateIds)` select for the real row data (title, host,
+  attendee joins, etc.) — same two-step "narrow via RPC, then fetch full rows for just those
+  ids" shape `searchGatherings()` already uses for its own ILIKE-matched results. Everything
+  downstream — `applyGatheringVisibilityFilters()` (blocks/women-only/friends/community/
+  invite_only), `enrichGatheringsWithDistanceAndSort()` (real distances, fuzzed map coordinates,
+  the final `is_public || distanceMiles <= maxMiles` filter, sort) — is completely unchanged, so
+  this is purely a bound on what gets fetched, not a rewrite of what gets shown.
+  `searchGatherings()` itself was left as-is, not touched — its own row count is already
+  naturally bounded by the ILIKE text match, and the flagged issue was specifically about the
+  unconditional browse path, not search.
+- **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+  grants (`authenticated` can execute, `anon` correctly cannot) and both new indexes exist, then
+  ran a real four-gathering test as a real profile (`Allen` as caller, `Claude` as host, an
+  arbitrary reference point far from any real user) — a public gathering 1000 miles away was
+  correctly **included** (public bypasses distance), a private gathering 0.5 miles away was
+  correctly **included** (private, within radius), a private gathering 50 miles away was
+  correctly **excluded** (private, outside radius), a public gathering 0.1 miles away was
+  correctly included. Separately confirmed the host-exclusion clause (calling as the host of all
+  4 test rows returns none of them), the `row_limit` bound (capping at `row_limit=1` returned
+  exactly 1 of 3 real matches), that the local-tier (`max_miles=1`) still correctly includes the
+  far-away public gathering (matching the "public bypasses distance at every tier" rule, not a
+  bug), and that an `anon`-role call is rejected with a real permission-denied error. All 4 test
+  gatherings deleted afterward; confirmed production back to its exact pre-test baseline (5
+  gatherings).
+- **Verified via a real from-scratch migration replay, not just live application** — per this
+  file's own migration-discipline rule (see "Known conventions" at the bottom): pulled the real
+  `supabase/postgres:15.1.0.147` Docker image (already cached from an earlier session), dropped
+  and recreated an empty `public` schema, patched the two known image-version gaps onto the test
+  container only (`auth.users.phone`, `storage.buckets.public`), then ran the entire
+  `supabase/migrations/` folder in order with `psql -v ON_ERROR_STOP=1` — exit code 0, all 5
+  files applied cleanly including this one, and the new function/indexes were confirmed to exist
+  in the freshly-rebuilt database afterward. Container removed after verification.
+- Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+  was an edit to an existing file plus one new migration, no new client files).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through of the Gatherings/Discover screens after this change — next session should confirm
+  the nearby/attending lists still populate correctly and the Local/Wider Area toggle still
+  behaves as expected on a real device.
 
 **Device QA script — for whenever a real device pass happens, not something this sandboxed
 session can run itself. Kept here so it survives to that point regardless of how many sessions
