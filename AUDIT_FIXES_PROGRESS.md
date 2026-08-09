@@ -8,7 +8,7 @@ often in this project).
 |---|------|--------|
 | 1 | ChatScreen debug overlay always-on | DONE |
 | 2 | 13-button Alert.alert → real menu component | DONE |
-| 3 | Full schema pull, commit to git | not started |
+| 3 | Full schema pull, commit to git | DONE |
 | 4 | Re-verify is_blocked() live | DONE |
 | 5 | Re-verify business RPC ownership checks live | DONE |
 | 6 | Shared send-and-recover-on-failure for 4 chat screens | not started |
@@ -55,3 +55,23 @@ owner (Allen) — got `total_followers: 1` — and as a real non-owner (Claude) 
 `total_followers: 0` for the same partner id, proving the ownership check actually
 discriminates, not just that the table happens to be empty. Test follower row deleted
 afterward.
+
+**Item 3** — new `supabase/full_schema_pull_2026-08-09.sql` (~5,900 lines), a complete,
+machine-generated snapshot of the live production schema (`enmosvippabmuqslzrox`), pulled via
+direct `pg_catalog`/`information_schema` introspection through the Management API (no
+`pg_dump`/`psql` binary available in this sandbox, and no direct Postgres connection string —
+only the Management API token). Covers everything `supabase/schema.sql` (the original
+hand-authored file, left untouched) never did: all **52** real tables (columns, defaults,
+nullability, PK/FK/UNIQUE/CHECK constraints, indexes, RLS enable flags), all **132** RLS
+policies (119 table + 13 storage), all **101** functions with their real `SECURITY
+DEFINER`/`INVOKER` status and full body, all real triggers, the 5 real storage buckets +
+their `storage.objects` policies, and the 9 real `pg_cron` scheduled jobs. Also includes two
+informational (non-executable) snapshots that don't fit as plain DDL but matter for security
+review: per-function EXECUTE grants for `anon`/`authenticated`/`service_role`/`public` (every
+security fix in this project's history has been about exactly this), and per-table grants for
+the same three roles.
+Verified counts directly against live `pg_proc`/`pg_policy`/`pg_class` queries rather than
+just trusting the script's own tally. This is a one-time historical-baseline snapshot, not a
+replacement for `supabase/migrations/` — the file's own header says so, and future schema
+changes should still go through a real migration file per this repo's standing (and
+previously not-held-to) convention.
