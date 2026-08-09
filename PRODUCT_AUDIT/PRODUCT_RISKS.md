@@ -1,151 +1,147 @@
 # Product Risks — Nearby
 
-*Basis: findings across all other audit files, synthesized by risk category. Each item states
-what was directly observed and, separately, what would need checking to fully confirm severity
-— consistent with this package's "don't invent, flag UNCLEAR" instruction.*
+*Basis: findings across all other audit files, synthesized by risk category, plus live
+production re-verification performed during this refresh (Management API against
+`enmosvippabmuqslzrox`) — noted explicitly wherever a risk was actually re-tested rather than
+re-read. **Refreshed 2026-08-09.** The last audit (2026-08-08) had to leave nearly every
+security-shaped item as "reported fixed, not independently re-verified" — this refresh closes
+that gap for essentially all of them. See `AUDIT_CHANGELOG.md` for the full diff.*
 
 ## Safety risks
 
-- **The "Do Something Together" 13-button `Alert.alert` may make core relationship-safety
-  content (Emergency Kit's sibling tools) unreliable on Android** — see `UX_GAPS.md`. If a
-  couple relies on `RelationshipConstitution`/`StressTest` for real conflict-navigation and
-  can't reliably open the menu, that's a safety-adjacent product failure, not just a UX
-  annoyance.
-- **No automated third-party alerting exists for the date-safety check-in flow** — per
-  `CLAUDE.md` (independently corroborated: no `twilio`/`resend`/`sendgrid`/`smtp` anywhere in
-  this repo), if a user doesn't check in by their scheduled time, nothing automatically texts
-  or emails their emergency contact — the app can only push-notify the *user's own* device, and
-  can only ever *offer* to open the device's own SMS composer pre-addressed to a saved contact.
-  A genuinely at-risk user depends entirely on their own phone still being usable to trigger
-  that share. This is a real, structural limitation of the feature's promise ("safety
-  check-in"), not a bug — worth the product owner being explicit about with users.
-- **`is_blocked()`'s historical RLS-recursion-shaped bug** (a blocked user could see/message
-  their blocker, per `CLAUDE.md`) is described as fixed but was not independently re-verified
-  live in this pass. Blocking is core safety infrastructure — this is worth a fresh live check,
-  not just trusting the changelog.
-- **Admin screens (`AdminReportsScreen`, `AdminBusinessRequestsScreen`, `AdminVerificationScreen`)
-  show no client-side role check of their own** — access relies entirely on Settings hiding the
-  entry point plus (presumably) RLS. This is architecturally consistent with the rest of the
-  app's "RLS is the real gate" tables, but wasn't independently re-verified for these three
-  specific screens in this pass.
+- ~~The 13-button `Alert.alert` may make relationship-safety content unreliable on Android~~ —
+  **RESOLVED.** The menu was already a real `ActionSheetModal.js` component, not a native
+  `Alert.alert`, at the point the last audit was written — the risk it flagged was never
+  actually live in that snapshot. See `UX_GAPS.md`.
+- **No automated third-party alerting exists for the date-safety check-in flow** — unchanged,
+  confirmed again this refresh (no `twilio`/`resend`/`sendgrid`/`smtp` anywhere in the repo). A
+  genuinely at-risk user still depends on their own phone remaining usable to trigger a share.
+  Real, structural, not a bug.
+- ~~`is_blocked()`'s historical bug was not independently re-verified live~~ — **RESOLVED.**
+  Live-tested this refresh with a real disposable block row, both directions: the blocked party
+  (the historical failure mode) correctly sees the block; an unrelated third party correctly
+  cannot probe the pair. **CONFIRMED SECURE.**
+- **Admin screens still show no client-side role check of their own** — unchanged, architecturally
+  consistent with the rest of the app; not independently re-tested against a real non-admin
+  session this refresh either (same limitation as the last audit).
 
 ## Privacy risks
 
-- **`gatherings`/`communities` RLS is deliberately wide open** ("Anyone can view gatherings"
-  `using (true)`, per `CLAUDE.md`) — visibility scoping (`friends`/`community`/`invite_only`)
-  is enforced entirely by which rows the *app* chooses to fetch, not by the database. A user
-  with any direct Supabase client access (the anon key is necessarily public in a mobile app)
-  could query `gatherings` directly and see every `invite_only`/`friends`-scoped gathering's
-  full details, bypassing the visibility model entirely. This is a repeated, explicit design
-  choice across this schema, not an oversight — but it means the actual privacy guarantee for
-  gathering visibility is "obscurity via normal app usage," not "enforced." Worth the product
-  owner deciding explicitly whether that's the intended risk posture for something as sensitive
-  as an `invite_only` gathering's location/attendee list.
-- **Several business-facing RPCs previously had no ownership check** (`get_business_top_members`
-  et al., per `CLAUDE.md` — reportedly returned another business's named-individual attendee
-  data to any authenticated caller who guessed a `partner_id`) — reportedly fixed, not
-  independently re-verified live in this pass. A real PII-adjacent exposure if the fix doesn't
-  hold or regresses.
-- **The base schema's own privacy model is otherwise genuinely strong**: no client anywhere
-  receives another person's precise coordinates; `profiles` has no lat/lng column at all. This
-  is a real structural strength, cited explicitly so this risk section isn't read as
-  all-negative.
+- **`gatherings`/`communities` RLS is still deliberately wide open** — unchanged design posture,
+  re-confirmed live this refresh (`"Anyone can view gatherings" using (true)`). The product-
+  owner decision the last audit called for (is "obscurity via normal app usage" an acceptable
+  risk posture for an `invite_only` gathering) is still not made explicit anywhere in the code —
+  still worth a direct answer. **Partially mitigated since the last audit**: `join_gathering()`
+  itself now has real server-side `invite_only` enforcement (a determined caller can no longer
+  auto-join an invite-only gathering by hitting the RPC directly), even though the underlying
+  row-visibility RLS is unchanged. The two are different guarantees — join enforcement doesn't
+  change what a direct `SELECT` can see.
+- ~~Several business-facing RPCs previously had no ownership check, not independently
+  re-verified~~ — **RESOLVED.** All 5 original functions plus 3 new-this-session ones
+  live-tested this refresh (`pg_get_functiondef` read + grant checks via
+  `has_function_privilege`) — all 8 confirmed to carry the ownership guard and correctly
+  restrict `anon`. **CONFIRMED SECURE.**
+- **A real, previously-open question about `hosting_partner_id` self-edit is now resolved,
+  positively.** The last audit's own build history flagged, as a "check before building" item,
+  whether a host could self-set a business affiliation on their own gathering with zero consent
+  from that business — and never circled back with a documented answer. Live-tested directly
+  this refresh on a real, non-test gathering: a self-edit attempt is silently reverted by a
+  dedicated trigger. **CONFIRMED SECURE** — closes an open question the last audit's risk file
+  didn't even know to ask about, since it predates that audit's own scope.
+- **The base schema's privacy model is otherwise genuinely strong** — unchanged, independently
+  re-confirmed this refresh (zero lat/lng-shaped columns among `profiles`' real 66 columns).
 
 ## Spam/abuse risks
 
-- **Business-partnership approve/deny asymmetry**: per `SCREEN_INVENTORY.md`,
-  `AdminBusinessRequestsScreen`'s Approve action calls a real RPC
-  (`approve_business_partner_request`) but Deny is a plain client-side `.update()` — worth
-  checking whether the deny path has the same server-side integrity guarantees as approve, or
-  whether a malicious/bugged client could manipulate a denied request's state directly.
-  UNCLEAR without reading that RPC/RLS directly.
-- **No proof-of-redemption mechanism was found for business perks** (`USER_FLOWS.md` flow I) —
-  if redemption is purely client-triggered with no staff-facing confirmation step, there's a
-  plausible (unverified) path for a user to claim a redemption without actually visiting the
-  business, undermining the entire premise businesses are paying for.
-- **Content moderation is consistently applied via `checkTextModeration`** across nearly every
-  free-text field observed in the screen inventory (memory vault, constitution, gathering
-  Q&A, chat, etc.) — a real, positive, repeated pattern, cited for balance.
+- **Business-partnership approve/deny asymmetry** — confirmed directly this refresh (not just
+  flagged as UNCLEAR): `AdminBusinessRequestsScreen`'s Approve calls a real RPC, Deny is a plain
+  client `.update()`. Still worth checking whether Deny's integrity guarantees genuinely differ
+  in practice — not independently re-tested for an actual exploit path this refresh, same
+  UNCLEAR-severity as before, just now confirmed as a real code-level asymmetry rather than
+  inferred from screen behavior alone.
+- ~~No proof-of-redemption mechanism was found~~ — **RESOLVED.** A real 6-digit confirmation-code
+  flow now exists; only confirmed redemptions count toward billing.
+- **Content moderation via `checkTextModeration`** — unchanged, still a real, positive, repeated
+  pattern.
 
 ## Growth problems
 
-- **The referral/growth mechanism (`InviteFriendsScreen.js`) and the gathering/community invite
-  mechanism (`social_invites`) are unrelated systems that share a casual name** — this is a
-  UX-clarity risk (see `UX_GAPS.md`) but also a growth risk: a user trying to "invite a friend
-  to the app" and a user trying to "invite a friend to my gathering" are doing conceptually
-  different things, and the app doesn't obviously funnel one into the other (e.g. inviting a
-  non-app friend to a specific gathering, if that's even possible, wasn't confirmed in this pass).
-- **The single biggest differentiator (the relationship-longevity suite) is nearly invisible**
-  (see `UX_GAPS.md`) — if this toolset is meant to be a retention/differentiation lever per
-  `PRODUCT_OVERVIEW.md`'s theory of the product, its current discoverability actively undercuts
-  that strategy. A feature that exists in code contributes nothing to growth or retention if
-  users can't find it.
+- **The referral/growth mechanism and the gathering/community invite mechanism are still
+  unrelated systems sharing a casual name** — unchanged. Partially narrowed: a real path to
+  invite a non-app-user to a *specific* gathering now exists (a share-link action), closing the
+  specific growth gap the last audit called out, even though the naming-overlap UX risk itself
+  is unchanged.
+- ~~The relationship-longevity suite is nearly invisible~~ — **RESOLVED.** See `UX_GAPS.md`; a
+  real consolidated hub now exists.
 
 ## Retention problems
 
-- **Three real, well-built personal-stat screens (`Insights`, `Momentum`, `Rewards`) are dead
-  ends** with no CTA to act on what they show — these are exactly the kind of screen that
-  should be driving a return visit ("you're 2 away from Silver — go redeem something") and
-  currently isn't.
-- **`FeaturesOverviewScreen`'s lack of deep links** means the app's own "here's everything we
-  offer" moment doesn't convert into actual usage of anything it describes.
+- ~~Three real personal-stat screens are dead ends~~ — **PARTIALLY RESOLVED.** All three now
+  have a real in-app CTA. The proactive-push half (a "you're on a streak"/"close to a tier"
+  notification) still does not exist — no grep hit for anything resembling it in
+  `supabase/functions/` or the migrations. This remains the single sharpest fall-out point in
+  the product flywheel — see `PRODUCT_FLYWHEEL.md`.
+- **`FeaturesOverviewScreen`'s lack of deep links** — unchanged.
 
 ## Marketplace problems (business ↔ consumer matching)
 
-- **Business self-onboarding is incomplete**: `profiles.managed_partner_id` linkage has no
-  confirmed self-serve claiming flow in this pass, and the dashboard can't edit the business's
-  own profile yet. A real bottleneck to scaling the number of active local businesses without
-  manual intervention per new partner.
-- **Whether a business can host its own gathering unilaterally, vs. only ever being invited to
-  sponsor a consumer's gathering, is UNCLEAR** (see `USER_FLOWS.md` flow K) — this materially
-  affects how much supply-side effort a business needs from a consumer host to get any value
-  from the platform.
+- ~~Business self-onboarding is incomplete~~ — **PARTIALLY RESOLVED.** The dashboard's own
+  profile-editing gap is fixed; a real self-*claim* flow (becoming a partner without admin
+  review) still doesn't exist — unchanged half of the original finding.
+- ~~Whether a business can host its own gathering unilaterally is UNCLEAR~~ — **RESOLVED, as a
+  definite NO.** Direct code reading confirms `host_id` is always the caller's own session; a
+  business can only ever be attached via the consumer-initiated partnership flow.
 
 ## Business adoption problems
 
-- **No payment processor exists at all** — `business_invoices` rows accumulate in `draft`
-  status forever; there is no way for Nearby to actually collect money from a business today.
-  This is the single largest business-model gap in the entire codebase (see
-  `CRITICAL_MISSING_FEATURES.md`).
-- **The dashboard's incomplete self-editing** (see above) is a real friction point for business
-  adoption specifically — an owner who can't fix a typo in their own description without
-  emailing support is a worse first-week experience than most competing local-business tools.
+- **No payment processor exists at all** — unchanged, confirmed again this refresh. Still the
+  single largest business-model gap in the codebase.
+- ~~The dashboard's incomplete self-editing is a real friction point~~ — **RESOLVED**, same fix
+  as above.
 
 ## Monetization problems
 
-- **Two entirely separate monetization systems with no shared infrastructure**: consumer
-  Premium (RevenueCat, live and real) and business billing (contract math, real, but
-  disconnected from any payment rail). The app has proven it can monetize consumers but not yet
-  businesses, despite the business side having the more architecturally sophisticated billing
-  model (per-redemption/flat/hybrid contracts) — the harder problem is solved, the easier one
-  (actually charging a card) isn't.
-- **Redemption-based billing depends on redemption data being trustworthy** — see the
-  proof-of-redemption gap above; if redemptions can be gamed, the billing math built on top of
-  them inherits that risk.
+- **Two entirely separate monetization systems with no shared infrastructure** — unchanged.
+- **Redemption-based billing depended on redemption data being trustworthy** — **materially
+  improved**: a real proof-of-redemption mechanism now exists and gates what counts toward
+  billing, closing the specific trust gap the last audit flagged (money still can't move at all,
+  per the payment-processor gap above, but the accounting input is now more trustworthy).
 
 ## Scalability concerns
 
-- **The single largest technical/scalability risk found in this audit**: per
-  `DATABASE_AND_DATA_MODEL.md`, roughly 45 of ~53 real production tables have **no
-  corresponding `CREATE TABLE` anywhere in this git repository** — they were created directly
-  in the live Supabase project outside of version control. There is no way to spin up a fresh
-  staging/dev database from source control, no code-reviewable history for most of the schema,
-  and no disaster-recovery story beyond "restore the one production database." This is a
-  foundational risk independent of any single feature.
-- **Search is a client-side filter over already-fetched lists**, not a real backend search
-  index (`USER_FLOWS.md` flow B) — this will not scale gracefully as the number of gatherings/
-  communities/perks in a metro area grows; it works today because the data volume is small
-  (per `CLAUDE.md`'s own repeated notes that production has very little real data yet — single
-  digits of communities/offers at the time of several sessions).
-- **`GatheringsScreen.js`/`ChatScreen.js` being 1400+-line single files** is a maintainability
-  risk that compounds scalability risk — large, hard-to-reason-about files are exactly where
-  bugs like the `ChatScreen` production-debug-overlay issue hide (see `IMPLEMENTATION_NOTES.md`).
+- ~~Roughly 45 of ~53 tables have no `CREATE TABLE` anywhere in this repo~~ — **RESOLVED, and
+  replay-verified, not just statically confirmed.** See `DATABASE_AND_DATA_MODEL.md` for the
+  full account, including one regression found and fixed during this very refresh. This was the
+  single largest technical/scalability risk in the last audit and is now the single largest
+  positive change in this one.
+- **Search is still a client-side filter over already-fetched lists** — unchanged, confirmed
+  STILL PRESENT.
+- **`GatheringsScreen.js`/`ChatScreen.js` remain 1400+-line single files** — unchanged.
+  `BusinessDashboardScreen.js` (1202 lines) now also crosses this threshold, a new observation
+  from this refresh's own churn (three feature stacks landed in the same file this session), not
+  a new class of problem.
 
 ## UX risks
 
-Substantially covered in `UX_GAPS.md` — summarized here for completeness: production debug
-code visible to real users, a broken empty state, a non-functional recommendation flow, silent
-message-send failures across 4 chat surfaces, and the systemic relationship-tools
-discoverability gap (with its associated Android `Alert.alert` reliability risk) are the
-concrete, evidence-backed items; everything else in this section is either a direct consequence
-of those or a reasoned inference clearly marked as such.
+**Every concrete, evidence-backed UX risk the last audit cited by name is now resolved**:
+production debug code, the broken empty state, the non-functional recommendation flow, silent
+message-send failures, and the relationship-tools discoverability/reliability gap. What remains
+is smaller and lower-severity: the `ChemistryDiaryListScreen`/`FeaturesOverviewScreen` gaps, the
+withdraw-pending-request gap, naming/terminology confusions, and — genuinely new this refresh —
+the hardcoded-URL pattern being 5x larger in scope than previously documented. See `UX_GAPS.md`
+for the full current-state list.
+
+## Overall risk posture — how much actually changed
+
+The last audit's risk section was dominated by items in an unresolved, "reported fixed but never
+independently checked" state — a real, honest limitation of a code-only audit with no database
+access. **This refresh had database access and used it**: essentially every safety/security-
+shaped item that could be live-tested was live-tested, with real disposable test data, cleaned
+up afterward, matching this repo's own established verification convention. The net result is a
+genuinely lower-risk picture than the last audit could respons­ibly claim — not because the
+underlying code changed dramatically in every case, but because several real fixes that existed
+only as claims in `CLAUDE.md`'s own history are now independently, directly confirmed. The
+remaining open risks are concentrated in two places: **business monetization is still entirely
+uncollectible** (no payment processor, unchanged) and **the retention loop is still only
+half-activated** (CTAs exist, proactive pushes don't) — both are product/scope decisions, not
+security gaps.

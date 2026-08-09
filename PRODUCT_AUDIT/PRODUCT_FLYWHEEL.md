@@ -1,131 +1,130 @@
 # Product Flywheel — Nearby
 
-*Tracing the loop the prompt asked for: Discover → Join → Meet → Connect → Create → Invite →
-Gather → Community → Business → Perk → Return. Basis: `USER_FLOWS.md`, `SCREEN_INVENTORY.md`,
-`FEATURE_MATRIX.md`. For each step: what's real today, what's missing, and the concrete point
-where a user can fall out of the loop.*
+*Tracing the loop: Discover → Join → Meet → Connect → Create → Invite → Gather → Community →
+Business → Perk → Return. Basis: `USER_FLOWS.md`, `SCREEN_INVENTORY.md`, `FEATURE_MATRIX.md`,
+and a from-scratch, 20-transition trace done directly (not delegated) for this refresh, extending
+the app's own internal `FLYWHEEL_TRACE_PROGRESS.md`. **Refreshed 2026-08-09.** For each step:
+what's real today, what's missing, and the concrete point where a user can fall out of the loop.*
 
 ## Discover
 
-**Exists**: a genuinely unified hub (`DiscoverHubScreen`) across gatherings/communities/places/
-perks, plus a separate People-discovery surface (`DiscoveryScreen`/`Nearby`), plus Home's own
-daily-digest surfacing of the same underlying content. Real signal-based recommendations
-("Recommended for you," Trending) — no fabricated scores.
-**Missing**: search is a client-side filter over already-fetched lists, not a real index (see
-`PRODUCT_RISKS.md`) — fine at today's data volume, a real ceiling later.
-**Fall-out point**: none especially sharp here — this is the best-covered step in the loop.
+**Exists**: unchanged — a genuinely unified hub, real signal-based recommendations.
+**Missing**: search is still a client-side filter, unchanged, a real ceiling later not today.
+**Fall-out point**: none especially sharp — still the best-covered step in the loop.
 
 ## Join
 
-**Exists**: a real, capacity-aware, waitlist-backed join flow (`join_gathering` RPC per
-`CLAUDE.md`), honest CTA copy that differs by join type, a private pre-join intent signal never
-shown to the host.
-**Missing**: no visible way to withdraw a pending host-approval request (only an *approved*
-attendee can leave).
-**Fall-out point**: a host-approval gathering with a slow-to-respond host has no
-expectation-setting UI ("hosts usually respond within X") and no easy way to reconsider — a
-user could simply stop checking rather than actively leaving.
+**Exists**: unchanged, plus **`invite_only` gathering join is now genuinely server-side
+enforced**, not just UI-gated — live-verified this refresh (an uninvited direct RPC call is
+rejected, an invited-and-accepted one succeeds). An honest "almost full" nudge was also added.
+**Missing**: still no visible way to withdraw a pending host-approval request — unchanged.
+**Fall-out point**: unchanged from the last audit — a slow-to-respond host still leaves the
+requester with no expectation-setting UI and no easy way to reconsider.
 
 ## Meet
 
-**Exists**: `GatheringHub`'s "Who You'll Meet" section (real shared-interest overlap,
-first-timer flags, host reputation stats stacked honestly), ice breakers that prefill group
-chat, on-my-way/check-in self-reporting.
-**Missing**: no GPS-verified arrival — entirely self-reported, a deliberate, documented
-trade-off (per `CLAUDE.md`) rather than a gap, given this app's structural no-precise-location
-privacy stance.
-**Fall-out point**: a gathering with a lot of first-timers and no active host engagement in the
-hub has nothing pulling people back in after the "You're In!" banner beyond the static ice
-breakers — no live presence indicator of who else is actually en route.
+**Exists**: unchanged.
+**Missing**: unchanged — no GPS-verified arrival, a deliberate trade-off.
+**Fall-out point**: unchanged.
 
 ## Connect
 
-**Exists**: friend requests, `friend_circles` grouping, mutual-friends surfacing on profiles,
-gathering-based matching (`matches.source_gathering_id` per `CLAUDE.md`) alongside the
-classic Notice/Wave mutual-match path.
-**Missing**: nothing structurally missing — this step is well-built.
-**Fall-out point**: a match/friend made at a gathering has no obvious nudge back toward
-`Create`/`Invite` immediately after — the loop's next step isn't proactively suggested at the
-moment connection happens (it exists on Home as a general "best pick," not as a direct
-"you just met X, plan something together" prompt).
+**Exists**: unchanged — friend requests, circles, mutual-friends, gathering-based matching.
+**Missing**: nothing structurally missing — unchanged assessment.
+**Fall-out point**: unchanged — a match/friend made at a gathering still has no direct "you just
+met X, plan something together" prompt, only a general Home "best pick."
 
 ## Create
 
-**Exists**: the full "Create 2.0" guided wizard, AI-assisted free-text fallback, real deep-link
-share on publish.
-**Missing**: nothing structurally missing for gatherings; whether a *business* can unilaterally
-create its own gathering (vs. only sponsor a consumer's) is UNCLEAR (`USER_FLOWS.md` flow K).
-**Fall-out point**: none especially sharp — this is the second-best-covered step after Discover.
+**Exists**: unchanged.
+**Missing**: **the "whether a business can unilaterally create a gathering" question is now
+resolved to a definite NO** (was UNCLEAR at the last audit) — this doesn't change the loop
+itself, just removes the ambiguity around it.
+**Fall-out point**: none especially sharp — unchanged, still the second-best-covered step.
 
 ## Invite
 
-**Exists**: friends-only `social_invites` for gatherings/communities with real shared-context
-enrichment, a post-publish "Invite Connections" prompt, a post-join "Want to bring someone?"
-growth prompt.
-**Missing**: no way found to invite someone who isn't already a friend/app user to a *specific*
-gathering (the referral system invites to the *app*, not to a specific event) — a real limiter
-on the loop's viral surface, since "bring a friend who isn't on Nearby yet" to a specific
-gathering isn't a built path.
-**Fall-out point**: a user whose real-world social circle isn't yet on the app has a
-meaningfully weaker version of this step — they can share the app itself, but not "here's the
-specific thing, come to this."
+**Exists**: unchanged, plus **a real path to invite a non-app-user to a specific gathering now
+exists** (a share-link action from `InviteFriendsModal.js`) — this was the last audit's specific
+named gap for this step and is now closed. Cold-start push-tap delivery for an invite
+notification is also now reliable (was silently dropped if the app launched from fully-closed —
+fixed this session).
+**Missing**: the underlying limiter (bringing someone who isn't yet an app user/friend to a
+*specific* gathering) is now real via the share-link path — narrower gap than before, though a
+non-app-user still can't be given a real in-app invite record the way a friend can, only a shared
+link.
+**Fall-out point**: meaningfully narrower than the last audit found — the sharpest remaining
+edge is a user whose social circle isn't on the app at all still gets a generic share, not a
+tracked/attributed invite.
 
 ## Gather
 
-**Exists**: the full live-hub experience, feedback loop, host-reputation accumulation.
-**Missing**: nothing structurally missing beyond what's noted under "Meet" above.
-**Fall-out point**: same as "Meet."
+**Exists**: unchanged.
+**Missing**: unchanged, same as "Meet."
+**Fall-out point**: unchanged.
 
 ## Community
 
-**Exists**: real standing communities with roles/calendar, gathering-to-community linkage on
-creation, business affiliation.
-**Missing**: nothing structurally missing for the consumer side.
-**Fall-out point**: a gathering attendee who isn't already in the relevant community has no
-prompt, at the point of attending, to join the community behind that gathering (confirmed
-absent in the screen inventory — `GatheringHub`/`GatheringDetail` don't surface a
-"join this community" nudge tied to the specific gathering they're already engaged with).
+**Exists**: unchanged, plus **the single biggest change in the entire flywheel since the last
+audit**: a gathering can now directly seed a brand-new community from its own real, friended
+attendees ("Start a Community from This Gathering") — this closes a gap the flywheel-trace audit
+identified and deliberately left unbuilt at the time it was first found. Also, a gathering
+already scoped to a community now correctly surfaces a link to it (was previously fetched but
+never shown).
+**Missing**: nothing structurally missing for the consumer side — unchanged.
+**Fall-out point**: **resolved.** The last audit's fall-out point here ("no prompt to join the
+community behind a gathering just attended") no longer applies — both directions of this
+connection (existing gathering → existing community, and one-off gathering → brand-new
+community) are now real.
 
 ## Business
 
-**Exists**: perks, sponsorship requests, dashboard analytics/CRM.
-**Missing**: self-serve business onboarding is incomplete (no confirmed self-claim flow, no
-profile self-editing yet) — a real supply-side bottleneck.
-**Fall-out point**: a business that wants to join sees a real, working application flow, but
-getting from "approved" to "actually configured and live" depends on manual/support
-intervention for anything beyond what was in the original application.
+**Exists**: unchanged, plus real self-serve profile editing (closing a previously-silent
+double bug — no UPDATE RLS policy existed at all underneath the old "isn't available yet" UI),
+persistent per-customer CRM notes, and a natural-language AI assistant over the owner's own
+stats.
+**Missing**: self-serve *claiming* (becoming a partner) is still admin-gated — unchanged half of
+the last audit's finding.
+**Fall-out point**: narrower than before — "approved but not yet configured" now only applies to
+the initial claim step, not to ongoing profile maintenance.
 
 ## Perk
 
-**Exists**: scarcity, targeting, group-unlock, real redemption tracking, loyalty tiers.
-**Missing**: no confirmed proof-of-redemption mechanism (see `PRODUCT_RISKS.md`); `Rewards`
-itself has no CTA back into redeeming more.
-**Fall-out point**: a user who redeems a perk has nothing in the flow actively routing them
-back toward Discover/Gather afterward — the loop doesn't close itself here, it depends on the
-user re-initiating.
+**Exists**: unchanged, plus **a real proof-of-redemption mechanism now exists** (a 6-digit
+confirmation code, business-confirmed) — this was the last audit's specific named gap for this
+step and is now closed. `Rewards` also now has a real CTA back into redeeming.
+**Missing**: nothing structurally missing that the last audit named — both gaps for this step
+are closed.
+**Fall-out point**: narrower than before — a redeeming user now has a real CTA nudging them back
+toward Discover/Gather via `RewardsScreen`, though it still requires them to navigate there
+rather than being pushed to.
 
 ## Return
 
-**Exists**: `Insights`/`Momentum`/`Rewards` make the return loop *legible* (real streaks,
-real deltas, real tier progress) — a genuinely strong, non-fabricated foundation for a "come
-back" mechanic.
-**Missing**: none of the three screens that exist specifically to encourage return have an
-outbound CTA (see `UX_GAPS.md`) — the legibility is built, the actual next-action nudge isn't.
-Push notifications exist for direct social events (match, message, invite) but there's no
-observed "you have momentum, don't lose your streak" proactive nudge tying the Momentum screen's
-own signal back into a notification.
-**Fall-out point**: the single sharpest fall-out point in the entire flywheel. The app can tell
-a user exactly how engaged they've been, in real numbers, and then does nothing with that
-information to pull them back in — the "Return" step is instrumented but not activated.
+**Exists**: unchanged legibility (real streaks/deltas/tier progress), plus **all three screens
+now have a real outbound CTA** — the "instrumented but the screen itself is a dead end" half of
+the last audit's finding is closed.
+**Missing**: **the proactive push notification tying the same signal back into a notification
+still does not exist** — no grep hit for a streak/tier-proximity push trigger anywhere in
+`supabase/functions/` or the migrations. This is the one piece of the last audit's Return-step
+finding that is genuinely unchanged.
+**Fall-out point**: **still the sharpest fall-out point in the entire flywheel, but narrower
+than before.** The app now tells a user exactly how engaged they've been *and* gives them a
+button to act on it from within the screen — what's still missing is the proactive nudge that
+would pull them back into the app to see that screen in the first place. A real, if smaller,
+gap than the last audit found.
 
 ## Overall assessment
 
-The **content/supply side of the loop (Discover→Join→Meet→Connect→Create→Gather→Community) is
-genuinely strong and internally consistent** — this is where most of the engineering effort
-visible in `CLAUDE.md`'s own history and in the screen inventory has gone, and it shows. The
-**two weakest links are Invite** (no path to a specific non-app-user for a specific event) **and
-Return** (real signal, no activation) — both are the steps a flywheel depends on most for
-actually compounding, as opposed to steps that just need to work once per session. The Business/
-Perk half of the loop is real but has a genuine adoption bottleneck (self-serve onboarding) and
-an unresolved trust question (proof of redemption) that would matter more the more the business
-side scales.
+**The content/supply side of the loop remains genuinely strong.** What changed most since the
+last audit is that **two of the loop's three weakest links from the last audit are now
+substantially closed**: Invite (a real specific-gathering, non-app-user path now exists) and
+Community (the gathering→community bridge, the last audit's own single biggest deliberately-
+unbuilt gap, is now built). **Return remains the loop's genuine weak point**, though it too is
+now half-closed (legibility + CTA both real; only the proactive-nudge half is still missing).
+The Business/Perk half of the loop is materially more trustworthy than at the last audit —
+proof-of-redemption closes the trust question, self-edit closes the onboarding-friction
+question — but the adoption bottleneck (self-serve *claiming*, still admin-gated) and the
+monetization gap (no payment processor, unchanged) are both still real. Compared to the last
+audit, this is a flywheel that has closed real gaps rather than accumulated new ones — the
+refresh found no new fall-out point anywhere in the 20-transition trace performed for this pass.

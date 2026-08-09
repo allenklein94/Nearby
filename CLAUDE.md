@@ -40,25 +40,41 @@ table/function exists in the baseline, so they're correctly incremental, no dupl
 baseline, so nothing is lost, only the duplicate live copy is removed from the replay path.
 Container removed afterward, nothing persisted beyond the verification itself.
 
-## Outstanding: PRODUCT_AUDIT full refresh (Aug 9 2026) — IN PROGRESS
+## Outstanding: PRODUCT_AUDIT full refresh (Aug 9 2026) — DONE
 
 The user asked for a complete refresh of `/workspaces/Nearby/PRODUCT_AUDIT/` against the
-**current** repo — 21 commits / 69 files / +14443/-461 lines have landed since that audit was
-written (commit `d96f10cf`), so it's genuinely stale, not a rubber-stamp re-run. Explicit rules:
-current repo is sole source of truth (old audit is a diffing baseline only, never evidence
-something still holds); every previously-identified issue gets a real FIXED/STILL PRESENT/
-PARTIALLY FIXED/NO LONGER APPLICABLE/COULD NOT VERIFY classification verified against current
-implementation; read-only, no application code changes; overwrite the 13 existing
-`PRODUCT_AUDIT/*.md`+`.json` files in place (no second folder); add one new file,
-`AUDIT_CHANGELOG.md`, kept across future refreshes unlike the other 13; max 2 concurrent agents.
+**current** repo — 21 commits / 69 files / +14443/-461 lines had landed since that audit was
+written (commit `d96f10cf`), so it was genuinely stale, not a rubber-stamp re-run. Explicit
+rules followed: current repo as sole source of truth (old audit used only as a diffing
+baseline); every previously-identified issue given a real FIXED/STILL PRESENT/PARTIALLY FIXED/
+NO LONGER APPLICABLE/COULD NOT VERIFY classification verified against current implementation;
+read-only, no application code changes; the 13 existing `PRODUCT_AUDIT/*.md`+`.json` files
+overwritten in place (no second folder); one new file added, `AUDIT_CHANGELOG.md` (kept going
+forward across future refreshes, unlike the other 13 which get fully overwritten each time);
+max 2 concurrent agents throughout.
 
-**Full plan and live status tracked in `PRODUCT_AUDIT/REFRESH_PROGRESS.md`** — read that file
-first if picking this up after a restart, don't re-derive the plan from scratch. Short version:
-2 parallel background research agents (A: codebase re-scan + technical-debt scan + old-audit
-diff/classification; B: live Supabase re-verification of RLS/ownership/security claims,
-including today's newest RPCs and whether the schema baseline still covers every migration
-added since Aug 9), plus a from-scratch flywheel-trace re-verification done directly (not
-delegated) since it needs judgment across many files, all synthesized into the 14 target files.
+**Survived a codespace restart mid-pass** — Agent B's live-production security recheck and the
+from-scratch 20-transition flywheel trace both completed and were saved to disk before the
+restart hit; only Agent A's codebase re-scan was lost and had to be relaunched fresh on resume
+(cost: ~7 minutes, nothing else). `PRODUCT_AUDIT/REFRESH_PROGRESS.md` (the restart-safety
+scratch file used to track this) has since been deleted along with the other 3 intermediate
+research files, per the plan's own step 7 — all four were scratch, not deliverables.
+
+**Headline result**: every one of the last audit's 6 P0 items is now FIXED, 4 of them
+independently live-re-verified against production (not just re-read) — `is_blocked()`'s
+historical safety bug, the business-RPC ownership checks, and the schema-reproducibility claim
+all moved from "reported fixed, never independently confirmed" to "confirmed live, with real
+disposable test data, cleaned up afterward." **One genuine regression was found and fixed within
+this very refresh pass**: a duplicate-effect migration (`20260809_social_invite_community_join.sql`)
+left un-archived, which would have broken a from-scratch `supabase/migrations/` replay — see the
+section immediately above for the full account; this is the same finding, cross-validated
+independently by both the direct investigation and Agent B's live catalog analysis. The flywheel
+trace found no new BROKEN or MISSING transition across all 20 steps. Full item-by-item
+classification, new findings (a 12-file-wider hardcoded-URL scope, two small dead-code items,
+`hosting_partner_id` self-edit now confirmed protected), and package housekeeping notes are all
+in `PRODUCT_AUDIT/AUDIT_CHANGELOG.md` — read that file, not this section, for the complete
+record; this section is intentionally kept short since the changelog is now the durable home for
+this detail.
 
 ## Aug 9 2026 — push-notification cold-start tap silently dropped (fixed)
 

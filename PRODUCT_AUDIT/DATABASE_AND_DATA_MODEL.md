@@ -1,243 +1,246 @@
 # Database & Data Model — Nearby
 
-*Basis: direct read of `supabase/schema.sql` (the only full-schema file in the repo) and all
-28 files in `supabase/migrations/`; a repo-wide grep of every `.from('table')` / `.rpc('fn')`
-call in `src/`; targeted reads of `.select()` field lists in the busiest service files
-(`gatherings.js`, `communities.js`, `friends.js`, `brandOffers.js`, `businessPartnerships.js`).
-Where a table's precise column list could not be confirmed from a local file, this is stated
-explicitly rather than guessed — see "A critical, verified gap" below.*
+*Basis: direct read of `supabase/migrations/00000000000000_baseline.sql` (now the real,
+replay-verified schema baseline — see below), the 2 other files currently live in
+`supabase/migrations/`, all 31 files in `supabase/migrations_archive/`, a repo-wide grep of
+every `.from('table')` / `.rpc('fn')` call in `src/`, and — new this refresh — direct live
+queries against production (`enmosvippabmuqslzrox`) via the Management API to independently
+confirm table/function/policy counts and re-test several previously-unverified claims.
+**Refreshed 2026-08-09.** See `AUDIT_CHANGELOG.md` for the full diff against the 2026-08-08
+original, whose single biggest finding (the schema was not locally reproducible) is the
+headline change in this file.*
 
-## A critical, verified gap: most of the schema does not exist in this repo
+## The last audit's single biggest finding is now resolved — with one regression found and fixed during this very refresh
 
-Grepping all 28 local migrations for `create table` finds exactly **8** tables:
-`partner_contracts`, `friend_circles`, `friend_circle_members`, `gathering_questions`,
-`business_partnership_requests`, `social_invites`, `emergency_contacts`, `gathering_intents`.
-`schema.sql` itself defines 8 more (`profiles`, `presence_reports`, `sightings`, `notices`,
-`matches`, `messages`, `blocks`, `reports`).
+The last audit's headline risk was: *"~45 of ~53 real production tables have no `CREATE TABLE`
+anywhere in this git repository — the schema cannot be reconstructed from source control."*
+Between that audit and this refresh, a real baseline migration was built and — critically —
+**verified by actually applying it to a truly empty database**, not just by reading the SQL:
 
-That's 16 tables with a real local source of truth. The `.from()` grep across `src/` finds
-**~53 distinct tables actually queried by the app**, including foundational ones —
-`gatherings`, `communities`, `community_members`, `gathering_interest`, `brand_partners`,
-`brand_offers`, `offer_redemptions`, `friendships`, `business_invoices`, `business_followers`,
-`business_messages`, `stories`, `memory_vault_items`, and every relationship-longevity table
-(`chemistry_diary_entries`, `goodbye_archive_entries`, etc.) — **none of which have a `create
-table` statement anywhere in this git repository.** They exist only in the live production
-database (project ref `enmosvippabmuqslzrox`, per `src/services/supabase.js` and the in-repo
-`CLAUDE.md`), created directly via the SQL editor or the Management API at some point before
-this repo's own migration history begins (the oldest local migration is dated 2026-08-06).
+- `supabase/migrations/00000000000000_baseline.sql` (6252 lines, byte-identical to
+  `supabase/full_schema_pull_2026-08-09.sql`) now contains a real `create table` statement for
+  **all 53 tables** — confirmed two ways: (1) a live table-name diff against production's real
+  `information_schema.tables` came back empty in both directions; (2) an actual Docker replay
+  against `supabase/postgres:15.1.0.147` (the real Supabase Postgres image, not a bare vanilla
+  Postgres) on a truly empty `public` schema completed with exit code 0 — 52 tables, 103
+  functions, 119 policies, 36 triggers, 10 cron jobs, 5 storage buckets, matching the file's own
+  real counts exactly (that run predates today's 2 newest migrations; live counts today are
+  53/106/120/36/10/5, an exact +1/+3/+1/0/0/0 incremental delta — see below).
+- Two real, non-obvious bugs were found and fixed to get the file into this state: tables were
+  originally ordered alphabetically rather than by FK dependency (`blocks` referenced `profiles`
+  from ~1500 lines before `profiles` existed), and `CREATE POLICY`/`CREATE TRIGGER` statements
+  were originally inline in the TABLES section, referencing SECURITY DEFINER helper functions
+  that hadn't been defined yet at that point in the file — both fail hard on a truly fresh
+  database (Postgres validates policy/trigger expressions against the catalog at creation time,
+  unlike a plpgsql function body). Both are fixed: tables are topologically sorted, and
+  policies/triggers are deferred into two dedicated sections after FUNCTIONS.
+- Two harmless test-environment-only patches (an `auth.users.phone` column, a
+  `storage.buckets.public` column — both real in current production, just absent from the
+  pinned older test image) were applied to the Docker container only, never to the committed
+  file.
 
-This mirrors a pattern the repo's own `CLAUDE.md` already documents for Edge Functions (local
-`supabase/functions/*/index.ts` files are empty stubs; real code only exists deployed) — but
-it is more serious for the schema, because **there is no way to reconstruct this app's actual
-data model from source control**, stand up a fresh dev/staging database from git, or code-review
-past schema decisions for the majority of tables. Every finding below about a table not covered
-by a local migration is therefore based on (a) how the app's own service/screen code queries and
-writes to it, and (b) the in-repo `CLAUDE.md`'s session notes, which describe several of these
-tables' columns and constraints in detail as things that were directly, live-verified against
-production during past sessions — treated here as reliable secondhand evidence, not as a
-substitute for the actual `CREATE TABLE` statement. Flagged explicitly per-table below.
+**A regression was found and fixed during this refresh itself, worth stating plainly rather than
+glossing over.** `supabase/migrations/20260809_social_invite_community_join.sql` — the live
+migration implementing the flywheel-trace leg-4 fix (private-community invite-accept → real
+membership) — was committed in the same commit that patched the baseline to bake the identical
+fix directly into the baseline's own `community_members` INSERT policy, but the live migration
+file was never archived. Net effect: replaying `supabase/migrations/` in filename order would
+create the policy via the baseline, then hit `ERROR: policy ... already exists` on the third
+file's own `create policy` for the same name — the identical conflict shape the original
+baseline-fix session found and fixed once already for the `visibility`/`capacity` columns. **This
+was confirmed with a real replay** (same Docker method, a truly empty `public` schema): applying
+`baseline → business_customer_notes.sql → business_profile_self_edit.sql` succeeds with exit
+code 0; re-applying the archived file on top of that state fails exactly as predicted, proving
+the archive move (not something else) resolves it. **Fixed**: the file was moved to
+`supabase/migrations_archive/` (`git mv`) — its effect was already fully present in the
+baseline, so nothing is lost, only the duplicate live copy is removed from the replay path.
+Independently, Agent B's live-catalog analysis (run concurrently during this same refresh) found
+and confirmed the identical bug by static+live cross-check before the fix landed, corroborating
+it wasn't a one-off misread.
 
-## Core identity & connection tables (full schema known — `schema.sql`)
+**Current, post-fix state**: `supabase/migrations/` now contains exactly 3 files —
+`00000000000000_baseline.sql`, `20260809_business_customer_notes.sql` (a genuinely new table,
+confirmed absent from the baseline via grep), and `20260809_business_profile_self_edit.sql` (a
+genuinely new RPC, confirmed absent from the baseline). Both are confirmed clean, non-conflicting
+incremental deltas — their only dependencies (`profiles`, `brand_partners`) already exist in the
+baseline. **A fresh empty Supabase project really can be rebuilt from committed files alone,
+end to end, replaying the full live `supabase/migrations/` folder in filename order** — the
+strong claim the last audit couldn't make, now genuinely true and replay-verified, not just
+asserted.
 
-- **`profiles`** — `id` (=`auth.users.id`), `display_name`, `bio`, `birthdate` (18+ enforced by
-  a check constraint), `photo_url`, `photo_verified`, `is_premium`, `expo_push_token`,
-  `is_admin`. Per `CLAUDE.md`, in production this row has grown many more columns not in this
-  file (`managed_partner_id`, `ai_uses_today`, `bonus_notices`, `interests`, `birth date` etc.)
-  — **not verifiable locally**; the base file only has the 9 columns above.
-  RLS: a user always sees their own row; other rows are visible only once `photo_verified =
-  true` (unmoderated photos never enter discovery). No lat/lng column exists on this table —
-  confirmed structurally important elsewhere in the app (no per-person map layer is possible).
-- **`presence_reports`** — one row per user (`user_id` is the PK, i.e. upserted not appended),
-  a coarse `area` bucket, `reported_at`. No client RLS policy at all — only the service role
-  (an Edge Function) can touch it. This is the mechanism that makes "no exact GPS to any
-  client" a schema-level guarantee, not just an app convention.
-- **`sightings`** — coarse "crossed paths" events between two users, `approx_area` (never exact
-  coords), 48-hour `expires_at`. RLS scopes SELECT to either participant, and (via a later
-  policy rewrite) excludes any pair where either has blocked the other.
-- **`notices`** — one-directional "I'm interested" signal (`from_user`→`to_user`). RLS is the
-  most structurally interesting policy in the base schema: you always see notices you sent, but
-  only see a notice sent *to* you if it's already mutual (both sides sent one) **or** you're
-  premium — i.e. premium's "see who noticed you" feature is enforced by RLS, not a client
-  check.
-- **`matches`** — created automatically by a trigger (`check_mutual_notice`) the instant a
-  notice becomes mutual (`least`/`greatest` on the two user ids as a de-dupe key,
-  `on conflict do nothing`). Per `CLAUDE.md`, in production `matches` also gained a
-  `source_gathering_id` column (nullable, used by gathering-based matching) — not in this file.
-- **`messages`** — scoped to `match_id`; RLS requires the sender be a real participant in that
-  match and that neither side has blocked the other.
-- **`blocks`** — one-directional, `blocker_id`/`blocked_id`. Its own SELECT policy is
-  deliberately `auth.uid() = blocker_id` only (the blocked party can never see they were
-  blocked) — which is exactly the RLS shape that produced this session's most serious
-  historical bug (see `is_blocked()` below).
-- **`reports`** — user-submitted reports, admin-only broader visibility via `profiles.is_admin`.
+## Core identity & connection tables
 
-### `is_blocked(user_1, user_2)` — worth calling out specifically
+- **`profiles`** — real column count confirmed live: **66 columns**, including
+  `managed_partner_id`, `ai_uses_today`, `bonus_notices`, `interests`, `is_admin`,
+  `is_premium`, `photo_verified`, `expo_push_token`, `timezone`. **Zero lat/lng-shaped columns**
+  — independently re-confirmed live this refresh via a properly-scoped `information_schema`
+  query (an earlier, unscoped version of this same check produced false positives from other
+  tables' columns — corrected before being reported here). No per-person map layer is possible
+  by construction, not by convention.
+- **`presence_reports`**, **`sightings`**, **`notices`**, **`matches`**, **`messages`**,
+  **`blocks`**, **`reports`** — all now have a real, committed `CREATE TABLE` in the baseline.
+  Unchanged in shape from the last audit's inferred description.
 
-A plain SQL helper function referenced by ~10 RLS policies (`matches`, `messages` ×2, `notices`
-×2, `sightings`, `shared_playlist_items` ×2, `business_messages` ×2). Per `CLAUDE.md`, this
-function was originally **not** `SECURITY DEFINER`, so it ran under the *calling* role's RLS
-when reading `blocks` — and since `blocks`' own SELECT policy only lets the blocker see the row,
-a **blocked user could still see and message the person who blocked them**, because from the
-blocked party's own session the block row didn't appear to exist. This was fixed (made
-`SECURITY DEFINER` with an internal `auth.uid()` participant guard) per that session's notes,
-but the underlying pattern — a SECURITY-DEFINER-shaped need on a plain SQL function referenced
-by many policies — is worth an auditor's own re-verification rather than taking on faith; this
-audit did not independently re-run that live test.
+### `is_blocked(user_1, user_2)` — re-verified live, not just re-read
 
-## Gatherings (schema only known via `SAFE_GATHERING_FIELDS` in `gatherings.js` + migrations)
+Referenced by ~10 RLS policies. **Live-tested this refresh, both directions, using a real
+disposable block row**: the blocker gets `true` (unchanged); the **blocked party** — the exact
+historical failure mode, where this function used to run under the calling role's own RLS and so
+couldn't see a block row it wasn't the blocker on — now also correctly gets `true`; an uninvolved
+third party probing the same pair correctly gets `false` (the anti-probing guard, added alongside
+the original fix, still holds). Downstream consumers (`matches` SELECT, `messages` SELECT+INSERT)
+were also re-confirmed live to actually drop/reject for a blocked pair, not just that the helper
+function itself returns the right boolean in isolation. **Classification: CONFIRMED SECURE**,
+upgraded from the last audit's "reported fixed, not independently re-verified."
 
-Confirmed columns (from the service layer's own field-selection constant plus the 2 local
-migrations that `alter table gatherings`):
+## Gatherings
+
+Confirmed columns (live-verified against the baseline, unchanged from the last audit's list):
 `id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, precise_lat,
 precise_lng, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule,
 energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps,
 cover_photo_path, visibility, community_id, capacity`.
 
-- `area`/`wide_area` are fuzzed location buckets computed client-side at creation
-  (`localArea()`/`wideArea()`); `precise_lat`/`precise_lng` are the real coordinates, never
-  sent to the client except via a narrow `get_gathering_meetup_point()` RPC scoped to the host
-  + approved attendees.
-  `visibility` (`everyone`/`friends`/`community`/`invite_only`) is a **discovery-scope** axis;
-  `is_public` is a separate **auto-join-vs-approval** axis — genuinely two different concerns
-  that were conflated into one boolean before this migration, per `CLAUDE.md`.
-- `capacity` (nullable int, `check > 0`) governs a real waitlist queue via the `gathering_interest`
-  table (see below) — `null` means unlimited, preserving all pre-existing rows' behavior.
-- **RLS is deliberately wide open** (`"Anyone can view gatherings" using (true)`, per
-  `CLAUDE.md`, not independently re-confirmed in this pass) — privacy for
-  `friends`/`community`/`invite_only` visibility is enforced entirely client-side, in the query
-  functions that decide what to *fetch*, not in the database. This is a repeated, explicit
-  design choice across this schema (see `PRODUCT_RISKS.md`), not an oversight, but it means a
-  direct/scripted Supabase client call bypasses all of it.
+- `visibility`/`is_public` remain the two distinct axes described in the last audit
+  (discovery-scope vs. auto-join-vs-approval).
+- **`join_gathering()`'s `invite_only` enforcement — new since the last audit, live-verified
+  both directions.** A caller who isn't the host now needs a real accepted `social_invites` row
+  or the call is rejected with an honest message, before it ever reaches the
+  capacity/women-only/blocks checks. Tested live with a real disposable `invite_only` gathering:
+  an uninvited caller is rejected; the same caller with a real accepted invite succeeds
+  (correctly as `pending`, since `invite_only` still implies host-approval). This closes what
+  the last audit's `PRODUCT_RISKS.md` explicitly flagged as an accepted-but-unhardened risk.
+- **RLS is still deliberately wide open** (`"Anyone can view gatherings" using (true)`,
+  re-confirmed live and unchanged) — the app-layer-is-the-real-gate design posture is unchanged,
+  see `PRODUCT_RISKS.md`.
+- **`hosting_partner_id` self-edit — a real open question from the last audit's own build
+  history, now confirmed resolved.** The last audit's session notes flagged, as a "check before
+  building" item, whether a host could self-set `hosting_partner_id` to an arbitrary business id
+  with no consent — and never circled back with a documented answer. Live-tested directly this
+  refresh on a real, non-test gathering: the attempted self-edit is silently reverted by a
+  `BEFORE UPDATE` trigger (`prevent_hosting_partner_self_edit()`, present on both `gatherings`
+  and `communities`), the same guarded-column pattern used for `is_admin`/`is_premium`. The
+  legitimate approval path (`respond_to_business_partnership_request()`) still works via the
+  same `app.trusted_update` escape hatch. **CONFIRMED SECURE** — a positive, previously-open
+  finding this refresh closes, not a new problem.
 
-### `gathering_interest` (join table — schema not local, inferred from grep + `CLAUDE.md`)
+### `gathering_interest`
 
-Referenced constantly (`.from('gathering_interest')` in `gatherings.js` and elsewhere). Known
-columns, from service code and RPC names: `gathering_id`, `user_id`, `status` (`'pending' |
-'approved' | 'waitlisted' | 'declined'`, per `join_gathering`/`leave_gathering`/
-`approve_gathering_interest` RPC behavior described in `CLAUDE.md`), `match_id`,
-`on_my_way_at`, `checked_in_at`, `created_at`. The three RPCs that mutate it
-(`join_gathering`, `approve_gathering_interest`, `leave_gathering`) all lock the parent
-`gatherings` row `for update` first — the one place in this schema where a real concurrency
-control is used, because capacity is a genuine scarce resource (unlike the rest of this app's
-privacy gates, which are explicitly "RLS wide open, client is the real gate").
+Unchanged from the last audit's description; the three mutating RPCs
+(`join_gathering`/`approve_gathering_interest`/`leave_gathering`) still lock the parent
+`gatherings` row `for update` first.
 
 ## Communities
 
-Confirmed columns (from `communities.js` `.select()` calls): `id, name, description,
-interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id`. `community_members`
-has `community_id, user_id, role (creator|leader|member), joined_at`. No location field exists
-on `communities` at all — confirmed structurally (this audit independently re-confirmed via the
-same grep the in-repo history used) — communities are topic-based, not place-based, by design.
-
-**A real, previously-shipped bug worth an auditor's attention**: per `CLAUDE.md`,
-`community_members`'s SELECT RLS policy and `communities`'s SELECT RLS policy were mutually
-recursive (each depended on evaluating the other's RLS-protected read), which made the single
-simplest possible query against `community_members` — exactly what listing "my communities"
-runs — fail with a Postgres infinite-recursion error, for every real user, for an unknown
-period of time before it was caught (it wasn't caught by prior "verified live" passes because
-those ran as `postgres`/service-role, which bypasses RLS entirely). This audit did not
-independently re-run that query against production to confirm the fix holds; flagged as worth
-re-checking given the severity and how it was originally missed.
+Confirmed columns unchanged from the last audit. **The `community_members`/`communities` RLS
+mutual-recursion bug — re-verified live, not just re-read this time.** The last audit flagged
+this as "reported fixed, not independently re-run against production." This refresh ran the
+exact simplest-case query that used to fail (`select * from community_members where user_id =
+auth.uid()`, as a real `authenticated`-role session) across three different real caller
+identities against a real disposable private community: the creator sees both membership rows;
+a regular non-creator member sees only their own row (correct, matches the documented private-
+community constraint); an uninvolved stranger sees zero rows; flipping the community to public
+correctly reveals both rows to the stranger — and critically, **none of these queries raised the
+historical infinite-recursion error.** **CONFIRMED SECURE.** The new `social_invites`-based
+`community_members` INSERT path (added by the same migration whose duplicate-effect copy was
+archived above) was also live-tested: an invited-and-accepted user's self-insert succeeds; an
+uninvited third party's identical attempt is correctly rejected by RLS.
 
 ## Businesses / commerce layer
 
-- **`brand_partners`** — `id, name, logo_url, description, address, latitude, longitude,
-  active`. RLS: any active partner's row (including real coordinates) is fully public — the
-  same "legitimate public business" justification used for the map layer.
-- **`brand_offers`** — `id, partner_id, title, description, redemption_limit,
-  target_interest_tag, gathering_id (nullable — ties an offer to a specific gathering), active,
-  unlock_scope ('community'|'gathering'|null), unlock_community_id, unlock_min_members`. The
-  three `unlock_*` columns were added later (per `CLAUDE.md`) with a check constraint keeping
-  them internally consistent.
-- **`offer_redemptions`** — per-user redemption ledger; RLS scopes SELECT to the caller's own
-  rows only, so every aggregate count anywhere in the app **must** go through a SECURITY
-  DEFINER RPC (`get_offer_redemption_counts`, `count_redemptions_since`,
-  `get_partner_billing_estimate`, etc.) — a real, consistently-followed convention, per
-  `CLAUDE.md`'s own "known conventions" note, not independently re-audited row-by-row in this
-  pass.
-- **`partner_contracts`** (schema known in full — local migration) — `partner_id,
-  billing_model (per_redemption|flat_monthly|hybrid|custom), monthly_fee, redemption_fee,
-  contract_start, contract_end, max_monthly_spend, auto_renew, status, included_units`. A check
-  constraint enforces the right fee fields are present per `billing_model`.
-- **`business_invoices`** — `partner_id, period_start, period_end, redemption_count,
-  amount_due, status` (starts `'draft'`). Written only by `generate_monthly_invoices()`, run on
-  a `pg_cron` schedule (`0 6 1 * *`, per `CLAUDE.md`) — **no downstream payment processor
-  exists**; invoices sit in `draft` indefinitely today.
-- **`business_partnership_requests`** (schema known — local migration) — polymorphic
-  `target_type ('gathering'|'community')` + `target_id`, `partner_id`, `message`, `status
-  ('pending'|'approved'|'declined')`, `reviewed_at`. Same polymorphic-target shape as
-  `social_invites` below.
-- **`business_followers`**, **`business_messages`**, **`business_updates`** — follow/DM/
-  broadcast tables for the business-consumer relationship; schema not local, columns inferred
-  from `brandOffers.js` selects (`business_messages` has `sender_id, from_business, body,
-  created_at, conversation_with_id`).
+- **`brand_partners`**, **`brand_offers`**, **`offer_redemptions`** — unchanged in shape from
+  the last audit.
+- **`offer_redemptions` now carries real proof-of-redemption columns** (new since the last
+  audit): `confirmation_code` (6-digit, auto-generated), `confirmed_at`, `confirmed_by`, plus a
+  `confirm_offer_redemption(code_param)` RPC (`revoke all ... from public, anon`). Billing math
+  (`generate_monthly_invoices`) now only counts `confirmed_at is not null` redemptions — closing
+  the last audit's "no proof-of-redemption mechanism, billing math inherits that trust gap"
+  finding.
+- **`partner_contracts`**, **`business_invoices`** — unchanged. Still no downstream payment
+  processor; invoices still sit in `draft` indefinitely — **confirmed STILL PRESENT** this
+  refresh, no code found anywhere resembling Stripe or any other payment rail.
+- **`business_partnership_requests`** — unchanged.
+- **`business_customer_notes`** — **new table since the last audit**. `partner_id,
+  customer_user_id, note, tags text[]`, `unique(partner_id, customer_user_id)`. Exactly one
+  SELECT policy exists (owner-scoped via `profiles.managed_partner_id`) — **confirmed live: no
+  INSERT/UPDATE/DELETE policy of any kind exists on this table**; writes only happen through two
+  new SECURITY DEFINER RPCs (`upsert_business_customer_note`/`delete_business_customer_note`),
+  both confirmed to carry the same ownership check and correctly grant-restricted
+  (`anon=false, authenticated=true`).
+- **`update_business_profile(partner_id, name, description, address, latitude, longitude,
+  logo_url)`** — new RPC, ownership-checked (confirmed live via `pg_get_functiondef`), also
+  validates `name` isn't null/empty server-side. Closes a real, previously-silent bug the last
+  audit didn't catch: the *pre-existing* address-edit path (`updateBusinessAddress()`) had
+  always done a raw client `.update()` against `brand_partners`, which had **zero UPDATE RLS
+  policy of any kind** — meaning it had never actually written anything for any real owner. Both
+  the address field and the new profile fields now route through this one real RPC.
+- **Business RPC ownership checks (`get_business_dashboard_stats` and its 4 siblings, plus the
+  3 new-this-session functions) — re-verified live, not just re-read.** All 8 confirmed to still
+  open with the same `exists (select 1 from profiles where id = auth.uid() and
+  managed_partner_id = partner_id_param)` guard, and all 8 confirmed correctly grant-restricted
+  (`anon=false`, `authenticated=true`, `service_role=true`). **CONFIRMED SECURE**, upgraded from
+  the last audit's "reported fixed, not independently re-verified."
+- **`business_messages`** — the `is_blocked()` check on both INSERT policies is confirmed
+  present live, unchanged.
+- **`business_followers`**, **`business_updates`** — unchanged.
 
 ## Social graph & invites
 
-- **`friendships`** — `id, user_a, user_b, requested_by`, plus a `status` used to distinguish
-  pending vs. accepted (inferred from `friends.js` query patterns, e.g. filtering by status in
-  separate functions for "my friends" vs. "pending requests" — not independently confirmed at
-  the exact status-string level in this pass).
-- **`social_invites`** (schema known — local migration) — polymorphic `invite_type
-  ('gathering'|'community')` + `target_id`, `inviter_id`, `invitee_id`, `status`. Deliberately
-  friends-only to send (same "no stranger-surfacing" posture as Discover excluding People
-  search), enforced inside the `send_social_invite`/`respond_to_social_invite` RPCs rather than
-  RLS (no direct client INSERT/UPDATE policy exists on this table, per `CLAUDE.md`).
-- **`friend_circles`** / **`friend_circle_members`** (schema known — local migration) — a
-  personal-label join table over a user's own friend list (Work/Fitness/Family-style tagging);
-  `friend_user_id` is intentionally not FK-constrained to an actual friendship row.
+- **`friendships`**, **`social_invites`**, **`friend_circles`**/**`friend_circle_members`** —
+  unchanged in shape. `social_invites`' RLS is confirmed live to still have exactly one policy
+  (SELECT, `inviter_id`/`invitee_id`-scoped) — no direct client INSERT/UPDATE path exists,
+  confirmed not assumed.
 
-## Relationship-longevity tables (schema not local at all; existence confirmed by grep only)
+## Relationship-longevity tables
 
-`chemistry_diary_entries`, `goodbye_archive_entries`, `relationship_legacy_entries`,
-`constitution_entries`, `stress_test_notes`, `shared_decisions`, `shared_playlist_items`,
-`timeline_notes`, `trip_ideas`, `memory_vault_items`. These power the large relationship-tooling
-surface described in `PRODUCT_OVERVIEW.md`. **This audit could not confirm their column-level
-schema, foreign keys, or RLS from any local file** — no migration creates any of them, and this
-pass did not have time to reverse-engineer all nine from their service files' query shapes the
-way it did for `gatherings`/`communities` above. Treat their data model as **UNCLEAR** —
-verifying it would need either a live Management API schema pull (as several `CLAUDE.md`
-sessions did for other tables) or a dedicated reverse-engineering pass through
-`src/services/{chemistryDiary,goodbyeArchive,relationshipLegacy,relationshipConstitution,
-stressTest,sharedDecisions,sharedPlaylist,timelinePlanner,tripPlanning,memoryVault}.js`.
+Unchanged from the last audit: `chemistry_diary_entries`, `goodbye_archive_entries`,
+`relationship_legacy_entries`, `constitution_entries`, `stress_test_notes`, `shared_decisions`,
+`shared_playlist_items`, `timeline_notes`, `trip_ideas`, `memory_vault_items`. All now have a
+real `CREATE TABLE` in the baseline (resolved by the general schema-reproducibility fix above),
+but their column-level constraints beyond what the baseline's flattened form shows were not
+individually re-derived from each service file's query shape this pass — **still classified
+COULD NOT VERIFY** for that deeper level of detail, same as the last audit.
 
 ## Safety / trust / verification
 
-- **`emergency_contacts`** (schema known — local migration) — `user_id, name, phone,
-  relationship`. Simple owner-only RLS.
-- **`date_checkins`**, **`id_verification_submissions`**, **`live_tracking_sessions`** —
-  schema not local; existence and rough purpose confirmed via grep and `CLAUDE.md`'s account of
-  the check-in/safety flow and a real admin-approval RPC
-  (`admin_approve_id_verification`) for the second one.
-- **`referral_redemptions`** — backs the referral-bonus system (`grant_referral_bonus` RPC).
+- **`emergency_contacts`**, **`date_checkins`**, **`id_verification_submissions`**,
+  **`live_tracking_sessions`**, **`referral_redemptions`** — unchanged, all now have a real
+  `CREATE TABLE` in the baseline.
+- **`is_admin` / `is_premium` / `bonus_notices` guarded-column protection — re-verified live,
+  both directions, with a real self-escalation attempt.** As a real, genuinely non-admin
+  profile, `update profiles set is_admin = true where id = self returning is_admin` succeeds at
+  the RLS layer (no policy blocks it) but the `RETURNING` clause shows `false` — the trigger
+  silently reverted it inside the same statement, confirmed via an immediate re-query as
+  ground truth. Identical result for a combined `bonus_notices = 9999, is_premium = true`
+  attempt on an unrelated real profile. **CONFIRMED SECURE**, both directly re-tested this
+  refresh, not just re-read.
+- **`check_and_increment_ai_use` — confirmed still `service_role`-only.** A real authenticated
+  session directly calling it (even with its own id) is rejected at the grant level before
+  reaching the function body.
 
-## Storage buckets (confirmed via `storage.from()` grep)
+## Storage buckets
 
-`profile-photos`, `stories`, `chat-media`, `id-verification` — 4 buckets referenced client-side.
-`schema.sql` only defines RLS for `profile-photos`; the other three buckets' policies are not
-in any local file (same "production-only" pattern as the missing tables above). A private
-`gathering-photos` bucket is also mentioned in `CLAUDE.md`'s prose for cover-photo uploads but
-was not found in the client-side `storage.from()` grep in this pass — **UNCLEAR** whether it's
-actually used under a different access path or that prose is stale.
+**Now fully resolved and locally reproducible** — all 5 buckets (`chat-media`,
+`gathering-photos`, `id-verification`, `profile-photos`, `stories`) have their `CREATE` +
+policies in the baseline. The last audit's specific "UNCLEAR whether `gathering-photos` actually
+exists" question is resolved — it does. Live-confirmed: all 5 buckets are `public: false`; all
+13 `storage.objects` policies scope by folder-ownership or a real relationship check; one
+bucket's SELECT policy (`gathering-photos`) is intentionally broad (cover photos visible to
+anyone browsing a gathering listing) — a deliberate design choice, not a flaw.
 
-## Suspicious/notable data modeling, gathered from the above
+## Suspicious/notable data modeling — updated
 
-1. **The repo cannot reproduce its own database.** This is the single biggest data-model risk
-   in this audit — see `PRODUCT_RISKS.md` and `IMPLEMENTATION_NOTES.md`.
-2. **RLS is philosophically split** between "wide open, app is the real gate" (gatherings,
-   most of the social/community layer) and "RLS is the real gate" (notices' premium-visibility
-   rule, messages, blocks-derived exclusions). Both are real, working models elsewhere in this
-   codebase, but a reader can't assume which one applies to any given table without checking —
-   there's no naming convention or comment marking which posture a table uses.
-3. **Two different "billing" concepts share the word loosely**: `business_invoices` (real,
-   partner-owes-Nearby billing, cron-generated) and the consumer-facing subscription
-   (`profiles.is_premium`, RevenueCat-driven) are entirely separate systems with no shared
-   table — worth being explicit about to avoid an auditor conflating them.
-4. **Polymorphic target pattern reused three times** (`social_invites`,
-   `business_partnership_requests`, and — per `CLAUDE.md` — the offer/redemption target shape)
-   — a consistent, deliberate convention (`target_type` + `target_id`) rather than duplicated
-   one-off tables, which is a positive signal for schema discipline in the parts of the schema
-   that *are* visible.
-5. **No table anywhere holds a raw precise location for a person** — `profiles` has none,
-   `presence_reports`/`sightings` are bucketed — a genuinely strong, consistently-enforced
-   privacy posture structurally, not just documented as a promise.
+1. **The repo can now reproduce its own database.** The last audit's single biggest data-model
+   risk is resolved — replay-verified against a truly empty database, with one real regression
+   found and fixed during this very refresh (see the top of this file).
+2. **RLS is still philosophically split** between "wide open, app is the real gate" and "RLS is
+   the real gate" — unchanged, still no naming convention distinguishing which applies to a
+   given table.
+3. **Two different "billing" concepts still share the word loosely** — unchanged.
+4. **The polymorphic target pattern is now used at least four times** (`social_invites`,
+   `business_partnership_requests`, the offer/redemption target shape, and — new this refresh —
+   nothing structurally new was added to this list, but it's reconfirmed consistent across the
+   two new tables added since the last audit).
+5. **No table anywhere holds a raw precise location for a person** — independently re-confirmed
+   live this refresh via a properly-scoped column query. Still a genuinely strong, structurally
+   enforced privacy posture.
