@@ -117,10 +117,58 @@ increments as each piece lands, rather than batching the whole item at the end.
    history and real matching nearby gatherings, and correctly renders nothing for an account
    with no category history or no matches.
 
-   **Still to do for this item**: the actual hierarchy/consolidation pass across the remaining
-   ~15 sections (nothing else has been touched yet; the two sub-increments above only added two
-   new sections and slightly relabeled one existing one, they did not yet reduce the total
-   count).
+   **Sub-increment 3 — DONE: the actual hierarchy/consolidation pass.** Reduced the screen's
+   real section-header count from 8 down to 5 (`sectionHeader`-styled `Text`s: "Your Next
+   Thing", the time-of-day period label, "🔥 Happening Now", "✨ Recommended For You", "📅 Also
+   Coming Up") without deleting or hiding any real signal — every query, every card, every
+   condition that governed whether something rendered is unchanged; this was purely regrouping
+   and re-labeling, not a data cut:
+   - **Banners consolidated**: the pending-invites banner, perks banner, and "Since you were
+     away" banner — previously scattered across three separate points in the scroll (top, mid,
+     mid) — now render together as one adjacent cluster right after the hero/insight line, under
+     one wrapping condition (`pendingInvitesCount > 0 || perksCount > 0 || sinceAway has
+     content`) so the cluster's own spacing doesn't leave a gap when only one banner has
+     something to say. No header text needed — each banner is already self-explanatory; the win
+     is physical adjacency, not a new label.
+   - **Four "suggestion" sections merged under one header**: Best Pick Tonight, Because You're
+     Into..., Trending Near You, and Friends' Activity previously each had their own full
+     `sectionHeader`-styled title stacked one after another — now they all render under a single
+     "✨ Recommended For You" header (shown once, only if at least one of the four has content),
+     each keeping a smaller `subLabel`-styled sub-heading (new style, `textSecondary`/13px/bold
+     — one visual step down from `sectionHeader`) so the four are still individually
+     identifiable, just no longer competing as four equally-weighted top-level sections. Order
+     unchanged (Best Pick → Because You're Into → Trending → Friends' Activity), matching each
+     one's real signal strength.
+   - **Quick-stats row moved up**: the "people nearby / gatherings today / crossed paths /
+     unread messages" card — previously buried after Continue Your Communities and Also Coming
+     Up, roughly section 15 of 19 — now sits right after Continue Your Communities, before the
+     new Recommended For You cluster, since it's a compact utility/quick-nav block that reads
+     better near the top than mixed in with the heavier suggestion cards.
+   - **Untouched, deliberately**: greeting/subtitle, hero card, opportunity/insight lines,
+     time-of-day quick actions, Happening Now, Social Forecast card, Continue Your Communities,
+     Also Coming Up, This Week recap, the quiet-night fallback, Browse button, and the FAB all
+     kept their exact existing position and behavior — this pass targeted the specific
+     duplicative-header problem the doc actually complained about, not every section
+     indiscriminately.
+   - Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+     was a pure JSX reorganization of the same two files, no new files, no new queries beyond
+     what sub-increments 1-2 already added). Confirmed no duplicate rendering by grepping style
+     reference counts after the edit (`perksBanner`/`sinceAwayBanner`/`pendingInvitesBanner`
+     each still referenced exactly once, "Best Pick Tonight" appears exactly once). **Not done
+     yet, same standing gap as everywhere in this file**: no manual device/simulator run-through
+     — next session should confirm the banner cluster reads cleanly with 1, 2, and all 3 banners
+     present, the Recommended For You cluster renders correctly with only 1 of the 4 sub-sections
+     present (e.g. an account with a Best Pick but no Trending/Friends'-Activity/interest
+     history) and with all 4, and that moving the quick-stats row doesn't visually clash with the
+     new banner cluster directly above it.
+
+   **Item 1 (Home) is now substantially complete** — hero, interest-based suggestions, and a
+   real header-count reduction are all live. What remains, if revisited: further tightening
+   (e.g. deciding whether Social Forecast/Continue Communities themselves could fold into an
+   existing cluster) is a judgment call, not a confirmed gap — the doc's core complaint (no
+   hierarchy, no hero, everything reads as a flat equally-weighted stack) has been addressed.
+   Per the plan's own ranking, item 2 (Inbox's tab structure) is next up if continuing this
+   whole plan.
 
 2. **Inbox's tab structure — real, confirmed structural gap.** Currently 5 tabs (Messages /
    Requests / Invites / Reminders / Activity), not the doc's clean Messages/Activity split.

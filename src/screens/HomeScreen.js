@@ -171,19 +171,46 @@ export default function HomeScreen({ navigation }) {
           return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
         })()}
 
-        {pendingInvitesCount > 0 && (
-          <TouchableOpacity
-            style={styles.pendingInvitesBanner}
-            onPress={() => navigation.navigate('Matches', { initialSection: 'invitations' })}
-            activeOpacity={0.85}
-            accessibilityLabel={`${pendingInvitesCount} pending invite${pendingInvitesCount === 1 ? '' : 's'} and requests`}
-            accessibilityRole="button"
-          >
-            <Text style={styles.pendingInvitesBannerText}>
-              🤝 {pendingInvitesCount} pending invite{pendingInvitesCount === 1 ? '' : 's'} &amp; request{pendingInvitesCount === 1 ? '' : 's'}
-            </Text>
-            <Text style={styles.pendingInvitesBannerArrow}>›</Text>
-          </TouchableOpacity>
+        {(pendingInvitesCount > 0 || perksCount > 0 || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+          <View style={{ marginBottom: spacing.md }}>
+            {pendingInvitesCount > 0 && (
+              <TouchableOpacity
+                style={styles.pendingInvitesBanner}
+                onPress={() => navigation.navigate('Matches', { initialSection: 'invitations' })}
+                activeOpacity={0.85}
+                accessibilityLabel={`${pendingInvitesCount} pending invite${pendingInvitesCount === 1 ? '' : 's'} and requests`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.pendingInvitesBannerText}>
+                  🤝 {pendingInvitesCount} pending invite{pendingInvitesCount === 1 ? '' : 's'} &amp; request{pendingInvitesCount === 1 ? '' : 's'}
+                </Text>
+                <Text style={styles.pendingInvitesBannerArrow}>›</Text>
+              </TouchableOpacity>
+            )}
+            {perksCount > 0 && (
+              <TouchableOpacity
+                style={styles.perksBanner}
+                onPress={() => navigation.navigate('BrandOffers')}
+                activeOpacity={0.85}
+                accessibilityLabel={`${perksCount} perks available to redeem`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.perksBannerText}>🎁 {perksCount} perk{perksCount === 1 ? '' : 's'} unlocked nearby</Text>
+                <Text style={styles.perksBannerArrow}>›</Text>
+              </TouchableOpacity>
+            )}
+            {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
+              <View style={styles.sinceAwayBanner}>
+                <Text style={styles.sinceAwayTitle}>Since you were away</Text>
+                {dashboard.sinceAway.newPeopleCount > 0 && (
+                  <Text style={styles.sinceAwayItem}>👥 {dashboard.sinceAway.newPeopleCount} new {dashboard.sinceAway.newPeopleCount === 1 ? 'person' : 'people'} nearby</Text>
+                )}
+                {dashboard.sinceAway.newGatheringsCount > 0 && (
+                  <Text style={styles.sinceAwayItem}>🎉 {dashboard.sinceAway.newGatheringsCount} new gathering{dashboard.sinceAway.newGatheringsCount === 1 ? '' : 's'}</Text>
+                )}
+              </View>
+            )}
+          </View>
         )}
 
         <Text style={styles.sectionHeader}>{PERIOD_SECTION_LABELS[period]}</Text>
@@ -255,65 +282,6 @@ export default function HomeScreen({ navigation }) {
             ))}
           </>
         )}
-        {perksCount > 0 && (
-          <TouchableOpacity
-            style={styles.perksBanner}
-            onPress={() => navigation.navigate('BrandOffers')}
-            activeOpacity={0.85}
-            accessibilityLabel={`${perksCount} perks available to redeem`}
-            accessibilityRole="button"
-          >
-            <Text style={styles.perksBannerText}>🎁 {perksCount} perk{perksCount === 1 ? '' : 's'} unlocked nearby</Text>
-            <Text style={styles.perksBannerArrow}>›</Text>
-          </TouchableOpacity>
-        )}
-        {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
-          <View style={styles.sinceAwayBanner}>
-            <Text style={styles.sinceAwayTitle}>Since you were away</Text>
-            {dashboard.sinceAway.newPeopleCount > 0 && (
-              <Text style={styles.sinceAwayItem}>👥 {dashboard.sinceAway.newPeopleCount} new {dashboard.sinceAway.newPeopleCount === 1 ? 'person' : 'people'} nearby</Text>
-            )}
-            {dashboard.sinceAway.newGatheringsCount > 0 && (
-              <Text style={styles.sinceAwayItem}>🎉 {dashboard.sinceAway.newGatheringsCount} new gathering{dashboard.sinceAway.newGatheringsCount === 1 ? '' : 's'}</Text>
-            )}
-          </View>
-        )}
-
-        {dashboard?.friendsActivity?.length > 0 && (
-          <>
-            <Text style={styles.sectionHeader}>👥 Friends' Activity</Text>
-            {dashboard.friendsActivity.map((g) => (
-              <TouchableOpacity
-                key={g.id}
-                style={styles.trendingCard}
-                onPress={() => navigation.navigate('Gatherings')}
-                accessibilityLabel={`${g.profiles?.display_name} is hosting ${g.title}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.trendingTitle}>{g.profiles?.display_name} is hosting</Text>
-                <Text style={styles.trendingMeta}>{g.title}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-
-        {dashboard?.upcomingPlans?.length > 1 && (
-          <>
-            <Text style={styles.sectionHeader}>📅 Also Coming Up</Text>
-            {dashboard.upcomingPlans.slice(1).map((plan) => (
-              <TouchableOpacity
-                key={plan.id}
-                style={styles.trendingCard}
-                onPress={() => navigation.navigate('Gatherings')}
-                accessibilityLabel={`${plan.title}, you're ${plan.role}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.trendingTitle}>{plan.title}</Text>
-                <Text style={styles.trendingMeta}>{plan.role === 'hosting' ? 'Hosting' : 'Attending'} · {new Date(plan.scheduled_at).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
 
         <View style={styles.card}>
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
@@ -350,44 +318,104 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {dashboard?.bestPick && (
+        {(dashboard?.bestPick || dashboard?.becauseYouLike?.length > 0 || dashboard?.trendingGatherings?.length > 0 || dashboard?.friendsActivity?.length > 0) && (
           <>
-            <Text style={styles.sectionHeader}>⭐ Best Pick Tonight</Text>
-            <TouchableOpacity
-              style={styles.bestPickCard}
-              onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
-              accessibilityLabel={`${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
-              accessibilityRole="button"
-            >
-              <Text style={styles.bestPickTitle}>{dashboard.bestPick.title}</Text>
-              <View style={styles.bestPickReasons}>
-                {dashboard.bestPick.reasons.map((reason, i) => (
-                  <Text key={i} style={styles.bestPickReason}>✓ {reason}</Text>
+            <Text style={styles.sectionHeader}>✨ Recommended For You</Text>
+
+            {dashboard?.bestPick && (
+              <>
+                <Text style={styles.subLabel}>⭐ Best Pick Tonight</Text>
+                <TouchableOpacity
+                  style={styles.bestPickCard}
+                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
+                  accessibilityLabel={`${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.bestPickTitle}>{dashboard.bestPick.title}</Text>
+                  <View style={styles.bestPickReasons}>
+                    {dashboard.bestPick.reasons.map((reason, i) => (
+                      <Text key={i} style={styles.bestPickReason}>✓ {reason}</Text>
+                    ))}
+                  </View>
+                  <Text style={styles.bestPickAction}>View →</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {dashboard?.becauseYouLike?.length > 0 && (
+              <>
+                <Text style={styles.subLabel}>💡 Because You're Into {formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
+                {dashboard.becauseYouLike.map((g) => {
+                  const style = categoryStyleFor(g.interest_tag);
+                  return (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={styles.trendingCard}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                      accessibilityLabel={`${g.title}, ${g.interest_tag}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.trendingTitle}>{style.icon} {g.title}</Text>
+                      <Text style={styles.trendingMeta}>{g.interest_tag} · {formatHeroDateTime(g.scheduled_at)}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
+
+            {dashboard?.trendingGatherings?.length > 0 && (
+              <>
+                <Text style={styles.subLabel}>🔥 Trending Near You</Text>
+                {dashboard.trendingGatherings.map((g) => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={styles.trendingCard}
+                    onPress={() => navigation.navigate('Gatherings')}
+                    accessibilityLabel={`${g.title}, ${g.approvedAttendees?.length ?? 0} attending`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.trendingTitle}>{g.title}</Text>
+                    <Text style={styles.trendingMeta}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
+                  </TouchableOpacity>
                 ))}
-              </View>
-              <Text style={styles.bestPickAction}>View →</Text>
-            </TouchableOpacity>
+              </>
+            )}
+
+            {dashboard?.friendsActivity?.length > 0 && (
+              <>
+                <Text style={styles.subLabel}>👥 Friends' Activity</Text>
+                {dashboard.friendsActivity.map((g) => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={styles.trendingCard}
+                    onPress={() => navigation.navigate('Gatherings')}
+                    accessibilityLabel={`${g.profiles?.display_name} is hosting ${g.title}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.trendingTitle}>{g.profiles?.display_name} is hosting</Text>
+                    <Text style={styles.trendingMeta}>{g.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </>
+            )}
           </>
         )}
 
-        {dashboard?.becauseYouLike?.length > 0 && (
+        {dashboard?.upcomingPlans?.length > 1 && (
           <>
-            <Text style={styles.sectionHeader}>💡 Because You're Into {formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
-            {dashboard.becauseYouLike.map((g) => {
-              const style = categoryStyleFor(g.interest_tag);
-              return (
-                <TouchableOpacity
-                  key={g.id}
-                  style={styles.trendingCard}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                  accessibilityLabel={`${g.title}, ${g.interest_tag}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.trendingTitle}>{style.icon} {g.title}</Text>
-                  <Text style={styles.trendingMeta}>{g.interest_tag} · {formatHeroDateTime(g.scheduled_at)}</Text>
-                </TouchableOpacity>
-              );
-            })}
+            <Text style={styles.sectionHeader}>📅 Also Coming Up</Text>
+            {dashboard.upcomingPlans.slice(1).map((plan) => (
+              <TouchableOpacity
+                key={plan.id}
+                style={styles.trendingCard}
+                onPress={() => navigation.navigate('Gatherings')}
+                accessibilityLabel={`${plan.title}, you're ${plan.role}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.trendingTitle}>{plan.title}</Text>
+                <Text style={styles.trendingMeta}>{plan.role === 'hosting' ? 'Hosting' : 'Attending'} · {new Date(plan.scheduled_at).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
+              </TouchableOpacity>
+            ))}
           </>
         )}
 
@@ -401,24 +429,6 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.recapItem}>✓ Made {dashboard.weeklyRecap.newFriends} new friend{dashboard.weeklyRecap.newFriends === 1 ? '' : 's'}</Text>
             )}
           </View>
-        )}
-
-        {dashboard?.trendingGatherings?.length > 0 && (
-          <>
-            <Text style={styles.sectionHeader}>🔥 Trending Near You</Text>
-            {dashboard.trendingGatherings.map((g) => (
-              <TouchableOpacity
-                key={g.id}
-                style={styles.trendingCard}
-                onPress={() => navigation.navigate('Gatherings')}
-                accessibilityLabel={`${g.title}, ${g.approvedAttendees?.length ?? 0} attending`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.trendingTitle}>{g.title}</Text>
-                <Text style={styles.trendingMeta}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
         )}
 
         {!dashboard?.bestPick && (!dashboard?.trendingGatherings || dashboard.trendingGatherings.length === 0) && (dashboard?.nearbyPeopleCount ?? 0) === 0 && (
@@ -532,6 +542,7 @@ const getStyles = (colors) => StyleSheet.create({
   cardChevron: { color: colors.textTertiary, fontSize: 18 },
   divider: { height: 1, backgroundColor: colors.border },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
   bestPickCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
     padding: spacing.lg, marginBottom: spacing.lg,
