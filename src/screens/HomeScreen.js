@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { getMostRecentUnratedGathering } from '../services/gatherings';
+import { getMostRecentUnratedGathering, getApprovedAttendeeCount } from '../services/gatherings';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
@@ -14,6 +14,20 @@ import { getGreeting, getTimePeriod, getQuickPrompts } from '../utils/timeContex
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
 const PERIOD_OPPORTUNITY_WORD = { morning: 'today', afternoon: 'today', evening: 'tonight', weekend: 'this weekend' };
+
+// "Today · 7:15 PM" / "Tomorrow · 7:15 PM" / "Fri, Aug 14 · 7:15 PM" — real
+// calendar-relative formatting for the hero card, not a generic date string.
+function formatHeroDateTime(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (isSameDay(d, now)) return `Today · ${time}`;
+  if (isSameDay(d, tomorrow)) return `Tomorrow · ${time}`;
+  return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
+}
 
 export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();
@@ -29,6 +43,7 @@ export default function HomeScreen({ navigation }) {
   const [perksCount, setPerksCount] = useState(0);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
+  const [heroAttendeeCount, setHeroAttendeeCount] = useState(null);
   const period = getTimePeriod();
 
   const load = useCallback(async () => {
@@ -41,6 +56,12 @@ export default function HomeScreen({ navigation }) {
     const result = await getHomeDashboard();
     setDashboard(result);
     setLoading(false);
+    if (result?.upcomingPlans?.[0]) {
+      const count = await getApprovedAttendeeCount(result.upcomingPlans[0].id).catch(() => null);
+      setHeroAttendeeCount(count);
+    } else {
+      setHeroAttendeeCount(null);
+    }
     try {
       const communities = await getContinueYourCommunities();
       setContinueCommunities(communities);
@@ -108,6 +129,30 @@ export default function HomeScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
+        <Text style={styles.subtitle}>Here's what's happening around you.</Text>
+
+        {dashboard?.upcomingPlans?.[0] && (
+          <>
+            <Text style={styles.sectionHeader}>Your Next Thing</Text>
+            <TouchableOpacity
+              style={styles.heroCard}
+              onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.upcomingPlans[0].id })}
+              activeOpacity={0.85}
+              accessibilityLabel={`${dashboard.upcomingPlans[0].title}, ${formatHeroDateTime(dashboard.upcomingPlans[0].scheduled_at)}, view gathering`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.heroIcon}>{categoryStyleFor(dashboard.upcomingPlans[0].interest_tag).icon}</Text>
+              <Text style={styles.heroRole}>{dashboard.upcomingPlans[0].role === 'hosting' ? "You're hosting" : "You're going"}</Text>
+              <Text style={styles.heroTitle}>{dashboard.upcomingPlans[0].title}</Text>
+              <Text style={styles.heroDateTime}>{formatHeroDateTime(dashboard.upcomingPlans[0].scheduled_at)}</Text>
+              {heroAttendeeCount > 0 && (
+                <Text style={styles.heroAttendees}>{heroAttendeeCount} {heroAttendeeCount === 1 ? 'person' : 'people'} going</Text>
+              )}
+              <Text style={styles.heroAction}>View Gathering →</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
         {dashboard?.gatheringsTodayCount > 0 && (
           <Text style={styles.opportunityLine}>
             You have {dashboard.gatheringsTodayCount} great {dashboard.gatheringsTodayCount === 1 ? 'opportunity' : 'opportunities'} {PERIOD_OPPORTUNITY_WORD[period]}.
@@ -244,10 +289,10 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {dashboard?.upcomingPlans?.length > 0 && (
+        {dashboard?.upcomingPlans?.length > 1 && (
           <>
-            <Text style={styles.sectionHeader}>📅 Upcoming Plans</Text>
-            {dashboard.upcomingPlans.map((plan) => (
+            <Text style={styles.sectionHeader}>📅 Also Coming Up</Text>
+            {dashboard.upcomingPlans.slice(1).map((plan) => (
               <TouchableOpacity
                 key={plan.id}
                 style={styles.trendingCard}
@@ -388,6 +433,17 @@ export default function HomeScreen({ navigation }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: 2 },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  heroCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
+    padding: spacing.lg, marginBottom: spacing.lg,
+  },
+  heroIcon: { fontSize: 28, marginBottom: spacing.xs },
+  heroRole: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  heroTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
+  heroDateTime: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  heroAttendees: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.sm },
+  heroAction: { color: colors.primary, fontWeight: '700', fontSize: 14, marginTop: spacing.xs },
   opportunityLine: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   insightLine: { color: colors.primary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
   quickActionChip: {

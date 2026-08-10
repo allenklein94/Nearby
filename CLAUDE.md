@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — PLAN ONLY, not started
+## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — IN PROGRESS, Home started
 
 The user pasted a detailed UI-polish feedback doc (10 numbered items + a "5 I'd do first" list +
 a per-tab breakdown) aimed at making the app read as decisively-designed rather than
@@ -14,8 +14,11 @@ in this file — a feedback doc, like an external audit, is a lead to verify, no
 build on unchecked). The real picture is more mixed than the doc assumes: several of its asks
 are already built, one of its asks actively conflicts with an earlier deliberate decision in this
 same file, and a few are real, confirmed gaps. Ranked plan below reflects what's actually true,
-not the doc's own framing. **Nothing in this section has been built yet — plan only, written so
-a fresh session (post-restart) can pick it straight up.**
+not the doc's own framing. **Written so a fresh session (post-restart) can pick this up mid-way
+— check the per-item status notes below (and this file's own commit history) for what's actually
+landed vs. what's still just plan, same restart-safety convention as every other plan-first
+section in this file.** User asked to start on item 1 (Home) first and commit/push in real
+increments as each piece lands, rather than batching the whole item at the end.
 
 **What's already true — don't rebuild these:**
 - **"Why am I seeing this" reason text (doc item 8) — already fully built.** Real signal-based
@@ -69,6 +72,36 @@ a fresh session (post-restart) can pick it straight up.**
    groups (a "because you're into..." row is new — needs a real interests-based query, not
    fabricated), and cut or collapse whatever's left so the screen reads as prioritized instead of
    stacked. This needs real screen time to do right — biggest single item in this plan.
+
+   **Sub-increment 1 — DONE: subtitle + a real "Your Next Thing" hero.** Added
+   `"Here's what's happening around you."` under the greeting (closes item 3/doc-item-2 for
+   Home specifically — Discover/Create already had one, Inbox/Profile still don't, see item 3
+   below). New hero card at the very top of the scroll, sourced from `dashboard.upcomingPlans[0]`
+   — deliberately **not** `bestPick` (that's a recommendation for something not yet joined;
+   "your next thing" should be something the user already actually committed to — an approved
+   attending row or a gathering they're hosting, sorted soonest-first, which `upcomingPlans`
+   already computes). Real category icon (added `interest_tag` to `getHomeDashboard()`'s
+   `attendingUpcoming`/`hostingUpcoming` selects — a one-column additive query change, nothing
+   removed), a real `formatHeroDateTime()` helper ("Today · 7:15 PM" / "Tomorrow · 7:15 PM" /
+   "Fri, Aug 14 · 7:15 PM" — genuinely calendar-relative, not a flat date string), a real
+   attendee count (new one-off `getApprovedAttendeeCount()` call for just the hero gathering,
+   reusing the existing function from the Aug 9 Create 2.0 countdown-card work rather than a new
+   query shape), and an honest "You're hosting" vs. "You're going" label so hosting and attending
+   are never conflated. Taps through to the real `GatheringDetail`. The later "📅 Upcoming Plans"
+   section (further down the scroll) now reads `.slice(1)` and is relabeled "📅 Also Coming Up" —
+   so the same gathering never appears twice on the same screen now that it's promoted to the
+   hero. Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged,
+   edits to two existing files only). **Not done yet, same standing gap as everywhere in this
+   file**: no manual device/simulator run-through — next session should confirm the hero renders
+   correctly for a hosting gathering, an attending gathering, and (real empty state) an account
+   with no upcoming plans at all, where the hero section should simply not render.
+
+   **Still to do for this item**: the "because you're into..." chips section (a real query
+   already exists to back it — `getMyTopGatheringCategories()`, `services/gatherings.js:265`,
+   already used elsewhere in the app — just not yet called from Home), and the actual hierarchy/
+   consolidation pass across the remaining ~15 sections (nothing else has been touched yet; the
+   hero above only added one new section and slightly relabeled one existing one, it did not yet
+   reduce the total count).
 
 2. **Inbox's tab structure — real, confirmed structural gap.** Currently 5 tabs (Messages /
    Requests / Invites / Reminders / Activity), not the doc's clean Messages/Activity split.

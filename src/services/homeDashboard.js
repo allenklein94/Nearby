@@ -384,14 +384,14 @@ export async function getHomeDashboard() {
   const now = new Date().toISOString();
   const { data: attendingUpcoming } = await supabase
     .from('gathering_interest')
-    .select('gatherings!inner(id, title, scheduled_at)')
+    .select('gatherings!inner(id, title, scheduled_at, interest_tag)')
     .eq('user_id', myId)
     .eq('status', 'approved')
     .gte('gatherings.scheduled_at', now);
 
   const { data: hostingUpcoming } = await supabase
     .from('gatherings')
-    .select('id, title, scheduled_at')
+    .select('id, title, scheduled_at, interest_tag')
     .eq('host_id', myId)
     .gte('scheduled_at', now);
 
