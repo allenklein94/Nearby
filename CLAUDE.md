@@ -96,12 +96,31 @@ increments as each piece lands, rather than batching the whole item at the end.
    correctly for a hosting gathering, an attending gathering, and (real empty state) an account
    with no upcoming plans at all, where the hero section should simply not render.
 
-   **Still to do for this item**: the "because you're into..." chips section (a real query
-   already exists to back it — `getMyTopGatheringCategories()`, `services/gatherings.js:265`,
-   already used elsewhere in the app — just not yet called from Home), and the actual hierarchy/
-   consolidation pass across the remaining ~15 sections (nothing else has been touched yet; the
-   hero above only added one new section and slightly relabeled one existing one, it did not yet
-   reduce the total count).
+   **Sub-increment 2 — DONE: "Because You're Into..." section.** New real section, sourced from
+   the existing `getMyTopGatheringCategories()` (`services/gatherings.js:265`, already used
+   elsewhere as `GatheringsScreen.js`'s "For You" filter toggle — first time it's been called
+   from Home) cross-referenced against `nearbyGatherings` — a list `getHomeDashboard()` already
+   fetches for `trendingGatherings`/`happeningNow`/`bestPick`, so this added one new query
+   (`getMyTopGatheringCategories()` itself) rather than a new gathering fetch. Takes the
+   caller's top 3 real interest categories by frequency, filters `nearbyGatherings` to just
+   those tags, excludes anything already surfacing in the hero/Also Coming Up section
+   (`upcomingPlanIds`, so nothing is suggested twice), sorts soonest-first, caps at 6. Returns
+   `becauseYouLike` (the gatherings) and `becauseYouLikeCategories` (the real top-3 tags used,
+   not guessed from the first result) from `getHomeDashboard()`. Renders only when the caller
+   has real category history and at least one real nearby match — a brand-new account or one
+   with no matching nearby gatherings sees nothing here, no fabricated placeholder. Header reads
+   the real category list ("Because You're Into Coffee & Outdoors"), each card taps through to
+   the real `GatheringDetail`. Verified via a full `npx expo export --platform ios` — clean,
+   1850 modules (unchanged, edits to the same two existing files as sub-increment 1). **Not done
+   yet, same standing gap as everywhere in this file**: no manual device/simulator run-through —
+   next session should confirm this section renders correctly for an account with real category
+   history and real matching nearby gatherings, and correctly renders nothing for an account
+   with no category history or no matches.
+
+   **Still to do for this item**: the actual hierarchy/consolidation pass across the remaining
+   ~15 sections (nothing else has been touched yet; the two sub-increments above only added two
+   new sections and slightly relabeled one existing one, they did not yet reduce the total
+   count).
 
 2. **Inbox's tab structure — real, confirmed structural gap.** Currently 5 tabs (Messages /
    Requests / Invites / Reminders / Activity), not the doc's clean Messages/Activity split.

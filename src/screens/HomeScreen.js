@@ -29,6 +29,14 @@ function formatHeroDateTime(iso) {
   return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
 }
 
+// "Coffee" / "Coffee & Outdoors" / "Coffee, Outdoors & Music" — the real
+// top categories this section is drawn from, not just the first result.
+function formatCategoryList(categories) {
+  if (!categories || categories.length === 0) return '';
+  if (categories.length === 1) return categories[0];
+  return `${categories.slice(0, -1).join(', ')} & ${categories[categories.length - 1]}`;
+}
+
 export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors);
@@ -359,6 +367,27 @@ export default function HomeScreen({ navigation }) {
               </View>
               <Text style={styles.bestPickAction}>View →</Text>
             </TouchableOpacity>
+          </>
+        )}
+
+        {dashboard?.becauseYouLike?.length > 0 && (
+          <>
+            <Text style={styles.sectionHeader}>💡 Because You're Into {formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
+            {dashboard.becauseYouLike.map((g) => {
+              const style = categoryStyleFor(g.interest_tag);
+              return (
+                <TouchableOpacity
+                  key={g.id}
+                  style={styles.trendingCard}
+                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                  accessibilityLabel={`${g.title}, ${g.interest_tag}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.trendingTitle}>{style.icon} {g.title}</Text>
+                  <Text style={styles.trendingMeta}>{g.interest_tag} · {formatHeroDateTime(g.scheduled_at)}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
 

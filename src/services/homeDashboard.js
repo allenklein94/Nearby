@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
-import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
+import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories } from './gatherings';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -315,9 +315,10 @@ export async function getHomeDashboard() {
   const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
   await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
 
-  const [nearbyPeople, nearbyGatherings] = await Promise.all([
+  const [nearbyPeople, nearbyGatherings, topCategories] = await Promise.all([
     getNearbyMatches().catch(() => []),
     getNearbyGatherings('wide').catch(() => []),
+    getMyTopGatheringCategories().catch(() => []),
   ]);
 
   const gatheringsToday = nearbyGatherings.filter((g) => isToday(g.scheduled_at));
@@ -402,6 +403,19 @@ export async function getHomeDashboard() {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
 
+  // "Because you're into X/Y/Z" — real nearby gatherings matching the
+  // caller's own most-frequent past interest categories (a genuine
+  // signal, not a fabricated one), excluding anything already
+  // committed to (upcomingPlans) so nothing is suggested twice.
+  const topInterestCategories = topCategories.slice(0, 3);
+  const upcomingPlanIds = new Set(upcomingPlans.map((p) => p.id));
+  const becauseYouLike = topInterestCategories.length > 0
+    ? nearbyGatherings
+        .filter((g) => topInterestCategories.includes(g.interest_tag) && !upcomingPlanIds.has(g.id))
+        .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+        .slice(0, 6)
+    : [];
+
   // Genuine recent activity from your actual friends — a new
   // gathering they're hosting, in the last 3 days. Real names, real
   // events, not a fabricated feed.
@@ -471,6 +485,8 @@ export async function getHomeDashboard() {
     weeklyRecap,
     upcomingPlans,
     friendsActivity,
+    becauseYouLike,
+    becauseYouLikeCategories: topInterestCategories,
   };
 }
 
