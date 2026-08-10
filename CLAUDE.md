@@ -4,7 +4,223 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Detailed UI/IA documentation for external-AI review — IN PROGRESS
+## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — PLANNED, no code changes yet
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
+per-phase status notes below for what's actually landed vs. still just this plan.** This is a
+direct, detailed reaction to `PRODUCT_AUDIT/UI_IA_REVIEW_FOR_EXTERNAL_AI_2026-08-10.md` (the
+doc closed out immediately above this section) — the user read that doc's own findings/overlap
+list and turned them into a concrete restructure proposal, given directly, not yet built.
+**Explicit instruction on process, given directly, not to be silently deviated from**: tackle
+Home first, then Profile/Settings, then Inbox — do not redesign all screens simultaneously.
+After each phase, report a delta (what changed, what didn't) rather than another full audit.
+
+**Target mental model** (restated exactly as given — five bottom tabs plus Settings as a
+non-tab, gear-icon-only surface reached from Profile, matching this file's own already-existing
+"Current UI Map" target IA almost exactly, just with one explicit question per tab):
+
+| Surface | The question it should answer |
+|---|---|
+| 🏠 Home | What's happening in my Nearby life? |
+| 🔎 Discover | What can I find / do? |
+| ➕ Create | What do I want to make happen? |
+| 💬 Inbox | Who / what needs my attention? |
+| 👤 You (Profile) | Who am I / what have I done? |
+| ⚙️ Settings (not a tab — reached from Profile's gear icon, unchanged) | How do I control Nearby? |
+
+**Per-item verification against the just-built review doc, done before locking this in as a
+build plan** (same "verify before building" discipline as every other plan-first section in this
+file) — several of the user's 13 numbered points turn out to already be fully or mostly built.
+Flagged explicitly here so a future session doesn't redo real, already-shipped work:
+
+1. **Quick Picks → discovery-first tap behavior — ALREADY DONE, one real exception found.** Per
+   the review doc's own HomeScreen trace: tapping a Quick Pick chip already navigates to
+   `Gatherings` filtered by category (browse first), not straight to `CreateGathering` — this
+   was built in the Aug 10 "personalize + discover-first Home quick picks" pass, and the
+   review doc's own §5 cross-cutting call-out independently reconfirms it (`HomeScreen.js`'s own
+   code comment: *"Discover-first: browse what already exists in this category before offering
+   to create one"*). **Real, confirmed exception**: any Quick Pick whose category currently has
+   a `SUB_OPTIONS` entry (today, only "Dinner") skips browse entirely and opens
+   `StartSomethingModal`'s sub-grid, every leaf of which goes straight to `CreateGathering` — the
+   one label-string match silently flips the row's behavior from discovery to creation. This is
+   the one real, small, confirmed gap under item 1 — folded into Phase 1 below.
+2. **Quick Picks customizable — ALREADY DONE.** Edit link, `QuickPicksEditModal`, persisted to
+   `profiles.home_quick_pick_categories` — the user's own message says as much ("Good news: they
+   already are"). The user's proposed copy ("Your Quick Picks" header, "What are you usually up
+   for? Choose 4–6.") is a small wording/cap refinement (current cap is 5, not "4–6"; current
+   header reads "Quick Picks" only when customized) — optional polish, not a structural gap, not
+   separately scheduled unless it comes up naturally while touching this section in Phase 1.
+3. **Time-of-day should flavor, not overwrite, saved preferences — ALREADY DONE.** Per the same
+   Aug 10 pass: a customized (pinned) Quick Picks list renders identically regardless of period,
+   never period-gated; only the *auto-personalized* (non-customized) fallback flavors a real top
+   category's label/icon by time-of-day (e.g. "Foodie" → "Dinner" in the evening) without
+   swapping in an unrelated category. Matches the user's stated principle exactly — no action
+   needed.
+4. **The weather card explaining itself — ALREADY MOSTLY TRUE, one real, previously-undocumented
+   trust gap found.** Per the review doc's dedicated Weather trace section: `forecast_label`
+   ("Quiet"/"Excellent"/"Good") and `forecast_detail` (the real reason sentence, e.g. "Rain or
+   storms expected — a better night for something indoors.") are **always** rendered together in
+   the Social Forecast card — there is no code path showing the label without its reasoning. The
+   card is not the underlying issue. **Real, confirmed gap**: the underlying OpenWeatherMap call
+   is a **current-conditions snapshot at request time**, not an actual forecast — there is no
+   time-of-day parameter anywhere in the SQL, yet the card is labeled "☀️ Social Forecast" and
+   several `forecast_detail` strings hardcode the word "tonight" regardless of when the request
+   actually fired (e.g. a morning request during rain still says "a better night for something
+   indoors"). Separately, `getHomeInsight()`'s one-line insight sentence (a *different* code path
+   from the card) has exactly one weather-triggered branch — a fixed, generic sentence ("Looks
+   like a perfect evening for something outdoors.") that never states the real specific reason
+   (temperature, condition) behind it, firing only when `forecast_label==='Good'`. And there is no
+   "signal too weak, don't show anything" branch anywhere — the SQL's `CASE` always falls through
+   to a real value (`'Decent conditions out there tonight.'` in the weakest case), matching the
+   user's specific ask #4 ("if the weather signal isn't strong enough, don't make a
+   recommendation") as a real, unbuilt gap. All three sub-issues (misleading "tonight"/"forecast"
+   framing on a current-conditions snapshot, the generic non-specific insight-line sentence, no
+   suppress-when-weak-signal branch) are real and scoped into Phase 1 below.
+5. **/ 6. "Your Plans" with an explicit Going/Hosting split — REAL, CONFIRMED GAP.** Home already
+   has a single "Your Next Thing" hero (soonest item, whichever role) plus a flat "Also Coming
+   Up" list (each row labeled "Hosting · date" / "Attending · date" but not grouped) — close in
+   spirit but not the explicit two-group "Going" / "Hosting" structure the user wants. Real,
+   confirmed restructuring work, scoped into Phase 1 below (folds together with item 12 — see the
+   final phase list).
+7. **Inbox's Messages/Activity split — ALREADY MATCHES the user's proposed model closely, no
+   action needed for the split itself.** Per the review doc: Messages tab already interleaves
+   1:1 matches with a group-chat chip row (gathering + community chats) — exactly the "Sarah /
+   Friday Soccer (8 people) / Nearby Community" grouping the user describes. Activity tab already
+   groups Connection Requests / Invitations / Upcoming plus a chronological notices/crossed-paths/
+   business-updates feed — exactly the "Sarah invited you… / You joined Downtown Runners / Your
+   perk is ready" framing. **Not separately re-scheduled as its own build phase** — Phase 6 below
+   is reserved for it structurally (per the user's own 8-step order) in case building Phases 1-5
+   first surfaces something concrete, but per this verification there is no known gap to close
+   here today. One related, **not yet decided** question surfaced by cross-referencing this
+   against Phase 1/2: the review doc's own overlap list already flags Activity's "⏰ Upcoming"
+   group (next-24h reminders) as duplicating the same commitment fact Home's hero/Also-Coming-Up
+   (soon to be "Your Plans") already shows — the user's own message gestures at this ("Home →
+   Your Plans: Friday Soccer — 7 PM. That's the actual commitment") without explicitly asking to
+   remove Activity's Upcoming group. **Not assumed away** — flagged as a real decision to make
+   explicitly when Phase 6 is reached, not silently resolved now.
+8. **/ 9. / 10. Profile vs. Settings dedup (Billing, Emergency Contacts) — REAL, CONFIRMED
+   DUPLICATE, exactly as the user states.** The review doc's own overlap list independently
+   confirms both: Billing is a real duplicate row (Profile's link list vs. Settings' "Manage
+   Subscription"), Emergency Contacts is a real duplicate row (Profile's link list vs. Settings'
+   Safety section). Scoped into Phase 5 below — remove both rows from Profile, keep both in
+   Settings only.
+11. **Business Mode's 4 scattered entry points — REAL, CONFIRMED, exactly as the user states.**
+    The review doc's overlap list independently confirms all four (Profile "Switch to
+    Business"/"My Application", Settings "Manage Your Business"/"My Application"/"Partner With
+    Us", Create's secondary row, plus the admin-only "Business Dashboard (Admin)" row in
+    Settings). **One distinction worth preserving, not something to collapse away**: the
+    admin-only rows (`AdminBusinessRequests`/"Business Dashboard (Admin)"/`AdminVerification`)
+    serve a different persona (an admin reviewing *other people's* businesses/applications) than
+    the "my own business" entry points the user is asking to consolidate — out of scope for this
+    consolidation, kept exactly as-is. Scoped into Phase 7 below.
+12. **/ 13. Weekly Recap vs. Momentum overlap, and Home doing too much overall — REAL, CONFIRMED,
+    exactly as the user states.** The review doc's own closing overlap list independently flags
+    both as a real "how have I been doing lately" duplication. Home's 16-section stack (per the
+    review doc's full top-to-bottom hierarchy) is real, not an exaggeration. Scoped across
+    Phase 1 (the 5-section reduction) and Phase 8 (the Weekly-Recap-to-Momentum-link change
+    specifically) below, per the user's own explicit ordering — see the note under Phase 8 for
+    why that one piece is sequenced last rather than folded into Phase 1.
+
+**Locked build order and scope — 8 phases, in the exact order given, not to be reordered or
+batched without asking again:**
+
+**Phase 1 — Home information hierarchy (biggest, tackle first).** Reduce Home to the user's
+five named sections — **Your Plans** (see Phase 2's split, but understood as living inside this
+same Phase-1 pass since both are Home-scoped and the user said "tackle Home first" as one unit),
+**Happening Near You** (Home's existing "🔥 Happening Now" chip row, likely little/no change),
+**Quick Picks** (close the one Dinner-sub-option exception from item 1 above so *every* Quick
+Pick is discovery-first, no silent exceptions), **Because You Like…** (Home's existing section,
+likely little/no change), **Your Communities** (Home's existing "Continue Your Communities",
+likely little/no change) — with the remaining real signal (pending invites, perks, since-you-
+were-away, social forecast) demoted to small contextual cards that appear only when relevant,
+not permanently-occupying sections, matching the user's own explicit framing ("small contextual
+cards can appear when appropriate... but they shouldn't permanently occupy huge sections").
+Also includes the weather-explanation fix (item 4's three real sub-issues: stop calling a
+current-conditions snapshot a "tonight forecast," make the `getHomeInsight()` one-liner state
+its real specific reason instead of a fixed generic sentence, add a genuine "signal too weak,
+show nothing" branch instead of always falling through to a value). **Real design decisions not
+yet made, to resolve during this phase, not assumed**: exactly which of the existing 16 sections
+collapse into which of the 5 named ones vs. become a contextual card vs. get cut/deprioritized
+entirely; whether "Because You Like…" absorbs Trending/Friends'-Activity (today's "Recommended
+For You" cluster) or those become their own contextual surfacing; the real weak-signal threshold
+for suppressing the weather card (no such threshold exists anywhere in this codebase yet to
+reuse — will need a real, stated, non-fabricated rule, matching this file's own "no invented
+numbers" convention).
+
+**Phase 2 — "Your Plans," explicit Going/Hosting split.** Replace the hero card + "Also Coming
+Up" list with one "Your Plans" section, sub-grouped into **Going** and **Hosting** (not a single
+soonest-first flat list), each item showing the same real data already fetched
+(title/date-time/attendee count) — "See all plans →" continues to `Gatherings`. Real, not yet
+decided: whether "Your Plans" shows a capped preview (e.g. next 1-2 per group) with "See all,"
+or the full near-term list inline — resolve while building, since the user's own mockup shows
+just one example per group without stating a cap.
+
+**Phase 3 — Weather explanation.** The three sub-issues under item 4 above, built here
+specifically if not already folded into Phase 1's pass over the same card (Phases 1 and 3 both
+touch the Social Forecast card — sequenced separately by the user's own numbering, but likely
+built as one continuous edit to `HomeScreen.js`/`homeDashboard.js` when the time comes; noted
+here as its own checkable phase regardless of how the actual commit sequencing falls out).
+
+**Phase 4 — Quick Picks discovery-first, closing the Dinner exception.** The one real gap under
+item 1: every Quick Pick chip, including ones matching a `SUB_OPTIONS` key, should browse first
+(`navigate('Gatherings', {initialCategoryFilter, initialDateFilter})`) rather than opening the
+creation sub-grid — the creation path (per the existing Aug 10 pattern) belongs in the
+already-built "+ Start a {category} Gathering" empty-state button, not as the chip's own default
+tap behavior. **Real decision to make while building**: whether the Dinner sub-grid (Pizza/
+Mexican/Sushi/etc.) still has *any* purpose once its parent chip no longer opens it by default —
+e.g. surfaced instead from the browse screen's own empty state or dropped entirely — not assumed
+away here.
+
+**Phase 5 — Clean Profile vs. Settings.** Remove Profile's Billing and Emergency Contacts rows
+(both stay Settings-only, per items 8-10 above). Restructure Profile's own link list into three
+named groups matching the user's mockup — **Profile** (photo/name/bio/interests/prompts/about
+me — the identity-editing fields Profile already has, unchanged), **My Activity** (Timeline/
+Memory Vault/Insights/Momentum/Rewards), **My Circle** (Friends/Communities) — dropping the
+standalone Business row from this list per Phase 7's consolidation (folds in below), not
+duplicated here.
+
+**Phase 6 — Clean Inbox.** Per item 7's verification above, no known gap exists today — this
+phase exists in the build order per the user's own explicit sequencing, to be revisited once
+Phases 1-5 land in case anything downstream (e.g. Phase 2's new "Your Plans" section) creates a
+fresh overlap with Activity's "⏰ Upcoming" group that wasn't there before. Not pre-emptively
+built against a gap that hasn't been confirmed.
+
+**Phase 7 — Consolidate Business entry points.** Collapse the 4 "my own business" entry points
+down to 1: Profile shows a single "Business" row (if `managesBusiness`) or "Become a Business
+Partner" (else) — replacing Profile's existing "Switch to Business"/"My Application" row.
+Settings' business row and Create's "Manage Your Business"/"Partner with a Business" secondary
+link are both removed, per the user's explicit instruction ("Settings should contain only
+account/configuration... Create should not need 'Manage Your Business' either"). The 3
+admin-only rows in Settings (`Business Dashboard (Admin)`, `Business Requests (Admin)`,
+`Review Verifications (Admin)`) are explicitly **not** touched — different persona, out of
+scope, per item 11's verification above.
+
+**Phase 8 — Weekly Recap ↔ Momentum merge.** Home's "This Week" recap card becomes a short
+one-line summary ("2 gatherings · 3 new connections") with a "View Momentum →" link, instead of
+its own standalone card — Profile's Momentum screen (already reachable via Phase 5's "My
+Activity" group) becomes the one place owning the deeper historical view. **Sequenced last, not
+folded into Phase 1**, because the link's destination framing ("Profile/You owns the deeper
+historical view") only makes full sense once Phase 5 has already settled where Momentum lives in
+Profile's own restructured link list — building this before Phase 5 would mean revisiting the
+link's copy/placement a second time.
+
+**Explicit non-scope, stated so a future session doesn't silently expand this plan**: Discover
+and Create are both **not** touched by this plan — the user explicitly said Discover's
+architecture and Create's activity-first grid are already good and shouldn't be messed with.
+The cross-screen duplications the review doc flagged that involve Discover (Trending/Recommended
+computed independently on both screens, "Meet People" vs. "N people nearby" as two entry points
+to `Nearby`) are **not** in scope here — the user's plan only asks to change what Home surfaces
+about itself, not to deduplicate Discover's independent computation of the same signals.
+
+**Status: PLANNED ONLY. No code has been changed for any of the 8 phases above** — this section
+is the plan, written and committed on its own per the user's explicit request, before any
+implementation begins. Per the user's own explicit instruction: build Phase 1 (Home) first,
+report a delta afterward (not another full audit), then proceed to Phase 5 (Profile/Settings),
+then Phase 6 (Inbox), continuing through the remaining phases — don't batch multiple phases into
+one pass, and don't skip ahead without the delta report landing first.
+
+## Detailed UI/IA documentation for external-AI review — DONE
 
 Written before the deliverable, same restart-safety convention as every other plan-first section
 in this file — check `git status`/`git log` and the status note at the bottom if a restart hits
