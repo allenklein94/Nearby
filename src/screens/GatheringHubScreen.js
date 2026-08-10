@@ -10,6 +10,7 @@ import {
   getFirstTimerAttendeeIds,
   hasSubmittedFeedback,
   getHostStats,
+  isFirstGatheringJoin,
 } from '../services/gatherings';
 import { getSocialForecast } from '../services/homeDashboard';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -55,6 +56,7 @@ export default function GatheringHubScreen({ route, navigation }) {
   const [onMyWayBusy, setOnMyWayBusy] = useState(false);
   const [checkInBusy, setCheckInBusy] = useState(false);
   const [showJoinedBanner, setShowJoinedBanner] = useState(!!justJoined);
+  const [isFirstJoin, setIsFirstJoin] = useState(false);
   const [showGrowthPrompt, setShowGrowthPrompt] = useState(false);
   const [growthInviteModalVisible, setGrowthInviteModalVisible] = useState(false);
   const [feedbackVisible, setFeedbackVisible] = useState(false);
@@ -102,6 +104,12 @@ export default function GatheringHubScreen({ route, navigation }) {
       load();
     }, [load])
   );
+
+  useEffect(() => {
+    if (justJoined) {
+      isFirstGatheringJoin().then(setIsFirstJoin);
+    }
+  }, [justJoined]);
 
   useEffect(() => {
     if (!showJoinedBanner) return;
@@ -214,10 +222,12 @@ export default function GatheringHubScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}>
         {showJoinedBanner && (
           <View style={[styles.joinedBanner, { borderColor: categoryStyle.color, backgroundColor: categoryStyle.color + '20' }]}>
-            <Text style={styles.joinedBannerTitle}>You're In! 🎉</Text>
+            <Text style={styles.joinedBannerTitle}>{isFirstJoin ? 'Your First Gathering! 🎉🌟' : "You're In! 🎉"}</Text>
             <Text style={styles.joinedBannerSub}>{gathering.title}</Text>
             {countdown && <Text style={styles.joinedBannerSub}>{countdown}</Text>}
-            <Text style={styles.joinedBannerFoot}>We'll help you have a great time.</Text>
+            <Text style={styles.joinedBannerFoot}>
+              {isFirstJoin ? "This is the start of something great — welcome to Nearby gatherings." : "We'll help you have a great time."}
+            </Text>
           </View>
         )}
 

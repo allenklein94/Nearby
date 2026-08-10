@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, onSendMessage, onDismiss }) {
+export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch, onSendMessage, onDismiss }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
@@ -31,9 +31,11 @@ export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoU
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.overlay}>
         <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
-          <Text style={styles.emoji}>🎉</Text>
-          <Text style={styles.title}>It's a Match!</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text style={styles.emoji}>{isFirstMatch ? '🎉🌟' : '🎉'}</Text>
+          <Text style={styles.title}>{isFirstMatch ? 'Your First Match!' : "It's a Match!"}</Text>
+          <Text style={styles.subtitle}>
+            {subtitle}{isFirstMatch ? ' This is the start of something new.' : ''}
+          </Text>
 
           <View style={styles.photosRow}>
             <View style={[styles.photoWrap, styles.photoWrapLeft]}>

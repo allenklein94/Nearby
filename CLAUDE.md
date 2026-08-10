@@ -239,17 +239,43 @@ increments as each piece lands, rather than batching the whole item at the end.
    else was changed here — still a real, open, low-priority gap across the other 85 call sites,
    matching the plan's own "do the rest opportunistically" framing rather than a dedicated pass.
 
-5. **First-time celebration moments (doc's "favorite polish idea") — real, additive gap.**
-   General celebration copy already exists and is good (`GatheringHubScreen.js`'s "You're In!
-   🎉", `GatheringConfirmationScreen.js`'s "Your gathering is live!", `MatchCelebrationModal.js`)
-   — but none of it is first-time-specific; it fires identically every time, not specially on a
-   user's actual first gathering/community/connection. Grepped for `isFirstGathering`/
-   `first_community`/etc. — zero hits, confirming this doesn't exist yet. **Plan**: this is
-   additive on top of already-good copy, not a rebuild — needs a real "is this genuinely the
-   caller's first one" check (a plain count query against data already fetched elsewhere in this
-   codebase, e.g. `hostedCount`/`communitiesCreated` already computed in `insights.js` — no new
-   schema), then swap in a one-time richer message on top of the existing celebration UI for
-   exactly that first real occurrence. Smallest item in this plan with real payoff.
+5. **First-time celebration moments (doc's "favorite polish idea") — DONE, for the three real
+   celebration surfaces this codebase actually has.** All additive on top of already-good
+   copy, no rebuild — each needed a genuine "is this really the caller's first one" check, not
+   an invented flag:
+   - **`GatheringHubScreen.js`'s "You're In! 🎉"** — new `isFirstGatheringJoin()`
+     (`services/gatherings.js`) counts the caller's own total *approved* `gathering_interest`
+     rows; called only when `justJoined` is true (same condition that already gates the banner
+     itself), so a count of exactly 1 means the row just created is the only one that's ever
+     existed. First-timer copy: "Your First Gathering! 🎉🌟" / "This is the start of something
+     great — welcome to Nearby gatherings."
+   - **`GatheringConfirmationScreen.js`'s "Your gathering is live!"** — new
+     `isFirstGatheringHosted()` (same file), counts the caller's total `gatherings` where
+     `host_id` = them, called right after the screen loads (right after a create just
+     succeeded). First-timer copy: "Your First Gathering Is Live! 🎉🌟" / "You're officially a
+     host — let's help people discover it."
+   - **`MatchCelebrationModal.js`'s "It's a Match!"** — no new query needed here at all:
+     `MatchesScreen.js` already fetches the caller's complete match list every load, so
+     `data.length === 1` at the exact moment a genuine new-match celebration is being triggered
+     (not the pre-existing `isFirstRunEver` check, which is a different signal — that one
+     suppresses celebrating a *historical* match on first app open, unrelated to whether this is
+     the user's first match ever) is a real, free signal reusing already-fetched data, passed
+     down as a new `isFirstMatch` prop. First-timer copy: "Your First Match! 🎉🌟" / the existing
+     subtitle plus "This is the start of something new."
+   - **Community join/creation deliberately not touched — no existing celebration UI to enrich.**
+     Grepped `CommunityDetailScreen.js`/`CreateCommunityScreen.js` for any "You're in"/"Welcome"
+     style banner — none exists at all, confirming this doc item's "gathering/community/
+     connection" framing doesn't fully hold: only 2 of those 3 categories (gathering,
+     connection/match) had an existing celebration to make first-time-specific. Building a
+     brand-new community celebration from scratch would be a different, larger item (new UI, not
+     an enrichment of something that already exists) — out of scope for "additive on top of
+     already-good copy," flagged here rather than silently expanded into.
+   - Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, all
+     edits to existing files). **Not done yet, same standing gap as everywhere in this file**: no
+     manual device/simulator run-through — next session should confirm all three first-timer
+     variants render correctly for a genuinely brand-new account (first gathering join, first
+     hosted gathering, first match) and that the normal (non-first-time) copy still shows
+     correctly for an account with existing history in each category.
 
 **A real, unresolved tension — flagging rather than silently picking a side, per this file's own
 standing rule about not silently overriding a previously deliberate decision:**

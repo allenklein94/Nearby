@@ -1088,6 +1088,42 @@ export async function getApprovedAttendeeCount(gatheringId) {
   return count ?? 0;
 }
 
+// A genuine "is this really your first one" check for the join-success
+// celebration — counts the caller's own total approved gathering_interest
+// rows (across every gathering, not just this one). Called right after a
+// join succeeds, so a count of exactly 1 means the row that was just
+// created is the only one that's ever existed for this person.
+export async function isFirstGatheringJoin() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return false;
+
+  const { count, error } = await supabase
+    .from('gathering_interest')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', myId)
+    .eq('status', 'approved');
+
+  if (error) return false;
+  return (count ?? 0) === 1;
+}
+
+// Same idea for hosting — counts every gathering the caller has ever
+// created, called right after a create succeeds.
+export async function isFirstGatheringHosted() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return false;
+
+  const { count, error } = await supabase
+    .from('gatherings')
+    .select('id', { count: 'exact', head: true })
+    .eq('host_id', myId);
+
+  if (error) return false;
+  return (count ?? 0) === 1;
+}
+
 export async function getPendingInterestCount(gatheringId) {
   const { count, error } = await supabase
     .from('gathering_interest')

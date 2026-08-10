@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share } from 'react-native';
-import { getGatheringById, getFriendsWithSharedContext } from '../services/gatherings';
+import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
 import * as Haptics from 'expo-haptics';
@@ -22,6 +22,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
 
   const [gathering, setGathering] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isFirstHosted, setIsFirstHosted] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [friends, setFriends] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -34,6 +35,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
       setGathering(g);
       setLoading(false);
     });
+    isFirstGatheringHosted().then(setIsFirstHosted);
   }, [gatheringId]);
 
   async function handleShare() {
@@ -92,9 +94,11 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xxl, alignItems: 'center' }}>
-        <Text style={styles.celebrateIcon}>🎉</Text>
-        <Text style={styles.title}>Your gathering is live!</Text>
-        <Text style={styles.subtitle}>Now let's help people discover it.</Text>
+        <Text style={styles.celebrateIcon}>{isFirstHosted ? '🎉🌟' : '🎉'}</Text>
+        <Text style={styles.title}>{isFirstHosted ? 'Your First Gathering Is Live!' : 'Your gathering is live!'}</Text>
+        <Text style={styles.subtitle}>
+          {isFirstHosted ? "You're officially a host — let's help people discover it." : "Now let's help people discover it."}
+        </Text>
 
         <View style={[styles.summaryCard, { borderColor: categoryStyle.color }]}>
           <Text style={styles.summaryIcon}>{categoryStyle.icon}</Text>

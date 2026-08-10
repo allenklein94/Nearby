@@ -54,6 +54,7 @@ export default function MatchesScreen({ navigation }) {
   const [compatModalName, setCompatModalName] = useState('');
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [celebrationWasWave, setCelebrationWasWave] = useState(false);
+  const [celebrationIsFirst, setCelebrationIsFirst] = useState(false);
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -107,6 +108,9 @@ export default function MatchesScreen({ navigation }) {
           .or(`and(from_user.eq.${myId},to_user.eq.${otherPersonId}),and(from_user.eq.${otherPersonId},to_user.eq.${myId})`);
         const anyWave = (relatedNotices ?? []).some((n) => n.is_super);
         setCelebrationWasWave(anyWave);
+        // Real "is this genuinely your only match ever" check, reusing the
+        // full match list already fetched above — no new query.
+        setCelebrationIsFirst(data.length === 1);
 
         setCelebrationMatch(newMatch);
       }
@@ -312,6 +316,7 @@ export default function MatchesScreen({ navigation }) {
         theirName={celebrationMatch ? otherPersonFor(celebrationMatch)?.display_name : ''}
         gatheringTitle={celebrationMatch?.gatherings?.title || null}
         wasWave={celebrationWasWave}
+        isFirstMatch={celebrationIsFirst}
         onSendMessage={handleSendMessage}
         onDismiss={() => setCelebrationMatch(null)}
       />
