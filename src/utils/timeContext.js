@@ -1,3 +1,17 @@
+// "Today · 7:15 PM" / "Tomorrow · 7:15 PM" / "Fri, Aug 14 · 7:15 PM" — real
+// calendar-relative formatting, not a generic date string.
+export function formatHeroDateTime(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (isSameDay(d, now)) return `Today · ${time}`;
+  if (isSameDay(d, tomorrow)) return `Tomorrow · ${time}`;
+  return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
+}
+
 export function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';

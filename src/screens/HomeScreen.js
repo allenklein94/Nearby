@@ -11,25 +11,11 @@ import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks } from '../utils/timeContext';
+import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime } from '../utils/timeContext';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
-
-// "Today · 7:15 PM" / "Tomorrow · 7:15 PM" / "Fri, Aug 14 · 7:15 PM" — real
-// calendar-relative formatting for the hero card, not a generic date string.
-function formatHeroDateTime(iso) {
-  const d = new Date(iso);
-  const now = new Date();
-  const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(now.getDate() + 1);
-  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  if (isSameDay(d, now)) return `Today · ${time}`;
-  if (isSameDay(d, tomorrow)) return `Tomorrow · ${time}`;
-  return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
-}
 
 // "Coffee" / "Coffee & Outdoors" / "Coffee, Outdoors & Music" — the real
 // top categories this section is drawn from, not just the first result.
@@ -281,7 +267,7 @@ export default function HomeScreen({ navigation }) {
             </View>
             <TouchableOpacity
               style={styles.seeAllPlansButton}
-              onPress={() => navigation.navigate('Gatherings', { initialTab: dashboard.plansGoing.length > 0 ? 'attending' : 'hosting' })}
+              onPress={() => navigation.navigate('Plans')}
               accessibilityLabel="See all plans"
               accessibilityRole="button"
             >

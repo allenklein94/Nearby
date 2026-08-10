@@ -207,6 +207,40 @@ the caller's own real `gathering_interest`/`gatherings` rows, each tab's rows ta
 `GatheringDetail`, matching the "commitment surface, not a browse surface" framing. Home's "See
 All Plans →" link repoints here.
 
+**Phase 1 — DONE.** Resolved the open design question per the plan's own lean: built a genuinely
+separate, smaller `PlansScreen.js` (new `Plans` route in `RootNavigator.js`, `headerShown: true`
+native title "Your Plans", matching the `Momentum`/`Rewards` route convention) rather than a 4th
+`GatheringsScreen` tab — scoped to just the caller's own commitments, no browse-nearby concept at
+all, matching the plan's own "Home gives me the next 1-3 things, the Plans screen gives me the
+complete calendar" framing. Real **Upcoming / Hosting / Past** tabs, built entirely on two
+already-existing functions (`getMyAttendingGatherings()`/`getMyGatherings()`, both already return
+`{upcoming, past}`) — no new queries, no new schema:
+- **Upcoming**: `attending.upcoming` + `hosting.upcoming` merged, sorted soonest-first, each row
+  labeled "Going"/"Hosting" — the same shape as Home's own "Your Plans" section, just unabridged
+  (Home caps at 3 per group; this screen shows everything).
+- **Hosting**: every gathering the caller hosts, past and upcoming, under two real sub-headers
+  ("Upcoming"/"Past") — a role-filtered view, not a duplicate of the caller-scoped "manage my
+  hosted gatherings" surface `GatheringsScreen.js`'s own hosting tab already owns (no edit/cancel/
+  invite actions here — this screen's only job is tap-through to `GatheringDetail`, matching the
+  plan's "commitment surface, not a browse surface" framing exactly).
+- **Past**: `attending.past` + `hosting.past` merged, sorted most-recent-first, labeled
+  "Went"/"Hosted" — the one tab that closes the real, confirmed gap (no "Past" concept existed
+  anywhere in this codebase before this phase).
+Each row taps straight to the real `GatheringDetail`. Real, honest empty state per tab (no
+fabricated placeholder). `formatHeroDateTime()` — previously a private helper local to
+`HomeScreen.js` — was promoted to a shared export in `utils/timeContext.js` (matching this file's
+own established "factor into the shared util, don't duplicate" convention) so both Home's hero
+rows and this new screen's rows use the exact same calendar-relative date formatting
+("Today · 7:15 PM" / "Tomorrow · 7:15 PM" / "Fri, Aug 14 · 7:15 PM"). Home's "See All Plans →"
+link now points at `Plans` instead of `Gatherings`. Verified via a full `npx expo export
+--platform ios` — clean, 1855 modules (one more than the 1854 baseline — the one new
+`PlansScreen.js`; every other touched file was an edit).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm each of the three tabs renders correctly against real
+data (including the Hosting tab's two sub-headers only appearing when that half has real rows),
+that a brand-new account with zero plans sees the correct honest empty state per tab, and that
+every row's tap lands cleanly on the right `GatheringDetail`.
+
 **Phase 2 — Activity restructure into Needs Your Attention / Today / Earlier (closes point 2).**
 Resolve the flagged business-notices-urgency question first, then: rename/regroup
 `requests`+`invitations` under one real "Needs Your Attention" header (keeping their own
