@@ -4,6 +4,37 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Detailed UI/IA documentation for external-AI review — IN PROGRESS
+
+Written before the deliverable, same restart-safety convention as every other plan-first section
+in this file — check `git status`/`git log` and the status note at the bottom if a restart hits
+mid-build.
+
+**Explicit scope, given directly**: this is documentation only, for handoff to a *different* AI
+to critique. **No product audit, no code changes, no redesign.** The prior same-day UI map
+(`PRODUCT_AUDIT/CURRENT_UI_MAP_2026-08-10.md`, see the section below) was a lighter first pass —
+this is a deliberately more exhaustive one, covering 7 specific screens plus Business Mode's
+intersection points, each documented A-J (screen name, file path, full top-to-bottom hierarchy,
+every section, every card/button/CTA, what each major CTA does, what data is shown, a
+classification tag — personal info / discovery / creation / messaging / activity / settings /
+recommendations / commitments — and bidirectional navigation), a dedicated trace of the exact
+weather-recommendation logic, and a closing concise ASCII UI map + a factual "Potential IA
+overlaps" list (overlaps only — not resolved, not recommended away).
+
+**Plan:**
+1. Two parallel read-only research passes (capped at 2 concurrent), each producing the full A-J
+   breakdown for its assigned screens, reading current source directly:
+   - Pass 1: Home, Discover/Meet People, Create, plus the weather-logic trace.
+   - Pass 2: Profile, Settings, Inbox, Gathering Detail + Gatherings (attending/hosting tabs),
+     plus every point where Business Mode intersects any of the above.
+2. Assemble both passes into one deliverable:
+   `PRODUCT_AUDIT/UI_IA_REVIEW_FOR_EXTERNAL_AI_2026-08-10.md`.
+3. Write the closing ASCII UI map + "Potential IA overlaps" section myself once both passes are
+   back, since overlaps require cross-referencing both halves against each other.
+4. Commit and push once assembled.
+
+**Status: plan committed, research running.**
+
 ## Outstanding: Current UI Map for IA review — IN PROGRESS
 
 Written before the map itself, same restart-safety convention as every other plan-first section
