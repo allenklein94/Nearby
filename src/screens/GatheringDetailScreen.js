@@ -308,77 +308,89 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {hasVibe && (
+          {(hasVibe || gathering.timeline_steps?.length > 0) && (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>The Vibe</Text>
-              {VIBE_SCALES.map((scale) => {
-                const value = gathering[scale.key];
-                if (value == null) return null;
-                return (
-                  <View key={scale.key} style={styles.vibeScaleRow}>
-                    <Text style={styles.vibeScaleLabel}>{scale.label}</Text>
-                    <View style={styles.vibeDotsRow}>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <View key={n} style={[styles.vibeDot, n <= value && { backgroundColor: categoryStyle.color, borderColor: categoryStyle.color }]} />
-                      ))}
-                    </View>
-                    <View style={styles.vibeEndLabels}>
-                      <Text style={styles.vibeEndLabel}>{scale.lowLabel}</Text>
-                      <Text style={styles.vibeEndLabel}>{scale.highLabel}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-              {gathering.beginner_friendly && <Text style={styles.beginnerText}>🔰 Beginner friendly</Text>}
-            </View>
-          )}
+              <Text style={styles.sectionLabel}>📋 What to Expect</Text>
 
-          {gathering.timeline_steps?.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Timeline</Text>
-              {gathering.timeline_steps.map((step, i) => (
-                <View key={i} style={styles.timelineRow}>
-                  <View style={styles.timelineDotColumn}>
-                    <View style={[styles.timelineDot, { backgroundColor: categoryStyle.color }]} />
-                    {i < gathering.timeline_steps.length - 1 && <View style={styles.timelineConnector} />}
-                  </View>
-                  <View style={styles.timelineTextColumn}>
-                    {step.time ? <Text style={styles.timelineTime}>{step.time}</Text> : null}
-                    <Text style={styles.timelineLabel}>{step.label}</Text>
-                  </View>
+              {hasVibe && (
+                <View style={gathering.timeline_steps?.length > 0 ? { marginBottom: spacing.lg } : null}>
+                  <Text style={styles.subLabel}>The Vibe</Text>
+                  {VIBE_SCALES.map((scale) => {
+                    const value = gathering[scale.key];
+                    if (value == null) return null;
+                    return (
+                      <View key={scale.key} style={styles.vibeScaleRow}>
+                        <Text style={styles.vibeScaleLabel}>{scale.label}</Text>
+                        <View style={styles.vibeDotsRow}>
+                          {[1, 2, 3, 4, 5].map((n) => (
+                            <View key={n} style={[styles.vibeDot, n <= value && { backgroundColor: categoryStyle.color, borderColor: categoryStyle.color }]} />
+                          ))}
+                        </View>
+                        <View style={styles.vibeEndLabels}>
+                          <Text style={styles.vibeEndLabel}>{scale.lowLabel}</Text>
+                          <Text style={styles.vibeEndLabel}>{scale.highLabel}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  {gathering.beginner_friendly && <Text style={styles.beginnerText}>🔰 Beginner friendly</Text>}
                 </View>
-              ))}
+              )}
+
+              {gathering.timeline_steps?.length > 0 && (
+                <View>
+                  <Text style={styles.subLabel}>Timeline</Text>
+                  {gathering.timeline_steps.map((step, i) => (
+                    <View key={i} style={styles.timelineRow}>
+                      <View style={styles.timelineDotColumn}>
+                        <View style={[styles.timelineDot, { backgroundColor: categoryStyle.color }]} />
+                        {i < gathering.timeline_steps.length - 1 && <View style={styles.timelineConnector} />}
+                      </View>
+                      <View style={styles.timelineTextColumn}>
+                        {step.time ? <Text style={styles.timelineTime}>{step.time}</Text> : null}
+                        <Text style={styles.timelineLabel}>{step.label}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
-          {offer && (
-            <View style={styles.perkCard}>
-              <Text style={styles.perkKicker}>🎁 Community Perk</Text>
-              <Text style={styles.perkTitle}>{offer.title}</Text>
-              {offer.brand_partners?.name && (
+          {(offer || gathering.community) && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>🏘️ Community & Perks</Text>
+
+              {offer && (
+                <View style={styles.perkCard}>
+                  <Text style={styles.perkKicker}>🎁 Community Perk</Text>
+                  <Text style={styles.perkTitle}>{offer.title}</Text>
+                  {offer.brand_partners?.name && (
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
+                      accessibilityLabel={`View ${offer.brand_partners.name}'s business profile`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={[styles.perkSub, styles.perkSubLink]}>at {offer.brand_partners.name}</Text>
+                    </TouchableOpacity>
+                  )}
+                  {offer.description ? <Text style={styles.perkDesc}>{offer.description}</Text> : null}
+                </View>
+              )}
+
+              {gathering.community && (
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('BusinessProfile', { partnerId: offer.partner_id })}
-                  accessibilityLabel={`View ${offer.brand_partners.name}'s business profile`}
+                  style={[styles.communityCard, offer && { marginTop: spacing.sm }]}
+                  onPress={() => navigation.navigate('CommunityDetail', { communityId: gathering.community.id, communityName: gathering.community.name })}
+                  accessibilityLabel={`View the ${gathering.community.name} community`}
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.perkSub, styles.perkSubLink]}>at {offer.brand_partners.name}</Text>
+                  <Text style={styles.communityKicker}>🏘️ Part of a community</Text>
+                  <Text style={styles.communityTitle}>{gathering.community.name}</Text>
+                  <Text style={styles.communitySub}>View community →</Text>
                 </TouchableOpacity>
               )}
-              {offer.description ? <Text style={styles.perkDesc}>{offer.description}</Text> : null}
             </View>
-          )}
-
-          {gathering.community && (
-            <TouchableOpacity
-              style={styles.communityCard}
-              onPress={() => navigation.navigate('CommunityDetail', { communityId: gathering.community.id, communityName: gathering.community.name })}
-              accessibilityLabel={`View the ${gathering.community.name} community`}
-              accessibilityRole="button"
-            >
-              <Text style={styles.communityKicker}>🏘️ Part of a community</Text>
-              <Text style={styles.communityTitle}>{gathering.community.name}</Text>
-              <Text style={styles.communitySub}>View community →</Text>
-            </TouchableOpacity>
           )}
 
           <View style={styles.section}>
@@ -637,6 +649,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginTop: spacing.md,
   },
   sectionLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  subLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '700', marginBottom: spacing.sm },
   reasonLine: { color: colors.textPrimary, fontSize: 14, marginBottom: 2, fontWeight: '600' },
   description: { ...typography.body, color: colors.textSecondary, marginTop: spacing.md },
   section: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
@@ -662,7 +675,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   timelineLabel: { color: colors.textPrimary, fontSize: 14 },
   perkCard: {
     backgroundColor: '#f59e0b15', borderRadius: radius.lg, borderWidth: 1, borderColor: '#f59e0b',
-    padding: spacing.md, marginTop: spacing.lg,
+    padding: spacing.md,
   },
   perkKicker: { color: '#f59e0b', fontSize: 11, fontWeight: '700', marginBottom: 2 },
   perkTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
@@ -671,7 +684,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   perkDesc: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
   communityCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
-    padding: spacing.md, marginTop: spacing.lg,
+    padding: spacing.md,
   },
   communityKicker: { color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 2 },
   communityTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },

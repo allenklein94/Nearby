@@ -312,13 +312,48 @@ standing rule about not silently overriding a previously deliberate decision:**
    as everywhere in this file**: no manual device/simulator run-through — next session should
    confirm the link renders correctly right above the Join button and opens the same working
    invite modal.
-8. **Visual density on `GatheringDetailScreen.js` itself** — confirmed up to 16 stacked sections
-   (hero, fit reasons, who's going, vibe, timeline, community perk, linked-community card,
-   organizer, Q&A, plus a bottom action panel with its own 5 state-dependent variants). Same
-   "grew feature-by-feature, never redesigned as a whole" problem as Home, but on this app's
-   single most heavily-built-out screen — real, but higher-risk to touch than Home, and better
-   sequenced *after* the Home hierarchy pass proves out an approach worth reusing here. Not
-   started.
+8. **Visual density on `GatheringDetailScreen.js` itself — DONE, the consolidation half.**
+   Confirmed up to 16 stacked sections (hero, fit reasons, who's going, vibe, timeline,
+   community perk, linked-community card, organizer, Q&A, plus a bottom action panel with its
+   own 5 state-dependent variants) — same "grew feature-by-feature, never redesigned as a
+   whole" problem as Home, but on this app's single most heavily-built-out screen. Applied the
+   same regroup-without-deleting-signal approach the Home pass (item 1) already proved out,
+   scoped to the two real duplicative-header cases this screen actually had:
+   - **Vibe + Timeline merged into one "📋 What to Expect" section.** Both previously rendered
+     as two separate full `sectionLabel`-styled, top-bordered blocks back-to-back
+     (`GatheringDetailScreen.js`, was lines 311/337) whenever a gathering had either signal —
+     now one bordered section with a single header, each half kept as its own `subLabel`-styled
+     sub-heading ("The Vibe" / "Timeline", same smaller one-step-down style Home's Recommended
+     For You cluster already introduced) so both stay individually identifiable. Every field,
+     condition, and dot-scale/timeline-connector visual is unchanged — this was pure regrouping,
+     not a data cut.
+   - **Community Perk card + linked-community card merged into one "🏘️ Community & Perks"
+     section.** Previously these were two separate freestanding cards (each with its own
+     `marginTop: spacing.lg`, no shared header, no top-border divider — visually just two boxes
+     floating one after another) — now both nest inside one real bordered `section` block with
+     one header, keeping their own distinct card styling (`perkCard`/`communityCard`, amber vs.
+     primary-tinted) inside it so the perk-vs-community distinction is still visually clear at a
+     glance. Both cards' own content, tap targets, and conditions (perk only when `offer`
+     exists, community card only when `gathering.community` exists) are unchanged.
+   - **Net reduction**: 9 conceptual stacked pieces (hero, fit reasons, who's going, vibe,
+     timeline, community perk, linked community, organizer, Q&A) down to 7 (hero, fit reasons,
+     who's going, what-to-expect, community-&-perks, organizer, Q&A) — confirmed by diffing the
+     real bordered-section count before/after (`git show HEAD:...  | grep -c
+     "style={styles.section}"` vs. the same on the working tree: 4 both times, expected — 2
+     merged into 1 for What to Expect, and 2 previously-*unbordered* floating cards absorbed
+     into 1 *new* bordered section for Community & Perks, netting to the same raw count while
+     the actual number of distinct visual blocks a reader scans past genuinely dropped).
+   - **The bottom action panel's 5 state-dependent variants were deliberately left untouched**
+     this pass — each variant (host / approved / waitlisted / pending / invite-only-locked) is
+     mutually exclusive (only one ever renders at a time, per the gathering's real state for
+     that viewer), so it was never actually a stacking-density problem the way the two merges
+     above were; consolidating further there would mean removing a real state distinction, not
+     decluttering.
+   - Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, edit
+     to one existing file). **Not done yet, same standing gap as everywhere in this file**: no
+     manual device/simulator run-through — next session should confirm "What to Expect" reads
+     correctly with only Vibe, only Timeline, and both present, and "Community & Perks" reads
+     correctly with only a perk, only a linked community, and both present.
 
 **Deliberately not re-litigated**: doc item 6 ("Inbox: don't make users figure out where
 something went — invite → Activity, accept → Messages → gathering chat") already matches current
