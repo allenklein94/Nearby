@@ -4,6 +4,128 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Scalability audit fixes (Aug 10 2026) — plan written, NOT STARTED
+
+Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
+"download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
+refresh review" below). The user asked the natural follow-up: audit the rest of the app for
+the same pattern before assuming it was a one-off. Full findings are written up in
+`PRODUCT_AUDIT/SCALABILITY_AUDIT.md` — read that file for the complete file/line evidence; this
+section is the execution plan distilled from it, written *before* any fix lands, same
+restart-safety convention as every other plan-first section in this file. **Nothing below has
+been built yet** — check `git log`/`git status` before assuming any part of this landed, same
+as always.
+
+**Headline finding, worth restating here since it changes the priority order from what the
+audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
+browse-download bug (though two of those were found too, see below) — it's that **all four
+messaging surfaces (1:1 chat, gathering chat, community chat, business messaging) re-fetch
+their entire conversation history on a fixed 3-4 second timer, not just once on screen open.**
+Two of the four (gathering chat, community chat) have no realtime subscription at all and rely
+purely on that poll; 1:1 chat has both a real Realtime channel *and* a redundant poll running
+at the same time. This is present-tense cost today, independent of how long any conversation's
+history currently is — fixing message-count bounding alone without also fixing the polling
+would still leave every open chat screen re-fetching its now-smaller "latest page" twenty times
+a minute for no reason a subscription couldn't cover for free. This is why the plan below fixes
+polling→realtime *before* pagination, not after.
+
+**Locked decisions, so implementation doesn't re-litigate them mid-build:**
+1. **Message page size: 50**, matching common messaging-app convention — not derived from any
+   real usage data (this app doesn't have any yet), stated as a starting default, not a
+   fabricated metric standing in for one.
+2. **Pagination shape, shared across all four messaging surfaces, built once**: initial load
+   fetches the most recent 50 (`order('created_at', desc).limit(50)`), an inverted `FlatList`
+   (or equivalent reverse-render) avoids needing to flip the array by hand, and scrolling to the
+   top (`onEndReached` in inverted-list terms) fetches the next 50 older than the oldest
+   currently-loaded message's `created_at` — a real cursor, not an offset (offset pagination
+   drifts under concurrent inserts; a `created_at`/`id` cursor doesn't). New messages arriving
+   via a realtime subscription get appended to the in-memory list directly, never trigger a
+   re-fetch of the whole thing. Built once as a shared hook/helper, then wired into all four
+   screens — matching this codebase's own established precedent for exactly this situation (the
+   still-open PRODUCT_AUDIT P0 #6, "fix the silent-send-failure pattern once, in one place, for
+   all four chat-style screens," never built but already correctly scoped the same way).
+3. **Polling → realtime, per screen, not a blanket rip-out**: `GatheringChatScreen.js` and
+   `CommunityChatScreen.js` get a brand-new Realtime channel subscription (mirroring
+   `ChatScreen.js`'s existing `.channel('messages:${matchId}')` pattern) and lose their
+   `setInterval(load, 3000)` entirely — there's nothing else the poll could be covering there
+   since it's the only delivery mechanism today. `BusinessConversationScreen.js` gets the same
+   treatment for its 4-second poll. **`ChatScreen.js` itself needs a closer read before its poll
+   is touched** — it already has a working realtime channel *and* the poll, and the poll's tick
+   also drives `markMessagesAsRead()` (`ChatScreen.js:202`); before deleting the poll, confirm
+   whether read-receipt marking has a legitimate reason to run on its own cadence separate from
+   new-message delivery (e.g. marking read on *any* tick, not just a new-message event) and give
+   it its own lighter mechanism (on-focus, or on new-message-received) if so, rather than
+   silently dropping read-receipt behavior as a side effect of removing the redundant fetch.
+4. **`getBusinessConversations()` needs a new RPC, not a client-side limit.** The current
+   function downloads every message across every conversation just to keep the first (most
+   recent) per `conversation_with_id` — the worst shape found in the whole audit, scaling with
+   both customer count and history length at once. Fix: a new SECURITY DEFINER RPC doing a real
+   `DISTINCT ON (conversation_with_id) ... ORDER BY conversation_with_id, created_at DESC`
+   (a shape PostgREST can't express directly — same category of gap `searchOffers()`'s
+   cross-table join already needed a new RPC for), scoped by the caller's own
+   `managed_partner_id` ownership check (same pattern every other business RPC in this schema
+   already uses). Returns one row per conversation. `BusinessDashboardScreen.js`'s
+   `loadNeedsAttention()` (currently calling `getBusinessConversations()` a *second* time, just
+   to compute an unread count) should read off the same result instead of re-fetching.
+5. **The two browse-download bugs (`getPublicCommunities()`, `getNearbyBusinesses()`) get the
+   lighter fix, not a forced copy of the gatherings RPC.** Communities have no location column
+   (confirmed in the Unified Map section further below — real, not an oversight), so there's no
+   geographic bound to compute; the fix is a plain `.limit(200)` added to the existing query,
+   no new RPC needed, since nothing server-side needs computing beyond what Postgres already
+   does for a capped `ORDER BY created_at DESC LIMIT`. `getNearbyBusinesses()` gets the same
+   lighter treatment first — a plain `.limit(300)` cap on top of the existing query, *not* a
+   full `get_bounded_nearby_gathering_ids()`-style geographic RPC — because this codebase's own
+   existing reasoning (Rewards/Billing sections) already expects the business-partner count to
+   stay much smaller than gatherings for a long while. The full RPC treatment is deliberately
+   deferred, not skipped outright — flagged here so a future session doesn't have to
+   re-discover the gap if the "stays small" assumption ever stops holding.
+6. **`getCommunityMembers()` and the Activity screen's notices feed both get a plain `.limit()`
+   cap, no pagination UI built yet** — both are 🟠, not 🔴, and neither has evidence today of
+   actually needing a "load more" affordance; a cap alone closes the unbounded-download risk
+   without building UI nothing currently demands. Revisit with real pagination only if a
+   community/account actually grows past the cap in practice.
+
+**Execution order** (each its own commit, pushed individually — not batched at the end, same
+practice as the current UI-polish pass, so a mid-session restart never loses more than one
+piece):
+1. `GatheringChatScreen.js` — realtime channel replacing the poll (no existing subscription to
+   conflict with, smallest and most isolated of the four, good first proof of the pattern).
+2. `CommunityChatScreen.js` — same treatment, same shape.
+3. `BusinessConversationScreen.js` — same treatment for its 4-second poll.
+4. `ChatScreen.js` — investigate the poll/channel/read-receipt relationship first (per locked
+   decision 3 above), then remove the redundant full-history poll without losing read-receipt
+   behavior.
+5. Build the shared pagination hook/helper (locked decision 2), wire it into all four screens —
+   this is the piece that actually bounds each conversation's fetched-row-count, independent of
+   the polling fixes above.
+6. New business-conversations-summary RPC (locked decision 4), rewire
+   `getBusinessConversations()` and `BusinessDashboardScreen.js`'s `loadNeedsAttention()`.
+7. `.limit(200)` on `getPublicCommunities()`.
+8. `.limit(200)` on `getCommunityMembers()`.
+9. `.limit(300)` on `getNearbyBusinesses()`.
+10. `.limit()` cap on `ActivityScreen.js`'s notices fetch.
+
+**Deliberately not in this pass** (🟡 items from the audit — real but self-limiting, not worth
+the churn right now): `getAllPendingRequests()`, `getMyTimeline()`, `getMyGatherings()`/
+`getMyAttendingGatherings()`, `getMyRedemptions()`, and the business-insights RPCs whose
+internal `LIMIT` (if any) wasn't visible from client code alone. None of these show a growth
+curve tied to platform-wide scale the way the 🔴/🟠 items above do.
+
+**Verification plan, matching this file's established convention**: for the new business
+RPC, apply to production and verify live with real disposable test data (multiple test
+conversations for one partner, confirm exactly one row per conversation comes back, confirm
+ownership check rejects a non-owner) — clean up afterward, same as every other RPC change in
+this file. For the realtime-channel fixes, verify the channel subscription is correctly scoped
+(right table/filter) by reading the subscription config against `ChatScreen.js`'s own working
+example, since this sandbox can't open two live app sessions to watch a real message arrive —
+flag that specific gap honestly rather than claiming it as tested. Full `npx expo export
+--platform ios` after every individual increment, matching the 1850-module baseline. **Standing
+limitation, same as everywhere else in this file**: no manual simulator/device run-through —
+next session should specifically confirm a message sent from one device actually appears on a
+second device's screen without a manual refresh (the one thing only a live realtime
+subscription, not a static code read, can actually prove), and that scrolling to the top of a
+long conversation actually loads older messages rather than silently stopping.
+
 ## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — IN PROGRESS, Home started
 
 The user pasted a detailed UI-polish feedback doc (10 numbered items + a "5 I'd do first" list +
