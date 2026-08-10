@@ -7,7 +7,7 @@ import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped 
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
-import { getActiveOffers, getNearbyBusinesses } from '../services/brandOffers';
+import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl } from '../services/places';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
@@ -81,6 +81,7 @@ export default function DiscoverHubScreen({ navigation }) {
   // the debounced effect below.
   const [searchedGatherings, setSearchedGatherings] = useState([]);
   const [searchedCommunities, setSearchedCommunities] = useState([]);
+  const [searchedOffers, setSearchedOffers] = useState([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const searchRequestId = useRef(0);
   const joinedCommunityIdsRef = useRef(new Set());
@@ -168,19 +169,22 @@ export default function DiscoverHubScreen({ navigation }) {
     if (term.length < 2) {
       setSearchedGatherings([]);
       setSearchedCommunities([]);
+      setSearchedOffers([]);
       return;
     }
     const thisRequestId = ++searchRequestId.current;
     const timer = setTimeout(async () => {
       setLoadingSearch(true);
       try {
-        const [gatheringResults, communityResults] = await Promise.all([
+        const [gatheringResults, communityResults, offerResults] = await Promise.all([
           searchGatherings(term, 'wide'),
           searchPublicCommunities(term),
+          searchOffers(term, userLocation?.latitude ?? null, userLocation?.longitude ?? null),
         ]);
         if (thisRequestId === searchRequestId.current) {
           setSearchedGatherings(gatheringResults);
           setSearchedCommunities(communityResults.filter((c) => !joinedCommunityIdsRef.current.has(c.id)));
+          setSearchedOffers(offerResults);
         }
       } catch (e) {
         console.error('Discover search failed', e);
@@ -188,7 +192,7 @@ export default function DiscoverHubScreen({ navigation }) {
       if (thisRequestId === searchRequestId.current) setLoadingSearch(false);
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, userLocation]);
 
   async function loadPublicStories() {
     try {
@@ -228,17 +232,12 @@ export default function DiscoverHubScreen({ navigation }) {
   // .filter().includes() over the full already-fetched browse lists.
   const filteredGatherings = isSearching ? searchedGatherings : gatherings;
   const filteredCommunities = isSearching ? searchedCommunities : communities;
-  // Offers stay client-side: getActiveOffers()'s base query is already
-  // narrow (active, non-gathering offers only), the real business-partner
-  // count this app will have for a long while keeps that list small, and
-  // matching brand_partners.name server-side would need a genuine
-  // cross-table search (PostgREST's .or() can't OR a condition on a joined
-  // table against one on the base table in a single request) — not worth
-  // building for a list this size. Flagged here rather than silently
-  // left unexplained.
-  const filteredOffers = offers.filter((o) =>
-    !q || o.title?.toLowerCase().includes(q) || o.brand_partners?.name?.toLowerCase().includes(q) || o.description?.toLowerCase().includes(q)
-  );
+  // Offers: real server-side, indexed search results (searchedOffers,
+  // populated by the debounced effect above — a genuine cross-table search
+  // over brand_offers.title/description and brand_partners.name via the new
+  // search_offer_ids() RPC) once actively searching, instead of the
+  // client-side .filter().includes() this used before.
+  const filteredOffers = isSearching ? searchedOffers : offers;
 
   const recommended = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
     ? filteredGatherings
@@ -605,7 +604,21 @@ export default function DiscoverHubScreen({ navigation }) {
             </>
           )}
 
-          {showPerks && offersToShow.length > 0 && (
+          {showPerks && isSearching && loadingSearch && (
+            <>
+              <Text style={styles.sectionHeader}>Perks</Text>
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+            </>
+          )}
+
+          {showPerks && isSearching && !loadingSearch && offersToShow.length === 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Perks</Text>
+              <Text style={styles.emptyText}>No perks match "{searchQuery.trim()}".</Text>
+            </>
+          )}
+
+          {showPerks && !(isSearching && loadingSearch) && offersToShow.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
               {offersToShow.map((o) => (

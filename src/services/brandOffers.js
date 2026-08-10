@@ -86,6 +86,64 @@ export async function getActiveOffers(myLat = null, myLng = null) {
   });
 }
 
+// Real, indexed, server-side search across brand_offers.title/description
+// AND brand_partners.name — closes the "non-indexed offers search" gap
+// deliberately left out of the Aug 9 gatherings/communities search pass
+// (see CLAUDE.md) because it's a genuine cross-table search PostgREST's
+// .or() can't express in one request; search_offer_ids() (in
+// 20260809_offers_indexed_search.sql) does the real join+ILIKE server-side,
+// backed by trigram GIN indexes on all three columns. Reuses the exact same
+// target-interest and nearby-radius filtering getActiveOffers() already
+// applies, so a search result can never surface an offer plain browse would
+// have excluded.
+export async function searchOffers(queryText, myLat = null, myLng = null) {
+  const term = (queryText ?? '').trim();
+  if (!term) return [];
+  // Escape ILIKE's own wildcard characters so a literal % or _ typed by the
+  // user is matched literally, not treated as a wildcard — same convention
+  // searchGatherings()/searchPublicCommunities() already use.
+  const escaped = term.replace(/[%_]/g, '\\$&');
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+
+  let myInterests = [];
+  if (myId) {
+    const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', myId).single();
+    myInterests = myProfile?.interests ?? [];
+  }
+
+  let nearbyOfferIds = null;
+  if (myLat != null && myLng != null) {
+    const { data: nearby } = await supabase.rpc('get_nearby_offer_ids', { my_lat: myLat, my_lng: myLng, radius_miles: 50 });
+    nearbyOfferIds = new Set((nearby ?? []).map((n) => n.id));
+  }
+
+  const { data: idRows, error: idError } = await supabase.rpc('search_offer_ids', { query_text: escaped });
+  if (idError) {
+    console.error('search_offer_ids error', idError);
+    return [];
+  }
+  const ids = (idRows ?? []).map((r) => r.id);
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('brand_offers')
+    .select('*, brand_partners(name, logo_url, description)')
+    .in('id', ids)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('searchOffers error', error);
+    return [];
+  }
+
+  return (data ?? []).filter((offer) => {
+    if (nearbyOfferIds !== null && !nearbyOfferIds.has(offer.id)) return false;
+    if (!offer.target_interest_tag) return true;
+    return myInterests.some((i) => i.toLowerCase() === offer.target_interest_tag.toLowerCase());
+  });
+}
+
 // Every nearby active business, not just ones currently running an offer —
 // brand_partners' own RLS ("Anyone can view active partners") already makes
 // active=true rows fully public, same justification GatheringsMapView's own

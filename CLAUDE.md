@@ -4,6 +4,75 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 10 2026 — item 5's second half: indexed offers search — DONE
+
+Asked directly to do the second half of item 5 (the piece deliberately skipped in the prior
+pass below as "not actually small") — server-side, indexed search over `brand_offers.title`/
+`description` **and** `brand_partners.name`. This genuinely needed a new Postgres function, not
+just a client-side wiring change: PostgREST's `.or()` can't express a condition against a joined
+table (`brand_partners.name`) alongside one on the base table (`brand_offers.title`/
+`description`) in a single request — the same limitation `DiscoverHubScreen.js`'s own existing
+comment already documented when this was originally left client-side.
+
+- **`20260809_offers_indexed_search.sql`**: `pg_trgm` (already enabled, re-declared
+  `if not exists` for this migration's own self-containment) plus three new trigram GIN indexes
+  — `brand_offers.title`, `brand_offers.description`, `brand_partners.name`. New
+  `search_offer_ids(query_text)` SECURITY DEFINER function — a real join
+  (`brand_offers` left joined to `brand_partners` on `partner_id`, same shape
+  `get_nearby_offer_ids()` already uses) filtered by the exact same base predicate
+  `getActiveOffers()` already applies (`active = true`, `gathering_id is null`, not expired) so a
+  search result can never surface an offer plain browse would have excluded. Granted to
+  `authenticated` only, revoked from `public`/`anon`.
+- **`searchOffers(queryText, myLat, myLng)`** in `services/brandOffers.js` — same
+  ILIKE-wildcard-escaping convention as `searchGatherings()`/`searchPublicCommunities()`, calls
+  the new RPC to get matching ids, then a second `.in('id', ids)` select for full row data (same
+  "narrow via RPC, fetch full rows after" two-step shape those two functions already use), then
+  applies the identical target-interest and nearby-radius filtering `getActiveOffers()` already
+  does — so search and browse can never disagree on what a given offer's visibility should be.
+- **`DiscoverHubScreen.js`**: the old client-side `offers.filter(o => o.title...includes(q) ||
+  ...)` substring check is gone. New `searchedOffers` state, populated by the same debounced
+  (350ms, 2-character minimum) effect that already calls `searchGatherings`/
+  `searchPublicCommunities`, now also calling `searchOffers` in the same `Promise.all` (passing
+  `userLocation`, already tracked in state from the existing Places-search effect). `filteredOffers`
+  now reads from `searchedOffers` while actively searching, the untouched full `offers` list
+  otherwise — same pattern the gatherings/communities sections already use. Added the same
+  loading-spinner + honest `No perks match "..."` empty state to the Perks section that
+  gatherings/communities already had, closing the one inconsistency that existed between them
+  (Perks previously just silently rendered nothing while searching, no loading/empty feedback at
+  all).
+- **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+  grants (`authenticated` can execute, `anon` correctly cannot — direct `set role anon` call
+  rejected with a real permission-denied error) and all three indexes exist. Real test with a
+  disposable partner/offer pair (`ZzxSearchVerifyPartner` / `Ordinary Title` / `Nothing special`
+  description): a search for the **partner name** correctly matched the offer (the actual
+  cross-table case this fix exists for — the old client-side filter could already do this, but
+  nothing server-side could), searches for the title and the description each independently
+  matched, a non-matching term correctly returned zero rows, and — one predicate at a time —
+  confirmed an inactive offer, an expired offer, and a gathering-attached offer are each
+  correctly excluded from search results, matching `getActiveOffers()`'s own base filter exactly.
+  Confirmed via `EXPLAIN` that the query plan is a real join, not a coincidental correct answer;
+  at today's real production row count (0 offers at rest, 1 pre-existing partner) the planner
+  correctly still prefers a sequential scan over the new index — the identical, already-documented,
+  expected-at-this-scale caveat noted in the sibling `20260809_indexed_text_search.sql`. All test
+  rows deleted afterward; confirmed production back to its exact pre-test baseline (0 offers, 1
+  partner).
+- **Verified via a real from-scratch migration replay**, per this file's migration-discipline
+  rule: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and
+  recreated an empty `public` schema, patched the two known image-version gaps, ran the full
+  `supabase/migrations/` folder in order (`00000000000000_baseline.sql` through this pass's own
+  `20260809_offers_indexed_search.sql`, 7 files total) — exit 0, all applied cleanly, confirmed
+  the new function and all three trigram indexes exist in the freshly-rebuilt database
+  afterward. Hit the exact same container-restart timing issue this file has already documented
+  once before (`pg_isready` succeeding mid-way through the image's own internal init/restart
+  cycle, causing the schema reset to get wiped when the container restarted) — resolved the same
+  way already prescribed here: waited for Docker's own `healthy` health-check status instead of
+  just `pg_isready`, then redid the reset. Container removed afterward.
+- Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
+  was an edit to two existing files plus one new migration, no new client files).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through — next session should confirm typing a business name (not just an offer title) into
+  Discover's search box on a real device actually surfaces that business's perk.
+
 ## Aug 9 2026 — item 5 of the prioritized list: ChemistryDiaryListScreen profile-entry-point gap — DONE (half of it — see scope note)
 
 Asked directly to do item 5 from the prioritized list below, if small. It's actually two
@@ -19,15 +88,14 @@ one was built:
   sourced from the already-loaded `profile.display_name` — no new query), placed right under the
   existing Add Friend button, shown for any non-own profile (matches this being a personal
   reflection tool with no friendship gate on the chat entry point either, so none was added here).
-- **Non-indexed offers search — deliberately NOT done, not actually small.** This is the same
-  gap already flagged and deliberately left in the Aug 9 "second AI's post-refresh review"
-  section below: fixing it for real needs a genuine cross-table search (`brand_offers.title`/
-  `description` **and** `brand_partners.name`) that PostgREST's `.or()` can't express in one
-  request across a join — it would need a new Postgres function, not just an index or a client
-  wiring change. That's a real, if small-in-user-impact, schema change — out of scope for "if
-  small," and this app's real number of business partners stays small enough that the cost of
-  leaving it client-side-filtered is low. Left exactly as previously flagged, not silently
-  attempted or dropped.
+- **Non-indexed offers search — deliberately NOT done in this pass, not actually small.** This
+  is the same gap already flagged and deliberately left in the Aug 9 "second AI's post-refresh
+  review" section below: fixing it for real needs a genuine cross-table search
+  (`brand_offers.title`/`description` **and** `brand_partners.name`) that PostgREST's `.or()`
+  can't express in one request across a join — it would need a new Postgres function, not just
+  an index or a client wiring change. That's a real, if small-in-user-impact, schema change —
+  out of scope for "if small" at the time this bullet was written. **Built the next day, once
+  asked for directly — see the "Aug 10 2026 — item 5's second half" section above.**
 - Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, this
   was an edit to an existing screen only).
 - **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
