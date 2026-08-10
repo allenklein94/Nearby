@@ -117,9 +117,19 @@ restart never loses more than one piece:
    files) with `psql -v ON_ERROR_STOP=1` — exit 0 on every file, both functions' bodies
    confirmed to contain the new push logic in the freshly-rebuilt database. Container removed.
    No client files touched, so no `npx expo export` needed for this step.
-3. **Client** — expand `BusinessPartnerApplyScreen.js`'s form with the new fields (category
-   picker, website/phone/address, feature checkboxes → `requested_features`). Pure client
-   change once step 1 is live.
+3. **Client — DONE.** `BusinessPartnerApplyScreen.js` expanded with the new fields: a category
+   chip picker (`food_drink`/`fitness_wellness`/`retail_shopping`/`arts_entertainment`/
+   `professional_services`/`other` — a small, reasonable set introduced for this pass since no
+   business-category convention existed anywhere in this codebase to reuse, distinct from
+   gathering `interest_tag`s), website/phone/address text inputs (all optional, matching the
+   existing description/contact-info fields' own optional convention), and a "What would you
+   like to offer?" checkbox group → `requested_features` — four real, honest options mapping to
+   actual capabilities an approved partner already has in this app (create offers/perks, host
+   gatherings, sponsor a community, just get listed), not invented feature names. The insert
+   now also specifically catches a `23505` (the new partial-unique-index violation from step 1)
+   and shows an honest "you already have a pending application" message instead of a raw
+   Postgres error. Verified via a full `npx expo export --platform ios` — clean, 1851 modules
+   (unchanged, edit to one existing file only).
 4. **Client** — new lightweight applicant-facing "My Application" status screen (reuses the
    already-existing, currently-unused "Users can view their own requests" SELECT policy), plus
    the conditional swap in `SettingsScreen.js` (pending/denied → status screen, not the bare
