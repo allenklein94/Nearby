@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-5 and 7 DONE, Phase 6 (Inbox) still next, Phase 8 last
+## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-7 DONE, Phase 8 (Weekly Recap ↔ Momentum) last
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -185,6 +185,46 @@ phase exists in the build order per the user's own explicit sequencing, to be re
 Phases 1-5 land in case anything downstream (e.g. Phase 2's new "Your Plans" section) creates a
 fresh overlap with Activity's "⏰ Upcoming" group that wasn't there before. Not pre-emptively
 built against a gap that hasn't been confirmed.
+
+**Phase 6 — DONE.** Once Phase 1-4's "Your Plans" section actually landed on Home, the flagged
+overlap became real and concrete rather than hypothetical, exactly as this phase anticipated —
+Activity's "⏰ Upcoming" group (previously: any approved/hosted gathering in the next 24h) was
+showing the same soonest-commitment fact Home's "Your Plans" now already owns in fuller form.
+Surfaced this explicitly to the user (per this section's own "not assumed away" note) rather
+than silently resolving it either direction. **User's answer, given directly, not to be
+re-litigated**: neither remove the group nor leave it unchanged — give the two surfaces
+genuinely different jobs instead of duplicating the same information twice. Home's "Your Plans"
+is the one canonical place for *every* upcoming commitment regardless of timing ("what's on my
+calendar?"); Activity's "Upcoming" becomes a same-day nudge only ("what needs my attention right
+now?") — and explicitly should never become a second calendar or duplicate the full gathering
+card.
+- `getUpcomingReminders()` (`services/gatherings.js`) — window narrowed from 24h to ~12h (both
+  the attending and hosting queries' `.lte('scheduled_at', ...)` bound), with a new comment
+  stating the rule plainly so a future session doesn't quietly widen it back out. Already
+  correctly suppressed the whole group when empty (`reminders.length > 0` gate) — no new
+  suppression logic needed, just a narrower window feeding that same existing gate.
+- `ActivityScreen.js`'s "⏰ Upcoming" rows — still deliberately lightweight (title, role, real
+  `formatTimeUntil()` line — "in 2 hours" style), **not** expanded into a duplicate of
+  `GatheringDetailScreen`'s full card, per the user's own explicit "don't duplicate the full
+  gathering card/details" instruction. Made genuinely actionable instead: each row is now a real
+  `TouchableOpacity` navigating to `GatheringDetail` (was a plain non-interactive `View` before
+  this pass — tapping did nothing), with a small "View gathering →" link line making that
+  tap-through obvious rather than implicit.
+- **Deliberately not built**: a location/venue line on each row (the user's own illustrative
+  mockup showed one, "📍 Downtown Field") — checked the real `gatherings` schema first rather
+  than fabricating one: there's no plain address/venue-name column, only `area`/`wide_area`
+  (fuzzed text, unused by any current screen) and `precise_lat/lng` (private, host/attendee-only
+  coordinates with no reverse-geocoded label anywhere in this codebase). Adding a real location
+  line would need either a new field or a new reverse-geocode call — out of scope for a same-day
+  nudge whose one real job, per the user's own framing, is a time cue plus a way to jump to the
+  real detail screen for anything else.
+- Verified via a full `npx expo export --platform ios` — clean, 1854 modules (unchanged, edits
+  to two existing files only).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through — next session should confirm the Upcoming group genuinely disappears when nothing
+  is within ~12h (not just visually empty, actually absent), that it correctly still fires for a
+  gathering the caller is hosting as well as one they're attending, and that tapping a row lands
+  cleanly on that gathering's real `GatheringDetail`.
 
 **Phase 7 — Consolidate Business entry points.** Collapse the 4 "my own business" entry points
 down to 1: Profile shows a single "Business" row (if `managesBusiness`) or "Become a Business
@@ -370,12 +410,11 @@ elsewhere on this screen for "More Photos"/"Prompts"/"Achievements" — no new s
   4-tile row, and that Billing/Emergency Contacts are still reachable (Settings-only) with no
   dead link left behind on Profile.
 
-**Next**: Phase 6 (Clean Inbox) — per this plan's own item-7 verification, no known gap exists
-today; this phase is a check-and-confirm pass (and a chance to resolve the one explicitly-
-flagged-but-undecided question about Activity's "⏰ Upcoming" group vs. Home's now-live "Your
-Plans" section), not a rebuild. Not started. **Phase 7 (Business consolidation) was built out of
-order — see its own status note above — and is now DONE; Phase 8 (Weekly Recap ↔ Momentum) is
-the only phase left besides Phase 6.**
+**Next**: Phase 8 (Weekly Recap ↔ Momentum merge) — the only phase left. Phases 6 and 7 are both
+now DONE (see their own status notes above; Phase 7 was built out of the stated order during a
+restart, then Phase 6 was completed afterward once its own explicitly-flagged decision —
+Activity's "⏰ Upcoming" group vs. Home's "Your Plans" — was put to the user directly and
+resolved). Not started.
 
 ## Detailed UI/IA documentation for external-AI review — DONE
 

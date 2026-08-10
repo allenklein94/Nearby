@@ -52,8 +52,12 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   const [friendRequestPhotoUrls, setFriendRequestPhotoUrls] = useState({});
   const [socialInvites, setSocialInvites] = useState([]);
 
-  // Upcoming — gatherings starting in the next 24 hours (formerly
-  // Inbox's "⏰" tab).
+  // Upcoming — a same-day nudge, not a second calendar. Home's own
+  // "Your Plans" section is the canonical place for every upcoming
+  // commitment regardless of when it is; this group only ever shows
+  // gatherings starting within the next ~12h (see getUpcomingReminders'
+  // own comment) and renders nothing at all when there's nothing that
+  // near-term — an attention surface, not a duplicate of Home's list.
   const [reminders, setReminders] = useState([]);
 
   const groupOrder = initialSubSection && DEFAULT_GROUP_ORDER.includes(initialSubSection)
@@ -394,12 +398,19 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
         <View key="reminders" style={styles.group}>
           <Text style={styles.groupHeader}>⏰ Upcoming ({reminders.length})</Text>
           {reminders.map((item) => (
-            <View key={item.id} style={styles.row}>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.row}
+              onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+              accessibilityLabel={`${item.title}, ${formatTimeUntil(item.scheduledAt)}`}
+              accessibilityRole="button"
+            >
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowTitle}>{item.title}</Text>
                 <Text style={styles.rowSubtitle}>{item.role} · {formatTimeUntil(item.scheduledAt)}</Text>
+                <Text style={styles.viewLink}>View gathering →</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       );
@@ -576,6 +587,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   lockIconSmall: { position: 'absolute', left: 16, top: 16, fontSize: 18 },
   rowTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   rowSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  viewLink: { color: colors.primary, fontWeight: '700', fontSize: 12, marginTop: 4 },
   inlineButton: { backgroundColor: colors.primary, borderRadius: radius.full, width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   inlineButtonDone: { backgroundColor: colors.success },
   declineInlineButton: { backgroundColor: colors.surfaceElevated },

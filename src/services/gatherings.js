@@ -567,8 +567,12 @@ export async function getUpcomingReminders() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return [];
 
+  // Same-day nudge window (~12h), not a general "upcoming plans" list —
+  // Home's "Your Plans" section already owns the full, un-time-boxed view
+  // of every upcoming commitment. This is Activity's own narrower job:
+  // "what needs my attention right now," not a second calendar.
   const now = new Date();
-  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const in12h = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
   const { data: attending } = await supabase
     .from('gathering_interest')
@@ -576,14 +580,14 @@ export async function getUpcomingReminders() {
     .eq('user_id', myId)
     .eq('status', 'approved')
     .gte('gatherings.scheduled_at', now.toISOString())
-    .lte('gatherings.scheduled_at', in24h.toISOString());
+    .lte('gatherings.scheduled_at', in12h.toISOString());
 
   const { data: hosting } = await supabase
     .from('gatherings')
     .select('id, title, scheduled_at')
     .eq('host_id', myId)
     .gte('scheduled_at', now.toISOString())
-    .lte('scheduled_at', in24h.toISOString());
+    .lte('scheduled_at', in12h.toISOString());
 
   const attendingItems = (attending ?? []).map((a) => ({
     id: a.gatherings.id,
