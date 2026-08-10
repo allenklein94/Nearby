@@ -4,6 +4,159 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — PLAN ONLY, not started
+
+The user pasted a detailed UI-polish feedback doc (10 numbered items + a "5 I'd do first" list +
+a per-tab breakdown) aimed at making the app read as decisively-designed rather than
+feature-rich-but-noisy. **Before writing this plan, audited every one of the doc's 12 concrete
+claims directly against the actual current screens** (same standing rule as every other section
+in this file — a feedback doc, like an external audit, is a lead to verify, not ground truth to
+build on unchecked). The real picture is more mixed than the doc assumes: several of its asks
+are already built, one of its asks actively conflicts with an earlier deliberate decision in this
+same file, and a few are real, confirmed gaps. Ranked plan below reflects what's actually true,
+not the doc's own framing. **Nothing in this section has been built yet — plan only, written so
+a fresh session (post-restart) can pick it straight up.**
+
+**What's already true — don't rebuild these:**
+- **"Why am I seeing this" reason text (doc item 8) — already fully built.** Real signal-based
+  `getGatheringFitReasons()` (`services/gatherings.js`) renders on `GatheringDetailScreen.js`
+  ("Why this fits you"), `DiscoverHubScreen.js` ("Recommended For You"), and Home's Best Pick
+  card — real counts/interest-matches/distance/beginner-friendly signals, no fabrication. Nothing
+  to do here.
+- **CTA button specificity (doc item 3) — already mostly correct, and better than the doc's own
+  suggestion in one place.** `GatheringDetailScreen.js`'s join button is already dynamic —
+  "JOIN GATHERING" / "REQUEST TO JOIN" / "JOIN WAITLIST" depending on real state, not a generic
+  "Join". The doc's example weak/vague labels ("Explore", "Connect") don't exist anywhere as
+  actual button text — grepped, zero hits. Three small genuine stragglers found: plain "Join" on
+  `CommunitiesScreen.js:136` (community join button), plain "Create" on `FriendsScreen.js:418`
+  ("New Circle" modal submit), and "View" as an `Alert.alert` button on `GatheringsScreen.js:768`.
+  Small, bundle into whichever pass touches those files next, not worth a dedicated pass.
+- **Terminology consistency (doc item 10) — already true.** Zero hits for "Event"/"Hangout"
+  anywhere in `src/`. "Group" never means "Community" (every "Group Chat" hit refers to the real
+  chat feature shared by gatherings/communities, not a synonym drift). "Meetup" appears exactly
+  once as a quick-action chip label ("Breakfast Meetup," `timeContext.js:21`) — not a systemic
+  drift, not worth touching.
+- **Empty-state copy (doc item 7) — already largely aligned with the doc's own spirit.** Audited
+  every major empty state (`GatheringsScreen.js`, `DiscoverHubScreen.js`, `CommunitiesScreen.js`,
+  `InboxScreen.js`, `ActivityScreen.js`, `MatchesScreen.js`) — none say a bare "No X found."
+  Real examples already live: "Nothing happening nearby yet. Be the first to host something!",
+  "No public communities to discover right now — start your own!". **What wasn't verified**:
+  whether each of these has an actual tappable CTA button attached, or just inviting text with no
+  action — spot-check this during whatever pass touches each screen, don't assume either way.
+- **Invite visibility post-join/post-create (part of doc item 5) — already built close to the
+  doc's own mockup.** `GatheringHubScreen.js` shows a real "Want to bring someone?" prompt 2.2s
+  after joining (Invite a Friend / Share Link / Skip). `GatheringConfirmationScreen.js`
+  (post-create) shows "Your gathering is live!" with Share Gathering / Invite Connections. What's
+  **not** built: an Invite link visible next to the Join button *before* joining — invite only
+  ever appears after you're already in or hosting. Small, optional, see plan below.
+
+**Real, confirmed gaps — ranked by size and actual leverage, not the doc's own order:**
+
+1. **Home's structure — real, confirmed density problem, the single biggest one found.**
+   `HomeScreen.js` currently renders **up to 19 separate conditional sections** stacked on one
+   scroll, built up incrementally across many separate past sessions (each individually
+   justified when added, never redesigned as a whole) — greeting, opportunity line, insight line,
+   pending-invites banner, time-of-day quick actions, Happening Now, Social Forecast, Continue
+   Your Communities, perks banner, since-you-were-away, Friends' Activity, Upcoming Plans, a stat
+   card row, Best Pick, weekly recap, Trending, an empty-state fallback, a browse button, and a
+   FAB. No single "your next thing" hero exists — the closest is the conditional Best Pick card,
+   buried 14 sections down. No "because you like X/Y/Z" interest-chip section exists at all. This
+   is exactly the doc's core complaint, confirmed real. **Plan**: don't delete real signal (this
+   codebase's own standing convention is no fabricated numbers, and every one of these 19
+   sections is backed by a real query) — instead do a genuine hierarchy pass: promote whichever
+   of {Best Pick, next upcoming attending gathering, Happening Now} is most relevant to a real
+   single "Your next thing" hero at the very top, demote the rest into fewer, clearly-labeled
+   groups (a "because you're into..." row is new — needs a real interests-based query, not
+   fabricated), and cut or collapse whatever's left so the screen reads as prioritized instead of
+   stacked. This needs real screen time to do right — biggest single item in this plan.
+
+2. **Inbox's tab structure — real, confirmed structural gap.** Currently 5 tabs (Messages /
+   Requests / Invites / Reminders / Activity), not the doc's clean Messages/Activity split.
+   Messages already correctly includes gathering + community chats (chip row above the 1:1 list,
+   not "just 1:1" as the doc worried) — that part's already right. The real gap is Requests/
+   Invites/Reminders sitting as 3 separate top-level tabs instead of living inside one Activity
+   tab. **Plan**: collapse Requests/Invites/Reminders into sections *within* Activity (matching
+   the doc's "Activity: Invitations, Connection requests, Gathering updates..." model) rather than
+   deleting any of the underlying data/actions — every existing badge count and the `initialSection`
+   deep-link param (`InboxScreen.js`, already used by Home's pending-invites banner and others)
+   needs to keep working, just pointing at a sub-section instead of a top-level tab. Medium-size,
+   real navigation restructure, not a copy change.
+
+3. **Screen one-sentence subtitles (doc item 2) — real, but cheap.** `DiscoverHubScreen.js` and
+   `CreateHubScreen.js` already have one each ("What are you looking for?" / "What would you like
+   to do today?" — close to the doc's spirit already). `HomeScreen.js`, `InboxScreen.js`, and
+   `ProfileScreen.js` have none — `InboxScreen.js` doesn't even have a title. Add one line each,
+   matching the doc's own suggested tone. Do alongside #1/#2 above since it's the same screens.
+
+4. **Loading state strings (part of the "one subtle thing") — real, mechanical gap.** Zero
+   contextual loading strings exist anywhere — grepped for "Finding"/"Searching for"/"Loading
+   nearby", all zero hits. 86 bare `<ActivityIndicator>`s across `src/screens`, the large majority
+   with no text at all (only one generic literal "Loading..." found, `GatheringsScreen.js:1057`).
+   **Plan**: not a dedicated pass — swap in a real contextual string wherever a loading spinner is
+   touched by any other work in this plan (Home, Discover, Inbox), and do the rest opportunistically
+   rather than a mechanical find-replace across 86 unrelated call sites in one sitting.
+
+5. **First-time celebration moments (doc's "favorite polish idea") — real, additive gap.**
+   General celebration copy already exists and is good (`GatheringHubScreen.js`'s "You're In!
+   🎉", `GatheringConfirmationScreen.js`'s "Your gathering is live!", `MatchCelebrationModal.js`)
+   — but none of it is first-time-specific; it fires identically every time, not specially on a
+   user's actual first gathering/community/connection. Grepped for `isFirstGathering`/
+   `first_community`/etc. — zero hits, confirming this doesn't exist yet. **Plan**: this is
+   additive on top of already-good copy, not a rebuild — needs a real "is this genuinely the
+   caller's first one" check (a plain count query against data already fetched elsewhere in this
+   codebase, e.g. `hostedCount`/`communitiesCreated` already computed in `insights.js` — no new
+   schema), then swap in a one-time richer message on top of the existing celebration UI for
+   exactly that first real occurrence. Smallest item in this plan with real payoff.
+
+**A real, unresolved tension — flagging rather than silently picking a side, per this file's own
+standing rule about not silently overriding a previously deliberate decision:**
+
+6. **The doc's Create-screen ask (item 4) directly conflicts with Create 2.0's own deliberate
+   design** (see "Frictionless Gathering Creation Redesign" further below in this file — a real,
+   discussed-with-the-user decision, not an oversight). Create 2.0 deliberately made
+   `CreateHubScreen.js`'s primary surface an **8-tile activity grid** (Coffee/Dinner/Walk/Sports/
+   Games/Music/Volunteer/Something Else) specifically so a user doesn't have to answer "what
+   *type* of thing am I making" before getting to the actual activity — Community and Business
+   Partnership were deliberately demoted to a small secondary row *because* gathering-creation is
+   the dominant, most-common action this screen exists for. The new doc's ask — "What do you want
+   to create? 🎉 A Gathering / 👥 A Community / 🤝 Partner with a Business / ✨ Something Else" —
+   re-introduces exactly the top-level type-first choice Create 2.0 was built to remove. These
+   are two different, both-reasonable product philosophies (type-first clarity vs.
+   activity-first frictionlessness), not a bug in either. **Don't silently pick one** — next
+   session (or this one, if picked back up the same day) should surface this tension to the user
+   directly before touching `CreateHubScreen.js`, rather than assuming the newer doc automatically
+   overrides the earlier, deliberate, already-verified-live build. If the user does want the
+   type-first framing, the actual activity-tile grid doesn't need to be thrown away — it can
+   become the sub-picker *inside* "Start a Gathering," the same way `SUB_OPTIONS` (Dinner →
+   Pizza/Mexican/etc.) already nests one level deep today.
+
+**Smaller/optional, sequence last:**
+
+7. **Pre-join Invite link on `GatheringDetailScreen.js`** — currently invite only shows after
+   joining/hosting; doc's mockup implies it should sit near the Join button before that. Small,
+   genuinely optional (inviting someone to something you haven't joined yourself is a real UX
+   question worth a quick gut-check, not obviously correct) — do only if time remains after 1-5.
+8. **Visual density on `GatheringDetailScreen.js` itself** — confirmed up to 16 stacked sections
+   (hero, fit reasons, who's going, vibe, timeline, community perk, linked-community card,
+   organizer, Q&A, plus a bottom action panel with its own 5 state-dependent variants). Same
+   "grew feature-by-feature, never redesigned as a whole" problem as Home, but on this app's
+   single most heavily-built-out screen — real, but higher-risk to touch than Home, and better
+   sequenced *after* the Home hierarchy pass proves out an approach worth reusing here. Not
+   started.
+
+**Deliberately not re-litigated**: doc item 6 ("Inbox: don't make users figure out where
+something went — invite → Activity, accept → Messages → gathering chat") already matches current
+behavior exactly, confirmed by reading `InboxScreen.js`'s accept-invite handler — no gap, no plan
+needed. Doc's 5-tab-by-tab summary (Home/Discover/Create/Inbox/Profile purposes) is fully covered
+by items 1-3 above; not a separate work item.
+
+**Verification convention for whenever this gets built**: `npx expo export --platform ios` after
+each meaningful increment (matching every other pass in this file); for the Inbox restructure
+specifically, re-check every existing deep-link/`initialSection` caller into `InboxScreen.js`
+still lands correctly, not just that the new tab structure renders; no manual simulator/device
+run-through will be possible here either, same standing gap as everywhere else in this file — all
+of this is inherently visual/UX work, so that gap matters more for this section than most others.
+
 ## Aug 10 2026 — item 5's second half: indexed offers search — DONE
 
 Asked directly to do the second half of item 5 (the piece deliberately skipped in the prior
