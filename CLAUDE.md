@@ -170,17 +170,54 @@ increments as each piece lands, rather than batching the whole item at the end.
    Per the plan's own ranking, item 2 (Inbox's tab structure) is next up if continuing this
    whole plan.
 
-2. **Inbox's tab structure — real, confirmed structural gap.** Currently 5 tabs (Messages /
-   Requests / Invites / Reminders / Activity), not the doc's clean Messages/Activity split.
-   Messages already correctly includes gathering + community chats (chip row above the 1:1 list,
-   not "just 1:1" as the doc worried) — that part's already right. The real gap is Requests/
-   Invites/Reminders sitting as 3 separate top-level tabs instead of living inside one Activity
-   tab. **Plan**: collapse Requests/Invites/Reminders into sections *within* Activity (matching
-   the doc's "Activity: Invitations, Connection requests, Gathering updates..." model) rather than
-   deleting any of the underlying data/actions — every existing badge count and the `initialSection`
-   deep-link param (`InboxScreen.js`, already used by Home's pending-invites banner and others)
-   needs to keep working, just pointing at a sub-section instead of a top-level tab. Medium-size,
-   real navigation restructure, not a copy change.
+2. **Inbox's tab structure — DONE.** Was 5 top-level tabs (Messages / Requests / Invites /
+   Reminders / Activity); now the doc's clean 2-tab Messages/Activity split, with Requests/
+   Invites/Reminders living as real named sections *inside* Activity instead of being deleted.
+   Messages already correctly included gathering + community chats (chip row above the 1:1
+   list) — untouched by this pass.
+   - **`ActivityScreen.js`** (previously just a chronological notices/sightings/business-update
+     feed with friend requests interleaved in) gained three new real, named groups —
+     "🙋 Connection Requests" (pending `gathering_interest` rows for gatherings the caller
+     hosts, via `getAllPendingRequests()`/`approveInterest()` — moved here from Inbox's old
+     "Requests" tab), "🤝 Invitations" (pending friend requests + pending gathering/community
+     `social_invites`, combined — moved here from Inbox's old "Invites" tab, same
+     `getPendingFriendRequests()`/`getMyReceivedInvites()`/`respondToFriendRequest()`/
+     `respondToInvite()` calls, same accept/decline actions), and "⏰ Upcoming" (gatherings
+     starting in the next 24h via `getUpcomingReminders()` — moved here from Inbox's old "⏰"
+     tab) — rendered as the FlatList's `ListHeaderComponent`, above the existing interleaved
+     feed, each hidden entirely when empty (no fabricated "0 pending" placeholder). **Friend
+     requests were removed from the interleaved chronological feed** (they used to render there
+     via a `type: 'friend_request'` item, duplicating what the old Inbox "Invites" tab already
+     showed) — they now render exactly once, inside the new Invitations group, not twice across
+     two different parts of the same screen. Everything else about the interleaved feed
+     (notices/waves, crossed paths, business updates, premium gating, compatibility scoring,
+     notice-back) is unchanged.
+   - **`InboxScreen.js`** trimmed from 5 toggle buttons to 2 ("💬 Messages" / "🔔 Activity").
+     The Activity button's badge now shows the same real aggregate Home's own pending-invites
+     banner already uses (`getPendingInvitesCount()` — pending join requests + pending friend
+     requests + pending social invites, all real, no new query invented), replacing the two
+     separate per-tab counts the old "🙋 Requests (N)"/"🤝 Invites (N)" buttons showed.
+   - **`initialSection` deep-link kept working, now pointing at a sub-section instead of a
+     top-level tab**, per the plan's own requirement. Home's pending-invites banner still calls
+     `navigation.navigate('Matches', { initialSection: 'invitations' })` unchanged — Inbox now
+     resolves any non-`'messages'` value to the `'activity'` tab, and additionally passes a new
+     `initialSubSection` prop to `ActivityScreen` when the value is a recognized sub-value
+     (`'requests'|'invitations'|'reminders'`) — `ActivityScreen` reorders its three groups so
+     the requested one renders first, without hiding the other two (so the deep link "points at"
+     the right content without an added scroll-to/highlight animation, which wasn't built —
+     everything already renders at the top of the screen, above the fold, so reordering alone
+     gets the linked content to the top).
+   - `ActivityScreen.js` is also reachable standalone (RootNavigator's `Notices` route, used by
+     `ActivityBell.js`/cold-start push routing) — unaffected by this pass; `initialSubSection`
+     is optional and simply defaults to the standard group order there.
+   - Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, both
+     files already existed, this was edits only). **Not done yet, same standing gap as
+     everywhere in this file**: no manual device/simulator run-through — next session should
+     confirm: the Activity tab's badge count matches reality, each of the three new groups
+     renders/hides correctly and their accept/decline/approve actions still work, Home's
+     pending-invites banner still lands on Activity with the right group brought to the front,
+     and the standalone `Notices` route (reached via the activity bell or a cold-start push tap)
+     still renders correctly with no `initialSubSection` passed.
 
 3. **Screen one-sentence subtitles (doc item 2) — real, but cheap.** `DiscoverHubScreen.js` and
    `CreateHubScreen.js` already have one each ("What are you looking for?" / "What would you like

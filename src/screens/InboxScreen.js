@@ -1,28 +1,37 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import MatchesScreen from './MatchesScreen';
 import ActivityScreen from './ActivityScreen';
-import { getAllPendingRequests, approveInterest, getUpcomingReminders, getMyGatheringChats } from '../services/gatherings';
-import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
-import { getMyReceivedInvites, respondToInvite } from '../services/invites';
+import { getMyGatheringChats } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
-import { getSignedPhotoUrl } from '../services/photos';
+import { getPendingInvitesCount } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
+
+// Connection requests, invitations, and reminders used to be three
+// separate top-level tabs here — collapsed into real named sections
+// inside ActivityScreen itself (see that file's "Connection
+// Requests"/"Invitations"/"Upcoming" groups), matching a clean
+// Messages/Activity split. `initialSection` deep-links (e.g. Home's
+// pending-invites banner) still work — a value other than 'messages'
+// still lands on Activity, and a recognized sub-value additionally
+// brings that group to the front there instead of hiding the rest.
+const SUBSECTION_VALUES = ['requests', 'invitations', 'reminders'];
 
 // A thin wrapper, not a merge — Messages and Activity stay
 // completely separate, already-working screens underneath. This
 // just toggles which one renders, avoiding any risk to either
-// screen's real, complex internal logic (celebration modal,
-// premium gating, compatibility scoring, etc). Requests is new,
-// genuinely built from real pending gathering_interest rows across
-// every gathering you host, not a re-labeled version of something
-// else.
+// screen's real, complex internal logic (celebration modal, premium
+// gating, compatibility scoring, etc).
 export default function InboxScreen(props) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [section, setSection] = useState(props.route?.params?.initialSection ?? 'messages');
+  const initialParam = props.route?.params?.initialSection;
+  const [section, setSection] = useState(initialParam && initialParam !== 'messages' ? 'activity' : 'messages');
+  const [activitySubSection, setActivitySubSection] = useState(SUBSECTION_VALUES.includes(initialParam) ? initialParam : undefined);
+  const [groupChats, setGroupChats] = useState([]);
+  const [pendingCount, setPendingCount] = useState(0);
 
   // The tab navigator keeps InboxScreen mounted, so a fresh navigation into
   // it (e.g. from Home's pending-invites banner) with a new initialSection
@@ -30,73 +39,12 @@ export default function InboxScreen(props) {
   // applies on first mount. Re-applies only when the param itself changes,
   // so a manual tab switch afterward isn't overridden by a stale re-focus.
   useEffect(() => {
-    if (props.route?.params?.initialSection) {
-      setSection(props.route.params.initialSection);
+    const param = props.route?.params?.initialSection;
+    if (param) {
+      setSection(param !== 'messages' ? 'activity' : 'messages');
+      setActivitySubSection(SUBSECTION_VALUES.includes(param) ? param : undefined);
     }
   }, [props.route?.params?.initialSection]);
-  const [requests, setRequests] = useState([]);
-  const [photoUrls, setPhotoUrls] = useState({});
-  const [loadingRequests, setLoadingRequests] = useState(true);
-  const [invitations, setInvitations] = useState([]);
-  const [loadingInvitations, setLoadingInvitations] = useState(true);
-  const [socialInvites, setSocialInvites] = useState([]);
-  const [loadingSocialInvites, setLoadingSocialInvites] = useState(true);
-  const [reminders, setReminders] = useState([]);
-  const [loadingReminders, setLoadingReminders] = useState(true);
-  const [groupChats, setGroupChats] = useState([]);
-
-  const loadRequests = useCallback(async () => {
-    try {
-      const results = await getAllPendingRequests();
-      setRequests(results);
-      const urlEntries = await Promise.all(
-        results.map(async (r) => {
-          const path = r.profiles?.photo_url;
-          if (!path) return [r.id, null];
-          const url = await getSignedPhotoUrl(path);
-          return [r.id, url];
-        })
-      );
-      setPhotoUrls(Object.fromEntries(urlEntries));
-    } catch (e) {
-      // Without this, a failure here left the Requests section
-      // spinning forever, since setLoadingRequests(false) would
-      // never be reached.
-      console.error('loadRequests failed', e);
-    } finally {
-      setLoadingRequests(false);
-    }
-  }, []);
-  const loadInvitations = useCallback(async () => {
-    try {
-      const results = await getPendingFriendRequests();
-      setInvitations(results);
-    } catch (e) {
-      console.error('loadInvitations failed', e);
-    } finally {
-      setLoadingInvitations(false);
-    }
-  }, []);
-  const loadSocialInvites = useCallback(async () => {
-    try {
-      const results = await getMyReceivedInvites();
-      setSocialInvites(results);
-    } catch (e) {
-      console.error('loadSocialInvites failed', e);
-    } finally {
-      setLoadingSocialInvites(false);
-    }
-  }, []);
-  const loadReminders = useCallback(async () => {
-    try {
-      const results = await getUpcomingReminders();
-      setReminders(results);
-    } catch (e) {
-      console.error('loadReminders failed', e);
-    } finally {
-      setLoadingReminders(false);
-    }
-  }, []);
 
   const loadGroupChats = useCallback(async () => {
     try {
@@ -110,68 +58,25 @@ export default function InboxScreen(props) {
     }
   }, []);
 
+  // The same real aggregate Home's own pending-invites banner uses —
+  // pending join requests + pending friend requests + pending social
+  // invites — reused here for the Activity tab's badge rather than
+  // inventing a second count.
+  const loadPendingCount = useCallback(async () => {
+    try {
+      const count = await getPendingInvitesCount();
+      setPendingCount(count);
+    } catch (e) {
+      console.error('loadPendingCount failed', e);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
-      loadRequests();
-      loadInvitations();
-      loadSocialInvites();
-      loadReminders();
       loadGroupChats();
-    }, [loadRequests, loadInvitations, loadSocialInvites, loadReminders, loadGroupChats])
+      loadPendingCount();
+    }, [loadGroupChats, loadPendingCount])
   );
-
-  function formatTimeUntil(iso) {
-    const diffMs = new Date(iso).getTime() - Date.now();
-    const diffHours = Math.round(diffMs / (60 * 60 * 1000));
-    if (diffHours < 1) return 'starting soon';
-    if (diffHours === 1) return 'in 1 hour';
-    return `in ${diffHours} hours`;
-  }
-
-  async function handleApprove(request) {
-    try {
-      const result = await approveInterest(request.id);
-      if (result?.status === 'waitlisted') {
-        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
-      }
-      loadRequests();
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    }
-  }
-
-  async function handleRespondInvitation(invitation, accept) {
-    try {
-      await respondToFriendRequest(invitation.friendshipId, accept);
-      loadInvitations();
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    }
-  }
-
-  async function handleRespondSocialInvite(invite, accept) {
-    try {
-      await respondToInvite(invite.id, accept);
-      loadSocialInvites();
-      if (accept) {
-        const screen = invite.inviteType === 'gathering' ? 'GatheringDetail' : 'CommunityDetail';
-        const params = invite.inviteType === 'gathering'
-          ? { gatheringId: invite.targetId }
-          : { communityId: invite.targetId, communityName: invite.targetTitle };
-        props.navigation?.navigate(screen, params);
-      }
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    }
-  }
-
-  // Combined so the "Invites" tab reflects real invites of every kind
-  // this app actually has (friend requests + gathering/community
-  // invites), not just friend requests as before.
-  const combinedInvites = [
-    ...invitations.map((i) => ({ kind: 'friend', ...i })),
-    ...socialInvites.map((i) => ({ kind: 'social', ...i })),
-  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -186,46 +91,15 @@ export default function InboxScreen(props) {
           <Text style={[styles.toggleText, section === 'messages' && styles.toggleTextActive]}>💬 Messages</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.toggleButton, section === 'requests' && styles.toggleButtonActive]}
-          onPress={() => setSection('requests')}
-          accessibilityLabel={`Requests${requests.length > 0 ? `, ${requests.length} pending` : ''}`}
-          accessibilityRole="button"
-          accessibilityState={{ selected: section === 'requests' }}
-        >
-          <Text style={[styles.toggleText, section === 'requests' && styles.toggleTextActive]}>
-            🙋 Requests{requests.length > 0 ? ` (${requests.length})` : ''}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleButton, section === 'invitations' && styles.toggleButtonActive]}
-          onPress={() => setSection('invitations')}
-          accessibilityLabel={`Invites${combinedInvites.length > 0 ? `, ${combinedInvites.length} pending` : ''}`}
-          accessibilityRole="button"
-          accessibilityState={{ selected: section === 'invitations' }}
-        >
-          <Text style={[styles.toggleText, section === 'invitations' && styles.toggleTextActive]}>
-            🤝 Invites{combinedInvites.length > 0 ? ` (${combinedInvites.length})` : ''}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleButton, section === 'reminders' && styles.toggleButtonActive]}
-          onPress={() => setSection('reminders')}
-          accessibilityLabel={`Reminders${reminders.length > 0 ? `, ${reminders.length} upcoming` : ''}`}
-          accessibilityRole="button"
-          accessibilityState={{ selected: section === 'reminders' }}
-        >
-          <Text style={[styles.toggleText, section === 'reminders' && styles.toggleTextActive]}>
-            ⏰{reminders.length > 0 ? ` (${reminders.length})` : ''}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[styles.toggleButton, section === 'activity' && styles.toggleButtonActive]}
           onPress={() => setSection('activity')}
-          accessibilityLabel="Activity"
+          accessibilityLabel={`Activity${pendingCount > 0 ? `, ${pendingCount} pending` : ''}`}
           accessibilityRole="button"
           accessibilityState={{ selected: section === 'activity' }}
         >
-          <Text style={[styles.toggleText, section === 'activity' && styles.toggleTextActive]}>🔔 Activity</Text>
+          <Text style={[styles.toggleText, section === 'activity' && styles.toggleTextActive]}>
+            🔔 Activity{pendingCount > 0 ? ` (${pendingCount})` : ''}
+          </Text>
         </TouchableOpacity>
       </View>
       <View style={{ flex: 1 }}>
@@ -258,124 +132,7 @@ export default function InboxScreen(props) {
             <MatchesScreen {...props} />
           </>
         )}
-        {section === 'activity' && <ActivityScreen {...props} />}
-        {section === 'invitations' && (
-          <FlatList
-            data={combinedInvites}
-            keyExtractor={(item) => (item.kind === 'friend' ? `friend-${item.friendshipId}` : `social-${item.id}`)}
-            contentContainerStyle={{ padding: spacing.lg }}
-            refreshing={loadingInvitations || loadingSocialInvites}
-            onRefresh={() => { loadInvitations(); loadSocialInvites(); }}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>🤝</Text>
-                <Text style={styles.emptyText}>No pending invitations right now.</Text>
-              </View>
-            }
-            renderItem={({ item }) => item.kind === 'friend' ? (
-              <View style={styles.requestRow}>
-                <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.requestName}>{item.display_name}</Text>
-                  <Text style={styles.requestSubtitle}>wants to be friends</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => handleRespondInvitation(item, true)}
-                  accessibilityLabel={`Accept ${item.display_name}'s friend request`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.approveButtonText}>Accept</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.requestRow}>
-                <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.requestName}>{item.inviterName}</Text>
-                  <Text style={styles.requestSubtitle}>
-                    invited you to {item.inviteType === 'gathering' ? 'a gathering' : 'a community'}: {item.targetTitle}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.declineButton}
-                  onPress={() => handleRespondSocialInvite(item, false)}
-                  accessibilityLabel={`Decline invite to ${item.targetTitle}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.declineButtonText}>Decline</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => handleRespondSocialInvite(item, true)}
-                  accessibilityLabel={`Accept invite to ${item.targetTitle}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.approveButtonText}>Accept</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        )}
-        {section === 'requests' && (
-          <FlatList
-            data={requests}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: spacing.lg }}
-            refreshing={loadingRequests}
-            onRefresh={loadRequests}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>🙋</Text>
-                <Text style={styles.emptyText}>No pending requests right now.</Text>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <View style={styles.requestRow}>
-                {photoUrls[item.id] ? (
-                  <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
-                ) : (
-                  <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.requestName}>{item.profiles?.display_name}</Text>
-                  <Text style={styles.requestSubtitle}>wants to join {item.gatherings?.title}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.approveButton}
-                  onPress={() => handleApprove(item)}
-                  accessibilityLabel={`Approve ${item.profiles?.display_name}'s request`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.approveButtonText}>Approve</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        )}
-        {section === 'reminders' && (
-          <FlatList
-            data={reminders}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: spacing.lg }}
-            refreshing={loadingReminders}
-            onRefresh={loadReminders}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyEmoji}>⏰</Text>
-                <Text style={styles.emptyText}>Nothing coming up in the next 24 hours.</Text>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <View style={styles.requestRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.requestName}>{item.title}</Text>
-                  <Text style={styles.requestSubtitle}>{item.role} · {formatTimeUntil(item.scheduledAt)}</Text>
-                </View>
-              </View>
-            )}
-          />
-        )}
+        {section === 'activity' && <ActivityScreen {...props} initialSubSection={activitySubSection} />}
       </View>
     </SafeAreaView>
   );
@@ -388,20 +145,8 @@ const getStyles = (colors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, alignItems: 'center',
   },
   toggleButtonActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  toggleText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  toggleText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   toggleTextActive: { color: '#fff' },
-  requestRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
-  },
-  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.md },
-  avatarPlaceholder: { backgroundColor: colors.surfaceElevated },
-  requestName: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
-  requestSubtitle: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  approveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
-  approveButtonText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  declineButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginRight: spacing.xs },
-  declineButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
   groupChatsRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
   groupChatChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
@@ -409,7 +154,4 @@ const getStyles = (colors) => StyleSheet.create({
   },
   groupChatChipIcon: { fontSize: 14, marginRight: 4 },
   groupChatChipText: { color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
-  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
-  emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
-  emptyText: { color: colors.textTertiary, textAlign: 'center' },
 });

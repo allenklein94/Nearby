@@ -9,6 +9,8 @@ import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
+import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
+import { getMyReceivedInvites, respondToInvite } from '../services/invites';
 import SkeletonGridCard from '../components/SkeletonGridCard';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -16,10 +18,17 @@ import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
-// friend requests, and other activity all interleaved by recency
-// into one chronological list, rather than scattered across
-// separate places to check.
-export default function ActivityScreen({ navigation }) {
+// and other activity all interleaved by recency into one
+// chronological list, rather than scattered across separate places
+// to check.
+// Real named sections — Connection Requests, Invitations, Upcoming —
+// matching the doc's "Activity: Invitations, Connection requests,
+// Gathering updates..." model. `groupOrder` lets a caller (Inbox's
+// initialSection deep-link) bring one to the front without hiding the
+// others — every group still renders, just reordered.
+const DEFAULT_GROUP_ORDER = ['requests', 'invitations', 'reminders'];
+
+export default function ActivityScreen({ navigation, initialSubSection }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -31,6 +40,25 @@ export default function ActivityScreen({ navigation }) {
   const [compatScores, setCompatScores] = useState({});
   const [noticedBackIds, setNoticedBackIds] = useState({});
   const [respondedFriendIds, setRespondedFriendIds] = useState({});
+
+  // Connection Requests — pending gathering_interest rows for
+  // gatherings the caller hosts (formerly Inbox's "Requests" tab).
+  const [connectionRequests, setConnectionRequests] = useState([]);
+  const [requestPhotoUrls, setRequestPhotoUrls] = useState({});
+
+  // Invitations — pending friend requests + pending gathering/community
+  // invites, combined (formerly Inbox's "Invites" tab).
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [friendRequestPhotoUrls, setFriendRequestPhotoUrls] = useState({});
+  const [socialInvites, setSocialInvites] = useState([]);
+
+  // Upcoming — gatherings starting in the next 24 hours (formerly
+  // Inbox's "⏰" tab).
+  const [reminders, setReminders] = useState([]);
+
+  const groupOrder = initialSubSection && DEFAULT_GROUP_ORDER.includes(initialSubSection)
+    ? [initialSubSection, ...DEFAULT_GROUP_ORDER.filter((g) => g !== initialSubSection)]
+    : DEFAULT_GROUP_ORDER;
 
   const load = useCallback(async () => {
     const premiumStatus = await isPremium().catch(() => false);
@@ -82,14 +110,6 @@ export default function ActivityScreen({ navigation }) {
       raw: s,
     }));
 
-    const pendingFriends = await getPendingFriendRequests().catch(() => []);
-    const friendRequestItems = pendingFriends.map((f) => ({
-      type: 'friend_request',
-      key: `friend-${f.friendshipId}`,
-      timestamp: new Date().toISOString(),
-      raw: f,
-    }));
-
     const businessUpdates = await getFollowedBusinessUpdates().catch(() => []);
     const businessUpdateItems = businessUpdates.map((u) => ({
       type: 'business_update',
@@ -98,7 +118,10 @@ export default function ActivityScreen({ navigation }) {
       raw: u,
     }));
 
-    const allItems = [...noticeItems, ...sightingItems, ...friendRequestItems, ...businessUpdateItems].sort(
+    // Friend requests are no longer interleaved into this chronological
+    // feed — they now render in the "Invitations" group below instead,
+    // alongside gathering/community invites, so they aren't shown twice.
+    const allItems = [...noticeItems, ...sightingItems, ...businessUpdateItems].sort(
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
 
@@ -106,7 +129,7 @@ export default function ActivityScreen({ navigation }) {
 
     const urlEntries = await Promise.all(
       allItems.map(async (item) => {
-        const path = item.type === 'friend_request' ? item.raw.photo_url : item.raw.profiles?.photo_url;
+        const path = item.raw.profiles?.photo_url;
         if (!path) return [item.key, null];
         const url = await getSignedPhotoUrl(path);
         return [item.key, url];
@@ -120,17 +143,101 @@ export default function ActivityScreen({ navigation }) {
     setLoading(false);
   }, []);
 
+  const loadConnectionRequests = useCallback(async () => {
+    try {
+      const results = await getAllPendingRequests();
+      setConnectionRequests(results);
+      const urlEntries = await Promise.all(
+        results.map(async (r) => {
+          const path = r.profiles?.photo_url;
+          if (!path) return [r.id, null];
+          const url = await getSignedPhotoUrl(path);
+          return [r.id, url];
+        })
+      );
+      setRequestPhotoUrls(Object.fromEntries(urlEntries));
+    } catch (e) {
+      console.error('loadConnectionRequests failed', e);
+    }
+  }, []);
+
+  const loadInvitations = useCallback(async () => {
+    try {
+      const [friends, invites] = await Promise.all([getPendingFriendRequests(), getMyReceivedInvites()]);
+      setFriendRequests(friends);
+      setSocialInvites(invites);
+      const urlEntries = await Promise.all(
+        friends.map(async (f) => {
+          if (!f.photo_url) return [f.friendshipId, null];
+          const url = await getSignedPhotoUrl(f.photo_url);
+          return [f.friendshipId, url];
+        })
+      );
+      setFriendRequestPhotoUrls(Object.fromEntries(urlEntries));
+    } catch (e) {
+      console.error('loadInvitations failed', e);
+    }
+  }, []);
+
+  const loadReminders = useCallback(async () => {
+    try {
+      const results = await getUpcomingReminders();
+      setReminders(results);
+    } catch (e) {
+      console.error('loadReminders failed', e);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+      loadConnectionRequests();
+      loadInvitations();
+      loadReminders();
+    }, [load, loadConnectionRequests, loadInvitations, loadReminders])
   );
 
   async function onRefresh() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await load();
+    await Promise.all([load(), loadConnectionRequests(), loadInvitations(), loadReminders()]);
     setRefreshing(false);
+  }
+
+  function formatTimeUntil(iso) {
+    const diffMs = new Date(iso).getTime() - Date.now();
+    const diffHours = Math.round(diffMs / (60 * 60 * 1000));
+    if (diffHours < 1) return 'starting soon';
+    if (diffHours === 1) return 'in 1 hour';
+    return `in ${diffHours} hours`;
+  }
+
+  async function handleApproveConnectionRequest(request) {
+    try {
+      const result = await approveInterest(request.id);
+      if (result?.status === 'waitlisted') {
+        Alert.alert('Gathering full', "This gathering is already at capacity — they've been added to the waitlist instead.");
+      }
+      loadConnectionRequests();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  async function handleRespondSocialInvite(invite, accept) {
+    try {
+      await respondToInvite(invite.id, accept);
+      loadInvitations();
+      if (accept) {
+        const screen = invite.inviteType === 'gathering' ? 'GatheringDetail' : 'CommunityDetail';
+        const params = invite.inviteType === 'gathering'
+          ? { gatheringId: invite.targetId }
+          : { communityId: invite.targetId, communityName: invite.targetTitle };
+        navigation.navigate(screen, params);
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
   }
 
   function compatibilityColor(score) {
@@ -140,10 +247,6 @@ export default function ActivityScreen({ navigation }) {
   }
 
   function handleCardPress(item) {
-    if (item.type === 'friend_request') {
-      navigation.navigate('ViewProfile', { userId: item.raw.id });
-      return;
-    }
     const userId = item.type === 'notice' ? item.raw.from_user : item.raw.otherUserId;
     if (premium || item.type === 'sighting') {
       navigation.navigate('ViewProfile', { userId });
@@ -171,11 +274,11 @@ export default function ActivityScreen({ navigation }) {
     }
   }
 
-  async function handleFriendRespond(item, accept) {
+  async function handleFriendRespond(friendReq, accept) {
     try {
-      await respondToFriendRequest(item.raw.friendshipId, accept);
-      setRespondedFriendIds((prev) => ({ ...prev, [item.key]: true }));
-      load();
+      await respondToFriendRequest(friendReq.friendshipId, accept);
+      setRespondedFriendIds((prev) => ({ ...prev, [friendReq.friendshipId]: true }));
+      loadInvitations();
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -189,6 +292,119 @@ export default function ActivityScreen({ navigation }) {
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${Math.floor(diffHours / 24)}d ago`;
   }
+
+  // Combined so "Invitations" reflects real invites of every kind this
+  // app actually has (friend requests + gathering/community invites).
+  const combinedInvites = [
+    ...friendRequests.filter((f) => !respondedFriendIds[f.friendshipId]).map((f) => ({ kind: 'friend', ...f })),
+    ...socialInvites.map((i) => ({ kind: 'social', ...i })),
+  ];
+
+  function renderGroup(groupName) {
+    if (groupName === 'requests' && connectionRequests.length > 0) {
+      return (
+        <View key="requests" style={styles.group}>
+          <Text style={styles.groupHeader}>🙋 Connection Requests ({connectionRequests.length})</Text>
+          {connectionRequests.map((item) => (
+            <View key={item.id} style={styles.row}>
+              {requestPhotoUrls[item.id] ? (
+                <Image source={{ uri: requestPhotoUrls[item.id] }} style={styles.rowAvatar} />
+              ) : (
+                <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.profiles?.display_name}</Text>
+                <Text style={styles.rowSubtitle}>wants to join {item.gatherings?.title}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={() => handleApproveConnectionRequest(item)}
+                accessibilityLabel={`Approve ${item.profiles?.display_name}'s request`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.textButtonLabel}>Approve</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    if (groupName === 'invitations' && combinedInvites.length > 0) {
+      return (
+        <View key="invitations" style={styles.group}>
+          <Text style={styles.groupHeader}>🤝 Invitations ({combinedInvites.length})</Text>
+          {combinedInvites.map((item) => item.kind === 'friend' ? (
+            <View key={`friend-${item.friendshipId}`} style={styles.row}>
+              {friendRequestPhotoUrls[item.friendshipId] ? (
+                <Image source={{ uri: friendRequestPhotoUrls[item.friendshipId] }} style={styles.rowAvatar} />
+              ) : (
+                <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.display_name}</Text>
+                <Text style={styles.rowSubtitle}>wants to be friends</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={() => handleFriendRespond(item, true)}
+                accessibilityLabel={`Accept ${item.display_name}'s friend request`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.textButtonLabel}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View key={`social-${item.id}`} style={styles.row}>
+              <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.inviterName}</Text>
+                <Text style={styles.rowSubtitle}>
+                  invited you to {item.inviteType === 'gathering' ? 'a gathering' : 'a community'}: {item.targetTitle}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.textButton, styles.declineTextButton]}
+                onPress={() => handleRespondSocialInvite(item, false)}
+                accessibilityLabel={`Decline invite to ${item.targetTitle}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.declineTextButtonLabel}>Decline</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={() => handleRespondSocialInvite(item, true)}
+                accessibilityLabel={`Accept invite to ${item.targetTitle}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.textButtonLabel}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    if (groupName === 'reminders' && reminders.length > 0) {
+      return (
+        <View key="reminders" style={styles.group}>
+          <Text style={styles.groupHeader}>⏰ Upcoming ({reminders.length})</Text>
+          {reminders.map((item) => (
+            <View key={item.id} style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.title}</Text>
+                <Text style={styles.rowSubtitle}>{item.role} · {formatTimeUntil(item.scheduledAt)}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    return null;
+  }
+
+  const hasAnyGroupContent = connectionRequests.length > 0 || combinedInvites.length > 0 || reminders.length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -223,58 +439,20 @@ export default function ActivityScreen({ navigation }) {
           keyExtractor={(item) => item.key}
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-          ListEmptyComponent={
+          ListHeaderComponent={hasAnyGroupContent ? (
+            <View style={{ marginBottom: spacing.md }}>
+              {groupOrder.map((groupName) => renderGroup(groupName))}
+            </View>
+          ) : null}
+          ListEmptyComponent={hasAnyGroupContent ? null : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔔</Text>
               <Text style={styles.emptyText}>
                 Nothing new yet — notices, crossed paths, and other activity will show up here.
               </Text>
             </View>
-          }
+          )}
           renderItem={({ item }) => {
-            if (item.type === 'friend_request') {
-              const f = item.raw;
-              const responded = respondedFriendIds[item.key];
-              return (
-                <TouchableOpacity
-                  style={styles.row}
-                  onPress={() => handleCardPress(item)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${f.display_name} sent a friend request`}
-                  accessibilityRole="button"
-                >
-                  {photoUrls[item.key] ? (
-                    <Image source={{ uri: photoUrls[item.key] }} style={styles.rowAvatar} />
-                  ) : (
-                    <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rowTitle}>🤝 {f.display_name} wants to be friends</Text>
-                  </View>
-                  {!responded && (
-                    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                      <TouchableOpacity
-                        style={styles.inlineButton}
-                        onPress={() => handleFriendRespond(item, true)}
-                        accessibilityLabel={`Accept ${f.display_name}'s friend request`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.inlineButtonText}>✓</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.inlineButton, styles.declineInlineButton]}
-                        onPress={() => handleFriendRespond(item, false)}
-                        accessibilityLabel={`Decline ${f.display_name}'s friend request`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.inlineButtonText}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            }
-
             if (item.type === 'business_update') {
               const u = item.raw;
               return (
@@ -398,4 +576,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   inlineButtonDone: { backgroundColor: colors.success },
   declineInlineButton: { backgroundColor: colors.surfaceElevated },
   inlineButtonText: { fontSize: 16 },
+  group: { marginBottom: spacing.md },
+  groupHeader: {
+    ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
+    letterSpacing: 0.5, marginBottom: spacing.sm,
+  },
+  textButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  textButtonLabel: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  declineTextButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginRight: spacing.xs },
+  declineTextButtonLabel: { color: colors.textSecondary, fontWeight: '700', fontSize: 12 },
 });
