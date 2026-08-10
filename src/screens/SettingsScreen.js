@@ -21,6 +21,30 @@ function toE164(rawInput) {
   return null;
 }
 
+// IA restructure round 3, Phase 6: regrouped into 6 named control-center
+// sections (Account / Preferences / Notifications / Privacy & Safety /
+// Business / Support), matching round 2 Phase 5's own "reuse every
+// existing row, add new headers, don't rebuild content" precedent —
+// every row below is the exact same content/handler as before, just
+// physically regrouped and relabeled. Two placements the plan itself
+// flagged as unresolved, and two gaps the plan's own text didn't
+// anticipate, resolved here (see CLAUDE.md's Phase 6 status note for the
+// full reasoning):
+// - "Connect" (Friends/Music Mode/Invite Friends) stays its own header,
+//   deliberately outside the 6 — it's product-feature access, not an
+//   app control, and doesn't map cleanly to any of the 6. "Offers &
+//   Perks" (previously under "Account & Billing", never addressed by the
+//   plan's own mapping) joins it for the same reason.
+// - "❤️ Relationship" moves from Safety into Connect — it's relationship
+//   tools/reflection, not a safety feature; Safety keeps only genuine
+//   safety rows.
+// - "Business" here is admin-only rows now (Business Dashboard/Requests/
+//   Review Verifications) — the plan's own text assumed a personal
+//   "Business" row still lived in Settings, but round 2 Phase 7 already
+//   moved that to Profile; nothing to fold in here anymore.
+// - "Review Reports (Admin)" (a 4th admin row the plan never named) goes
+//   into Privacy & Safety's Safety sub-group — it's content-moderation/
+//   safety-complaint review, not a business concern.
 export default function SettingsScreen({ navigation }) {
   const { isAdmin } = useAuth();
   const { colors, shadow, isDark, toggleTheme } = useTheme();
@@ -251,6 +275,108 @@ export default function SettingsScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
+        <Text style={styles.groupHeader} accessibilityRole="header">Account</Text>
+        <View style={styles.card}>
+          {!changingPhone ? (
+            <TouchableOpacity
+              style={styles.rowButton}
+              onPress={() => setChangingPhone(true)}
+              accessibilityLabel={t('settings.changePhoneNumber')}
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>{t('settings.changePhoneNumber')}</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          ) : !otpSent ? (
+            <View>
+              <Text style={styles.label}>New Phone Number</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="(555) 555-5555"
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="phone-pad"
+                value={newPhoneInput}
+                onChangeText={setNewPhoneInput}
+                accessibilityLabel="New phone number"
+              />
+              <TouchableOpacity
+                style={styles.button}
+                onPress={sendPhoneChangeOtp}
+                activeOpacity={0.85}
+                accessibilityLabel="Send verification code"
+                accessibilityRole="button"
+              >
+                <Text style={styles.buttonText}>Send Verification Code</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setChangingPhone(false)}
+                style={{ marginTop: spacing.sm }}
+                accessibilityLabel="Cancel"
+                accessibilityRole="button"
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.label}>Enter the code sent to {newPhoneInput}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="6-digit code"
+                placeholderTextColor={colors.textTertiary}
+                keyboardType="number-pad"
+                value={otp}
+                onChangeText={setOtp}
+                accessibilityLabel="Verification code"
+              />
+              <TouchableOpacity
+                style={styles.button}
+                onPress={verifyPhoneChange}
+                activeOpacity={0.85}
+                accessibilityLabel="Confirm new number"
+                accessibilityRole="button"
+              >
+                <Text style={styles.buttonText}>Confirm New Number</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('Billing')}
+          activeOpacity={0.85}
+          accessibilityLabel={t('settings.manageSubscription')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>💳 {t('settings.manageSubscription')}</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={handleDataExport}
+          disabled={exporting}
+          accessibilityLabel={exporting ? 'Preparing export' : 'Request my data'}
+          accessibilityRole="button"
+        >
+          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={confirmDeleteAccount}
+          disabled={deleting}
+          accessibilityLabel={deleting ? 'Deleting account' : 'Delete account, this permanently removes your profile and cannot be undone'}
+          accessibilityRole="button"
+        >
+          <Text style={styles.deleteText}>
+            {deleting ? 'Deleting account...' : 'Delete Account'}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={styles.groupHeader} accessibilityRole="header">Preferences</Text>
+
         <Text style={styles.sectionLabel} accessibilityRole="header">Looking For</Text>
         <View style={styles.card}>
           <View style={styles.chipsWrap}>
@@ -276,6 +402,141 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.helperText}>
             Select as many as apply. Shown on your profile. How often you change this is visible too — it's meant to keep expectations honest, for you and everyone you match with.
           </Text>
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.discoveryPreferences')}</Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>{t('settings.showMe')}</Text>
+          <View style={styles.chipsWrap}>
+            {SHOW_ME_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, showMe === option && styles.chipSelected]}
+                onPress={() => setShowMe(option)}
+                activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: showMe === option }}
+              >
+                <Text style={[styles.chipText, showMe === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>{t('settings.ageRange')}</Text>
+          <View style={styles.ageRow}>
+            <TextInput
+              style={[styles.input, styles.ageInput]}
+              value={minAge}
+              onChangeText={setMinAge}
+              keyboardType="number-pad"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Minimum age"
+            />
+            <Text style={styles.ageDash}>to</Text>
+            <TextInput
+              style={[styles.input, styles.ageInput]}
+              value={maxAge}
+              onChangeText={setMaxAge}
+              keyboardType="number-pad"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Maximum age"
+            />
+          </View>
+
+          <Text style={styles.label}>{t('settings.myGender')}</Text>
+          <View style={styles.chipsWrap}>
+            {GENDER_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, discoveryGender === option && styles.chipSelected]}
+                onPress={() => setDiscoveryGender(option)}
+                activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: discoveryGender === option }}
+              >
+                <Text style={[styles.chipText, discoveryGender === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.helperText}>
+            This is separate from the "Gender" field on your profile — it's only used to match against other people's "Show Me" preference.
+          </Text>
+
+          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>{t('settings.hideGender')}</Text>
+              <Text style={styles.helperText}>{t('settings.hideGenderHelper')}</Text>
+            </View>
+            <Switch
+              value={genderHidden}
+              onValueChange={(v) => toggleNotifPref('gender_hidden', v, setGenderHidden)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel={t('settings.hideGender')}
+            />
+          </View>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.myEthnicity')}</Text>
+          <View style={styles.chipsWrap}>
+            {ETHNICITY_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, myEthnicity === option && styles.chipSelected]}
+                onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
+                activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: myEthnicity === option }}
+              >
+                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>{t('settings.hideEthnicity')}</Text>
+              <Text style={styles.helperText}>{t('settings.hideEthnicityHelper')}</Text>
+            </View>
+            <Switch
+              value={ethnicityHidden}
+              onValueChange={(v) => toggleNotifPref('ethnicity_hidden', v, setEthnicityHidden)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel={t('settings.hideEthnicity')}
+            />
+          </View>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ethnicityPreferences')}</Text>
+          <View style={styles.chipsWrap}>
+            {ETHNICITY_OPTIONS.map((option) => {
+              const selected = ethnicityPreferences.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleEthnicityPreference(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>{t('settings.ethnicityPreferencesHelper')}</Text>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={savePreferences}
+            activeOpacity={0.85}
+            accessibilityLabel="Save preferences"
+            accessibilityRole="button"
+          >
+            <Text style={styles.buttonText}>Save Preferences</Text>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>
@@ -434,7 +695,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.notifications')}</Text>
+        <Text style={styles.groupHeader} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>{t('settings.newMatches')}</Text>
@@ -467,6 +728,8 @@ export default function SettingsScreen({ navigation }) {
           </View>
         </View>
 
+        <Text style={styles.groupHeader} accessibilityRole="header">Privacy & Safety</Text>
+
         <Text style={styles.sectionLabel} accessibilityRole="header">Privacy</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
@@ -495,242 +758,6 @@ export default function SettingsScreen({ navigation }) {
             />
           </View>
         </View>
-
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.discoveryPreferences')}</Text>
-        <View style={styles.card}>
-          <Text style={styles.label}>{t('settings.showMe')}</Text>
-          <View style={styles.chipsWrap}>
-            {SHOW_ME_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, showMe === option && styles.chipSelected]}
-                onPress={() => setShowMe(option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: showMe === option }}
-              >
-                <Text style={[styles.chipText, showMe === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <Text style={styles.label}>{t('settings.ageRange')}</Text>
-          <View style={styles.ageRow}>
-            <TextInput
-              style={[styles.input, styles.ageInput]}
-              value={minAge}
-              onChangeText={setMinAge}
-              keyboardType="number-pad"
-              placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Minimum age"
-            />
-            <Text style={styles.ageDash}>to</Text>
-            <TextInput
-              style={[styles.input, styles.ageInput]}
-              value={maxAge}
-              onChangeText={setMaxAge}
-              keyboardType="number-pad"
-              placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Maximum age"
-            />
-          </View>
-
-          <Text style={styles.label}>{t('settings.myGender')}</Text>
-          <View style={styles.chipsWrap}>
-            {GENDER_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, discoveryGender === option && styles.chipSelected]}
-                onPress={() => setDiscoveryGender(option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: discoveryGender === option }}
-              >
-                <Text style={[styles.chipText, discoveryGender === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.helperText}>
-            This is separate from the "Gender" field on your profile — it's only used to match against other people's "Show Me" preference.
-          </Text>
-
-          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('settings.hideGender')}</Text>
-              <Text style={styles.helperText}>{t('settings.hideGenderHelper')}</Text>
-            </View>
-            <Switch
-              value={genderHidden}
-              onValueChange={(v) => toggleNotifPref('gender_hidden', v, setGenderHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('settings.hideGender')}
-            />
-          </View>
-
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.myEthnicity')}</Text>
-          <View style={styles.chipsWrap}>
-            {ETHNICITY_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, myEthnicity === option && styles.chipSelected]}
-                onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: myEthnicity === option }}
-              >
-                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('settings.hideEthnicity')}</Text>
-              <Text style={styles.helperText}>{t('settings.hideEthnicityHelper')}</Text>
-            </View>
-            <Switch
-              value={ethnicityHidden}
-              onValueChange={(v) => toggleNotifPref('ethnicity_hidden', v, setEthnicityHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('settings.hideEthnicity')}
-            />
-          </View>
-
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ethnicityPreferences')}</Text>
-          <View style={styles.chipsWrap}>
-            {ETHNICITY_OPTIONS.map((option) => {
-              const selected = ethnicityPreferences.includes(option);
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  onPress={() => toggleEthnicityPreference(option)}
-                  activeOpacity={0.8}
-                  accessibilityLabel={option}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={styles.helperText}>{t('settings.ethnicityPreferencesHelper')}</Text>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={savePreferences}
-            activeOpacity={0.85}
-            accessibilityLabel="Save preferences"
-            accessibilityRole="button"
-          >
-            <Text style={styles.buttonText}>Save Preferences</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionLabel} accessibilityRole="header">Account</Text>
-        <View style={styles.card}>
-          {!changingPhone ? (
-            <TouchableOpacity
-              style={styles.rowButton}
-              onPress={() => setChangingPhone(true)}
-              accessibilityLabel={t('settings.changePhoneNumber')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.rowButtonText}>{t('settings.changePhoneNumber')}</Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          ) : !otpSent ? (
-            <View>
-              <Text style={styles.label}>New Phone Number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="(555) 555-5555"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="phone-pad"
-                value={newPhoneInput}
-                onChangeText={setNewPhoneInput}
-                accessibilityLabel="New phone number"
-              />
-              <TouchableOpacity
-                style={styles.button}
-                onPress={sendPhoneChangeOtp}
-                activeOpacity={0.85}
-                accessibilityLabel="Send verification code"
-                accessibilityRole="button"
-              >
-                <Text style={styles.buttonText}>Send Verification Code</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setChangingPhone(false)}
-                style={{ marginTop: spacing.sm }}
-                accessibilityLabel="Cancel"
-                accessibilityRole="button"
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View>
-              <Text style={styles.label}>Enter the code sent to {newPhoneInput}</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="6-digit code"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="number-pad"
-                value={otp}
-                onChangeText={setOtp}
-                accessibilityLabel="Verification code"
-              />
-              <TouchableOpacity
-                style={styles.button}
-                onPress={verifyPhoneChange}
-                activeOpacity={0.85}
-                accessibilityLabel="Confirm new number"
-                accessibilityRole="button"
-              >
-                <Text style={styles.buttonText}>Confirm New Number</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        <Text style={styles.sectionLabel} accessibilityRole="header">Connect</Text>
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('Friends')}
-          activeOpacity={0.85}
-          accessibilityLabel="Friends, manage friend requests and see your friends list"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🤝 Friends</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('MusicMode')}
-          activeOpacity={0.85}
-          accessibilityLabel="Music Mode, connect Spotify and pick favorite tracks for your profile"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🎵 Music Mode</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('InviteFriends')}
-          activeOpacity={0.85}
-          accessibilityLabel="Invite friends"
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>🎁 Invite Friends</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Safety</Text>
         <TouchableOpacity
@@ -766,26 +793,88 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
+        {isAdmin && (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('AdminReports')}
+            activeOpacity={0.85}
+            accessibilityLabel="Review reports, admin"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>Review Reports (Admin)</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        )}
+
+        {isAdmin && (
+          <>
+            <Text style={styles.groupHeader} accessibilityRole="header">Business</Text>
+            <TouchableOpacity
+              style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('BusinessDashboard')}
+              activeOpacity={0.85}
+              accessibilityLabel="Business dashboard, admin"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Business Dashboard (Admin)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('AdminBusinessRequests')}
+              activeOpacity={0.85}
+              accessibilityLabel="Review business partner requests, admin"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Business Requests (Admin)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('AdminVerification')}
+              activeOpacity={0.85}
+              accessibilityLabel="Review pending verifications, admin"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Review Verifications (Admin)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        <Text style={styles.groupHeader} accessibilityRole="header">Connect</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('RelationshipHub')}
+          onPress={() => navigation.navigate('Friends')}
           activeOpacity={0.85}
-          accessibilityLabel="Relationship, tools and reflection for a specific match or on your own"
+          accessibilityLabel="Friends, manage friend requests and see your friends list"
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>❤️ Relationship</Text>
+          <Text style={styles.rowButtonText}>🤝 Friends</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Account & Billing</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('Billing')}
+          onPress={() => navigation.navigate('MusicMode')}
           activeOpacity={0.85}
-          accessibilityLabel={t('settings.manageSubscription')}
+          accessibilityLabel="Music Mode, connect Spotify and pick favorite tracks for your profile"
           accessibilityRole="button"
         >
-          <Text style={styles.rowButtonText}>💳 {t('settings.manageSubscription')}</Text>
+          <Text style={styles.rowButtonText}>🎵 Music Mode</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('InviteFriends')}
+          activeOpacity={0.85}
+          accessibilityLabel="Invite friends"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>🎁 Invite Friends</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
@@ -800,7 +889,18 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Help & Legal</Text>
+        <TouchableOpacity
+          style={styles.rowButtonCard}
+          onPress={() => navigation.navigate('RelationshipHub')}
+          activeOpacity={0.85}
+          accessibilityLabel="Relationship, tools and reflection for a specific match or on your own"
+          accessibilityRole="button"
+        >
+          <Text style={styles.rowButtonText}>❤️ Relationship</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.groupHeader} accessibilityRole="header">Support</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
           onPress={() => navigation.navigate('FeaturesOverview')}
@@ -823,66 +923,6 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        {isAdmin && (
-          <TouchableOpacity
-            style={styles.rowButtonCard}
-            onPress={() => navigation.navigate('AdminReports')}
-            activeOpacity={0.85}
-            accessibilityLabel="Review reports, admin"
-            accessibilityRole="button"
-          >
-            <Text style={styles.rowButtonText}>Review Reports (Admin)</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        )}
-        {isAdmin && (
-          <TouchableOpacity
-            style={styles.rowButtonCard}
-            onPress={() => navigation.navigate('BusinessDashboard')}
-            activeOpacity={0.85}
-            accessibilityLabel="Business dashboard, admin"
-            accessibilityRole="button"
-          >
-            <Text style={styles.rowButtonText}>Business Dashboard (Admin)</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        )}
-        {isAdmin && (
-          <TouchableOpacity
-            style={styles.rowButtonCard}
-            onPress={() => navigation.navigate('AdminBusinessRequests')}
-            activeOpacity={0.85}
-            accessibilityLabel="Review business partner requests, admin"
-            accessibilityRole="button"
-          >
-            <Text style={styles.rowButtonText}>Business Requests (Admin)</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        )}
-
-        {isAdmin && (
-          <TouchableOpacity
-            style={styles.rowButtonCard}
-            onPress={() => navigation.navigate('AdminVerification')}
-            activeOpacity={0.85}
-            accessibilityLabel="Review pending verifications, admin"
-            accessibilityRole="button"
-          >
-            <Text style={styles.rowButtonText}>Review Verifications (Admin)</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleDataExport}
-          disabled={exporting}
-          accessibilityLabel={exporting ? 'Preparing export' : 'Request my data'}
-          accessibilityRole="button"
-        >
-          <Text style={styles.signOutText}>{exporting ? 'Preparing export...' : 'Request My Data'}</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.signOutButton}
           onPress={signOut}
@@ -890,18 +930,6 @@ export default function SettingsScreen({ navigation }) {
           accessibilityRole="button"
         >
           <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={confirmDeleteAccount}
-          disabled={deleting}
-          accessibilityLabel={deleting ? 'Deleting account' : 'Delete account, this permanently removes your profile and cannot be undone'}
-          accessibilityRole="button"
-        >
-          <Text style={styles.deleteText}>
-            {deleting ? 'Deleting account...' : 'Delete Account'}
-          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -920,6 +948,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   permissionBannerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14, marginBottom: 2 },
   permissionBannerText: { color: colors.textSecondary, fontSize: 12, lineHeight: 16 },
   permissionBannerArrow: { color: colors.textTertiary, fontSize: 20, marginLeft: spacing.xs },
+  groupHeader: { fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm, marginTop: spacing.lg },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,

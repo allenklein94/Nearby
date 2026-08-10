@@ -368,6 +368,58 @@ phase).** Resolve the two flagged open placements ("Connect", "❤️ Relationsh
 execute the proposed mapping above — same "reuse every existing row, add new headers, don't
 rebuild content" approach as round 2 Phase 5's Profile regroup.
 
+**Phase 6 — DONE, the largest phase, one full `SettingsScreen.js` rewrite (reorder + relabel
+only — every row's own content/handler is byte-for-byte unchanged, confirmed by a sorted
+line-by-line diff against the pre-phase file showing zero lost content, only header-text
+changes and the intentional consolidation of 3 separate `{isAdmin && (...)}` blocks into 1).**
+Resolved the two flagged open placements, plus two real gaps the plan's own text didn't
+anticipate — all four documented inline in the file's own new header comment, not just here:
+- **"Connect" — kept as its own header, deliberately outside the 6 named groups.** None of
+  Account/Preferences/Notifications/Privacy & Safety/Business/Support is a real fit for
+  Friends/Music Mode/Invite Friends — these are product-feature access points, not app
+  controls. Forcing them into one of the 6 would have been a worse fit than leaving a 7th,
+  honestly-labeled cluster. **"🎁 Offers & Perks"** (previously paired with Billing under the
+  old "Account & Billing" header, never once addressed by the plan's own mapping text) joins
+  Connect for the identical reason — it's a browse/discover feature, not an account control.
+- **"❤️ Relationship" — moved from Safety into Connect.** It navigates to `RelationshipHub`
+  (tools/reflection for a match or on your own) — thematically a relationship-tools feature,
+  not a safety concern. Safety now holds only genuine safety rows (Blocked Users, Verify
+  Identity, Emergency Contacts).
+- **"Business" — real, previously-unnoticed gap: there is no personal Business row left in
+  Settings to fold in.** The plan's own Phase 6 mapping text says "the existing consolidated
+  Business row (round 2 Phase 7) + the 3 admin-only rows" — but round 2 Phase 7 (see that
+  section's own status note, further up this file) already fully removed Settings' business
+  row and moved it to Profile; the plan's text was written referencing round 2 Phase 7 without
+  re-verifying its actual result. Resolved by building "Business" here as exactly what's
+  genuinely left in Settings: the 3 admin-only rows (`Business Dashboard (Admin)`,
+  `Business Requests (Admin)`, `Review Verifications (Admin)`), now consolidated under one real
+  `isAdmin`-gated header instead of three separately-conditioned rows with no header of their
+  own at all.
+- **"Review Reports (Admin)" — a 4th admin row the plan never named, found while reading the
+  file.** Not business-related at all (it's content-moderation/safety-complaint review) — placed
+  in Privacy & Safety's Safety sub-group instead, where it thematically belongs.
+Final structure, in on-screen order: **Account** (phone-change flow, Billing, Request My Data,
+Delete Account — no email/password rows exist anywhere in this screen despite the plan's own
+text assuming they did; only phone-change was ever real), **Preferences** (a real cluster header
+with four sub-labels — Looking For, Discovery Preferences, Appearance, Language — each keeping
+its own existing sub-heading, same demoted-sub-label pattern this file's own Phase 2 pass
+already established for Activity), **Notifications** (unchanged content, header text unchanged),
+**Privacy & Safety** (a real cluster header with two sub-labels — Privacy, Safety — Safety now
+correctly scoped to Blocked Users/Verify Identity/Emergency Contacts/Review Reports (Admin)
+only), **Business** (admin-only, see above), **Connect** (Friends, Music Mode, Invite Friends,
+Offers & Perks, Relationship), **Support** (renamed from "Help & Legal": Everything In Nearby,
+Legal). Sign Out stays a bare, unlabeled action at the very bottom — a persistent app-level
+action, not content belonging to any of the 7 named clusters. Verified via a full `npx expo
+export --platform ios` — clean, 1855 modules (unchanged, edit to one existing file only).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm all 7 group headers (plus the 2 nested sub-label
+pairs inside Preferences and Privacy & Safety) render correctly and in the right order against
+real data, that the Business header genuinely only appears for an admin account (never an empty
+header for a non-admin), and that every row's underlying action (phone change, billing,
+data export, delete account, language switch, dark mode, etc.) still works exactly as before —
+this was a pure JSX reorganization, but a rewrite of this size deserves a real click-through
+before being trusted blind.
+
 **Phase 7 — Weather: tighten to genuinely actionable only, pair bad weather with real indoor
 suggestions (closes point 10).** Resolve the flagged "does Excellent still get a card"
 question first. Build the static category→indoor/outdoor map (a real categorization of the
