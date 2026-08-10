@@ -4,6 +4,34 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 10 2026 — two small user-reported bugs found via live usage, both fixed
+
+The user was actually using the app (not a code audit) and hit two real navigation bugs:
+
+1. **Hosting your own gathering, it never appeared on the Nearby map.** By design, not a bug —
+   `get_bounded_nearby_gathering_ids()` (`supabase/migrations/20260809_bounded_nearby_
+   gatherings.sql:54`) explicitly excludes `g.host_id <> auth.uid()`, mirroring a rule that
+   already existed client-side before it became a server-side bound: the "Nearby" browse feed is
+   for discovering things you don't already know about, not your own gathering. Confirmed the
+   real way to see it on a map is `Gatherings` screen → **Hosting** tab → map view, which pulls
+   from the separate, unfiltered `getMyGatherings()` query. No code change — explained and
+   pointed at the right screen.
+2. **Home's "Continue Browsing →" button landed on the people-swiping screen (Crossed Paths),
+   not general browsing — real bug, fixed.** `HomeScreen.js`'s button sits directly under
+   gathering-focused content (Best Pick, Trending, Also Coming Up) and a "Quiet night nearby"
+   fallback, but `navigation.navigate('Nearby')` opened `DiscoveryScreen` defaulted to its
+   **Crossed Paths** mode (not even that screen's own broader "Browse" mode) — a mismatch
+   between the button's generic copy/context and what it actually did. Fixed by pointing it at
+   `navigation.navigate('Discover')` instead — `Home`/`Discover` are sibling tabs in the same
+   `Tab.Navigator` (`RootNavigator.js`), and `DiscoverHubScreen` is the actual general
+   browse-everything hub (gatherings/communities/places/perks), a much better match for
+   "Continue Browsing" than a single-purpose people-swipe screen. Verified via a full
+   `npx expo export --platform ios` — clean (edit to one existing file only). Committed and
+   pushed (`cb7d6a86`).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through — next session should confirm tapping "Continue Browsing" from a genuinely quiet
+  Home state lands cleanly on the Discover tab.
+
 ## Outstanding: Business Partner Onboarding (self-serve apply enrichment) — DONE, steps 1-6 all closed, step 7 deliberately deferred
 
 Written before implementation, same restart-safety convention as every other plan-first
