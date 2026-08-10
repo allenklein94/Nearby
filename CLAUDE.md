@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 3 of 10 done
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 4 of 10 done
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -71,6 +71,32 @@ use of `getConversationWithBusiness()`) was checked too and does **not** poll on
 wasn't in scope for this step; it's still an unbounded single fetch, but that's pagination's
 job (step 5), not this step's. Verified via a full `npx expo export --platform ios` — clean,
 1850 modules. Same unverified live-delivery gap as steps 1-2.
+
+**Step 4 — DONE.** Investigated why `ChatScreen.js`'s poll coexisted with its already-working
+realtime channel before touching it, per the plan's own instruction not to assume either way.
+Answer: the poll's tick was also driving `markMessagesAsRead(myId)` — not a reliability
+fallback for missed realtime events, just piggybacking read-receipt marking onto a timer that
+happened to already exist. Fixed by moving `markMessagesAsRead()` into the channel's own INSERT
+handler (called only when the new message isn't from the caller) — read receipts now fire the
+moment a message actually arrives, which is strictly more immediate than waiting up to 3 seconds
+for the old poll tick ever was, and needs none of what that poll otherwise did (a full
+`loadMessages()` re-fetch of the entire conversation). The `AppState` "app returned to
+foreground" listener — a real, distinct reliability fallback for the fact that iOS suspends JS
+timers *and* the realtime socket whenever the screen locks or the app backgrounds — was
+deliberately left exactly as it was; it's not the poll this step removed, it only ever fires
+once per resume, not on a timer.
+**Also fixed while in this exact code region**: neither the messages channel (`channel`,
+`ChatScreen.js`'s own realtime subscription for new/edited messages) nor the reactions channel
+(`reactionChannel`) were ever stored anywhere or cleaned up on unmount — only the typing channel
+was. This is a real, previously-undocumented leak (flagged as a finding during step 1, when this
+same pattern was built correctly for `GatheringChatScreen.js` from the start) — every open/close
+of a chat screen left two orphaned realtime subscriptions running. Fixed by adding
+`messagesChannelRef`/`reactionChannelRef` and cleaning both up in the same `return () => {...}`
+that already cleaned up the typing channel. Verified via a full `npx expo export --platform
+ios` — clean, 1850 modules (edit to one existing file). Same unverified live-delivery gap as
+steps 1-3 — additionally, the read-receipt-on-INSERT change specifically should be confirmed on
+a real device: send a message from account A, confirm account B's screen shows it read
+immediately (not after up to 3 seconds, the old behavior) once B's screen is open.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped

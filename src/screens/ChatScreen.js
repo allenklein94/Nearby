@@ -138,6 +138,8 @@ export default function ChatScreen({ route, navigation }) {
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const typingChannelRef = useRef(null);
+  const messagesChannelRef = useRef(null);
+  const reactionChannelRef = useRef(null);
   const otherTypingTimeoutRef = useRef(null);
 
   async function loadMessages() {
@@ -193,22 +195,22 @@ export default function ChatScreen({ route, navigation }) {
   }, [messages]);
 
   useEffect(() => {
-    let pollInterval;
     let currentMyId;
     init().then((myId) => {
       currentMyId = myId;
-      pollInterval = setInterval(async () => {
-        await loadMessages();
-        if (myId) await markMessagesAsRead(myId);
-      }, 3000);
     });
 
-    // iOS suspends JS timers (including this poll) whenever the
-    // screen locks or the app backgrounds — this forces an
-    // immediate refresh the moment the app returns, rather than
-    // waiting up to 3 seconds for the next scheduled tick, so
-    // anything that changed while suspended (like a disappearing
-    // message) shows up right away.
+    // Was also driving a setInterval(..., 3000) here that re-ran
+    // loadMessages() (the entire conversation, re-fetched from scratch)
+    // every 3 seconds, on top of the realtime channel already subscribed
+    // to new messages inside init() — two independent delivery mechanisms
+    // running at once for the same data. The poll is gone; new messages
+    // and their read-receipt marking are now both handled reactively by
+    // the channel's own INSERT handler (see init()). The AppState listener
+    // below is kept exactly as it was — iOS suspends JS timers (which
+    // would also suspend the realtime socket) whenever the screen locks or
+    // the app backgrounds, so a real refresh on returning to foreground is
+    // still the right fallback, independent of the poll this replaces.
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         loadMessages();
@@ -217,10 +219,11 @@ export default function ChatScreen({ route, navigation }) {
     });
 
     return () => {
-      if (pollInterval) clearInterval(pollInterval);
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       if (otherTypingTimeoutRef.current) clearTimeout(otherTypingTimeoutRef.current);
       if (typingChannelRef.current) supabase.removeChannel(typingChannelRef.current);
+      if (messagesChannelRef.current) supabase.removeChannel(messagesChannelRef.current);
+      if (reactionChannelRef.current) supabase.removeChannel(reactionChannelRef.current);
       subscription.remove();
     };
   }, []);
@@ -380,6 +383,12 @@ export default function ChatScreen({ route, navigation }) {
             return [...prev, payload.new];
           });
           setIsStalled(false);
+          // Mark read reactively, right as the message actually arrives,
+          // instead of waiting for the poll tick that used to run this —
+          // more immediate than the old 3-second timer ever was, and
+          // doesn't need the rest of what that timer did (a full
+          // loadMessages() re-fetch of the entire conversation).
+          if (payload.new.sender_id !== myId) markMessagesAsRead(myId);
         }
       )
       .on(
@@ -390,6 +399,7 @@ export default function ChatScreen({ route, navigation }) {
         }
       )
       .subscribe();
+    messagesChannelRef.current = channel;
 
     const reactionChannel = supabase
       .channel(`reactions:${matchId}`)
@@ -401,6 +411,7 @@ export default function ChatScreen({ route, navigation }) {
         }
       )
       .subscribe();
+    reactionChannelRef.current = reactionChannel;
 
     const typingChannel = supabase
       .channel(`typing:${matchId}`)
