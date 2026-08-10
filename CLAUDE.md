@@ -4,6 +4,261 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: IA restructure round 3 — canonical Plans, attention-only Activity, gathering/chat/invite three-way split, Settings as a real control center — PLAN ONLY, NOT STARTED
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
+per-phase status notes below for what's actually landed vs. still just this plan.** Given
+directly by the user as a detailed, numbered 12-point reaction to round 2 (the section
+immediately below this one, all 8 phases of which are DONE) — read that section's own delta
+notes for what round 2 already built; this plan is the next layer on top of it, not a redo.
+**Explicit instruction, given directly**: write the plan first, into this file, then stop — do
+not start building until the user has reviewed it. This section is that plan. Nothing described
+below has been built yet.
+
+**The user's own closing mental model, restated exactly as given, since it's the organizing
+principle for every phase below**:
+
+> A gathering is a thing. A gathering chat is a conversation. An invitation is an activity.
+> A plan is a commitment.
+
+Five bottom tabs, unchanged, explicitly reaffirmed as a non-goal to touch (point 12 below):
+🏠 Home ("My life on Nearby") · 🔎 Discover ("What's out there?") · ➕ Create ("What can I make
+happen?") · 💬 Inbox ("What needs my attention?") · 👤 You ("Who am I and what have I done?").
+
+**Per-point verification against the actual current code, done before locking this in as a build
+plan** (same "verify before building" discipline as round 2 and every other plan-first section in
+this file) — several of the user's 12 points turn out to be already fully or mostly built by
+round 2's own work; a few are real, concrete, unbuilt gaps. Flagged explicitly so a future
+session doesn't redo real, already-shipped work:
+
+1. **Home's "Your Plans" as the canonical commitment surface — ALREADY MOSTLY TRUE, one real
+   piece missing.** Confirmed via direct read of `HomeScreen.js`: "Your Plans" already shows
+   both Going and Hosting sub-groups (real `plansGoing`/`plansHosting`, soonest-first, capped to
+   3 each), each row already taps through to `GatheringDetail`. Inbox/Activity already doesn't
+   store commitments (round 2 Phase 6 narrowed Activity's "Upcoming" to a same-day nudge that
+   only ever links out to the real gathering, never duplicates it). **Real, confirmed gap**: "See
+   all" currently reads "See All Plans →" and routes to `Gatherings` with `initialTab` set to
+   `'attending'` or `'hosting'` — that screen's tabs are `nearby`/`attending`/`hosting`, not a
+   dedicated Plans view, and it has no "Past" concept anywhere. The user's own point 11 below
+   asks for a real dedicated destination (Upcoming | Hosting | Past) — scoped into Phase 1 below,
+   not treated as already done.
+2. **Activity strictly "things that happened / need attention" — REAL, CONFIRMED GAP, but a
+   smaller one than it might sound.** `ActivityScreen.js` today has 3 named groups
+   (`requests`/`invitations`/`reminders`, i.e. "🙋 Connection Requests" / "🤝 Invitations" /
+   "⏰ Upcoming") rendered as a `ListHeaderComponent`, followed by an unlabeled chronological
+   `FlatList` body (notices/waves, crossed paths, business updates) with no header of its own —
+   confirmed via direct read. This is already close in spirit to the user's proposed
+   Needs-Your-Attention / Today / Earlier shape — requests + invitations naturally fold into one
+   "Needs Your Attention" group, the already-narrowed `reminders` group naturally becomes
+   "Today", and the existing unlabeled chronological feed naturally becomes "Earlier" once it
+   gets a real header. **Real, not-yet-decided question**: "important business/account notices"
+   are named explicitly in the user's own "Needs Your Attention" example — today, business-update
+   items (`type: 'business_update'`) live in the *chronological* feed (what's becoming "Earlier"),
+   not in a needs-response group, and there's no concept anywhere in this schema of a business
+   notice being more urgent than a plain notice. Not assumed away — flagged as a real design
+   decision for Phase 2 below: fold every business-update notice into "Needs Your Attention"
+   (likely too broad — most are informational, not actionable), or only ones that are genuinely
+   actionable if such a distinction exists in the data (needs checking), or leave all
+   business-update notices in "Earlier" and treat "Needs Your Attention" as scoped to
+   requests/invitations only, which is what the data actually supports today without inventing a
+   new urgency signal.
+3. **Gathering / gathering-chat / invitation three-way separation — ALREADY LARGELY TRUE, this
+   phase is mostly an audit, not a rebuild.** Confirmed via direct read: Home's "Your Plans" rows
+   already tap to `GatheringDetail` (the thing), never to chat. Inbox's Messages tab already has
+   a "Group Chats" chip row (gathering + community chats, the conversation) separate from the
+   1:1 matches list — built in an earlier session, confirmed still present. Activity's
+   "⏰ Upcoming"/invitations groups (the activity) already tap to `GatheringDetail` or resolve via
+   `respondToInvite`, never conflate with chat. No known live conflation was found by this
+   verification pass — scoped into Phase 3 below as a real audit (re-check every gathering-naming
+   surface for a case where a gathering's own title is used as if it were its chat's title, or
+   vice versa) rather than assumed clean without checking, since the user raised this as
+   important enough to call out by name.
+4. **Quick Picks label wording — MOSTLY ALREADY SHORT, one real straggler found.** Read
+   `utils/timeContext.js`'s `QUICK_PROMPTS_BY_PERIOD` directly: most labels are already exactly
+   the short, find-not-create wording the user wants ("Coffee", "Lunch", "Dinner", "Walk").
+   **One real, confirmed exception**: `"Breakfast Meetup"` (morning period) — the literal
+   "Meetup" suffix the user's example specifically calls out avoiding. Scoped into Phase 4 below
+   as a one-line rename to `"Breakfast"`, matching its siblings. The rest of the list
+   (`"Morning Run"`, `"Beach Volleyball"`, `"Beach Cleanup"`, `"Wine Tasting"`, `"Concert"`) reads
+   as an activity description, not a "you are about to create an X" framing — left as-is, not
+   silently rewritten beyond the one real match. **Real, confirmed, separate gap**: the
+   destination screen (`GatheringsScreen.js`, filtered by `initialCategoryFilter`) has no
+   dynamic headline at all — just a small filter-chip indicator, not the "Coffee Near You"-style
+   page title the user describes. Scoped into Phase 4.
+5. **Create as the only creation-primary surface — ALREADY TRUE, reaffirmed as a non-goal, not a
+   build item.** Matches round 2's own already-verified state (Home's Quick Picks browse-first,
+   `CreateHubScreen`'s icon grid stays creation-first, per the Aug 10 "Create 2.0" tension that
+   was explicitly resolved with the user already). No action.
+6. **Profile → You simplification — ALREADY VERY CLOSE, needs relabeling + one placement
+   fix, not a rebuild.** Round 2 Phase 5 already grouped Profile into exactly "My Circle"
+   (Friends/Communities) / "My Activity" (Timeline/Memory Vault/Insights/Momentum/Rewards) /
+   "Profile" (identity fields) — nearly identical in shape to the user's proposed "Your
+   Connections" / "Your Activity" / "Your Profile" / "Business". **Real, confirmed gap**: the
+   single consolidated Business row (round 2 Phase 7) currently floats between the achievements
+   grid and the "Profile" header with no section label of its own — doesn't read as its own named
+   group the way the user's mockup shows it. Scoped into Phase 6 below: rename the three existing
+   groups to the user's preferred wording and give Business its own real header. **Re-confirmed,
+   not just assumed**: Profile has no Settings-only content leaking onto it today (no
+   notification/privacy/billing/emergency-contact controls found via direct read) — nothing to
+   remove here, this part of point 6 is already true.
+7. **Settings as a real control center — REAL, CONFIRMED, the single biggest item in this
+   plan.** Read `SettingsScreen.js` directly: it has 11 `sectionLabel`-styled headers today
+   (Looking For, Appearance, Language, Notifications, Privacy, Discovery Preferences, Account,
+   Connect, Safety, Account & Billing, Help & Legal) plus a "❤️ Relationship" row sitting
+   unlabeled at the tail end of the Safety section, plus 3 admin-only rows with no header of
+   their own either. This is real, uncontested sprawl relative to the user's proposed 6 named
+   top-level groups (Account / Preferences / Notifications / Privacy & Safety / Business /
+   Support) — scoped into Phase 7 below, the largest phase in this plan. **Proposed mapping,
+   written out here so it can be corrected before or during the build rather than silently
+   assumed** (this is a regroup-and-relabel pass, matching round 2 Phase 5's own established
+   "reuse every existing row, add new headers, don't rebuild content" precedent — nothing listed
+   below is deleted):
+   - **Account**: existing "Account" section (phone/email/password/delete-account rows) +
+     "Account & Billing"'s "Billing" row folded in (billing is account-level, not a separate
+     top-level concern in the user's 6-group model).
+   - **Preferences**: "Looking For" + "Discovery Preferences" (Show Me/age range/distance) +
+     "Appearance" + "Language" — all real "how the app behaves for me" content-adjacent settings,
+     none of them notifications/privacy/account-identity.
+   - **Notifications**: existing "Notifications" section, unchanged.
+   - **Privacy & Safety**: existing "Privacy" + "Safety" sections merged (Blocked Users, Verify
+     Identity, Emergency Contacts) — already adjacent in spirit, just under two separate headers
+     today.
+   - **Business**: the existing consolidated Business row (round 2 Phase 7) + the 3 admin-only
+     rows (`Business Dashboard (Admin)`/`Business Requests (Admin)`/`Review Verifications
+     (Admin)`) — **not** merged into one row with the personal Business entry point; grouped
+     under the same header but kept visually/behaviorally distinct, since round 2 Phase 7 already
+     established admin rows are a different persona and explicitly not to be collapsed together.
+   - **Support**: existing "Help & Legal" section, relabeled.
+   - **Not cleanly mapped to any of the 6 groups, flagged rather than forced**: "Connect"
+     (currently a Friends-related section — real content, needs a real decision: fold into
+     Account, fold into a Preferences-adjacent "Social" idea the user didn't name, or keep its
+     own header outside the 6) and "❤️ Relationship" (today an orphaned row under Safety with no
+     real thematic fit in either Safety or any of the other 5 groups — same open question). Not
+     assumed away here; call this out explicitly when Phase 7 is reached rather than silently
+     picking a bucket for either.
+8. **Interests as content preference, not a Settings control — ALREADY TRUE, reaffirmed as a
+   non-goal.** Confirmed via direct read: real interest editing already lives on Profile's own
+   identity section (round 2 Phase 5's "Profile" group) and via `QuickPicksEditModal` from Home —
+   both product-surface, not Settings. Settings' own "Looking For"/"Discovery Preferences"
+   sections are dating-intention and show-me/age/distance filters, not general interest editing —
+   no overlap to fix. **No "how Nearby uses your interests" system-level toggle exists anywhere
+   in this codebase to move into Settings** — this point is treated as a guardrail against
+   accidentally moving interest editing into the Settings regroup (Phase 7), not a request to
+   invent a new preference control that doesn't exist today. No action beyond that guardrail.
+9. **Home's 5-section cap — ALREADY TRUE.** Direct read of `HomeScreen.js` confirms exactly 4
+   `sectionHeader`-styled titles today (Your Plans, the period-label/Quick Picks row, 🔥 Happening
+   Near You, ✨ Because You Like…) plus "🏘️ Your Communities" under its own distinct
+   `continueCommunityLabel` style — 5 major named sections total, matching the user's own example
+   list almost exactly. Everything else (pending-invites/perks/weather/since-away banners, the
+   quick-stats row, the one-line Weekly Recap, the quiet-night fallback) is already contextual,
+   not a permanently-occupying section — round 2 Phase 1's hierarchy pass already did this work.
+   No action needed beyond re-confirming the cap still holds after Phase 4/10's edits land (a
+   verification step, not new work).
+10. **Weather fully contextual, only when genuinely actionable — REAL, CONFIRMED GAP beyond what
+    round 2 already fixed.** Round 2 already suppresses the ambiguous "Good" case (only
+    `'Excellent'`/`'Quiet'` ever render) and already fixed the misleading "tonight forecast"
+    framing (heading now reads "🌤️ Right Now", copy no longer claims a specific time of day —
+    see the weather-copy section further below). **What's still open, per the user's new ask**:
+    even a genuinely `'Excellent'` day currently always renders a card — the user's framing
+    ("if the weather is normal, don't waste Home real estate") suggests even good-but-unremarkable
+    weather shouldn't necessarily earn a permanent card slot, and specifically wants the *bad*
+    weather case paired with a real, actionable suggestion ("here are 4 indoor gatherings
+    tonight") rather than just a warning sentence. **Real, not-yet-decided design question,
+    flagged rather than assumed**: should `'Excellent'` keep rendering (arguably still genuinely
+    actionable — "great day to do something outdoors" is a real reason to act, matching this
+    card's whole original justification), or should the bar tighten to *only* the `'Quiet'`
+    (bad-weather) case pairing with real indoor suggestions, with `'Excellent'` demoted to a
+    smaller inline mention elsewhere rather than its own card? Scoped into Phase 10 below as an
+    explicit decision to make before building, not silently picked. **Real, confirmed prerequisite
+    gap for the "indoor gatherings" half of this**: there is no indoor/outdoor categorization
+    anywhere in this codebase today (grepped — zero hits) — building a real, honest "4 indoor
+    gatherings tonight" suggestion needs a new static category→indoor/outdoor map (same
+    established precedent as `gatheringCoverPhotos.js`'s category→image map or
+    `QUICK_PROMPTS_BY_PERIOD`'s category→label map — a real categorization of already-existing
+    interest tags, not a fabricated per-gathering signal), proposed concretely in Phase 10 below.
+11. **"See all plans" dedicated destination (Upcoming | Hosting | Past) — REAL, CONFIRMED GAP,
+    the other half of point 1.** `GatheringsScreen.js` has exactly `nearby`/`attending`/`hosting`
+    tabs, confirmed via direct read — no "Past" tab or mode exists anywhere in this codebase.
+    **Real, not-yet-decided design question**: build this as a 4th tab/mode on the existing
+    `GatheringsScreen` (reusing its existing map/list machinery, `nearby` tab untouched), or as a
+    genuinely separate, smaller `PlansScreen` scoped to just the caller's own commitments
+    (Upcoming/Hosting/Past, no browse-nearby concept at all, matching the user's own framing that
+    this screen's whole job is "the complete history/calendar-like view" of *my* plans, not
+    discovery). Leaning toward the separate `PlansScreen` reading as more honest to the user's own
+    "Home gives me the next 1-3 things, the Plans screen gives me the complete calendar" framing —
+    but flagged as a real decision for Phase 1, not silently picked, since it changes how much
+    code this phase actually touches (a new screen + route vs. extending an existing one).
+12. **No new bottom tabs — ALREADY TRUE, explicitly reaffirmed, not a build item.** Whatever
+    Phase 1/11 becomes (a `GatheringsScreen` tab or a new `PlansScreen`), it's reached via Home's
+    "See All Plans →" link, never a 6th bottom tab — matching this file's own long-standing,
+    repeatedly-reaffirmed "no new tabs" stance.
+
+**Locked build order — 7 phases, following the user's own numbered priority list where it maps
+cleanly to independent, checkable work; combining the user's points 1+11 (both "Your Plans"/
+Plans-screen work) and 9+12 (both already-true reaffirmations, folded into whichever phase
+touches the same file) so the phase list stays independently buildable rather than artificially
+matching 1-to-1 with all 12 original points:**
+
+**Phase 1 — Home's "Your Plans" gains a real dedicated destination (closes points 1 and 11).**
+Resolve the open "new `PlansScreen` vs. extend `GatheringsScreen`" question first (see point 11
+above), then build it — real Upcoming/Hosting/Past tabs (or whatever the resolved shape is) over
+the caller's own real `gathering_interest`/`gatherings` rows, each tab's rows tapping to
+`GatheringDetail`, matching the "commitment surface, not a browse surface" framing. Home's "See
+All Plans →" link repoints here.
+
+**Phase 2 — Activity restructure into Needs Your Attention / Today / Earlier (closes point 2).**
+Resolve the flagged business-notices-urgency question first, then: rename/regroup
+`requests`+`invitations` under one real "Needs Your Attention" header (keeping their own
+sub-labels, matching the sub-heading pattern round 2's Home pass already established elsewhere),
+rename `reminders` to "Today" (content/behavior unchanged, already a same-day nudge per round 2
+Phase 6), and give the existing unlabeled chronological feed a real "Earlier" header.
+
+**Phase 3 — Gathering/chat/invitation separation audit (closes point 3).** A real audit pass,
+not an assumed-clean skip — re-check every surface that names a specific gathering (Home's Your
+Plans, the new Plans screen from Phase 1, Activity's Today/requests/invitations rows, Inbox's
+Group Chats chip row, `GatheringDetailScreen` itself) for any place a gathering's title is used
+interchangeably with its chat's title, or a tap target lands on the wrong one of the three
+(thing/conversation/activity). Fix whatever's found; if nothing's found, say so plainly rather
+than padding this phase with unnecessary changes.
+
+**Phase 4 — Quick Picks wording + destination headline (closes point 4).** Rename `"Breakfast
+Meetup"` → `"Breakfast"` in `QUICK_PROMPTS_BY_PERIOD`. Add a real dynamic headline to
+`GatheringsScreen.js` when reached via `initialCategoryFilter` (e.g. "Coffee Near You" instead of
+just a filter chip), keeping the existing "+ Start a {category} Gathering" empty-state button
+exactly as-is (already matches the user's own "Join existing gatherings, plus + Start a Coffee
+Gathering" framing per round 2 Phase 4).
+
+**Phase 5 — Profile → You relabel + Business header (closes point 6).** Rename the three
+existing Profile groups ("My Circle" → "Your Connections", "My Activity" → "Your Activity",
+"Profile" → "Your Profile") and give the already-consolidated Business row its own real section
+header instead of floating unlabeled between the achievements grid and "Your Profile".
+
+**Phase 6 — Settings regroup into 6 named control-center sections (closes point 7, the largest
+phase).** Resolve the two flagged open placements ("Connect", "❤️ Relationship") first, then
+execute the proposed mapping above — same "reuse every existing row, add new headers, don't
+rebuild content" approach as round 2 Phase 5's Profile regroup.
+
+**Phase 7 — Weather: tighten to genuinely actionable only, pair bad weather with real indoor
+suggestions (closes point 10).** Resolve the flagged "does Excellent still get a card"
+question first. Build the static category→indoor/outdoor map (a real categorization of the
+existing 25 canonical `INTEREST_OPTIONS` tags, same established precedent as
+`gatheringCoverPhotos.js`), then wire a real "here are N indoor gatherings tonight" suggestion
+into the weather card for the bad-weather case, sourced from already-fetched `nearbyGatherings`
+filtered to indoor tags — no new query, no fabricated suggestion.
+
+**Explicit non-scope, stated so a future session doesn't silently expand this plan**: points 5,
+8, 9, and 12 above are all reaffirmed non-goals per this plan's own verification — Create staying
+creation-first, interests staying on Profile/Discover (not moved to Settings), Home's 5-section
+cap, and no new bottom tabs. None of these need building; they're guardrails against
+accidentally undoing round 2's own already-correct work while building the 7 phases above.
+
+**Status: PLAN ONLY. Nothing in this section has been built.** Per the user's own explicit
+instruction, building does not start until this plan has been reviewed. Once building starts,
+follow this file's own established convention: one phase at a time, commit and push after each,
+update this section's own status notes incrementally (not batched at the end) so a mid-session
+restart never loses more than one phase's worth of work.
+
 ## Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — ALL 8 PHASES DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
