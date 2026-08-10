@@ -130,11 +130,29 @@ restart never loses more than one piece:
    and shows an honest "you already have a pending application" message instead of a raw
    Postgres error. Verified via a full `npx expo export --platform ios` — clean, 1851 modules
    (unchanged, edit to one existing file only).
-4. **Client** — new lightweight applicant-facing "My Application" status screen (reuses the
-   already-existing, currently-unused "Users can view their own requests" SELECT policy), plus
-   the conditional swap in `SettingsScreen.js` (pending/denied → status screen, not the bare
-   form) and the equivalent new conditional block added to `ProfileScreen.js` (today shows
-   nothing for a non-partner at all).
+4. **Client — DONE.** New `src/services/businessPartnerApply.js`
+   (`getMyBusinessPartnerRequest()`) — a single query reusing the already-existing, previously-
+   unused "Users can view their own requests" SELECT policy (re-confirmed live before building:
+   `requester_id = auth.uid()`, real and active), returning the caller's own most recent
+   request row regardless of status. New `src/screens/MyBusinessApplicationScreen.js` +
+   `MyBusinessApplication` route (`RootNavigator.js`) — real per-status copy (pending/approved/
+   denied), the applicant's own submitted fields rendered back (category/description/website/
+   phone/address/requested features, resolving the stored keys back to their real labels via
+   `BUSINESS_CATEGORIES`/`FEATURE_OPTIONS`, now exported from `BusinessPartnerApplyScreen.js`
+   for this reuse), the real `admin_notes` shown when a denial has one, and honest next-action
+   buttons (denied → "Submit a New Application" → the apply form, matching locked decision 5's
+   fresh-INSERT-not-resurrection design; approved → "Go to Business Dashboard"; no request on
+   file → routes to the apply form instead of a dead end). `SettingsScreen.js` and
+   `ProfileScreen.js` both gained the same three-way conditional: managing a real business →
+   existing "Manage Your Business"/"Switch to Business" (unchanged) → pending/denied request on
+   file → new "My Application" row/button → otherwise the original "Partner With Us" row
+   (Settings) or nothing at all (Profile — matches its own pre-existing "renders nothing for a
+   non-partner" convention; this pass only added the pending/denied case, not a fresh "Partner
+   With Us" entry point on Profile, per the plan's own scope). Both screens' `load()` fetch the
+   status only when the caller doesn't already manage a business, swallowing a fetch failure
+   quietly rather than blocking the rest of either screen's load. Verified via a full
+   `npx expo export --platform ios` — clean, 1853 modules (two more than the 1851 baseline —
+   the two new files; every other touched file was an edit).
 5. **Client** — `AdminBusinessRequestsScreen.js` renders the new fields per card
    (category/website/phone) for fuller review context. No RPC changes needed, Approve/Deny
    already call the real functions.

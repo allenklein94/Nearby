@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
+import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { typography, spacing, radius } from '../theme';
@@ -53,6 +54,7 @@ export default function SettingsScreen({ navigation }) {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [managesBusiness, setManagesBusiness] = useState(false);
+  const [myBusinessRequestStatus, setMyBusinessRequestStatus] = useState(null);
 
   useEffect(() => {
     load();
@@ -96,6 +98,14 @@ export default function SettingsScreen({ navigation }) {
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
       setManagesBusiness(!!data.managed_partner_id);
+      if (!data.managed_partner_id) {
+        try {
+          const myRequest = await getMyBusinessPartnerRequest();
+          setMyBusinessRequestStatus(myRequest?.status ?? null);
+        } catch (e) {
+          // no-op: don't block the rest of Settings loading over this
+        }
+      }
     }
   }
 
@@ -846,6 +856,19 @@ export default function SettingsScreen({ navigation }) {
             accessibilityRole="button"
           >
             <Text style={styles.rowButtonText}>🏪 Manage Your Business</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        ) : myBusinessRequestStatus === 'pending' || myBusinessRequestStatus === 'denied' ? (
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => navigation.navigate('MyBusinessApplication')}
+            activeOpacity={0.85}
+            accessibilityLabel="View your business partner application"
+            accessibilityRole="button"
+          >
+            <Text style={styles.rowButtonText}>
+              {myBusinessRequestStatus === 'pending' ? '⏳ My Application (Pending)' : '📋 My Application'}
+            </Text>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
         ) : (

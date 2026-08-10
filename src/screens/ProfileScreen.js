@@ -7,6 +7,7 @@ import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../serv
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
+import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
@@ -92,6 +93,7 @@ export default function ProfileScreen({ navigation }) {
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
+  const [myBusinessRequestStatus, setMyBusinessRequestStatus] = useState(null);
   const [earnedStats, setEarnedStats] = useState({ favoriteVibe: null, usuallyActive: null });
   const [connectionGoal, setConnectionGoal] = useState('');
 
@@ -145,6 +147,14 @@ export default function ProfileScreen({ navigation }) {
     const earnedAchievements = await getAchievements();
     setAchievements(earnedAchievements);
     setManagesBusiness(!!data?.managed_partner_id);
+    if (!data?.managed_partner_id) {
+      try {
+        const myRequest = await getMyBusinessPartnerRequest();
+        setMyBusinessRequestStatus(myRequest?.status ?? null);
+      } catch (e) {
+        // no-op: don't block the rest of Profile loading over this
+      }
+    }
     const earnedStats = await getEarnedProfileStats().catch(() => ({ favoriteVibe: null, usuallyActive: null }));
     setEarnedStats(earnedStats);
   }
@@ -528,7 +538,7 @@ const result = await response.json();
           </>
         )}
 
-        {managesBusiness && (
+        {managesBusiness ? (
           <TouchableOpacity
             style={styles.businessModeButton}
             onPress={() => navigation.navigate('BusinessDashboard')}
@@ -538,7 +548,19 @@ const result = await response.json();
           >
             <Text style={styles.businessModeButtonText}>🏪 Switch to Business</Text>
           </TouchableOpacity>
-        )}
+        ) : (myBusinessRequestStatus === 'pending' || myBusinessRequestStatus === 'denied') ? (
+          <TouchableOpacity
+            style={styles.businessModeButton}
+            onPress={() => navigation.navigate('MyBusinessApplication')}
+            activeOpacity={0.85}
+            accessibilityLabel="View your business partner application"
+            accessibilityRole="button"
+          >
+            <Text style={styles.businessModeButtonText}>
+              {myBusinessRequestStatus === 'pending' ? '⏳ My Application (Pending)' : '📋 My Application'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
 
         <TouchableOpacity
           style={styles.photoWrap}

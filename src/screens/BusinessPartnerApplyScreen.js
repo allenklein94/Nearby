@@ -5,7 +5,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-const BUSINESS_CATEGORIES = [
+export const BUSINESS_CATEGORIES = [
   { key: 'food_drink', label: '☕ Food & Drink' },
   { key: 'fitness_wellness', label: '💪 Fitness & Wellness' },
   { key: 'retail_shopping', label: '🛍️ Retail & Shopping' },
@@ -14,7 +14,7 @@ const BUSINESS_CATEGORIES = [
   { key: 'other', label: '✨ Other' },
 ];
 
-const FEATURE_OPTIONS = [
+export const FEATURE_OPTIONS = [
   { key: 'offers', label: 'Create offers & perks for customers' },
   { key: 'host_gatherings', label: 'Host gatherings at my business' },
   { key: 'sponsor_community', label: 'Sponsor a community' },
