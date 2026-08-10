@@ -89,11 +89,34 @@ restart never loses more than one piece:
    `tier text default 'basic' check (tier in ('basic','growth','brand'))`. Both RPCs updated to
    set `reviewed_by = auth.uid()` on review (new auditability — today there's no way to tell
    which admin reviewed a given request). **← starting here.**
-2. **Migration** — add push notifications to both RPCs, mirroring `notify_gathering_approved()`'s
-   exact established pattern (`net.http_post` to `send-push`) — no new trigger needed, these
-   RPCs are already the only path into a status change. This app has no in-app-notices
-   equivalent for this event today, confirmed by checking — push is the only real delivery
-   mechanism to add.
+2. **Migration — DONE.** Added push notifications to both RPCs
+   (`20260810_business_partner_review_notifications.sql`), mirroring `notify_gathering_
+   approved()`'s exact established `net.http_post`-to-`send-push` pattern — no new trigger
+   needed, these RPCs are already the only path into a status change. Neither push is gated on
+   a `notify_*` profile preference column: checked live and this app has no dedicated
+   preference for this event type (only `notify_matches`/`notify_messages`/`notify_waves`
+   exist), and `invite_friend_to_gathering()` already sets the precedent of sending
+   unconditionally for an event with no matching preference — followed that, not invented.
+   Approve sends `{type: 'business_partner_approved', partner_id}` with real "You're approved
+   as a partner! 🎉" copy naming the real business; deny sends `{type:
+   'business_partner_denied', request_id}`, using the admin's real `admin_notes` as the body
+   when present, falling back to honest generic copy ("wasn't approved this time... submit a
+   new application any time") when not — no client screen reads either `data.type` yet, that's
+   step 6. **Applied to production and verified live end-to-end, not just applied**: confirmed
+   grants survived the `CREATE OR REPLACE` (`authenticated`/`service_role`/`postgres` only, no
+   `anon`); ran a real approve and a real deny (one with no `admin_notes`, exercising the
+   fallback-copy branch) against two disposable pending test requests as the real admin
+   (`Allen`) — both completed with no error, confirming the embedded `net.http_post` call
+   doesn't raise; re-confirmed the double-review guard still rejects a second deny attempt on
+   an already-reviewed row. All test rows/side-effects (the new `brand_partners` row, `Claude`'s
+   `managed_partner_id`, both of `Claude`'s real gatherings' `hosting_partner_id`) reverted —
+   confirmed production back to its exact pre-test baseline (1 pre-existing request row, 1
+   partner). **Verified via a real from-scratch migration replay**: pulled the cached
+   `supabase/postgres:15.1.0.147` image, dropped/recreated an empty `public` schema, patched
+   the two known image-version gaps, ran the full `supabase/migrations/` folder in order (10
+   files) with `psql -v ON_ERROR_STOP=1` — exit 0 on every file, both functions' bodies
+   confirmed to contain the new push logic in the freshly-rebuilt database. Container removed.
+   No client files touched, so no `npx expo export` needed for this step.
 3. **Client** — expand `BusinessPartnerApplyScreen.js`'s form with the new fields (category
    picker, website/phone/address, feature checkboxes → `requested_features`). Pure client
    change once step 1 is live.
