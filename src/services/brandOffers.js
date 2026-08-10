@@ -480,7 +480,14 @@ async function geocodeAddress(address) {
   );
   const result = await response.json();
   if (result.status !== 'OK' || !result.results?.[0]) {
-    throw new Error("Couldn't find that address. Try being more specific.");
+    if (result.status === 'ZERO_RESULTS') {
+      throw new Error("Couldn't find that address. Try being more specific.");
+    }
+    // A non-ZERO_RESULTS status means Google rejected the request itself
+    // (bad/restricted API key, Geocoding API not enabled, billing, quota) --
+    // surface the real reason instead of the misleading "try being more
+    // specific" copy, which only applies to a genuinely bad address.
+    throw new Error(`Address lookup failed (${result.status}${result.error_message ? `: ${result.error_message}` : ''}).`);
   }
   const { lat, lng } = result.results[0].geometry.location;
   return { latitude: lat, longitude: lng };

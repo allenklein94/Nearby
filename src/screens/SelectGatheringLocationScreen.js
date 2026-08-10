@@ -50,7 +50,15 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       const result = await response.json();
 
       if (result.status !== 'OK' || !result.results?.[0]) {
-        Alert.alert('Not found', "Couldn't find that address. Try being more specific.");
+        if (result.status === 'ZERO_RESULTS') {
+          Alert.alert('Not found', "Couldn't find that address. Try being more specific.");
+        } else {
+          // A non-ZERO_RESULTS status means Google rejected the request itself
+          // (bad/restricted API key, Geocoding API not enabled, billing, quota) --
+          // surface the real reason instead of the misleading "try being more
+          // specific" copy, which only applies to a genuinely bad address.
+          Alert.alert('Address lookup failed', `${result.status}${result.error_message ? `: ${result.error_message}` : ''}`);
+        }
         setSearching(false);
         return;
       }
