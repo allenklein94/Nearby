@@ -33,15 +33,20 @@ overlaps" list (overlaps only — not resolved, not recommended away).
    back, since overlaps require cross-referencing both halves against each other.
 4. Commit and push once assembled.
 
-**Status: research done, assembled, committed. Closing UI map + overlaps section still to
-write.** Both read-only research passes completed and were assembled into
+**Status: DONE.** Both read-only research passes completed and were assembled into
 `PRODUCT_AUDIT/UI_IA_REVIEW_FOR_EXTERNAL_AI_2026-08-10.md` (Part 1: Home/Discover/Create/weather
 trace; Part 2: Profile/Settings/Inbox/GatheringDetail/Gatherings-attending-hosting/Business Mode
-intersections). **Committed immediately on completion, before writing the closing section**, per
-the user's own mid-task request not to risk losing it to a restart. Next: write the closing
-ASCII UI map + "Potential IA overlaps" section (requires cross-referencing both parts against
-each other, done by the orchestrating session, not either research pass alone), append to the
-same file, commit again.
+intersections), committed immediately per the user's own mid-task request not to risk losing it
+to a restart. The closing section (a concise ASCII UI map of all 5 tabs + cross-tab "fan-in" hub
+screens, plus an unranked, factual "Potential IA overlaps" list of 15 items — Business Mode's
+4 separate entry points, Billing/Emergency Contacts/Friends duplicated across screens, the
+Looking-For-vs-connection-goal and My-Gender-vs-gender-identity field overlaps, a gathering's
+upcoming/attending/hosting status surfaced in 5+ places, the duplicate Approve action on
+Hosting-tab vs. Activity's Connection Requests, Home/Discover's independently-computed
+Trending/Recommended sections, group-chat/invite-friends reachable via 3-4 paths each, etc.) was
+written by cross-referencing both parts against each other, appended to the same file, and
+committed (`d86af1d5`). The whole deliverable is now assembled end-to-end — nothing left to
+build for this item.
 
 ## Outstanding: Current UI Map for IA review — IN PROGRESS
 
