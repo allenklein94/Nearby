@@ -188,6 +188,23 @@ export async function getCommunityMessages(communityId) {
   return data ?? [];
 }
 
+// Single-row fetch (with the same profiles join getCommunityMessages already
+// uses) for a realtime INSERT payload, which only carries raw table columns —
+// used to append one new message without re-downloading the whole history.
+export async function getCommunityMessageById(messageId) {
+  const { data, error } = await supabase
+    .from('community_messages')
+    .select('id, sender_id, body, created_at, profiles(display_name, photo_url)')
+    .eq('id', messageId)
+    .single();
+
+  if (error) {
+    console.error('getCommunityMessageById error', error);
+    return null;
+  }
+  return data;
+}
+
 export async function sendCommunityMessage(communityId, body) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

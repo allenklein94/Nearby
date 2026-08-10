@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { getCommunityMessages, sendCommunityMessage } from '../services/communities';
+import { getCommunityMessages, getCommunityMessageById, sendCommunityMessage } from '../services/communities';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { supabase } from '../services/supabase';
@@ -36,9 +36,32 @@ export default function CommunityChatScreen({ route }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));
     load();
-    const interval = setInterval(load, 3000);
-    return () => clearInterval(interval);
-  }, [load]);
+
+    // Was a setInterval(load, 3000) re-downloading the entire message
+    // history every 3 seconds, unconditionally, for as long as this screen
+    // stayed open — worse here than on a one-off gathering chat, since a
+    // community's group chat is open-ended and ongoing. Replaced with a
+    // real realtime subscription — new messages arrive as individual
+    // INSERT events and get appended to the already-loaded list.
+    const channel = supabase
+      .channel(`community_messages:${communityId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'community_messages', filter: `community_id=eq.${communityId}` },
+        async (payload) => {
+          const fullMessage = await getCommunityMessageById(payload.new.id);
+          if (!fullMessage) return;
+          setMessages((prev) => (prev.some((m) => m.id === fullMessage.id) ? prev : [...prev, fullMessage]));
+          if (fullMessage.profiles?.photo_url) {
+            const url = await getSignedPhotoUrl(fullMessage.profiles.photo_url);
+            setPhotoUrls((prev) => ({ ...prev, [fullMessage.sender_id]: url }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [load, communityId]);
 
   async function handleSend() {
     await send(async (body) => {

@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 1 of 10 done
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 2 of 10 done
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -40,6 +40,16 @@ clean, 1850 modules (unchanged, edits to two existing files). **Not verified**: 
 message arriving on a second device without a manual refresh — this sandbox can't open two live
 app sessions to test that, flagged honestly rather than claimed, same standing gap the plan
 itself already called out.
+
+**Step 2 — DONE.** `CommunityChatScreen.js` got the identical treatment — same
+`setInterval(load, 3000)` removed, same `community_messages:{communityId}` realtime channel
+shape, same new single-row `getCommunityMessageById()` helper added to `services/
+communities.js` for the same reason (a `postgres_changes` payload has no joined `profiles`
+data). This one matters more than step 1 in expected growth curve — a community's group chat is
+open-ended and ongoing, not scoped to one finite event the way a gathering chat is, so this was
+the more urgent of the two non-realtime chat screens. Verified via a full `npx expo export
+--platform ios` — clean, 1850 modules. Same unverified gap as step 1: no live two-device test
+of a message actually arriving without a manual refresh.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
