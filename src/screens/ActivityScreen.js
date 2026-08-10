@@ -21,12 +21,20 @@ import { typography, spacing, radius } from '../theme';
 // and other activity all interleaved by recency into one
 // chronological list, rather than scattered across separate places
 // to check.
-// Real named sections — Connection Requests, Invitations, Upcoming —
-// matching the doc's "Activity: Invitations, Connection requests,
-// Gathering updates..." model. `groupOrder` lets a caller (Inbox's
-// initialSection deep-link) bring one to the front without hiding the
-// others — every group still renders, just reordered.
-const DEFAULT_GROUP_ORDER = ['requests', 'invitations', 'reminders'];
+// IA restructure round 3, Phase 2: three real top-level clusters —
+// "Needs Your Attention" (Connection Requests + Invitations, each keeping
+// its own sub-label), "Today" (the same-day gathering nudge, unchanged
+// content/behavior), and "Earlier" (the existing chronological notices/
+// sightings/business-update feed, now with a real header instead of none).
+// Business-update notices deliberately stay in "Earlier", not folded into
+// "Needs Your Attention" — business_updates has no urgency/actionable flag
+// anywhere in its schema (just title/body/created_at), so there's no real
+// signal to sort on; scoping "Needs Your Attention" to requests/invitations
+// only is what the data actually supports, not an invented distinction.
+// `initialSubSection` (Inbox's deep-link) still brings the requested content
+// to the front — either promoting the whole Today cluster ahead of Needs
+// Your Attention, or reordering which sub-group leads inside it — without
+// hiding anything else.
 
 export default function ActivityScreen({ navigation, initialSubSection }) {
   const { colors, shadow } = useTheme();
@@ -60,9 +68,11 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   // near-term — an attention surface, not a duplicate of Home's list.
   const [reminders, setReminders] = useState([]);
 
-  const groupOrder = initialSubSection && DEFAULT_GROUP_ORDER.includes(initialSubSection)
-    ? [initialSubSection, ...DEFAULT_GROUP_ORDER.filter((g) => g !== initialSubSection)]
-    : DEFAULT_GROUP_ORDER;
+  // Within the "Needs Your Attention" cluster: which sub-group leads.
+  const attentionSubOrder = initialSubSection === 'invitations' ? ['invitations', 'requests'] : ['requests', 'invitations'];
+  // Top-level cluster order: deep-linking to "reminders" promotes the whole
+  // "Today" cluster ahead of "Needs Your Attention".
+  const clusterOrder = initialSubSection === 'reminders' ? ['today', 'needsAttention'] : ['needsAttention', 'today'];
 
   const load = useCallback(async () => {
     const premiumStatus = await isPremium().catch(() => false);
@@ -396,7 +406,6 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
     if (groupName === 'reminders' && reminders.length > 0) {
       return (
         <View key="reminders" style={styles.group}>
-          <Text style={styles.groupHeader}>⏰ Upcoming ({reminders.length})</Text>
           {reminders.map((item) => (
             <TouchableOpacity
               key={item.id}
@@ -417,6 +426,26 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
     }
 
     return null;
+  }
+
+  function renderNeedsAttentionCluster() {
+    if (connectionRequests.length === 0 && combinedInvites.length === 0) return null;
+    return (
+      <View key="needsAttention" style={styles.cluster}>
+        <Text style={styles.clusterHeader}>🎯 Needs Your Attention</Text>
+        {attentionSubOrder.map((groupName) => renderGroup(groupName))}
+      </View>
+    );
+  }
+
+  function renderTodayCluster() {
+    if (reminders.length === 0) return null;
+    return (
+      <View key="today" style={styles.cluster}>
+        <Text style={styles.clusterHeader}>📅 Today ({reminders.length})</Text>
+        {renderGroup('reminders')}
+      </View>
+    );
   }
 
   const hasAnyGroupContent = connectionRequests.length > 0 || combinedInvites.length > 0 || reminders.length > 0;
@@ -454,9 +483,10 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
           keyExtractor={(item) => item.key}
           contentContainerStyle={{ padding: spacing.lg }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-          ListHeaderComponent={hasAnyGroupContent ? (
+          ListHeaderComponent={(hasAnyGroupContent || items.length > 0) ? (
             <View style={{ marginBottom: spacing.md }}>
-              {groupOrder.map((groupName) => renderGroup(groupName))}
+              {clusterOrder.map((cluster) => cluster === 'needsAttention' ? renderNeedsAttentionCluster() : renderTodayCluster())}
+              {items.length > 0 && <Text style={styles.clusterHeader}>🕰️ Earlier</Text>}
             </View>
           ) : null}
           ListEmptyComponent={hasAnyGroupContent ? null : (
@@ -592,6 +622,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   inlineButtonDone: { backgroundColor: colors.success },
   declineInlineButton: { backgroundColor: colors.surfaceElevated },
   inlineButtonText: { fontSize: 16 },
+  cluster: { marginBottom: spacing.lg },
+  clusterHeader: {
+    fontSize: 16, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.sm,
+  },
   group: { marginBottom: spacing.md },
   groupHeader: {
     ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',

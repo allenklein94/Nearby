@@ -248,6 +248,36 @@ sub-labels, matching the sub-heading pattern round 2's Home pass already establi
 rename `reminders` to "Today" (content/behavior unchanged, already a same-day nudge per round 2
 Phase 6), and give the existing unlabeled chronological feed a real "Earlier" header.
 
+**Phase 2 — DONE.** Resolved the flagged business-notices-urgency question first, by checking
+the real data rather than guessing: `business_updates` (`getFollowedBusinessUpdates()`,
+`services/brandOffers.js`) has exactly `id, title, body, created_at, partner_id` — no
+urgency/actionable flag of any kind anywhere in its schema. Folding every business-update notice
+into "Needs Your Attention" would be the "likely too broad" option the plan itself already
+flagged as the weakest; there's no data to support a narrower "only the actionable ones" split
+either. Went with the plan's own third, data-honest option: business-update notices stay in
+"Earlier", "Needs Your Attention" is scoped to requests/invitations only — matching this file's
+standing "don't invent a new signal" convention.
+`ActivityScreen.js` now renders three real top-level clusters instead of three same-weight
+headers stacked flat: **🎯 Needs Your Attention** (Connection Requests + Invitations, each
+keeping its own existing sub-label/count exactly as before — "🙋 Connection Requests (N)" /
+"🤝 Invitations (N)" — now one visual step down from the new cluster header, matching the
+sub-heading pattern round 2's Home pass already established for its own "Recommended For You"
+cluster), **📅 Today (N)** (the same `reminders` group from round 2 Phase 6, content/behavior
+byte-for-byte unchanged — still the ~12h same-day nudge, still taps through to
+`GatheringDetail` — only its header changed, from "⏰ Upcoming (N)" to "📅 Today (N)"), and
+**🕰️ Earlier** (the existing unlabeled chronological notices/sightings/business-update feed,
+now with a real header above it for the first time). `initialSubSection` (Inbox's deep-link
+into this screen) still works exactly as before, just translated onto the new two-level
+structure: linking to `'reminders'` promotes the whole Today cluster ahead of Needs Your
+Attention; linking to `'requests'`/`'invitations'` reorders which sub-group leads inside the
+Needs Your Attention cluster, without hiding the other. Verified via a full `npx expo export
+--platform ios` — clean, 1855 modules (unchanged, edit to one existing file only).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm the three clusters render correctly with every
+combination of content present/absent (e.g. only Today, only Needs Your Attention, only
+Earlier, all three, none), and that the `initialSubSection` deep-link from Inbox still brings
+the right cluster to the front.
+
 **Phase 3 — Gathering/chat/invitation separation audit (closes point 3).** A real audit pass,
 not an assumed-clean skip — re-check every surface that names a specific gathering (Home's Your
 Plans, the new Plans screen from Phase 1, Activity's Today/requests/invitations rows, Inbox's
