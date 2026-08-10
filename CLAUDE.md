@@ -287,6 +287,26 @@ new files):**
   browses first; and the renamed section headers/reordered sub-labels read correctly against
   real data.
 
+**New gap surfaced by this phase, real and unscheduled — not a phase 1-8 item, carried forward
+explicitly here so it isn't silently lost the way this file's own conventions warn against.**
+The weather card's `forecast_detail` sentences (returned verbatim by the `get_weather_result`
+SQL function — the actual copy strings, not composed client-side) always say "tonight" and can
+never make a real time-specific claim (e.g. "rain after 7 PM") regardless of when the request
+actually fires, because the backend only calls OpenWeatherMap's **current-conditions** endpoint,
+not an hourly/forecast endpoint — there is no real data behind a future-time claim to make. This
+pass fixed what was honestly fixable client-side (weak-signal suppression, the "Social Forecast"
+→ "Right Now" heading, dropping the redundant generic insight-line sentence) but deliberately
+did **not** touch the SQL function's own hardcoded copy, since that's a schema/migration change
+requiring this file's own live-verification + from-scratch-replay discipline, not something to
+fold into a client-only Home pass. **Closing this for real needs one of**: (a) a genuine forecast
+API integration (a different OpenWeatherMap/Google endpoint, real new external cost/latency,
+worth a scope discussion before building), or (b) at minimum a small migration softening the
+SQL function's own "tonight"/"tonight's" wording to something time-neutral (e.g. "right now"),
+with the same live-test + from-scratch-replay verification every other schema change in this
+file gets. Not built, not scheduled as one of the 8 phases below — flagged here as its own
+standalone open item so a future session (this one or a fresh one) can pick it up deliberately,
+either bundled into a future Home revisit or as its own small one-off fix.
+
 **Next**: Phase 5 (Profile vs. Settings cleanup — remove Profile's Billing/Emergency Contacts
 rows, regroup Profile's link list into Profile/My Activity/My Circle), not started.
 
