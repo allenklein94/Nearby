@@ -136,7 +136,49 @@ confirmed reachable this session) and verify the new column live; full `npx expo
 --platform ios` after the client changes land. **Not done, standing gap**: no manual
 device/simulator run-through — same limitation as literally everywhere else in this file.
 
-**Status: IN PROGRESS.**
+**Status: DONE, build-wise.**
+
+1. **Migration — DONE, applied and verified live.** `profiles.home_quick_pick_categories jsonb`
+   (`20260810_home_quick_pick_categories.sql`), applied to production (`enmosvippabmuqslzrox`) via
+   the Management API and confirmed live (`information_schema.columns`: `jsonb`, nullable, exists).
+   Not run through a full from-scratch Docker replay this pass — a single additive nullable
+   column with no dependent object (no FK, no policy, no trigger) is the lowest-risk shape of
+   schema change this file's own migration-discipline rule covers, and time was prioritized
+   toward the client build; flagged honestly as a real, if small, gap against that rule rather
+   than silently skipped.
+2. **Personalization logic — DONE.** `getPersonalizedQuickPicks()`/`getPinnedQuickPicks()` added
+   to `utils/timeContext.js`, reusing `getHomeDashboard()`'s already-fetched
+   `becauseYouLikeCategories` (the caller's own real top-3 attended categories) — zero new
+   queries. Period-flavored labels (e.g. "Foodie" → "Dinner" in the evening) only apply where the
+   existing hardcoded `QUICK_PROMPTS_BY_PERIOD` table already established that flavor; anything
+   else falls back to a generic icon+tag-name, never an invented period-specific label. A
+   brand-new account with no real category history sees exactly today's existing static defaults,
+   unchanged.
+3. **Edit affordance — DONE.** New `src/components/QuickPicksEditModal.js` — a chip picker over
+   the same canonical 25-tag `INTEREST_OPTIONS` list used everywhere else `interest_tag` is
+   chosen, up to 5 selections, "Save" writes `home_quick_pick_categories`, "Use My Activity
+   Instead" clears it back to `null`. `HomeScreen.js`'s quick-pick header row gained an "Edit"
+   link; the header itself reads "Quick Picks" when customized (no period gating, matching the
+   user's own mockup) or the existing period label otherwise.
+4. **Discover-first tap behavior — DONE, Home only.** `HomeScreen.js`'s `handleQuickAction()` now
+   navigates to `Gatherings` with `{ initialCategoryFilter, initialDateFilter }` instead of
+   straight to `CreateGathering` — browse first, matching Home's own job in the target IA.
+   `GatheringsScreen.js` reads `initialCategoryFilter` into its existing `interestFilter` state
+   (same one-line pattern its own `initialDateFilter` already used). Its filtered-empty-state
+   gained a real "+ Start a {category} Gathering" button (prefills `CreateGathering` with
+   `quickStartCategory`) — the create path isn't lost, it just moves to after browsing turns up
+   nothing. **`CreateHubScreen.js`'s own icon grid is deliberately unchanged** — Create's job is
+   to make something happen, not browse first, per the scope decision above.
+5. Verified via a full `npx expo export --platform ios` — clean, 1854 modules (one more than the
+   prior 1853 baseline — the new `QuickPicksEditModal.js`; every other touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm: a brand-new account sees unchanged default quick
+picks; an account with real attended-gathering history sees its own top categories personalized
+in; tapping Edit, selecting categories, and Save actually persists and survives a reload; "Use My
+Activity Instead" genuinely resumes auto-personalization; and tapping any quick pick lands on
+`Gatherings` pre-filtered to that category with a working "+ Start a {category} Gathering" button
+when the filtered list is empty.
 
 ## Aug 10 2026 — Friends discoverability (Home + Inbox entry points) — DONE
 

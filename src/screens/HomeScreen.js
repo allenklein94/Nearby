@@ -7,10 +7,13 @@ import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal, { SUB_OPTIONS } from '../components/StartSomethingModal';
+import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { getGreeting, getTimePeriod, getQuickPrompts } from '../utils/timeContext';
+import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks } from '../utils/timeContext';
+
+const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
 const PERIOD_OPPORTUNITY_WORD = { morning: 'today', afternoon: 'today', evening: 'tonight', weekend: 'this weekend' };
@@ -52,14 +55,17 @@ export default function HomeScreen({ navigation }) {
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
   const [heroAttendeeCount, setHeroAttendeeCount] = useState(null);
+  const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
+  const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const period = getTimePeriod();
 
   const load = useCallback(async () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     if (myId) {
-      const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', myId).single();
+      const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories').eq('id', myId).single();
       setMyName(profile?.display_name?.split(' ')[0] ?? '');
+      setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
     }
     const result = await getHomeDashboard();
     setDashboard(result);
@@ -119,8 +125,37 @@ export default function HomeScreen({ navigation }) {
       setStartModalVisible(true);
       return;
     }
-    navigation.navigate('CreateGathering', { quickStartTitle: item.label, quickStartCategory: item.category });
+    // Discover-first: browse what already exists in this category before
+    // offering to create one — matches Home's own job ("what's happening
+    // in my life") as distinct from Create's ("what can I make happen").
+    // GatheringsScreen's own filtered-empty-state carries the "+ Start a
+    // {category} Gathering" fallback, so nothing is lost, just reordered.
+    navigation.navigate('Gatherings', {
+      initialCategoryFilter: item.category,
+      initialDateFilter: PERIOD_DATE_FILTER[period],
+    });
   }
+
+  async function saveQuickPicks(categories) {
+    setQuickPicksEditVisible(false);
+    setPinnedQuickPicks(categories);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (myId) await supabase.from('profiles').update({ home_quick_pick_categories: categories }).eq('id', myId);
+  }
+
+  async function resetQuickPicksToAuto() {
+    setQuickPicksEditVisible(false);
+    setPinnedQuickPicks(null);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (myId) await supabase.from('profiles').update({ home_quick_pick_categories: null }).eq('id', myId);
+  }
+
+  const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
+    ? getPinnedQuickPicks(pinnedQuickPicks, period, categoryStyleFor)
+    : getPersonalizedQuickPicks(period, dashboard?.becauseYouLikeCategories, categoryStyleFor);
+  const quickPicksAreCustom = pinnedQuickPicks && pinnedQuickPicks.length > 0;
 
   if (loading) {
     return (
@@ -214,9 +249,14 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        <Text style={styles.sectionHeader}>{PERIOD_SECTION_LABELS[period]}</Text>
+        <View style={styles.quickPicksHeaderRow}>
+          <Text style={styles.sectionHeader}>{quickPicksAreCustom ? 'Quick Picks' : PERIOD_SECTION_LABELS[period]}</Text>
+          <TouchableOpacity onPress={() => setQuickPicksEditVisible(true)} accessibilityRole="button" accessibilityLabel="Edit quick picks">
+            <Text style={styles.quickPicksEditLink}>Edit</Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
-          {getQuickPrompts(period).map((item) => (
+          {quickPicks.map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.quickActionChip}
@@ -474,6 +514,13 @@ export default function HomeScreen({ navigation }) {
         navigation={navigation}
         onClose={() => setUnratedGathering(null)}
       />
+      <QuickPicksEditModal
+        visible={quickPicksEditVisible}
+        onClose={() => setQuickPicksEditVisible(false)}
+        initialPicks={pinnedQuickPicks ?? []}
+        onSave={saveQuickPicks}
+        onResetToAuto={resetQuickPicksToAuto}
+      />
     </SafeAreaView>
   );
 }
@@ -552,6 +599,8 @@ const getStyles = (colors) => StyleSheet.create({
   cardChevron: { color: colors.textTertiary, fontSize: 18 },
   divider: { height: 1, backgroundColor: colors.border },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  quickPicksHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  quickPicksEditLink: { ...typography.caption, color: colors.primary, marginBottom: spacing.sm },
   subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
   bestPickCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,

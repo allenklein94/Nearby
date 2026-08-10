@@ -106,7 +106,7 @@ export default function GatheringsScreen({ navigation, route }) {
   const [fellowPhotoUrls, setFellowPhotoUrls] = useState({});
   const [loadingFellows, setLoadingFellows] = useState(false);
   const [sentNoticeTo, setSentNoticeTo] = useState({});
-  const [interestFilter, setInterestFilter] = useState(null);
+  const [interestFilter, setInterestFilter] = useState(route?.params?.initialCategoryFilter ?? null);
   const [dateFilter, setDateFilter] = useState(route?.params?.initialDateFilter ?? 'anytime');
   const [forYouActive, setForYouActive] = useState(false);
   const [trendingActive, setTrendingActive] = useState(false);
@@ -803,6 +803,16 @@ export default function GatheringsScreen({ navigation, route }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
               <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
+              {!isSearchingGatherings && !forYouActive && interestFilter && (
+                <TouchableOpacity
+                  style={styles.emptyStateCreateButton}
+                  onPress={() => navigation.navigate('CreateGathering', { quickStartCategory: interestFilter })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Start a ${interestFilter} gathering`}
+                >
+                  <Text style={styles.emptyStateCreateButtonText}>+ Start a {interestFilter} Gathering</Text>
+                </TouchableOpacity>
+              )}
             </View>
           }
           renderItem={({ item, index }) => {
@@ -1371,6 +1381,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  emptyStateCreateButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.lg },
+  emptyStateCreateButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   card: {
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
