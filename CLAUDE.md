@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 5 DONE (4 of 4 sub-increments), steps 6-10 remaining
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, steps 1-6 DONE, steps 7-10 remaining (four plain `.limit()` caps)
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -236,6 +236,49 @@ removing).
 have both a real realtime channel (steps 1-4) and real cursor-based pagination (5a-5d), closing
 out the headline finding below for good.** Next up per the execution order: step 6 (business-
 conversations-summary RPC), then the four remaining `.limit()` caps (steps 7-10).
+
+**Step 6 — DONE: business-conversations-summary RPC.** `getBusinessConversations()` was
+downloading *every* message across every conversation a business has ever had, just to keep the
+first (most recent) row per `conversation_with_id` in JS — the worst shape in the whole audit,
+scaling with both customer count and history length at once. New
+`get_business_conversations_summary(partner_id_param)` SECURITY DEFINER RPC
+(`20260810_business_conversations_summary.sql`) does a real `DISTINCT ON (conversation_with_id)
+... ORDER BY conversation_with_id, created_at DESC`, capped at 500 conversations, joined to
+`profiles` for `display_name` — same ownership-check convention as every other business RPC
+(`profiles.managed_partner_id = partner_id_param`, empty result for a non-owner rather than an
+error). `getBusinessConversations()` in `services/brandOffers.js` now just calls this RPC and
+maps the row shape to the same `{userId, displayName, lastMessage, lastAt}` object callers
+already expected, plus a new `fromBusiness` field.
+**A real, previously-undetected bug found and fixed while touching this exact code path**: the
+old client-side grouping never actually carried `from_business` onto its returned objects, but
+`BusinessDashboardScreen.js`'s `loadNeedsAttention()` filtered on `c.from_business` anyway to
+compute the "N conversations waiting for a reply" task — `!undefined` is always `true`, so that
+task always counted *every* conversation as needing a reply, never just the ones where the
+business genuinely hadn't replied yet. Fixed as part of this rewrite since the RPC now returns
+`last_from_business` correctly; `loadNeedsAttention()` reads `c.fromBusiness` off the real value.
+Also consolidated the two independent `getBusinessConversations()` calls
+(`loadConversations`/`loadNeedsAttention`, previously fetching the same data twice on every
+focus) into one fetch, with `loadNeedsAttention` now taking the already-fetched list as a param
+instead of re-fetching.
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+grants (`authenticated` yes, `anon` no); built two real disposable test conversations for the
+real partner `Coastal Coffee` (owned by `Allen`) — one where the customer's message was last
+(should count as needing a reply) and one where the business's own reply was last (should not)
+— the RPC's `last_from_business` column correctly distinguished the two; confirmed a real
+non-owner (`Claude`) calling the RPC for `Coastal Coffee` gets exactly 0 rows back while the
+real owner (`Allen`) gets exactly 2. All test `business_messages` rows deleted afterward;
+confirmed production back to its exact pre-test baseline (0 rows).
+**Verified via a real from-scratch migration replay**, per this file's migration-discipline
+rule: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and
+recreated an empty `public` schema, patched the two known image-version gaps, ran the full
+`supabase/migrations/` folder in order (8 files, baseline through this pass's own
+`20260810_business_conversations_summary.sql`) — exit 0, all applied cleanly, confirmed the new
+function exists in the freshly-rebuilt database afterward. Container removed.
+Verified via a full `npx expo export --platform ios` — clean, 1851 modules (unchanged, edits to
+two existing files plus one new migration, no new client files).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm the Business Dashboard's conversation list and
+"needs attention" task count both still render correctly for a real business owner account.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped

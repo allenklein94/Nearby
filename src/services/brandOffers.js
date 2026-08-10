@@ -426,30 +426,32 @@ export async function sendMessageToBusiness(partnerId, body) {
   if (error) throw error;
 }
 
+// Was a plain client-side query downloading EVERY message across every
+// conversation just to keep the first (most recent) per
+// conversation_with_id in JS (see the Aug 10 2026 scalability audit) —
+// the worst shape found in the whole audit, scaling with both customer
+// count and history length at once. Replaced with a real server-side
+// DISTINCT ON via get_business_conversations_summary(), which also
+// returns each conversation's last-message from_business flag — the old
+// version never carried that onto its returned objects even though
+// loadNeedsAttention() (BusinessDashboardScreen.js) filtered on it, a
+// real pre-existing bug (always-true `!undefined`) fixed as part of this
+// pass since it's the exact field this rewrite now returns correctly.
 export async function getBusinessConversations(partnerId) {
-  const { data, error } = await supabase
-    .from('business_messages')
-    .select('conversation_with_id, body, created_at, from_business, profiles!business_messages_conversation_with_id_fkey(display_name)')
-    .eq('partner_id', partnerId)
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('get_business_conversations_summary', { partner_id_param: partnerId });
 
   if (error) {
     console.error('getBusinessConversations error', error);
     return [];
   }
 
-  const grouped = {};
-  for (const msg of data ?? []) {
-    if (!grouped[msg.conversation_with_id]) {
-      grouped[msg.conversation_with_id] = {
-        userId: msg.conversation_with_id,
-        displayName: msg.profiles?.display_name,
-        lastMessage: msg.body,
-        lastAt: msg.created_at,
-      };
-    }
-  }
-  return Object.values(grouped);
+  return (data ?? []).map((row) => ({
+    userId: row.conversation_with_id,
+    displayName: row.display_name,
+    lastMessage: row.last_message,
+    lastAt: row.last_at,
+    fromBusiness: row.last_from_business,
+  }));
 }
 
 export async function replyAsBusinessOwner(partnerId, conversationWithId, body) {

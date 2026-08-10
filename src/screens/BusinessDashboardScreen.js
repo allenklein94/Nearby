@@ -131,8 +131,10 @@ export default function BusinessDashboardScreen({ navigation }) {
         loadInsights(selectedPartner.id);
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
-        loadConversations(selectedPartner.id);
-        loadNeedsAttention(selectedPartner.id);
+        // Fetches conversations once and feeds the same result to both
+        // consumers, instead of loadConversations/loadNeedsAttention each
+        // separately calling getBusinessConversations() for the same data.
+        loadConversations(selectedPartner.id).then((results) => loadNeedsAttention(selectedPartner.id, results));
         loadTopMembers(selectedPartner.id);
         loadVisitFrequency(selectedPartner.id);
         loadPartnershipRequests(selectedPartner.id);
@@ -191,9 +193,10 @@ export default function BusinessDashboardScreen({ navigation }) {
   async function loadConversations(partnerId) {
     const results = await getBusinessConversations(partnerId);
     setConversations(results);
+    return results;
   }
 
-  async function loadNeedsAttention(partnerId) {
+  async function loadNeedsAttention(partnerId, conversationsList) {
     // Genuine, real actionable items — not invented busywork. A
     // pending gathering approval and unread messages are the only
     // two things I can compute honestly right now without guessing.
@@ -208,8 +211,11 @@ export default function BusinessDashboardScreen({ navigation }) {
       tasks.push({ label: `${pendingCount} attendee request${pendingCount === 1 ? '' : 's'} waiting for approval`, onPress: () => setSection('gatherings') });
     }
 
-    const unreadConvos = await getBusinessConversations(partnerId);
-    const unreadCount = unreadConvos.filter((c) => !c.from_business).length;
+    // fromBusiness comes straight off get_business_conversations_summary's
+    // last_from_business column now (see getBusinessConversations) — the
+    // old client-grouped version never actually carried this field, so
+    // this filter was silently always true (`!undefined`) before.
+    const unreadCount = conversationsList.filter((c) => !c.fromBusiness).length;
     if (unreadCount > 0) {
       tasks.push({ label: `${unreadCount} conversation${unreadCount === 1 ? '' : 's'} waiting for a reply`, onPress: () => setSection('inbox_modal') });
     }
