@@ -301,10 +301,17 @@ standing rule about not silently overriding a previously deliberate decision:**
 
 **Smaller/optional, sequence last:**
 
-7. **Pre-join Invite link on `GatheringDetailScreen.js`** — currently invite only shows after
-   joining/hosting; doc's mockup implies it should sit near the Join button before that. Small,
-   genuinely optional (inviting someone to something you haven't joined yourself is a real UX
-   question worth a quick gut-check, not obviously correct) — do only if time remains after 1-5.
+7. **Pre-join Invite link on `GatheringDetailScreen.js` — DONE.** Asked the user directly (the
+   plan's own gut-check) rather than assuming — confirmed they want it. Added a small
+   "🤝 Invite a friend" link right under the Join/Request/Waitlist button, in the same final
+   not-yet-joined branch (not shown for the host/approved/waitlisted/pending/invite-only-locked
+   panels, which already had their own invite links or don't apply). Reuses the exact same
+   `InviteFriendsModal` + `inviteModalVisible` state the host banner and post-join panel already
+   use — no new component, no new state. Verified via a full `npx expo export --platform ios` —
+   clean, 1850 modules (unchanged, edit to one existing file). **Not done yet, same standing gap
+   as everywhere in this file**: no manual device/simulator run-through — next session should
+   confirm the link renders correctly right above the Join button and opens the same working
+   invite modal.
 8. **Visual density on `GatheringDetailScreen.js` itself** — confirmed up to 16 stacked sections
    (hero, fit reasons, who's going, vibe, timeline, community perk, linked-community card,
    organizer, Q&A, plus a bottom action panel with its own 5 state-dependent variants). Same

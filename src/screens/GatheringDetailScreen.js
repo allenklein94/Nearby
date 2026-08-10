@@ -562,18 +562,28 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <Text style={styles.pendingText}>🔒 This gathering is invite-only. Ask {gathering.host?.display_name} for an invite to join.</Text>
             </View>
           ) : (
-            <TouchableOpacity
-              style={[styles.joinButton, { backgroundColor: categoryStyle.color }, shadow.button]}
-              onPress={() => setIntentModalVisible(true)}
-              disabled={joining}
-              activeOpacity={0.85}
-              accessibilityLabel={gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.joinButtonText}>
-                {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}
-              </Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[styles.joinButton, { backgroundColor: categoryStyle.color }, shadow.button]}
+                onPress={() => setIntentModalVisible(true)}
+                disabled={joining}
+                activeOpacity={0.85}
+                accessibilityLabel={gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')}
+                accessibilityRole="button"
+              >
+                <Text style={styles.joinButtonText}>
+                  {joining ? 'Joining...' : gathering.isFull ? 'JOIN WAITLIST' : (gathering.is_public ? 'JOIN GATHERING' : 'REQUEST TO JOIN')}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setInviteModalVisible(true)}
+                style={{ marginTop: spacing.sm, alignItems: 'center' }}
+                accessibilityLabel="Invite a friend to this gathering"
+                accessibilityRole="button"
+              >
+                <Text style={styles.sayHelloLink}>🤝 Invite a friend</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </ScrollView>
