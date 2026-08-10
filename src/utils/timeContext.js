@@ -32,7 +32,7 @@ const QUICK_PROMPTS_BY_PERIOD = {
   morning: [
     { icon: '☕', label: 'Coffee', category: 'Coffee' },
     { icon: '🏃', label: 'Morning Run', category: 'Fitness' },
-    { icon: '🍳', label: 'Breakfast Meetup', category: 'Foodie' },
+    { icon: '🍳', label: 'Breakfast', category: 'Foodie' },
   ],
   afternoon: [
     { icon: '🥪', label: 'Lunch', category: 'Foodie' },

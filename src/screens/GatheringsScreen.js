@@ -516,7 +516,9 @@ export default function GatheringsScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header">{t('gatherings.title')}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">
+          {tab === 'nearby' && interestFilter && !forYouActive ? `${interestFilter} Near You` : t('gatherings.title')}
+        </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {(tab === 'nearby' || tab === 'attending' || tab === 'hosting') && (
             <TouchableOpacity

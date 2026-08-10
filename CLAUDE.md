@@ -324,6 +324,25 @@ just a filter chip), keeping the existing "+ Start a {category} Gathering" empty
 exactly as-is (already matches the user's own "Join existing gatherings, plus + Start a Coffee
 Gathering" framing per round 2 Phase 4).
 
+**Phase 4 — DONE.** `"Breakfast Meetup"` → `"Breakfast"` in `QUICK_PROMPTS_BY_PERIOD`
+(`utils/timeContext.js`) — a one-line rename, confirmed via grep this was the only literal
+occurrence of that string anywhere in `src/`. `GatheringsScreen.js`'s header title is now real
+and dynamic: on the `nearby` (browse) tab, whenever a category filter is active and the "For
+You" toggle isn't (which already has its own "For You" framing), the header reads
+`"{Category} Near You"` (e.g. "Coffee Near You") instead of the generic gatherings title —
+updates live as the filter changes, whether set by the incoming `initialCategoryFilter` param
+(a Quick Pick tap) or a manually-tapped category chip, so it's genuinely dynamic, not a frozen
+snapshot of how the screen was reached. The small filter-chip accordion indicator
+(`categorySummary`, "All Categories"/"{Category}"/"For You") is untouched — this adds a real
+page-level headline alongside it, doesn't replace it. The existing "+ Start a {category}
+Gathering" empty-state button (round 2 Phase 4) is completely unchanged, matching the plan's
+explicit instruction to leave it as-is. Verified via a full `npx expo export --platform ios` —
+clean, 1855 modules (unchanged, edits to two existing files only).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm the dynamic headline reads correctly when arriving via
+a Home Quick Pick, when manually tapping a category chip, and that it correctly falls back to the
+generic title when no category filter is active or "For You" is toggled on.
+
 **Phase 5 — Profile → You relabel + Business header (closes point 6).** Rename the three
 existing Profile groups ("My Circle" → "Your Connections", "My Activity" → "Your Activity",
 "Profile" → "Your Profile") and give the already-consolidated Business row its own real section
