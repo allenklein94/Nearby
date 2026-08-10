@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-4 (Home) DONE, Phase 5 (Profile/Settings) next
+## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-5 DONE, Phase 6 (Inbox) next
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -307,8 +307,39 @@ file gets. Not built, not scheduled as one of the 8 phases below — flagged her
 standalone open item so a future session (this one or a fresh one) can pick it up deliberately,
 either bundled into a future Home revisit or as its own small one-off fix.
 
-**Next**: Phase 5 (Profile vs. Settings cleanup — remove Profile's Billing/Emergency Contacts
-rows, regroup Profile's link list into Profile/My Activity/My Circle), not started.
+**Phase 5 — DONE.** `ProfileScreen.js` only (edit, no new files). Removed the "💳 Billing" and
+"🛡️ Emergency Contacts" `timelineLink` rows outright — both stay Settings-only now
+(Settings' "Manage Subscription" and "🛡️ Emergency Contacts" rows were already there,
+confirmed unchanged, no Settings edit needed for this phase). Regrouped the rest of the
+existing content under three new `sectionLabel`-styled headers (same header style already used
+elsewhere on this screen for "More Photos"/"Prompts"/"Achievements" — no new style invented):
+- **"My Circle"** — the existing quick-stats row split in two; Communities/Friends now sit
+  under this header as their own 2-tile row (same `quickStatsRow`/`quickStat` styles reused
+  as-is — `quickStat` is `flex: 1`, so two tiles fill the row exactly as evenly as four did,
+  no new style needed).
+- **"My Activity"** — the other half of the old quick-stats row (Upcoming/Past) as its own
+  2-tile row, immediately followed by the five surviving `timelineLink` rows (Timeline/Memory
+  Vault/Insights/Momentum/Rewards, unchanged).
+- **"Profile"** — a new header placed directly above the photo picker, marking the start of
+  the identity-editing content (photo, extra photos, name/bio, prompts, connection goal,
+  about-you fields, details/basics accordions, interests, AI strengths, save) — none of that
+  content itself was touched, only the new header was added above it.
+- **Deliberately left in their existing position, not reassigned to one of the three groups**:
+  earned stats (favorite vibe/usually active), the Achievements grid, and the Business Mode
+  button — per the plan's own note, Business's row is Phase 7's job (consolidating it down to
+  one entry point across the whole app), not something to touch or duplicate into a group here.
+- Verified via a full `npx expo export --platform ios` — clean, 1854 modules (unchanged, edit
+  to one existing file only).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through. Next session should confirm the three new section headers read cleanly against
+  real data, the split 2-tile stat rows don't look sparse/oddly spaced compared to the old
+  4-tile row, and that Billing/Emergency Contacts are still reachable (Settings-only) with no
+  dead link left behind on Profile.
+
+**Next**: Phase 6 (Clean Inbox) — per this plan's own item-7 verification, no known gap exists
+today; this phase is a check-and-confirm pass (and a chance to resolve the one explicitly-
+flagged-but-undecided question about Activity's "⏰ Upcoming" group vs. Home's now-live "Your
+Plans" section), not a rebuild. Not started.
 
 ## Detailed UI/IA documentation for external-AI review — DONE
 

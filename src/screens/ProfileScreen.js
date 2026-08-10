@@ -420,6 +420,7 @@ const result = await response.json();
         </View>
         <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">My Circle</Text>
         <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={`${quickStats.communities} communities`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
@@ -429,6 +430,10 @@ const result = await response.json();
             <Text style={styles.quickStatNumber}>{quickStats.friends}</Text>
             <Text style={styles.quickStatLabel}>Friends</Text>
           </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">My Activity</Text>
+        <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
             <Text style={styles.quickStatLabel}>Upcoming</Text>
@@ -488,26 +493,6 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Billing')}
-          activeOpacity={0.85}
-          accessibilityLabel="View your subscription and billing"
-          accessibilityRole="button"
-        >
-          <Text style={styles.timelineLinkText}>💳 Billing</Text>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('EmergencyContacts')}
-          activeOpacity={0.85}
-          accessibilityLabel="Manage your emergency contacts"
-          accessibilityRole="button"
-        >
-          <Text style={styles.timelineLinkText}>🛡️ Emergency Contacts</Text>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (
@@ -562,6 +547,7 @@ const result = await response.json();
           </TouchableOpacity>
         ) : null}
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">Profile</Text>
         <TouchableOpacity
           style={styles.photoWrap}
           onPress={changePhoto}
