@@ -315,10 +315,11 @@ export async function getHomeDashboard() {
   const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
   await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
 
-  const [nearbyPeople, nearbyGatherings, topCategories] = await Promise.all([
+  const [nearbyPeople, nearbyGatherings, topCategories, { count: friendsCount }] = await Promise.all([
     getNearbyMatches().catch(() => []),
     getNearbyGatherings('wide').catch(() => []),
     getMyTopGatheringCategories().catch(() => []),
+    supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'accepted').or(`user_a.eq.${myId},user_b.eq.${myId}`),
   ]);
 
   const gatheringsToday = nearbyGatherings.filter((g) => isToday(g.scheduled_at));
@@ -476,6 +477,7 @@ export async function getHomeDashboard() {
   return {
     nearbyPeopleCount: nearbyPeople.length,
     gatheringsTodayCount: gatheringsToday.length,
+    friendsCount: friendsCount ?? 0,
     mostRecentSighting,
     unreadCount,
     trendingGatherings,

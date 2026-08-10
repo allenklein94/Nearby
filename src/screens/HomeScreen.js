@@ -317,6 +317,14 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.cardText}>{dashboard?.unreadCount ?? 0} unread message{dashboard?.unreadCount === 1 ? '' : 's'}</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${dashboard?.friendsCount ?? 0} friends, tap to view`} accessibilityRole="button">
+            <Text style={styles.cardIcon}>🤝</Text>
+            <Text style={styles.cardText}>{dashboard?.friendsCount ?? 0} friend{dashboard?.friendsCount === 1 ? '' : 's'}</Text>
+            <Text style={styles.cardChevron}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {(dashboard?.bestPick || dashboard?.becauseYouLike?.length > 0 || dashboard?.trendingGatherings?.length > 0 || dashboard?.friendsActivity?.length > 0) && (

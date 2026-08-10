@@ -4,6 +4,34 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 10 2026 — Friends discoverability (Home + Inbox entry points) — DONE
+
+Direct follow-up to the Story Circle question above: user confirmed Friends is genuinely hard
+to find today (only two entry points — `ProfileScreen.js`'s quick-stat tile and a row buried in
+Settings → Connect, two taps deep) and asked for real entry points from **Home** and **Inbox**
+specifically (ruled out a 6th bottom tab, matching this file's own repeated "no new tabs"
+stance).
+
+**Built exactly as planned, no design changes during implementation**:
+1. **Home**: a "🤝 N friend(s)" row added to the existing always-visible quick-stats card
+   (`HomeScreen.js`, same card as people-nearby/gatherings-today/crossed-paths/unread-messages),
+   same `cardRow`/`cardIcon`/`cardText`/`cardChevron` style as every other row there, navigating
+   to `Friends`. `getHomeDashboard()` (`services/homeDashboard.js`) now also returns
+   `friendsCount` — one added count query in the existing `Promise.all`, same real
+   `friendships`-where-`status='accepted'` shape `getProfileQuickStats()` already uses, not a
+   new signal.
+2. **Inbox**: a small persistent "🤝 Friends" pill added to `InboxScreen.js`'s header row, next
+   to the "Inbox" title — always visible regardless of which of the two tabs (Messages/Activity)
+   is active, navigating straight to `Friends`.
+3. The existing two entry points (Profile quick-stat, Settings → Connect) were left untouched —
+   this was additive, not a replacement.
+- Verified via a full `npx expo export --platform ios` — clean (edits to two existing files
+  only, no new files). Committed and pushed.
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through — next session should confirm both new links render and navigate correctly, and
+  that the Home card's real friend count matches Profile's own quick-stat number for the same
+  account.
+
 ## Aug 10 2026 — two small user-reported bugs found via live usage, both fixed
 
 The user was actually using the app (not a code audit) and hit two real navigation bugs:

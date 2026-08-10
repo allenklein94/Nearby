@@ -81,8 +81,20 @@ export default function InboxScreen(props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header">Inbox</Text>
-        <Text style={styles.subtitle}>Messages, requests, and everything else waiting for you.</Text>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle} accessibilityRole="header">Inbox</Text>
+            <Text style={styles.subtitle}>Messages, requests, and everything else waiting for you.</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.friendsLink}
+            onPress={() => props.navigation.navigate('Friends')}
+            accessibilityLabel="Friends"
+            accessibilityRole="button"
+          >
+            <Text style={styles.friendsLinkText}>🤝 Friends</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <View style={styles.toggleRow}>
         <TouchableOpacity
@@ -144,8 +156,14 @@ export default function InboxScreen(props) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
+  friendsLink: {
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, marginTop: 2,
+  },
+  friendsLinkText: { color: colors.textPrimary, fontSize: 13, fontWeight: '700' },
   toggleRow: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   toggleButton: {
     flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full,
