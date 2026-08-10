@@ -126,6 +126,7 @@ export default function HomeScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+        <Text style={styles.loadingText}>Finding what's happening near you...</Text>
       </SafeAreaView>
     );
   }
@@ -473,6 +474,7 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   heroCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
     padding: spacing.lg, marginBottom: spacing.lg,

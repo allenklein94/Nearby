@@ -219,19 +219,25 @@ increments as each piece lands, rather than batching the whole item at the end.
      and the standalone `Notices` route (reached via the activity bell or a cold-start push tap)
      still renders correctly with no `initialSubSection` passed.
 
-3. **Screen one-sentence subtitles (doc item 2) — real, but cheap.** `DiscoverHubScreen.js` and
-   `CreateHubScreen.js` already have one each ("What are you looking for?" / "What would you like
-   to do today?" — close to the doc's spirit already). `HomeScreen.js`, `InboxScreen.js`, and
-   `ProfileScreen.js` have none — `InboxScreen.js` doesn't even have a title. Add one line each,
-   matching the doc's own suggested tone. Do alongside #1/#2 above since it's the same screens.
+3. **Screen one-sentence subtitles (doc item 2) — DONE.** `DiscoverHubScreen.js` and
+   `CreateHubScreen.js` already had one each. `HomeScreen.js` got one in item 1's first
+   sub-increment ("Here's what's happening around you."). This pass closed the remaining two:
+   `ProfileScreen.js` gained "Your story, your stats, your circle." under its existing header row
+   (the row's own `marginBottom` moved onto the new subtitle so spacing stayed even).
+   `InboxScreen.js` **didn't even have a title** before this — it went straight into the toggle
+   row with no header of any kind. Added a real header ("Inbox") plus a subtitle ("Messages,
+   requests, and everything else waiting for you.") above the Messages/Activity toggle,
+   requiring a new `typography` import (previously only `spacing`/`radius`).
 
-4. **Loading state strings (part of the "one subtle thing") — real, mechanical gap.** Zero
-   contextual loading strings exist anywhere — grepped for "Finding"/"Searching for"/"Loading
-   nearby", all zero hits. 86 bare `<ActivityIndicator>`s across `src/screens`, the large majority
-   with no text at all (only one generic literal "Loading..." found, `GatheringsScreen.js:1057`).
-   **Plan**: not a dedicated pass — swap in a real contextual string wherever a loading spinner is
-   touched by any other work in this plan (Home, Discover, Inbox), and do the rest opportunistically
-   rather than a mechanical find-replace across 86 unrelated call sites in one sitting.
+4. **Loading state strings (part of the "one subtle thing") — partially closed, opportunistically
+   per the plan's own scope.** Not a dedicated pass across all 86 bare `<ActivityIndicator>`s —
+   per plan, only touched wherever another item in this pass already touched the same screen.
+   `HomeScreen.js`'s own top-level loading spinner (shown before `getHomeDashboard()` resolves,
+   the same screen item 1 already rewrote extensively) gained "Finding what's happening near
+   you..." under the spinner. Discover and the rest of Inbox's own screens weren't otherwise
+   touched by this pass's item 2/3 work in a way that put a bare spinner in scope, so nothing
+   else was changed here — still a real, open, low-priority gap across the other 85 call sites,
+   matching the plan's own "do the rest opportunistically" framing rather than a dedicated pass.
 
 5. **First-time celebration moments (doc's "favorite polish idea") — real, additive gap.**
    General celebration copy already exists and is good (`GatheringHubScreen.js`'s "You're In!

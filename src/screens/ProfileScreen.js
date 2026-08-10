@@ -408,6 +408,7 @@ const result = await response.json();
             <Text style={styles.settingsGearText}>⚙️</Text>
           </TouchableOpacity>
         </View>
+        <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
 
         <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={`${quickStats.communities} communities`} accessibilityRole="button">
@@ -905,10 +906,11 @@ const result = await response.json();
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { marginBottom: spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { marginBottom: 2, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   settingsGear: { padding: spacing.xs },
   settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   timelineLink: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

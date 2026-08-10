@@ -7,7 +7,7 @@ import { getMyGatheringChats } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
 import { getPendingInvitesCount } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
-import { spacing, radius } from '../theme';
+import { spacing, radius, typography } from '../theme';
 
 // Connection requests, invitations, and reminders used to be three
 // separate top-level tabs here — collapsed into real named sections
@@ -80,6 +80,10 @@ export default function InboxScreen(props) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle} accessibilityRole="header">Inbox</Text>
+        <Text style={styles.subtitle}>Messages, requests, and everything else waiting for you.</Text>
+      </View>
       <View style={styles.toggleRow}>
         <TouchableOpacity
           style={[styles.toggleButton, section === 'messages' && styles.toggleButtonActive]}
@@ -139,6 +143,9 @@ export default function InboxScreen(props) {
 }
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  headerTitle: { ...typography.title, color: colors.textPrimary },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
   toggleRow: { flexDirection: 'row', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   toggleButton: {
     flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full,
