@@ -139,7 +139,7 @@ export default function InboxScreen(props) {
                       accessibilityRole="button"
                     >
                       <Text style={styles.groupChatChipIcon}>{chat.kind === 'gathering' ? '🎉' : '🏘️'}</Text>
-                      <Text style={styles.groupChatChipText} numberOfLines={1}>{chat.title}</Text>
+                      <Text style={styles.groupChatChipText} numberOfLines={1}>{chat.title} Chat</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>

@@ -286,6 +286,37 @@ interchangeably with its chat's title, or a tap target lands on the wrong one of
 (thing/conversation/activity). Fix whatever's found; if nothing's found, say so plainly rather
 than padding this phase with unnecessary changes.
 
+**Phase 3 — DONE, two real conflations found and fixed, not a clean skip.** Audited every
+surface the plan names: Home's Your Plans and the new Plans screen (Phase 1) both only ever
+navigate to `GatheringDetail` (the thing) — clean, no chat conflation. Activity's Today rows
+navigate to `GatheringDetail`; its Invitations rows, on accept, also navigate to
+`GatheringDetail`/`CommunityDetail` (the thing an invitation resolves to), never straight into
+a chat — clean. `GatheringDetailScreen`'s own "🤝 Invite friends" link and "💬 Say Hello"/
+"💬 Group Chat" buttons are each correctly scoped to their own action (invite vs. chat) — clean.
+**Two real conflations found, both the exact "Friday Soccer" vs. "Friday Soccer Chat" shape the
+user's own example named**: (1) the `GatheringChat`/`CommunityChat` screens' own native headers
+(`RootNavigator.js`) showed the bare gathering/community title verbatim (`title:
+route.params?.gatheringTitle ?? 'Group Chat'`) — indistinguishable from the gathering/community
+itself once inside the conversation. (2) Inbox's "Group Chats" chip row (`InboxScreen.js`) showed
+the same bare title for the identical reason. Both fixed at the point where the chat's own
+*identity* is displayed, not by touching the underlying `gatheringTitle`/`communityName` params
+themselves — those are correctly reused elsewhere for sentences that are genuinely about the
+gathering/community, not the chat (e.g. `GatheringChatScreen.js`'s "Your story is now shared with
+everyone at {gatheringTitle}"), so changing the param's value everywhere would have broken those.
+Fix: `RootNavigator.js`'s `GatheringChat`/`CommunityChat` header-title functions now render
+`` `${title} Chat` `` instead of the bare title (one line each, covering all 7 real navigation
+call sites into these two routes from a single place — `GatheringHubScreen.js`,
+`GatheringDetailScreen.js`, `GatheringsScreen.js`, `CommunityDetailScreen.js` — rather than
+touching each call site); Inbox's chip label likewise now renders `{chat.title} Chat`. A gathering
+now reads "Friday Soccer" everywhere it's the thing (Home, Plans, GatheringDetail) and "Friday
+Soccer Chat" everywhere it's the conversation (the chat screen's own header, Inbox's chip) —
+exactly the three-way separation the user's mental model asks for. Verified via a full `npx expo
+export --platform ios` — clean, 1855 modules (unchanged, edits to two existing files only).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm both chat screens' headers and Inbox's chip both read
+correctly ("X Chat") against real data, and that nothing relying on the raw `gatheringTitle`/
+`communityName` param elsewhere in either chat screen was affected.
+
 **Phase 4 — Quick Picks wording + destination headline (closes point 4).** Rename `"Breakfast
 Meetup"` → `"Breakfast"` in `QUICK_PROMPTS_BY_PERIOD`. Add a real dynamic headline to
 `GatheringsScreen.js` when reached via `initialCategoryFilter` (e.g. "Coffee Near You" instead of
