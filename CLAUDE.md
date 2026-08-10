@@ -153,9 +153,13 @@ restart never loses more than one piece:
    quietly rather than blocking the rest of either screen's load. Verified via a full
    `npx expo export --platform ios` — clean, 1853 modules (two more than the 1851 baseline —
    the two new files; every other touched file was an edit).
-5. **Client** — `AdminBusinessRequestsScreen.js` renders the new fields per card
-   (category/website/phone) for fuller review context. No RPC changes needed, Approve/Deny
-   already call the real functions.
+5. **Client — DONE.** `AdminBusinessRequestsScreen.js` now renders the new fields per card —
+   category (resolved to its real label via the same exported `BUSINESS_CATEGORIES` list step 4
+   already reused), website, phone, address, and a "Reviewed {date}" line once `reviewed_by` is
+   set — for fuller review context, each conditionally rendered only when present so an older
+   or thinner application doesn't show empty rows. No RPC changes needed, Approve/Deny already
+   call the real functions from steps 1-2. Verified via a full `npx expo export --platform
+   ios` — clean, 1853 modules (unchanged, edit to one existing file only).
 6. **Client** — two new `routeNotificationTap()` cases in `services/notifications.js`
    (`business_partner_approved` → `BusinessDashboard`, `business_partner_denied` → the new
    status screen).

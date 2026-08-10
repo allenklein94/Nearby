@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -79,8 +80,19 @@ export default function AdminBusinessRequestsScreen() {
               </Text>
             </View>
             <Text style={styles.requester}>Requested by {item.profiles?.display_name}</Text>
+            {item.category ? (
+              <Text style={styles.category}>
+                {BUSINESS_CATEGORIES.find((c) => c.key === item.category)?.label ?? item.category}
+              </Text>
+            ) : null}
             {item.business_description ? <Text style={styles.description}>{item.business_description}</Text> : null}
             {item.contact_info ? <Text style={styles.contact}>📞 {item.contact_info}</Text> : null}
+            {item.website ? <Text style={styles.contact}>🔗 {item.website}</Text> : null}
+            {item.phone ? <Text style={styles.contact}>📱 {item.phone}</Text> : null}
+            {item.address ? <Text style={styles.contact}>📍 {item.address}</Text> : null}
+            {item.reviewed_by ? (
+              <Text style={styles.contact}>Reviewed {item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString() : ''}</Text>
+            ) : null}
             {item.status === 'pending' && (
               <View style={styles.actionsRow}>
                 <TouchableOpacity
@@ -119,7 +131,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md, ...shadow.card,
   },
   businessName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16 },
-  requester: { color: colors.textTertiary, fontSize: 12, marginTop: 2, marginBottom: spacing.sm },
+  requester: { color: colors.textTertiary, fontSize: 12, marginTop: 2, marginBottom: spacing.xs },
+  category: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
   statusBadge: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   statusApproved: { color: colors.success },
   statusDenied: { color: colors.textTertiary },
