@@ -1531,3 +1531,229 @@ The default landing tab of `GatheringsScreen.js`. It is a browse/discovery surfa
 - **`GatheringOfferBadge`** component on Nearby-tab cards signaling an available brand offer tied to that gathering
 - Host-only "🤝 Request a Business Partner →" link on Gathering Detail → `navigation.navigate('RequestBusinessPartner', {targetType:'gathering', targetId, targetTitle})`
 - "🎁 N new offer(s) available" banner on both the Gatherings screen header and MatchesScreen (Messages tab) → `navigation.navigate('BrandOffers')` (offers are business-partner-issued)
+---
+
+# CLOSING: Concise UI Map + Potential IA Overlaps
+
+Written by the orchestrating session after cross-referencing both research parts above against
+each other. Factual only, per the same instruction as the rest of this document — no
+recommendations, no "should," no proposed fixes. The map below is a summary of what's already
+documented in full above; where it disagrees in wording with a section above, the section above
+is the source of truth.
+
+## Concise ASCII UI Map
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  BOTTOM TAB BAR — always visible, 5 tabs (RootNavigator "MainTabs")      │
+│  🏠 Home   🔎 Discover   ➕ Create   💬 Inbox (route "Matches")   👤 You   │
+└──────────────────────────────────────────────────────────────────────────┘
+
+🏠 HOME  (HomeScreen)
+├─ Greeting + subtitle
+├─ "Your Next Thing" hero card ──────────────► GatheringDetail
+├─ Opportunity line / Home insight line (text only)
+├─ Banner cluster: Pending Invites ──────────► Matches (Inbox, Activity tab)
+│                  Perks ────────────────────► BrandOffers
+│                  Since You Were Away (text only)
+├─ Quick Picks chip row (+ "Edit") ──────────► Gatherings (filtered) | StartSomethingModal → CreateGathering
+├─ "🔥 Happening Now" chips ─────────────────► Gatherings (unfiltered)
+├─ "☀️ Social Forecast" card (text only)
+├─ "🏘️ Continue Your Communities" ───────────► CommunityDetail
+├─ Stats card: people nearby / gatherings today / crossed paths / unread / friends
+│    └─────────────────────────────────────► Nearby | Gatherings | ViewProfile | Matches | Friends
+├─ "✨ Recommended For You" cluster:
+│    Best Pick / Because You're Into X / Trending / Friends' Activity ──► GatheringDetail | Gatherings
+├─ "📅 Also Coming Up" ──────────────────────► Gatherings
+├─ "This Week" recap card (text only)
+├─ "Continue Browsing →" ────────────────────► Discover
+└─ FAB "+ Start Something" ──────────────────► StartSomethingModal → CreateGathering
+
+🔎 DISCOVER  (DiscoverHubScreen — "Meet People" lives here, not a separate tab)
+├─ Search bar + "✨ Ask AI Concierge" ────────► AIConcierge
+├─ Type filter chips (All/Gatherings/Communities/Places/Perks) + map/list toggle
+├─ "👥 Meet People" card ─────────────────────► Nearby
+├─ "🌙 Tonight" / "📅 This Weekend" cards ────► Gatherings (date-filtered)
+├─ Recommended For You / 🔥 Trending Near You ► GatheringDetail
+├─ Gatherings list ───────────────────────────► GatheringDetail | Gatherings ("See all")
+├─ Communities list ───────────────────────────► CommunityDetail | Communities ("See all")
+├─ Places list ─────────────────────────────────► external Google Maps link | Places ("See all")
+├─ Perks list ───────────────────────────────────► BrandOffers
+├─ Gathering Memories / Public Stories ────────► in-screen story viewer modal (no navigation)
+└─ Map view: gathering pins / deal pins / business pins ► GatheringDetail | BrandOffers | BusinessProfile
+   (zero creation exit-points anywhere on this screen — confirmed by full read)
+
+➕ CREATE  (CreateHubScreen)
+├─ Icon grid (8 tiles: Coffee/Dinner/Walk/Sports/Games/Music/Volunteer/Something Else)
+│    ├─ 7 direct-category tiles ──────────────► CreateGathering (fromQuickPick:true, wizard's "What" step skipped)
+│    ├─ "Dinner" → sub-grid (Pizza/Mexican/Sushi/Burgers/Healthy/Italian/Doesn't matter) ► CreateGathering
+│    └─ "➕ Something Else" → NL text box → create-assistant classifier ► CreateGathering | CreateCommunity
+│                                                                        | RequestBusinessPartner
+└─ Secondary row "Want to build something bigger?"
+     ├─ "👥 Create a Community" ───────────────► CreateCommunity
+     └─ "🏪 Manage Your Business" (if managesBusiness) ► BusinessDashboard
+        / "🤝 Partner with a Business" (else)   ► RequestBusinessPartner
+   (reached ONLY via the bottom tab bar — zero other in-app navigate('Create') call sites)
+
+💬 INBOX  (InboxScreen shell, embeds MatchesScreen + ActivityScreen)
+├─ Header: title/subtitle + "🤝 Friends" button ─────► Friends
+├─ Toggle: 💬 Messages / 🔔 Activity (N)
+├─ MESSAGES tab (MatchesScreen):
+│    ├─ Group-chat chip row (gathering 🎉 / community 🏘️) ► GatheringChat | CommunityChat
+│    ├─ Offers banner ────────────────────────────────────► BrandOffers
+│    └─ Match rows ─────────────────────────────────────────► ViewProfile (avatar) | Chat (row body)
+└─ ACTIVITY tab (ActivityScreen):
+     ├─ Premium upsell banner ─────────────────────────────► Paywall
+     ├─ 🙋 Connection Requests group (Approve) ─── (same underlying rows as Gatherings→Hosting's own Approve)
+     ├─ 🤝 Invitations group (friend req. + social invites) ► GatheringDetail | CommunityDetail (on accept)
+     ├─ ⏰ Upcoming group (next-24h reminders, non-tappable)
+     └─ Chronological feed: notices / crossed-paths / business updates ► ViewProfile | Paywall | BusinessProfile
+   (also reachable directly, bypassing the tab shell, via top-level "Notices" route —
+    push-notification tap / 🔔 ActivityBell)
+
+👤 PROFILE ("You")  (ProfileScreen)
+├─ ⚙️ Settings gear ──────────────────────────────────► Settings
+├─ Quick Stats: Communities / Friends / Upcoming / Past ► Communities* | Friends | Gatherings | Gatherings
+├─ Link list: Timeline / Memory Vault / Insights / Momentum / Rewards / Billing / Emergency Contacts
+│    └──────────────────────────────────────────────────► Timeline | MemoryVaultIndex | Insights | Momentum
+│                                                           | Rewards | Billing | EmergencyContacts
+├─ Business Mode button (Switch to Business / My Application) ► BusinessDashboard | MyBusinessApplication
+├─ Achievements grid, photo gallery, name/bio, prompts, connection-goal chips,
+│  about-you fields, Details/Basics accordions, interests, AI strengths button — all in-place editing,
+│  no further navigation except AI-strengths' Premium-paywall branch ► Paywall
+└─ Reached ONLY via the bottom "You" tab icon — no other navigate('Profile') call site in src/
+
+⚙️ SETTINGS  (SettingsScreen — reached only from Profile's gear icon)
+├─ Looking For / Appearance / Language / Notifications / Privacy / Discovery Preferences
+│  (all in-place editing, instant-write or "Save Preferences" — no further navigation)
+├─ Account (phone-number change, in-place flow)
+├─ Connect: Friends / Music Mode / Invite Friends ► Friends | MusicMode | InviteFriends
+├─ Safety: Blocked Users / Verify Identity / Emergency Contacts / Relationship
+│    └──────────────────────────────────────────► BlockedUsers | IdVerification | EmergencyContacts
+│                                                    | RelationshipHub
+├─ Account & Billing: Manage Subscription / Offers & Perks ► Billing | BrandOffers
+├─ Help & Legal: Everything In Nearby / Legal / Business row (3-way) / admin rows (3, admin-only)
+│    └──────────────────────────────────────────► FeaturesOverview | Legal | BusinessDashboard
+│                                                    | MyBusinessApplication | BusinessPartnerApply
+│                                                    | AdminReports | AdminBusinessRequests | AdminVerification
+└─ Request My Data / Sign Out / Delete Account (service calls, no navigation)
+
+── Cross-tab hub screens (reached from 2+ tabs — fan-in, not documented as their own top-level tab) ──
+
+GatheringDetail  ◄── Home (hero, best pick, because-you-like) · Discover (browse cards, map pins)
+                  ◄── Gatherings (all 3 tabs, list cards + map pins) · Inbox→Activity (invite-accept)
+                  ◄── Inbox→Messages ("Met through X gathering" sub-label, indirectly)
+                  → GatheringHub, ViewProfile, BusinessProfile, CommunityDetail, RequestBusinessPartner,
+                    CreateCommunity (seed-from-gathering), GatheringChat, Paywall
+
+BusinessDashboard ◄── Profile (Switch to Business) · Settings (Manage Your Business, ×2 rows incl. admin)
+                   ◄── Create (secondary row) · push-notification deep link
+
+Friends           ◄── Home (stats card) · Inbox (header button) · Settings (Connect section)
+                   ◄── Profile (Quick Stats "Friends", indirectly via same destination)
+
+BrandOffers       ◄── Home (perks banner) · Discover (Perks section) · Inbox→Messages (offers banner)
+                   ◄── Settings (Offers & Perks) · Gathering Detail (Community Perk card, via BusinessProfile)
+
+Billing           ◄── Profile (link list) · Settings (Manage Subscription)
+
+EmergencyContacts ◄── Profile (link list) · Settings (Safety section)
+```
+
+## Potential IA overlaps
+
+Factual list only — every item below is a place where the same destination screen, the same
+underlying data, or closely-related subject matter is reached or edited from more than one point
+in the documented surface. Not ranked, not resolved, no recommendation attached. Each restates
+(and in a few cases newly cross-references) a duplication already noted inline in Part 1 or
+Part 2 above.
+
+1. **Business Mode entry point exists in four separate places with three different labels for
+   the same underlying `managed_partner_id` conditional**: Profile's "🏪 Switch to Business" /
+   "My Application" button, Settings' Help & Legal "🏪 Manage Your Business" / "My Application" /
+   "Partner With Us" row, Create's secondary row "🏪 Manage Your Business" / "🤝 Partner with a
+   Business", and Settings' admin-only "Business Dashboard (Admin)" row. All four resolve to the
+   same two destinations (`BusinessDashboard` / `MyBusinessApplication` / `BusinessPartnerApply`).
+
+2. **"Billing" is a duplicate row**: identical destination (`Billing` screen) reachable from both
+   Profile's link list and Settings' "Account & Billing" section, under different labels
+   ("Billing" vs. "Manage Subscription").
+
+3. **"Emergency Contacts" is a duplicate row**: identical destination reachable from both
+   Profile's link list and Settings' "Safety" section, same label, no distinguishing context on
+   either screen for why it appears twice.
+
+4. **"Friends" has four independent entry points to the same screen**: Home's stats-card "🤝 N
+   friend(s)" row, Inbox's persistent header button, Settings' "Connect" section row, and
+   Profile's Quick Stats "Friends" count (tap target).
+
+5. **Two separate "why are you here" preference fields, edited on two different screens, with
+   overlapping subject matter**: Settings' "Looking For" intention chips (writes
+   `relationship_intention`, an array) and Profile's "What are you hoping to find?" connection-goal
+   chips (writes `connection_goal`, a single string) — both capture user intent/purpose, stored
+   separately, edited separately, with no cross-reference between the two screens.
+
+6. **Two separate gender-identity-adjacent fields with overlapping subject matter, flagged by the
+   app's own in-screen helper text**: Settings' "My Gender" (writes `discovery_gender`, used only
+   for matching against others' "Show Me" preference) and Profile's "About You → I identify as"
+   (writes `gender_identity`, a public identity field). The Settings screen's own copy explicitly
+   warns these are separate fields, which is itself evidence a user could reasonably expect them
+   to be the same setting.
+
+7. **A gathering the user is attending or hosting is surfaced as its own distinct UI element in
+   at least five separate places**, all ultimately linking to the same `GatheringDetail`: Home's
+   "Your Next Thing" hero card (single soonest item), Home's "📅 Also Coming Up" list (remaining
+   items), Inbox→Activity's "⏰ Upcoming" group (all items within 24h, non-tappable, informational
+   only), Gatherings screen's Attending and Hosting tabs (full lists), and Profile's Quick Stats
+   "Upcoming"/"Past" counts (aggregate numbers only, tapping goes to the `Gatherings` list, not a
+   specific gathering).
+
+8. **The same pending-join-request approval action is available from two different screens**:
+   Gatherings→Hosting tab shows each hosted gathering's pending requesters inline with a per-row
+   "Approve" button; Inbox→Activity's "🙋 Connection Requests" group shows the identical
+   underlying `gathering_interest` rows (via the same `getAllPendingRequests()`/`approveInterest()`
+   calls) aggregated across all of a host's gatherings in one place.
+
+9. **The "Trending Near You" and "Recommended For You" signals are computed independently on two
+   different screens using the same underlying scorer/data**: Home's "Recommended For You"
+   cluster (Best Pick / Trending / Friends' Activity) and Discover's "Recommended For You" /
+   "🔥 Trending Near You" sections both call the same client-side functions
+   (`getGatheringFitReasons()`, and a same-threshold trending computation over
+   `approvedAttendees.length`) against overlapping gathering lists, rendered as two separately
+   maintained UI sections on two separate tabs.
+
+10. **A specific gathering's group chat is reachable via at least four independent paths, all
+    landing on the same `GatheringChat` screen**: Inbox→Messages' group-chat chip row, Gatherings
+    screen's per-card "💬 Group Chat" button (Hosting and Attending tabs), Gathering Detail's
+    "You're In!" panel "💬 Say Hello" link, and Gathering Detail's host banner (indirectly, via
+    "Manage attendees →" → Gatherings → per-card Group Chat button).
+
+11. **"Invite friends" to a specific gathering appears three times on the same screen**: Gathering
+    Detail's host banner, its "You're In!" attendee panel, and its default (not-yet-joined) join
+    panel each independently render an "Invite friends" link, all opening the same
+    `InviteFriendsModal`. A fourth, separate invite affordance (an icon button, not a text link)
+    exists on Gatherings→Hosting tab's per-card row for the same gathering.
+
+12. **Settings' "Nearby Display Style" (list vs. cards) setting has no corresponding control on
+    the screen it governs.** It's housed entirely under Settings → Appearance, but affects
+    rendering of the Nearby/Discover browsing surface — a Discover-relevant preference with zero
+    presence on Discover itself.
+
+13. **"Weekly Recap" (Home) and "Your Momentum" (linked from Profile, screen contents out of
+    scope for this document) both appear to be "how have I been doing lately" summary surfaces**
+    over closely related underlying data (recent gathering attendance, new friends) — Home's
+    recap card is a static always-on-Home summary of the trailing 7 days; Momentum (per its own
+    link-row description on Profile) is a dedicated screen for the same category of signal.
+    Momentum's internal content isn't one of the 7 screens documented in full above, so this is
+    noted as a surface-level naming/purpose overlap only, not a detailed comparison.
+
+14. **"Meet People" / the people-browsing surface (`Nearby` route) has two independent entry
+    points with different framing**: Home's "👥 N people nearby" stats-card row and Discover's
+    "👥 Meet People" card — both navigate to the same screen, one framed as a live count, the
+    other as a category tile alongside Gatherings/Communities/Places/Perks.
+
+15. **Quick Picks personalization (Home) has no equivalent on Discover**, even though both
+    screens surface a "recommended things to do" signal — Home's Quick Picks are user-editable
+    (via the "Edit" link → `QuickPicksEditModal`) and persisted to `profiles.home_quick_pick_categories`;
+    Discover's Recommended/Trending sections (see #9) have no equivalent editable personalization
+    surface anywhere in this document.
