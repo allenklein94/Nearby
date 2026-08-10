@@ -115,7 +115,7 @@ export default function CreateHubScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Create</Text>
-          <Text style={styles.subtitle}>What would you like to do today?</Text>
+          <Text style={styles.subtitle}>What do you want to do?</Text>
 
           {(activeSubCategory || showSomethingElse) && (
             <TouchableOpacity onPress={resetGrid} accessibilityLabel="Back" accessibilityRole="button">
@@ -173,6 +173,7 @@ export default function CreateHubScreen({ navigation }) {
 
           {!activeSubCategory && !showSomethingElse && (
             <View style={styles.secondaryRow}>
+              <Text style={styles.secondaryRowHeader}>Want to build something bigger?</Text>
               <TouchableOpacity
                 style={styles.secondaryLink}
                 onPress={() => navigation.navigate('CreateCommunity')}
@@ -238,6 +239,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   assistantButtonText: { color: '#fff', fontSize: 20, fontWeight: '700' },
   secondaryRow: { marginTop: spacing.xl, gap: spacing.sm },
+  secondaryRowHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: 2 },
   secondaryLink: { paddingVertical: spacing.sm },
   secondaryLinkText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
 });

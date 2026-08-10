@@ -701,27 +701,46 @@ increments as each piece lands, rather than batching the whole item at the end.
      hosted gathering, first match) and that the normal (non-first-time) copy still shows
      correctly for an account with existing history in each category.
 
-**A real, unresolved tension — flagging rather than silently picking a side, per this file's own
-standing rule about not silently overriding a previously deliberate decision:**
+6. **The doc's Create-screen ask (item 4) directly conflicted with Create 2.0's own deliberate
+   design — resolved Aug 10 2026, DONE, no rebuild needed.** Surfaced the tension to the user
+   directly rather than silently picking a side, per this file's own standing rule (see the
+   original framing preserved below). **User's answer: keep Create 2.0's activity-first grid,
+   don't switch to the type-first wizard.** Reasoning given: a user opening Create isn't
+   thinking "I would like to create a Gathering," they're thinking "I want to get coffee with
+   people" — asking "Gathering / Community / Partner / Something Else" first makes the user
+   understand the product's internal organizational structure before they can act, whereas an
+   activity grid (☕🍽️🚶⚽) asks the much more human "what sounds fun?" and lets Nearby handle
+   what that activity technically *is* behind the scenes. Community/Business stay real but
+   secondary, framed as "want to build something bigger?" — a different intent, not competing
+   with the primary activity choice.
+   **Because `CreateHubScreen.js` already built almost exactly this shape**, closing this out
+   was copy-tightening, not a rebuild: subtitle changed from "What would you like to do today?"
+   to the user's preferred **"What do you want to do?"** (warmer, doesn't expose the word
+   "activity"/"type" anywhere); added a small **"Want to build something bigger?"** label above
+   the existing Create a Community / Partner with a Business secondary row (previously
+   unlabeled). The grid's own tile labels (Coffee/Dinner/Walk/Sports/Games/Music/Volunteer) were
+   already short and human, not the verbose "Coffee Meetup"/"Go for a Walk"/"Play Games" the
+   user's answer specifically called out avoiding — nothing to change there. "Something Else"
+   staying a grid tile (rather than a separate section below, as one version of the user's own
+   mockup showed it) was left as-is — a real but minor layout choice already made under Create
+   2.0, not something the user's answer required changing.
+   Verified via a full `npx expo export --platform ios` — clean (edit to one existing file only,
+   no new files, so no module-count change expected). **Not done yet, same standing gap as
+   everywhere in this file**: no manual device/simulator run-through — next session should
+   confirm the updated subtitle and secondary-row header render correctly and that nothing about
+   the grid/sub-option/Something-Else flow regressed from this pass's small copy edits.
 
-6. **The doc's Create-screen ask (item 4) directly conflicts with Create 2.0's own deliberate
-   design** (see "Frictionless Gathering Creation Redesign" further below in this file — a real,
-   discussed-with-the-user decision, not an oversight). Create 2.0 deliberately made
+   **Original framing, preserved for context:** Create 2.0 deliberately made
    `CreateHubScreen.js`'s primary surface an **8-tile activity grid** (Coffee/Dinner/Walk/Sports/
    Games/Music/Volunteer/Something Else) specifically so a user doesn't have to answer "what
    *type* of thing am I making" before getting to the actual activity — Community and Business
    Partnership were deliberately demoted to a small secondary row *because* gathering-creation is
-   the dominant, most-common action this screen exists for. The new doc's ask — "What do you want
-   to create? 🎉 A Gathering / 👥 A Community / 🤝 Partner with a Business / ✨ Something Else" —
-   re-introduces exactly the top-level type-first choice Create 2.0 was built to remove. These
-   are two different, both-reasonable product philosophies (type-first clarity vs.
-   activity-first frictionlessness), not a bug in either. **Don't silently pick one** — next
-   session (or this one, if picked back up the same day) should surface this tension to the user
-   directly before touching `CreateHubScreen.js`, rather than assuming the newer doc automatically
-   overrides the earlier, deliberate, already-verified-live build. If the user does want the
-   type-first framing, the actual activity-tile grid doesn't need to be thrown away — it can
-   become the sub-picker *inside* "Start a Gathering," the same way `SUB_OPTIONS` (Dinner →
-   Pizza/Mexican/etc.) already nests one level deep today.
+   the dominant, most-common action this screen exists for. A separately-pasted doc's ask — "What
+   do you want to create? 🎉 A Gathering / 👥 A Community / 🤝 Partner with a Business / ✨
+   Something Else" — would have re-introduced exactly the top-level type-first choice Create 2.0
+   was built to remove. Two different, both-reasonable product philosophies (type-first clarity
+   vs. activity-first frictionlessness), not a bug in either — hence asking rather than silently
+   picking one.
 
 **Smaller/optional, sequence last:**
 
