@@ -94,12 +94,18 @@ export async function getMyCommunities() {
   return (data ?? []).filter((row) => row.communities).map((row) => ({ ...row.communities, myRole: row.role }));
 }
 
+// Scalability audit step 7: was unbounded, downloading every public
+// community in the app on every browse. A plain cap is the right-sized fix
+// here (per the audit's own locked decision 5) -- communities have no
+// location column to bound geographically, so there's no distance-based
+// RPC to build, just a Postgres-side LIMIT on top of the existing query.
 export async function getPublicCommunities() {
   const { data, error } = await supabase
     .from('communities')
     .select(PUBLIC_COMMUNITY_SELECT)
     .eq('is_public', true)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   if (error) {
     console.error('getPublicCommunities error', error);
@@ -230,11 +236,17 @@ export async function getCommunityMembers(communityId) {
   // communities or to the community's own creator — anyone else viewing a
   // private community only sees their own row. That's a real privacy
   // constraint from the schema, not a bug in this function.
+  //
+  // Scalability audit step 8: was unbounded. Same plain-cap treatment as
+  // getPublicCommunities() (locked decision 6) — no "load more" UI exists
+  // or is demanded today, so a cap alone closes the unbounded-download
+  // risk without building pagination UI nothing currently needs.
   const { data, error } = await supabase
     .from('community_members')
     .select('user_id, role, joined_at, profiles(display_name, photo_url)')
     .eq('community_id', communityId)
-    .order('joined_at', { ascending: true });
+    .order('joined_at', { ascending: true })
+    .limit(200);
 
   if (error) {
     console.error('getCommunityMembers error', error);

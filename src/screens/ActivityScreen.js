@@ -87,11 +87,15 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
       ...(blockedMe ?? []).map((b) => b.blocker_id),
     ]);
 
+    // Scalability audit step 10: was unbounded. Same plain-cap treatment as
+    // getCommunityMembers()/getPublicCommunities() (locked decision 6) —
+    // no "load more" UI exists or is demanded today for this feed.
     const { data: noticesData } = await supabase
       .from('notices')
       .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics)')
       .eq('to_user', myId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
     const filteredNotices = (noticesData ?? []).filter((n) => !matchedUserIds.has(n.from_user) && !excludedUserIds.has(n.from_user));
 

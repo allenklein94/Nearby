@@ -152,13 +152,22 @@ export async function searchOffers(queryText, myLat = null, myLng = null) {
 // individual's whereabouts. No RPC needed (unlike offers/gatherings, which
 // route distance math server-side to avoid ever shipping a person's exact
 // coordinates to the client) — there's no such coordinate to protect here.
+// Scalability audit step 9: was unbounded, downloading every active
+// business with coordinates before filtering to radius client-side. Per
+// the audit's own locked decision 5, this gets the lighter plain-`.limit()`
+// fix (not a full geographic RPC like get_bounded_nearby_gathering_ids) —
+// the business-partner count is expected to stay much smaller than
+// gatherings for a long while (same reasoning as the Rewards/Billing
+// sections). Ordered by created_at so the capped 300 is deterministic.
 export async function getNearbyBusinesses(myLat, myLng, radiusMiles = 50) {
   const { data, error } = await supabase
     .from('brand_partners')
     .select('id, name, logo_url, latitude, longitude')
     .eq('active', true)
     .not('latitude', 'is', null)
-    .not('longitude', 'is', null);
+    .not('longitude', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(300);
 
   if (error) {
     console.error('getNearbyBusinesses error', error);

@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, steps 1-6 DONE, steps 7-10 remaining (four plain `.limit()` caps)
+## Scalability audit fixes (Aug 10 2026) — DONE, all 10 execution steps closed
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -389,6 +389,44 @@ next session should specifically confirm a message sent from one device actually
 second device's screen without a manual refresh (the one thing only a live realtime
 subscription, not a static code read, can actually prove), and that scrolling to the top of a
 long conversation actually loads older messages rather than silently stopping.
+
+**Steps 7-10 — DONE, all four plain `.limit()` caps landed in one pass** (no schema/migration
+involved, so no live-production or from-scratch-replay verification was needed for these —
+purely client-side query changes, verified via the export build only):
+- **Step 7**: `getPublicCommunities()` (`services/communities.js`) gained `.limit(200)` — was
+  unconditionally downloading every public community in the app on every Discover/Communities
+  browse.
+- **Step 8**: `getCommunityMembers()` (`services/communities.js`) gained `.limit(200)` — was
+  unconditionally downloading a community's entire membership list every time
+  `CommunityDetailScreen.js`'s Leaders & Members section loaded.
+- **Step 9**: `getNearbyBusinesses()` (`services/brandOffers.js`) gained `.order('created_at',
+  { ascending: false }).limit(300)` — was downloading every active business with coordinates
+  before filtering to radius client-side (the same shape `getNearbyGatherings()` had before its
+  Aug 9 fix, just for a table expected to stay much smaller for a long while — see Rewards/
+  Billing's own reasoning — hence the lighter cap instead of a full geographic RPC, per locked
+  decision 5). Added a real `order` clause since a `.limit()` with no ordering would return an
+  arbitrary, non-deterministic 300 rows.
+- **Step 10**: `ActivityScreen.js`'s `notices` query gained `.limit(200)` — was unconditionally
+  downloading every notice ever received by the caller on every Activity tab load.
+- Verified via a full `npx expo export --platform ios` — clean, 1851 modules (unchanged, edits
+  to three existing files only).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through — next session should confirm Discover/Communities, a community's member list,
+  the map's business layer, and the Activity feed all still render correctly with real data
+  under these new caps (none of production's current row counts are anywhere near 200-300, so
+  this is inherently unexercised by real data today).
+
+**All 10 execution steps are now DONE — the scalability audit pass described in this whole
+section is complete.** Every messaging surface has real realtime delivery and real pagination;
+every previously-unbounded browse/list query identified in the audit now has either a real
+SQL-bounded RPC (`getNearbyGatherings()`, fixed Aug 9, and the new business-conversations
+summary RPC) or a plain `.limit()` cap sized to its own actual risk. What remains, per the
+audit's own scope boundary, is the 🟡 tier deliberately left out of this pass (`getAllPendingRequests()`,
+`getMyTimeline()`, `getMyGatherings()`/`getMyAttendingGatherings()`, `getMyRedemptions()`, and
+the business-insights RPCs) — real but self-limiting, not worth the churn until one of them
+actually shows a growth curve tied to platform-wide scale. Next real input this file needs is a
+manual device/simulator pass exercising everything flagged "not done" across steps 1-10, same
+standing limitation as literally every other section in this file.
 
 ## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — IN PROGRESS, Home started
 
