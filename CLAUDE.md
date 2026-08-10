@@ -54,7 +54,20 @@ is still fully open.
 5. Commit incrementally (plan section first, then the map once built) so a restart never loses
    more than one piece.
 
-**Status: plan committed. Map next.**
+**Status: DONE.** `PRODUCT_AUDIT/CURRENT_UI_MAP_2026-08-10.md` built — full 60-route inventory
+bucketed against the target IA (Part 3), a section-by-section table with a blank annotation
+column for each of the 6 primary screens (Part 4), and direct current-behavior answers to all six
+of the user's original complaints with file:line citations (Part 5). Built by reading
+`RootNavigator.js` directly plus two parallel read-only research passes over
+`HomeScreen.js`/`DiscoverHubScreen.js`/`CreateHubScreen.js`/`StartSomethingModal.js` and
+`InboxScreen.js`/`ActivityScreen.js`/`MatchesScreen.js`/`ProfileScreen.js`/`SettingsScreen.js` —
+not inferred from this file's own history. **No application code was touched.** Headline finding
+worth flagging: complaint 5 (upcoming/attending gatherings on Home) and complaint 7 (group chat
+not reading as a generic Inbox row) both already match the target model described — likely stale
+relative to the user's current impression of the app, not still-open gaps. The other four
+complaints (1/2/3/4) are confirmed still real and unaddressed. **Next step is the user's own
+screen-by-screen keep/move/remove/combine/rename pass against Part 4 — no further building until
+that happens**, per the user's own explicit instruction not to change anything yet.
 
 ## Aug 10 2026 — Friends discoverability (Home + Inbox entry points) — DONE
 
