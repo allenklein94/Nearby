@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — PLANNED, no code changes yet
+## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-4 (Home) DONE, Phase 5 (Profile/Settings) next
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -213,12 +213,82 @@ computed independently on both screens, "Meet People" vs. "N people nearby" as t
 to `Nearby`) are **not** in scope here — the user's plan only asks to change what Home surfaces
 about itself, not to deduplicate Discover's independent computation of the same signals.
 
-**Status: PLANNED ONLY. No code has been changed for any of the 8 phases above** — this section
-is the plan, written and committed on its own per the user's explicit request, before any
-implementation begins. Per the user's own explicit instruction: build Phase 1 (Home) first,
-report a delta afterward (not another full audit), then proceed to Phase 5 (Profile/Settings),
-then Phase 6 (Inbox), continuing through the remaining phases — don't batch multiple phases into
-one pass, and don't skip ahead without the delta report landing first.
+**Status: Phases 1-4 (Home) DONE, built together as one pass since all four are Home-scoped
+edits to the same two files, per the plan's own note that they'd likely land as one continuous
+edit. Delta report below, per the user's own explicit "report a delta, not another full audit"
+instruction. Phases 5-8 (Profile/Settings, Inbox, Business consolidation, Weekly Recap/Momentum)
+remain PLANNED ONLY, not started — do not batch ahead into them without this delta being reviewed
+first.**
+
+**Delta — what actually changed in `HomeScreen.js`/`homeDashboard.js` (both files, edits only, no
+new files):**
+- **Hero card + "Also Coming Up" → "Your Plans."** `getHomeDashboard()`'s old merged/sliced
+  `upcomingPlans` (soonest 3 across both roles) is gone, replaced by `plansGoing`/`plansHosting`
+  — each role's own real query (`attendingUpcoming`/`hostingUpcoming`, both already fetched,
+  nothing new), sorted soonest-first, capped to 3. `HomeScreen.js` renders one "Your Plans"
+  section with "Going" and "Hosting" sub-groups (icon, title, `formatHeroDateTime`, role line,
+  tap → `GatheringDetail`) and one "See All Plans →" button → `Gatherings` with a new
+  `initialTab` param (`GatheringsScreen.js` now reads `route?.params?.initialTab ?? 'nearby'`,
+  same one-line pattern its own `initialCategoryFilter`/`initialDateFilter` already use).
+  Per-item attendee counts (the old hero's "N people going" line, one extra query) were dropped
+  — the new list shows multiple items at once and the mockup this was built against doesn't show
+  a count per row.
+- **Weather card — three real fixes, no schema/migration needed.** (1) Weak-signal suppression:
+  `getSocialForecast()` now returns `null` when the SQL function's own `forecast_label==='Good'`
+  — that's the function's real ambiguous catch-all branch ("Decent conditions out there
+  tonight."), not a newly-invented threshold; only `'Excellent'`/`'Quiet'` (genuinely clear+
+  comfortable, or genuinely bad) are ever shown. (2) The card's static heading changed from
+  "☀️ Social Forecast" to "🌤️ Right Now" — the underlying OpenWeatherMap call is a current-
+  conditions snapshot, not a forecast, so the heading no longer claims otherwise.
+  (3) `getHomeInsight()`'s separate weather branch (a fixed generic sentence, "Looks like a
+  perfect evening for something outdoors.", with no real specifics attached) is deleted outright
+  — the Social Forecast card already states its own real reason directly, so a second vaguer
+  line saying the same thing was exactly the "AI sentence generated just because the card
+  exists" the user explicitly said not to build. **Known, disclosed, NOT fixed this pass**: the
+  individual `forecast_detail` sentences themselves (e.g. "...a better night for something
+  indoors.") still say "tonight" regardless of what time the request actually fired, and still
+  can't make a real time-specific claim like "rain after 7 PM" — the backend only has a current-
+  conditions API, not an hourly forecast API. Fixing that for real needs either a genuine
+  forecast API integration or a schema/copy migration to the SQL function's own strings, deferred
+  rather than bundled into a client-only pass — flagged here so it isn't silently dropped.
+- **Quick Picks — the one real "Dinner" exception, closed.** `handleQuickAction()` no longer
+  branches on `SUB_OPTIONS[item.label]` — every Quick Pick chip, including "Dinner," now browses
+  first (`navigate('Gatherings', {initialCategoryFilter, initialDateFilter})`), matching every
+  other chip. The `StartSomethingModal`'s Dinner sub-grid (Pizza/Mexican/etc.) still exists and
+  still works exactly as before, just no longer reachable from a Quick Pick tap — it's still used
+  by the FAB's "+ Start Something" flow and `CreateHubScreen`'s own grid, both legitimately
+  creation-first entry points per the plan's own "Create's job is to make something happen"
+  reasoning. `quickCategory` state and the `SUB_OPTIONS` import were removed from `HomeScreen.js`
+  as dead code once this branch was gone.
+- **Section-header renames, no behavior change**: "🔥 Happening Now" → "🔥 Happening Near You";
+  "🏘️ Continue Your Communities" → "🏘️ Your Communities"; "✨ Recommended For You" →
+  "✨ Because You Like…" (its four sub-sections — Because You're Into / Best Pick / Trending /
+  Friends' Activity — reordered so "Because You're Into" leads, matching the new header's own
+  wording; all four kept, no signal cut, matching the established "regroup and relabel, don't
+  delete real signal" precedent from the earlier Aug 10 UI-polish pass).
+- **Cut as redundant, not carried anywhere else**: the standalone "You have N great
+  opportunities today" line — the identical `gatheringsTodayCount` number is already shown,
+  and already tappable, in the stats-utility card's "🎉 N gatherings today" row a few sections
+  down; keeping both was pure duplication with no added value.
+- **Untouched, deliberately**: greeting/subtitle, the insight line's other three branches
+  (friends-activity/best-pick/happening-now), the pending-invites/perks/since-away banners
+  (weather joined this same cluster, nothing else about it changed), the stats utility card, the
+  Weekly Recap card (explicitly deferred to Phase 8, not touched here), the quiet-night fallback,
+  Continue Browsing button, and the FAB all kept their exact existing behavior.
+- Verified via a full `npx expo export --platform ios` — clean, 1854 modules (unchanged from the
+  established baseline — this pass only edited existing files: `HomeScreen.js`,
+  `homeDashboard.js`, `GatheringsScreen.js` for the one-line `initialTab` addition).
+- **Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+  run-through. Next session (or the next step of this same session) should confirm: "Your Plans"
+  renders correctly with only Going, only Hosting, and both, and correctly doesn't render at all
+  for an account with no upcoming plans; "See All Plans →" lands on the right `Gatherings` tab;
+  the weather card only ever shows for genuinely clear or genuinely bad conditions, never the
+  "Good"/ambiguous case; every Quick Pick including a re-added or future `SUB_OPTIONS` category
+  browses first; and the renamed section headers/reordered sub-labels read correctly against
+  real data.
+
+**Next**: Phase 5 (Profile vs. Settings cleanup — remove Profile's Billing/Emergency Contacts
+rows, regroup Profile's link list into Profile/My Activity/My Circle), not started.
 
 ## Detailed UI/IA documentation for external-AI review — DONE
 

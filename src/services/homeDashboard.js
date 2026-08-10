@@ -138,7 +138,14 @@ export async function getSocialForecast(latitude, longitude) {
     console.error('getWeatherResult error', error);
     return null;
   }
-  return data?.[0] ?? null;
+  const result = data?.[0] ?? null;
+  // 'Good' is the SQL function's own ambiguous catch-all branch ("Decent
+  // conditions out there tonight.") — real data, but nothing distinctive
+  // enough to act on. Not a new invented threshold: only 'Excellent'
+  // (clear + comfortable) and 'Quiet' (genuinely bad — rain/storm/too
+  // cold/too hot) are signals worth surfacing as a recommendation at all.
+  if (result?.forecast_label === 'Good') return null;
+  return result;
 }
 
 // Was capped to a single most-recently-joined community (.limit(1)) —
@@ -397,19 +404,30 @@ export async function getHomeDashboard() {
     .eq('host_id', myId)
     .gte('scheduled_at', now);
 
-  const upcomingPlans = [
-    ...(attendingUpcoming ?? []).map((row) => ({ ...row.gatherings, role: 'attending' })),
-    ...(hostingUpcoming ?? []).map((g) => ({ ...g, role: 'hosting' })),
-  ]
+  // Split by role rather than merged into one soonest-first list — Home's
+  // "Your Plans" section shows Going and Hosting as two distinct groups
+  // (an explicit commitment-type distinction the user asked for), not one
+  // flat list that conflates "I'm attending" with "I'm running this."
+  const plansGoing = (attendingUpcoming ?? [])
+    .map((row) => ({ ...row.gatherings, role: 'attending' }))
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 3);
+  const plansHosting = (hostingUpcoming ?? [])
+    .map((g) => ({ ...g, role: 'hosting' }))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
 
   // "Because you're into X/Y/Z" — real nearby gatherings matching the
   // caller's own most-frequent past interest categories (a genuine
-  // signal, not a fabricated one), excluding anything already
-  // committed to (upcomingPlans) so nothing is suggested twice.
+  // signal, not a fabricated one), excluding anything already committed
+  // to so nothing is suggested twice. Built from the full attending/
+  // hosting sets, not just the display-capped plansGoing/plansHosting
+  // above, so a plan that fell outside the top-3 preview still counts.
   const topInterestCategories = topCategories.slice(0, 3);
-  const upcomingPlanIds = new Set(upcomingPlans.map((p) => p.id));
+  const upcomingPlanIds = new Set([
+    ...(attendingUpcoming ?? []).map((row) => row.gatherings?.id).filter(Boolean),
+    ...(hostingUpcoming ?? []).map((g) => g.id),
+  ]);
   const becauseYouLike = topInterestCategories.length > 0
     ? nearbyGatherings
         .filter((g) => topInterestCategories.includes(g.interest_tag) && !upcomingPlanIds.has(g.id))
@@ -485,7 +503,8 @@ export async function getHomeDashboard() {
     bestPick,
     sinceAway,
     weeklyRecap,
-    upcomingPlans,
+    plansGoing,
+    plansHosting,
     friendsActivity,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
@@ -496,7 +515,12 @@ export async function getHomeDashboard() {
 // computed dashboard signals in priority order. No invented content:
 // if none of these signals are true, no line is shown at all, same
 // philosophy as the rest of this file (quietCard, sinceAway, etc.).
-export function getHomeInsight(dashboard, socialForecast) {
+// No weather branch: the Social Forecast card already states its own
+// real reason directly (label + detail together) — a second, vaguer,
+// AI-flavored sentence up here saying the same thing in fuzzier words
+// would just be a synthetic-feeling line for a card that already
+// explains itself. Don't generate one just because the card exists.
+export function getHomeInsight(dashboard) {
   if (!dashboard) return null;
 
   if (dashboard.friendsActivity?.length >= 2) {
@@ -504,9 +528,6 @@ export function getHomeInsight(dashboard, socialForecast) {
   }
   if (dashboard.bestPick) {
     return 'Tonight looks like a great night to meet someone new.';
-  }
-  if (socialForecast?.forecast_label && /good|great|perfect|clear|sunny/i.test(socialForecast.forecast_label)) {
-    return 'Looks like a perfect evening for something outdoors.';
   }
   if (dashboard.happeningNow?.length > 0) {
     return `${dashboard.happeningNow.length} ${dashboard.happeningNow.length === 1 ? 'thing is' : 'things are'} happening near you right now.`;

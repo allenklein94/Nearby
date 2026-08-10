@@ -2,11 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { getMostRecentUnratedGathering, getApprovedAttendeeCount } from '../services/gatherings';
+import { getMostRecentUnratedGathering } from '../services/gatherings';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
-import StartSomethingModal, { SUB_OPTIONS } from '../components/StartSomethingModal';
+import StartSomethingModal from '../components/StartSomethingModal';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -16,7 +16,6 @@ import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPi
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
-const PERIOD_OPPORTUNITY_WORD = { morning: 'today', afternoon: 'today', evening: 'tonight', weekend: 'this weekend' };
 
 // "Today · 7:15 PM" / "Tomorrow · 7:15 PM" / "Fri, Aug 14 · 7:15 PM" — real
 // calendar-relative formatting for the hero card, not a generic date string.
@@ -48,13 +47,11 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
-  const [quickCategory, setQuickCategory] = useState(null);
   const [socialForecast, setSocialForecast] = useState(null);
   const [continueCommunities, setContinueCommunities] = useState([]);
   const [perksCount, setPerksCount] = useState(0);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   const [unratedGathering, setUnratedGathering] = useState(null);
-  const [heroAttendeeCount, setHeroAttendeeCount] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const period = getTimePeriod();
@@ -70,12 +67,6 @@ export default function HomeScreen({ navigation }) {
     const result = await getHomeDashboard();
     setDashboard(result);
     setLoading(false);
-    if (result?.upcomingPlans?.[0]) {
-      const count = await getApprovedAttendeeCount(result.upcomingPlans[0].id).catch(() => null);
-      setHeroAttendeeCount(count);
-    } else {
-      setHeroAttendeeCount(null);
-    }
     try {
       const communities = await getContinueYourCommunities();
       setContinueCommunities(communities);
@@ -116,20 +107,19 @@ export default function HomeScreen({ navigation }) {
 
   function closeStartModal() {
     setStartModalVisible(false);
-    setQuickCategory(null);
   }
 
   function handleQuickAction(item) {
-    if (SUB_OPTIONS[item.label]) {
-      setQuickCategory(item);
-      setStartModalVisible(true);
-      return;
-    }
-    // Discover-first: browse what already exists in this category before
-    // offering to create one — matches Home's own job ("what's happening
-    // in my life") as distinct from Create's ("what can I make happen").
+    // Discover-first, unconditionally — every Quick Pick browses what
+    // already exists in this category before offering to create one,
+    // matching Home's own job ("what's happening in my life") as distinct
+    // from Create's ("what can I make happen"). Previously, any category
+    // with a StartSomethingModal SUB_OPTIONS entry (only "Dinner") silently
+    // skipped this and opened the creation sub-grid instead — that
+    // exception is closed; every chip now behaves the same way.
     // GatheringsScreen's own filtered-empty-state carries the "+ Start a
-    // {category} Gathering" fallback, so nothing is lost, just reordered.
+    // {category} Gathering" fallback, so the creation path isn't lost,
+    // just reordered to after browsing turns up nothing.
     navigation.navigate('Gatherings', {
       initialCategoryFilter: item.category,
       initialDateFilter: PERIOD_DATE_FILTER[period],
@@ -175,39 +165,12 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
         <Text style={styles.subtitle}>Here's what's happening around you.</Text>
 
-        {dashboard?.upcomingPlans?.[0] && (
-          <>
-            <Text style={styles.sectionHeader}>Your Next Thing</Text>
-            <TouchableOpacity
-              style={styles.heroCard}
-              onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.upcomingPlans[0].id })}
-              activeOpacity={0.85}
-              accessibilityLabel={`${dashboard.upcomingPlans[0].title}, ${formatHeroDateTime(dashboard.upcomingPlans[0].scheduled_at)}, view gathering`}
-              accessibilityRole="button"
-            >
-              <Text style={styles.heroIcon}>{categoryStyleFor(dashboard.upcomingPlans[0].interest_tag).icon}</Text>
-              <Text style={styles.heroRole}>{dashboard.upcomingPlans[0].role === 'hosting' ? "You're hosting" : "You're going"}</Text>
-              <Text style={styles.heroTitle}>{dashboard.upcomingPlans[0].title}</Text>
-              <Text style={styles.heroDateTime}>{formatHeroDateTime(dashboard.upcomingPlans[0].scheduled_at)}</Text>
-              {heroAttendeeCount > 0 && (
-                <Text style={styles.heroAttendees}>{heroAttendeeCount} {heroAttendeeCount === 1 ? 'person' : 'people'} going</Text>
-              )}
-              <Text style={styles.heroAction}>View Gathering →</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {dashboard?.gatheringsTodayCount > 0 && (
-          <Text style={styles.opportunityLine}>
-            You have {dashboard.gatheringsTodayCount} great {dashboard.gatheringsTodayCount === 1 ? 'opportunity' : 'opportunities'} {PERIOD_OPPORTUNITY_WORD[period]}.
-          </Text>
-        )}
         {(() => {
-          const insight = getHomeInsight(dashboard, socialForecast);
+          const insight = getHomeInsight(dashboard);
           return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
         })()}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {pendingInvitesCount > 0 && (
               <TouchableOpacity
@@ -235,6 +198,13 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.perksBannerArrow}>›</Text>
               </TouchableOpacity>
             )}
+            {socialForecast && (
+              <View style={styles.forecastCard}>
+                <Text style={styles.forecastLabel}>🌤️ Right Now</Text>
+                <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
+                <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
+              </View>
+            )}
             {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
               <View style={styles.sinceAwayBanner}>
                 <Text style={styles.sinceAwayTitle}>Since you were away</Text>
@@ -247,6 +217,66 @@ export default function HomeScreen({ navigation }) {
               </View>
             )}
           </View>
+        )}
+
+        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0) && (
+          <>
+            <Text style={styles.sectionHeader}>Your Plans</Text>
+            <View style={styles.plansCard}>
+              {dashboard.plansGoing.length > 0 && (
+                <>
+                  <Text style={styles.subLabel}>Going</Text>
+                  {dashboard.plansGoing.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={styles.planRow}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're going`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
+                      <View style={styles.planInfo}>
+                        <Text style={styles.planTitle}>{plan.title}</Text>
+                        <Text style={styles.planMeta}>{formatHeroDateTime(plan.scheduled_at)} · You're going</Text>
+                      </View>
+                      <Text style={styles.planChevron}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+              {dashboard.plansHosting.length > 0 && (
+                <>
+                  <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>Hosting</Text>
+                  {dashboard.plansHosting.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={styles.planRow}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're hosting`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
+                      <View style={styles.planInfo}>
+                        <Text style={styles.planTitle}>{plan.title}</Text>
+                        <Text style={styles.planMeta}>{formatHeroDateTime(plan.scheduled_at)} · You're hosting</Text>
+                      </View>
+                      <Text style={styles.planChevron}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.seeAllPlansButton}
+              onPress={() => navigation.navigate('Gatherings', { initialTab: dashboard.plansGoing.length > 0 ? 'attending' : 'hosting' })}
+              accessibilityLabel="See all plans"
+              accessibilityRole="button"
+            >
+              <Text style={styles.seeAllPlansText}>See All Plans →</Text>
+            </TouchableOpacity>
+          </>
         )}
 
         <View style={styles.quickPicksHeaderRow}>
@@ -273,7 +303,7 @@ export default function HomeScreen({ navigation }) {
 
         {dashboard?.happeningNow?.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>🔥 Happening Now</Text>
+            <Text style={styles.sectionHeader}>🔥 Happening Near You</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
               {dashboard.happeningNow.map((g) => {
                 const style = categoryStyleFor(g.interest_tag);
@@ -295,17 +325,9 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {socialForecast && (
-          <View style={styles.forecastCard}>
-            <Text style={styles.forecastLabel}>☀️ Social Forecast</Text>
-            <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
-            <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
-          </View>
-        )}
-
         {continueCommunities.length > 0 && (
           <>
-            <Text style={styles.continueCommunityLabel}>🏘️ Continue Your Communities</Text>
+            <Text style={styles.continueCommunityLabel}>🏘️ Your Communities</Text>
             {continueCommunities.map((community) => (
               <TouchableOpacity
                 key={community.id}
@@ -369,7 +391,28 @@ export default function HomeScreen({ navigation }) {
 
         {(dashboard?.bestPick || dashboard?.becauseYouLike?.length > 0 || dashboard?.trendingGatherings?.length > 0 || dashboard?.friendsActivity?.length > 0) && (
           <>
-            <Text style={styles.sectionHeader}>✨ Recommended For You</Text>
+            <Text style={styles.sectionHeader}>✨ Because You Like…</Text>
+
+            {dashboard?.becauseYouLike?.length > 0 && (
+              <>
+                <Text style={styles.subLabel}>💡 {formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
+                {dashboard.becauseYouLike.map((g) => {
+                  const style = categoryStyleFor(g.interest_tag);
+                  return (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={styles.trendingCard}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                      accessibilityLabel={`${g.title}, ${g.interest_tag}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.trendingTitle}>{style.icon} {g.title}</Text>
+                      <Text style={styles.trendingMeta}>{g.interest_tag} · {formatHeroDateTime(g.scheduled_at)}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </>
+            )}
 
             {dashboard?.bestPick && (
               <>
@@ -388,27 +431,6 @@ export default function HomeScreen({ navigation }) {
                   </View>
                   <Text style={styles.bestPickAction}>View →</Text>
                 </TouchableOpacity>
-              </>
-            )}
-
-            {dashboard?.becauseYouLike?.length > 0 && (
-              <>
-                <Text style={styles.subLabel}>💡 Because You're Into {formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
-                {dashboard.becauseYouLike.map((g) => {
-                  const style = categoryStyleFor(g.interest_tag);
-                  return (
-                    <TouchableOpacity
-                      key={g.id}
-                      style={styles.trendingCard}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                      accessibilityLabel={`${g.title}, ${g.interest_tag}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.trendingTitle}>{style.icon} {g.title}</Text>
-                      <Text style={styles.trendingMeta}>{g.interest_tag} · {formatHeroDateTime(g.scheduled_at)}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
               </>
             )}
 
@@ -450,24 +472,6 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {dashboard?.upcomingPlans?.length > 1 && (
-          <>
-            <Text style={styles.sectionHeader}>📅 Also Coming Up</Text>
-            {dashboard.upcomingPlans.slice(1).map((plan) => (
-              <TouchableOpacity
-                key={plan.id}
-                style={styles.trendingCard}
-                onPress={() => navigation.navigate('Gatherings')}
-                accessibilityLabel={`${plan.title}, you're ${plan.role}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.trendingTitle}>{plan.title}</Text>
-                <Text style={styles.trendingMeta}>{plan.role === 'hosting' ? 'Hosting' : 'Attending'} · {new Date(plan.scheduled_at).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-
         {dashboard?.weeklyRecap && (dashboard.weeklyRecap.gatheringsAttended > 0 || dashboard.weeklyRecap.newFriends > 0) && (
           <View style={styles.recapCard}>
             <Text style={styles.recapTitle}>This Week</Text>
@@ -506,7 +510,6 @@ export default function HomeScreen({ navigation }) {
         visible={startModalVisible}
         onClose={closeStartModal}
         navigation={navigation}
-        initialCategory={quickCategory}
       />
       <GatheringFeedbackModal
         visible={!!unratedGathering}
@@ -530,18 +533,20 @@ const getStyles = (colors) => StyleSheet.create({
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
-  heroCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
-    padding: spacing.lg, marginBottom: spacing.lg,
-  },
-  heroIcon: { fontSize: 28, marginBottom: spacing.xs },
-  heroRole: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  heroTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
-  heroDateTime: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  heroAttendees: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.sm },
-  heroAction: { color: colors.primary, fontWeight: '700', fontSize: 14, marginTop: spacing.xs },
-  opportunityLine: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   insightLine: { color: colors.primary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
+  plansCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.sm,
+  },
+  planRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs },
+  planIcon: { fontSize: 22, marginRight: spacing.sm },
+  planInfo: { flex: 1 },
+  planTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  planMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  planChevron: { color: colors.textTertiary, fontSize: 18 },
+  subLabelSpaced: { marginTop: spacing.md },
+  seeAllPlansButton: { alignItems: 'center', paddingVertical: spacing.xs, marginBottom: spacing.lg },
+  seeAllPlansText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   quickActionChip: {
     alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginRight: spacing.sm, minWidth: 84,

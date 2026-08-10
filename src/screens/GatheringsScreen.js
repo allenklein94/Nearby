@@ -92,7 +92,7 @@ export default function GatheringsScreen({ navigation, route }) {
   const { t } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
-  const [tab, setTab] = useState('nearby');
+  const [tab, setTab] = useState(route?.params?.initialTab ?? 'nearby');
   const [radiusTier, setRadiusTier] = useState('local');
   const [nearby, setNearby] = useState([]);
   const [hosting, setHosting] = useState({ upcoming: [], past: [] });
