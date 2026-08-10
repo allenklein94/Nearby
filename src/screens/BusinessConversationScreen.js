@@ -3,6 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeArea
 import { useFocusEffect } from '@react-navigation/native';
 import { getConversationWithBusiness, sendMessageToBusiness } from '../services/brandOffers';
 import ReportBlockModal from '../components/ReportBlockModal';
+import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 import useChatComposer from '../hooks/useChatComposer';
@@ -23,9 +24,33 @@ export default function BusinessConversationScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => {
       load();
-      const interval = setInterval(load, 4000);
-      return () => clearInterval(interval);
-    }, [load])
+
+      // Was a setInterval(load, 4000) re-downloading this entire
+      // conversation every 4 seconds while the screen was focused.
+      // Replaced with a real realtime subscription — new messages arrive
+      // as individual INSERT events and get appended directly. No extra
+      // per-row fetch is needed here (unlike gathering/community chat)
+      // since business_messages rows carry no joined profile data to
+      // begin with — getConversationWithBusiness()'s own select is just
+      // raw columns, so the INSERT payload already matches that shape.
+      // RLS's own "Only the follower and business owner can see this
+      // conversation" SELECT policy means a customer's subscription only
+      // ever actually receives rows for their own conversation, even
+      // though the filter below is scoped to partner_id only (Realtime
+      // filters can't express a second conversation_with_id condition).
+      const channel = supabase
+        .channel(`business_messages:${partnerId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'business_messages', filter: `partner_id=eq.${partnerId}` },
+          (payload) => {
+            setMessages((prev) => (prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new]));
+          }
+        )
+        .subscribe();
+
+      return () => supabase.removeChannel(channel);
+    }, [load, partnerId])
   );
 
   useEffect(() => {

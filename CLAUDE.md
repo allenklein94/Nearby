@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 2 of 10 done
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 3 of 10 done
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -50,6 +50,27 @@ open-ended and ongoing, not scoped to one finite event the way a gathering chat 
 the more urgent of the two non-realtime chat screens. Verified via a full `npx expo export
 --platform ios` — clean, 1850 modules. Same unverified gap as step 1: no live two-device test
 of a message actually arriving without a manual refresh.
+
+**Step 3 — DONE.** `BusinessConversationScreen.js`'s `setInterval(load, 4000)` (inside its
+existing `useFocusEffect`, so it already only ran while focused — the least-bad of the three
+non-realtime chat screens, but still re-downloading the entire conversation every 4 seconds
+while open) is gone, replaced with a `business_messages:{partnerId}` realtime channel. No new
+single-row-fetch helper was needed here, unlike gathering/community chat —
+`getConversationWithBusiness()`'s own select is already just raw columns (no `profiles` join),
+so a `postgres_changes` INSERT payload already matches that shape and can be appended directly.
+Checked the real RLS policy before relying on this (`"Only the follower and business owner can
+see this conversation," ... using (conversation_with_id = auth.uid() OR managed_partner_id =
+partner_id)`, from `full_schema_pull_2026-08-09.sql`) — confirmed Realtime's `postgres_changes`
+enforces the same SELECT RLS as a normal query, so even though the channel filter can only
+express one column (`partner_id`, not also `conversation_with_id` — Realtime filters don't
+support a second AND condition), a customer's subscription genuinely only ever receives rows
+for their own conversation; nothing wider is exposed by using the broader filter.
+`BusinessDashboardScreen.js`'s own owner-side conversation view (a separate, non-`route`-driven
+use of `getConversationWithBusiness()`) was checked too and does **not** poll on a timer at all
+— it only fetches once when a conversation is opened and once after sending a reply — so it
+wasn't in scope for this step; it's still an unbounded single fetch, but that's pagination's
+job (step 5), not this step's. Verified via a full `npx expo export --platform ios` — clean,
+1850 modules. Same unverified live-delivery gap as steps 1-2.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
