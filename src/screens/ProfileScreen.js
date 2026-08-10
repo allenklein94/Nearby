@@ -528,24 +528,26 @@ const result = await response.json();
             style={styles.businessModeButton}
             onPress={() => navigation.navigate('BusinessDashboard')}
             activeOpacity={0.85}
-            accessibilityLabel="Switch to Business Dashboard"
+            accessibilityLabel="Business"
             accessibilityRole="button"
           >
-            <Text style={styles.businessModeButtonText}>🏪 Switch to Business</Text>
+            <Text style={styles.businessModeButtonText}>🏪 Business</Text>
           </TouchableOpacity>
-        ) : (myBusinessRequestStatus === 'pending' || myBusinessRequestStatus === 'denied') ? (
+        ) : (
           <TouchableOpacity
             style={styles.businessModeButton}
-            onPress={() => navigation.navigate('MyBusinessApplication')}
+            onPress={() => navigation.navigate(
+              (myBusinessRequestStatus === 'pending' || myBusinessRequestStatus === 'denied')
+                ? 'MyBusinessApplication'
+                : 'BusinessPartnerApply'
+            )}
             activeOpacity={0.85}
-            accessibilityLabel="View your business partner application"
+            accessibilityLabel="Become a Business Partner"
             accessibilityRole="button"
           >
-            <Text style={styles.businessModeButtonText}>
-              {myBusinessRequestStatus === 'pending' ? '⏳ My Application (Pending)' : '📋 My Application'}
-            </Text>
+            <Text style={styles.businessModeButtonText}>🤝 Become a Business Partner</Text>
           </TouchableOpacity>
-        ) : null}
+        )}
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Profile</Text>
         <TouchableOpacity

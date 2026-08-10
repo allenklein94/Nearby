@@ -1,8 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { CREATE_HUB_OPTIONS, SUB_OPTIONS } from '../components/StartSomethingModal';
-import { supabase } from '../services/supabase';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -16,34 +14,21 @@ const SOMETHING_ELSE_LABEL = 'Something Else';
 // StartSomethingModal itself for HomeScreen's time-adaptive quick
 // actions) but are rendered here with this screen's own JSX. Free text
 // now lives specifically behind "Something Else" — no more redundant
-// always-visible NL box alongside the grid. Community/Business move to
-// a small, de-emphasized secondary row below — still real features,
-// just not what this screen is about anymore. See CLAUDE.md's
-// "Create 2.0" section for the full design discussion.
+// always-visible NL box alongside the grid. Community creation moves to
+// a small, de-emphasized secondary row below — still a real feature,
+// just not what this screen is about anymore. Business consolidation
+// (Phase 7, CLAUDE.md) removed this screen's own business entry point —
+// "Request a Business Partner" is reachable from a specific gathering/
+// community's own detail screen instead, and "become a business owner"
+// lives solely on Profile now. See CLAUDE.md's "Create 2.0" and Phase 7
+// sections for the full design discussion.
 export default function CreateHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [managesBusiness, setManagesBusiness] = useState(false);
   const [activeSubCategory, setActiveSubCategory] = useState(null);
   const [showSomethingElse, setShowSomethingElse] = useState(false);
   const [assistantText, setAssistantText] = useState('');
   const [thinking, setThinking] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      (async () => {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const myId = sessionData?.session?.user?.id;
-        if (!myId) return;
-
-        const { data: profile } = await supabase.from('profiles').select('managed_partner_id').eq('id', myId).single();
-        if (cancelled) return;
-        setManagesBusiness(!!profile?.managed_partner_id);
-      })();
-      return () => { cancelled = true; };
-    }, [])
-  );
 
   function resetGrid() {
     setActiveSubCategory(null);
@@ -182,25 +167,6 @@ export default function CreateHubScreen({ navigation }) {
               >
                 <Text style={styles.secondaryLinkText}>👥 Create a Community</Text>
               </TouchableOpacity>
-              {managesBusiness ? (
-                <TouchableOpacity
-                  style={styles.secondaryLink}
-                  onPress={() => navigation.navigate('BusinessDashboard')}
-                  accessibilityLabel="Manage your business"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.secondaryLinkText}>🏪 Manage Your Business</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={styles.secondaryLink}
-                  onPress={() => navigation.navigate('RequestBusinessPartner')}
-                  accessibilityLabel="Partner with a business"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.secondaryLinkText}>🤝 Partner with a Business</Text>
-                </TouchableOpacity>
-              )}
             </View>
           )}
         </ScrollView>

@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-5 DONE, Phase 6 (Inbox) next
+## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-5 and 7 DONE, Phase 6 (Inbox) still next, Phase 8 last
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -196,6 +196,40 @@ admin-only rows in Settings (`Business Dashboard (Admin)`, `Business Requests (A
 `Review Verifications (Admin)`) are explicitly **not** touched — different persona, out of
 scope, per item 11's verification above.
 
+**Phase 7 — DONE, built out of the plan's own stated order (Phase 6 was still next per this
+file's own prior status note) after a codespace restart interrupted a session that had already
+started this phase's edits.** On resume, `git status` showed `CreateHubScreen.js`/
+`SettingsScreen.js` already mid-edit (uncommitted) — `SettingsScreen.js`'s business row,
+`managesBusiness`/`myBusinessRequestStatus` state, and its `getMyBusinessPartnerRequest` import
+were already fully removed, matching the plan exactly. `CreateHubScreen.js` was only
+half-finished: its old three-way `managesBusiness` conditional (Manage Your Business /
+Partner with a Business) had been collapsed down to an unconditional single "🤝 Partner with a
+Business" → `RequestBusinessPartner` link — still present, not actually removed, contradicting
+the plan's explicit "Create's ... secondary link are both removed." Finished by deleting that
+link outright, leaving only the "👥 Create a Community" secondary row (the business-partnership-
+request flow for a specific gathering/community stays reachable from `GatheringDetailScreen`/
+`CommunityDetailScreen`'s own host banners, built in an earlier pass — nothing lost, just no
+longer duplicated as a generic top-level Create-tab entry point). `ProfileScreen.js` (untouched
+by the interrupted session) was then updated to close the plan's other half: its old three-way
+conditional ("🏪 Switch to Business" / "⏳ My Application (Pending)" / "📋 My Application" / no
+button at all) collapsed to the plan's literal two-state design — `managesBusiness` → "🏪
+Business" → `BusinessDashboard`; otherwise "🤝 Become a Business Partner", still routing smartly
+under the hood (to `MyBusinessApplication` if a pending/denied request already exists, else
+`BusinessPartnerApply`) so an applicant checking on an in-flight application doesn't lose that
+path — only the row's own label collapsed to the plan's two named states, not the underlying
+status-aware routing. The 3 admin-only Settings rows were confirmed untouched (not part of this
+diff). Verified via a full `npx expo export --platform ios` — clean, 1854 modules (unchanged,
+edits to three existing files only, no new files).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm Profile's collapsed business row renders and routes
+correctly in all three underlying states (managing a business, a pending/denied application on
+file, no application at all), and that Create/Settings no longer show any business row at all.
+**Phase 6 (Clean Inbox) is still not started** — this file's own build order calls for it before
+Phase 7; it was skipped over by whichever session started this Phase 7 work mid-restart. Not
+silently resequenced — flagged here so the next session either does Phase 6 next (per the
+original order) or explicitly re-confirms skipping ahead to Phase 8 is fine, rather than
+assuming the order no longer matters.
+
 **Phase 8 — Weekly Recap ↔ Momentum merge.** Home's "This Week" recap card becomes a short
 one-line summary ("2 gatherings · 3 new connections") with a "View Momentum →" link, instead of
 its own standalone card — Profile's Momentum screen (already reachable via Phase 5's "My
@@ -339,7 +373,9 @@ elsewhere on this screen for "More Photos"/"Prompts"/"Achievements" — no new s
 **Next**: Phase 6 (Clean Inbox) — per this plan's own item-7 verification, no known gap exists
 today; this phase is a check-and-confirm pass (and a chance to resolve the one explicitly-
 flagged-but-undecided question about Activity's "⏰ Upcoming" group vs. Home's now-live "Your
-Plans" section), not a rebuild. Not started.
+Plans" section), not a rebuild. Not started. **Phase 7 (Business consolidation) was built out of
+order — see its own status note above — and is now DONE; Phase 8 (Weekly Recap ↔ Momentum) is
+the only phase left besides Phase 6.**
 
 ## Detailed UI/IA documentation for external-AI review — DONE
 
