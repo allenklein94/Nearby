@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 5 in progress (5a-5b of 4 done)
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 5 DONE (4 of 4 sub-increments), steps 6-10 remaining
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -172,6 +172,70 @@ a lower-traffic, non-infinite-scroll surface, rather than building full paginati
 owner-only drill-in panel nothing currently demands it for. Verified via a full `npx expo export
 --platform ios` — clean, 1851 modules (unchanged, edits to three existing files only). Same
 unverified visual/on-device gaps as 5a/5b.
+
+**Sub-increment 5d — DONE: `ChatScreen.js`, the last of the four and by far the largest/
+riskiest** (1:1 chat — reactions, voice notes, GIFs, photo/video attachments, typing
+indicators, read receipts, disappearing messages, a designated-first-messenger gate, and an
+`AppState` foreground-resume fallback, none of which existed on the other three simpler chat
+screens). Unlike 5a-5c, this screen never had a dedicated `services/` module for its messages
+(every query was inline `supabase.from('messages')` calls directly in the screen) — kept that
+same convention rather than introducing a new service file just for this pass: the paginated
+`fetchPage` is a `useCallback` defined directly in the screen, same `DESC.limit()` +
+`.lt('created_at', cursor)` shape the shared hook expects, replacing the old unbounded
+`loadMessages()` (deleted — it was local to this file, not exported, confirmed via grep before
+removing).
+- **Ordering flip, done carefully since this screen (unlike 5a-5c) had several places that
+  assumed ascending order**: `messages` is now DESC via the shared hook (newest first,
+  matching `FlatList`'s `inverted` prop). Every optimistic-send path (`sendMessage`, `sendGif`,
+  `handlePickVideo`, `handlePickPhoto`, `handleStopRecording`, `suggestDateNight` — six total,
+  more than any other chat screen since this one supports every message type) now prepends
+  (`[optimisticMessage, ...prev]`) instead of appending, using the hook's own tracked
+  `setMessages` so `loadOlder`'s cursor bookkeeping (`messagesRef`) stays correct.
+  `lastMyMessage` (used for the "Seen" read-receipt label) was `[...messages].reverse().find(...)`
+  under the old ASC order — simplified to a plain `messages.find(...)` now that DESC already
+  puts the most recent first. The realtime channel's INSERT handler now calls the hook's
+  `prependMessage` (which dedupes by id, so the sender's own echoed insert is a no-op against
+  what was already added optimistically) instead of a hand-rolled dedupe-and-append; its UPDATE
+  handler (used for `read_at`/disappearing-message changes) now calls the hook's `updateMessage`
+  instead of a hand-rolled `.map()`.
+- **`isStalled` (the "conversation went quiet" banner + AI icebreaker nudge) used to be computed
+  inline inside `loadMessages()` every time it ran** — since that function no longer exists,
+  this became a `useEffect` reacting to `messages` changes, reading `messages[0].created_at`
+  (the newest, under DESC order) instead of `data[data.length - 1]` (the newest, under the old
+  ASC order) — same signal, recomputed on the same events (initial load, a realtime arrival, an
+  optimistic send), just without a whole-conversation re-fetch driving it. Every explicit
+  `setIsStalled(false)` call that used to sit next to each optimistic append was removed as
+  redundant — the effect already recomputes to `false` the moment a brand-new message (real
+  `created_at` of "now") lands in `messages`.
+- **The `AppState` "app returned to foreground" listener — a real, distinct reliability
+  fallback already documented in step 4 above, kept exactly as it was, just repointed** from
+  `loadMessages()` to the hook's `loadInitial()` — re-syncs to the most recent page on resume,
+  same as a fresh screen open. One real, disclosed behavior change: if the user had scrolled up
+  via `loadOlder` before backgrounding the app, that older history is dropped on resume rather
+  than re-fetched — matches what re-opening the screen fresh would show, not a regression in
+  what's reachable (scrolling up again reloads it), just no longer "sticky" across a background/
+  foreground cycle.
+- **`FlatList` gained `inverted`/`onEndReached={loadOlder}`/`ListFooterComponent`**, same shape
+  as 5a-5c. The old `ref`+`onContentSizeChange={() => listRef.current?.scrollToEnd(...)}`
+  scroll-to-bottom hack (needed under the old non-inverted ASC layout) was removed entirely —
+  `inverted` pins new content at the visual bottom natively, no manual scroll needed, same as
+  the other three screens already established. `ListEmptyComponent` was moved out to a plain
+  sibling `View` (same inverted-list gotcha 5a already flagged and avoided) — this screen's
+  empty state is richer than the other three (a designated-first-messenger hint, a premium-only
+  AI icebreaker button), both preserved exactly, just relocated.
+- Verified via a full `npx expo export --platform ios` — clean, 1851 modules (unchanged, edit
+  to one existing file only — no new service file, per the note above). **Not verified, same
+  standing gap as 5a-5c**: no on-device scroll-to-load-older, no live two-device message
+  delivery test, and specifically for this screen — reactions, voice notes, GIF/photo/video
+  attachments, typing indicators, and the disappearing-message screenshot-detection flow should
+  all be spot-checked on a real device next session, since this was the highest-risk of the
+  four rewrites and none of that surrounding functionality was exercised beyond a clean bundle
+  export.
+
+**Step 5 is now fully DONE — all four messaging surfaces (1:1, gathering, community, business)
+have both a real realtime channel (steps 1-4) and real cursor-based pagination (5a-5d), closing
+out the headline finding below for good.** Next up per the execution order: step 6 (business-
+conversations-summary RPC), then the four remaining `.limit()` caps (steps 7-10).
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped

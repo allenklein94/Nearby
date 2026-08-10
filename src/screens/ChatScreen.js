@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio, Video } from 'expo-av';
@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import ActionSheetModal from '../components/ActionSheetModal';
 import useChatComposer from '../hooks/useChatComposer';
+import usePaginatedMessages from '../hooks/usePaginatedMessages';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
@@ -107,7 +108,22 @@ export default function ChatScreen({ route, navigation }) {
   const styles = getStyles(colors);
   const posthog = usePostHog();
   const headerHeight = useHeaderHeight();
-  const [messages, setMessages] = useState([]);
+  const fetchPage = useCallback(async ({ limit, beforeCreatedAt }) => {
+    let query = supabase
+      .from('messages')
+      .select('*')
+      .eq('match_id', matchId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt);
+    const { data, error } = await query;
+    if (error) {
+      console.error('loadMessages page error', error);
+      return [];
+    }
+    return data ?? [];
+  }, [matchId]);
+  const { messages, setMessages, loadInitial, loadOlder, prependMessage, updateMessage, hasMore, loadingOlder } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer();
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
@@ -133,7 +149,6 @@ export default function ChatScreen({ route, navigation }) {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [designatedFirstMessengerId, setDesignatedFirstMessengerId] = useState(null);
   const [designatedFirstMessengerName, setDesignatedFirstMessengerName] = useState(null);
-  const listRef = useRef(null);
   const seenMessageIdsRef = useRef(new Set());
   const recordingRef = useRef(null);
   const recordingTimerRef = useRef(null);
@@ -141,23 +156,6 @@ export default function ChatScreen({ route, navigation }) {
   const messagesChannelRef = useRef(null);
   const reactionChannelRef = useRef(null);
   const otherTypingTimeoutRef = useRef(null);
-
-  async function loadMessages() {
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('match_id', matchId)
-      .order('created_at', { ascending: true });
-    setMessages(data || []);
-
-    if (data && data.length > 0) {
-      const lastMessage = data[data.length - 1];
-      const daysSinceLastMessage = (Date.now() - new Date(lastMessage.created_at).getTime()) / (1000 * 60 * 60 * 24);
-      setIsStalled(daysSinceLastMessage >= STALLED_THRESHOLD_DAYS);
-    } else {
-      setIsStalled(false);
-    }
-  }
 
   async function loadReactions() {
     const data = await getReactionsForMatch(matchId);
@@ -194,6 +192,20 @@ export default function ChatScreen({ route, navigation }) {
     })();
   }, [messages]);
 
+  // messages is kept in DESC order (see usePaginatedMessages) so
+  // messages[0] is always the newest currently-loaded message — recomputed
+  // whenever the loaded set changes (initial load, a realtime arrival, or
+  // an optimistic send), same reactivity the old loadMessages() had on
+  // every call, just without a whole-conversation re-fetch to trigger it.
+  useEffect(() => {
+    if (messages.length === 0) {
+      setIsStalled(false);
+      return;
+    }
+    const daysSinceLastMessage = (Date.now() - new Date(messages[0].created_at).getTime()) / (1000 * 60 * 60 * 24);
+    setIsStalled(daysSinceLastMessage >= STALLED_THRESHOLD_DAYS);
+  }, [messages]);
+
   useEffect(() => {
     let currentMyId;
     init().then((myId) => {
@@ -211,9 +223,13 @@ export default function ChatScreen({ route, navigation }) {
     // would also suspend the realtime socket) whenever the screen locks or
     // the app backgrounds, so a real refresh on returning to foreground is
     // still the right fallback, independent of the poll this replaces.
+    // Re-syncs to just the most recent page (loadInitial), same as a fresh
+    // screen open — if the user had scrolled up via loadOlder before
+    // backgrounding, that older history is dropped on resume rather than
+    // re-fetched, matching what a fresh open of this screen would show.
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        loadMessages();
+        loadInitial();
         if (currentMyId) markMessagesAsRead(currentMyId);
       }
     });
@@ -368,7 +384,7 @@ export default function ChatScreen({ route, navigation }) {
       });
     }
 
-    await loadMessages();
+    await loadInitial();
     await loadReactions();
     await markMessagesAsRead(myId);
 
@@ -378,11 +394,10 @@ export default function ChatScreen({ route, navigation }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
         (payload) => {
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === payload.new.id)) return prev;
-            return [...prev, payload.new];
-          });
-          setIsStalled(false);
+          // prependMessage (see usePaginatedMessages) dedupes by id, so
+          // this is a no-op for the sender's own echoed insert if it was
+          // already added optimistically below.
+          prependMessage(payload.new);
           // Mark read reactively, right as the message actually arrives,
           // instead of waiting for the poll tick that used to run this —
           // more immediate than the old 3-second timer ever was, and
@@ -395,7 +410,7 @@ export default function ChatScreen({ route, navigation }) {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages', filter: `match_id=eq.${matchId}` },
         (payload) => {
-          setMessages((prev) => prev.map((m) => (m.id === payload.new.id ? payload.new : m)));
+          updateMessage(payload.new);
         }
       )
       .subscribe();
@@ -492,7 +507,7 @@ export default function ChatScreen({ route, navigation }) {
         .select()
         .single();
       if (error) throw error;
-      setMessages((prev) => [...prev, data]);
+      setMessages((prev) => [data, ...prev]);
       posthog.capture('date_night_suggested');
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -778,8 +793,7 @@ export default function ChatScreen({ route, navigation }) {
         read_at: null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, optimisticMessage]);
-      setIsStalled(false);
+      setMessages((prev) => [optimisticMessage, ...prev]);
 
       const { data, error } = await supabase
         .from('messages')
@@ -855,8 +869,7 @@ export default function ChatScreen({ route, navigation }) {
         read_at: null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, optimisticMessage]);
-      setIsStalled(false);
+      setMessages((prev) => [optimisticMessage, ...prev]);
 
       try {
         const { data, error } = await supabase
@@ -901,8 +914,7 @@ export default function ChatScreen({ route, navigation }) {
       read_at: null,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, optimisticMessage]);
-    setIsStalled(false);
+    setMessages((prev) => [optimisticMessage, ...prev]);
 
     const { data, error } = await supabase
       .from('messages')
@@ -941,8 +953,7 @@ export default function ChatScreen({ route, navigation }) {
         read_at: null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, optimisticMessage]);
-      setIsStalled(false);
+      setMessages((prev) => [optimisticMessage, ...prev]);
 
       const { data, error } = await supabase
         .from('messages')
@@ -987,8 +998,7 @@ export default function ChatScreen({ route, navigation }) {
         read_at: null,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, optimisticMessage]);
-      setIsStalled(false);
+      setMessages((prev) => [optimisticMessage, ...prev]);
 
       const { data, error } = await supabase
         .from('messages')
@@ -1032,7 +1042,9 @@ export default function ChatScreen({ route, navigation }) {
     return Object.entries(counts).map(([emoji, count]) => (count > 1 ? `${emoji}${count}` : emoji)).join(' ');
   }
 
-  const lastMyMessage = [...messages].reverse().find((m) => m.sender_id === userId);
+  // messages is DESC (newest first, see usePaginatedMessages), so the
+  // first match here is already the most recent — no reverse needed.
+  const lastMyMessage = messages.find((m) => m.sender_id === userId);
   const emptyStateText = gatheringTitle
     ? `Say hi — you're both attending "${gatheringTitle}"!`
     : t('chat.sayHi');
@@ -1049,37 +1061,53 @@ export default function ChatScreen({ route, navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
       >
+        {messages.length === 0 ? (
+          <View style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
+            <Text style={styles.emptyEmoji}>💬</Text>
+            <Text style={styles.emptyText}>{emptyStateText}</Text>
+            {isBlockedFromSending && (
+              <Text style={styles.firstMessageHint}>
+                {designatedFirstMessengerName} will send the first message.
+              </Text>
+            )}
+            {isUserPremium && (
+              <TouchableOpacity
+                style={styles.icebreakerEmptyButton}
+                onPress={getIcebreaker}
+                disabled={loadingIcebreaker}
+                accessibilityLabel="Get an AI icebreaker suggestion"
+                accessibilityRole="button"
+              >
+                {loadingIcebreaker ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Text style={styles.icebreakerEmptyText}>✨ Get an AI icebreaker suggestion</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
         <FlatList
-          ref={listRef}
           data={messages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>💬</Text>
-              <Text style={styles.emptyText}>{emptyStateText}</Text>
-              {isBlockedFromSending && (
-                <Text style={styles.firstMessageHint}>
-                  {designatedFirstMessengerName} will send the first message.
-                </Text>
-              )}
-              {isUserPremium && (
-                <TouchableOpacity
-                  style={styles.icebreakerEmptyButton}
-                  onPress={getIcebreaker}
-                  disabled={loadingIcebreaker}
-                  accessibilityLabel="Get an AI icebreaker suggestion"
-                  accessibilityRole="button"
-                >
-                  {loadingIcebreaker ? (
-                    <ActivityIndicator color={colors.primary} />
-                  ) : (
-                    <Text style={styles.icebreakerEmptyText}>✨ Get an AI icebreaker suggestion</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
+          // Newest-first data + inverted rendering — same shape as
+          // gathering/community/business chat, so onEndReached below
+          // corresponds to scrolling toward the *oldest* end of the
+          // conversation, and a new message stays pinned at the visual
+          // bottom without a manual scrollToEnd.
+          inverted
+          onEndReached={loadOlder}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            // Renders visually at the TOP under `inverted`.
+            loadingOlder ? (
+              <View style={{ paddingVertical: spacing.md }}>
+                <ActivityIndicator color={colors.textTertiary} />
+              </View>
+            ) : !hasMore && messages.length > 0 ? (
+              <Text style={styles.historyStartText}>The start of your conversation</Text>
+            ) : null
           }
           renderItem={({ item }) => {
             const isMe = item.sender_id === userId;
@@ -1180,6 +1208,7 @@ export default function ChatScreen({ route, navigation }) {
             );
           }}
         />
+        )}
 
         {isStalled && messages.length > 0 && isUserPremium && (
           <View style={styles.stalledBanner}>
@@ -1355,6 +1384,7 @@ export default function ChatScreen({ route, navigation }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  historyStartText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   firstMessageHint: { ...typography.caption, color: colors.primary, textAlign: 'center', marginTop: spacing.sm, fontWeight: '600' },
