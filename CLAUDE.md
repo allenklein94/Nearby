@@ -4,6 +4,147 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Business Partner Onboarding (self-serve apply enrichment) — plan written before implementation, step 1 in progress
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file — **if a codespace restart hits mid-build, check `git status`/`git log`
+for what actually landed vs. what's still just this plan.** Started Aug 10 2026, the day after
+the scalability audit closed out. The user asked directly: "becoming a partner is still
+admin-gated — how should I fix this?", floated a fairly large self-serve-application design
+(short form → pending → admin approve/reject/request-more-info → auto-unlock → partner tiers),
+and explicitly asked for an architecture proposal *before* any code — "do NOT implement yet,"
+matching this file's own standing discipline for exactly this kind of decision.
+
+**Investigated the real code before proposing anything, rather than assuming the gap was as
+wide as it sounded.** Headline finding: most of what was being asked for **already exists** —
+this is an enrichment pass on a real, already-correct system, not a new build. Two separate,
+similarly-named systems exist and shouldn't be conflated: `business_partner_requests` +
+`BusinessPartnerApplyScreen.js` + `AdminBusinessRequestsScreen.js` +
+`approve_business_partner_request()`/`deny_business_partner_request()` (the real "become a
+partner" flow — reachable today from exactly one place, `SettingsScreen.js`'s "Partner With
+Us" row) vs. `business_partnership_requests` (a completely different, already-built feature —
+an existing gathering/community host asking an *already-approved* business to sponsor their
+specific event; what `CreateHubScreen`'s "🤝 Partner with a Business" row actually points to;
+not part of this gap, not touched by this plan).
+
+Reading `approve_business_partner_request()`'s real body (`20260809_business_request_review_
+guard.sql`) confirmed the hard part is already built and already correct: approval atomically
+creates a real `brand_partners` row, sets `profiles.managed_partner_id` (which **is** "auto-
+unlock Business Mode" — every gate in the app, `SettingsScreen`/`ProfileScreen`/
+`CreateHubScreen`, reads this same column), and retroactively links the requester's existing
+gatherings/communities to the new partner — all in one SECURITY DEFINER transaction, already
+double-approval-guarded (added the prior day). RLS was also independently checked and is
+already sound: `business_partner_requests` has an INSERT policy (own rows only) and a SELECT
+policy (own rows only) but **no owner-scoped UPDATE policy at all** — a normal user can create
+and read their own request but cannot touch `status` on any row by any client-side write.
+Self-approval is already structurally impossible, not just RPC-discouraged.
+
+**What's genuinely missing, confirmed by reading every real call site** (not the RPCs — those
+are fine): the applicant has **zero visibility** into their application after submitting (no
+status screen anywhere, despite the needed SELECT policy already existing and being unused);
+**neither RPC sends any notification** on approve/deny (confirmed — no `net.http_post` call in
+either function, and this app has no in-app-notices fallback for this event type either,
+unlike some other approval flows); the form itself is thin (name/description/contact-info
+only, no category/website/phone/address, no "what would you like to offer" checkboxes); there's
+no `tier` concept anywhere on `brand_partners`; nothing stops a user from submitting multiple
+concurrent pending applications; there's no `reviewed_by` on the request row (no audit trail of
+which admin reviewed it); the entry point is a single buried Settings text row — `ProfileScreen.js`
+only ever shows the *already-a-partner* "Switch to Business" button and renders nothing at all
+for a non-partner, so there's no natural "become a partner" surface there today.
+
+**Locked decisions from the investigation, not to be re-litigated:**
+1. Do not touch `business_partnership_requests`/`RequestBusinessPartnerScreen`/`CreateHubScreen`'s
+   "Partner with a Business" row — different feature, different persona, already correctly
+   scoped, no naming collision in practice once traced through the actual code.
+2. Reuse the existing RPCs/table/screens — this is additive columns + new UI reading an
+   already-existing-but-unused SELECT policy, not a new schema or a parallel system.
+3. **Skip building a real "Request More Information" third reviewer state for v1** — at this
+   app's real application volume, an admin denying with a note and letting the person reapply
+   (a fresh INSERT, not a resurrected row — keeps admin review history intact) is a workable
+   substitute for a whole extra state-machine branch. Flagged for later, not built now.
+4. **`brand_partners.tier` ships as a bare column this pass** (`basic`/`growth`/`brand`,
+   default `basic`) — no billing/feature-gating logic wired to it anywhere yet, matching the
+   user's own "design the database around it, don't build all three now" instruction. A column
+   now avoids a harder migration later; nothing downstream reads it yet.
+5. **No new UPDATE RLS policy for "reapply after denial."** A reapply is a fresh `pending` row,
+   not a resurrection of the denied one — preserves the admin's full review history, matches
+   what `AdminBusinessRequestsScreen.js` already displays (all statuses, not just pending).
+6. **Not building a marketing-style "Business Mode" landing page** with value-prop bullets —
+   real and reasonable, but that's content/positioning layered on a working mechanism, not a
+   functional gap. Flagged, not silently bundled in.
+
+**Build plan, in order — each its own migration/commit, verified the same way every other
+schema change in this file already is** (live production check with real disposable test data
++ a from-scratch Docker replay before considered done, matching the migration-discipline rule
+in "Known conventions" at the bottom of this file), **not batched at the end**, so a mid-session
+restart never loses more than one piece:
+
+1. **Migration** (schema only, zero client changes, fully additive/backward-compatible) —
+   `business_partner_requests` gains `category`/`website`/`phone`/`address` text columns,
+   `requested_features text[]`, `admin_notes text`, `reviewed_by uuid references profiles(id)`;
+   a `status` CHECK constraint (`pending|approved|denied` — **there currently is none at all**,
+   worth closing regardless of this feature); a partial unique index
+   `unique (requester_id) where status = 'pending'` (closes a real gap — nothing today stops
+   someone submitting multiple concurrent pending applications). `brand_partners` gains
+   `tier text default 'basic' check (tier in ('basic','growth','brand'))`. Both RPCs updated to
+   set `reviewed_by = auth.uid()` on review (new auditability — today there's no way to tell
+   which admin reviewed a given request). **← starting here.**
+2. **Migration** — add push notifications to both RPCs, mirroring `notify_gathering_approved()`'s
+   exact established pattern (`net.http_post` to `send-push`) — no new trigger needed, these
+   RPCs are already the only path into a status change. This app has no in-app-notices
+   equivalent for this event today, confirmed by checking — push is the only real delivery
+   mechanism to add.
+3. **Client** — expand `BusinessPartnerApplyScreen.js`'s form with the new fields (category
+   picker, website/phone/address, feature checkboxes → `requested_features`). Pure client
+   change once step 1 is live.
+4. **Client** — new lightweight applicant-facing "My Application" status screen (reuses the
+   already-existing, currently-unused "Users can view their own requests" SELECT policy), plus
+   the conditional swap in `SettingsScreen.js` (pending/denied → status screen, not the bare
+   form) and the equivalent new conditional block added to `ProfileScreen.js` (today shows
+   nothing for a non-partner at all).
+5. **Client** — `AdminBusinessRequestsScreen.js` renders the new fields per card
+   (category/website/phone) for fuller review context. No RPC changes needed, Approve/Deny
+   already call the real functions.
+6. **Client** — two new `routeNotificationTap()` cases in `services/notifications.js`
+   (`business_partner_approved` → `BusinessDashboard`, `business_partner_denied` → the new
+   status screen).
+7. *(Optional, explicitly deferred per locked decision 3)* — a real "Request More Information"
+   reviewer state, only if it later proves worth the complexity.
+
+**Step 1 — DONE, verified both live and via a from-scratch replay.** The migration
+(`20260810_business_partner_onboarding_enrichment.sql`) was already applied to production
+(`enmosvippabmuqslzrox`) from before a codespace restart interrupted this session — confirmed
+directly (all 7 new columns, both new constraints, the partial unique index, `tier` with its
+default, and both RPCs' `reviewed_by` logic all present) rather than re-applying blind.
+**Verified live with real disposable test data**, matching the plan's own verification bar:
+inserted two `pending` test requests for the same real requester (`Claude`) — the second was
+correctly rejected by the new partial unique index (`23505` on
+`business_partner_requests_one_pending_idx`); inserted a request with `status='bogus'` — 
+correctly rejected by the new CHECK constraint (`23514`); confirmed `reviewed_by` is `null`
+before review; called `approve_business_partner_request`/`deny_business_partner_request` as the
+real admin (`Allen`) on two separate real pending test requests — both correctly stamped
+`reviewed_by = Allen's id` and a real `reviewed_at`. **A real mistake made and caught during
+cleanup, disclosed rather than glossed over**: the approve call's own side effects (a real new
+`brand_partners` row, `Claude`'s `managed_partner_id`, and — since `Claude` hosts two real
+gatherings with no partner yet — both gatherings' `hosting_partner_id`) all needed reverting
+too, not just the request rows themselves; caught by re-checking those tables before declaring
+cleanup done, not assumed clean. All test rows deleted, `Claude`'s `managed_partner_id` and both
+gatherings' `hosting_partner_id` reset to `null`, the one pre-existing baseline row (`Test
+Approval Business`, `approved`, 1 row total) confirmed unchanged — production back to its exact
+pre-test state. **Verified via a real from-scratch migration replay**, per the migration-
+discipline rule: pulled the already-cached `supabase/postgres:15.1.0.147` image, dropped and
+recreated an empty `public` schema, patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`), ran the full `supabase/migrations/` folder in
+order (9 files, baseline through this pass's own migration) with `psql -v ON_ERROR_STOP=1` —
+exit 0 on every file, all new columns/constraints/index/default confirmed to exist in the
+freshly-rebuilt database afterward. Container removed. No client files touched this step, so no
+`npx expo export` was needed (matching the plan's own note that step 1 has no client changes).
+
+**Not done yet, per this plan's own step ordering**: steps 2-7 above are real, planned, and not
+yet built — check `git log` for what's actually landed before assuming more than step 1 (or
+whatever step is checked off here) is done. Same standing gap as everywhere else in this file:
+no manual device/simulator run-through once the client-side steps land.
+
 ## Scalability audit fixes (Aug 10 2026) — DONE, all 10 execution steps closed
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
