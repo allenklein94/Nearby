@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — Phases 1-7 DONE, Phase 8 (Weekly Recap ↔ Momentum) last
+## Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — ALL 8 PHASES DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -279,6 +279,28 @@ historical view") only makes full sense once Phase 5 has already settled where M
 Profile's own restructured link list — building this before Phase 5 would mean revisiting the
 link's copy/placement a second time.
 
+**Phase 8 — DONE, exactly as planned, no design changes during implementation.**
+`HomeScreen.js`'s "This Week" card (previously its own bulleted-list card — a title plus up to
+two "✓ Attended N gatherings"/"✓ Made N new friends" lines) is now a single tappable row: a
+one-line summary (new module-level `formatWeeklyRecap()` helper, joining only the real non-zero
+parts with " · " — e.g. "2 gatherings · 3 new connections", or just "2 gatherings" if the caller
+made no new friends this week) plus a "View Momentum →" link, navigating to the existing
+`Momentum` route (`MomentumScreen.js`, already reachable from Profile's "My Activity" group per
+Phase 5). No new query — still the same `dashboard.weeklyRecap` shape
+(`gatheringsAttended`/`newFriends`) `getHomeDashboard()` already computed; only the rendering
+changed. The card's visibility condition is unchanged (renders only when at least one real count
+is > 0, same as before — no card at all for a quiet week, not a fabricated zero-state).
+Verified via a full `npx expo export --platform ios` — clean, 1854 modules (unchanged, edits to
+one existing file only).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm the one-line summary reads correctly with only
+gatherings, only new connections, and both present, and that tapping it lands cleanly on
+Profile's Momentum screen.
+
+**All 8 phases of this plan are now DONE.** Nothing further scheduled here unless a future
+device/simulator pass (the standing gap repeated across every phase above) surfaces something
+concrete to fix.
+
 **Explicit non-scope, stated so a future session doesn't silently expand this plan**: Discover
 and Create are both **not** touched by this plan — the user explicitly said Discover's
 architecture and Create's activity-first grid are already good and shouldn't be messed with.
@@ -410,11 +432,9 @@ elsewhere on this screen for "More Photos"/"Prompts"/"Achievements" — no new s
   4-tile row, and that Billing/Emergency Contacts are still reachable (Settings-only) with no
   dead link left behind on Profile.
 
-**Next**: Phase 8 (Weekly Recap ↔ Momentum merge) — the only phase left. Phases 6 and 7 are both
-now DONE (see their own status notes above; Phase 7 was built out of the stated order during a
-restart, then Phase 6 was completed afterward once its own explicitly-flagged decision —
-Activity's "⏰ Upcoming" group vs. Home's "Your Plans" — was put to the user directly and
-resolved). Not started.
+**All 8 phases of this whole restructure are now DONE** (Phases 6, 7, and 8's own status notes
+are further down this section, after Phase 8's plan text). Nothing left scheduled here except
+the standing, repeated-everywhere-in-this-file device/simulator verification gap.
 
 ## Detailed UI/IA documentation for external-AI review — DONE
 

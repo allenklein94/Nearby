@@ -39,6 +39,17 @@ function formatCategoryList(categories) {
   return `${categories.slice(0, -1).join(', ')} & ${categories[categories.length - 1]}`;
 }
 
+function formatWeeklyRecap(recap) {
+  const parts = [];
+  if (recap.gatheringsAttended > 0) {
+    parts.push(`${recap.gatheringsAttended} gathering${recap.gatheringsAttended === 1 ? '' : 's'}`);
+  }
+  if (recap.newFriends > 0) {
+    parts.push(`${recap.newFriends} new connection${recap.newFriends === 1 ? '' : 's'}`);
+  }
+  return parts.join(' · ');
+}
+
 export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors);
@@ -473,15 +484,15 @@ export default function HomeScreen({ navigation }) {
         )}
 
         {dashboard?.weeklyRecap && (dashboard.weeklyRecap.gatheringsAttended > 0 || dashboard.weeklyRecap.newFriends > 0) && (
-          <View style={styles.recapCard}>
-            <Text style={styles.recapTitle}>This Week</Text>
-            {dashboard.weeklyRecap.gatheringsAttended > 0 && (
-              <Text style={styles.recapItem}>✓ Attended {dashboard.weeklyRecap.gatheringsAttended} gathering{dashboard.weeklyRecap.gatheringsAttended === 1 ? '' : 's'}</Text>
-            )}
-            {dashboard.weeklyRecap.newFriends > 0 && (
-              <Text style={styles.recapItem}>✓ Made {dashboard.weeklyRecap.newFriends} new friend{dashboard.weeklyRecap.newFriends === 1 ? '' : 's'}</Text>
-            )}
-          </View>
+          <TouchableOpacity
+            style={styles.recapCard}
+            onPress={() => navigation.navigate('Momentum')}
+            accessibilityLabel={`This week: ${formatWeeklyRecap(dashboard.weeklyRecap)}. View Momentum`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.recapSummary}>This week: {formatWeeklyRecap(dashboard.weeklyRecap)}</Text>
+            <Text style={styles.recapLink}>View Momentum →</Text>
+          </TouchableOpacity>
         )}
 
         {!dashboard?.bestPick && (!dashboard?.trendingGatherings || dashboard.trendingGatherings.length === 0) && (dashboard?.nearbyPeopleCount ?? 0) === 0 && (
@@ -616,10 +627,11 @@ const getStyles = (colors) => StyleSheet.create({
   bestPickReason: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
   bestPickAction: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   recapCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },
-  recapTitle: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
-  recapItem: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
+  recapSummary: { color: colors.textPrimary, fontSize: 13, flex: 1, marginRight: spacing.sm },
+  recapLink: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   trendingTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
   trendingMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
