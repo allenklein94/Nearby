@@ -33,7 +33,15 @@ overlaps" list (overlaps only — not resolved, not recommended away).
    back, since overlaps require cross-referencing both halves against each other.
 4. Commit and push once assembled.
 
-**Status: plan committed, research running.**
+**Status: research done, assembled, committed. Closing UI map + overlaps section still to
+write.** Both read-only research passes completed and were assembled into
+`PRODUCT_AUDIT/UI_IA_REVIEW_FOR_EXTERNAL_AI_2026-08-10.md` (Part 1: Home/Discover/Create/weather
+trace; Part 2: Profile/Settings/Inbox/GatheringDetail/Gatherings-attending-hosting/Business Mode
+intersections). **Committed immediately on completion, before writing the closing section**, per
+the user's own mid-task request not to risk losing it to a restart. Next: write the closing
+ASCII UI map + "Potential IA overlaps" section (requires cross-referencing both parts against
+each other, done by the orchestrating session, not either research pass alone), append to the
+same file, commit again.
 
 ## Outstanding: Current UI Map for IA review — IN PROGRESS
 
