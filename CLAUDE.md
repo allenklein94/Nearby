@@ -383,25 +383,47 @@ new files):**
   browses first; and the renamed section headers/reordered sub-labels read correctly against
   real data.
 
-**New gap surfaced by this phase, real and unscheduled — not a phase 1-8 item, carried forward
-explicitly here so it isn't silently lost the way this file's own conventions warn against.**
+**Gap surfaced by this phase — CLOSED (option (b) below), 2026-08-10, same day as Phases 6-8.**
 The weather card's `forecast_detail` sentences (returned verbatim by the `get_weather_result`
-SQL function — the actual copy strings, not composed client-side) always say "tonight" and can
-never make a real time-specific claim (e.g. "rain after 7 PM") regardless of when the request
-actually fires, because the backend only calls OpenWeatherMap's **current-conditions** endpoint,
-not an hourly/forecast endpoint — there is no real data behind a future-time claim to make. This
-pass fixed what was honestly fixable client-side (weak-signal suppression, the "Social Forecast"
-→ "Right Now" heading, dropping the redundant generic insight-line sentence) but deliberately
-did **not** touch the SQL function's own hardcoded copy, since that's a schema/migration change
-requiring this file's own live-verification + from-scratch-replay discipline, not something to
-fold into a client-only Home pass. **Closing this for real needs one of**: (a) a genuine forecast
-API integration (a different OpenWeatherMap/Google endpoint, real new external cost/latency,
-worth a scope discussion before building), or (b) at minimum a small migration softening the
-SQL function's own "tonight"/"tonight's" wording to something time-neutral (e.g. "right now"),
-with the same live-test + from-scratch-replay verification every other schema change in this
-file gets. Not built, not scheduled as one of the 8 phases below — flagged here as its own
-standalone open item so a future session (this one or a fresh one) can pick it up deliberately,
-either bundled into a future Home revisit or as its own small one-off fix.
+SQL function — the actual copy strings, not composed client-side) always said "tonight" and
+could never make a real time-specific claim (e.g. "rain after 7 PM") regardless of when the
+request actually fired, because the backend only calls OpenWeatherMap's **current-conditions**
+endpoint, not an hourly/forecast endpoint — there is no real data behind a future-time claim to
+make. The earlier Home pass fixed what was honestly fixable client-side (weak-signal
+suppression, the "Social Forecast" → "Right Now" heading, dropping the redundant generic
+insight-line sentence) but deliberately left the SQL function's own hardcoded copy untouched,
+flagging two ways to close it for real: (a) a genuine forecast API integration (real new
+external cost/latency, needs its own scope discussion), or (b) at minimum a migration softening
+the "tonight"/"a better night" wording to something time-neutral. **User asked for (b)
+specifically, not (a)** — closed via `20260810_weather_copy_time_neutral.sql`.
+- Both `get_weather_result(request_id_param)` (the live path — the only one actually called from
+  the client, via `getSocialForecast()`'s submit-then-poll pattern in `homeDashboard.js`) and its
+  identical-logic-but-unused sibling `get_social_forecast(my_lat, my_lng)` (superseded by the
+  async submit/poll pair, confirmed zero client callers via grep, kept in sync anyway so a future
+  session reviving it doesn't inherit stale copy) had their three time-specific
+  `forecast_detail` strings softened: "a better night for something indoors" → "a better time
+  for something indoors"; "a harder sell tonight" → "a harder sell right now"; "out there
+  tonight" → "out there right now". `forecast_label` bucketing (Quiet/Excellent/Good), the two
+  branches that never mentioned a time of day (the "too hot" and "clear skies" cases), and every
+  threshold are all byte-for-byte unchanged — copy-only edit, no logic touched.
+- **Verified live against production** (`enmosvippabmuqslzrox`): applied via the Management API,
+  confirmed both functions' `prosrc` no longer contains "tonight" and now contains "right now",
+  confirmed `authenticated`-only execute grants survived the `CREATE OR REPLACE` (`anon` still
+  correctly excluded), and pulled the full `pg_get_functiondef()` for `get_weather_result` to
+  eyeball the complete body — the CASE logic is intact, only the four literal strings changed.
+- **Verified via a real from-scratch migration replay**, per this file's migration-discipline
+  rule: pulled the already-cached `supabase/postgres:15.1.0.147` image, dropped and recreated an
+  empty `public` schema, patched the two known image-version gaps, ran the full
+  `supabase/migrations/` folder in order (12 files, baseline through this pass's own migration)
+  with `psql -v ON_ERROR_STOP=1` — exit 0 on every file, both functions confirmed to contain the
+  new wording in the freshly-rebuilt database. Container removed afterward.
+- No client files touched — this was a pure backend copy fix, `HomeScreen.js`/`homeDashboard.js`
+  already render whatever `forecast_detail` the RPC returns verbatim, so no `npx expo export`
+  was needed for this specific change.
+- **Still open, disclosed rather than silently resolved**: option (a) — a genuine hourly-forecast
+  API integration, which would let the card make an actually time-specific claim ("rain after
+  7 PM") instead of just avoiding a false one — was not attempted and would need its own scope
+  discussion (a different API endpoint, real new cost/latency) before being built.
 
 **Phase 5 — DONE.** `ProfileScreen.js` only (edit, no new files). Removed the "💳 Billing" and
 "🛡️ Emergency Contacts" `timelineLink` rows outright — both stay Settings-only now
