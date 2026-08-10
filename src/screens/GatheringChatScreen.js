@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { getGatheringMessages, sendGatheringMessage } from '../services/gatheringChat';
+import { getGatheringMessages, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
 import { getSignedPhotoUrl } from '../services/photos';
 import { captureStoryMedia, uploadStory } from '../services/stories';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -110,9 +110,32 @@ export default function GatheringChatScreen({ route }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));
     load();
-    const interval = setInterval(load, 3000);
-    return () => clearInterval(interval);
-  }, [load]);
+
+    // Was a setInterval(load, 3000) re-downloading the entire message
+    // history every 3 seconds, unconditionally, for as long as this screen
+    // stayed open. Replaced with a real realtime subscription — new
+    // messages arrive as individual INSERT events and get appended to the
+    // already-loaded list, instead of the whole conversation being
+    // re-fetched on a timer.
+    const channel = supabase
+      .channel(`gathering_messages:${gatheringId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'gathering_messages', filter: `gathering_id=eq.${gatheringId}` },
+        async (payload) => {
+          const fullMessage = await getGatheringMessageById(payload.new.id);
+          if (!fullMessage) return;
+          setMessages((prev) => (prev.some((m) => m.id === fullMessage.id) ? prev : [...prev, fullMessage]));
+          if (fullMessage.profiles?.photo_url) {
+            const url = await getSignedPhotoUrl(fullMessage.profiles.photo_url);
+            setPhotoUrls((prev) => ({ ...prev, [fullMessage.sender_id]: url }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [load, gatheringId]);
 
   async function handleSend() {
     await send(async (body) => {

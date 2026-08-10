@@ -4,17 +4,42 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — plan written, NOT STARTED
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 1 of 10 done
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
 refresh review" below). The user asked the natural follow-up: audit the rest of the app for
 the same pattern before assuming it was a one-off. Full findings are written up in
 `PRODUCT_AUDIT/SCALABILITY_AUDIT.md` — read that file for the complete file/line evidence; this
-section is the execution plan distilled from it, written *before* any fix lands, same
-restart-safety convention as every other plan-first section in this file. **Nothing below has
-been built yet** — check `git log`/`git status` before assuming any part of this landed, same
-as always.
+section is the execution plan distilled from it. **Status, updated as each of the 10 execution
+steps lands (check the numbered list further down for per-step status) — check `git log`/
+`git status` before assuming anything beyond what's marked DONE below actually landed**, same
+restart-safety convention as every other plan-first section in this file.
+
+**Step 1 — DONE.** `GatheringChatScreen.js`'s `setInterval(load, 3000)` (re-downloading the
+*entire* gathering message history every 3 seconds, unconditionally, for as long as the screen
+stayed open — the headline finding of the audit) is gone. Replaced with a real Supabase
+Realtime channel (`gathering_messages:{gatheringId}`, mirroring `ChatScreen.js`'s own existing
+`messages:{matchId}` channel pattern), subscribed to `INSERT` events on `gathering_messages`
+filtered by `gathering_id`. Since a `postgres_changes` payload only carries raw table columns
+(no joined `profiles` data), a new `getGatheringMessageById()` was added to
+`services/gatheringChat.js` — same select shape as the existing `getGatheringMessages()`, just
+scoped to one row by id — so a newly-arrived message can be appended to state with its sender's
+`display_name`/`photo_url` already resolved, instead of falling back to a stale null (the
+channel handler also updates `photoUrls` for that sender the same way the initial `load()`
+already does). The channel is properly cleaned up on unmount
+(`return () => supabase.removeChannel(channel)`) — done correctly from the start here, unlike
+`ChatScreen.js`'s own pre-existing messages channel, which turns out to have the same
+never-cleaned-up gap (found while reading it for comparison; not fixed yet, flagged for step 4
+below, which touches that exact function).
+**Deliberately not touched this step**: `handleSend()` still calls `load()` once after a
+successful send (a single user-triggered fetch, not a recurring timer — fine as-is; message-
+count bounding itself is step 5's job, this step was scoped to the delivery mechanism only, per
+the plan's own separation of concerns). Verified via a full `npx expo export --platform ios` —
+clean, 1850 modules (unchanged, edits to two existing files). **Not verified**: an actual live
+message arriving on a second device without a manual refresh — this sandbox can't open two live
+app sessions to test that, flagged honestly rather than claimed, same standing gap the plan
+itself already called out.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
