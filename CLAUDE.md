@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Business Partner Onboarding (self-serve apply enrichment) — plan written before implementation, step 1 in progress
+## Outstanding: Business Partner Onboarding (self-serve apply enrichment) — DONE, steps 1-6 all closed, step 7 deliberately deferred
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file — **if a codespace restart hits mid-build, check `git status`/`git log`
@@ -160,9 +160,15 @@ restart never loses more than one piece:
    or thinner application doesn't show empty rows. No RPC changes needed, Approve/Deny already
    call the real functions from steps 1-2. Verified via a full `npx expo export --platform
    ios` — clean, 1853 modules (unchanged, edit to one existing file only).
-6. **Client** — two new `routeNotificationTap()` cases in `services/notifications.js`
-   (`business_partner_approved` → `BusinessDashboard`, `business_partner_denied` → the new
-   status screen).
+6. **Client — DONE.** Two new `routeNotificationTap()` cases in `services/notifications.js`
+   (`business_partner_approved` → `BusinessDashboard`, `business_partner_denied` →
+   `MyBusinessApplication`, matching the `data.type` values step 2's push payloads actually
+   send). No separate cold-start handling needed — `routeNotificationTap()`'s existing
+   not-ready path (stash to `AsyncStorage`, replay via `consumePendingNotificationTap()` once
+   the authenticated stack mounts, the Aug 9 2026 fix documented elsewhere in this file) already
+   re-invokes this same switch statement regardless of `type`, so both new cases are covered
+   for a cold-start tap for free. Verified via a full `npx expo export --platform ios` — clean,
+   1853 modules (unchanged, edit to one existing file only).
 7. *(Optional, explicitly deferred per locked decision 3)* — a real "Request More Information"
    reviewer state, only if it later proves worth the complexity.
 
@@ -195,10 +201,20 @@ exit 0 on every file, all new columns/constraints/index/default confirmed to exi
 freshly-rebuilt database afterward. Container removed. No client files touched this step, so no
 `npx expo export` was needed (matching the plan's own note that step 1 has no client changes).
 
-**Not done yet, per this plan's own step ordering**: steps 2-7 above are real, planned, and not
-yet built — check `git log` for what's actually landed before assuming more than step 1 (or
-whatever step is checked off here) is done. Same standing gap as everywhere else in this file:
-no manual device/simulator run-through once the client-side steps land.
+**Steps 1-6 are all now DONE — schema, push notifications, the expanded apply form, the
+applicant status screen, the admin card's fuller review context, and push-tap routing are all
+built, applied, and verified (schema/RPC pieces live against production + a from-scratch Docker
+replay; client pieces via a clean `npx expo export --platform ios` after each increment).**
+Step 7 (a real "Request More Information" reviewer state) remains deliberately deferred per
+locked decision 3 — not built, not needed unless real application volume later makes a denial-
+and-reapply cycle genuinely too costly. **Not done, same standing gap as everywhere else in this
+file**: no manual device/simulator run-through of any of the client-side pieces — next session
+should confirm: the expanded apply form submits correctly end-to-end as a real signed-in user,
+the category chips/feature checkboxes round-trip correctly, the "My Application" status screen
+renders correctly for a genuinely pending, approved, and denied real application, the admin
+card's new fields display correctly for a request with and without each optional field
+populated, and that a real approve/deny push notification actually arrives on a device and tapping
+it (both warm and cold-start) lands on `BusinessDashboard`/`MyBusinessApplication` respectively.
 
 ## Scalability audit fixes (Aug 10 2026) — DONE, all 10 execution steps closed
 

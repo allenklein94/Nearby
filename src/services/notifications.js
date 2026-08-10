@@ -130,6 +130,12 @@ export function routeNotificationTap(data) {
     case 'reward_tier_nudge':
       navigationRef.navigate('Rewards');
       break;
+    case 'business_partner_approved':
+      navigationRef.navigate('BusinessDashboard');
+      break;
+    case 'business_partner_denied':
+      navigationRef.navigate('MyBusinessApplication');
+      break;
     default:
       break;
   }
