@@ -439,7 +439,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
 
-        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Nearby')} accessibilityLabel="Continue browsing" accessibilityRole="button">
+        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel="Continue browsing" accessibilityRole="button">
           <Text style={styles.browseButtonText}>Continue Browsing →</Text>
         </TouchableOpacity>
       </ScrollView>
