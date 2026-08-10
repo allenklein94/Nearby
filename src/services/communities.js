@@ -174,15 +174,24 @@ export async function leaveCommunity(communityId) {
   if (error) throw error;
 }
 
-export async function getCommunityMessages(communityId) {
-  const { data, error } = await supabase
+// Paginated, cursor-based fetch backing usePaginatedMessages — returns
+// rows newest-first, capped at `limit`. Was previously an unconditional
+// `getCommunityMessages()` fetch of the entire history, called on every
+// load *and* re-called every 3 seconds by a poll (see the Aug 10 2026
+// scalability audit) — this is the replacement for that unbounded query.
+export async function getCommunityMessagesPage(communityId, { limit = 50, beforeCreatedAt = null } = {}) {
+  let query = supabase
     .from('community_messages')
     .select('id, sender_id, body, created_at, profiles(display_name, photo_url)')
     .eq('community_id', communityId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
+  if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt);
+
+  const { data, error } = await query;
   if (error) {
-    console.error('getCommunityMessages error', error);
+    console.error('getCommunityMessagesPage error', error);
     return [];
   }
   return data ?? [];

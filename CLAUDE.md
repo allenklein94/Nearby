@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 5 in progress (5a of 4 done)
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 5 in progress (5a-5b of 4 done)
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -142,6 +142,15 @@ layout — this sandbox can't render RN views, so this is verified by reasoning 
 looking at it. Next session should specifically confirm: new messages still appear at the
 visual bottom in the right order, scrolling up genuinely loads older messages without jumping
 or duplicating rows, and the empty state doesn't render upside-down.
+
+**Sub-increment 5b — DONE: `CommunityChatScreen.js`.** Identical treatment to 5a: new
+`getCommunityMessagesPage(communityId, { limit, beforeCreatedAt })` in `services/
+communities.js` replaces the old unbounded `getCommunityMessages()` (deleted, confirmed its
+only caller was this screen), same `inverted`/`onEndReached`/`ListFooterComponent` FlatList
+shape, same consolidated photo-URL-resolution `useEffect`, same "no manual append after
+send, the realtime channel's own echo handles it" simplification. Verified via a full
+`npx expo export --platform ios` — clean, 1850 modules (edits to two existing files only).
+Same unverified visual/on-device gaps as 5a.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
