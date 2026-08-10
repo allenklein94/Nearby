@@ -200,6 +200,27 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.forecastLabel}>🌤️ Right Now</Text>
                 <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
                 <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
+                {socialForecast.forecast_label === 'Quiet' && dashboard?.indoorGatheringsToday?.length > 0 && (
+                  <View style={styles.indoorSuggestions}>
+                    <Text style={styles.indoorSuggestionsHeader}>
+                      🏠 {dashboard.indoorGatheringsToday.length} indoor gathering{dashboard.indoorGatheringsToday.length === 1 ? '' : 's'} today
+                    </Text>
+                    {dashboard.indoorGatheringsToday.map((g) => (
+                      <TouchableOpacity
+                        key={g.id}
+                        style={styles.indoorSuggestionRow}
+                        onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                        activeOpacity={0.85}
+                        accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.indoorSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                        <Text style={styles.indoorSuggestionText} numberOfLines={1}>{g.title}</Text>
+                        <Text style={styles.indoorSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
             {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
@@ -589,6 +610,12 @@ const getStyles = (colors) => StyleSheet.create({
   forecastLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
   forecastValue: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   forecastDetail: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
+  indoorSuggestions: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  indoorSuggestionsHeader: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  indoorSuggestionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  indoorSuggestionIcon: { fontSize: 14, marginRight: spacing.xs },
+  indoorSuggestionText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
+  indoorSuggestionTime: { color: colors.textTertiary, fontSize: 11, marginLeft: spacing.xs },
   sinceAwayBanner: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },

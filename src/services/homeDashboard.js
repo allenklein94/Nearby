@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories } from './gatherings';
+import { isIndoorCategory } from '../constants/gatheringIndoorOutdoor';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -330,6 +331,17 @@ export async function getHomeDashboard() {
   ]);
 
   const gatheringsToday = nearbyGatherings.filter((g) => isToday(g.scheduled_at));
+
+  // For the weather card's bad-weather ("Quiet") case — real nearby
+  // gatherings happening today in a genuinely indoor category (see
+  // constants/gatheringIndoorOutdoor.js), no new query. Always computed
+  // here (this function has no visibility into what the weather turns
+  // out to be — that's a separate call), only ever rendered by
+  // HomeScreen when the weather signal is actually bad.
+  const indoorGatheringsToday = gatheringsToday
+    .filter((g) => isIndoorCategory(g.interest_tag))
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 4);
   const trendingGatherings = [...nearbyGatherings]
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
@@ -508,6 +520,7 @@ export async function getHomeDashboard() {
     friendsActivity,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
+    indoorGatheringsToday,
   };
 }
 

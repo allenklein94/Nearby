@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: IA restructure round 3 — canonical Plans, attention-only Activity, gathering/chat/invite three-way split, Settings as a real control center — PLAN ONLY, NOT STARTED
+## IA restructure round 3 — canonical Plans, attention-only Activity, gathering/chat/invite three-way split, Settings as a real control center — ALL 7 PHASES DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -13,8 +13,9 @@ directly by the user as a detailed, numbered 12-point reaction to round 2 (the s
 immediately below this one, all 8 phases of which are DONE) — read that section's own delta
 notes for what round 2 already built; this plan is the next layer on top of it, not a redo.
 **Explicit instruction, given directly**: write the plan first, into this file, then stop — do
-not start building until the user has reviewed it. This section is that plan. Nothing described
-below has been built yet.
+not start building until the user has reviewed it. The plan below was written, reviewed, and the
+user then said to proceed — **all 7 phases are now built**; per-phase status notes are inline
+below each phase's own plan text (search "DONE" within this section for each one).
 
 **The user's own closing mental model, restated exactly as given, since it's the organizing
 principle for every phase below**:
@@ -428,17 +429,60 @@ existing 25 canonical `INTEREST_OPTIONS` tags, same established precedent as
 into the weather card for the bad-weather case, sourced from already-fetched `nearbyGatherings`
 filtered to indoor tags — no new query, no fabricated suggestion.
 
+**Phase 7 — DONE, the last of the 7 phases.** Resolved the "does Excellent still get a card"
+question by keeping `'Excellent'` exactly as it already was — its own full, unchanged card. The
+plan's own reasoning for this ("a great day to do something outdoors is a real reason to act,
+matching this card's whole original justification") held up, and round 2 had already tightened
+this card to only ever show `'Excellent'`/`'Quiet'` (never the ambiguous `'Good'` case) — that
+existing bar already answers the user's "if the weather is normal, don't waste Home real estate"
+ask; nothing further to tighten there. The real new work was scoped to `'Quiet'` (bad weather)
+specifically, per the user's own example.
+New `src/constants/gatheringIndoorOutdoor.js` — `CATEGORY_INDOOR_OUTDOOR`, a real categorization
+of all 25 canonical tags (the full list, sourced from `QuickPicksEditModal.js`'s own 25-tag
+list, not `CreateGatheringScreen.js`'s 24-tag one, which is missing "Faith & Spirituality").
+Deliberately conservative: only 14 tags (Coffee, Foodie, Gaming, Movies, Yoga, Wine, Dancing,
+Reading, Art, Cooking, Cats, Museums, Meditation, Faith & Spirituality) are marked `'indoor'` —
+anything genuinely ambiguous (Travel, Music, Fitness, Photography, Sports, Concerts,
+Volunteering) is left unclassified rather than guessed, since a false "this is indoor"
+suggestion during bad weather would be a worse outcome than simply not suggesting it. 4 tags
+(Hiking, Outdoors, Running, Dogs) marked `'outdoor'`, unused by this phase but kept for the map's
+own honesty/completeness.
+`getHomeDashboard()` (`homeDashboard.js`) gained `indoorGatheringsToday` — filtered from the
+same already-fetched `gatheringsToday` (itself already derived from `nearbyGatherings`, so this
+is genuinely zero new queries) to just the indoor-tagged ones, sorted soonest, capped at 4.
+Computed unconditionally (this function has no visibility into the weather result — that's a
+separate call) but only ever rendered by `HomeScreen.js` when `socialForecast.forecast_label ===
+'Quiet'` and the list is non-empty — a real, honest gate, not a fabricated fallback. The weather
+card's `'Quiet'` branch now shows a real "🏠 N indoor gathering(s) today" sub-list under the
+existing label/detail text, each row (category icon, title, the same real `formatHeroDateTime()`
+used everywhere else on Home) tapping straight through to `GatheringDetail`. Deliberately not
+framed as "tonight" (the user's own literal example wording) — this file's own round-2 weather-
+copy fix already established that the underlying weather call is a current-conditions snapshot,
+not a real forecast, so this phase keeps the same honesty discipline: the suggestion says "today"
+(matching the real `isToday()` filter it's actually built from), never a time-of-day claim the
+data can't back up. When `'Quiet'` fires but no real indoor gathering exists nearby today, no
+sub-list renders at all — the card still shows its existing label/detail text unchanged, matching
+this file's "no fabricated suggestion" convention rather than inventing a generic tip. Verified
+via a full `npx expo export --platform ios` — clean, 1856 modules (one more than the 1855
+baseline — the one new `gatheringIndoorOutdoor.js`; every other touched file was an edit).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm the indoor-suggestions sub-list renders correctly
+under a real `'Quiet'` weather result with real matching gatherings, correctly renders nothing
+extra when `'Quiet'` fires with no matching indoor gatherings, and that `'Excellent'` still
+renders exactly as it did before this phase (no regression).
+
+**All 7 phases of this plan are now DONE.** Every phase committed and pushed individually as it
+landed, per this file's own established restart-safety convention — check `git log` for the
+exact per-phase commit sequence if ever needed. Nothing further scheduled here except the
+standing, repeated-everywhere-in-this-file device/simulator verification gap — every phase above
+was verified via a clean `npx expo export --platform ios` and (where schema-adjacent) direct
+code/data reads, never a live app run.
+
 **Explicit non-scope, stated so a future session doesn't silently expand this plan**: points 5,
 8, 9, and 12 above are all reaffirmed non-goals per this plan's own verification — Create staying
 creation-first, interests staying on Profile/Discover (not moved to Settings), Home's 5-section
 cap, and no new bottom tabs. None of these need building; they're guardrails against
 accidentally undoing round 2's own already-correct work while building the 7 phases above.
-
-**Status: PLAN ONLY. Nothing in this section has been built.** Per the user's own explicit
-instruction, building does not start until this plan has been reviewed. Once building starts,
-follow this file's own established convention: one phase at a time, commit and push after each,
-update this section's own status notes incrementally (not batched at the end) so a mid-session
-restart never loses more than one phase's worth of work.
 
 ## Home/Profile/Settings/Inbox IA restructure — round 2 (user's reaction to the external-AI-review doc) — ALL 8 PHASES DONE
 
