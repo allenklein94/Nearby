@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getConversationWithBusiness, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
+import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
@@ -260,10 +260,21 @@ export default function BusinessDashboardScreen({ navigation }) {
     setVisitFrequency(result);
   }
 
+  // Bounded to the most recent 50 rather than the full thread — this view
+  // has no infinite-scroll UI (it's a plain owner-side drill-in, not the
+  // customer's own chat screen), so a plain cap is the right-sized fix
+  // here rather than building full pagination for a lower-traffic surface
+  // (see the Aug 10 2026 scalability audit's own "lighter fix" convention).
+  // getBusinessMessagesPage returns newest-first; reversed here since this
+  // screen renders its thread oldest-to-newest in a plain (non-inverted) list.
+  async function loadConversationMessages(userId) {
+    const page = await getBusinessMessagesPage(selectedPartner.id, userId).catch(() => []);
+    setConversationMessages([...page].reverse());
+  }
+
   async function openConversation(convo) {
     setActiveConversation(convo);
-    const messages = await getConversationWithBusiness(selectedPartner.id, convo.userId).catch(() => []);
-    setConversationMessages(messages);
+    await loadConversationMessages(convo.userId);
   }
 
   async function sendReply() {
@@ -271,8 +282,7 @@ export default function BusinessDashboardScreen({ navigation }) {
     try {
       await replyAsBusinessOwner(selectedPartner.id, activeConversation.userId, replyText.trim());
       setReplyText('');
-      const messages = await getConversationWithBusiness(selectedPartner.id, activeConversation.userId).catch(() => []);
-      setConversationMessages(messages);
+      await loadConversationMessages(activeConversation.userId);
     } catch (e) {
       Alert.alert('Error', e.message);
     }

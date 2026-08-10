@@ -384,22 +384,33 @@ export async function getMyBusinessGatherings(partnerId) {
   );
 }
 
-export async function getConversationWithBusiness(partnerId, conversationWithId = null) {
+// Paginated, cursor-based fetch backing usePaginatedMessages — returns rows
+// newest-first, capped at `limit`. Replaces the old unbounded
+// getConversationWithBusiness() (see the Aug 10 2026 scalability audit),
+// which downloaded a conversation's entire history on every load.
+// conversationWithId is null for the customer's own screen (resolves to
+// their own session), and explicit for the business owner's dashboard,
+// which looks up a specific customer's thread.
+export async function getBusinessMessagesPage(partnerId, conversationWithId = null, { limit = 50, beforeCreatedAt = null } = {}) {
   let targetUserId = conversationWithId;
   if (!targetUserId) {
     const { data: sessionData } = await supabase.auth.getSession();
     targetUserId = sessionData?.session?.user?.id;
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('business_messages')
     .select('id, sender_id, from_business, body, created_at')
     .eq('partner_id', partnerId)
     .eq('conversation_with_id', targetUserId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
+  if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt);
+
+  const { data, error } = await query;
   if (error) {
-    console.error('getConversationWithBusiness error', error);
+    console.error('getBusinessMessagesPage error', error);
     return [];
   }
   return data ?? [];

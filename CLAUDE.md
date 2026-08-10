@@ -152,6 +152,27 @@ send, the realtime channel's own echo handles it" simplification. Verified via a
 `npx expo export --platform ios` — clean, 1850 modules (edits to two existing files only).
 Same unverified visual/on-device gaps as 5a.
 
+**Sub-increment 5c — DONE: `BusinessConversationScreen.js`.** Same treatment as 5a/5b, adapted
+for this surface's simpler shape (no joined `profiles` data on `business_messages`, matching
+step 3's own note — the realtime INSERT payload's raw columns already equal what
+`getBusinessMessagesPage` selects, so no per-row `getMessageById`-style helper was needed here).
+New `getBusinessMessagesPage(partnerId, conversationWithId, { limit, beforeCreatedAt })` in
+`services/brandOffers.js` replaces the old unbounded `getConversationWithBusiness()` (deleted —
+confirmed its only two callers were this screen and `BusinessDashboardScreen.js`'s owner-side
+conversation drill-in, both updated); same `DESC.limit()` + optional `.lt('created_at', cursor)`
+shape the shared hook expects. `BusinessConversationScreen.js` (the customer-facing side) got
+the full `inverted`/`onEndReached`/`ListFooterComponent` treatment, same "no manual append after
+send" simplification as 5a/5b. `BusinessDashboardScreen.js`'s owner-side conversation view
+(`openConversation`/`sendReply`) — a plain, non-infinite-scroll drill-in panel, not a dedicated
+chat screen — got the lighter fix instead: a new `loadConversationMessages()` helper calls the
+same paginated function with just the default page size (no load-older UI), reversing the
+DESC result back to the ascending order that view already renders in. This matches the plan's
+own "lighter fix, no pagination UI built yet" convention used elsewhere (locked decision 6) for
+a lower-traffic, non-infinite-scroll surface, rather than building full pagination UI into an
+owner-only drill-in panel nothing currently demands it for. Verified via a full `npx expo export
+--platform ios` — clean, 1851 modules (unchanged, edits to three existing files only). Same
+unverified visual/on-device gaps as 5a/5b.
+
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
 browse-download bug (though two of those were found too, see below) — it's that **all four
