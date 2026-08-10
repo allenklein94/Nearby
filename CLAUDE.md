@@ -4,6 +4,58 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Current UI Map for IA review — IN PROGRESS
+
+Written before the map itself, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and the
+status note at the bottom of this section for what's actually landed vs. still just this plan.
+
+**Context.** The user reacted to a batch of specific UI complaints (Home's category quick-action
+buttons behaving as create-only shortcuts rather than discovery shortcuts; those categories being
+hardcoded instead of personalized to the user's real interests; the morning/afternoon/evening
+prompts not being interest-aware; a "better night for something indoors" weather line with no
+visible reasoning behind it; upcoming/attending gatherings not being prominent on Home; and a
+Sports-group-as-its-own-Inbox-row concern) and then, instead of asking for any of those to be
+fixed individually, asked for something more structural: **a full current-state UI map first, no
+code changes yet**, so they can go through it screen-by-screen and call "keep / move / remove /
+combine / rename" against a target information architecture they laid out:
+
+- **🏠 Home** — "What's happening in my Nearby life?"
+- **🔎 Discover** — "What can I find?"
+- **➕ Create** — "What can I make happen?"
+- **💬 Inbox** — "Who is talking to me / what needs my attention?"
+- **👤 Profile** — "Who am I on Nearby?"
+- **⚙️ Settings** — "How does Nearby work for me?"
+
+**Explicit instruction: do not change any app code this pass.** This section and the map
+deliverable are the entire scope. The six specific complaints above are captured here so they
+survive to the screen-by-screen review rather than being silently acted on now — several of them
+may already be partially addressed by work already in this file (e.g. the Aug 10 "Your Next
+Thing" hero + "Also Coming Up" section already puts upcoming/attending gatherings on Home; Inbox's
+Aug 8 "Group Chats" chip row already lives inside the Messages tab, not as a bare top-level row) —
+the map notes current-actual-behavior against each complaint rather than assuming the complaint
+is still fully open.
+
+**Plan:**
+1. Map every registered route in `RootNavigator.js` (60 screens) against the six target IA
+   buckets above, by tracing real entry points — not guessing from screen names.
+2. For each of the 5 bottom-tab root screens (`HomeScreen.js`, `DiscoverHubScreen.js`,
+   `CreateHubScreen.js`, `InboxScreen.js`/`ActivityScreen.js`, `ProfileScreen.js`) plus
+   `SettingsScreen.js`, enumerate every real section/card/button in on-screen order, what it
+   shows, and exactly what screen it navigates to — read directly from the current source, not
+   inferred from this file's own history (this file's own past descriptions of a screen can be
+   stale by the time a later pass touched it again).
+3. Annotate the six specific complaints inline at the screen/section they concern, noting
+   current-actual-behavior (already addressed / partially addressed / still open) rather than
+   re-asserting the user's original framing unchecked.
+4. Deliverable: `PRODUCT_AUDIT/CURRENT_UI_MAP_2026-08-10.md` — organized by target IA bucket,
+   each screen/section listed with real navigation targets, so the user can annotate keep/move/
+   remove/combine/rename directly against it.
+5. Commit incrementally (plan section first, then the map once built) so a restart never loses
+   more than one piece.
+
+**Status: plan committed. Map next.**
+
 ## Aug 10 2026 — Friends discoverability (Home + Inbox entry points) — DONE
 
 Direct follow-up to the Story Circle question above: user confirmed Friends is genuinely hard
