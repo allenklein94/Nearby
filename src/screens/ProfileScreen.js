@@ -420,7 +420,7 @@ const result = await response.json();
         </View>
         <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">My Circle</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
         <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={`${quickStats.communities} communities`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
@@ -432,7 +432,7 @@ const result = await response.json();
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">My Activity</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">Your Activity</Text>
         <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
@@ -523,6 +523,7 @@ const result = await response.json();
           </>
         )}
 
+        <Text style={styles.sectionLabel} accessibilityRole="header">Business</Text>
         {managesBusiness ? (
           <TouchableOpacity
             style={styles.businessModeButton}
@@ -549,7 +550,7 @@ const result = await response.json();
           </TouchableOpacity>
         )}
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Profile</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header">Your Profile</Text>
         <TouchableOpacity
           style={styles.photoWrap}
           onPress={changePhoto}

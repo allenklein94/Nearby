@@ -348,6 +348,21 @@ existing Profile groups ("My Circle" → "Your Connections", "My Activity" → "
 "Profile" → "Your Profile") and give the already-consolidated Business row its own real section
 header instead of floating unlabeled between the achievements grid and "Your Profile".
 
+**Phase 5 — DONE.** `ProfileScreen.js` only (edit, no new files). Three renames, one-line each:
+"My Circle" → "Your Connections", "My Activity" → "Your Activity", "Profile" → "Your Profile"
+(the group header directly above the identity-editing content — confirmed the only literal
+`>Profile</Text>` occurrence in the file before renaming, so nothing else was touched by
+accident). The already-consolidated Business row (round 2 Phase 7 — a single "🏪 Business" or
+"🤝 Become a Business Partner" button depending on `managesBusiness`) gained a real "Business"
+`sectionLabel` header directly above it — same style every other group on this screen already
+uses, previously this row floated unlabeled between the Achievements grid and "Your Profile".
+Verified via a full `npx expo export --platform ios` — clean, 1855 modules (unchanged, edit to
+one existing file only).
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm all four section headers ("Your Connections",
+"Your Activity", "Business", "Your Profile") render correctly against real data, in both the
+`managesBusiness` and non-`managesBusiness` states.
+
 **Phase 6 — Settings regroup into 6 named control-center sections (closes point 7, the largest
 phase).** Resolve the two flagged open placements ("Connect", "❤️ Relationship") first, then
 execute the proposed mapping above — same "reuse every existing row, add new headers, don't
