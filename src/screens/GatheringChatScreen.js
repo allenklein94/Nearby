@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { getGatheringMessages, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
+import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
 import { getSignedPhotoUrl } from '../services/photos';
 import { captureStoryMedia, uploadStory } from '../services/stories';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { Alert } from 'react-native';
+import { Alert, ActivityIndicator } from 'react-native';
 import useChatComposer from '../hooks/useChatComposer';
+import usePaginatedMessages from '../hooks/usePaginatedMessages';
 
 export default function GatheringChatScreen({ route }) {
   const { gatheringId, gatheringTitle, draftText } = route.params;
@@ -86,37 +87,26 @@ export default function GatheringChatScreen({ route }) {
     setPostingStory(false);
   }
   const styles = getStyles(colors);
-  const [messages, setMessages] = useState([]);
+  const fetchPage = useCallback(
+    ({ limit, beforeCreatedAt }) => getGatheringMessagesPage(gatheringId, { limit, beforeCreatedAt }),
+    [gatheringId]
+  );
+  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer(draftText ?? '');
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
-  const listRef = useRef(null);
-
-  const load = useCallback(async () => {
-    const results = await getGatheringMessages(gatheringId);
-    setMessages(results);
-
-    const urlEntries = await Promise.all(
-      results.map(async (m) => {
-        if (!m.profiles?.photo_url) return [m.sender_id, null];
-        const url = await getSignedPhotoUrl(m.profiles.photo_url);
-        return [m.sender_id, url];
-      })
-    );
-    setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries) }));
-  }, [gatheringId]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));
-    load();
+    loadInitial();
 
     // Was a setInterval(load, 3000) re-downloading the entire message
     // history every 3 seconds, unconditionally, for as long as this screen
     // stayed open. Replaced with a real realtime subscription — new
-    // messages arrive as individual INSERT events and get appended to the
-    // already-loaded list, instead of the whole conversation being
-    // re-fetched on a timer.
+    // messages arrive as individual INSERT events and get prepended to the
+    // already-loaded page (see usePaginatedMessages), instead of the whole
+    // conversation being re-fetched on a timer or on every load.
     const channel = supabase
       .channel(`gathering_messages:${gatheringId}`)
       .on(
@@ -124,41 +114,76 @@ export default function GatheringChatScreen({ route }) {
         { event: 'INSERT', schema: 'public', table: 'gathering_messages', filter: `gathering_id=eq.${gatheringId}` },
         async (payload) => {
           const fullMessage = await getGatheringMessageById(payload.new.id);
-          if (!fullMessage) return;
-          setMessages((prev) => (prev.some((m) => m.id === fullMessage.id) ? prev : [...prev, fullMessage]));
-          if (fullMessage.profiles?.photo_url) {
-            const url = await getSignedPhotoUrl(fullMessage.profiles.photo_url);
-            setPhotoUrls((prev) => ({ ...prev, [fullMessage.sender_id]: url }));
-          }
+          if (fullMessage) prependMessage(fullMessage);
         }
       )
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [load, gatheringId]);
+  }, [loadInitial, gatheringId, prependMessage]);
+
+  // Resolves any not-yet-signed sender photo URLs whenever the loaded
+  // message set changes (initial load, load-older, or a realtime
+  // arrival) — one place instead of duplicating the same fetch at each
+  // of those three call sites.
+  useEffect(() => {
+    const missingSenderIds = [...new Set(
+      messages.filter((m) => m.profiles?.photo_url && !(m.sender_id in photoUrls)).map((m) => m.sender_id)
+    )];
+    if (missingSenderIds.length === 0) return;
+    (async () => {
+      const entries = await Promise.all(
+        missingSenderIds.map(async (senderId) => {
+          const photoPath = messages.find((m) => m.sender_id === senderId)?.profiles?.photo_url;
+          const url = await getSignedPhotoUrl(photoPath);
+          return [senderId, url];
+        })
+      );
+      setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    })();
+  }, [messages, photoUrls]);
 
   async function handleSend() {
     await send(async (body) => {
       await sendGatheringMessage(gatheringId, body);
-      await load();
-      listRef.current?.scrollToEnd({ animated: true });
+      // No manual reload/append here — the realtime channel above
+      // delivers this same INSERT back (Supabase doesn't suppress the
+      // echo to the inserting client), which prepends it the same way a
+      // message from anyone else would arrive.
     });
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {messages.length === 0 ? (
+          <View style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
+            <Text style={styles.emptyEmoji}>💬</Text>
+            <Text style={styles.emptyText}>Say hi to everyone attending "{gatheringTitle}"!</Text>
+          </View>
+        ) : (
         <FlatList
-          ref={listRef}
           data={messages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: spacing.lg }}
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>💬</Text>
-              <Text style={styles.emptyText}>Say hi to everyone attending "{gatheringTitle}"!</Text>
-            </View>
+          // Newest-first data + inverted rendering — the standard chat-app
+          // shape, and what lets onEndReached below correspond to
+          // scrolling toward the *oldest* end of the conversation, which
+          // is exactly when older history should load.
+          inverted
+          onEndReached={loadOlder}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            // Renders visually at the TOP under `inverted` — i.e. above
+            // the oldest currently-loaded message, right where "loading
+            // more history" belongs.
+            loadingOlder ? (
+              <View style={{ paddingVertical: spacing.md }}>
+                <ActivityIndicator color={colors.textTertiary} />
+              </View>
+            ) : !hasMore && messages.length > 0 ? (
+              <Text style={styles.historyStartText}>The start of this gathering's chat</Text>
+            ) : null
           }
           renderItem={({ item }) => {
             const isMe = item.sender_id === myUserId;
@@ -188,6 +213,7 @@ export default function GatheringChatScreen({ route }) {
             );
           }}
         />
+        )}
 
         {!!sendError && (
           <View style={styles.sendErrorBanner}>
@@ -240,6 +266,7 @@ export default function GatheringChatScreen({ route }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  historyStartText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: spacing.sm, gap: spacing.xs },

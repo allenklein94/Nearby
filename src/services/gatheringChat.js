@@ -1,14 +1,23 @@
 import { supabase } from './supabase';
 
-export async function getGatheringMessages(gatheringId) {
-  const { data, error } = await supabase
+// Paginated, cursor-based fetch backing usePaginatedMessages — returns
+// rows newest-first, capped at `limit`. Was previously an unconditional
+// `getGatheringMessages()` fetch of the entire history, called on every
+// load *and* re-called every 3 seconds by a poll (see the Aug 10 2026
+// scalability audit) — this is the replacement for that unbounded query.
+export async function getGatheringMessagesPage(gatheringId, { limit = 50, beforeCreatedAt = null } = {}) {
+  let query = supabase
     .from('gathering_messages')
     .select('id, sender_id, body, created_at, profiles(display_name, photo_url)')
     .eq('gathering_id', gatheringId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
+  if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt);
+
+  const { data, error } = await query;
   if (error) {
-    console.error('getGatheringMessages error', error);
+    console.error('getGatheringMessagesPage error', error);
     return [];
   }
   return data ?? [];

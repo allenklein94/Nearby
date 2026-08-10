@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 4 of 10 done
+## Outstanding: Scalability audit fixes (Aug 10 2026) — IN PROGRESS, step 5 in progress (5a of 4 done)
 
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
@@ -97,6 +97,51 @@ ios` — clean, 1850 modules (edit to one existing file). Same unverified live-d
 steps 1-3 — additionally, the read-receipt-on-INSERT change specifically should be confirmed on
 a real device: send a message from account A, confirm account B's screen shows it read
 immediately (not after up to 3 seconds, the old behavior) once B's screen is open.
+
+**Step 5 — real cursor-based pagination, largest remaining piece, built as four sub-increments
+(one per chat screen) so a restart never loses more than one.**
+
+New `src/hooks/usePaginatedMessages.js` — the shared hook locked decision 2 committed to.
+Messages are kept in **descending** `created_at` order the whole time (newest first), not
+ascending — this matches `FlatList`'s `inverted` prop directly (index 0 renders at the visual
+bottom), so neither the initial page nor a load-older append needs to reverse anything.
+`loadInitial()` fetches the newest `MESSAGE_PAGE_SIZE` (50) rows; `loadOlder()` uses the
+oldest-currently-loaded message's `created_at` as a real cursor (`.lt('created_at', cursor)`,
+not an offset — offsets drift under concurrent inserts, a timestamp cursor doesn't) and appends
+to the end of the array; `prependMessage()` is what a realtime INSERT calls (always the newest,
+goes at index 0, deduped by id); `hasMore`/`loadingOlder`/`loadingInitial` are exposed for the
+UI. One hook, four callers — matching this codebase's own established precedent
+(`useChatComposer.js`, built for the identical "fix once, in one shared place, for all four
+chat-style screens" situation).
+
+**Sub-increment 5a — DONE: `GatheringChatScreen.js`.** New `getGatheringMessagesPage(
+gatheringId, { limit, beforeCreatedAt })` in `services/gatheringChat.js` replaces the old
+unbounded `getGatheringMessages()` (deleted — confirmed its only caller was this screen before
+removing it), same `DESC.limit()` + optional `.lt('created_at', cursor)` shape the hook expects.
+The screen's `FlatList` gained `inverted`, `onEndReached={loadOlder}` (in inverted-list terms,
+scrolling toward the data array's "end" is scrolling toward the *oldest* messages — exactly
+when older history should load), and a `ListFooterComponent` that renders visually at the
+**top** under `inverted` (a loading spinner while `loadingOlder`, or "The start of this
+gathering's chat" once `hasMore` is `false`) — right where a "load more history" indicator
+belongs. Photo-URL resolution for message senders was consolidated from three separate call
+sites (initial load, realtime arrival, and what would have been a fourth for load-older) into
+one `useEffect` reacting to `messages` changes, resolving only not-yet-signed senders — simpler
+than duplicating the same fetch logic at every call site. `handleSend()` no longer manually
+appends or reloads after sending — the realtime channel already delivers the sender's own
+INSERT back (Supabase doesn't suppress the echo to the inserting client), so it arrives via
+`prependMessage()` the same way a message from anyone else would. The old `ListEmptyComponent`
+approach was dropped in favor of rendering the empty state as a plain sibling `View` instead of
+inside the `FlatList` — under `inverted`, supplementary FlatList components (`ListEmptyComponent`
+included) get visually flipped along with everything else, which is a well-known gotcha (upside-
+down emoji/text) worth avoiding rather than working around with a counter-transform.
+Verified via a full `npx expo export --platform ios` — clean, 1850 modules (unchanged, edits to
+two existing files, no new files besides the shared hook already counted). **Not verified**: an
+actual on-device scroll-to-load-older interaction, and the visual correctness of the inverted
+layout — this sandbox can't render RN views, so this is verified by reasoning through
+`FlatList`'s documented `inverted` behavior and one exhaustive read of the resulting JSX, not by
+looking at it. Next session should specifically confirm: new messages still appear at the
+visual bottom in the right order, scrolling up genuinely loads older messages without jumping
+or duplicating rows, and the empty state doesn't render upside-down.
 
 **Headline finding, worth restating here since it changes the priority order from what the
 audit request itself assumed**: the biggest risk isn't another `getNearbyGatherings()`-shaped
