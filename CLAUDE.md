@@ -69,6 +69,75 @@ complaints (1/2/3/4) are confirmed still real and unaddressed. **Next step is th
 screen-by-screen keep/move/remove/combine/rename pass against Part 4 — no further building until
 that happens**, per the user's own explicit instruction not to change anything yet.
 
+**Update, same day: user asked to build.** Rather than wait for the full screen-by-screen pass
+(a separate, larger, user-driven review), the user asked to proceed with the four complaints from
+Part 5 that are confirmed still genuinely open (items 1/2/3/4 — 5 and 7 are already built, see
+above). Plan below, written before implementation, same restart-safety convention as every other
+plan-first section — check `git status`/`git log` and the status note at the bottom for what's
+actually landed if a restart hits mid-build.
+
+**Scope decision, not re-asked**: only Home's quick-action chip row is being changed to
+discover-first/personalized/interest-aware. `CreateHubScreen.js`'s icon grid is deliberately left
+creation-first, unchanged — Create's own job (per the target IA: "what can I make happen?") is
+to make something happen, so jumping straight into `CreateGathering` is correct there; Home's job
+("what's happening in my life?") is to surface what already exists first. This is itself a small
+IA-consistency finding worth surfacing, not just an implementation shortcut.
+
+**Weather message (item 4) — traced, not rebuilt.** Confirmed via direct code read
+(`HomeScreen.js:258-264`, `services/homeDashboard.js:499-515`): the "☀️ Social Forecast" card
+already renders `forecast_label` and `forecast_detail` together, and `forecast_detail` always
+carries the real reason ("Rain or storms expected — a better night for something indoors.",
+sourced from a real OpenWeatherMap call bucketed server-side). The separate one-line "insight"
+sentence only has a *good*-weather branch (conclusion-only, but directionally non-confusing since
+"great outdoor conditions" doesn't contradict itself); it has no bad-weather branch, so there's no
+code path today that shows a "better indoors" conclusion with zero reasoning attached. **No code
+change made for this item** — flagged instead as unverifiable further without a live device and a
+real weather day to compare against (the actual accuracy of the underlying `get_weather_result`
+bucketing can't be tested from this sandbox), not silently left undone.
+
+**Build plan (items 1-3, one coherent change):**
+1. **Migration** — `profiles.home_quick_pick_categories jsonb`, nullable, no default (`null` =
+   auto-personalize). Matches the existing `quick_filter_order`/`quick_filter_visible` jsonb-array
+   convention already established on this same table for an analogous "user-customizable ordered
+   chip list" feature (Nearby screen's own quick filters) — same shape, new column, not a new
+   table. Not privileged (like `interests`, freely self-editable, no `trusted_update` guard
+   needed).
+2. **Personalization, zero new queries**: `getHomeDashboard()` already computes
+   `becauseYouLikeCategories` (`homeDashboard.js:411`, the caller's real top-3 most-attended
+   categories via the existing `getMyTopGatheringCategories()`) — reused directly, no second
+   fetch. New pure function (`utils/timeContext.js`) builds the actual displayed chips: if the
+   profile has explicit `home_quick_pick_categories` set, show exactly those, always, regardless
+   of period (matches the user's own mockup — a customized list isn't period-gated). Otherwise,
+   auto-build from the real top categories, time-flavored only where an icon/label variant
+   already exists in the current hardcoded `QUICK_PROMPTS_BY_PERIOD` table (inverted into a
+   lookup) — e.g. "Foodie" flavors to Breakfast/Lunch/Dinner by period, matching what's already
+   hardcoded today — falling back to a generic icon+tag-name for any category with no established
+   period flavor, and backfilling remaining slots from today's existing static defaults so a
+   brand-new user with no history sees exactly what they see today (zero regression). Nothing
+   invented: every label shown is either the user's own real attended-category history or an
+   already-existing static default.
+3. **Edit affordance**: small "Edit" link next to the quick-picks header, opening a new
+   lightweight chip-picker modal (`src/components/QuickPicksEditModal.js`) over the 25 canonical
+   `INTEREST_OPTIONS` categories — select up to a few, Save writes `home_quick_pick_categories`,
+   a "Use My Activity Instead" action clears it back to `null` (resumes auto-personalization).
+4. **Discover-first tap behavior**: `HomeScreen.js`'s quick-pick tap now navigates to `Gatherings`
+   with a category filter pre-applied (browse existing nearby gatherings of that category first)
+   instead of straight to `CreateGathering`. Needs `GatheringsScreen.js` to read an
+   `initialCategoryFilter` route param into its existing `interestFilter` state (same pattern its
+   own `initialDateFilter` param already uses one line above it) — small, additive, no new
+   concept. Its existing filtered-empty-state gets a "+ Start a {category} Gathering" button
+   (prefilling `CreateGathering` the same way the header's existing unfiltered create button
+   works today), so the secondary create path the user asked for ("+ Start a Coffee Gathering")
+   is real, not lost — it just moves to the natural place: after browsing turns up nothing, not
+   before browsing happens at all.
+
+**Verification plan**: apply the migration to production (`enmosvippabmuqslzrox`, Management API
+confirmed reachable this session) and verify the new column live; full `npx expo export
+--platform ios` after the client changes land. **Not done, standing gap**: no manual
+device/simulator run-through — same limitation as literally everywhere else in this file.
+
+**Status: IN PROGRESS.**
+
 ## Aug 10 2026 — Friends discoverability (Home + Inbox entry points) — DONE
 
 Direct follow-up to the Story Circle question above: user confirmed Friends is genuinely hard
