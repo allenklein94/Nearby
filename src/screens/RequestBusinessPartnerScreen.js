@@ -1,11 +1,16 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
 import { getActivePartnersByName, getAllActivePartners } from '../services/brandOffers';
+import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+
+function categoryLabel(key) {
+  return BUSINESS_CATEGORIES.find((c) => c.key === key)?.label ?? '✨ Other';
+}
 
 // Two entry shapes: no targetType/targetId (top-level Create tab — pick a
 // target first) or both passed (a per-target link on GatheringDetailScreen/
@@ -34,6 +39,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const [browsablePartners, setBrowsablePartners] = useState([]);
   const [loadingBrowsable, setLoadingBrowsable] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -78,6 +84,17 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
     setResults(data);
     setSearching(false);
   }
+
+  // Only chip categories that at least one real business on the platform
+  // actually has — never all 6 keys unconditionally, which would be a filter
+  // row promising results a tap would never return. "Uncategorized" only
+  // appears if a real business genuinely has no category set yet.
+  const availableCategories = useMemo(() => {
+    const present = new Set(browsablePartners.map((p) => p.category ?? 'uncategorized'));
+    return BUSINESS_CATEGORIES.filter((c) => present.has(c.key)).concat(
+      present.has('uncategorized') ? [{ key: 'uncategorized', label: '❓ Uncategorized' }] : []
+    );
+  }, [browsablePartners]);
 
   async function submit() {
     if (!selectedTarget || !selectedPartner) return;
@@ -176,10 +193,43 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
             />
             {(() => {
               const isSearching = businessQuery.trim().length >= 2;
-              const listData = isSearching ? results : browsablePartners;
+              const sourceData = isSearching ? results : browsablePartners;
+              const listData = categoryFilter
+                ? sourceData.filter((p) => (p.category ?? 'uncategorized') === categoryFilter)
+                : sourceData;
               const busy = isSearching ? searching : loadingBrowsable;
               return (
                 <>
+                  {availableCategories.length > 0 && (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{ marginTop: spacing.md }}
+                      contentContainerStyle={{ gap: spacing.xs }}
+                    >
+                      <TouchableOpacity
+                        style={[styles.chip, !categoryFilter && styles.chipActive]}
+                        onPress={() => setCategoryFilter(null)}
+                        accessibilityRole="button"
+                        accessibilityLabel="All categories"
+                        accessibilityState={{ selected: !categoryFilter }}
+                      >
+                        <Text style={[styles.chipText, !categoryFilter && styles.chipTextActive]}>All</Text>
+                      </TouchableOpacity>
+                      {availableCategories.map((c) => (
+                        <TouchableOpacity
+                          key={c.key}
+                          style={[styles.chip, categoryFilter === c.key && styles.chipActive]}
+                          onPress={() => setCategoryFilter(categoryFilter === c.key ? null : c.key)}
+                          accessibilityRole="button"
+                          accessibilityLabel={c.label}
+                          accessibilityState={{ selected: categoryFilter === c.key }}
+                        >
+                          <Text style={[styles.chipText, categoryFilter === c.key && styles.chipTextActive]}>{c.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
                   {!isSearching && !loadingBrowsable && browsablePartners.length > 0 && (
                     <Text style={styles.browseLabel}>Businesses on Nearby</Text>
                   )}
@@ -191,7 +241,11 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                     ListEmptyComponent={
                       !busy ? (
                         <Text style={styles.emptyText}>
-                          {isSearching ? 'No matching businesses found.' : 'No businesses on Nearby yet.'}
+                          {isSearching
+                            ? 'No matching businesses found.'
+                            : categoryFilter
+                              ? 'No businesses in this category yet.'
+                              : 'No businesses on Nearby yet.'}
                         </Text>
                       ) : null
                     }
@@ -204,7 +258,10 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                             <Text style={styles.logoFallbackText}>🏪</Text>
                           </View>
                         )}
-                        <Text style={styles.rowTitle}>{item.name}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.rowTitle}>{item.name}</Text>
+                          {item.category && <Text style={styles.rowSubtitle}>{categoryLabel(item.category)}</Text>}
+                        </View>
                       </TouchableOpacity>
                     )}
                   />
@@ -244,6 +301,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subheader: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   browseLabel: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.md },
+  chip: {
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: '#fff' },
   input: {
     backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, color: colors.textPrimary, ...typography.body,

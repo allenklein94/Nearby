@@ -7,6 +7,7 @@ import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { checkTextModeration } from '../services/textModeration';
+import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -32,6 +33,7 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [editNameInput, setEditNameInput] = useState('');
   const [editDescriptionInput, setEditDescriptionInput] = useState('');
   const [editLogoUrlInput, setEditLogoUrlInput] = useState('');
+  const [editCategoryInput, setEditCategoryInput] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,12 +109,14 @@ export default function BusinessDashboardScreen({ navigation }) {
         description: editDescriptionInput.trim() || null,
         address: selectedPartner.address ?? null,
         logoUrl: editLogoUrlInput.trim() || null,
+        category: editCategoryInput,
       });
       setSelectedPartner((prev) => ({
         ...prev,
         name: editNameInput.trim(),
         description: editDescriptionInput.trim() || null,
         logo_url: editLogoUrlInput.trim() || null,
+        category: editCategoryInput,
       }));
       setEditProfileModalVisible(false);
       Alert.alert('Saved', 'Your business profile has been updated.');
@@ -834,6 +838,11 @@ export default function BusinessDashboardScreen({ navigation }) {
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Business Profile</Text>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
+                  <Text style={styles.breakdownText}>
+                    {selectedPartner?.category
+                      ? BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category
+                      : 'No category set — pick one so customers can find you by category.'}
+                  </Text>
                   {selectedPartner?.description ? (
                     <Text style={styles.offerDescription}>{selectedPartner.description}</Text>
                   ) : (
@@ -844,6 +853,7 @@ export default function BusinessDashboardScreen({ navigation }) {
                       setEditNameInput(selectedPartner?.name ?? '');
                       setEditDescriptionInput(selectedPartner?.description ?? '');
                       setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
+                      setEditCategoryInput(selectedPartner?.category ?? null);
                       setEditProfileModalVisible(true);
                     }}
                     style={{ marginTop: spacing.sm }}
@@ -1073,6 +1083,21 @@ export default function BusinessDashboardScreen({ navigation }) {
                 autoCapitalize="none"
                 accessibilityLabel="Logo URL"
               />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Category</Text>
+              <View style={styles.chipRow}>
+                {BUSINESS_CATEGORIES.map((c) => (
+                  <TouchableOpacity
+                    key={c.key}
+                    style={[styles.chip, editCategoryInput === c.key && styles.chipSelected]}
+                    onPress={() => setEditCategoryInput(editCategoryInput === c.key ? null : c.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={c.label}
+                    accessibilityState={{ selected: editCategoryInput === c.key }}
+                  >
+                    <Text style={[styles.chipText, editCategoryInput === c.key && styles.chipTextSelected]}>{c.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSaveProfile}

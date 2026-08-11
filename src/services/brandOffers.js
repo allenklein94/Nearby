@@ -194,7 +194,7 @@ export async function getActivePartnersByName(query) {
 
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url')
+    .select('id, name, logo_url, category')
     .eq('active', true)
     .ilike('name', `%${trimmed}%`)
     .limit(20);
@@ -208,15 +208,16 @@ export async function getActivePartnersByName(query) {
 
 // The default browse list for RequestBusinessPartnerScreen — every active
 // business, alphabetical, so a business genuinely on the platform is
-// discoverable without already knowing its name to search for. brand_partners
-// has no category column today (only business_partner_requests captures a
-// category, at application time, and it's never copied onto the approved
-// row) so this can't be grouped by category yet — a flat alphabetical list
-// until that's real, stored data worth building UI around.
+// discoverable without already knowing its name to search for. category is
+// real, stored data now (20260811_business_partner_category.sql) — copied
+// onto brand_partners from the applicant's own choice at approval time, or
+// set later via the business owner's own Edit Profile screen — so the
+// screen can group/filter by it instead of faking a grouping with no data
+// behind it.
 export async function getAllActivePartners() {
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url')
+    .select('id, name, logo_url, category')
     .eq('active', true)
     .order('name', { ascending: true })
     .limit(100);
@@ -531,11 +532,12 @@ export async function updateBusinessAddress(partnerId, address) {
     latitude_param: latitude,
     longitude_param: longitude,
     logo_url_param: current?.logo_url ?? null,
+    category_param: current?.category ?? null,
   });
   if (error) throw error;
 }
 
-export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl }) {
+export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category }) {
   const current = await getBusinessProfile(partnerId);
   let latitude = current?.latitude ?? null;
   let longitude = current?.longitude ?? null;
@@ -557,6 +559,7 @@ export async function updateBusinessProfile(partnerId, { name, description, addr
     latitude_param: latitude,
     longitude_param: longitude,
     logo_url_param: logoUrl ?? null,
+    category_param: category ?? null,
   });
   if (error) throw error;
 }

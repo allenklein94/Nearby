@@ -40,11 +40,9 @@ all five were real, one turned out to be an account-billing issue rather than a 
    for. Fixed with a new `getAllActivePartners()` in `services/brandOffers.js` (every active
    partner, alphabetical, `.limit(100)`) rendered as a default "Businesses on Nearby" browse
    list under the search box whenever the query is empty/short, with its own honest loading/
-   empty state. **Category grouping (the user's own suggestion, like Discover's category tiles)
-   was not built** — checked live: `brand_partners` has no category column at all (only the
-   *application* row, `business_partner_requests.category`, captures one, and it's never copied
-   onto the approved `brand_partners` row) — flagged as a real, separate schema gap rather than
-   faking a grouping with no real data behind it.
+   empty state. **Category grouping was flagged as a real, separate schema gap in this same
+   pass, then built the same day once asked for directly — see "Category grouping + schema
+   build" below.**
 4. **"Follow This Business" appearing right after creating a community — traced to a real,
    intentional-but-unexplained DB trigger, not a data bug.** Queried production directly: the
    user's brand-new community ("Downtown runners") really did have `hosting_partner_id` set to
@@ -90,6 +88,96 @@ own-business info card in the community flow render correctly for a business-own
 end-to-end, and both Business Dashboard tabs' rows navigate correctly to a real gathering/
 community with full host controls intact. Item 1 has no code to verify — it's blocked entirely
 on the Anthropic account being funded.
+
+### Category grouping + schema — DONE, same day, asked for directly
+
+Item 3's flagged gap ("brand_partners has no category column, so grouping can't be real") closed
+head-on: a real schema addition, not a client-side workaround.
+
+- **`20260811_business_partner_category.sql`**: `brand_partners` gains a nullable `category`
+  text column, `check (category is null or category in ('food_drink', 'fitness_wellness',
+  'retail_shopping', 'arts_entertainment', 'professional_services', 'other'))` — the exact same
+  6 keys `BusinessPartnerApplyScreen.js`'s already-exported `BUSINESS_CATEGORIES` uses, so no
+  second enum was invented. Existing rows (today: just "Coastal Coffee") stay null — there's no
+  `business_partner_requests` row to backfill it from (checked live: it predates the real apply
+  flow, created directly outside that system) and guessing a category from the name would be
+  fabricating data, against this file's own convention.
+  - `approve_business_partner_request()` — pulled the **live** function body via the Management
+    API first (not reconstructed from the older baseline copy), since it had already picked up
+    a pending-guard, `reviewed_by` stamp, and a push notification in later migrations that a
+    baseline-based rewrite would have silently dropped. Only real change: the new
+    `brand_partners` row's `insert` now also carries `req.category` — the applicant's own
+    chosen category is copied onto the approved partner row going forward, closing the gap that
+    made this impossible before.
+  - `update_business_profile()` gains a `category_param text default null` — an added parameter
+    changes the function's signature, so the migration explicitly `drop function`s the old
+    7-arg overload first rather than leaving it orphaned as an unused second overload (confirmed
+    live afterward: exactly one `update_business_profile` overload exists). Same ownership check
+    and a new `category_param not in (...)` guard, mirroring the table's own CHECK constraint at
+    the RPC layer too (defense in depth, not redundant — a client could otherwise bypass the
+    table constraint's protection by never triggering it if the RPC allowed garbage through
+    first... it can't, both layers reject it independently, verified below).
+- **Verified live against production** (`enmosvippabmuqslzrox`), with real test data, not just
+  applied: inserted a disposable pending `business_partner_requests` row with
+  `category: 'fitness_wellness'`, approved it as the real admin (`Allen`) — the new
+  `brand_partners` row correctly landed with `category: 'fitness_wellness'`. Called
+  `update_business_profile` as `Allen` (real owner of Coastal Coffee) with `category:
+  'food_drink'` — correctly set. Called it again with a bogus category — correctly rejected
+  (`Invalid category`) by the RPC's own check. Called it as `Claude` (a real non-owner) —
+  correctly rejected (`You do not manage this business`). A raw direct `insert` on
+  `brand_partners` with a bogus category was independently rejected by the table's own CHECK
+  constraint, confirming both layers actually work, not just one. **A real mistake made and
+  caught during this pass, disclosed rather than glossed over**: the first `update_business_profile`
+  test call passed a throwaway placeholder description ("a real coffee shop") for Allen's real
+  Coastal Coffee row without first capturing what was there — a genuine, if minor, live-data
+  mutation mistake. Caught immediately, and since the row's `address`/`latitude`/`longitude`/
+  `logo_url` were all still null (this partner was seeded directly via SQL outside the real
+  apply flow, confirmed earlier in this same session), the most likely pre-test state was an
+  empty description — reverted to `null` via the same real RPC. `category: 'food_drink'` was
+  deliberately left set rather than reverted to null — it's genuinely correct, real data for a
+  coffee shop, not fabricated, and demonstrates the new column with real production data instead
+  of an artificially blank one. All other test rows (the disposable request, the disposable
+  approved partner, the disposable requester profile/auth user) deleted afterward; confirmed
+  `brand_partners`/`business_partner_requests` both back to their exact pre-test row counts.
+- **Verified via a real from-scratch migration replay**, per this file's migration-discipline
+  rule: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and
+  recreated an empty `public` schema, patched the two known image-version gaps, ran the full
+  `supabase/migrations/` folder in order (13 files, baseline through this pass's own migration)
+  with `psql -v ON_ERROR_STOP=1` — exit 0 on every file, the new column, CHECK constraint, and
+  single `update_business_profile` overload all confirmed to exist in the freshly-rebuilt
+  database afterward. Container removed.
+- **Client — `services/brandOffers.js`**: `getActivePartnersByName()`/`getAllActivePartners()`
+  both now select `category` too. `updateBusinessAddress()` now passes through
+  `category_param: current?.category ?? null` (fetches the current row first, same as it
+  already did for name/description/logo) so an address-only edit can't silently null out an
+  already-set category. `updateBusinessProfile()` takes a new `category` option and threads it
+  through as `category_param`.
+- **Client — `RequestBusinessPartnerScreen.js`**: a horizontal category filter chip row
+  ("All" + one chip per category that at least one real business actually has, plus
+  "❓ Uncategorized" only if a real business genuinely lacks one — never all 6 keys
+  unconditionally, which would promise results a tap could never return) now sits above the
+  business list, filtering whichever list is currently showing (the default browse list, or
+  active search results — both can be combined with a category filter at once). Each row now
+  also shows its real category label under the business name when it has one. Empty-state copy
+  now distinguishes "no matching businesses" (searching), "no businesses in this category yet"
+  (filtered), and "no businesses on Nearby yet" (neither) — three real, honest states instead of
+  one generic message.
+- **Client — `BusinessDashboardScreen.js`**: the Business Profile card now shows the real
+  category label (or "No category set — pick one so customers can find you by category." when
+  null, an honest nudge rather than silence). The Edit Profile modal gained a category chip
+  picker, reusing the screen's own pre-existing `chip`/`chipSelected`/`chipText`/
+  `chipTextSelected`/`chipRow` styles (no new style names introduced) — same
+  `BUSINESS_CATEGORIES` list, same picker pattern already established on
+  `BusinessPartnerApplyScreen.js`.
+- Verified via a full `npx expo export --platform ios` — clean, 1856 modules (unchanged, edits
+  to three existing files plus one new migration, no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through — next session should confirm the category chip row renders and filters correctly
+against real data with more than one category represented (today's production only has one real
+business, so the chip row currently only ever shows a single real chip plus "All" — worth
+re-checking once a second categorized business exists), and that the Edit Profile modal's
+category picker saves and reloads correctly.
 
 ## IA restructure round 3 — canonical Plans, attention-only Activity, gathering/chat/invite three-way split, Settings as a real control center — ALL 7 PHASES DONE
 
