@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
-import { getActivePartnersByName } from '../services/brandOffers';
+import { getActivePartnersByName, getAllActivePartners } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -32,6 +32,8 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [browsablePartners, setBrowsablePartners] = useState([]);
+  const [loadingBrowsable, setLoadingBrowsable] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,6 +48,23 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
       })();
       return () => { cancelled = true; };
     }, [presetTargetType])
+  );
+
+  // Every active business on the platform, shown by default underneath the
+  // search box — without this, a business you don't already know the name
+  // of is undiscoverable, since search only ever matches a typed name.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        const data = await getAllActivePartners();
+        if (!cancelled) {
+          setBrowsablePartners(data);
+          setLoadingBrowsable(false);
+        }
+      })();
+      return () => { cancelled = true; };
+    }, [])
   );
 
   async function search(text) {
@@ -155,29 +174,43 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
               onChangeText={search}
               accessibilityLabel="Search businesses"
             />
-            {searching && <ActivityIndicator style={{ marginTop: spacing.md }} color={colors.primary} />}
-            <FlatList
-              data={results}
-              keyExtractor={(p) => p.id}
-              contentContainerStyle={{ paddingTop: spacing.md }}
-              ListEmptyComponent={
-                businessQuery.trim().length >= 2 && !searching ? (
-                  <Text style={styles.emptyText}>No matching businesses found.</Text>
-                ) : null
-              }
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.row} activeOpacity={0.85} onPress={() => setSelectedPartner(item)} accessibilityRole="button">
-                  {item.logo_url ? (
-                    <Image source={{ uri: item.logo_url }} style={styles.logo} />
-                  ) : (
-                    <View style={[styles.logo, styles.logoFallback]}>
-                      <Text style={styles.logoFallbackText}>🏪</Text>
-                    </View>
+            {(() => {
+              const isSearching = businessQuery.trim().length >= 2;
+              const listData = isSearching ? results : browsablePartners;
+              const busy = isSearching ? searching : loadingBrowsable;
+              return (
+                <>
+                  {!isSearching && !loadingBrowsable && browsablePartners.length > 0 && (
+                    <Text style={styles.browseLabel}>Businesses on Nearby</Text>
                   )}
-                  <Text style={styles.rowTitle}>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-            />
+                  {busy && <ActivityIndicator style={{ marginTop: spacing.md }} color={colors.primary} />}
+                  <FlatList
+                    data={listData}
+                    keyExtractor={(p) => p.id}
+                    contentContainerStyle={{ paddingTop: spacing.md }}
+                    ListEmptyComponent={
+                      !busy ? (
+                        <Text style={styles.emptyText}>
+                          {isSearching ? 'No matching businesses found.' : 'No businesses on Nearby yet.'}
+                        </Text>
+                      ) : null
+                    }
+                    renderItem={({ item }) => (
+                      <TouchableOpacity style={styles.row} activeOpacity={0.85} onPress={() => setSelectedPartner(item)} accessibilityRole="button">
+                        {item.logo_url ? (
+                          <Image source={{ uri: item.logo_url }} style={styles.logo} />
+                        ) : (
+                          <View style={[styles.logo, styles.logoFallback]}>
+                            <Text style={styles.logoFallbackText}>🏪</Text>
+                          </View>
+                        )}
+                        <Text style={styles.rowTitle}>{item.name}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </>
+              );
+            })()}
           </>
         ) : (
           <>
@@ -210,6 +243,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg },
   header: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subheader: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  browseLabel: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.md },
   input: {
     backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, color: colors.textPrimary, ...typography.body,

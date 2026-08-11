@@ -564,7 +564,14 @@ export default function BusinessDashboardScreen({ navigation }) {
                   const isUpcoming = new Date(g.scheduled_at) >= new Date();
                   const attachedOffer = offers.find((o) => o.gathering_id === g.id);
                   return (
-                    <View key={g.id} style={styles.gatheringRow}>
+                    <TouchableOpacity
+                      key={g.id}
+                      style={styles.gatheringRow}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`View and manage ${g.title}`}
+                      accessibilityRole="button"
+                    >
                       <Text style={styles.offerTitle}>{g.title}{g.recurrence_rule ? ` (${g.recurrence_rule})` : ''}</Text>
                       <Text style={styles.offerDescription}>{isUpcoming ? 'Next: ' : 'Last: '}{formatDate(g.scheduled_at)}</Text>
                       {attachedOffer ? (
@@ -586,7 +593,7 @@ export default function BusinessDashboardScreen({ navigation }) {
                           {breakdown.total_attending} attending · {breakdown.new_attendees} new to you · {breakdown.returning_attendees} returning
                         </Text>
                       )}
-                    </View>
+                    </TouchableOpacity>
                   );
                 })
               )
@@ -633,11 +640,18 @@ export default function BusinessDashboardScreen({ navigation }) {
                   <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
                 ) : (
                   communities.map((c) => (
-                    <View key={c.id} style={styles.gatheringRow}>
+                    <TouchableOpacity
+                      key={c.id}
+                      style={styles.gatheringRow}
+                      onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`View and manage ${c.name}`}
+                      accessibilityRole="button"
+                    >
                       <Text style={styles.offerTitle}>{c.name}</Text>
                       <Text style={styles.breakdownText}>{c.memberCount} member{c.memberCount === 1 ? '' : 's'}</Text>
                       {c.description ? <Text style={styles.offerDescription}>{c.description}</Text> : null}
-                    </View>
+                    </TouchableOpacity>
                   ))
                 )}
 

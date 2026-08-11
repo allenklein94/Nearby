@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Ale
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole } from '../services/communities';
-import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer } from '../services/brandOffers';
+import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
 import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
@@ -25,6 +25,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [followingBusiness, setFollowingBusiness] = useState(false);
+  const [myManagedPartner, setMyManagedPartner] = useState(null);
   const [members, setMembers] = useState([]);
   const [memberPhotoUrls, setMemberPhotoUrls] = useState({});
   const [changingRoleFor, setChangingRoleFor] = useState(null);
@@ -68,6 +69,14 @@ export default function CommunityDetailScreen({ route, navigation }) {
     if (data?.hosting_partner_id) {
       const following = await isFollowingBusiness(data.hosting_partner_id);
       setFollowingBusiness(following);
+      // If you manage a business, every community you create is
+      // automatically linked to it (set_community_hosting_partner_from_creator
+      // trigger) so it shows up on your own Business Dashboard's Community
+      // tab. Fetched here so the block below can tell "this is your own
+      // business" apart from a genuine customer-facing perk -- following
+      // your own business, or being told to, makes no sense.
+      const partner = await getMyManagedPartner();
+      setMyManagedPartner(partner);
     }
 
     const [communityOffers, myRedemptions] = await Promise.all([getCommunityOffers(communityId), getMyRedemptions()]);
@@ -179,7 +188,24 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
-        {community.hosting_partner_id && (
+        {community.hosting_partner_id && myManagedPartner?.id === community.hosting_partner_id ? (
+          // You manage the business this community is auto-linked to (see
+          // the load() comment above) -- following your own business makes
+          // no sense, so this is an honest explanation instead of a Follow
+          // button pointed at yourself.
+          <View style={styles.ownBusinessNotice}>
+            <Text style={styles.ownBusinessNoticeText}>
+              🏪 This community is linked to your business, {myManagedPartner.name} — that's why it appears on your Business Dashboard's Community tab.
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('BusinessProfile', { partnerId: community.hosting_partner_id })}
+              accessibilityLabel="View business profile"
+              accessibilityRole="button"
+            >
+              <Text style={styles.businessProfileLink}>View Business Profile →</Text>
+            </TouchableOpacity>
+          </View>
+        ) : community.hosting_partner_id && (
           <>
             <TouchableOpacity
               style={[styles.chatButton, followingBusiness && styles.leaveButton]}
@@ -418,6 +444,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chatButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.lg },
   chatButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   businessProfileLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  ownBusinessNotice: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, padding: spacing.md, marginBottom: spacing.lg,
+  },
+  ownBusinessNoticeText: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 18 },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.lg },
   perkCard: {

@@ -206,6 +206,28 @@ export async function getActivePartnersByName(query) {
   return data ?? [];
 }
 
+// The default browse list for RequestBusinessPartnerScreen — every active
+// business, alphabetical, so a business genuinely on the platform is
+// discoverable without already knowing its name to search for. brand_partners
+// has no category column today (only business_partner_requests captures a
+// category, at application time, and it's never copied onto the approved
+// row) so this can't be grouped by category yet — a flat alphabetical list
+// until that's real, stored data worth building UI around.
+export async function getAllActivePartners() {
+  const { data, error } = await supabase
+    .from('brand_partners')
+    .select('id, name, logo_url')
+    .eq('active', true)
+    .order('name', { ascending: true })
+    .limit(100);
+
+  if (error) {
+    console.error('getAllActivePartners error', error);
+    return [];
+  }
+  return data ?? [];
+}
+
 export async function getGatheringOffer(gatheringId) {
   const { data, error } = await supabase
     .from('brand_offers')

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
+import { getMyManagedPartner } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -21,6 +22,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
   const [interestTag, setInterestTag] = useState(null);
   const [isPublic, setIsPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [managedPartner, setManagedPartner] = useState(null);
 
   // Prefill from CreateHubScreen's Create Assistant, same
   // quickStartTitle/quickStartCategory param shape CreateGatheringScreen
@@ -33,6 +35,14 @@ export default function CreateCommunityScreen({ navigation, route }) {
       setInterestTag(route.params.quickStartCategory);
     }
   }, [route?.params?.quickStartTitle, route?.params?.quickStartCategory]);
+
+  // A business owner's every new community is automatically linked to
+  // their own business (set_community_hosting_partner_from_creator DB
+  // trigger) so it shows up on their Business Dashboard's Community tab --
+  // surfaced here up front so it isn't a surprise on the next screen.
+  useEffect(() => {
+    getMyManagedPartner().then(setManagedPartner);
+  }, []);
 
   async function submit() {
     if (!name.trim()) {
@@ -87,6 +97,14 @@ export default function CreateCommunityScreen({ navigation, route }) {
         <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
           <Text style={styles.header}>Create a Community</Text>
           <Text style={styles.subheader}>An ongoing group that can host recurring gatherings over time.</Text>
+
+          {managedPartner && (
+            <View style={styles.businessNotice}>
+              <Text style={styles.businessNoticeText}>
+                🏪 Since you manage {managedPartner.name}, this community will be linked to your business page and appear on your Business Dashboard's Community tab.
+              </Text>
+            </View>
+          )}
 
           <Text style={styles.label}>Name</Text>
           <TextInput
@@ -172,6 +190,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subheader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
+  businessNotice: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, padding: spacing.md, marginBottom: spacing.lg,
+  },
+  businessNoticeText: { ...typography.caption, color: colors.textSecondary, lineHeight: 18 },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

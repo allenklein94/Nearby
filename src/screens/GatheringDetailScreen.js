@@ -467,7 +467,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 })()
               )}
               <TouchableOpacity
-                onPress={() => navigation.navigate('Gatherings')}
+                onPress={() => navigation.navigate('Gatherings', { initialTab: 'hosting' })}
                 accessibilityLabel="Manage attendees"
                 accessibilityRole="button"
               >

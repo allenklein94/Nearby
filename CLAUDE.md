@@ -4,6 +4,93 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 11 2026 — five user-reported live bugs (Create Assistant, Manage Attendees, business search, community/business auto-link confusion, Business Dashboard tap targets) — DONE
+
+The user hit five real problems while actually using the app (not a code audit) and reported them
+directly. Investigated each against live production/the real database rather than guessing —
+all five were real, one turned out to be an account-billing issue rather than a code bug.
+
+1. **Create tab → "Something Else" → typing a request (e.g. "get some people together for
+   coffee") always failed with "Could not process that right now." — confirmed real, but not a
+   code bug.** Reproduced directly against production: signed in as a real (disposable test)
+   user, called `create-assistant` with the exact text, got the generic client-facing error.
+   Temporarily deployed a diagnostic build of `supabase/functions/create-assistant/index.ts`
+   that echoed the raw Anthropic response back in the error payload, re-ran the same call, then
+   immediately reverted to the original file and redeployed the clean version (confirmed via
+   `diff` the restored file is byte-identical to the pre-change original). Root cause: Anthropic
+   is rejecting every request with `"Your credit balance is too low to access the Anthropic
+   API."` — **this is an account billing issue, not a code defect**, and it silently breaks
+   every AI feature in the app that shares the same `ANTHROPIC_API_KEY` secret: Create
+   Assistant, AI Concierge, `generate-icebreaker`, `generate-strengths`,
+   `generate-courage-message`, `translate-message`, `generate-introduction`, `rehearsal-chat`,
+   and `business-ai-assistant`. **Not something a code session can fix** — needs the Anthropic
+   console account topped up. No code changed for this item.
+2. **`GatheringDetailScreen.js`'s "Manage attendees →" link — real bug, fixed.** It called
+   `navigation.navigate('Gatherings')` with no params, which always lands on the default
+   "Nearby" tab — not useful for actually managing attendees. Fixed to
+   `navigation.navigate('Gatherings', { initialTab: 'hosting' })`, reusing the `initialTab`
+   param `GatheringsScreen.js` already reads (same pattern established elsewhere in this file).
+   The Hosting tab already lists each hosted gathering's pending/approved attendees inline with
+   Approve buttons — no further per-gathering scroll-to was built, since a host's own gathering
+   list is typically short.
+3. **`RequestBusinessPartnerScreen.js` never showed any business until you typed 2+ characters
+   — real, confirmed gap.** `getActivePartnersByName()` returned `[]` for an empty/short query,
+   so a real business on the platform (confirmed: exactly one active partner exists in
+   production, "Coastal Coffee") was invisible unless you already knew its exact name to search
+   for. Fixed with a new `getAllActivePartners()` in `services/brandOffers.js` (every active
+   partner, alphabetical, `.limit(100)`) rendered as a default "Businesses on Nearby" browse
+   list under the search box whenever the query is empty/short, with its own honest loading/
+   empty state. **Category grouping (the user's own suggestion, like Discover's category tiles)
+   was not built** — checked live: `brand_partners` has no category column at all (only the
+   *application* row, `business_partner_requests.category`, captures one, and it's never copied
+   onto the approved `brand_partners` row) — flagged as a real, separate schema gap rather than
+   faking a grouping with no real data behind it.
+4. **"Follow This Business" appearing right after creating a community — traced to a real,
+   intentional-but-unexplained DB trigger, not a data bug.** Queried production directly: the
+   user's brand-new community ("Downtown runners") really did have `hosting_partner_id` set to
+   their own managed business (Coastal Coffee) immediately on creation. Found the mechanism —
+   `set_community_hosting_partner_from_creator()`, a BEFORE INSERT trigger that auto-links any
+   new community to its creator's own `profiles.managed_partner_id` if they manage a business
+   (the exact same pattern `set_hosting_partner_from_host()` already does for gatherings — this
+   is what makes a business owner's own gatherings/communities show up on their Business
+   Dashboard, see item 5). The trigger itself is correct and load-bearing — removing it would
+   break the Business Dashboard's Gatherings/Community tabs. The actual bug was that nothing
+   ever told the user this would happen, and the resulting screen showed a nonsensical "follow
+   your own business" button. Fixed both ends:
+   - `CreateCommunityScreen.js` now fetches the caller's own `getMyManagedPartner()` and shows a
+     heads-up notice ("Since you manage {business}, this community will be linked to your
+     business page...") before they submit, if applicable.
+   - `CommunityDetailScreen.js` now also fetches the caller's own managed partner; when a
+     community's `hosting_partner_id` equals the viewer's own managed business, it shows an
+     explanatory info card ("This community is linked to your business, {name} — that's why it
+     appears on your Business Dashboard's Community tab.") instead of a Follow button. Every
+     other case (a genuine customer/member viewing a business-linked community that isn't their
+     own) is unchanged — still shows the real Follow/View Profile buttons.
+5. **Business Dashboard's Gatherings and Community tab rows weren't tappable — real, confirmed
+   bug, fixed.** Both `BusinessDashboardScreen.js` lists (`gatherings.map(...)`,
+   `communities.map(...)`) rendered each row as a plain `<View>` with no `onPress` anywhere —
+   confirmed via direct read, exactly matching the user's report. Both now wrap in a
+   `TouchableOpacity` navigating to the real `GatheringDetail`/`CommunityDetail` screens (the
+   business owner is also the host/creator of these, via item 4's same auto-link trigger, so
+   this lands them on the full real host-management view — manage attendees, edit, members,
+   etc.). The nested "+ Attach Reward" touchable inside each gathering row is unaffected (nested
+   `TouchableOpacity`s are a standard, working RN pattern — the inner one still claims its own
+   tap).
+
+Verified via a full `npx expo export --platform ios` — clean, 1856 modules (unchanged from the
+prior baseline — every touched file was an edit, no new files). Test account created for the
+`create-assistant` diagnosis (a disposable email/password signup) was deleted from
+`auth.users` afterward; production confirmed back to its pre-test state.
+
+**Not done, same standing gap as everywhere else in this file**: no manual device/simulator
+run-through of any of the 4 client-side fixes (items 2, 3, 4, 5) — next session should confirm:
+Manage Attendees lands on the Hosting tab correctly, the business browse list renders/scrolls
+correctly with more than a handful of partners, both the pre-create notice and the
+own-business info card in the community flow render correctly for a business-owner account
+end-to-end, and both Business Dashboard tabs' rows navigate correctly to a real gathering/
+community with full host controls intact. Item 1 has no code to verify — it's blocked entirely
+on the Anthropic account being funded.
+
 ## IA restructure round 3 — canonical Plans, attention-only Activity, gathering/chat/invite three-way split, Settings as a real control center — ALL 7 PHASES DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
