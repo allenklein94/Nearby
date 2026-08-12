@@ -329,7 +329,7 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity
                     key={g.id}
                     style={[styles.happeningNowChip, { borderColor: style.color }]}
-                    onPress={() => navigation.navigate('Gatherings')}
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                     activeOpacity={0.85}
                     accessibilityLabel={`${g.title}, ${g.interest_tag ?? 'General'}, happening now`}
                     accessibilityRole="button"
@@ -373,7 +373,7 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${dashboard?.gatheringsTodayCount ?? 0} gatherings today, tap to view`} accessibilityRole="button">
+          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel={`${dashboard?.gatheringsTodayCount ?? 0} gatherings today, tap to view`} accessibilityRole="button">
             <Text style={styles.cardIcon}>🎉</Text>
             <Text style={styles.cardText}>{dashboard?.gatheringsTodayCount ?? 0} gatherings today</Text>
             <Text style={styles.cardChevron}>›</Text>
@@ -459,7 +459,7 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity
                     key={g.id}
                     style={styles.trendingCard}
-                    onPress={() => navigation.navigate('Gatherings')}
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                     accessibilityLabel={`${g.title}, ${g.approvedAttendees?.length ?? 0} attending`}
                     accessibilityRole="button"
                   >
@@ -477,7 +477,7 @@ export default function HomeScreen({ navigation }) {
                   <TouchableOpacity
                     key={g.id}
                     style={styles.trendingCard}
-                    onPress={() => navigation.navigate('Gatherings')}
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
                     accessibilityLabel={`${g.profiles?.display_name} is hosting ${g.title}`}
                     accessibilityRole="button"
                   >
