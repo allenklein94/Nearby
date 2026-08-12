@@ -65,6 +65,7 @@ export default function MomentumScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <Text style={styles.subtitle}>Your activity streak, and how this month compares to last.</Text>
         <View style={styles.streakCard}>
           <Text style={styles.streakEmoji}>{stats.currentStreak > 0 ? '🔥' : '🌱'}</Text>
           <Text style={styles.streakNumber}>{stats.currentStreak}</Text>
@@ -137,6 +138,7 @@ export default function MomentumScreen({ navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  subtitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
   emptyText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center', lineHeight: 19 },
   streakCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

@@ -50,6 +50,7 @@ export default function RewardsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <Text style={styles.subtitle}>Your perk tier — based on how many perks you've redeemed.</Text>
         <View style={styles.tierCard}>
           <Text style={styles.tierEmoji}>{status.tier?.emoji ?? '🎁'}</Text>
           <Text style={styles.tierName}>{status.tier ? `${status.tier.name} Member` : 'Not a member yet'}</Text>
@@ -107,6 +108,7 @@ export default function RewardsScreen({ navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  subtitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
   emptyText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center', lineHeight: 19 },
   tierCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

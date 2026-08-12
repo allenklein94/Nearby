@@ -55,9 +55,9 @@ export default function InsightsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        {stats.memberSince && (
-          <Text style={styles.subtitle}>Member since {formatMemberSince(stats.memberSince)}</Text>
-        )}
+        <Text style={styles.subtitle}>
+          Your lifetime stats and achievements{stats.memberSince ? ` — member since ${formatMemberSince(stats.memberSince)}` : ''}.
+        </Text>
 
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
