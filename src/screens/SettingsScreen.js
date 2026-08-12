@@ -808,7 +808,7 @@ export default function SettingsScreen({ navigation }) {
 
         {isAdmin && (
           <>
-            <Text style={styles.groupHeader} accessibilityRole="header">Business</Text>
+            <Text style={styles.groupHeader} accessibilityRole="header">Business (Admin)</Text>
             <TouchableOpacity
               style={styles.rowButtonCard}
               onPress={() => navigation.navigate('BusinessDashboard')}

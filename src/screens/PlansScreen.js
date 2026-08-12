@@ -9,7 +9,7 @@ import { spacing, radius, typography } from '../theme';
 
 const TABS = [
   { key: 'upcoming', label: 'Upcoming' },
-  { key: 'hosting', label: 'Hosting' },
+  { key: 'hosting', label: 'My Hosting' },
   { key: 'past', label: 'Past' },
 ];
 
