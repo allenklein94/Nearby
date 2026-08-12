@@ -68,7 +68,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
             accessibilityRole="button"
             accessibilityLabel="Apply to partner your business"
           >
-            <Text style={styles.buttonText}>Partner With Us</Text>
+            <Text style={styles.buttonText}>List Your Business</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

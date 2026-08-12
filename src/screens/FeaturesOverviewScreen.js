@@ -34,7 +34,7 @@ const CATEGORIES = [
     title: '🌱 For You',
     features: [
       { icon: '🎭', name: 'Rehearsal Room', description: "Practice a hard conversation with an AI role-play partner before having it for real. Nothing here is saved permanently or about a real person." },
-      { icon: '🧰', name: 'Emergency Kit', description: 'General guidance on hard conversations, apologizing, rebuilding trust, and reconnecting after distance.' },
+      { icon: '🧰', name: 'Toolkit', description: 'General guidance on hard conversations, apologizing, rebuilding trust, and reconnecting after distance.' },
       { icon: '📔', name: 'Chemistry Diary', description: "A private log of how time with someone actually felt. Over time, builds an honest picture of what genuinely feels good to you." },
       { icon: '🌙', name: 'Private Reflections', description: 'A private space to write down what you learned from a connection, however it ended. Only you can see it.' },
       { icon: '🦁', name: 'Help Me Say It', description: 'Stuck on how to say something hard? Get help finding the words, right from a chat.' },

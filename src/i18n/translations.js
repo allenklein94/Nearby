@@ -256,7 +256,7 @@ export const translations = {
       leaveWisdom: 'Leave Wisdom',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Relationship Emergency Kit',
+      title: '\uD83E\uDDF0 Relationship Toolkit',
       subtitle: "Most relationships don't fail from lack of love — they struggle from lack of tools. General guidance, not advice about any specific situation.",
       hardConversation: '\uD83D\uDCAC Having a Hard Conversation',
       apologize: '\uD83D\uDE4F How to Apologize',
@@ -580,7 +580,7 @@ export const translations = {
       leaveWisdom: 'Dejar Sabidur\u00eda',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Kit de Emergencia de Relaci\u00f3n',
+      title: '\uD83E\uDDF0 Kit de Herramientas de Relaci\u00f3n',
       subtitle: 'La mayor\u00eda de las relaciones no fallan por falta de amor — luchan por falta de herramientas. Orientaci\u00f3n general, no consejos sobre una situaci\u00f3n espec\u00edfica.',
       hardConversation: '\uD83D\uDCAC Tener una Conversaci\u00f3n Dif\u00edcil',
       apologize: '\uD83D\uDE4F C\u00f3mo Disculparse',
@@ -905,7 +905,7 @@ export const translations = {
       leaveWisdom: 'Weisheit hinterlassen',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Beziehungs-Notfallset',
+      title: '\uD83E\uDDF0 Beziehungs-Werkzeugkasten',
       subtitle: 'Die meisten Beziehungen scheitern nicht an mangelnder Liebe — sie k\u00e4mpfen mit fehlenden Werkzeugen. Allgemeine Anleitung, kein Rat zu einer bestimmten Situation.',
       hardConversation: '\uD83D\uDCAC Ein schwieriges Gespr\u00e4ch f\u00fchren',
       apologize: '\uD83D\uDE4F Wie man sich entschuldigt',
@@ -1230,7 +1230,7 @@ export const translations = {
       leaveWisdom: 'Laisser une Sagesse',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Kit d\u2019Urgence Relationnel',
+      title: '\uD83E\uDDF0 Bo\u00eete \u00e0 Outils Relationnelle',
       subtitle: "La plupart des relations n'\u00e9chouent pas par manque d'amour — elles luttent par manque d'outils. Conseils g\u00e9n\u00e9raux, pas de conseils sur une situation sp\u00e9cifique.",
       hardConversation: '\uD83D\uDCAC Avoir une Conversation Difficile',
       apologize: '\uD83D\uDE4F Comment S\u2019excuser',
@@ -1880,7 +1880,7 @@ export const translations = {
       leaveWisdom: 'Kite Sajès',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Kit Ijans Relasyon',
+      title: '\uD83E\uDDF0 Kit Zouti Relasyon',
       subtitle: "Pifò relasyon pa echwe akoz mank lanmou — yo lite akoz mank zouti. Gid jeneral, se pa konsèy sou yon sitiyasyon espesifik.",
       hardConversation: '\uD83D\uDCAC Fè Yon Konvèsasyon Difisil',
       apologize: '\uD83D\uDE4F Kijan pou Eskize',
@@ -2205,7 +2205,7 @@ export const translations = {
       leaveWisdom: '留下智慧',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 关系应急工具包',
+      title: '\uD83E\uDDF0 关系工具包',
       subtitle: '大多数关系失败不是因为缺乏爱——而是因为缺乏工具。这里是一般性指导，不是针对特定情况的建议。',
       hardConversation: '\uD83D\uDCAC 进行艰难对话',
       apologize: '\uD83D\uDE4F 如何道歉',
@@ -2855,7 +2855,7 @@ export const translations = {
       leaveWisdom: 'Mag-iwan ng Karunungan',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Emergency Kit para sa Relasyon',
+      title: '\uD83E\uDDF0 Kit ng Kasangkapan para sa Relasyon',
       subtitle: "Karamihan sa mga relasyon ay hindi bumabagsak dahil sa kakulangan ng pagmamahal — nahihirapan sila dahil sa kakulangan ng mga kasangkapan. Pangkalahatang gabay, hindi payo tungkol sa isang tiyak na sitwasyon.",
       hardConversation: '\uD83D\uDCAC Pagkakaroon ng Mahirap na Usapan',
       apologize: '\uD83D\uDE4F Paano Humingi ng Paumanhin',
@@ -3180,7 +3180,7 @@ export const translations = {
       leaveWisdom: 'Оставить Мудрость',
     },
     emergencyKit: {
-      title: '\uD83E\uDDF0 Аварийный Комплект для Отношений',
+      title: '\uD83E\uDDF0 Набор Инструментов для Отношений',
       subtitle: 'Большинство отношений терпят неудачу не из-за недостатка любви — они борются из-за недостатка инструментов. Общее руководство, а не советы по конкретной ситуации.',
       hardConversation: '\uD83D\uDCAC Проведение Трудного Разговора',
       apologize: '\uD83D\uDE4F Как Извиниться',

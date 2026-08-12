@@ -27,7 +27,7 @@ const SECTIONS = [
       { key: 'chemistry', icon: '📔', label: 'Chemistry Diary', route: 'ChemistryDiaryList', a11y: 'Your chemistry diary' },
       { key: 'goodbye', icon: '🌙', label: 'Private Reflections', route: 'GoodbyeArchiveList', a11y: 'Your private reflections' },
       { key: 'legacy', icon: '💌', label: 'Relationship Wisdom', route: 'LegacyLibrary', a11y: 'Relationship wisdom library' },
-      { key: 'kit', icon: '🧰', label: 'Emergency Kit', route: 'RelationshipEmergencyKit', a11y: 'Relationship emergency kit' },
+      { key: 'kit', icon: '🧰', label: 'Toolkit', route: 'RelationshipEmergencyKit', a11y: 'Relationship toolkit' },
     ],
   },
 ];

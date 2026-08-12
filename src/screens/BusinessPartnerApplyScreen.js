@@ -87,7 +87,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
-          <Text style={styles.header}>Partner With Us</Text>
+          <Text style={styles.header}>List Your Business</Text>
           <Text style={styles.subheader}>
             Businesses can host gatherings and communities, create offers for real customers who opt in, and build genuine relationships — not just run ads.
           </Text>

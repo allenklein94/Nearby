@@ -571,11 +571,11 @@ const result = await response.json();
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Activity</Text>
         <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
             <Text style={styles.quickStatLabel}>Upcoming</Text>
           </TouchableOpacity>
-         <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Gatherings')} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
+         <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
             <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
             <Text style={styles.quickStatLabel}>Past</Text>
           </TouchableOpacity>
@@ -680,10 +680,10 @@ const result = await response.json();
                 : 'BusinessPartnerApply'
             )}
             activeOpacity={0.85}
-            accessibilityLabel="Become a Business Partner"
+            accessibilityLabel="List your business on Nearby"
             accessibilityRole="button"
           >
-            <Text style={styles.businessModeButtonText}>🤝 Become a Business Partner</Text>
+            <Text style={styles.businessModeButtonText}>🏪 List Your Business</Text>
           </TouchableOpacity>
         )}
 
