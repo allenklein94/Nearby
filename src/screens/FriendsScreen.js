@@ -414,8 +414,8 @@ export default function FriendsScreen({ navigation }) {
               autoFocus
               accessibilityLabel="Circle name"
             />
-            <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85}>
-              <Text style={styles.modalButtonText}>Create</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85} accessibilityLabel="Create circle" accessibilityRole="button">
+              <Text style={styles.modalButtonText}>Create Circle</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
               <Text style={styles.modalCancelText}>Cancel</Text>

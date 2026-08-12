@@ -22,6 +22,7 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import AnimatedListItem from '../components/AnimatedListItem';
 import SkeletonCard from '../components/SkeletonCard';
 import GatheringsMapView from '../components/GatheringsMapView';
+import StoryViewerModal from '../components/StoryViewerModal';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
@@ -130,6 +131,8 @@ export default function GatheringsScreen({ navigation, route }) {
   const [mapDeals, setMapDeals] = useState([]);
   const [mapStories, setMapStories] = useState([]);
   const [mapStoryPhotoUrls, setMapStoryPhotoUrls] = useState({});
+  const [mapStoryDisplayNames, setMapStoryDisplayNames] = useState({});
+  const [mapStoryViewerTarget, setMapStoryViewerTarget] = useState(null);
   const [attendingPastExpanded, setAttendingPastExpanded] = useState(false);
   const [hostingPastExpanded, setHostingPastExpanded] = useState(false);
   const [attendingPastSort, setAttendingPastSort] = useState('newest');
@@ -208,7 +211,7 @@ export default function GatheringsScreen({ navigation, route }) {
     setMapStories(publicStories);
     const storyPosterIds = [...new Set(publicStories.map((s) => s.user_id))];
     if (storyPosterIds.length > 0) {
-      const { data: posterProfiles } = await supabase.from('profiles').select('id, photo_url').in('id', storyPosterIds);
+      const { data: posterProfiles } = await supabase.from('profiles').select('id, display_name, photo_url').in('id', storyPosterIds);
       const urlEntries = await Promise.all(
         (posterProfiles ?? []).map(async (p) => {
           if (!p.photo_url) return [p.id, null];
@@ -217,6 +220,7 @@ export default function GatheringsScreen({ navigation, route }) {
         })
       );
       setMapStoryPhotoUrls(Object.fromEntries(urlEntries));
+      setMapStoryDisplayNames(Object.fromEntries((posterProfiles ?? []).map((p) => [p.id, p.display_name])));
     }
 
     const { status } = await Location.getForegroundPermissionsAsync();
@@ -765,10 +769,12 @@ export default function GatheringsScreen({ navigation, route }) {
             userLocation={userLocation}
             onSelectGathering={(gathering) => navigation.navigate('GatheringDetail', { gatheringId: gathering.id })}
             onSelectStory={(story) => {
-              Alert.alert('Public Story', 'View this story?', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'View', onPress: () => navigation.navigate('ViewProfile', { userId: story.user_id }) },
-              ]);
+              setMapStoryViewerTarget({
+                userId: story.user_id,
+                displayName: mapStoryDisplayNames[story.user_id],
+                photoUrl: mapStoryPhotoUrls[story.user_id],
+                stories: [story],
+              });
             }}
             onSelectDeal={(deal) => {
               Alert.alert(
@@ -1288,6 +1294,11 @@ export default function GatheringsScreen({ navigation, route }) {
           setIntentModalGathering(null);
           if (gathering) handleExpressInterest(gathering.id);
         }}
+      />
+      <StoryViewerModal
+        visible={!!mapStoryViewerTarget}
+        group={mapStoryViewerTarget}
+        onClose={() => setMapStoryViewerTarget(null)}
       />
     </SafeAreaView>
   );
