@@ -366,7 +366,7 @@ export default function DiscoverHubScreen({ navigation }) {
             businesses={mapBusinesses}
             userLocation={userLocation}
             onSelectGathering={(g) => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-            onSelectDeal={() => navigation.navigate('BrandOffers')}
+            onSelectDeal={(d) => navigation.navigate('BrandOffers', { highlightOfferId: d.id })}
             onSelectBusiness={(b) => navigation.navigate('BusinessProfile', { partnerId: b.id })}
           />
         </View>
