@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -8,10 +8,14 @@ import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, set
 import { checkTextModeration } from '../services/textModeration';
 import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
 import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
+import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
+import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
+
+const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -121,9 +125,18 @@ export default function ProfileScreen({ navigation }) {
   const [myBusinessRequestStatus, setMyBusinessRequestStatus] = useState(null);
   const [earnedStats, setEarnedStats] = useState({ favoriteVibe: null, usuallyActive: null });
   const [connectionGoal, setConnectionGoal] = useState('');
+  const [voiceIntroPath, setVoiceIntroPath] = useState(null);
+  const [isRecordingIntro, setIsRecordingIntro] = useState(false);
+  const [recordingIntroSeconds, setRecordingIntroSeconds] = useState(0);
+  const [uploadingIntro, setUploadingIntro] = useState(false);
+  const recordingIntroRef = useRef(null);
+  const recordingIntroTimerRef = useRef(null);
 
   useEffect(() => {
     load();
+    return () => {
+      if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
+    };
   }, []);
 
   async function load() {
@@ -145,6 +158,7 @@ export default function ProfileScreen({ navigation }) {
       setBasics(data.basics || {});
       setPrompts(data.prompts || []);
       setConnectionGoal(data.connection_goal || '');
+      setVoiceIntroPath(data.voice_intro_path || null);
       if (data.photo_url) {
         const url = await getSignedPhotoUrl(data.photo_url);
         setPhotoUrl(url);
@@ -315,6 +329,90 @@ const result = await response.json();
 
   function removePrompt(index) {
     setPrompts((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function formatVoiceIntroTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  async function startVoiceIntroRecording() {
+    try {
+      const recording = await startRecording();
+      recordingIntroRef.current = recording;
+      setIsRecordingIntro(true);
+      setRecordingIntroSeconds(0);
+
+      recordingIntroTimerRef.current = setInterval(() => {
+        setRecordingIntroSeconds((prev) => {
+          if (prev + 1 >= MAX_VOICE_INTRO_SECONDS) {
+            stopVoiceIntroRecording();
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  async function cancelVoiceIntroRecording() {
+    if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
+    setIsRecordingIntro(false);
+    if (recordingIntroRef.current) {
+      await stopRecording(recordingIntroRef.current).catch(() => {});
+      recordingIntroRef.current = null;
+    }
+  }
+
+  async function stopVoiceIntroRecording() {
+    if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
+    setIsRecordingIntro(false);
+    if (!recordingIntroRef.current) return;
+
+    try {
+      const uri = await stopRecording(recordingIntroRef.current);
+      recordingIntroRef.current = null;
+
+      setUploadingIntro(true);
+      const previousPath = voiceIntroPath;
+      const path = await uploadVoiceIntro(userId, uri);
+      const { error } = await supabase.from('profiles').update({ voice_intro_path: path }).eq('id', userId);
+      setUploadingIntro(false);
+
+      if (error) {
+        Alert.alert('Error', error.message);
+        return;
+      }
+      setVoiceIntroPath(path);
+      if (previousPath) deleteVoiceIntro(previousPath).catch(() => {});
+    } catch (e) {
+      setUploadingIntro(false);
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  function removeVoiceIntro() {
+    Alert.alert('Remove voice intro?', '', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const pathToDelete = voiceIntroPath;
+          setVoiceIntroPath(null);
+          const { error } = await supabase.from('profiles').update({ voice_intro_path: null }).eq('id', userId);
+          if (error) {
+            Alert.alert('Error', error.message);
+            setVoiceIntroPath(pathToDelete);
+            return;
+          }
+          deleteVoiceIntro(pathToDelete).catch(() => {});
+        },
+      },
+    ]);
   }
 
   async function save() {
@@ -700,6 +798,59 @@ const result = await response.json();
             </TouchableOpacity>
           )}
           <Text style={styles.helperText}>Add up to {MAX_PROMPTS} prompts to show more of your personality.</Text>
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">Voice Intro</Text>
+        <View style={styles.formCard}>
+          {voiceIntroPath ? (
+            <View style={styles.voiceIntroRow}>
+              <VoicePlayButton
+                getUrl={() => getSignedVoiceIntroUrl(voiceIntroPath)}
+                label="Your voice intro"
+                style={styles.voicePlayButton}
+              />
+              <Text style={styles.voiceIntroLabel}>Your voice intro</Text>
+              <TouchableOpacity
+                onPress={removeVoiceIntro}
+                style={styles.promptRemove}
+                accessibilityLabel="Remove voice intro"
+                accessibilityRole="button"
+              >
+                <Text style={styles.promptRemoveText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ) : isRecordingIntro ? (
+            <View style={styles.voiceIntroRow}>
+              <Text style={styles.recordingIntroTime}>{formatVoiceIntroTime(recordingIntroSeconds)}</Text>
+              <TouchableOpacity
+                onPress={stopVoiceIntroRecording}
+                style={styles.addPromptButton}
+                accessibilityLabel="Stop recording"
+                accessibilityRole="button"
+              >
+                <Text style={styles.addPromptText}>Stop</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={cancelVoiceIntroRecording}
+                accessibilityLabel="Cancel recording"
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addPromptButton}
+              onPress={startVoiceIntroRecording}
+              disabled={uploadingIntro}
+              activeOpacity={0.85}
+              accessibilityLabel="Record a voice intro"
+              accessibilityRole="button"
+            >
+              <Text style={styles.addPromptText}>{uploadingIntro ? 'Uploading...' : '🎙️ Record a Voice Intro'}</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.helperText}>Up to {MAX_VOICE_INTRO_SECONDS} seconds. A quick voice intro helps you stand out.</Text>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">What are you hoping to find?</Text>
@@ -1091,6 +1242,15 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderRadius: radius.md, padding: spacing.md, alignItems: 'center', marginBottom: spacing.sm,
   },
   addPromptText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  voiceIntroRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,
+  },
+  voicePlayButton: {
+    width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.primary,
+  },
+  voiceIntroLabel: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
+  recordingIntroTime: { flex: 1, color: colors.textPrimary, fontWeight: '700', fontSize: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
   modalTitle: { ...typography.title, color: colors.textPrimary },
   modalCancelText: { color: colors.primary, fontWeight: '600', textAlign: 'center' },

@@ -12,6 +12,8 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import { sendFriendRequest, getMutualFriends } from '../services/friends';
 import { getHostStats, getHostReputation } from '../services/gatherings';
+import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
+import VoicePlayButton from '../components/VoicePlayButton';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -92,7 +94,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks')
+      .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks, voice_intro_path')
       .eq('id', userId)
       .single();
 
@@ -374,6 +376,17 @@ export default function ViewProfileScreen({ route, navigation }) {
             </View>
           ))}
 
+          {profile.voice_intro_path && (
+            <View style={styles.voiceIntroCard}>
+              <VoicePlayButton
+                getUrl={() => getSignedVoiceIntroUrl(profile.voice_intro_path)}
+                label={`${profile.display_name}'s voice intro`}
+                style={styles.voicePlayButton}
+              />
+              <Text style={styles.voiceIntroLabel}>🎙️ Voice intro</Text>
+            </View>
+          )}
+
           {profile.favorite_tracks?.length > 0 && (
             <>
               <Text style={styles.sectionLabel} accessibilityRole="header">🎵 Music</Text>
@@ -496,6 +509,15 @@ const getStyles = (colors) => StyleSheet.create({
   },
   promptQuestion: { ...typography.caption, color: colors.textTertiary, marginBottom: 4 },
   promptAnswer: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 16, lineHeight: 22 },
+  voiceIntroCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.md,
+    marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
+  },
+  voicePlayButton: {
+    width: 36, height: 36, borderRadius: radius.full, backgroundColor: colors.primary,
+  },
+  voiceIntroLabel: { color: colors.textPrimary, fontWeight: '600', fontSize: 14 },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   interestChip: {

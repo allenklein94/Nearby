@@ -89,3 +89,36 @@ export async function getSignedAudioUrl(path) {
   if (error) return null;
   return data.signedUrl;
 }
+
+// A profile's single voice-intro clip lives in its own bucket, not
+// chat-media — it's readable by anyone the profile itself is visible
+// to (same rule as profile photos), not just conversation participants.
+export async function uploadVoiceIntro(userId, localUri) {
+  const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
+  if (!base64 || base64.length === 0) {
+    throw new Error('Could not read the recorded audio. Please try again.');
+  }
+
+  const bytes = base64ToUint8Array(base64);
+  const path = `${userId}/voice-intro-${Date.now()}.m4a`;
+
+  const { error } = await supabase.storage
+    .from('profile-audio')
+    .upload(path, bytes, { contentType: 'audio/m4a' });
+  if (error) throw error;
+  return path;
+}
+
+export async function getSignedVoiceIntroUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from('profile-audio')
+    .createSignedUrl(path, 3600);
+  if (error) return null;
+  return data.signedUrl;
+}
+
+export async function deleteVoiceIntro(path) {
+  if (!path) return;
+  await supabase.storage.from('profile-audio').remove([path]);
+}
