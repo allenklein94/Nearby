@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemistryDiary';
 import { usePostHog } from 'posthog-react-native';
@@ -42,7 +42,7 @@ function computeInsights(entries) {
     .sort((a, b) => b.count - a.count);
 }
 
-export default function ChemistryDiaryListScreen() {
+export default function ChemistryDiaryListScreen({ navigation }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -51,6 +51,8 @@ export default function ChemistryDiaryListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const [nameInput, setNameInput] = useState('');
 
   const load = useCallback(async () => {
     const data = await getMyChemistryEntries();
@@ -99,6 +101,20 @@ export default function ChemistryDiaryListScreen() {
     if (opening) posthog.capture('chemistry_diary_insights_viewed');
   }
 
+  function startNewEntry() {
+    setNameInput('');
+    setNameModalVisible(true);
+  }
+
+  function proceedToEntry() {
+    if (!nameInput.trim()) {
+      return Alert.alert('Add a name', "Who is this entry about? First name or however you'd like to remember them.");
+    }
+    setNameModalVisible(false);
+    posthog.capture('chemistry_diary_entry_started');
+    navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: nameInput.trim() });
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -121,6 +137,16 @@ export default function ChemistryDiaryListScreen() {
         <Text style={styles.headerSubtitle}>
           {t('chemistryDiary.subtitle')}
         </Text>
+
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={startNewEntry}
+          activeOpacity={0.85}
+          accessibilityLabel="Add a chemistry check-in entry"
+          accessibilityRole="button"
+        >
+          <Text style={styles.addButtonText}>+ Add Entry</Text>
+        </TouchableOpacity>
 
         {canShowInsights && (
           <TouchableOpacity
@@ -166,7 +192,7 @@ export default function ChemistryDiaryListScreen() {
         {entries.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📔</Text>
-            <Text style={styles.emptyText}>Nothing here yet. Add an entry any time after spending time with someone, from their profile or a chat.</Text>
+            <Text style={styles.emptyText}>Nothing here yet. Add an entry any time after spending time with someone — above, or from their profile or a chat.</Text>
           </View>
         )}
 
@@ -201,6 +227,40 @@ export default function ChemistryDiaryListScreen() {
           );
         })}
       </ScrollView>
+
+      <Modal visible={nameModalVisible} animationType="slide" transparent onRequestClose={() => setNameModalVisible(false)}>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Who is this entry about?</Text>
+            <TextInput
+              style={styles.nameInput}
+              placeholder="First name or however you'd like to remember them"
+              placeholderTextColor={colors.textTertiary}
+              value={nameInput}
+              onChangeText={setNameInput}
+              autoFocus
+              accessibilityLabel="Name"
+            />
+            <TouchableOpacity
+              style={styles.sheetButton}
+              onPress={proceedToEntry}
+              activeOpacity={0.85}
+              accessibilityLabel="Continue"
+              accessibilityRole="button"
+            >
+              <Text style={styles.sheetButtonText}>Continue</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setNameModalVisible(false)}
+              style={{ marginTop: spacing.md }}
+              accessibilityLabel="Cancel"
+              accessibilityRole="button"
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -209,6 +269,18 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
+  addButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginBottom: spacing.lg,
+  },
+  addButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
+  nameInput: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
+  sheetButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
+  sheetButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
   insightsCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary,
