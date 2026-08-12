@@ -625,7 +625,7 @@ export default function DiscoverHubScreen({ navigation }) {
                 <TouchableOpacity
                   key={o.id}
                   style={styles.card}
-                  onPress={() => navigation.navigate('BrandOffers')}
+                  onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
                   activeOpacity={0.85}
                   accessibilityLabel={`${o.title}, ${o.brand_partners?.name}`}
                   accessibilityRole="button"

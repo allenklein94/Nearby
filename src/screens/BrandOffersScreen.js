@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image, RefreshControl } from 'react-native';
 import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function BrandOffersScreen({ navigation }) {
+export default function BrandOffersScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -23,6 +23,14 @@ export default function BrandOffersScreen({ navigation }) {
   const [followingStatus, setFollowingStatus] = useState({});
   const [redemptionCounts, setRedemptionCounts] = useState({});
   const [unlockProgress, setUnlockProgress] = useState({});
+
+  // Optional deep-link target, e.g. from a specific offer card on Discover's
+  // search results — this screen has no per-offer detail view, so we scroll
+  // to and highlight the matching card in the flat list instead.
+  const highlightOfferId = route?.params?.highlightOfferId ?? null;
+  const scrollRef = useRef(null);
+  const cardOffsets = useRef({});
+  const [scrolledToHighlight, setScrolledToHighlight] = useState(false);
 
   const load = useCallback(async () => {
     let myLat = null;
@@ -65,6 +73,18 @@ export default function BrandOffersScreen({ navigation }) {
       load();
     }, [load])
   );
+
+  useEffect(() => {
+    if (!highlightOfferId || scrolledToHighlight || loading || offers.length === 0) return;
+    const timer = setTimeout(() => {
+      const y = cardOffsets.current[highlightOfferId];
+      if (y != null) {
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - spacing.lg), animated: true });
+      }
+      setScrolledToHighlight(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [highlightOfferId, scrolledToHighlight, loading, offers]);
 
   async function onRefresh() {
     setRefreshing(true);
@@ -127,6 +147,7 @@ export default function BrandOffersScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
@@ -145,8 +166,13 @@ export default function BrandOffersScreen({ navigation }) {
         {offers.map((offer) => {
           const alreadyRedeemed = redeemedIds.includes(offer.id);
           const isLocked = offer.unlock_scope != null && (unlockProgress[offer.id] ?? 0) < offer.unlock_min_members;
+          const isHighlighted = highlightOfferId === offer.id;
           return (
-            <View key={offer.id} style={styles.card}>
+            <View
+              key={offer.id}
+              style={[styles.card, isHighlighted && styles.cardHighlighted]}
+              onLayout={(e) => { cardOffsets.current[offer.id] = e.nativeEvent.layout.y; }}
+            >
               <View style={styles.cardHeader}>
                 <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
@@ -245,6 +271,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
+  cardHighlighted: { borderColor: colors.primary, borderWidth: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   logo: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md, backgroundColor: colors.surfaceElevated },
   logoPlaceholder: {},
