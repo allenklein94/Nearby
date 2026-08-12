@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import {
@@ -152,6 +153,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
         navigation.replace('GatheringHub', { gatheringId, justJoined: true });
         return;
       }
+      // Pending/waitlisted joins stay on this screen (no Hub hand-off, so
+      // no Success haptic from that screen either) — a lighter Medium
+      // impact confirms the request itself went through, matching this
+      // codebase's own Light-tap/Medium-meaningful-action/Success-fully-
+      // done haptic convention.
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await load();
     } catch (e) {
       Alert.alert('Error', e.message);

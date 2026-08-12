@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
 import { getSignedPhotoUrl } from '../services/photos';
 import { captureStoryMedia, uploadStory } from '../services/stories';
@@ -144,6 +145,7 @@ export default function GatheringChatScreen({ route }) {
   }, [messages, photoUrls]);
 
   async function handleSend() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await send(async (body) => {
       await sendGatheringMessage(gatheringId, body);
       // No manual reload/append here — the realtime channel above

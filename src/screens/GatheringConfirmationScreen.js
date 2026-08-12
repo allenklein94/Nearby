@@ -31,6 +31,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   const [invitingId, setInvitingId] = useState(null);
 
   useEffect(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     getGatheringById(gatheringId).then((g) => {
       setGathering(g);
       setLoading(false);

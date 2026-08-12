@@ -20,6 +20,7 @@ import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import * as Haptics from 'expo-haptics';
 
 // The live, day-of screen for people who already joined — distinct from
 // GatheringDetailScreen (which is the persuade-you-to-join page). Built
@@ -107,6 +108,7 @@ export default function GatheringHubScreen({ route, navigation }) {
 
   useEffect(() => {
     if (justJoined) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       isFirstGatheringJoin().then(setIsFirstJoin);
     }
   }, [justJoined]);

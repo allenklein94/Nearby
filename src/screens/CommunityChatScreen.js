@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { getCommunityMessagesPage, getCommunityMessageById, sendCommunityMessage } from '../services/communities';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -70,6 +71,7 @@ export default function CommunityChatScreen({ route }) {
   }, [messages, photoUrls]);
 
   async function handleSend() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await send(async (body) => {
       await sendCommunityMessage(communityId, body);
       // No manual reload/append here — the realtime channel above

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { getBusinessMessagesPage, sendMessageToBusiness } from '../services/brandOffers';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -76,6 +77,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
   }
 
   async function handleSend() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await send(async (body) => {
       await sendMessageToBusiness(partnerId, body);
       // No manual reload/append here — the realtime channel above delivers
