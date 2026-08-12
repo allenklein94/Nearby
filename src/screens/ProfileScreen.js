@@ -27,6 +27,31 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running',
 ];
 
+const PROFILE_COMPLETENESS_ITEMS = [
+  { key: 'photo', label: 'Add a main photo' },
+  { key: 'bio', label: 'Write a short bio' },
+  { key: 'prompt', label: 'Answer a prompt' },
+  { key: 'interests', label: 'Pick a few interests' },
+  { key: 'connectionGoal', label: "Say what you're hoping to find" },
+  { key: 'extraPhoto', label: 'Add another photo' },
+];
+
+function getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos }) {
+  const checks = {
+    photo: !!photoUrl,
+    bio: !!bio.trim(),
+    prompt: prompts.length > 0,
+    interests: interests.length > 0,
+    connectionGoal: !!connectionGoal,
+    extraPhoto: extraPhotos.length > 0,
+  };
+  const missing = PROFILE_COMPLETENESS_ITEMS.filter((item) => !checks[item.key]);
+  const percent = Math.round(
+    ((PROFILE_COMPLETENESS_ITEMS.length - missing.length) / PROFILE_COMPLETENESS_ITEMS.length) * 100
+  );
+  return { percent, missing };
+}
+
 function AccordionField({ field, value, expanded, onToggle, children }) {
   const { colors } = useTheme();
   const styles = getAccordionStyles(colors);
@@ -403,6 +428,7 @@ const result = await response.json();
   }
 
   const usedQuestions = prompts.map((p) => p.question);
+  const completeness = getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -419,6 +445,19 @@ const result = await response.json();
           </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
+
+        {completeness.percent < 100 && (
+          <View
+            style={styles.completenessCard}
+            accessibilityLabel={`Your profile is ${completeness.percent}% complete. ${completeness.missing[0].label} to stand out more.`}
+          >
+            <Text style={styles.completenessTitle}>Your profile is {completeness.percent}% complete</Text>
+            <View style={styles.completenessBarTrack}>
+              <View style={[styles.completenessBarFill, { width: `${completeness.percent}%` }]} />
+            </View>
+            <Text style={styles.completenessHint}>{completeness.missing[0].label} to stand out more.</Text>
+          </View>
+        )}
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
         <View style={styles.quickStatsRow}>
@@ -922,6 +961,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  completenessCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  completenessTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 13, marginBottom: spacing.sm },
+  completenessBarTrack: { height: 6, borderRadius: radius.full, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
+  completenessBarFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.primary },
+  completenessHint: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm },
   timelineLink: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
