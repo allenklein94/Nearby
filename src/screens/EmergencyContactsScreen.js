@@ -74,6 +74,7 @@ export default function EmergencyContactsScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your emergency contacts...</Text>
       </SafeAreaView>
     );
   }

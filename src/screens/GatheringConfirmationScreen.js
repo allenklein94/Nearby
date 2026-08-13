@@ -86,6 +86,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your gathering...</Text>
       </View>
     );
   }

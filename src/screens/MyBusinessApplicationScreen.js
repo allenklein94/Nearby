@@ -51,6 +51,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
+          <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your application...</Text>
         </View>
       </SafeAreaView>
     );

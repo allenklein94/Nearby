@@ -31,6 +31,7 @@ export default function RewardsScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your rewards...</Text>
       </SafeAreaView>
     );
   }

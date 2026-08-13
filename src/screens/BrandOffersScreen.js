@@ -140,6 +140,7 @@ export default function BrandOffersScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Finding perks near you...</Text>
       </SafeAreaView>
     );
   }
