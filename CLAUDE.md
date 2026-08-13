@@ -4,6 +4,92 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: UX-cohesion follow-through (verify the other 26 screens' error handling +
+resolve the Create/Business terminology question) — PLANNED, NOT STARTED
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what
+actually landed vs. what's still just this plan (nothing has landed for this section yet).
+
+**Context**: the user pasted a second AI's detailed UX-cohesion review (7 structural points +
+several "glue" items — one-obvious-home-per-concept, a consistent "I'm Going/Hosting" status
+indicator, confirmation/error/loading states, deep-link continuity, terminology, first-session
+experience). Most of it turned out to already be built by the earlier IA restructure rounds
+(rounds 2 and 3, both fully DONE, further down this file) — verified against the real code
+before agreeing with any of it, not taken at face value. Four real, confirmed gaps were found
+and closed in the same session, each its own commit, already pushed to `main`:
+1. New shared `src/components/GatheringStatusBadge.js` — a single source of truth for
+   Going/Hosting/Waitlisted/Requested/Attended/Hosted labeling, wired into
+   `GatheringDetailScreen`, `GatheringsScreen`, `HomeScreen`, and `PlansScreen`, which had each
+   independently drifted (e.g. `PlansScreen` said "Went" where `GatheringsScreen` said
+   "Attended" for the identical case).
+2. Loading captions added to 19 screens whose full-screen spinner had zero context on first
+   open (only `HomeScreen` had one before this).
+3. 14 of 25 real backend-sent push-notification `type`s (grepped every
+   `jsonb_build_object('type', ...)` in the migrations) fell through `routeNotificationTap()`'s
+   switch to a silent `default: break` — tapping those notifications opened the app but
+   navigated nowhere. All 14 now route somewhere real. Separately traced whether "press Back
+   returns you to where you were" already holds after a notification tap — confirmed it does
+   (`MainTabs` is a `Stack.Screen` sibling wrapping its own `Tab.Navigator`, which preserves
+   each tab's state on blur by default) — no fix needed there.
+4. New shared `src/components/LoadErrorState.js` (the load-side counterpart to the existing
+   `useChatComposer` send-side recovery) plus real try/catch added to 12 screens + 1 component
+   (`VoicePlayButton.js`) whose `load()`/audio-load path had **zero** error handling anywhere in
+   the file — a thrown error (no network, expired session, expired signed URL) left the screen
+   stuck on its loading spinner (or, for `QuickFilterCustomizeScreen`, a fully blank screen)
+   forever, with no message and no way to recover short of leaving and returning. Fixed:
+   `AdminReportsScreen`, `InsightsScreen`, `LegacyLibraryScreen`, `MatchesScreen`,
+   `MemoryVaultIndexScreen`, `MomentumScreen`, `OnboardingRecommendationsScreen`, `PlansScreen`,
+   `QuickFilterCustomizeScreen`, `RelationshipToolsScreen`, `RewardsScreen`, `TimelineScreen`.
+   Also fixed a real, unrelated bug caught while building the first of these: the new
+   `GatheringStatusBadge` had used the static (light-mode-only) `colors` export instead of the
+   theme-aware `useTheme()` hook every other shared component in this codebase uses — would have
+   shown wrong colors in dark mode.
+
+**Two items left, not yet started — this section's actual plan:**
+
+1. **Verify the other 26 screens' error handling is actually correct, not just present.** The
+   census behind item 4 above only checked for the *literal string* `setLoading(false)` plus at
+   least one `try {` occurring *anywhere in the file* — a real but weak heuristic. A screen can
+   contain a `try {` block that has nothing to do with its own `load()` path (e.g. guarding an
+   unrelated button handler) while its actual data-fetch on mount is still unguarded, and this
+   census would have missed it. The 26 files that need a real, line-by-line check (not another
+   blind census) are: `AIConciergeScreen.js`, `ActivityScreen.js`, `AdminVerificationScreen.js`,
+   `BillingScreen.js`, `BlockedUsersScreen.js`, `BrandOffersScreen.js`,
+   `BusinessAIAssistantScreen.js`, `BusinessDashboardScreen.js`, `BusinessProfileScreen.js`,
+   `ChatScreen.js`, `ChemistryDiaryListScreen.js`, `CommunitiesScreen.js`,
+   `CommunityDetailScreen.js`, `EmergencyContactsScreen.js`, `FriendsScreen.js`,
+   `GatheringConfirmationScreen.js`, `GatheringDetailScreen.js`, `GatheringHubScreen.js`,
+   `GoodbyeArchiveListScreen.js`, `HomeScreen.js`, `InviteFriendsScreen.js`, `LoginScreen.js`,
+   `MyBusinessApplicationScreen.js`, `PaywallScreen.js`, `PlacesScreen.js`,
+   `ViewProfileScreen.js`. For each: find the actual function(s) that populate the screen's
+   initial data and call `setLoading(false)`, confirm every `await` between entry and that call
+   is genuinely inside a `try` whose `catch`/`finally` still resolves `loading` and surfaces a
+   real error state — reusing the already-built `LoadErrorState` component, matching the pattern
+   from item 4 above — rather than assuming presence of the word "try" in the file means the
+   load path itself is covered. Fix whatever's found; if a screen turns out to already be fully
+   correct, say so plainly rather than re-touching it for no reason.
+
+2. **Resolve a real, surfaced-but-undecided conflict between the reviewed doc and an already-
+   made product decision, before any code changes.** The doc's "one obvious home per concept"
+   mapping put "Business partnership" under the **Create** tab's job ("Make"). But this file's
+   own round 2 Phase 7 (IA restructure, further down this file, fully DONE) explicitly decided
+   the opposite — Create's business entry point ("🤝 Partner with a Business") was deliberately
+   *removed*, per the user's own words at the time: "Settings should contain only account/
+   configuration... Create should not need 'Manage Your Business' either." Business is reached
+   today from `GatheringDetailScreen`/`CommunityDetailScreen`'s own host banners and from
+   Profile's single consolidated Business row — never from Create. This wasn't silently picked
+   either direction when it was noticed (see this file's own reaction to the doc, further up in
+   conversation history) — it's flagged here the same way, as a real decision the user should
+   make explicitly: keep Create business-free (the round 2 Phase 7 status quo, reaffirmed), or
+   revisit that decision now that a second, independent review suggested the opposite grouping.
+   Not a build task until that's answered.
+
+**Verification plan for item 1, once started**: full `npx expo export --platform ios` after each
+meaningful increment, checking the module count against the current 1859 baseline. Same standing
+limitation as everywhere else in this file: no manual simulator/device run-through of any fixed
+screen's actual retry button — flagged for whenever a real device pass happens.
+
 ## Aug 11 2026 — five user-reported live bugs (Create Assistant, Manage Attendees, business search, community/business auto-link confusion, Business Dashboard tap targets) — DONE
 
 The user hit five real problems while actually using the app (not a code audit) and reported them
