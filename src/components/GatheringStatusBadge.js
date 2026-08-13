@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, spacing } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+import { radius, spacing } from '../theme';
 
 // Single source of truth for how a caller's own relationship to a
 // gathering ("Going" / "Hosting" / "Waitlisted" / ...) is labeled and
@@ -10,14 +11,17 @@ import { colors, radius, spacing } from '../theme';
 // gathering." vs. a pill reading "✓ You're going" vs. plain "Hosting"
 // text), so the same real status could look and read differently
 // depending on which screen you were looking at it from.
+//
+// `tone` is resolved against the live theme inside the component (not
+// baked in here) so this stays correct in both light and dark mode.
 export const GATHERING_STATUS_META = {
-  hosting: { icon: '🎤', label: 'Hosting', bg: colors.primaryMuted, fg: colors.primary },
-  going: { icon: '✓', label: 'Going', bg: colors.primaryMuted, fg: colors.primary },
-  interested: { icon: '🕒', label: 'Requested', bg: colors.surfaceElevated, fg: colors.textSecondary },
-  waitlisted: { icon: '⏳', label: 'Waitlisted', bg: colors.surfaceElevated, fg: colors.textSecondary },
-  attended: { icon: '✓', label: 'Attended', bg: colors.surfaceElevated, fg: colors.textTertiary },
-  hosted: { icon: '🎤', label: 'Hosted', bg: colors.surfaceElevated, fg: colors.textTertiary },
-  didNotAttend: { icon: '—', label: "Didn't attend", bg: colors.surfaceElevated, fg: colors.textTertiary },
+  hosting: { icon: '🎤', label: 'Hosting', tone: 'active' },
+  going: { icon: '✓', label: 'Going', tone: 'active' },
+  interested: { icon: '🕒', label: 'Requested', tone: 'pending' },
+  waitlisted: { icon: '⏳', label: 'Waitlisted', tone: 'pending' },
+  attended: { icon: '✓', label: 'Attended', tone: 'past' },
+  hosted: { icon: '🎤', label: 'Hosted', tone: 'past' },
+  didNotAttend: { icon: '—', label: "Didn't attend", tone: 'past' },
 };
 
 // `label`, when passed, fully replaces the default "{icon} {label}" text
@@ -25,17 +29,26 @@ export const GATHERING_STATUS_META = {
 // (e.g. GatheringsScreen's t('gatherings.youreGoing')) instead of the
 // English default.
 export default function GatheringStatusBadge({ status, label, variant = 'pill', style, textStyle }) {
+  const { colors } = useTheme();
   const meta = GATHERING_STATUS_META[status];
   if (!meta) return null;
+
+  const { bg, fg } =
+    meta.tone === 'active'
+      ? { bg: colors.primaryMuted, fg: colors.primary }
+      : meta.tone === 'pending'
+      ? { bg: colors.surfaceElevated, fg: colors.textSecondary }
+      : { bg: colors.surfaceElevated, fg: colors.textTertiary };
+
   const text = label ?? `${meta.icon} ${meta.label}`;
 
   if (variant === 'inline') {
-    return <Text style={[styles.inlineText, { color: meta.fg }, textStyle]}>{text}</Text>;
+    return <Text style={[styles.inlineText, { color: fg }, textStyle]}>{text}</Text>;
   }
 
   return (
-    <View style={[styles.pill, { backgroundColor: meta.bg }, style]}>
-      <Text style={[styles.pillText, { color: meta.fg }, textStyle]}>{text}</Text>
+    <View style={[styles.pill, { backgroundColor: bg }, style]}>
+      <Text style={[styles.pillText, { color: fg }, textStyle]}>{text}</Text>
     </View>
   );
 }
