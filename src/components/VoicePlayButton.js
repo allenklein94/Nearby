@@ -27,25 +27,29 @@ export default function VoicePlayButton({ getUrl, label = 'Voice message', style
     }
 
     setLoading(true);
-    const url = await getUrl();
-    if (!url) {
-      setLoading(false);
-      return;
-    }
+    try {
+      const url = await getUrl();
+      if (!url) return;
 
-    const { sound: newSound } = await Audio.Sound.createAsync(
-      { uri: url },
-      { shouldPlay: true },
-      (status) => {
-        if (status.didJustFinish) {
-          setPlaying(false);
-          newSound.setPositionAsync(0);
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true },
+        (status) => {
+          if (status.didJustFinish) {
+            setPlaying(false);
+            newSound.setPositionAsync(0);
+          }
         }
-      }
-    );
-    setSound(newSound);
-    setPlaying(true);
-    setLoading(false);
+      );
+      setSound(newSound);
+      setPlaying(true);
+    } catch (e) {
+      // Leave sound/playing as-is (both still null/false) so the button
+      // falls back to its plain play icon and the next tap retries
+      // cleanly, instead of getting stuck showing a spinner forever.
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
