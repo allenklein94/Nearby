@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
@@ -10,6 +11,7 @@ import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -18,6 +20,13 @@ import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPi
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
+
+const PERIOD_SUBTITLES = {
+  morning: 'What sounds good this morning?',
+  afternoon: 'What sounds good this afternoon?',
+  evening: 'What sounds good tonight?',
+  weekend: 'What sounds good this weekend?',
+};
 
 // "Coffee" / "Coffee & Outdoors" / "Coffee, Outdoors & Music" — the real
 // top categories this section is drawn from, not just the first result.
@@ -186,7 +195,7 @@ export default function HomeScreen({ navigation }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
-        <Text style={styles.subtitle}>Here's what's happening around you.</Text>
+        <Text style={styles.subtitle}>{PERIOD_SUBTITLES[period]}</Text>
 
         {(() => {
           const insight = getHomeInsight(dashboard);
@@ -343,7 +352,7 @@ export default function HomeScreen({ navigation }) {
               accessibilityLabel={item.label}
               accessibilityRole="button"
             >
-              <Text style={styles.quickActionIcon}>{item.icon}</Text>
+              <Ionicons name={iconNameForCategory(item.category)} size={22} color={colors.primary} style={styles.quickActionIcon} />
               <Text style={styles.quickActionLabel}>{item.label}</Text>
             </TouchableOpacity>
           ))}
@@ -599,7 +608,7 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginRight: spacing.sm, minWidth: 84,
   },
-  quickActionIcon: { fontSize: 24, marginBottom: 4 },
+  quickActionIcon: { marginBottom: 4 },
   quickActionLabel: { color: colors.textPrimary, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   happeningNowChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1.5,

@@ -4,6 +4,91 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what's
+actually landed vs. still just this plan.
+
+**Context**: the user pasted a detailed external visual-identity/brand critique (app icon
+geometry, color palette discipline, Home emoji-vs-line-icon inconsistency, Home information
+hierarchy, weather-copy honesty, the yellow brand dot). Rather than act on it unchecked, every
+concrete claim was verified against the actual current code first (same standing rule as every
+other section in this file):
+- **Already done / already matches, no action needed**: "Partner with a Business" is confirmed
+  already absent from `CreateHubScreen.js`'s primary grid (only a small "Create a Community"
+  secondary link remains — resolved in an earlier session's "Create/Business terminology"
+  decision, directly above this section). Five-tab nav, coral/cream/dark-brown palette, rounded
+  cards — untouched, matches the critique's own "keep as-is" verdict. Home's section count is
+  really down to 5 named headers (verified via `sectionHeader` grep), not the dense stack an
+  earlier version of the critique's own screenshot implies.
+- **Real, confirmed, still open — scoped into this pass**: (1) Home's time-of-day quick-pick
+  chips (`utils/timeContext.js`'s `QUICK_PROMPTS_BY_PERIOD`) render as raw mixed-style Unicode
+  emoji (☕🏃🍳🥪🎤🚶 etc.) sitting next to a proper `Ionicons` line-icon tab bar — a real,
+  confirmed visual inconsistency. (2) Home's greeting is still literally "Good evening, Allen 👋
+  / Here's what's happening around you." — not the more action-oriented framing the critique
+  proposes.
+- **Real, confirmed, still open — deliberately NOT built this pass, flagged instead**: the
+  weather card's `forecast_detail` copy ("Rain or storms expected...") is still sourced from a
+  current-conditions API, not a genuine forecast — this is the same "genuine hourly-forecast API
+  vs. current-conditions-only" decision already carried as an open, unresolved item across
+  `PRODUCT_AUDIT/DELTA_REPORT_2026-08-12.md` and `PRODUCT_AUDIT/IA_CLEANUP_STATUS_CHECK_2026-08-12.md`
+  — needs an explicit build-vs-drop decision (real new API integration, cost/latency), not
+  something to silently pick here. App icon geometry and a full "coral = action, never
+  decoration" audit across every screen are real design opinions but not verifiable/executable
+  from a code-only session — flagged as out of scope, same as this file's own standing "no
+  manual simulator" limitation.
+
+**Scope for this pass, confirmed with the user before starting**: build the two concrete,
+low-risk, no-external-dependency items only (quick-pick icon consistency + greeting copy).
+Deliberately scoped to Home's quick-pick chip row only, not the app's shared
+`categoryStyleFor()` emoji map (`constants/gatheringCategoryStyles.js`) used broadly across
+gathering cards/badges on many other screens — touching that global map would be a much larger,
+riskier change nobody asked for; a new, narrow, Home-only icon lookup is added instead.
+
+**Plan**:
+1. New `src/constants/quickPickIcons.js` — a category-tag → `Ionicons` name lookup covering all
+   25 canonical `INTEREST_OPTIONS` tags (same set `categoryStyleFor()` already covers, so every
+   category personalization can actually surface reaches an icon, not just the 9 hardcoded in
+   `QUICK_PROMPTS_BY_PERIOD`), plus a generic fallback for anything unmapped. Reuses this file's
+   own established "no single-denomination image" precedent (from the cover-photo work further
+   down this file) for `Faith & Spirituality` — a neutral icon (`sparkles-outline`), not a
+   religious-specific glyph.
+2. `HomeScreen.js`'s quick-pick chip render swaps its `<Text>{item.icon}</Text>` emoji for a real
+   `<Ionicons>` glyph via the new lookup, matching the nav bar's own icon component/style
+   exactly. The underlying `icon` (emoji) field on `getQuickPrompts()`/`getPersonalizedQuickPicks()`/
+   `getPinnedQuickPicks()` stays untouched, since `StartSomethingModal.js`'s own FAB flow also
+   reads it and wasn't part of what was asked — this is a rendering-layer swap in one screen
+   only, not a data-shape change.
+3. `HomeScreen.js`'s subtitle line becomes a period-aware "What sounds good this morning/this
+   afternoon/tonight/this weekend?" (reusing the `period` value already computed at the top of
+   the component for the Quick Picks section header, so nothing new is fetched) instead of the
+   generic "Here's what's happening around you."
+
+**Verification plan**: a direct `@babel/core` parse of every touched file, then a full
+`npx expo export --platform ios`, checking the module count against the current 1859 baseline
+(one new file expected → 1860). Same standing limitation as everywhere else in this file: no
+manual simulator/device run-through of the new icons' actual rendered appearance.
+
+**Status: DONE, build-wise.** A codespace restart hit mid-build; on resume, `git status` showed
+both files already fully written and uncommitted (`quickPickIcons.js` untracked,
+`HomeScreen.js` modified) — nothing had been lost. Confirmed both match the plan exactly before
+trusting them: `quickPickIcons.js`'s `QUICK_PICK_ICON_BY_CATEGORY` covers all 25 canonical tags
+(cross-checked against `QuickPicksEditModal.js`'s own `INTEREST_OPTIONS` list, byte-for-byte
+match) plus a `star-outline` fallback; `HomeScreen.js` imports `Ionicons`/`iconNameForCategory`,
+renders `<Ionicons name={iconNameForCategory(item.category)} .../>` in place of the old
+`<Text>{item.icon}</Text>` emoji (confirmed every quick-pick source —
+`getQuickPrompts()`/`getPersonalizedQuickPicks()`/`getPinnedQuickPicks()`, all in
+`utils/timeContext.js` — already returns a real `category` field on every item, so this wasn't
+a data-shape assumption), and the subtitle now reads `PERIOD_SUBTITLES[period]` instead of the
+generic line. Ran the verification plan as originally written: a direct `@babel/core` parse of
+both files (not `npx babel`, which resolves to the old deprecated `babel` CLI package and errors
+on any file — confirmed that's a tooling mismatch, not a real syntax problem) — both parsed
+clean — then a full `npx expo export --platform ios`: clean, **1860 modules**, exactly matching
+the plan's own predicted count (1859 + the one new file). **Not done, same standing gap as
+everywhere else in this file**: no manual simulator/device run-through of the new icons' actual
+rendered appearance or the new subtitle copy across all four periods.
+
 ## Outstanding: UX-cohesion follow-through (verify the other 26 screens' error handling +
 resolve the Create/Business terminology question) — items 1 and 2 both DONE
 
