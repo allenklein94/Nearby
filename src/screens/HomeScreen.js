@@ -212,9 +212,12 @@ export default function HomeScreen({ navigation }) {
                 accessibilityLabel={`${pendingInvitesCount} pending invite${pendingInvitesCount === 1 ? '' : 's'} and requests`}
                 accessibilityRole="button"
               >
-                <Text style={styles.pendingInvitesBannerText}>
-                  🤝 {pendingInvitesCount} pending invite{pendingInvitesCount === 1 ? '' : 's'} &amp; request{pendingInvitesCount === 1 ? '' : 's'}
-                </Text>
+                <View style={styles.bannerContent}>
+                  <Ionicons name="notifications-outline" size={16} color={colors.primary} style={styles.bannerIcon} />
+                  <Text style={styles.pendingInvitesBannerText}>
+                    {pendingInvitesCount} pending invite{pendingInvitesCount === 1 ? '' : 's'} &amp; request{pendingInvitesCount === 1 ? '' : 's'}
+                  </Text>
+                </View>
                 <Text style={styles.pendingInvitesBannerArrow}>›</Text>
               </TouchableOpacity>
             )}
@@ -226,20 +229,29 @@ export default function HomeScreen({ navigation }) {
                 accessibilityLabel={`${perksCount} perks available to redeem`}
                 accessibilityRole="button"
               >
-                <Text style={styles.perksBannerText}>🎁 {perksCount} perk{perksCount === 1 ? '' : 's'} unlocked nearby</Text>
+                <View style={styles.bannerContent}>
+                  <Ionicons name="gift-outline" size={16} color={colors.primary} style={styles.bannerIcon} />
+                  <Text style={styles.perksBannerText}>{perksCount} perk{perksCount === 1 ? '' : 's'} unlocked nearby</Text>
+                </View>
                 <Text style={styles.perksBannerArrow}>›</Text>
               </TouchableOpacity>
             )}
             {socialForecast && (
               <View style={styles.forecastCard}>
-                <Text style={styles.forecastLabel}>🌤️ Right Now</Text>
+                <View style={styles.forecastLabelRow}>
+                  <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+                  <Text style={styles.forecastLabel}>Right Now</Text>
+                </View>
                 <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
                 <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
                 {socialForecast.forecast_label === 'Quiet' && dashboard?.indoorGatheringsToday?.length > 0 && (
                   <View style={styles.indoorSuggestions}>
-                    <Text style={styles.indoorSuggestionsHeader}>
-                      🏠 {dashboard.indoorGatheringsToday.length} indoor gathering{dashboard.indoorGatheringsToday.length === 1 ? '' : 's'} today
-                    </Text>
+                    <View style={styles.indoorSuggestionsHeaderRow}>
+                      <Ionicons name="home-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+                      <Text style={styles.indoorSuggestionsHeader}>
+                        {dashboard.indoorGatheringsToday.length} indoor gathering{dashboard.indoorGatheringsToday.length === 1 ? '' : 's'} today
+                      </Text>
+                    </View>
                     {dashboard.indoorGatheringsToday.map((g) => (
                       <TouchableOpacity
                         key={g.id}
@@ -262,10 +274,16 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.sinceAwayBanner}>
                 <Text style={styles.sinceAwayTitle}>Since you were away</Text>
                 {dashboard.sinceAway.newPeopleCount > 0 && (
-                  <Text style={styles.sinceAwayItem}>👥 {dashboard.sinceAway.newPeopleCount} new {dashboard.sinceAway.newPeopleCount === 1 ? 'person' : 'people'} nearby</Text>
+                  <View style={styles.sinceAwayItemRow}>
+                    <Ionicons name="people-outline" size={14} color={colors.textPrimary} style={styles.bannerIcon} />
+                    <Text style={styles.sinceAwayItem}>{dashboard.sinceAway.newPeopleCount} new {dashboard.sinceAway.newPeopleCount === 1 ? 'person' : 'people'} nearby</Text>
+                  </View>
                 )}
                 {dashboard.sinceAway.newGatheringsCount > 0 && (
-                  <Text style={styles.sinceAwayItem}>🎉 {dashboard.sinceAway.newGatheringsCount} new gathering{dashboard.sinceAway.newGatheringsCount === 1 ? '' : 's'}</Text>
+                  <View style={styles.sinceAwayItemRow}>
+                    <Ionicons name="calendar-outline" size={14} color={colors.textPrimary} style={styles.bannerIcon} />
+                    <Text style={styles.sinceAwayItem}>{dashboard.sinceAway.newGatheringsCount} new gathering{dashboard.sinceAway.newGatheringsCount === 1 ? '' : 's'}</Text>
+                  </View>
                 )}
               </View>
             )}
@@ -360,7 +378,10 @@ export default function HomeScreen({ navigation }) {
 
         {dashboard?.happeningNow?.length > 0 && (
           <>
-            <Text style={styles.sectionHeader}>🔥 Happening Near You</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Ionicons name="flame-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+              <Text style={styles.sectionHeaderText}>Happening Near You</Text>
+            </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.lg }}>
               {dashboard.happeningNow.map((g) => {
                 const style = categoryStyleFor(g.interest_tag);
@@ -384,7 +405,10 @@ export default function HomeScreen({ navigation }) {
 
         {continueCommunities.length > 0 && (
           <>
-            <Text style={styles.continueCommunityLabel}>🏘️ Your Communities</Text>
+            <View style={styles.continueCommunityLabelRow}>
+              <Ionicons name="business-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+              <Text style={styles.continueCommunityLabel}>Your Communities</Text>
+            </View>
             {continueCommunities.map((community) => (
               <TouchableOpacity
                 key={community.id}
@@ -405,7 +429,7 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.card}>
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
-            <Text style={styles.cardIcon}>👥</Text>
+            <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.nearbyPeopleCount ?? 0} people nearby</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
@@ -413,7 +437,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel={`${dashboard?.gatheringsTodayCount ?? 0} gatherings today, tap to view`} accessibilityRole="button">
-            <Text style={styles.cardIcon}>🎉</Text>
+            <Ionicons name="calendar-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.gatheringsTodayCount ?? 0} gatherings today</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
@@ -422,7 +446,7 @@ export default function HomeScreen({ navigation }) {
             <>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('ViewProfile', { userId: dashboard.mostRecentSighting.otherUserId })} accessibilityLabel={`You crossed paths with ${dashboard.mostRecentSighting.profiles?.display_name}`} accessibilityRole="button">
-                <Text style={styles.cardIcon}>📍</Text>
+                <Ionicons name="location-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
                 <Text style={styles.cardText}>Crossed paths with {dashboard.mostRecentSighting.profiles?.display_name}</Text>
                 <Text style={styles.cardChevron}>›</Text>
               </TouchableOpacity>
@@ -432,7 +456,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Matches')} accessibilityLabel={`${dashboard?.unreadCount ?? 0} unread messages, tap to view`} accessibilityRole="button">
-            <Text style={styles.cardIcon}>💬</Text>
+            <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.unreadCount ?? 0} unread message{dashboard?.unreadCount === 1 ? '' : 's'}</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
@@ -440,7 +464,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.divider} />
 
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Friends')} accessibilityLabel={`${dashboard?.friendsCount ?? 0} friends, tap to view`} accessibilityRole="button">
-            <Text style={styles.cardIcon}>🤝</Text>
+            <Ionicons name="people-circle-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.friendsCount ?? 0} friend{dashboard?.friendsCount === 1 ? '' : 's'}</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
@@ -448,11 +472,17 @@ export default function HomeScreen({ navigation }) {
 
         {(dashboard?.bestPick || dashboard?.becauseYouLike?.length > 0 || dashboard?.trendingGatherings?.length > 0 || dashboard?.friendsActivity?.length > 0) && (
           <>
-            <Text style={styles.sectionHeader}>✨ Because You Like…</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Ionicons name="sparkles-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+              <Text style={styles.sectionHeaderText}>Because You Like…</Text>
+            </View>
 
             {dashboard?.becauseYouLike?.length > 0 && (
               <>
-                <Text style={styles.subLabel}>💡 {formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
+                <View style={styles.subLabelRow}>
+                  <Ionicons name="bulb-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
+                  <Text style={styles.subLabelText}>{formatCategoryList(dashboard.becauseYouLikeCategories)}</Text>
+                </View>
                 {dashboard.becauseYouLike.map((g) => {
                   const style = categoryStyleFor(g.interest_tag);
                   return (
@@ -473,7 +503,10 @@ export default function HomeScreen({ navigation }) {
 
             {dashboard?.bestPick && (
               <>
-                <Text style={styles.subLabel}>⭐ Best Pick Tonight</Text>
+                <View style={styles.subLabelRow}>
+                  <Ionicons name="star-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
+                  <Text style={styles.subLabelText}>Best Pick Tonight</Text>
+                </View>
                 <TouchableOpacity
                   style={styles.bestPickCard}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
@@ -493,7 +526,10 @@ export default function HomeScreen({ navigation }) {
 
             {dashboard?.trendingGatherings?.length > 0 && (
               <>
-                <Text style={styles.subLabel}>🔥 Trending Near You</Text>
+                <View style={styles.subLabelRow}>
+                  <Ionicons name="flame-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
+                  <Text style={styles.subLabelText}>Trending Near You</Text>
+                </View>
                 {dashboard.trendingGatherings.map((g) => (
                   <TouchableOpacity
                     key={g.id}
@@ -511,7 +547,10 @@ export default function HomeScreen({ navigation }) {
 
             {dashboard?.friendsActivity?.length > 0 && (
               <>
-                <Text style={styles.subLabel}>👥 Friends' Activity</Text>
+                <View style={styles.subLabelRow}>
+                  <Ionicons name="people-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
+                  <Text style={styles.subLabelText}>Friends' Activity</Text>
+                </View>
                 {dashboard.friendsActivity.map((g) => (
                   <TouchableOpacity
                     key={g.id}
@@ -625,7 +664,8 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
-  continueCommunityLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  continueCommunityLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  continueCommunityLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   continueCommunityName: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
   continueCommunityDetail: { color: colors.primary, fontSize: 12, marginTop: 2 },
   perksBanner: {
@@ -642,15 +682,24 @@ const getStyles = (colors) => StyleSheet.create({
   },
   pendingInvitesBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   pendingInvitesBannerArrow: { color: colors.primary, fontSize: 18, fontWeight: '700' },
+  // Shared by every banner/label/stat row that pairs a small Ionicons glyph
+  // with adjacent text — bannerContent lets a left-aligned icon+text group
+  // sit inside a space-between row (banners) without stretching; bannerIcon
+  // is just the icon's own trailing gap, reused everywhere below instead of
+  // a bespoke margin per call site.
+  bannerContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: spacing.sm },
+  bannerIcon: { marginRight: spacing.xs },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,
   },
-  forecastLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  forecastLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  forecastLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   forecastValue: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   forecastDetail: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
   indoorSuggestions: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  indoorSuggestionsHeader: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  indoorSuggestionsHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  indoorSuggestionsHeader: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   indoorSuggestionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   indoorSuggestionIcon: { fontSize: 14, marginRight: spacing.xs },
   indoorSuggestionText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
@@ -659,17 +708,22 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },
   sinceAwayTitle: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
-  sinceAwayItem: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },
+  sinceAwayItemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  sinceAwayItem: { color: colors.textPrimary, fontSize: 13 },
   card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.lg },
   cardRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.md },
-  cardIcon: { fontSize: 20, marginRight: spacing.sm },
+  cardIcon: { marginRight: spacing.sm },
   cardText: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   cardChevron: { color: colors.textTertiary, fontSize: 18 },
   divider: { height: 1, backgroundColor: colors.border },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  sectionHeaderText: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5 },
   quickPicksHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   quickPicksEditLink: { ...typography.caption, color: colors.primary, marginBottom: spacing.sm },
   subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
+  subLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, marginTop: spacing.xs },
+  subLabelText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   bestPickCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
     padding: spacing.lg, marginBottom: spacing.lg,

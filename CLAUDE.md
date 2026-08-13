@@ -89,6 +89,58 @@ the plan's own predicted count (1859 + the one new file). **Not done, same stand
 everywhere else in this file**: no manual simulator/device run-through of the new icons' actual
 rendered appearance or the new subtitle copy across all four periods.
 
+**Follow-up, same day: extended Ionicons to the rest of Home's emoji, per a second external
+critique (with a real screenshot this time).** The critique reacted to the actual app rather
+than a code-only claim, and reconfirmed the same coral/cream/dark-brown palette, five-tab nav,
+and overlapping-circle logo concept as "keep as-is" — matching this file's own history. Its
+concrete "Improve" list was checked item-by-item against current code rather than accepted at
+face value (its screenshot predates the "Social Forecast" → "Right Now" rename from Round 2
+Phase 1, so it wasn't treated as a fresh, current-state read): two items were already done by
+the pass directly above this one (the Dinner/Concert/Walk quick-pick icons, and the
+action-oriented "What sounds good tonight?" subtitle — both shipped in commit `3ce810ee`); two
+are out of scope for a code session (app icon geometry, weather-forecast honesty — both already
+flagged); "reduce Home's competing sections" was already resolved architecturally in Round 2/3
+(5 named `sectionHeader` titles, contextual cards only co-occurring on a genuinely quiet night,
+which is what the critique's screenshot happened to show). The user asked to build the
+remaining real item: extend the same Ionicons treatment from the quick-pick chips to every
+other emoji on Home functioning as a plain UI icon (not the shared `categoryStyleFor()` map
+used for gathering/category glyphs — that's still out of scope, same reasoning as the original
+pass). Closed **10 emoji across 14 render sites** in `HomeScreen.js` (edit only, no new files):
+- Pending-invites banner (🤝 → `notifications-outline`) and perks banner (🎁 → `gift-outline`),
+  both colored `colors.primary` to match their already-coral banner text.
+- Weather card's "Right Now" label (🌤️ → `partly-sunny-outline`) and its indoor-suggestions
+  sub-header (🏠 → `home-outline`), both `colors.textTertiary` to match their caption text.
+- Since-you-were-away banner's two item rows (👥 → `people-outline`, 🎉 → `calendar-outline`),
+  `colors.textPrimary` to match `sinceAwayItem`'s text color.
+- The "🔥 Happening Near You" and "✨ Because You Like…" section headers (→ `flame-outline`,
+  `sparkles-outline`) and the "🏘️ Your Communities" label (→ `business-outline`), all
+  `colors.textTertiary` to match their caption-style labels.
+- The quick-stats card's five rows (👥/🎉/📍/💬/🤝 → `people-outline`/`calendar-outline`/
+  `location-outline`/`chatbubble-outline`/`people-circle-outline` — friends deliberately got a
+  distinct glyph from "people nearby" despite both starting from a people-shaped emoji, so the
+  two rows read as different things), `colors.textPrimary` to match `cardText`.
+- The "Because You Like…" cluster's four sub-labels (💡/⭐/🔥/👥 → `bulb-outline`/
+  `star-outline`/`flame-outline`/`people-outline`), `colors.textSecondary` to match `subLabel`.
+Rule used throughout, stated so a future pass can extend it consistently: each new icon's color
+matches its adjacent text's existing color — no new judgment call about which elements count as
+"action" vs. "decoration" (the user explicitly didn't ask for the broader coral audit this
+round), just visual consistency with what was already there. Six new shared styles added
+(`bannerContent`/`bannerIcon`/`forecastLabelRow`/`indoorSuggestionsHeaderRow`/
+`sinceAwayItemRow`/`sectionHeaderRow`+`sectionHeaderText`/`continueCommunityLabelRow`/
+`subLabelRow`+`subLabelText`) — each existing label style that moved its margin into a new row
+wrapper had that margin stripped from the original so the visual position is byte-for-byte
+unchanged, not duplicated. **Deliberately untouched, matching the original pass's scope
+decision**: every `categoryStyleFor().icon` usage (Plans row icons, Happening Now chips,
+Because You Like's trending/becauseYouLike cards, indoor-suggestion row icons) — that's the
+shared cross-screen emoji map, not a Home-only UI icon; the 👋 wave emoji in the greeting
+(expressive personality, not a functional icon); and the FAB's plain "+" text (not an emoji).
+Verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios` —
+clean, **1860 modules, unchanged** (edits only, no new files this round). **Not done, same
+standing gap as everywhere else in this file**: no manual simulator/device run-through of any
+of the 14 new icon placements — next session should confirm sizing/alignment reads correctly
+next to each label, especially the banner rows (icon + wrapped multi-line text) and the
+quick-stats card (five icons at a larger 20px size than the rest).
+
 ## Outstanding: UX-cohesion follow-through (verify the other 26 screens' error handling +
 resolve the Create/Business terminology question) — items 1 and 2 both DONE
 
