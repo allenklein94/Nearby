@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
@@ -10,6 +10,7 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
+import LoadErrorState from '../components/LoadErrorState';
 import { sendFriendRequest, getMutualFriends } from '../services/friends';
 import { getHostStats, getHostReputation } from '../services/gatherings';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
@@ -48,6 +49,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [profile, setProfile] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [compatibilityReport, setCompatibilityReport] = useState(null);
   const [compatModalVisible, setCompatModalVisible] = useState(false);
@@ -66,96 +68,104 @@ export default function ViewProfileScreen({ route, navigation }) {
   }, []);
 
   async function load() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    if (myId && myId !== userId) {
-      getMutualFriends(userId).then(setMutualFriends);
-      getHostStats(userId).then(setHostStats);
-      getHostReputation(userId).then(setHostReputation);
-      const { data: blockedByMe } = await supabase
-        .from('blocks')
-        .select('id')
-        .eq('blocker_id', myId)
-        .eq('blocked_id', userId)
-        .maybeSingle();
-      const { data: blockedMe } = await supabase
-        .from('blocks')
-        .select('id')
-        .eq('blocker_id', userId)
-        .eq('blocked_id', myId)
-        .maybeSingle();
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      if (myId && myId !== userId) {
+        getMutualFriends(userId).then(setMutualFriends);
+        getHostStats(userId).then(setHostStats);
+        getHostReputation(userId).then(setHostReputation);
+        const { data: blockedByMe } = await supabase
+          .from('blocks')
+          .select('id')
+          .eq('blocker_id', myId)
+          .eq('blocked_id', userId)
+          .maybeSingle();
+        const { data: blockedMe } = await supabase
+          .from('blocks')
+          .select('id')
+          .eq('blocker_id', userId)
+          .eq('blocked_id', myId)
+          .maybeSingle();
 
-      if (blockedByMe || blockedMe) {
-        setProfile(null);
-        setLoading(false);
-        return;
+        if (blockedByMe || blockedMe) {
+          setProfile(null);
+          setLoadError(false);
+          setLoading(false);
+          return;
+        }
       }
-    }
 
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks, voice_intro_path')
-      .eq('id', userId)
-      .single();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks, voice_intro_path')
+        .eq('id', userId)
+        .single();
 
-    let mainPhotoUrl = null;
-    if (data?.photo_url) {
-      mainPhotoUrl = await getSignedPhotoUrl(data.photo_url);
-    }
-
-    const extras = await getExtraPhotos(userId);
-    const verifiedExtras = extras.filter((p) => p.photo_verified && p.signedUrl);
-
-    const allPhotos = [
-      ...(mainPhotoUrl ? [{ id: 'main', signedUrl: mainPhotoUrl }] : []),
-      ...verifiedExtras,
-    ];
-
-    setProfile(data);
-    setPhotos(allPhotos);
-    setLoading(false);
-
-    if (data?.relationship_intention) {
-      const count = await getRecentIntentionChangeCount(userId);
-      setIntentionChangeCount(count);
-    }
-
-    const ownProfile = myId === userId;
-    setIsOwnProfile(ownProfile);
-
-    if (myId && !ownProfile && data) {
-      // A dating-style compatibility score doesn't make sense for a
-      // friend's profile — same reasoning as the fix already applied
-      // to Matches and Chat. Check the friendship table directly,
-      // since this screen doesn't have a match-source field to rely
-      // on the way those two did.
-      const { data: friendship } = await supabase
-        .from('friendships')
-        .select('id')
-        .eq('status', 'accepted')
-        .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
-        .maybeSingle();
-
-      if (!friendship) {
-        const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
-        const report = generateCompatibilityReport(myProfile, data);
-        setCompatibilityReport(report);
+      let mainPhotoUrl = null;
+      if (data?.photo_url) {
+        mainPhotoUrl = await getSignedPhotoUrl(data.photo_url);
       }
-    }
 
-    navigation.setOptions({
-      headerRight: () =>
-        !ownProfile ? (
-          <TouchableOpacity
-            onPress={() => setReportModalVisible(true)}
-            style={{ paddingHorizontal: spacing.sm }}
-            accessibilityLabel={`Report or block ${data?.display_name || 'this person'}`}
-            accessibilityRole="button"
-          >
-            <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
-          </TouchableOpacity>
-        ) : null,
-    });
+      const extras = await getExtraPhotos(userId);
+      const verifiedExtras = extras.filter((p) => p.photo_verified && p.signedUrl);
+
+      const allPhotos = [
+        ...(mainPhotoUrl ? [{ id: 'main', signedUrl: mainPhotoUrl }] : []),
+        ...verifiedExtras,
+      ];
+
+      setProfile(data);
+      setPhotos(allPhotos);
+      setLoadError(false);
+      setLoading(false);
+
+      if (data?.relationship_intention) {
+        const count = await getRecentIntentionChangeCount(userId);
+        setIntentionChangeCount(count);
+      }
+
+      const ownProfile = myId === userId;
+      setIsOwnProfile(ownProfile);
+
+      if (myId && !ownProfile && data) {
+        // A dating-style compatibility score doesn't make sense for a
+        // friend's profile — same reasoning as the fix already applied
+        // to Matches and Chat. Check the friendship table directly,
+        // since this screen doesn't have a match-source field to rely
+        // on the way those two did.
+        const { data: friendship } = await supabase
+          .from('friendships')
+          .select('id')
+          .eq('status', 'accepted')
+          .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
+          .maybeSingle();
+
+        if (!friendship) {
+          const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
+          const report = generateCompatibilityReport(myProfile, data);
+          setCompatibilityReport(report);
+        }
+      }
+
+      navigation.setOptions({
+        headerRight: () =>
+          !ownProfile ? (
+            <TouchableOpacity
+              onPress={() => setReportModalVisible(true)}
+              style={{ paddingHorizontal: spacing.sm }}
+              accessibilityLabel={`Report or block ${data?.display_name || 'this person'}`}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: colors.primary, fontSize: 20 }}>⋯</Text>
+            </TouchableOpacity>
+          ) : null,
+      });
+    } catch (e) {
+      setProfile(null);
+      setLoadError(true);
+      setLoading(false);
+    }
   }
 
   async function handleAddFriend() {
@@ -180,6 +190,14 @@ export default function ViewProfileScreen({ route, navigation }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load this profile." onRetry={load} />
       </SafeAreaView>
     );
   }

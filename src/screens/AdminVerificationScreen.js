@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import { supabase } from '../services/supabase';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -10,6 +11,7 @@ export default function AdminVerificationScreen() {
   const [submissions, setSubmissions] = useState([]);
   const [imageUrls, setImageUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [processingId, setProcessingId] = useState(null);
 
   useEffect(() => {
@@ -17,34 +19,37 @@ export default function AdminVerificationScreen() {
   }, []);
 
   async function load() {
-    const { data, error } = await supabase
-      .from('id_verification_submissions')
-      .select('*, profiles(display_name)')
-      .eq('status', 'pending')
-      .order('submitted_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('id_verification_submissions')
+        .select('*, profiles(display_name)')
+        .eq('status', 'pending')
+        .order('submitted_at', { ascending: true });
 
-    if (error) {
-      console.error('load pending verifications error', error);
+      if (error) throw error;
+
+      setSubmissions(data ?? []);
+
+      const urlEntries = await Promise.all(
+        (data ?? []).flatMap((s) => [
+          (async () => {
+            const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.selfie_path, 3600);
+            return [`${s.id}-selfie`, url?.signedUrl];
+          })(),
+          (async () => {
+            const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.id_photo_path, 3600);
+            return [`${s.id}-id`, url?.signedUrl];
+          })(),
+        ])
+      );
+      setImageUrls(Object.fromEntries(urlEntries.filter(([, v]) => v)));
+      setLoadError(false);
+    } catch (e) {
+      console.error('load pending verifications error', e);
+      setLoadError(true);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setSubmissions(data ?? []);
-
-    const urlEntries = await Promise.all(
-      (data ?? []).flatMap((s) => [
-        (async () => {
-          const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.selfie_path, 3600);
-          return [`${s.id}-selfie`, url?.signedUrl];
-        })(),
-        (async () => {
-          const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.id_photo_path, 3600);
-          return [`${s.id}-id`, url?.signedUrl];
-        })(),
-      ])
-    );
-    setImageUrls(Object.fromEntries(urlEntries.filter(([, v]) => v)));
-    setLoading(false);
   }
 
   async function handleDecision(submission, approved) {
@@ -72,6 +77,14 @@ export default function AdminVerificationScreen() {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading verification submissions...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load verification submissions." onRetry={load} />
       </SafeAreaView>
     );
   }

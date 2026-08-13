@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share } from 'react-native';
 import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
+import LoadErrorState from '../components/LoadErrorState';
 import * as Haptics from 'expo-haptics';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -22,6 +23,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
 
   const [gathering, setGathering] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isFirstHosted, setIsFirstHosted] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [friends, setFriends] = useState([]);
@@ -30,14 +32,24 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   const [invitedIds, setInvitedIds] = useState({});
   const [invitingId, setInvitingId] = useState(null);
 
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const g = await getGatheringById(gatheringId);
+      setGathering(g);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [gatheringId]);
+
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    getGatheringById(gatheringId).then((g) => {
-      setGathering(g);
-      setLoading(false);
-    });
+    load();
     isFirstGatheringHosted().then(setIsFirstHosted);
-  }, [gatheringId]);
+  }, [gatheringId, load]);
 
   async function handleShare() {
     try {
@@ -87,6 +99,14 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your gathering...</Text>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadErrorState message="Couldn't load your gathering." onRetry={load} />
       </View>
     );
   }

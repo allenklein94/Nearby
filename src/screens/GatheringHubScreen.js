@@ -18,6 +18,7 @@ import { iceBreakersFor, prepTipsFor } from '../constants/gatheringHubContent';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import * as Haptics from 'expo-haptics';
@@ -50,6 +51,7 @@ export default function GatheringHubScreen({ route, navigation }) {
 
   const [gathering, setGathering] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
   const [firstTimerIds, setFirstTimerIds] = useState(new Set());
   const [meetupPoint, setMeetupPoint] = useState(null);
@@ -64,8 +66,17 @@ export default function GatheringHubScreen({ route, navigation }) {
   const [hostStats, setHostStats] = useState(null);
 
   const load = useCallback(async () => {
-    const g = await getGatheringById(gatheringId);
+    let g;
+    try {
+      g = await getGatheringById(gatheringId);
+    } catch (e) {
+      setGathering(null);
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
     setGathering(g);
+    setLoadError(false);
     setLoading(false);
     if (!g) return;
 
@@ -166,6 +177,14 @@ export default function GatheringHubScreen({ route, navigation }) {
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading the gathering hub...</Text>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadErrorState message="Couldn't load the gathering hub." onRetry={load} />
       </View>
     );
   }

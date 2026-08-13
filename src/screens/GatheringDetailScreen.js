@@ -24,6 +24,7 @@ import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
+import LoadErrorState from '../components/LoadErrorState';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
@@ -48,6 +49,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
   const [gathering, setGathering] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [coverUrl, setCoverUrl] = useState(null);
   const [hostPhotoUrl, setHostPhotoUrl] = useState(null);
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
@@ -63,59 +65,77 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [countdownStats, setCountdownStats] = useState(null);
 
   const load = useCallback(async () => {
-    const g = await getGatheringById(gatheringId);
+    let g;
+    try {
+      g = await getGatheringById(gatheringId);
+    } catch (e) {
+      setGathering(null);
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+
     if (!g) {
       setGathering(null);
+      setLoadError(false);
       setLoading(false);
       return;
     }
     setGathering(g);
+    setLoadError(false);
     setLoading(false);
 
-    const [cover, hostPhoto, offerResult, stats, reputation] = await Promise.all([
-      g.cover_photo_path ? getSignedGatheringPhotoUrl(g.cover_photo_path) : Promise.resolve(null),
-      g.host?.photo_url ? getSignedPhotoUrl(g.host.photo_url) : Promise.resolve(null),
-      getGatheringOffer(gatheringId),
-      getHostStats(g.host_id),
-      getHostReputation(g.host_id),
-    ]);
-    setCoverUrl(cover);
-    setHostPhotoUrl(hostPhoto);
-    setOffer(offerResult);
-    setHostStats(stats);
-    setHostReputation(reputation);
-
-    if (g.host_id) {
-      getHostLovedTags(g.host_id).then(setLovedTags);
-    }
-
-    if (g.isHost) {
-      const [going, interested, messages] = await Promise.all([
-        getApprovedAttendeeCount(gatheringId),
-        getPendingInterestCount(gatheringId),
-        getGatheringMessageCount(gatheringId),
+    try {
+      const [cover, hostPhoto, offerResult, stats, reputation] = await Promise.all([
+        g.cover_photo_path ? getSignedGatheringPhotoUrl(g.cover_photo_path) : Promise.resolve(null),
+        g.host?.photo_url ? getSignedPhotoUrl(g.host.photo_url) : Promise.resolve(null),
+        getGatheringOffer(gatheringId),
+        getHostStats(g.host_id),
+        getHostReputation(g.host_id),
       ]);
-      setCountdownStats({ going, interested, messages, waitlisted: g.waitlistCount });
-    } else {
-      setCountdownStats(null);
-    }
+      setCoverUrl(cover);
+      setHostPhotoUrl(hostPhoto);
+      setOffer(offerResult);
+      setHostStats(stats);
+      setHostReputation(reputation);
 
-    if (g.approvedAttendees?.length > 0) {
-      const urlEntries = await Promise.all(
-        g.approvedAttendees.map(async (a) => {
-          const path = a.profiles?.photo_url;
-          if (!path) return null;
-          const url = await getSignedPhotoUrl(path);
-          return [a.user_id, url];
-        })
-      );
-      setAttendeePhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
+      if (g.host_id) {
+        getHostLovedTags(g.host_id).then(setLovedTags);
+      }
 
-      const firstTimers = await getFirstTimerAttendeeIds(gatheringId, g.approvedAttendees.map((a) => a.user_id));
-      setFirstTimerCount(firstTimers.length);
-    } else {
-      setAttendeePhotoUrls({});
-      setFirstTimerCount(0);
+      if (g.isHost) {
+        const [going, interested, messages] = await Promise.all([
+          getApprovedAttendeeCount(gatheringId),
+          getPendingInterestCount(gatheringId),
+          getGatheringMessageCount(gatheringId),
+        ]);
+        setCountdownStats({ going, interested, messages, waitlisted: g.waitlistCount });
+      } else {
+        setCountdownStats(null);
+      }
+
+      if (g.approvedAttendees?.length > 0) {
+        const urlEntries = await Promise.all(
+          g.approvedAttendees.map(async (a) => {
+            const path = a.profiles?.photo_url;
+            if (!path) return null;
+            const url = await getSignedPhotoUrl(path);
+            return [a.user_id, url];
+          })
+        );
+        setAttendeePhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
+
+        const firstTimers = await getFirstTimerAttendeeIds(gatheringId, g.approvedAttendees.map((a) => a.user_id));
+        setFirstTimerCount(firstTimers.length);
+      } else {
+        setAttendeePhotoUrls({});
+        setFirstTimerCount(0);
+      }
+    } catch (e) {
+      // Enrichment data (cover photo, host stats/reputation, offer, attendee
+      // photos/first-timer count) failed to load — the core gathering
+      // content above already rendered successfully, so this fails quietly
+      // rather than replacing a working screen with an error state.
     }
   }, [gatheringId]);
 
@@ -202,6 +222,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading gathering...</Text>
+      </View>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <View style={styles.loadingContainer}>
+        <LoadErrorState message="Couldn't load this gathering." onRetry={load} />
       </View>
     );
   }

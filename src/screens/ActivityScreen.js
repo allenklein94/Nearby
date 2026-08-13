@@ -12,6 +12,7 @@ import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
 import SkeletonGridCard from '../components/SkeletonGridCard';
+import LoadErrorState from '../components/LoadErrorState';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -44,6 +45,7 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   const [premium, setPremium] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [compatScores, setCompatScores] = useState({});
   const [noticedBackIds, setNoticedBackIds] = useState({});
@@ -75,6 +77,7 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   const clusterOrder = initialSubSection === 'reminders' ? ['today', 'needsAttention'] : ['needsAttention', 'today'];
 
   const load = useCallback(async () => {
+    try {
     const premiumStatus = await isPremium().catch(() => false);
     setPremium(premiumStatus);
 
@@ -158,7 +161,12 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
     const scoreEntries = noticeItems.map((item) => [item.key, calculateCompatibility(myProfile, item.raw.profiles)]);
     setCompatScores(Object.fromEntries(scoreEntries));
 
-    setLoading(false);
+    setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const loadConnectionRequests = useCallback(async () => {
@@ -477,6 +485,8 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
         <View style={styles.skeletonGrid}>
           {[...Array(4)].map((_, i) => <SkeletonGridCard key={i} />)}
         </View>
+      ) : loadError ? (
+        <LoadErrorState message="Couldn't load your activity." onRetry={load} />
       ) : (
         <FlatList
           data={items}

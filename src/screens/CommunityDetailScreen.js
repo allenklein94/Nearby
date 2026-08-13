@@ -8,6 +8,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -24,6 +25,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [memberCount, setMemberCount] = useState(0);
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [followingBusiness, setFollowingBusiness] = useState(false);
   const [myManagedPartner, setMyManagedPartner] = useState(null);
   const [members, setMembers] = useState([]);
@@ -37,6 +39,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [redeemingOfferId, setRedeemingOfferId] = useState(null);
 
   const load = useCallback(async () => {
+    try {
     const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
     setCommunity(data);
 
@@ -83,7 +86,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
     setOffers(communityOffers);
     setRedeemedOfferIds(myRedemptions);
 
-    setLoading(false);
+    setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [communityId]);
 
   async function handleRedeemOffer(offer) {
@@ -154,10 +162,18 @@ export default function CommunityDetailScreen({ route, navigation }) {
     return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
-  if (loading || !community) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError || !community) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load this community." onRetry={load} />
       </SafeAreaView>
     );
   }

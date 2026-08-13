@@ -15,6 +15,7 @@ import {
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -29,6 +30,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
   const [partner, setPartner] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [following, setFollowing] = useState(false);
   const [gatherings, setGatherings] = useState([]);
@@ -41,44 +43,50 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [photoUrls, setPhotoUrls] = useState([]);
 
   const load = useCallback(async () => {
-    const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep] = await Promise.all([
-      getBusinessProfile(partnerId),
-      getBusinessFollowerCount(partnerId),
-      isFollowingBusiness(partnerId),
-      getBusinessPublicGatherings(partnerId),
-      getBusinessActiveOffers(partnerId),
-      getBusinessLovedTags(partnerId),
-      getBusinessReputation(partnerId),
-    ]);
+    try {
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep] = await Promise.all([
+        getBusinessProfile(partnerId),
+        getBusinessFollowerCount(partnerId),
+        isFollowingBusiness(partnerId),
+        getBusinessPublicGatherings(partnerId),
+        getBusinessActiveOffers(partnerId),
+        getBusinessLovedTags(partnerId),
+        getBusinessReputation(partnerId),
+      ]);
 
-    setPartner(profile);
-    setFollowerCount(count);
-    setFollowing(isFollowing);
-    setGatherings(upcomingGatherings);
-    setOffers(activeOffers);
-    setLovedTags(tags);
-    setReputation(rep);
-    setLoading(false);
+      setPartner(profile);
+      setFollowerCount(count);
+      setFollowing(isFollowing);
+      setGatherings(upcomingGatherings);
+      setOffers(activeOffers);
+      setLovedTags(tags);
+      setReputation(rep);
+      setLoadError(false);
 
-    if (activeOffers.length > 0) {
-      getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
-    }
+      if (activeOffers.length > 0) {
+        getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
+      }
 
-    const lockedOffers = activeOffers.filter((o) => o.unlock_scope != null);
-    if (lockedOffers.length > 0) {
-      Promise.all(
-        lockedOffers.map(async (o) => [
-          o.id,
-          o.unlock_scope === 'community' ? await getCommunityMemberCount(o.unlock_community_id) : await getApprovedAttendeeCount(o.gathering_id),
-        ])
-      ).then((entries) => setUnlockProgress(Object.fromEntries(entries)));
-    }
+      const lockedOffers = activeOffers.filter((o) => o.unlock_scope != null);
+      if (lockedOffers.length > 0) {
+        Promise.all(
+          lockedOffers.map(async (o) => [
+            o.id,
+            o.unlock_scope === 'community' ? await getCommunityMemberCount(o.unlock_community_id) : await getApprovedAttendeeCount(o.gathering_id),
+          ])
+        ).then((entries) => setUnlockProgress(Object.fromEntries(entries)));
+      }
 
-    const withCovers = upcomingGatherings.filter((g) => g.cover_photo_path).slice(0, 6);
-    if (withCovers.length > 0) {
-      Promise.all(withCovers.map((g) => getSignedGatheringPhotoUrl(g.cover_photo_path))).then((urls) =>
-        setPhotoUrls(urls.filter(Boolean))
-      );
+      const withCovers = upcomingGatherings.filter((g) => g.cover_photo_path).slice(0, 6);
+      if (withCovers.length > 0) {
+        Promise.all(withCovers.map((g) => getSignedGatheringPhotoUrl(g.cover_photo_path))).then((urls) =>
+          setPhotoUrls(urls.filter(Boolean))
+        );
+      }
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
   }, [partnerId]);
 
@@ -124,10 +132,18 @@ export default function BusinessProfileScreen({ route, navigation }) {
     }
   }
 
-  if (loading || !partner) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError || !partner) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load this business." onRetry={load} />
       </SafeAreaView>
     );
   }

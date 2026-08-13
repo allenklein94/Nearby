@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { BUSINESS_CATEGORIES, FEATURE_OPTIONS } from './BusinessPartnerApplyScreen';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -29,15 +30,18 @@ export default function MyBusinessApplicationScreen({ navigation }) {
   const styles = getStyles(colors, shadow);
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const data = await getMyBusinessPartnerRequest();
       setRequest(data);
+      setLoadError(false);
     } catch (e) {
-      // no-op: an applicant-facing status screen shouldn't surface a raw error
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useFocusEffect(
@@ -53,6 +57,14 @@ export default function MyBusinessApplicationScreen({ navigation }) {
           <ActivityIndicator color={colors.primary} />
           <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your application...</Text>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your application status." onRetry={load} />
       </SafeAreaView>
     );
   }

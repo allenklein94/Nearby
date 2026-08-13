@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyCommunities, getPublicCommunities, joinCommunity, getCommunityMemberCount } from '../services/communities';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import BusinessHostBadge from '../components/BusinessHostBadge';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -15,20 +16,27 @@ export default function CommunitiesScreen({ navigation }) {
   const [memberCounts, setMemberCounts] = useState({});
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    const [mine, publicOnes] = await Promise.all([getMyCommunities(), getPublicCommunities()]);
-    setMyCommunities(mine);
+    try {
+      const [mine, publicOnes] = await Promise.all([getMyCommunities(), getPublicCommunities()]);
+      setMyCommunities(mine);
 
-    const myIds = new Set(mine.map((c) => c.id));
-    const toDiscover = publicOnes.filter((c) => !myIds.has(c.id));
-    setDiscoverCommunities(toDiscover);
+      const myIds = new Set(mine.map((c) => c.id));
+      const toDiscover = publicOnes.filter((c) => !myIds.has(c.id));
+      setDiscoverCommunities(toDiscover);
 
-    const counts = await Promise.all(
-      [...mine, ...toDiscover].map(async (c) => [c.id, await getCommunityMemberCount(c.id)])
-    );
-    setMemberCounts(Object.fromEntries(counts));
-    setLoading(false);
+      const counts = await Promise.all(
+        [...mine, ...toDiscover].map(async (c) => [c.id, await getCommunityMemberCount(c.id)])
+      );
+      setMemberCounts(Object.fromEntries(counts));
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -50,6 +58,23 @@ export default function CommunitiesScreen({ navigation }) {
     } catch (e) {
       Alert.alert('Error', e.message);
     }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading communities...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load communities." onRetry={load} />
+      </SafeAreaView>
+    );
   }
 
   return (

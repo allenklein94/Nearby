@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ale
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -16,6 +17,7 @@ export default function InviteFriendsScreen() {
   const [code, setCode] = useState(null);
   const [referralCount, setReferralCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [redeemInput, setRedeemInput] = useState('');
   const [redeeming, setRedeeming] = useState(false);
   const [alreadyReferred, setAlreadyReferred] = useState(false);
@@ -25,20 +27,26 @@ export default function InviteFriendsScreen() {
   }, []);
 
   async function load() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const id = sessionData?.session?.user?.id;
-    setUserId(id);
-    if (!id) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const id = sessionData?.session?.user?.id;
+      setUserId(id);
+      if (!id) return;
 
-    const [myCode, stats, profile] = await Promise.all([
-      getMyReferralCode(id),
-      getMyReferralStats(id),
-      supabase.from('profiles').select('referred_by').eq('id', id).single(),
-    ]);
-    setCode(myCode);
-    setReferralCount(stats.referralCount);
-    setAlreadyReferred(!!profile.data?.referred_by);
-    setLoading(false);
+      const [myCode, stats, profile] = await Promise.all([
+        getMyReferralCode(id),
+        getMyReferralStats(id),
+        supabase.from('profiles').select('referred_by').eq('id', id).single(),
+      ]);
+      setCode(myCode);
+      setReferralCount(stats.referralCount);
+      setAlreadyReferred(!!profile.data?.referred_by);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleShare() {
@@ -74,6 +82,14 @@ export default function InviteFriendsScreen() {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your friends...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your invite info." onRetry={load} />
       </SafeAreaView>
     );
   }

@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime } from '../utils/timeContext';
@@ -43,6 +44,7 @@ export default function HomeScreen({ navigation }) {
   const [dashboard, setDashboard] = useState(null);
   const [myName, setMyName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [startModalVisible, setStartModalVisible] = useState(false);
   const [socialForecast, setSocialForecast] = useState(null);
@@ -55,39 +57,54 @@ export default function HomeScreen({ navigation }) {
   const period = getTimePeriod();
 
   const load = useCallback(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    if (myId) {
-      const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories').eq('id', myId).single();
-      setMyName(profile?.display_name?.split(' ')[0] ?? '');
-      setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
-    }
-    const result = await getHomeDashboard();
-    setDashboard(result);
-    setLoading(false);
     try {
-      const communities = await getContinueYourCommunities();
-      setContinueCommunities(communities);
-      const perks = await getUnlockedPerksCount();
-      setPerksCount(perks);
-      const unrated = await getMostRecentUnratedGathering();
-      setUnratedGathering(unrated);
-      const pendingInvites = await getPendingInvitesCount(myId);
-      setPendingInvitesCount(pendingInvites);
-    } catch (e) {
-      // These are supplementary cards, not core functionality — a
-      // failure here should never block social forecast/location
-      // code that runs afterward in the same function.
-      console.error('Continue Community / Perks / Feedback fetch failed', e);
-    }
-
-    const { status } = await Location.getForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-      if (location) {
-        const forecast = await getSocialForecast(location.coords.latitude, location.coords.longitude);
-        setSocialForecast(forecast);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      if (myId) {
+        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories').eq('id', myId).single();
+        setMyName(profile?.display_name?.split(' ')[0] ?? '');
+        setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
       }
+      const result = await getHomeDashboard();
+      setDashboard(result);
+      setLoadError(false);
+
+      try {
+        const communities = await getContinueYourCommunities();
+        setContinueCommunities(communities);
+        const perks = await getUnlockedPerksCount();
+        setPerksCount(perks);
+        const unrated = await getMostRecentUnratedGathering();
+        setUnratedGathering(unrated);
+        const pendingInvites = await getPendingInvitesCount(myId);
+        setPendingInvitesCount(pendingInvites);
+      } catch (e) {
+        // These are supplementary cards, not core functionality — a
+        // failure here should never block social forecast/location
+        // code that runs afterward in the same function, nor the
+        // core dashboard content that already rendered successfully.
+        console.error('Continue Community / Perks / Feedback fetch failed', e);
+      }
+
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+          if (location) {
+            const forecast = await getSocialForecast(location.coords.latitude, location.coords.longitude);
+            setSocialForecast(forecast);
+          }
+        }
+      } catch (e) {
+        // Same reasoning as above — the weather card is a contextual
+        // extra, not core content; a failure here shouldn't flip the
+        // whole screen into an error state once the dashboard is up.
+        console.error('Social forecast fetch failed', e);
+      }
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -150,6 +167,14 @@ export default function HomeScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={styles.loadingText}>Finding what's happening near you...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your home feed." onRetry={load} />
       </SafeAreaView>
     );
   }

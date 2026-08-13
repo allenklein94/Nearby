@@ -5,7 +5,7 @@ This file captures known outstanding work as of early August 2026, so a fresh Cl
 session has the same context as the chat session that built most of this.
 
 ## Outstanding: UX-cohesion follow-through (verify the other 26 screens' error handling +
-resolve the Create/Business terminology question) — item 2 DONE, item 1 IN PROGRESS
+resolve the Create/Business terminology question) — items 1 and 2 both DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what
@@ -46,61 +46,55 @@ and closed in the same session, each its own commit, already pushed to `main`:
    theme-aware `useTheme()` hook every other shared component in this codebase uses — would have
    shown wrong colors in dark mode.
 
-**Two items left — item 2 DONE (see below), item 1 IN PROGRESS, sub-plan written below before
-starting, same restart-safety convention as every other plan-first section in this file — if a
-codespace restart hits mid-build, check `UX_COHESION_SCREEN_AUDIT_PROGRESS.md` (repo root,
-gitignored-scratch-style but committed for restart-safety) plus `git log` for which of the 4
-batches below actually landed vs. what's still just this plan.**
+**Both remaining items are now DONE.**
 
-**Item 1 sub-plan**: 26 files is too much for one straight-line pass, so this is split into 4
-roughly line-count-balanced batches, worked 2 at a time (this file's own standing "cap agents at
-2 concurrent" convention) via the Explore/general-purpose agent pattern already used elsewhere in
-this file for exactly this shape of task (e.g. the flywheel trace audit). Each batch's agent
-reads every assigned file in full, finds the actual function(s) that populate the screen's
-initial data and call `setLoading(false)`, confirms every `await` between entry and that call is
-genuinely inside a `try` whose `catch`/`finally` still resolves `loading` and surfaces a real
-`LoadErrorState` (modeled directly on `PlansScreen.js`'s already-correct pattern: a `loadError`
-boolean, `catch` sets it true, `finally` resolves `loading`, render branches
-`loading ? spinner : loadError ? <LoadErrorState onRetry={load} /> : content`), fixes whatever's
-broken, and leaves alone whatever's already correct. Batches:
-- **Batch 1**: `ChatScreen.js`, `ChemistryDiaryListScreen.js`, `PaywallScreen.js`,
-  `BillingScreen.js`, `LoginScreen.js`, `AIConciergeScreen.js`
-- **Batch 2**: `BusinessDashboardScreen.js`, `FriendsScreen.js`, `BrandOffersScreen.js`,
-  `EmergencyContactsScreen.js`, `PlacesScreen.js`, `BusinessAIAssistantScreen.js`,
-  `BlockedUsersScreen.js`
-- **Batch 3**: `GatheringDetailScreen.js`, `GatheringHubScreen.js`, `ViewProfileScreen.js`,
+**Item 1 — DONE, all 26 screens verified line-by-line, not another blind census.** The census
+behind item 4 (further up this section) only checked for the *literal string* `setLoading(false)`
+plus a `try {` occurring *anywhere in the file* — a real but weak heuristic. This pass split the
+26 files into 4 roughly line-count-balanced batches, worked 2 at a time (this file's own standing
+"cap agents at 2 concurrent" convention), each batch's agent finding the actual function(s) that
+populate the screen's initial data, tracing every `await` between entry and `setLoading(false)`,
+and confirming each is genuinely inside a `try` whose `catch`/`finally` still resolves `loading`
+and surfaces a real `LoadErrorState` (the shared component from item 4). Full batch-by-batch
+findings (what was broken, what changed, file-by-file) are in `UX_COHESION_SCREEN_AUDIT_PROGRESS.md`
+at the repo root — read that file for the complete record; summarized here:
+- **21 of 26 screens had a real, confirmed gap and were fixed**: `ChatScreen.js`,
+  `ChemistryDiaryListScreen.js`, `BusinessDashboardScreen.js`, `FriendsScreen.js`,
+  `BrandOffersScreen.js`, `EmergencyContactsScreen.js`, `PlacesScreen.js`, `BlockedUsersScreen.js`,
+  `GatheringDetailScreen.js`, `GatheringHubScreen.js`, `ViewProfileScreen.js`,
   `GatheringConfirmationScreen.js`, `CommunitiesScreen.js`, `AdminVerificationScreen.js`,
-  `GoodbyeArchiveListScreen.js`
-- **Batch 4**: `HomeScreen.js`, `ActivityScreen.js`, `CommunityDetailScreen.js`,
-  `BusinessProfileScreen.js`, `MyBusinessApplicationScreen.js`, `InviteFriendsScreen.js`
-
-Batches 1+2 run concurrently first, verified + committed + pushed as one increment; then
-batches 3+4 the same way — never more than 2 concurrent, matching this file's own established
-large-task pacing.
-
-**Two items left, not yet started — this section's actual plan:**
-
-1. **Verify the other 26 screens' error handling is actually correct, not just present.** The
-   census behind item 4 above only checked for the *literal string* `setLoading(false)` plus at
-   least one `try {` occurring *anywhere in the file* — a real but weak heuristic. A screen can
-   contain a `try {` block that has nothing to do with its own `load()` path (e.g. guarding an
-   unrelated button handler) while its actual data-fetch on mount is still unguarded, and this
-   census would have missed it. The 26 files that need a real, line-by-line check (not another
-   blind census) are: `AIConciergeScreen.js`, `ActivityScreen.js`, `AdminVerificationScreen.js`,
-   `BillingScreen.js`, `BlockedUsersScreen.js`, `BrandOffersScreen.js`,
-   `BusinessAIAssistantScreen.js`, `BusinessDashboardScreen.js`, `BusinessProfileScreen.js`,
-   `ChatScreen.js`, `ChemistryDiaryListScreen.js`, `CommunitiesScreen.js`,
-   `CommunityDetailScreen.js`, `EmergencyContactsScreen.js`, `FriendsScreen.js`,
-   `GatheringConfirmationScreen.js`, `GatheringDetailScreen.js`, `GatheringHubScreen.js`,
-   `GoodbyeArchiveListScreen.js`, `HomeScreen.js`, `InviteFriendsScreen.js`, `LoginScreen.js`,
-   `MyBusinessApplicationScreen.js`, `PaywallScreen.js`, `PlacesScreen.js`,
-   `ViewProfileScreen.js`. For each: find the actual function(s) that populate the screen's
-   initial data and call `setLoading(false)`, confirm every `await` between entry and that call
-   is genuinely inside a `try` whose `catch`/`finally` still resolves `loading` and surfaces a
-   real error state — reusing the already-built `LoadErrorState` component, matching the pattern
-   from item 4 above — rather than assuming presence of the word "try" in the file means the
-   load path itself is covered. Fix whatever's found; if a screen turns out to already be fully
-   correct, say so plainly rather than re-touching it for no reason.
+  `GoodbyeArchiveListScreen.js`, `HomeScreen.js`, `ActivityScreen.js`, `CommunityDetailScreen.js`,
+  `BusinessProfileScreen.js`, `MyBusinessApplicationScreen.js`, `InviteFriendsScreen.js` — the
+  large majority of the 26, matching the census's own admitted weakness rather than confirming it
+  was overcautious. Each now wraps its real initial-data-fetch in try/catch/finally
+  and surfaces a working `LoadErrorState` retry, matching `PlansScreen.js`'s pattern exactly.
+  Two screens (`CommunitiesScreen.js`, `FriendsScreen.js`) had an even worse gap than a stuck
+  spinner — neither rendered a loading spinner at all, so a failure produced a permanently blank
+  screen with zero feedback; both gained a real loading branch as part of this fix, not just the
+  error branch.
+- **5 of 26 were already fully correct, left untouched**: `PaywallScreen.js` (existing
+  `.catch()`/`.finally()` chain), `BillingScreen.js` (its one dependency, `getSubscriptionDetails()`,
+  is internally guarded and can never reject), `BusinessAIAssistantScreen.js` (no mount-time
+  fetch; its one user-triggered call already has correct handling).
+- **2 of 26 have no initial data load to guard**, correctly left alone: `LoginScreen.js` (pure
+  form, no fetch-on-mount), `AIConciergeScreen.js` (no mount-time fetch, user-triggered only).
+- **Two real, unrelated, pre-existing crash bugs found and fixed in the same pass** (confirmed
+  live before fixing, not left as flag-only, since both were trivial one-line import additions):
+  `ViewProfileScreen.js` called `Alert.alert(...)` in `handleAddFriend()` with `Alert` never
+  imported from `react-native` — a `ReferenceError` on every tap of Add Friend.
+  `GoodbyeArchiveListScreen.js` used `<ScrollView>` in its main render with `ScrollView` never
+  imported — this screen has been throwing on every real visit, not an edge case. Both fixed by
+  adding the missing import.
+- Several smaller, genuinely out-of-scope issues were flagged but deliberately not fixed (each
+  would touch shared infrastructure or a different code path than initial-load error handling) —
+  full list in the progress file, e.g. `ChatScreen.js`'s shared `usePaginatedMessages` fetcher
+  swallowing Supabase errors into a silent empty result, `BusinessDashboardScreen.js`'s ~9
+  secondary tab loaders having no try/catch of their own (none gate the main loading flag, so no
+  stuck-spinner risk, but a failure leaves that section silently stale).
+- Verified via a full `npx expo export --platform ios` after each 2-batch round — clean both
+  times, 1859 modules, unchanged from baseline (every touched file was an edit, no new files) —
+  plus a direct `@babel/core` parse pass over every touched file before the final export.
+  Committed and pushed as two increments (batches 1+2, then 3+4), not batched at the end.
 
 2. **Create/Business terminology conflict — RESOLVED, no code change.** Asked directly rather
    than silently picked. The user's answer: keep Create business-free — reaffirms round 2 Phase
@@ -109,10 +103,9 @@ large-task pacing.
    top-level grid. The second review's suggested "Business partnership belongs under Create"
    grouping is explicitly not adopted.
 
-**Verification plan for item 1, once started**: full `npx expo export --platform ios` after each
-meaningful increment, checking the module count against the current 1859 baseline. Same standing
-limitation as everywhere else in this file: no manual simulator/device run-through of any fixed
-screen's actual retry button — flagged for whenever a real device pass happens.
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any fixed screen's actual retry button, or of the two crash-bug fixes — flagged
+for whenever a real device pass happens.
 
 ## Aug 11 2026 — five user-reported live bugs (Create Assistant, Manage Attendees, business search, community/business auto-link confusion, Business Dashboard tap targets) — DONE
 
