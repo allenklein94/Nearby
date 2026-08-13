@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
+import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
@@ -256,7 +257,9 @@ export default function HomeScreen({ navigation }) {
                       <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
                       <View style={styles.planInfo}>
                         <Text style={styles.planTitle}>{plan.title}</Text>
-                        <Text style={styles.planMeta}>{formatHeroDateTime(plan.scheduled_at)} · You're going</Text>
+                        <Text style={styles.planMeta}>
+                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="going" />
+                        </Text>
                       </View>
                       <Text style={styles.planChevron}>›</Text>
                     </TouchableOpacity>
@@ -278,7 +281,9 @@ export default function HomeScreen({ navigation }) {
                       <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
                       <View style={styles.planInfo}>
                         <Text style={styles.planTitle}>{plan.title}</Text>
-                        <Text style={styles.planMeta}>{formatHeroDateTime(plan.scheduled_at)} · You're hosting</Text>
+                        <Text style={styles.planMeta}>
+                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="hosting" />
+                        </Text>
                       </View>
                       <Text style={styles.planChevron}>›</Text>
                     </TouchableOpacity>

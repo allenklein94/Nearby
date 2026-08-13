@@ -23,6 +23,7 @@ import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
@@ -200,6 +201,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator color={colors.primary} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading gathering...</Text>
       </View>
     );
   }
@@ -240,6 +242,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
           <Text style={styles.metaLine}>
             {formatDate(gathering.scheduled_at)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
+
+          {gathering.isHost ? (
+            <GatheringStatusBadge status="hosting" />
+          ) : gathering.myStatus === 'approved' ? (
+            <GatheringStatusBadge status="going" />
+          ) : gathering.myStatus === 'waitlisted' ? (
+            <GatheringStatusBadge status="waitlisted" />
+          ) : gathering.myStatus === 'pending' ? (
+            <GatheringStatusBadge status="interested" />
+          ) : null}
 
           {gathering.capacity != null && (
             <Text style={styles.capacityLine}>

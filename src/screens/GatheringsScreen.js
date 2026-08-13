@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Image, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyGatherings, searchGatherings, getMyGatherings, getMyAttendingGatherings, getFellowAttendees, expressInterest, approveInterest, getMyTopGatheringCategories, cancelGathering, stopRecurringSeries } from '../services/gatherings';
+import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { getMyFriends } from '../services/friends';
 import { getPublicStoriesOnMap } from '../services/stories';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -1046,9 +1047,7 @@ export default function GatheringsScreen({ navigation, route }) {
                   })()}
                   {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
                   <Text style={styles.time}>{formatDate(item.scheduled_at)}</Text>
-                  <View style={[styles.attendingBadge, isPast && styles.pastBadge]}>
-                    <Text style={[styles.attendingBadgeText, isPast && styles.pastBadgeText]}>{isPast ? '✓ Attended' : t('gatherings.youreGoing')}</Text>
-                  </View>
+                  <GatheringStatusBadge status={isPast ? 'attended' : 'going'} label={isPast ? undefined : t('gatherings.youreGoing')} />
                   {isPast && <GatheringFeedbackPrompt gatheringId={item.id} />}
                 </TouchableOpacity>
 
@@ -1442,10 +1441,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   collapsibleChevron: { color: colors.textTertiary, fontSize: 14, marginTop: spacing.lg },
   sortToggleText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginBottom: spacing.sm },
   pastCard: { opacity: 0.6 },
-  pastBadge: { backgroundColor: colors.surfaceElevated },
-  pastBadgeText: { color: colors.textTertiary },
-  attendingBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm },
-  attendingBadgeText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   groupChatButton: {
     alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs, marginTop: spacing.sm, borderWidth: 1, borderColor: colors.border,

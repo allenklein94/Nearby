@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
+import GatheringStatusBadge, { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -60,20 +61,20 @@ export default function PlansScreen({ navigation, route }) {
   const rowsFor = (activeTab) => {
     if (activeTab === 'upcoming') {
       return [
-        ...attending.upcoming.map((g) => ({ gathering: g, role: 'Going' })),
-        ...hosting.upcoming.map((g) => ({ gathering: g, role: 'Hosting' })),
+        ...attending.upcoming.map((g) => ({ gathering: g, status: 'going' })),
+        ...hosting.upcoming.map((g) => ({ gathering: g, status: 'hosting' })),
       ].sort((a, b) => new Date(a.gathering.scheduled_at) - new Date(b.gathering.scheduled_at));
     }
     if (activeTab === 'hosting') {
       return [
-        ...hosting.upcoming.map((g) => ({ gathering: g, role: 'Hosting', section: 'Upcoming' })),
-        ...hosting.past.map((g) => ({ gathering: g, role: 'Hosting', section: 'Past' })),
+        ...hosting.upcoming.map((g) => ({ gathering: g, status: 'hosting', section: 'Upcoming' })),
+        ...hosting.past.map((g) => ({ gathering: g, status: 'hosted', section: 'Past' })),
       ];
     }
     // past
     return [
-      ...attending.past.map((g) => ({ gathering: g, role: 'Went' })),
-      ...hosting.past.map((g) => ({ gathering: g, role: 'Hosted' })),
+      ...attending.past.map((g) => ({ gathering: g, status: 'attended' })),
+      ...hosting.past.map((g) => ({ gathering: g, status: 'hosted' })),
     ].sort((a, b) => new Date(b.gathering.scheduled_at) - new Date(a.gathering.scheduled_at));
   };
 
@@ -145,7 +146,7 @@ export default function PlansScreen({ navigation, route }) {
                 style={styles.planRow}
                 onPress={() => openGathering(g.id)}
                 activeOpacity={0.85}
-                accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}, ${item.role}`}
+                accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}, ${GATHERING_STATUS_META[item.status]?.label}`}
                 accessibilityRole="button"
               >
                 <View style={[styles.planIconWrap, { backgroundColor: categoryStyle.color + '30' }]}>
@@ -153,7 +154,9 @@ export default function PlansScreen({ navigation, route }) {
                 </View>
                 <View style={styles.planInfo}>
                   <Text style={styles.planTitle}>{g.title}</Text>
-                  <Text style={styles.planMeta}>{formatHeroDateTime(g.scheduled_at)} · {item.role}</Text>
+                  <Text style={styles.planMeta}>
+                    {formatHeroDateTime(g.scheduled_at)} · <GatheringStatusBadge variant="inline" status={item.status} />
+                  </Text>
                 </View>
                 <Text style={styles.planChevron}>›</Text>
               </TouchableOpacity>
