@@ -46,6 +46,38 @@ and closed in the same session, each its own commit, already pushed to `main`:
    theme-aware `useTheme()` hook every other shared component in this codebase uses — would have
    shown wrong colors in dark mode.
 
+**Two items left — item 2 DONE (see below), item 1 IN PROGRESS, sub-plan written below before
+starting, same restart-safety convention as every other plan-first section in this file — if a
+codespace restart hits mid-build, check `UX_COHESION_SCREEN_AUDIT_PROGRESS.md` (repo root,
+gitignored-scratch-style but committed for restart-safety) plus `git log` for which of the 4
+batches below actually landed vs. what's still just this plan.**
+
+**Item 1 sub-plan**: 26 files is too much for one straight-line pass, so this is split into 4
+roughly line-count-balanced batches, worked 2 at a time (this file's own standing "cap agents at
+2 concurrent" convention) via the Explore/general-purpose agent pattern already used elsewhere in
+this file for exactly this shape of task (e.g. the flywheel trace audit). Each batch's agent
+reads every assigned file in full, finds the actual function(s) that populate the screen's
+initial data and call `setLoading(false)`, confirms every `await` between entry and that call is
+genuinely inside a `try` whose `catch`/`finally` still resolves `loading` and surfaces a real
+`LoadErrorState` (modeled directly on `PlansScreen.js`'s already-correct pattern: a `loadError`
+boolean, `catch` sets it true, `finally` resolves `loading`, render branches
+`loading ? spinner : loadError ? <LoadErrorState onRetry={load} /> : content`), fixes whatever's
+broken, and leaves alone whatever's already correct. Batches:
+- **Batch 1**: `ChatScreen.js`, `ChemistryDiaryListScreen.js`, `PaywallScreen.js`,
+  `BillingScreen.js`, `LoginScreen.js`, `AIConciergeScreen.js`
+- **Batch 2**: `BusinessDashboardScreen.js`, `FriendsScreen.js`, `BrandOffersScreen.js`,
+  `EmergencyContactsScreen.js`, `PlacesScreen.js`, `BusinessAIAssistantScreen.js`,
+  `BlockedUsersScreen.js`
+- **Batch 3**: `GatheringDetailScreen.js`, `GatheringHubScreen.js`, `ViewProfileScreen.js`,
+  `GatheringConfirmationScreen.js`, `CommunitiesScreen.js`, `AdminVerificationScreen.js`,
+  `GoodbyeArchiveListScreen.js`
+- **Batch 4**: `HomeScreen.js`, `ActivityScreen.js`, `CommunityDetailScreen.js`,
+  `BusinessProfileScreen.js`, `MyBusinessApplicationScreen.js`, `InviteFriendsScreen.js`
+
+Batches 1+2 run concurrently first, verified + committed + pushed as one increment; then
+batches 3+4 the same way — never more than 2 concurrent, matching this file's own established
+large-task pacing.
+
 **Two items left, not yet started — this section's actual plan:**
 
 1. **Verify the other 26 screens' error handling is actually correct, not just present.** The
