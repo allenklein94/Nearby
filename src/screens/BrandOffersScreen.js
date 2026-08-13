@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getActiveOffers, getMyRedemptions, redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts } from '../services/brandOffers';
 import { getCommunityMemberCount } from '../services/communities';
 import { getApprovedAttendeeCount } from '../services/gatherings';
+import LoadErrorState from '../components/LoadErrorState';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -18,6 +19,7 @@ export default function BrandOffersScreen({ navigation, route }) {
   const [offers, setOffers] = useState([]);
   const [redeemedIds, setRedeemedIds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [redeemingId, setRedeemingId] = useState(null);
   const [followingStatus, setFollowingStatus] = useState({});
@@ -33,19 +35,28 @@ export default function BrandOffersScreen({ navigation, route }) {
   const [scrolledToHighlight, setScrolledToHighlight] = useState(false);
 
   const load = useCallback(async () => {
-    let myLat = null;
-    let myLng = null;
-    const { status } = await Location.getForegroundPermissionsAsync();
-    if (status === 'granted') {
-      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-      if (location) {
-        myLat = location.coords.latitude;
-        myLng = location.coords.longitude;
+    let offersData;
+    let redemptionsData;
+    try {
+      let myLat = null;
+      let myLng = null;
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+        if (location) {
+          myLat = location.coords.latitude;
+          myLng = location.coords.longitude;
+        }
       }
+      [offersData, redemptionsData] = await Promise.all([getActiveOffers(myLat, myLng), getMyRedemptions()]);
+      setOffers(offersData);
+      setRedeemedIds(redemptionsData);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+      setLoading(false);
+      return;
     }
-    const [offersData, redemptionsData] = await Promise.all([getActiveOffers(myLat, myLng), getMyRedemptions()]);
-    setOffers(offersData);
-    setRedeemedIds(redemptionsData);
     setLoading(false);
     const uniquePartnerIds = [...new Set(offersData.map((o) => o.partner_id))];
     const followEntries = await Promise.all(
@@ -141,6 +152,14 @@ export default function BrandOffersScreen({ navigation, route }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Finding perks near you...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load perks nearby." onRetry={load} />
       </SafeAreaView>
     );
   }

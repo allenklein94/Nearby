@@ -16,6 +16,7 @@ import { usePostHog } from 'posthog-react-native';
 import * as Haptics from 'expo-haptics';
 import ReportBlockModal from '../components/ReportBlockModal';
 import ActionSheetModal from '../components/ActionSheetModal';
+import LoadErrorState from '../components/LoadErrorState';
 import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
 import GifPickerModal from '../components/GifPickerModal';
@@ -127,6 +128,7 @@ export default function ChatScreen({ route, navigation }) {
   const { text, setText, send, sendError } = useChatComposer();
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   const [gatheringTitle, setGatheringTitle] = useState(null);
   const [isRomanticMatch, setIsRomanticMatch] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -298,6 +300,7 @@ export default function ChatScreen({ route, navigation }) {
   }, [disappearingMode, otherUser]);
 
   async function init() {
+    try {
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     setUserId(myId);
@@ -439,7 +442,13 @@ export default function ChatScreen({ route, navigation }) {
       .subscribe();
     typingChannelRef.current = typingChannel;
 
+    setLoadError(false);
     return myId;
+    } catch (e) {
+      console.error('ChatScreen init error', e);
+      setLoadError(true);
+      return null;
+    }
   }
 
   function showTogetherMenu() {
@@ -1053,6 +1062,14 @@ export default function ChatScreen({ route, navigation }) {
     ? (firstMessageSentFlag || messages.some((m) => m.sender_id === designatedFirstMessengerId))
     : true;
   const isBlockedFromSending = designatedFirstMessengerId && designatedFirstMessengerId !== userId && !designatedHasSentMessage;
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load this conversation." onRetry={init} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

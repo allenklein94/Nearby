@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemistryDiary';
 import { usePostHog } from 'posthog-react-native';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -49,15 +50,22 @@ export default function ChemistryDiaryListScreen({ navigation }) {
   const styles = getStyles(colors);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const [nameInput, setNameInput] = useState('');
 
   const load = useCallback(async () => {
-    const data = await getMyChemistryEntries();
-    setEntries(data);
-    setLoading(false);
+    try {
+      const data = await getMyChemistryEntries();
+      setEntries(data);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -120,6 +128,14 @@ export default function ChemistryDiaryListScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your check-ins...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your Chemistry Diary." onRetry={load} />
       </SafeAreaView>
     );
   }

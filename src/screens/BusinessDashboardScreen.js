@@ -8,6 +8,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { checkTextModeration } from '../services/textModeration';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -37,6 +38,7 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [offers, setOffers] = useState([]);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -81,9 +83,15 @@ export default function BusinessDashboardScreen({ navigation }) {
   }, []);
 
   async function loadMyPartner() {
-    const partner = await getMyManagedPartner();
-    setSelectedPartner(partner);
-    setLoading(false);
+    try {
+      const partner = await getMyManagedPartner();
+      setSelectedPartner(partner);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleUpdateAddress() {
@@ -164,9 +172,16 @@ export default function BusinessDashboardScreen({ navigation }) {
 
   async function loadStats(partnerId) {
     setLoading(true);
-    const { data, error } = await supabase.rpc('get_business_dashboard_stats', { partner_id_param: partnerId });
-    if (!error) setStats(data?.[0] ?? null);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.rpc('get_business_dashboard_stats', { partner_id_param: partnerId });
+      if (error) throw error;
+      setStats(data?.[0] ?? null);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function loadOffers(partnerId) {
@@ -472,6 +487,8 @@ export default function BusinessDashboardScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        ) : loadError ? (
+          <LoadErrorState message="Couldn't load your business dashboard." onRetry={loadMyPartner} />
         ) : (
           <>
             {section === 'home' && (

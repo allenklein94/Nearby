@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../services/emergencyContacts';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -10,6 +11,7 @@ export default function EmergencyContactsScreen() {
   const styles = getStyles(colors);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [relationship, setRelationship] = useState('');
@@ -17,9 +19,15 @@ export default function EmergencyContactsScreen() {
   const [deletingId, setDeletingId] = useState(null);
 
   const load = useCallback(async () => {
-    const data = await getMyEmergencyContacts();
-    setContacts(data);
-    setLoading(false);
+    try {
+      const data = await getMyEmergencyContacts();
+      setContacts(data);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -75,6 +83,14 @@ export default function EmergencyContactsScreen() {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your emergency contacts...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your emergency contacts." onRetry={load} />
       </SafeAreaView>
     );
   }

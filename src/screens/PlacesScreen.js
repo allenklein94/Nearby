@@ -34,7 +34,17 @@ export default function PlacesScreen() {
     const thisRequestId = ++requestIdRef.current;
     setLoading(true);
     setLoadError(false);
-    const { status } = await Location.requestForegroundPermissionsAsync();
+    let status;
+    try {
+      ({ status } = await Location.requestForegroundPermissionsAsync());
+    } catch (e) {
+      console.error('PlacesScreen load error', e);
+      if (thisRequestId === requestIdRef.current) {
+        setLoadError(true);
+        setLoading(false);
+      }
+      return;
+    }
     if (status !== 'granted') {
       if (thisRequestId === requestIdRef.current) {
         setLocationDenied(true);

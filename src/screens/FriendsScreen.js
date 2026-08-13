@@ -7,6 +7,7 @@ import { findFriendsFromContacts } from '../services/contactsImport';
 import StoriesRow from '../components/StoriesRow';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -18,6 +19,7 @@ export default function FriendsScreen({ navigation }) {
   const [pending, setPending] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [contactMatches, setContactMatches] = useState(null);
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [requestedIds, setRequestedIds] = useState({});
@@ -34,22 +36,28 @@ export default function FriendsScreen({ navigation }) {
   }, []);
 
   const load = useCallback(async () => {
-    const [friendsList, pendingList, suggested] = await Promise.all([getMyFriends(), getPendingFriendRequests(), getSuggestedFriends()]);
-    setFriends(friendsList);
-    setPending(pendingList);
-    setSuggestedFriends(suggested);
-    loadCircles();
+    try {
+      const [friendsList, pendingList, suggested] = await Promise.all([getMyFriends(), getPendingFriendRequests(), getSuggestedFriends()]);
+      setFriends(friendsList);
+      setPending(pendingList);
+      setSuggestedFriends(suggested);
+      loadCircles();
 
-    const all = [...friendsList, ...pendingList, ...suggested.map((s) => ({ id: s.suggested_id, photo_url: s.photo_url }))];
-    const urlEntries = await Promise.all(
-      all.map(async (person) => {
-        if (!person.photo_url) return [person.id, null];
-        const url = await getSignedPhotoUrl(person.photo_url);
-        return [person.id, url];
-      })
-    );
-    setPhotoUrls(Object.fromEntries(urlEntries));
-    setLoading(false);
+      const all = [...friendsList, ...pendingList, ...suggested.map((s) => ({ id: s.suggested_id, photo_url: s.photo_url }))];
+      const urlEntries = await Promise.all(
+        all.map(async (person) => {
+          if (!person.photo_url) return [person.id, null];
+          const url = await getSignedPhotoUrl(person.photo_url);
+          return [person.id, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -158,6 +166,14 @@ export default function FriendsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <StoriesRow />
+      {loading ? (
+        <View style={{ marginTop: spacing.xl, alignItems: 'center' }}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={{ marginTop: spacing.sm, color: colors.textTertiary, fontSize: 13 }}>Loading your friends...</Text>
+        </View>
+      ) : loadError ? (
+        <LoadErrorState message="Couldn't load your friends." onRetry={load} />
+      ) : (
       <FlatList
         data={friends
           .filter((f) => !friendSearch.trim() || f.display_name?.toLowerCase().includes(friendSearch.trim().toLowerCase()))
@@ -400,6 +416,7 @@ export default function FriendsScreen({ navigation }) {
           </View>
         )}
       />
+      )}
 
       <Modal visible={newCircleModalVisible} animationType="slide" transparent onRequestClose={() => setNewCircleModalVisible(false)}>
         <View style={styles.modalOverlay}>

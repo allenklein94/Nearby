@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBlockedUsers, unblockUser } from '../services/blockedUsers';
 import { getSignedPhotoUrl } from '../services/photos';
+import LoadErrorState from '../components/LoadErrorState';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -16,23 +17,30 @@ export default function BlockedUsersScreen() {
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [unblockingId, setUnblockingId] = useState(null);
 
   const load = useCallback(async () => {
-    const data = await getMyBlockedUsers();
-    setBlockedUsers(data);
+    try {
+      const data = await getMyBlockedUsers();
+      setBlockedUsers(data);
 
-    const urlEntries = await Promise.all(
-      data.map(async (b) => {
-        const path = b.profiles?.photo_url;
-        if (!path) return [b.id, null];
-        const url = await getSignedPhotoUrl(path);
-        return [b.id, url];
-      })
-    );
-    setPhotoUrls(Object.fromEntries(urlEntries));
-    setLoading(false);
+      const urlEntries = await Promise.all(
+        data.map(async (b) => {
+          const path = b.profiles?.photo_url;
+          if (!path) return [b.id, null];
+          const url = await getSignedPhotoUrl(path);
+          return [b.id, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -76,6 +84,14 @@ export default function BlockedUsersScreen() {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading blocked users...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your blocked users." onRetry={load} />
       </SafeAreaView>
     );
   }
