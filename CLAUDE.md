@@ -5,7 +5,7 @@ This file captures known outstanding work as of early August 2026, so a fresh Cl
 session has the same context as the chat session that built most of this.
 
 ## Outstanding: UX-cohesion follow-through (verify the other 26 screens' error handling +
-resolve the Create/Business terminology question) — PLANNED, NOT STARTED
+resolve the Create/Business terminology question) — item 2 DONE, item 1 IN PROGRESS
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what
@@ -70,20 +70,12 @@ and closed in the same session, each its own commit, already pushed to `main`:
    load path itself is covered. Fix whatever's found; if a screen turns out to already be fully
    correct, say so plainly rather than re-touching it for no reason.
 
-2. **Resolve a real, surfaced-but-undecided conflict between the reviewed doc and an already-
-   made product decision, before any code changes.** The doc's "one obvious home per concept"
-   mapping put "Business partnership" under the **Create** tab's job ("Make"). But this file's
-   own round 2 Phase 7 (IA restructure, further down this file, fully DONE) explicitly decided
-   the opposite — Create's business entry point ("🤝 Partner with a Business") was deliberately
-   *removed*, per the user's own words at the time: "Settings should contain only account/
-   configuration... Create should not need 'Manage Your Business' either." Business is reached
-   today from `GatheringDetailScreen`/`CommunityDetailScreen`'s own host banners and from
-   Profile's single consolidated Business row — never from Create. This wasn't silently picked
-   either direction when it was noticed (see this file's own reaction to the doc, further up in
-   conversation history) — it's flagged here the same way, as a real decision the user should
-   make explicitly: keep Create business-free (the round 2 Phase 7 status quo, reaffirmed), or
-   revisit that decision now that a second, independent review suggested the opposite grouping.
-   Not a build task until that's answered.
+2. **Create/Business terminology conflict — RESOLVED, no code change.** Asked directly rather
+   than silently picked. The user's answer: keep Create business-free — reaffirms round 2 Phase
+   7's existing decision as-is. Business stays reachable only from Profile's consolidated
+   Business row and from a specific gathering/community's own host banner, never from Create's
+   top-level grid. The second review's suggested "Business partnership belongs under Create"
+   grouping is explicitly not adopted.
 
 **Verification plan for item 1, once started**: full `npx expo export --platform ios` after each
 meaningful increment, checking the module count against the current 1859 baseline. Same standing
