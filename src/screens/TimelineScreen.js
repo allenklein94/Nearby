@@ -3,18 +3,31 @@ import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } fro
 import { getMyTimeline } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 export default function TimelineScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  function load() {
+    setLoading(true);
+    getMyTimeline()
+      .then((result) => {
+        setItems(result);
+        setLoadError(false);
+      })
+      .catch((e) => {
+        console.error('getMyTimeline failed', e);
+        setLoadError(true);
+      })
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
-    getMyTimeline()
-      .then((result) => setItems(result))
-      .catch((e) => console.error('getMyTimeline failed', e))
-      .finally(() => setLoading(false));
+    load();
   }, []);
 
   function formatDate(iso) {
@@ -27,7 +40,12 @@ export default function TimelineScreen() {
       <Text style={styles.subtitle}>How your social life has grown</Text>
 
       {loading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        <>
+          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+          <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your timeline...</Text>
+        </>
+      ) : loadError ? (
+        <LoadErrorState message="Couldn't load your timeline." onRetry={load} />
       ) : (
         <FlatList
           data={items}

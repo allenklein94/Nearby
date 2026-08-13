@@ -6,6 +6,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import ActionSheetModal from '../components/ActionSheetModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 // The 8 relationship-longevity tools that only make sense in the context
 // of a specific match (unlike Rehearsal Room / Chemistry Diary / Goodbye
@@ -31,42 +32,50 @@ export default function RelationshipToolsScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activeMatch, setActiveMatch] = useState(null);
 
   const load = useCallback(async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    if (!myId) {
+    try {
+      setLoadError(false);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      if (!myId) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('matches')
+        .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(display_name, photo_url), b:profiles!matches_user_b_fkey(display_name, photo_url)')
+        .order('matched_at', { ascending: false });
+
+      if (error) {
+        console.error('RelationshipToolsScreen load error', error);
+        setLoadError(true);
+        setLoading(false);
+        return;
+      }
+
+      const withOther = (data ?? []).map((m) => ({
+        matchId: m.id,
+        other: m.user_a === myId ? m.b : m.a,
+      }));
+      setMatches(withOther);
+
+      const urlEntries = await Promise.all(
+        withOther.map(async (m) => {
+          if (!m.other?.photo_url) return [m.matchId, null];
+          const url = await getSignedPhotoUrl(m.other.photo_url);
+          return [m.matchId, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
       setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('matches')
-      .select('id, user_a, user_b, matched_at, a:profiles!matches_user_a_fkey(display_name, photo_url), b:profiles!matches_user_b_fkey(display_name, photo_url)')
-      .order('matched_at', { ascending: false });
-
-    if (error) {
-      console.error('RelationshipToolsScreen load error', error);
+    } catch (e) {
+      setLoadError(true);
       setLoading(false);
-      return;
     }
-
-    const withOther = (data ?? []).map((m) => ({
-      matchId: m.id,
-      other: m.user_a === myId ? m.b : m.a,
-    }));
-    setMatches(withOther);
-
-    const urlEntries = await Promise.all(
-      withOther.map(async (m) => {
-        if (!m.other?.photo_url) return [m.matchId, null];
-        const url = await getSignedPhotoUrl(m.other.photo_url);
-        return [m.matchId, url];
-      })
-    );
-    setPhotoUrls(Object.fromEntries(urlEntries));
-    setLoading(false);
   }, []);
 
   useFocusEffect(
@@ -85,6 +94,14 @@ export default function RelationshipToolsScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading relationship tools...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your relationship tools." onRetry={load} />
       </SafeAreaView>
     );
   }

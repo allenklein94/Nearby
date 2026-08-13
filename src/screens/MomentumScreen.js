@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMomentumStats } from '../services/momentum';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 function deltaSymbol(current, previous) {
   if (current > previous) return '▲';
@@ -21,28 +22,41 @@ export default function MomentumScreen({ navigation }) {
   const styles = getStyles(colors, shadow);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      (async () => {
+  const load = useCallback(() => {
+    let cancelled = false;
+    setLoadError(false);
+    (async () => {
+      try {
         const data = await getMomentumStats();
-        if (!cancelled) {
-          setStats(data);
-          setLoading(false);
-        }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [])
-  );
+        if (!cancelled) setStats(data);
+      } catch (e) {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useFocusEffect(load);
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your momentum...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your momentum." onRetry={load} />
       </SafeAreaView>
     );
   }

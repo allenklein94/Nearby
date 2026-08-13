@@ -5,6 +5,7 @@ import { getLegacyEntries } from '../services/relationshipLegacy';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 const FIELDS = [
   { key: 'what_surprised_us', label: '✨ What surprised them' },
@@ -19,12 +20,19 @@ export default function LegacyLibraryScreen({ navigation }) {
   const styles = getStyles(colors);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const data = await getLegacyEntries();
-    setEntries(data);
-    setLoading(false);
+    try {
+      const data = await getLegacyEntries();
+      setEntries(data);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -44,6 +52,14 @@ export default function LegacyLibraryScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your legacy library...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your legacy library." onRetry={load} />
       </SafeAreaView>
     );
   }

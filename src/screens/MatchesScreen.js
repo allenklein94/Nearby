@@ -10,6 +10,7 @@ import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
 import StoriesRow from '../components/StoriesRow';
+import LoadErrorState from '../components/LoadErrorState';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -47,6 +48,7 @@ export default function MatchesScreen({ navigation }) {
   const [myProfile, setMyProfile] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [celebrationMatch, setCelebrationMatch] = useState(null);
   const [myPhotoUrl, setMyPhotoUrl] = useState(null);
@@ -57,6 +59,8 @@ export default function MatchesScreen({ navigation }) {
   const [celebrationIsFirst, setCelebrationIsFirst] = useState(false);
 
   const load = useCallback(async () => {
+    try {
+    setLoadError(false);
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
@@ -124,6 +128,10 @@ export default function MatchesScreen({ navigation }) {
 
     setLoading(false);
     await checkPendingCheckIns();
+    } catch (e) {
+      setLoadError(true);
+      setLoading(false);
+    }
   }, []);
 
   async function checkPendingCheckIns() {
@@ -241,6 +249,8 @@ export default function MatchesScreen({ navigation }) {
           <SkeletonCard />
           <SkeletonCard />
         </View>
+      ) : loadError ? (
+        <LoadErrorState message="Couldn't load your messages." onRetry={load} />
       ) : (
       <FlatList
         data={matches}

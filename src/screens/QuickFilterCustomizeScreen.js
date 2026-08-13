@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, StyleSheet, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 const FILTER_LABELS = {
   verified: { icon: '✓', label: 'Verified Only' },
@@ -16,18 +17,27 @@ export default function QuickFilterCustomizeScreen({ navigation }) {
   const [order, setOrder] = useState(['verified', 'highCompat', 'online']);
   const [visible, setVisible] = useState(['verified', 'highCompat', 'online']);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     load();
   }, []);
 
   async function load() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-    const { data } = await supabase.from('profiles').select('quick_filter_order, quick_filter_visible').eq('id', userId).single();
-    if (data?.quick_filter_order) setOrder(data.quick_filter_order);
-    if (data?.quick_filter_visible) setVisible(data.quick_filter_visible);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      const { data, error } = await supabase.from('profiles').select('quick_filter_order, quick_filter_visible').eq('id', userId).single();
+      if (error) throw error;
+      if (data?.quick_filter_order) setOrder(data.quick_filter_order);
+      if (data?.quick_filter_visible) setVisible(data.quick_filter_visible);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function save(newOrder, newVisible) {
@@ -58,7 +68,22 @@ export default function QuickFilterCustomizeScreen({ navigation }) {
     save(newOrder, visible);
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your filters...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your quick filters." onRetry={load} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

@@ -5,6 +5,7 @@ import { getMyAttendingGatherings, getMyGatherings } from '../services/gathering
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
 import GatheringStatusBadge, { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
+import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -25,24 +26,37 @@ export default function PlansScreen({ navigation, route }) {
   const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [hosting, setHosting] = useState({ upcoming: [], past: [] });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [attendingData, hostingData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings()]);
-    setAttending(attendingData);
-    setHosting(hostingData);
-    setLoading(false);
+    try {
+      const [attendingData, hostingData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings()]);
+      setAttending(attendingData);
+      setHosting(hostingData);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       (async () => {
-        const [attendingData, hostingData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings()]);
-        if (cancelled) return;
-        setAttending(attendingData);
-        setHosting(hostingData);
-        setLoading(false);
+        try {
+          const [attendingData, hostingData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings()]);
+          if (cancelled) return;
+          setAttending(attendingData);
+          setHosting(hostingData);
+          setLoadError(false);
+        } catch (e) {
+          if (!cancelled) setLoadError(true);
+        } finally {
+          if (!cancelled) setLoading(false);
+        }
       })();
       return () => {
         cancelled = true;
@@ -122,7 +136,12 @@ export default function PlansScreen({ navigation, route }) {
       </View>
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+        <View>
+          <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
+          <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your plans...</Text>
+        </View>
+      ) : loadError ? (
+        <LoadErrorState message="Couldn't load your plans." onRetry={load} />
       ) : (
         <FlatList
           data={listData}

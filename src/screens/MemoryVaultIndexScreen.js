@@ -5,6 +5,7 @@ import { getMyMatchesWithMemoryCounts } from '../services/memoryVault';
 import { getSignedPhotoUrl } from '../services/photos';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 export default function MemoryVaultIndexScreen({ navigation }) {
   const { colors, shadow } = useTheme();
@@ -12,20 +13,27 @@ export default function MemoryVaultIndexScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
-    const data = await getMyMatchesWithMemoryCounts();
-    setMatches(data);
+    try {
+      const data = await getMyMatchesWithMemoryCounts();
+      setMatches(data);
 
-    const urlEntries = await Promise.all(
-      data.map(async (m) => {
-        if (!m.other?.photo_url) return [m.matchId, null];
-        const url = await getSignedPhotoUrl(m.other.photo_url);
-        return [m.matchId, url];
-      })
-    );
-    setPhotoUrls(Object.fromEntries(urlEntries));
-    setLoading(false);
+      const urlEntries = await Promise.all(
+        data.map(async (m) => {
+          if (!m.other?.photo_url) return [m.matchId, null];
+          const url = await getSignedPhotoUrl(m.other.photo_url);
+          return [m.matchId, url];
+        })
+      );
+      setPhotoUrls(Object.fromEntries(urlEntries));
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -39,6 +47,14 @@ export default function MemoryVaultIndexScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your memories...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your memories." onRetry={load} />
       </SafeAreaView>
     );
   }

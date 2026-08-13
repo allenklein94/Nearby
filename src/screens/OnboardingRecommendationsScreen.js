@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { getGreeting } from '../utils/timeContext';
+import LoadErrorState from '../components/LoadErrorState';
 
 export default function OnboardingRecommendationsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
@@ -12,21 +13,28 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
   const [recommendations, setRecommendations] = useState([]);
   const [myName, setMyName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     load();
   }, []);
 
   async function load() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    if (myId) {
-      const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', myId).single();
-      setMyName(profile?.display_name?.split(' ')[0] ?? '');
+    try {
+      setLoadError(false);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myId = sessionData?.session?.user?.id;
+      if (myId) {
+        const { data: profile } = await supabase.from('profiles').select('display_name').eq('id', myId).single();
+        setMyName(profile?.display_name?.split(' ')[0] ?? '');
+      }
+      const results = await getOnboardingRecommendations().catch(() => []);
+      setRecommendations(results);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    const results = await getOnboardingRecommendations().catch(() => []);
-    setRecommendations(results);
-    setLoading(false);
   }
 
   function formatDate(iso) {
@@ -40,7 +48,12 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
         <Text style={styles.subtitle}>Based on what you told us...</Text>
 
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+          <>
+            <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+            <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Finding things nearby for you...</Text>
+          </>
+        ) : loadError ? (
+          <LoadErrorState message="Couldn't load recommendations." onRetry={load} />
         ) : recommendations.length > 0 ? (
           <>
             <Text style={styles.foundText}>I found {recommendations.length} great opportunit{recommendations.length === 1 ? 'y' : 'ies'}.</Text>

@@ -4,34 +4,50 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMyRewardStatus } from '../services/rewards';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 export default function RewardsScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-      (async () => {
+  const load = useCallback(() => {
+    let cancelled = false;
+    setLoadError(false);
+    (async () => {
+      try {
         const data = await getMyRewardStatus();
         if (!cancelled) {
           setStatus(data);
-          setLoading(false);
         }
-      })();
-      return () => {
-        cancelled = true;
-      };
-    }, [])
-  );
+      } catch (e) {
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useFocusEffect(load);
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your rewards...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your rewards." onRetry={load} />
       </SafeAreaView>
     );
   }

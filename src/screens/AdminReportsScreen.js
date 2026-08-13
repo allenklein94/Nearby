@@ -3,12 +3,14 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import LoadErrorState from '../components/LoadErrorState';
 
 export default function AdminReportsScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     load();
@@ -16,14 +18,21 @@ export default function AdminReportsScreen() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('reports')
-      .select('id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name)')
-      .order('resolved', { ascending: true })
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name)')
+        .order('resolved', { ascending: true })
+        .order('created_at', { ascending: false });
 
-    if (!error) setReports(data);
-    setLoading(false);
+      if (error) throw error;
+      setReports(data);
+      setLoadError(false);
+    } catch (e) {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function markResolved(id) {
@@ -61,7 +70,13 @@ export default function AdminReportsScreen() {
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         refreshing={loading}
         onRefresh={load}
-        ListEmptyComponent={<Text style={styles.empty}>No reports.</Text>}
+        ListEmptyComponent={
+          loadError ? (
+            <LoadErrorState message="Couldn't load reports." onRetry={load} />
+          ) : (
+            <Text style={styles.empty}>No reports.</Text>
+          )
+        }
         renderItem={({ item }) => (
           <View style={[styles.card, item.resolved && styles.cardResolved]}>
             <Text style={styles.reason}>{item.reason}</Text>
