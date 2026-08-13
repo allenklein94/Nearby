@@ -103,7 +103,15 @@ export function routeNotificationTap(data) {
     case 'playlist_addition':
     case 'trip_idea_addition':
     case 'shared_decision_addition':
+    case 'constitution_addition':
+    case 'memory_addition':
+    case 'stress_test_addition':
+    case 'timeline_addition':
+    case 'match_reminder':
     case 'screenshot':
+      // Same "Together" tools family as playlist/trip/decision — all of
+      // these are per-match content additions or nudges, all carry a
+      // match_id, all belong in that match's own chat.
       if (data.match_id) {
         navigationRef.navigate('Chat', { matchId: data.match_id });
       }
@@ -114,15 +122,39 @@ export function routeNotificationTap(data) {
     case 'gathering_interest':
     case 'gathering_invite':
     case 'gathering_reminder':
+    case 'gathering_waitlisted':
+    case 'gathering_updated':
+    case 'recurring_gathering':
       if (data.gathering_id) {
         navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id });
       } else {
         navigationRef.navigate('Gatherings');
       }
       break;
+    case 'gathering_cancelled':
+      // Deliberately no gathering_id in this payload — the row is already
+      // deleted by the time this fires (an ON DELETE trigger), so there's
+      // nothing left to open. Land on browse instead of doing nothing.
+    case 'first_mission_reminder':
+      navigationRef.navigate('Gatherings');
+      break;
     case 'friend_request':
     case 'friend_accepted':
       navigationRef.navigate('Friends');
+      break;
+    case 'birthday':
+      if (data.birthday_user_id) {
+        navigationRef.navigate('ViewProfile', { userId: data.birthday_user_id });
+      }
+      break;
+    case 'new_story':
+      // No dedicated story-viewer route exists anywhere in this app —
+      // stories render inline in feeds/carousels, not as their own
+      // navigable screen. This is the closest real destination (the
+      // poster's own profile), not a claim that it opens the story itself.
+      if (data.story_user_id) {
+        navigationRef.navigate('ViewProfile', { userId: data.story_user_id });
+      }
       break;
     case 'momentum_streak_nudge':
       navigationRef.navigate('Momentum');
@@ -135,6 +167,18 @@ export function routeNotificationTap(data) {
       break;
     case 'business_partner_denied':
       navigationRef.navigate('MyBusinessApplication');
+      break;
+    case 'business_partnership_response':
+      if (data.target_type === 'gathering' && data.target_id) {
+        navigationRef.navigate('GatheringDetail', { gatheringId: data.target_id });
+      } else if (data.target_type === 'community' && data.target_id) {
+        navigationRef.navigate('CommunityDetail', { communityId: data.target_id });
+      }
+      break;
+    case 'business_update':
+      if (data.partner_id) {
+        navigationRef.navigate('BusinessProfile', { partnerId: data.partner_id });
+      }
       break;
     default:
       break;
