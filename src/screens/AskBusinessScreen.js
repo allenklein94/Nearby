@@ -112,7 +112,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           date: toDateParam(dateWindow),
         });
       }
-      navigation.replace('BusinessRequestDetail', { requestId: result.requestId, justSubmitted: true, notifiedCount: result.notifiedCount });
+      navigation.replace('BusinessRequestDetail', { requestId: result.requestId, justSubmitted: true, notifiedCount: result.notifiedCount, duplicate: result.duplicate });
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
     }

@@ -37,6 +37,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const requestId = route.params?.requestId;
   const justSubmitted = route.params?.justSubmitted ?? false;
   const notifiedCount = route.params?.notifiedCount ?? 0;
+  const isDuplicate = route.params?.duplicate ?? false;
 
   const [request, setRequest] = useState(null);
   const [offers, setOffers] = useState([]);
@@ -127,7 +128,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {justSubmitted && (
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
-              {notifiedCount > 0
+              {isDuplicate
+                ? "You already have an open request just like this — here it is, no need to ask twice."
+                : notifiedCount > 0
                 ? `We asked ${notifiedCount} nearby business${notifiedCount === 1 ? '' : 'es'} — you'll be notified as offers come in.`
                 : "We couldn't find a nearby business to ask right now — try widening what you're looking for."}
             </Text>

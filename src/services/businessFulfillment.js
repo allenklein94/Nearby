@@ -45,7 +45,7 @@ export async function submitBusinessRequest({
     radius_miles_param: radiusMiles,
   });
   if (error) throw new Error(error.message);
-  return { requestId: data.requestId, notifiedCount: data.notifiedCount };
+  return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
 }
 
 // Phase 3: a gathering becomes a demand generator for Business Fulfillment.
@@ -61,7 +61,7 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
     radius_miles_param: radiusMiles,
   });
   if (error) throw new Error(error.message);
-  return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize };
+  return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
 }
 
 // The requester's own view of one request plus every offer on it (RLS

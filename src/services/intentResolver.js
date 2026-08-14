@@ -224,9 +224,24 @@ async function resolveBusinessAvailability(category, location) {
 // here reads already-real, already-existing data, and nothing here
 // creates or commits to anything.
 export async function resolveIntent({ category, dateWindow }) {
+  // Resolved once, up front, before any branch runs in parallel below —
+  // not a check-only call. getNearbyGatherings() (called from
+  // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
+  // itself, which prompts if the decision hasn't been made yet; a
+  // previous version of this function used the non-prompting
+  // getForegroundPermissionsAsync() here, running at the same instant as
+  // that prompt once every branch below moved to Promise.allSettled — a
+  // real race on a genuine first-time permission decision, where this
+  // check could read "not yet granted" a moment before the user answered
+  // the dialog gatherings' own call had just triggered, silently
+  // skipping perks/business availability for that submission. Requesting
+  // here instead and awaiting it before the parallel branches start
+  // removes the race entirely; Location's request call is idempotent, so
+  // resolveGatherings' own internal call just re-reads the
+  // now-already-decided status, no second dialog.
   let location = null;
   try {
-    const { status } = await Location.getForegroundPermissionsAsync();
+    const { status } = await Location.requestForegroundPermissionsAsync();
     if (status === 'granted') {
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
