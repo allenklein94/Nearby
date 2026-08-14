@@ -121,3 +121,18 @@ export async function declineBusinessOpportunity(requestId) {
   if (error) throw new Error(error.message);
   return data;
 }
+
+// ---- Tier 2 of the Intent Layer resolver ----
+// "Do any of my accepted friends/matches have an open business_requests
+// row with an overlapping category/date right now" -- see the Tier 2
+// retrofit migration (20260814_business_fulfillment_tier2.sql) for why
+// this is a narrow SECURITY DEFINER RPC rather than a broadened SELECT
+// policy on business_requests itself.
+export async function getConnectedOpenBusinessRequests({ category = null, date = null } = {}) {
+  const { data, error } = await supabase.rpc('get_connected_open_business_requests', {
+    category_param: category,
+    date_param: date,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}

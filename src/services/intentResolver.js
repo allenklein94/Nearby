@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getActiveOffers } from './brandOffers';
+import { getConnectedOpenBusinessRequests } from './businessFulfillment';
 
 const RESOLVER_RESULT_CAP = 4;
 
@@ -46,15 +47,44 @@ function matchesDateWindow(scheduledAt, dateWindow) {
   return true;
 }
 
-// Tier 1 + Tier 3 of the Intent Layer's resolver (CLAUDE.md's "Intent Layer
-// + Business Fulfillment" plan) — Phase 1b. Tier 2 (friends/matches who've
-// independently expressed compatible intent) is deliberately not built
-// here — it needs Phase 2's business_requests table to source its signal
-// from, so it's sequenced right after Phase 2 lands, not before. Tier 4
-// (asking a business for a real offer) is Phase 2 itself. This function
-// only ever reads already-real, already-existing supply (gatherings and
-// standing perks) — no new schema, no fabricated results, and nothing here
-// creates or commits to anything.
+// Translates the same coarse dateWindow vocabulary above into a concrete
+// date for comparing against business_requests.date (a plain date column,
+// unlike gatherings' scheduled_at timestamp) — same today/tomorrow/weekend
+// boundaries as matchesDateWindow, just returning a date instead of a
+// range check. Returns null for 'flexible'/unset, meaning "don't filter by
+// date" — matches the RPC's own (date_param is null or ...) passthrough.
+function dateWindowToDateParam(dateWindow) {
+  if (!dateWindow || dateWindow === 'flexible') return null;
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') {
+    return todayStart.toISOString().slice(0, 10);
+  }
+  if (dateWindow === 'tomorrow') {
+    const d = new Date(todayStart);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+  if (dateWindow === 'weekend') {
+    const dayOfWeek = todayStart.getDay();
+    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+    const d = new Date(todayStart);
+    d.setDate(d.getDate() + daysUntilSaturday);
+    return d.toISOString().slice(0, 10);
+  }
+  return null;
+}
+
+// Tiers 1-3 of the Intent Layer's resolver (CLAUDE.md's "Intent Layer +
+// Business Fulfillment" plan). Tier 2 (friends/matches who've
+// independently expressed compatible intent) was sequenced right after
+// Phase 2 landed, per the plan's own note — it sources its signal from
+// Phase 2's business_requests table via a narrow SECURITY DEFINER RPC, not
+// a broadened SELECT policy. Tier 4 (asking a business for a real offer)
+// is Phase 2's AskBusinessScreen, reached from Home when this resolver
+// returns nothing. This function only ever reads already-real,
+// already-existing supply/social-graph signal — no fabricated results,
+// and nothing here creates or commits to anything.
 export async function resolveIntent({ category, dateWindow }) {
   const results = [];
 
@@ -78,6 +108,26 @@ export async function resolveIntent({ category, dateWindow }) {
     }
   } catch (e) {
     console.error('resolveIntent gatherings error', e);
+  }
+
+  if (results.length < RESOLVER_RESULT_CAP) {
+    try {
+      const connected = await getConnectedOpenBusinessRequests({
+        category: category ?? null,
+        date: dateWindowToDateParam(dateWindow),
+      });
+      for (const r of connected.slice(0, RESOLVER_RESULT_CAP - results.length)) {
+        results.push({
+          type: 'friend_request',
+          id: r.id,
+          userId: r.requester_id,
+          title: `${r.requester_display_name ?? 'A friend'} is also looking for this`,
+          subtitle: r.raw_text,
+        });
+      }
+    } catch (e) {
+      console.error('resolveIntent connected requests error', e);
+    }
   }
 
   if (results.length < RESOLVER_RESULT_CAP) {

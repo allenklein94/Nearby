@@ -348,10 +348,57 @@ flexible-offer-shape requirement), a description field, an optional price field,
   push-notification taps (`business_offer_received` → `BusinessRequestDetail`,
   `business_offer_accepted` → `BusinessDashboard`) landing correctly on a real device.
 
-Everything in this plan not yet built (Tier 2 people-matching, gathering/community → business
-demand, proactive business availability, the broader "matching" framing layer — Phases 3-5) is
-locked, per the design work already done, and ready to build when picked up — see each phase's
-own plan text above.
+**Tier 2 retrofit — DONE, same day, right after Phase 2 landed.** Per this plan's own note ("Tier
+2's people-matching piece is naturally sequenced *after* Phase 2 lands... add the Tier 2
+friends/matches piece once Phase 2's `business_requests` table exists to source it from"), this
+was picked up immediately rather than left open. New `get_connected_open_business_requests(
+category_param, date_param)` SECURITY DEFINER RPC
+(`20260814_business_fulfillment_tier2.sql`) — deliberately a narrow, read-only function
+returning only the fields the resolver actually displays (id, requester id/display name/photo,
+raw_text, category, date, party_size — no lat/lng/radius/budget), **not** a broadened SELECT
+policy on `business_requests` a client could query arbitrarily, since a friend's own open ask is
+more personal than a gathering/perk. Computes the caller's "connected" set as accepted
+`friendships` **union** `matches` (both directions of each), matching the plan's own "friends/
+matches" wording — a dating match counts as an existing established relationship here just as
+much as a plain friendship, consistent with the plan's broader no-stranger-discovery principle.
+`intentResolver.js`'s `resolveIntent()` now calls this as Tier 2, inserted between Tier 1
+(gatherings) and Tier 3 (perks) — a new `dateWindowToDateParam()` helper translates the same
+today/tomorrow/weekend/flexible vocabulary already used for Tier 1's `matchesDateWindow()` into a
+concrete date for comparing against `business_requests.date` (a plain date column, unlike
+gatherings' timestamp), returning `null` (no date filter) for `flexible`/unset — matches the
+RPC's own `date_param is null` passthrough. A result renders as "{name} is also looking for
+this" with the friend's own raw text as the subtitle, tapping through to their `ViewProfile` (the
+one real, already-working destination for "go see this specific person" anywhere in this
+codebase — no new screen, and a friend's request itself has no consumer-facing detail view a
+non-owner could open, since `BusinessRequestDetailScreen` is scoped to the requester/business
+only). `HomeScreen.js`'s intent-result icon logic gained a third branch (`person-outline` for
+`friend_request`, alongside the existing gathering/perk icons).
+- **Verified live end-to-end against production**, real accepted-friend pair (`Claude`↔`Allen`):
+  `Claude` created a real open request (category `Coffee`, date = today); `Allen` (the friend)
+  calling the RPC with matching category/date correctly saw it, with the real requester name/
+  text; a genuine stranger (`Google voice`, no friendship/match with `Claude`) calling the
+  identical RPC correctly got nothing back; `Allen` calling with a non-matching category
+  (`Music`) correctly got nothing back. All test data deleted afterward; production confirmed
+  back to its exact pre-test baseline (0 `business_requests`).
+- **Verified via a real from-scratch migration replay**, per this file's own migration-discipline
+  rule: pulled the cached `supabase/postgres:15.1.0.147` image, dropped and recreated an empty
+  `public` schema, patched the two known image-version gaps, ran the full 16-file
+  `supabase/migrations/` folder in order with `psql -v ON_ERROR_STOP=1` — exit 0 on every file,
+  the new function confirmed to exist in the freshly-rebuilt database afterward. Container
+  removed. (First attempt at this replay failed on `pg_cron` — caused by an unrelated
+  `-c shared_preload_libraries=''` override left on the `docker run` command from copy/paste;
+  removing that override and using the image's own default startup fixed it — not a real issue
+  with any migration.)
+- Verified client-side via a direct `@babel/core` parse of all three touched files (clean) and a
+  full `npx expo export --platform ios` (clean, no bundling errors).
+- **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+  run-through — next session should confirm a Tier 2 result actually renders correctly on Home
+  when a real accepted friend has a genuinely compatible open request, and that tapping it lands
+  cleanly on that friend's `ViewProfile`.
+
+Everything in this plan not yet built (gathering/community → business demand, proactive business
+availability, the broader "matching" framing layer — Phases 3-5) is locked, per the design work
+already done, and ready to build when picked up — see each phase's own plan text above.
 
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
 

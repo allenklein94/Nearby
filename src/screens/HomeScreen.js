@@ -239,6 +239,8 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate('GatheringDetail', { gatheringId: item.id });
     } else if (item.type === 'perk') {
       navigation.navigate('BrandOffers', { highlightOfferId: item.id });
+    } else if (item.type === 'friend_request') {
+      navigation.navigate('ViewProfile', { userId: item.userId });
     }
   }
 
@@ -326,7 +328,7 @@ export default function HomeScreen({ navigation }) {
                   onPress={() => handleIntentResultTap(item)}
                 >
                   <Ionicons
-                    name={item.type === 'perk' ? 'gift-outline' : 'people-outline'}
+                    name={item.type === 'perk' ? 'gift-outline' : item.type === 'friend_request' ? 'person-outline' : 'people-outline'}
                     size={18}
                     color={colors.primary}
                     style={styles.intentResultIcon}
