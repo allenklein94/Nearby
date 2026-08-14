@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
@@ -60,7 +61,7 @@ const AVAILABILITY_STATUS_COPY = {
 };
 
 export default function BusinessDashboardScreen({ navigation, route }) {
-  const { colors, shadow } = useTheme();
+  const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
   const [section, setSection] = useState(route?.params?.initialSection ?? 'home');
   const [selectedPartner, setSelectedPartner] = useState(null);
@@ -118,6 +119,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
+  // Only meaningful when offerTypeInput === 'alt_time' -- proposedTime
+  // stays null for every other offer type, matching submit_business_
+  // offer's own default. Previously the "Alt. time" chip changed the
+  // stored offer_type with no attached time input anywhere (PRODUCT_AUDIT/
+  // INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md, finding 3).
+  const [offerProposedTime, setOfferProposedTime] = useState(null);
+  const [showOfferTimePicker, setShowOfferTimePicker] = useState(false);
   const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
   const [confirmingCode, setConfirmingCode] = useState(false);
   const [respondingToRequestId, setRespondingToRequestId] = useState(null);
@@ -231,11 +239,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTypeInput('standard');
     setOfferDescriptionInput('');
     setOfferPriceInput('');
+    setOfferProposedTime(null);
+    setShowOfferTimePicker(false);
   }
 
   async function handleSubmitOffer() {
     if (!offerDescriptionInput.trim()) {
       Alert.alert('Add a description', 'Say what you can offer.');
+      return;
+    }
+    if (offerTypeInput === 'alt_time' && !offerProposedTime) {
+      Alert.alert('Pick a time', 'Choose the time you’re proposing instead.');
       return;
     }
     const descCheck = await checkTextModeration(offerDescriptionInput);
@@ -250,6 +264,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         offerType: offerTypeInput,
         offerDescription: offerDescriptionInput.trim(),
         offerPrice: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
+        proposedTime: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
       });
       setOfferModalRequestId(null);
       await loadOpportunities(selectedPartner.id);
@@ -1478,6 +1493,35 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              {offerTypeInput === 'alt_time' && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.input, { marginTop: spacing.sm, justifyContent: 'center' }]}
+                    onPress={() => setShowOfferTimePicker(true)}
+                    accessibilityLabel="Pick the time you're proposing"
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: offerProposedTime ? colors.textPrimary : colors.textTertiary }}>
+                      {offerProposedTime
+                        ? offerProposedTime.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                        : 'Pick a time…'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showOfferTimePicker && (
+                    <DateTimePicker
+                      value={offerProposedTime ?? new Date()}
+                      mode="datetime"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      themeVariant={isDark ? 'dark' : 'light'}
+                      minimumDate={new Date()}
+                      onChange={(event, selectedDate) => {
+                        setShowOfferTimePicker(Platform.OS === 'ios');
+                        if (selectedDate) setOfferProposedTime(selectedDate);
+                      }}
+                    />
+                  )}
+                </>
+              )}
               <TextInput
                 style={[styles.input, { marginTop: spacing.sm, minHeight: 80 }]}
                 placeholder="What are you offering? e.g. Table for 4 at 7:30, 15% off the check"
@@ -1499,7 +1543,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSubmitOffer}
-                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim()}
+                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
                 accessibilityLabel={respondingOpportunityId === offerModalRequestId ? 'Sending' : 'Send offer'}
                 accessibilityRole="button"
               >

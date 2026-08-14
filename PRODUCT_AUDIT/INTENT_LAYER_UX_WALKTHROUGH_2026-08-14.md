@@ -358,12 +358,16 @@ above, not a ranking issue.
    sharing the exact Sat-Sun boundary `matchesDateWindow()` already used — verified live with a
    real Sunday friend-request that the old single-date call would have missed and the new range
    call correctly finds. See CLAUDE.md's "Intent Layer UX walkthrough fixes" plan, finding 2.
-3. **The "Alt. time" offer type has no actual time input anywhere, on either side.**
-   `business_request_offers.proposed_time` / `submitBusinessOfferResponse()`'s `proposedTime` is
-   never set by any caller and never rendered by `BusinessRequestDetailScreen` in either the
-   `offered` or `accepted` state — the chip changes a stored `offer_type` value with no user-
-   facing behavior attached to it. `src/screens/BusinessDashboardScreen.js:1467-1480`,
-   `src/screens/BusinessRequestDetailScreen.js:150-166`.
+3. **FIXED, 2026-08-14.** ~~The "Alt. time" offer type has no actual time input anywhere, on
+   either side.~~ `business_request_offers.proposed_time` / `submitBusinessOfferResponse()`'s
+   `proposedTime` was never set by any caller and never rendered by `BusinessRequestDetailScreen`
+   in either the `offered` or `accepted` state — the chip changed a stored `offer_type` value with
+   no user-facing behavior attached to it. Fixed client-side only (the schema/RPC already
+   supported it correctly): `BusinessDashboardScreen.js`'s offer modal now shows a real
+   `DateTimePicker` when "Alt. time" is selected, required before the offer can be sent;
+   `BusinessRequestDetailScreen.js` now renders the real proposed time (and `offer_price`, which
+   was also silently dropped once an offer moved to `accepted`) on both offer-card states. See
+   CLAUDE.md's "Intent Layer UX walkthrough fixes" plan, finding 3.
 4. **The empty-fallback's "try widening what you're looking for" has no widening control.**
    `AskBusinessScreen.js` submits with a hardcoded `radiusMiles: 15` — there is no radius input
    anywhere on the screen, so the copy invites an action the UI doesn't offer.

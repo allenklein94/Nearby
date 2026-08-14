@@ -23,6 +23,18 @@ const OFFER_STATUS_COPY = {
   completed: 'Completed',
 };
 
+// business_request_offers.proposed_time was previously collected nowhere
+// (the "Alt. time" offer-type chip had no time input attached to it at
+// all) and rendered nowhere -- PRODUCT_AUDIT/
+// INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md, finding 3. Now that
+// BusinessDashboardScreen's "Make an Offer" modal actually collects it,
+// render it here too, both before and after acceptance.
+function formatProposedTime(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 // The consumer-side offer-review/accept screen -- Phase 2 of the Intent
 // Layer plan (CLAUDE.md). Reached right after submitting a request
 // (AskBusinessScreen) and, later, via a real push notification
@@ -150,6 +162,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {o.status === 'offered' && (
                 <>
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+                  {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
                   {!hasWinner && (
                     <TouchableOpacity
@@ -167,6 +180,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {o.status === 'accepted' && (
                 <>
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+                  {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
+                  {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
                   <TouchableOpacity
                     style={styles.completeButton}
                     onPress={() => handleComplete(o.id)}
@@ -206,6 +221,7 @@ const getStyles = (colors) => StyleSheet.create({
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
+  offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   acceptButtonText: { color: '#fff', fontWeight: '700' },

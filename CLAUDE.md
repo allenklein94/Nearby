@@ -91,6 +91,26 @@ current as each lands.
    `offerTypeInput === 'alt_time'`, threaded through `submitBusinessOfferResponse()`'s already-
    existing `proposedTime` param. `BusinessRequestDetailScreen.js` renders `proposed_time` (real
    formatted date/time) on both the `offered` and `accepted` offer-card states when present.
+
+   **Finding 3 — DONE.** Built exactly as planned, no schema/RPC change needed (confirmed
+   `submit_business_offer`'s `proposed_time_param` already worked correctly, purely a client
+   coverage gap). `BusinessDashboardScreen.js`'s "Make an Offer" modal now shows a real
+   `DateTimePicker` (same pattern as `CreateGatheringScreen.js`'s own date/time step) whenever
+   "Alt. time" is the selected offer type, required before Send Offer enables (a small addition
+   beyond the plan's own text: submit is now disabled until a time is actually picked, matching
+   the same "don't let an incomplete alt-time offer go out silently missing its own time" spirit).
+   `BusinessRequestDetailScreen.js` renders the real proposed time (and, as a small adjacent fix
+   while touching this exact render block, `offer_price` too, previously shown only in the
+   `offered` state and silently dropped once accepted) on both offer-card states. Verified via a
+   direct `@babel/core` parse of both touched files (clean) and a full `npx expo export --platform
+   ios` (clean). **Not done yet, same standing gap as everywhere else in this file**: no manual
+   simulator/device run-through — next session should confirm the picker renders/behaves
+   correctly on a real device (both iOS spinner and Android default display modes), that the
+   proposed time round-trips correctly end-to-end (business picks it → consumer sees the exact
+   same time, no timezone drift), and that selecting a different offer type after picking a time
+   doesn't leave a stale, now-irrelevant proposed time silently attached if the business flips
+   back to "Alt. time" later in the same session (currently: it would still be there, which is
+   arguably correct — not re-verified against a real multi-edit session).
 4. **The empty-fallback's "try widening what you're looking for" has no widening control** —
    `AskBusinessScreen.js` always submits with a hardcoded `radiusMiles: 15`, and
    `BusinessRequestDetailScreen` is reached via `navigation.replace()`, so there's no back-
