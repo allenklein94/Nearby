@@ -311,7 +311,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   offerCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   offerTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   offerDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
-  scarcityText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
+  scarcityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   redeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   lockedButton: { backgroundColor: colors.surfaceElevated },

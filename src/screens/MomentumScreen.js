@@ -170,7 +170,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chartRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 110 },
   barColumn: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
   barTrack: { width: 14, height: 80, justifyContent: 'flex-end', backgroundColor: colors.surfaceElevated, borderRadius: radius.sm, overflow: 'hidden' },
-  barFill: { width: '100%', backgroundColor: colors.primary, borderRadius: radius.sm },
+  barFill: { width: '100%', backgroundColor: colors.textPrimary, borderRadius: radius.sm },
   barWeekLabel: { color: colors.textTertiary, fontSize: 9, marginTop: 4 },
   deltaCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

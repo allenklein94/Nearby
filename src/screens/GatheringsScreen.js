@@ -1399,7 +1399,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card,
   },
-  matchCard: { borderColor: colors.primary },
+  matchCard: { borderColor: colors.border },
   coverPhoto: { width: '100%', height: 140, borderRadius: radius.md, marginBottom: spacing.sm, backgroundColor: colors.surfaceElevated },
   detailsToggleText: { color: colors.primary, fontSize: 12, fontWeight: '700', marginBottom: spacing.sm },
   vibeSection: { marginBottom: spacing.sm },
@@ -1416,8 +1416,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   moreButton: { paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
   moreButtonText: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   expandChevron: { color: colors.textTertiary, fontSize: 16, paddingHorizontal: spacing.sm },
-  matchBadge: { alignSelf: 'flex-start', backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
-  matchBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '700' },
+  matchBadge: {
+    alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+  },
+  matchBadgeText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
   womenOnlyBadge: { alignSelf: 'flex-start', backgroundColor: '#f9a8d4', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm },
   womenOnlyBadgeText: { color: '#831843', fontSize: 11, fontWeight: '700' },
   friendsInterestedBadge: {

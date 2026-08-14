@@ -312,7 +312,7 @@ const getStyles = (colors) => StyleSheet.create({
   insightRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm },
   insightLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', width: 110 },
   insightBarTrack: { flex: 1, height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' },
-  insightBarFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+  insightBarFill: { height: '100%', backgroundColor: colors.textPrimary, borderRadius: 4 },
   insightPercent: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', width: 36, textAlign: 'right' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },

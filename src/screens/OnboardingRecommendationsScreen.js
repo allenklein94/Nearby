@@ -123,7 +123,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
   },
-  missionLabel: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  missionLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   missionText: { color: colors.textPrimary, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 18, alignItems: 'center', ...shadow.button },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },

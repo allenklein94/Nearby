@@ -130,6 +130,55 @@ reads clearly at a glance now that it's `textPrimary` vs. `textViewed`'s `colors
 `SightingsOverviewMap.js`'s neutral avatar-pin border is still visible against a real map tile
 (map backgrounds vary by location/zoom in a way this sandbox can't render).
 
+## Follow-up, 2026-08-14: stat/count-highlighting coral — DONE
+
+Same session, closing out the larger of the two categories explicitly flagged as needing its own
+decision in the prior two entries. 12 occurrences across 10 files, all confirmed via direct grep
+against current line numbers (not assumed from the original audit read) before editing, since two
+prior passes had already shifted some line numbers. Verified the same way as every prior entry
+(clean `@babel/core` parse of all 10 files + a full `npx expo export --platform ios`, no bundling
+errors). Total `colors.primary` occurrences across `src/` now 389, down from the original 423.
+
+- **`GatheringsScreen.js`**: `matchCard`'s border modifier → `colors.border` (now a no-op against
+  the base `card` style it overrides, left in place rather than removed from the JSX, since
+  deleting the conditional application itself would be touching component logic, not just a
+  color value). `matchBadge`/`matchBadgeText` (the "Matches your interests" pill) swapped to this
+  same file's own existing neutral-badge convention — `colors.surfaceElevated` + `colors.border`
+  border + `colors.textSecondary` text — matching `friendsInterestedBadge`/`friendsInterestedText`
+  a few lines below it exactly, rather than inventing a new neutral badge style.
+- **`BusinessDashboardScreen.js`** (4 spots): `statNumber` (the stat-grid number itself, e.g.
+  follower count) → `colors.textPrimary` — stays bold/prominent, just not brand-colored.
+  `offerRedemptionCount`/`breakdownText` (smaller inline stat text, `breakdownText` reused across
+  6 call sites) → `colors.textSecondary`. `estimatedOwedLabel` (the "ESTIMATED AMOUNT OWED"
+  caption inside the now-neutral card from the first cleanup entry) → `colors.textTertiary`,
+  matching the label/value convention already established elsewhere in this same file (the actual
+  number, `estimatedOwedValue`, was already `colors.textPrimary` and untouched — labels go
+  tertiary, values stay prominent).
+- **`OnboardingRecommendationsScreen.js`**: `missionLabel` (the "YOUR FIRST MISSION" caption
+  inside the now-neutral `missionCard`) → `colors.textTertiary`, same label convention.
+- **Progress-bar fills (4 files)** → `colors.textPrimary`: `ProfileScreen.js`'s
+  `completenessBarFill`, `ChemistryDiaryListScreen.js`'s `insightBarFill`, `MomentumScreen.js`'s
+  `barFill`, `RewardsScreen.js`'s `progressFill`. None of these encode a real state distinction
+  the way `StoriesRow.js`'s ring did (they're all a single continuous fill, not two discrete
+  states), so a single neutral tone was safe here without losing any signal.
+- **Scarcity/status text (3 spots)** → `colors.textSecondary`: `BrandOffersScreen.js`'s
+  `scarcityText` ("N of M spots left") and `redeemedBadgeText` ("Redeemed" badge),
+  `BusinessProfileScreen.js`'s `scarcityText`.
+- **`InviteFriendsScreen.js`**: `codeText` (the large referral code display, separate from the
+  actual Share button below it) → `colors.textPrimary` — stays large/prominent, not brand-colored.
+
+**Both categories flagged as needing an explicit decision are now resolved**: this one (fixed),
+and the sender-identity chat-bubble convention (explicitly left as a deliberate keep-as-is, not
+picked this round — see the prior entries for the full reasoning). Per the earlier audit's own
+"Fully clean files" tracking, `colors.primary` in `src/` is now overwhelmingly reserved for real
+CTAs, selected states, and links across the whole app.
+
+**Not done, same standing gap as everywhere else**: no manual simulator/device run-through — next
+session should confirm none of these 12 changes reads as washed-out or hard to distinguish from
+its surrounding neutral text against real content (progress bars in particular are worth a close
+look, since a fill bar with no color contrast at all against its track can become hard to read at
+a glance).
+
 ## Classification rubric (given to every batch agent, restated here for consistency)
 
 - **ACTIONABLE**: coral is applied to something the user taps to perform a real action — a

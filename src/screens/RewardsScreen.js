@@ -135,7 +135,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tierName: { ...typography.title, color: colors.textPrimary, fontSize: 20 },
   pointsText: { color: colors.textTertiary, fontSize: 13, marginTop: 4, marginBottom: spacing.md },
   progressTrack: { width: '100%', height: 8, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: colors.primary, borderRadius: radius.full },
+  progressFill: { height: '100%', backgroundColor: colors.textPrimary, borderRadius: radius.full },
   progressLabel: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm, textAlign: 'center' },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   tierListCard: {

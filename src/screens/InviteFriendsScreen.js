@@ -154,7 +154,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     alignItems: 'center', marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border,
   },
   codeLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
-  codeText: { fontSize: 32, fontWeight: '800', letterSpacing: 4, color: colors.primary, marginBottom: spacing.lg },
+  codeText: { fontSize: 32, fontWeight: '800', letterSpacing: 4, color: colors.textPrimary, marginBottom: spacing.lg },
   shareButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, ...shadow.button },
   shareButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   statCard: {
