@@ -145,7 +145,11 @@ const getStyles = (colors) => StyleSheet.create({
     width: 60, height: 60, borderRadius: 30, borderWidth: 2.5,
     justifyContent: 'center', alignItems: 'center', marginBottom: 4,
   },
-  ringUnviewed: { borderColor: colors.primary },
+  // Unviewed-vs-viewed is a real status distinction, not just emphasis — kept
+  // visually different from ringViewed's plain border, just via the neutral
+  // "primary content" text tone instead of brand coral (this ring itself
+  // isn't the tap target; the whole row is, regardless of viewed state).
+  ringUnviewed: { borderColor: colors.textPrimary },
   ringViewed: { borderColor: colors.border },
   addRing: { borderColor: colors.border, borderStyle: 'dashed' },
   addIcon: { fontSize: 24, color: colors.primary, fontWeight: '300' },

@@ -172,7 +172,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   placeName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   placeAddress: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   placeRating: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
-  placeGatherings: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  placeGatherings: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.lg },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },

@@ -667,7 +667,7 @@ const getStyles = (colors) => StyleSheet.create({
   continueCommunityLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   continueCommunityLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   continueCommunityName: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
-  continueCommunityDetail: { color: colors.primary, fontSize: 12, marginTop: 2 },
+  continueCommunityDetail: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
   perksBanner: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,

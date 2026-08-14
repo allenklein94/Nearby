@@ -74,6 +74,62 @@ neutral cards still read clearly against their surrounding content, the Activity
 still looks reasonable without coral, and both Delete buttons/the Paywall error text render
 correctly in the danger color on a real device.
 
+## Follow-up, 2026-08-14: "other coral leftovers" — avatar rings + remaining nested-stat cases — DONE
+
+Same session, continuing the same hard rule, asked to close out two of the smaller categories
+explicitly left out of the first cleanup pass: avatar/photo rings, and the remaining "stat
+nested inside an already-tappable row" cases beyond the one (`ActivityScreen.js`) already fixed.
+Eight files, verified the same way as before (clean `@babel/core` parse of every touched file +
+a full `npx expo export --platform ios`, no bundling errors):
+
+**Avatar/photo rings (3 files)** — each checked against its real JSX first to confirm the ring
+itself carries no separate tap action (distinct from `BusinessHostBadge.js`'s conditionally-
+tappable badge, which was correctly left alone in the original audit):
+- `MatchCelebrationModal.js`'s `photoWrap` (pure celebratory flourish, no informational content
+  either — both photos get identical treatment) → `'rgba(255,255,255,0.3)'`, matching this same
+  file's own existing convention for neutral text on its permanent dark overlay
+  (`subtitle`/`dismissText` already use `rgba(255,255,255,...)`) rather than a semantic
+  light/dark-aware token that would be invisible against a fixed black background.
+- `SightingsOverviewMap.js`'s `avatarPin` (confirmed no `onPress` of its own — the sibling
+  `Callout` handles the tap) → `colors.border`.
+- `StoriesRow.js`'s `ringUnviewed` — **a real judgment call, not a mechanical swap**: unlike the
+  other two, this ring genuinely encodes state (unviewed vs. viewed story), not just emphasis.
+  Confirmed via the JSX that the ring itself isn't the tap surface (the outer `ringWrap`
+  `TouchableOpacity` is, and it's tappable regardless of viewed state) — so per the hard rule it
+  can't stay coral. But swapping straight to `colors.border` would have made it identical to
+  `ringViewed` and erased the distinction entirely, which the audit itself never asked for and
+  would be a real regression, not a decoration removed. Used `colors.textPrimary` instead — still
+  a real, visually distinct "primary content" tone per the user's own stated hierarchy, not brand
+  coral, and still tells unviewed from viewed at a glance.
+
+**Remaining "stat nested inside a tappable row" cases (5)** — each swapped from `colors.primary`
+to `colors.textSecondary`, keeping the stat legible and still a notch more prominent than the
+plain tertiary/caption text around it, just without brand color: `HomeScreen.js`'s
+`continueCommunityDetail` ("N new messages" inside the tappable community card, whose own
+actionable label `continueCommunityName` was already neutral — this was the original "backwards"
+inconsistency flagged in Batch 1), `GatheringsScreen.js`'s `styles.time` (the scheduled-date text
+on all three nearby/attending/hosting card layouts, since they all share the one style object),
+`OnboardingRecommendationsScreen.js`'s `cardMatch` ("⭐ Matches your interests"),
+`PlacesScreen.js`'s `placeGatherings` ("🎉 N gathering(s) here"), and `CommunityCalendar.js`'s
+gathering-presence `dot`/`dotSelected` — left `cellSelected`/`dayTextSelected` untouched, since
+those genuinely are the tappable day-cell's own real selection state.
+
+**Deliberately still not touched, per the same "targeted, not a redesign" discipline**: the
+larger stat/count-highlighting text category (`GatheringsScreen.js`'s `matchBadgeText`/
+`matchCard` border, `BusinessDashboardScreen.js`'s `statNumber`/`offerRedemptionCount`/
+`breakdownText`/`estimatedOwedLabel`/`missionLabel`, `ProfileScreen.js`'s
+`completenessBarFill`, `ChemistryDiaryListScreen.js`'s `insightBarFill`, `MomentumScreen.js`'s
+`barFill`, `RewardsScreen.js`'s `progressFill`, `BrandOffersScreen.js`/`BusinessProfileScreen.js`'s
+`scarcityText`, `InviteFriendsScreen.js`'s `codeText`) and the 6-surface sender-identity chat-
+bubble convention — both already flagged in the prior entry as needing their own explicit
+decision, still true.
+
+**Not done, same standing gap as everywhere else**: no manual simulator/device run-through —
+next session should specifically confirm `StoriesRow.js`'s unviewed/viewed ring distinction still
+reads clearly at a glance now that it's `textPrimary` vs. `textViewed`'s `colors.border`, and that
+`SightingsOverviewMap.js`'s neutral avatar-pin border is still visible against a real map tile
+(map backgrounds vary by location/zoom in a way this sandbox can't render).
+
 ## Classification rubric (given to every batch agent, restated here for consistency)
 
 - **ACTIONABLE**: coral is applied to something the user taps to perform a real action — a

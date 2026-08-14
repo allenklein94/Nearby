@@ -101,6 +101,6 @@ const getStyles = (colors) => StyleSheet.create({
   dayTextMuted: { color: colors.textTertiary },
   dayTextToday: { fontWeight: '800' },
   dayTextSelected: { color: colors.primary, fontWeight: '800' },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary, marginTop: 2 },
-  dotSelected: { backgroundColor: colors.primary },
+  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.textSecondary, marginTop: 2 },
+  dotSelected: { backgroundColor: colors.textSecondary },
 });

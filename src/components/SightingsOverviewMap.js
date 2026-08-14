@@ -53,7 +53,7 @@ export default function SightingsOverviewMap({ sightings, photoUrls, userLocatio
 const getStyles = (colors) => StyleSheet.create({
   map: { flex: 1 },
   avatarPin: {
-    width: 40, height: 40, borderRadius: 20, borderWidth: 2.5, borderColor: colors.primary,
+    width: 40, height: 40, borderRadius: 20, borderWidth: 2.5, borderColor: colors.border,
     overflow: 'hidden', backgroundColor: colors.surfaceElevated,
   },
   avatarImage: { width: '100%', height: '100%' },

@@ -1427,7 +1427,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   friendsInterestedText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.sm },
-  time: { ...typography.caption, color: colors.primary, fontWeight: '600' },
+  time: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
   distance: { ...typography.caption, color: colors.textTertiary },
   attendeesRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   attendeeAvatars: { flexDirection: 'row', marginRight: spacing.sm },

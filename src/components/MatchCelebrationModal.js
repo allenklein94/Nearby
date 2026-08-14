@@ -74,7 +74,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   subtitle: { ...typography.body, color: 'rgba(255,255,255,0.8)', marginBottom: spacing.xl, textAlign: 'center' },
   photosRow: { flexDirection: 'row', marginBottom: spacing.xl },
   photoWrap: {
-    width: 110, height: 110, borderRadius: 55, borderWidth: 4, borderColor: colors.primary,
+    width: 110, height: 110, borderRadius: 55, borderWidth: 4, borderColor: 'rgba(255,255,255,0.3)',
     overflow: 'hidden', backgroundColor: colors.surfaceElevated,
   },
   photoWrapLeft: { marginRight: -20, zIndex: 1 },

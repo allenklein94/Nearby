@@ -113,7 +113,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   cardTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
   cardDate: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  cardMatch: { color: colors.primary, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  cardMatch: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginTop: 4 },
   cardChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
