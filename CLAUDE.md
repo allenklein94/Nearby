@@ -4,6 +4,154 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: skeptical first-time-user product critique of the intent-first Home (Aug 14 2026) — READ-ONLY, no code changed, decision pending with the user
+
+**Explicit instruction, given directly, not to be silently acted on**: after the Intent Layer +
+Business Fulfillment architecture (all 4 phases) and the UX walkthrough's 6 findings were both
+fully DONE, the user deliberately stopped asking for more building and asked instead: "Does this
+actually make Nearby better than it was before?" — framed as a real inflection point, where the
+risk flips from *underbuilding* the vision to *overbuilding* on top of a product whose core
+mechanics already work. The instruction was explicit: act as a skeptical first-time Nearby user
+and product reviewer, evaluate the current implementation against 10 named categories (first
+impression, mental model, results-as-answers, business-fallback naturalness, stranger-safety
+legibility, whether existing product still feels important, Home's hierarchy, terminology, dead
+ends, differentiation), score each 1-10, name the five highest-priority changes, **and do not
+implement anything** — bring the critique back for a decision first, not build against it
+autonomously.
+
+**Methodology**: read the actual current implementation directly rather than reasoning about it
+abstractly — `HomeScreen.js` (full render tree, top to bottom), `CreateHubScreen.js`,
+`DiscoverHubScreen.js`, `AIConciergeScreen.js`, `intentResolver.js`, `AskBusinessScreen.js`,
+`BusinessRequestDetailScreen.js`, and `ViewProfileScreen.js`. No files were edited. Every finding
+below is grounded in a specific screen/copy string/code path actually read this pass, not a
+generic take.
+
+### Scores (1-10)
+
+| # | Category | Score |
+|---|---|---|
+| 1 | First impression | 6 |
+| 2 | Mental model | 5 |
+| 3 | Results feel like answers | 7 |
+| 4 | Business fallback transition | 7 |
+| 5 | Stranger-safety boundary legibility | 9 |
+| 6 | Does existing product still feel important | 7 |
+| 7 | Home hierarchy | 6 |
+| 8 | Terminology a first-timer won't understand | 7 |
+| 9 | Dead ends / weak results | 5 |
+| 10 | Differentiation vs. Maps/Yelp/Meetup/dating/coupon apps | 6 |
+
+Not an 8+/10 sweep — several real, specific coherence problems, not just "needs polish."
+
+### Findings, by category
+
+**1. First impression (6/10).** "What do you want to do?" is a good, honest hook, but it's
+undercut by its own surroundings: the greeting subtitle directly above it
+(`PERIOD_SUBTITLES[period]`, e.g. "What sounds good this morning?") asks essentially the same
+question in different words one line up, with no visual link — the subtitle is actually labeling
+the Quick Picks section further down the screen, not the box below it, but a first-time reader has
+no way to know that. Bigger problem: **this same question is asked three times across three tabs,
+three different ways, three different mechanisms** — Home: "What do you want to do?" (classifier +
+five-branch resolver against real supply). Create: "What do you want to do?" — the literal
+identical sentence (`CreateHubScreen.js` subtitle), a creation-only picker with no resolver at
+all. Discover: "What are you looking for?" plus a separate "✨ Ask AI Concierge what to do" row
+(`DiscoverHubScreen.js` → `AIConciergeScreen.js`) — a third, premium-gated LLM call over a smaller
+candidate set (gatherings/communities/perks only, no business fallback, no friend/match tier).
+
+**2. Mental model (5/10).** Two real cracks in the "Nearby resolves intent through anything"
+promise: **(a) community-classified asks skip the resolver entirely** —
+`HomeScreen.js`'s `handleHomeIntentSubmit()` branches `if (result.intent === 'community' ||
+result.intent === 'business_partner') { proceedToCreation(...) }` *before* ever calling
+`resolveIntent()`, so a "community" classification never checks `resolveCommunities()` (or
+anything else) for an existing match — even a community the user already belongs to. Only
+`gathering`/`unclear`-classified text gets the full five-branch resolver. Typing "I want to start
+a run club" when a matching community already exists sends the user straight to creating a
+duplicate, with zero acknowledgment that one exists. **(b) The friend/match tier
+(`resolveConnectedRequests()`) will read as empty for most real users for a long time** — it only
+fires when a friend/match has *independently submitted their own open business request* with an
+overlapping category and date, not "a friend who likes coffee." In a young app with low request
+volume, the "existing trusted people" pillar of the 5-source model is real in the code but will
+almost never actually surface in practice.
+
+**3. Results feel like answers (7/10).** Gathering/perk/business-availability results read like
+real answers (title, one honest reason line, tap-through to the real thing). The weak link: a
+`friend_request` result ("{name} is also looking for this") taps through to a bare `ViewProfile`
+via `navigation.navigate('ViewProfile', { userId: item.userId })` with **no context about the
+shared ask carried over, and `ViewProfileScreen.js` has no Message/Chat button anywhere in its own
+UI** (confirmed via direct grep — only `handleAddFriend`) — the user is told "here's someone who
+wants the same thing" and dropped on a profile with no way to act on that fact.
+
+**4. Business fallback transition (7/10).** Bridging copy is genuinely good — "Can Nearby make
+this happen?" — the ask is framed as first-class, not a consolation prize. But the screen itself
+is a real jump in weight from a one-line box: a 24-tag category grid, four date-window chips,
+party size, budget, and (as of this session's Finding 4 fix) a 15/30/50mi radius picker. Right
+mechanism, but it reads as being handed an intake form mid-conversation, not a continuation of it.
+
+**5. Stranger-safety boundary legibility (9/10).** Strongest category — the resolver never
+surfaces an unconnected person anywhere, and (per this session's Finding 5) the `unclear`-copy now
+states the boundary explicitly. Only soft spot: the explanation only appears *after* a
+person-shaped ask gets classified `unclear` — a user who never types something person-shaped never
+learns the boundary exists at all, so it reads as "graceful refusal" more than "stated policy."
+
+**6. Does existing product still feel important (7/10).** Dating/matches, gatherings, communities,
+and perks are all fully reachable, nothing visually demoted to a "legacy" treatment. But Home's
+most prominent real estate now goes to the intent box, and matches/dating shows up only as one row
+in a five-row utility card ("N unread messages" → `Matches`) — functionally intact, no longer part
+of the story Home tells about itself.
+
+**7. Home hierarchy (6/10).** The box's *position* is right (top of screen, above everything). But
+it doesn't feel dominant once you scroll — read the full render tree top to bottom and counted:
+below the box sits a banner cluster (invites/perks/weather/since-away), Your Plans, Quick Picks,
+Happening Near You, Your Communities, a five-row quick-stats card, a four-part "Because You
+Like…" cluster (Because You're Into / Best Pick / Trending / Friends' Activity), a weekly recap,
+a quiet-night fallback, and a Continue Browsing button — 12+ more sections. The box reads as "one
+more thing at the top" of an otherwise-unchanged long scroll, not as the screen's new organizing
+principle.
+
+**8. Terminology (7/10).** Client-facing copy is genuinely clean — no leaked internal vocabulary
+found anywhere read this pass (no "resolver"/"tier"/"fulfillment"/"opportunity" in any UI string).
+The real cost isn't jargon, it's the duplicate-phrasing problem from #1 — three surfaces asking
+the same question three ways is a bigger comprehension tax than any single unfamiliar word.
+
+**9. Dead ends / weak results (5/10).** Community-intent asks skip the existing-supply check
+entirely (#2a). Friend/match results dead-end at a message-less profile (#3). The friend/match
+tier will likely read empty for most users for a long time (#2b). The empty-fallback →
+Ask-a-business handoff asks for category twice in close succession (the classifier's guess, then
+the form's own 24-chip picker) right after a "we found nothing" letdown — not wrong, but a small
+redundant-effort moment.
+
+**10. Differentiation (6/10).** The real pitch — "ask for what you want, we check your real life
+first, a business is a fallback, not the point" — is genuinely good once understood, and it's real
+in the architecture. But it's not legible to a first-time user, because Discover's own "Ask AI
+Concierge" row competes with Home's box for the identical territory with different behavior and a
+different premium gate. A new user is more likely to notice "there are two ask-boxes that behave
+differently" than absorb the actual differentiation.
+
+### Five highest-priority changes (not built — decision pending)
+
+1. **Kill the redundant "ask box."** Fold AI Concierge's capability into Home's one resolver, or
+   remove the Discover entry point. Two competing natural-language boxes with different result
+   sets and different premium gates is the single biggest thing undermining "one coherent
+   product."
+2. **Route community-classified intents through the resolver too**, so a community-shaped ask
+   checks for an existing/joined match before offering to create a duplicate — closes the one real
+   gap in the "checks everything first" promise (#2a).
+3. **Give the friend/match result somewhere to go** — either add a message affordance to that
+   specific tap-through, or drop the framing so it doesn't imply an action that isn't actually
+   there (#3).
+4. **Reconcile the three "what do you want" phrasings** (Home / Create / Discover) into language
+   that makes the difference between them legible — today they read as the same feature
+   stuttering across three tabs (#1, #10).
+5. **Tighten Home's hierarchy below the box** — fewer, more clearly subordinate sections, so the
+   page visibly defers to the intent box instead of sitting atop an otherwise-unchanged
+   12-section scroll (#7).
+
+**Status: read-only critique complete, nothing implemented.** Per explicit instruction, this is
+the decision point — none of the five recommendations above should be built without the user
+picking which (if any) to act on first. This section should be updated (not silently deleted)
+once that decision is made and/or any of the five items are actually built, matching this file's
+own standing plan-then-status convention.
+
 ## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, all 6 findings DONE, build-wise
 
 Written before implementation, same restart-safety convention as every other plan-first section
