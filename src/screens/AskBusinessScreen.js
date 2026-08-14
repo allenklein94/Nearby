@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { submitBusinessRequest } from '../services/businessFulfillment';
+import { submitBusinessRequest, submitBusinessRequestForGathering } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -49,14 +49,23 @@ function toDateParam(dateWindow) {
   return null;
 }
 
-// Reached from Home's intent box once Tiers 1/3 (existing gatherings/
-// perks) genuinely found nothing -- Tier 4 of the resolver, "ask a
-// business to make it happen." Framed to the user as a real, first-class
-// path, never a fallback after "the real options" failed, per the plan's
-// own locked product principle.
+// Reached two ways: from Home's intent box once Tiers 1/3 (existing
+// gatherings/perks) genuinely found nothing -- Tier 4 of the resolver,
+// "ask a business to make it happen," framed as a real, first-class path,
+// never a fallback after "the real options" failed -- or, when
+// `route.params.gatheringId` is present, from a gathering's own host
+// banner (Phase 3, "a gathering becomes a demand generator"). In gathering
+// mode, party size/date/location are all real data sourced server-side
+// from the gathering itself, never re-asked here -- the "When" step is
+// skipped entirely since the gathering already has a real date, and party
+// size renders as a fact, not an editable field.
 export default function AskBusinessScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+
+  const gatheringId = route.params?.gatheringId ?? null;
+  const gatheringTitle = route.params?.gatheringTitle ?? null;
+  const gatheringPartySize = route.params?.gatheringPartySize ?? null;
 
   const [text, setText] = useState(route.params?.prefillText ?? '');
   const [category, setCategory] = useState(route.params?.prefillCategory ?? null);
@@ -72,15 +81,27 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     setSubmitting(true);
     try {
-      const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
       const budgetMaxNum = budgetMax.trim() ? parseInt(budgetMax.trim(), 10) : null;
-      const result = await submitBusinessRequest({
-        text: text.trim(),
-        category,
-        partySize: Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null,
-        budgetMax: Number.isInteger(budgetMaxNum) && budgetMaxNum > 0 ? budgetMaxNum : null,
-        date: toDateParam(dateWindow),
-      });
+      const safeBudgetMax = Number.isInteger(budgetMaxNum) && budgetMaxNum > 0 ? budgetMaxNum : null;
+
+      let result;
+      if (gatheringId) {
+        result = await submitBusinessRequestForGathering({
+          gatheringId,
+          text: text.trim(),
+          category,
+          budgetMax: safeBudgetMax,
+        });
+      } else {
+        const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
+        result = await submitBusinessRequest({
+          text: text.trim(),
+          category,
+          partySize: Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null,
+          budgetMax: safeBudgetMax,
+          date: toDateParam(dateWindow),
+        });
+      }
       navigation.replace('BusinessRequestDetail', { requestId: result.requestId, justSubmitted: true, notifiedCount: result.notifiedCount });
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
@@ -92,10 +113,13 @@ export default function AskBusinessScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.heading}>Can Nearby make this happen?</Text>
+          <Text style={styles.heading}>
+            {gatheringId ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go` : 'Can Nearby make this happen?'}
+          </Text>
           <Text style={styles.subtitle}>
-            We couldn't find anything already happening for this — real nearby businesses can
-            respond with a real offer.
+            {gatheringId
+              ? `Asking on behalf of your ${gatheringPartySize ?? ''}-person gathering — real nearby businesses can respond with a real offer for the group.`
+              : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
           </Text>
 
           <Text style={styles.label}>What do you want?</Text>
@@ -124,34 +148,40 @@ export default function AskBusinessScreen({ navigation, route }) {
             ))}
           </View>
 
-          <Text style={styles.label}>When?</Text>
-          <View style={styles.chipRow}>
-            {DATE_OPTIONS.map((d) => (
-              <TouchableOpacity
-                key={d.key}
-                style={[styles.chip, dateWindow === d.key && styles.chipSelected]}
-                onPress={() => setDateWindow(d.key)}
-                accessibilityLabel={d.label}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.chipText, dateWindow === d.key && styles.chipTextSelected]}>{d.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {!gatheringId && (
+            <>
+              <Text style={styles.label}>When?</Text>
+              <View style={styles.chipRow}>
+                {DATE_OPTIONS.map((d) => (
+                  <TouchableOpacity
+                    key={d.key}
+                    style={[styles.chip, dateWindow === d.key && styles.chipSelected]}
+                    onPress={() => setDateWindow(d.key)}
+                    accessibilityLabel={d.label}
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.chipText, dateWindow === d.key && styles.chipTextSelected]}>{d.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
 
           <View style={styles.row}>
-            <View style={{ flex: 1, marginRight: spacing.sm }}>
-              <Text style={styles.label}>Party size (optional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 4"
-                placeholderTextColor={colors.textTertiary}
-                value={partySize}
-                onChangeText={setPartySize}
-                keyboardType="number-pad"
-                accessibilityLabel="Party size"
-              />
-            </View>
+            {!gatheringId && (
+              <View style={{ flex: 1, marginRight: spacing.sm }}>
+                <Text style={styles.label}>Party size (optional)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 4"
+                  placeholderTextColor={colors.textTertiary}
+                  value={partySize}
+                  onChangeText={setPartySize}
+                  keyboardType="number-pad"
+                  accessibilityLabel="Party size"
+                />
+              </View>
+            )}
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Budget max (optional)</Text>
               <TextInput

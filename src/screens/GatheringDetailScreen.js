@@ -536,6 +536,21 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>🤝 Request a Business Partner →</Text>
               </TouchableOpacity>
+              {new Date(gathering.scheduled_at) >= new Date() && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('AskBusiness', {
+                    gatheringId,
+                    gatheringTitle: gathering.title,
+                    gatheringPartySize: (gathering.approvedAttendees?.length ?? 0) + 1,
+                    prefillCategory: gathering.interest_tag ?? null,
+                  })}
+                  style={{ marginTop: spacing.xs }}
+                  accessibilityLabel="Ask local businesses on behalf of this gathering"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.hostBannerLink}>🍽️ Ask Local Businesses →</Text>
+                </TouchableOpacity>
+              )}
               {!gathering.community_id && new Date(gathering.scheduled_at) < new Date() && (
                 <TouchableOpacity
                   onPress={() => navigation.navigate('CreateCommunity', {

@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phases 1 and 2 DONE
+## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phases 1-3 DONE (gatherings only for Phase 3; communities deliberately deferred)
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what's
@@ -396,8 +396,77 @@ only). `HomeScreen.js`'s intent-result icon logic gained a third branch (`person
   when a real accepted friend has a genuinely compatible open request, and that tapping it lands
   cleanly on that friend's `ViewProfile`.
 
-Everything in this plan not yet built (gathering/community → business demand, proactive business
-availability, the broader "matching" framing layer — Phases 3-5) is locked, per the design work
+**Phase 3 — DONE for gatherings, communities deliberately deferred.** Built per the plan's own
+locked framing ("a gathering becomes a demand generator for Business Fulfillment, not just a
+receiver of sponsorship... needs the broadcast-with-competing-offers shape from Phase 2") — this
+is entirely additive to Phase 2's own tables/RPCs, not a second lifecycle: a gathering-sourced
+request lands in the exact same `business_requests`/`business_request_offers` rows, gets fanned
+out, offered on, and accepted through the exact same RPCs already built and verified in Phase 2.
+The only new thing is a second, host-only *way to create* a request, where every field that can
+be real is: `party_size` is the gathering's actual approved-attendee count (+1 for the host,
+never user-typed), `date` is the gathering's own `scheduled_at`, and `latitude`/`longitude` are
+the gathering's own real `precise_lat`/`precise_lng` — read server-side, never re-collected from
+the device or exposed to the client (same narrow-need exception to the coordinate-fuzzing rule
+`get_gathering_meetup_point()` already established). Only `raw_text`/`category`/`budget_max`
+(the genuinely subjective "what are we actually asking for") stay caller-supplied.
+- **Schema**: `business_requests` gained a nullable `gathering_id` FK. A new
+  `_business_request_fanout()` internal helper was factored out of Phase 2's own
+  `create_business_request` (verbatim fan-out logic, no behavior change) so the new gathering
+  path doesn't duplicate the haversine/eligibility SQL — locked down (`revoke all from public,
+  anon, authenticated`) since it takes a raw request id/lat/lng with no ownership check of its
+  own; **verified empirically before relying on this**, not assumed from documentation, that a
+  nested call from within another `SECURITY DEFINER` function owned by the same role bypasses
+  that lockdown (confirmed live against production with disposable throwaway test functions,
+  then dropped) — the same lockdown-but-internally-callable shape already established by
+  `expire_stale_business_requests()`. `create_business_request` itself was re-pointed at the
+  shared helper via `CREATE OR REPLACE` — pure internal refactor, same signature/behavior,
+  confirmed via a live regression call after the change (still returns the same shape, still
+  fans out correctly). New `create_business_request_for_gathering(gathering_id, raw_text,
+  category, budget_max, radius_miles)` — host-only (`gatherings.host_id = auth.uid()`, matching
+  `business_partnership_requests`' existing host/creator/leader-only precedent for "ask a
+  business on behalf of the group" rather than letting any attendee commit the group), raises a
+  real error if the gathering has no location set. Request expiry is bounded to the gathering's
+  own `scheduled_at` (capped at 30 days out) rather than the solo path's generic 48h default,
+  since a request tied to a specific gathering stops being useful once that gathering's already
+  happened.
+- **Community demand generation deliberately NOT built this pass** — flagged, not an oversight.
+  Communities have no scheduled date or precise location the way a gathering does (this schema's
+  own Unified Map section already established communities are topic-based, not place/time-based)
+  — there's no real signal to source party size/date/location from the way there is for a
+  gathering, and the plan's own phase-3 text names gatherings explicitly.
+- **Client**: new `submitBusinessRequestForGathering()` in `businessFulfillment.js`.
+  `AskBusinessScreen.js` now has a real gathering mode (`route.params.gatheringId`) — different
+  heading/subtitle naming the real gathering and its real party size, the "When?" date-window
+  picker and the party-size input both hidden (both already real/sourced server-side, nothing
+  to ask), category/budget/text stay editable. `GatheringDetailScreen.js`'s host banner gained a
+  new "🍽️ Ask Local Businesses →" link, right below the existing "🤝 Request a Business Partner"
+  link, gated on the gathering being genuinely upcoming (`scheduled_at >= now()` — the mirror
+  image of the existing "Start a Community from This Gathering" link's own `< now()` gate a few
+  lines below it), passing the real already-fetched attendee count through for the screen's own
+  display copy (not sent to the RPC — the RPC recomputes it server-side from real data
+  regardless of what the client claims).
+- **Verified live end-to-end against production**, real host/attendee data: a non-host calling
+  `create_business_request_for_gathering` for someone else's gathering was correctly rejected
+  (`Only the host can ask businesses on behalf of this gathering.`); the real host succeeded,
+  with the returned `partySize` (2: one real approved attendee + the host) and the stored
+  `date`/`latitude`/`longitude` all confirmed to exactly match the gathering's own real
+  `scheduled_at`/`precise_lat`/`precise_lng` — not approximated, not re-derived. All test data
+  (the request, its fan-out offer, the added `gathering_interest` row, the temporarily-set
+  business coordinates) deleted/reverted afterward; production confirmed back to its exact
+  pre-test baseline.
+- **Verified via a real from-scratch migration replay** (17 files, `psql -v ON_ERROR_STOP=1`,
+  exit 0 throughout), per this file's migration-discipline rule — both new functions confirmed
+  to exist in the freshly-rebuilt database. Client-side verified via a direct `@babel/core`
+  parse of all three touched files (clean) and a full `npx expo export --platform ios` (clean).
+- **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+  run-through — next session should confirm the new "Ask Local Businesses" link renders only for
+  an upcoming gathering's own host, that `AskBusinessScreen`'s gathering mode reads correctly
+  (real title, real party size, no date/party-size inputs), and that the resulting request
+  flows through offer/accept exactly like a solo one on `BusinessRequestDetailScreen`.
+
+Everything in this plan not yet built (proactive business availability, the broader "matching"
+framing layer — Phases 4-5, plus community demand generation, deliberately deferred within Phase
+3 itself per the note above) is locked, per the design work
 already done, and ready to build when picked up — see each phase's own plan text above.
 
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE

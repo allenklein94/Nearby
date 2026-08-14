@@ -48,6 +48,22 @@ export async function submitBusinessRequest({
   return { requestId: data.requestId, notifiedCount: data.notifiedCount };
 }
 
+// Phase 3: a gathering becomes a demand generator for Business Fulfillment.
+// Host-only. party_size/date/location are all sourced server-side from the
+// gathering's own real data -- never re-collected from the device or
+// typed by the caller, unlike the solo submitBusinessRequest() above.
+export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15 }) {
+  const { data, error } = await supabase.rpc('create_business_request_for_gathering', {
+    gathering_id_param: gatheringId,
+    raw_text_param: text,
+    category_param: category,
+    budget_max_param: budgetMax,
+    radius_miles_param: radiusMiles,
+  });
+  if (error) throw new Error(error.message);
+  return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize };
+}
+
 // The requester's own view of one request plus every offer on it (RLS
 // already scopes both selects to rows the caller can legitimately see --
 // their own request, and offers on it from any business, regardless of
