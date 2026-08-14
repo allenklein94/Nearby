@@ -157,6 +157,21 @@ current as each lands.
    empty-fallback panel on `HomeScreen.js` gain one honest explanatory line above their existing
    content — plain language, no jargon, plainly stating Nearby doesn't search for individual
    people directly and that gatherings/communities are the real mechanism for meeting people here.
+
+   **Finding 5 — DONE.** Built exactly as planned, copy-only, no new logic. Both
+   `intentResults` (the ranked-results panel) and `intentEmptyFallback` (the empty-fallback
+   panel) on `HomeScreen.js` now render a real explanatory line — "Nearby doesn't search for
+   individual people directly — gatherings and communities are how you meet people here." (plus a
+   short lead-in to the results below it in the ranked-results panel) — gated on
+   `classifyResult?.intent === 'unclear'`, the one classification bucket that's neither a named
+   creation intent nor a resolver-shaped category ask. Every other intent (`gathering`/
+   `community`/`business_partner`) renders exactly as before — no change to their copy or
+   behavior. Verified via a direct `@babel/core` parse (clean) and a full `npx expo export
+   --platform ios` (clean, 1864 modules, unchanged — edit to one existing file only). **Not done
+   yet, same standing gap as everywhere else in this file**: no manual simulator/device
+   run-through — next session should confirm the note renders correctly (and only) for a
+   genuinely `unclear`-classified ask, in both the ranked-results and empty-fallback panels, and
+   that it reads as an honest explanation rather than an apology.
 6. **The 24-tag category system is the resolver's real precision ceiling** — "pickleball"
    collapses to "Sports" with no narrowing anywhere, silently, for every branch that filters by
    category. This is a genuinely large product decision (expanding the taxonomy, or adding real

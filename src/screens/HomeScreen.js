@@ -359,6 +359,13 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
+              {intentResults.classifyResult?.intent === 'unclear' && (
+                <Text style={styles.intentUnclearNote}>
+                  Nearby doesn't search for individual people directly — gatherings and
+                  communities are how you meet people here. Here's what's already happening
+                  that might fit.
+                </Text>
+              )}
               <Text style={styles.intentResultsHeading}>Already happening near you</Text>
               {intentResults.items.map((item) => (
                 <TouchableOpacity
@@ -390,6 +397,12 @@ export default function HomeScreen({ navigation }) {
 
           {intentEmptyFallback && (
             <View style={styles.intentResults}>
+              {intentEmptyFallback.classifyResult?.intent === 'unclear' && (
+                <Text style={styles.intentUnclearNote}>
+                  Nearby doesn't search for individual people directly — gatherings and
+                  communities are how you meet people here.
+                </Text>
+              )}
               <Text style={styles.intentResultsHeading}>Nothing already happening for this</Text>
               <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusiness}>
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
@@ -856,6 +869,7 @@ const getStyles = (colors) => StyleSheet.create({
   intentButtonDisabled: { opacity: 0.5 },
   intentButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   intentResults: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  intentUnclearNote: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 18 },
   intentResultsHeading: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.sm },
   intentResultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   intentResultIcon: { marginRight: spacing.sm },
