@@ -238,6 +238,11 @@ export default function BusinessDashboardScreen({ navigation }) {
       Alert.alert('Add a description', 'Say what you can offer.');
       return;
     }
+    const descCheck = await checkTextModeration(offerDescriptionInput);
+    if (!descCheck.safe) {
+      Alert.alert('Not allowed', 'Please revise your offer description and try again.');
+      return;
+    }
     setRespondingOpportunityId(offerModalRequestId);
     try {
       const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
@@ -288,6 +293,11 @@ export default function BusinessDashboardScreen({ navigation }) {
   async function handlePostAvailability() {
     if (!availabilityTitleInput.trim()) {
       Alert.alert('Add a title', 'Say what you have available, e.g. "4 empty tables tonight".');
+      return;
+    }
+    const titleCheck = await checkTextModeration(availabilityTitleInput);
+    if (!titleCheck.safe) {
+      Alert.alert('Title not allowed', 'Please revise and try again.');
       return;
     }
     setPostingAvailability(true);
