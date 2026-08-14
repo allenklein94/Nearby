@@ -5,6 +5,7 @@ import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage
 import { getSignedPhotoUrl } from '../services/photos';
 import { captureStoryMedia, uploadStory } from '../services/stories';
 import ReportBlockModal from '../components/ReportBlockModal';
+import LoadErrorState from '../components/LoadErrorState';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -92,7 +93,7 @@ export default function GatheringChatScreen({ route }) {
     ({ limit, beforeCreatedAt }) => getGatheringMessagesPage(gatheringId, { limit, beforeCreatedAt }),
     [gatheringId]
   );
-  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder } = usePaginatedMessages(fetchPage);
+  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer(draftText ?? '');
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -155,6 +156,18 @@ export default function GatheringChatScreen({ route }) {
     });
   }
 
+  // Was previously indistinguishable from a genuinely empty chat --
+  // getGatheringMessagesPage() used to swallow a real query error into an
+  // empty array, which would have rendered the "Say hi" empty state below
+  // instead of a real error + retry.
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -183,6 +196,10 @@ export default function GatheringChatScreen({ route }) {
               <View style={{ paddingVertical: spacing.md }}>
                 <ActivityIndicator color={colors.textTertiary} />
               </View>
+            ) : loadOlderError ? (
+              <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
+                <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+              </TouchableOpacity>
             ) : !hasMore && messages.length > 0 ? (
               <Text style={styles.historyStartText}>The start of this gathering's chat</Text>
             ) : null
@@ -269,6 +286,7 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   historyStartText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.md },
+  historyErrorText: { color: colors.primary, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: spacing.sm, gap: spacing.xs },

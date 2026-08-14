@@ -362,6 +362,74 @@ header) were not built — not approved this pass. No manual simulator/device ru
 session (or the user directly) should confirm the reordered/restyled Home actually reads as
 intended on a real device, matching this file's standing limitation everywhere else.
 
+## Aug 14 2026 — two small, flagged-but-unfixed gaps closed (silently swallowed chat-load errors, business dashboard's uncaught secondary loaders) — DONE
+
+Asked directly to close two of the small, real, previously-flagged gaps from this file's own
+history (surfaced when the user asked "are any gaps missing" after the Home hierarchy pass
+above) — both were explicitly low-priority ("no stuck-spinner risk") when first flagged, not
+oversights being newly discovered.
+
+1. **`usePaginatedMessages.js`'s shared `fetchPage()` callers swallowed a real Supabase error
+   into an empty array — DONE, fixed once, in the shared hook, for all four chat-style
+   screens.** All four `fetchPage` implementations (`ChatScreen.js`'s inline function,
+   `getGatheringMessagesPage()`, `getCommunityMessagesPage()`, `getBusinessMessagesPage()`) did
+   `if (error) { console.error(...); return []; }` — a real query failure was indistinguishable,
+   to `usePaginatedMessages`, from a genuinely empty conversation (on initial load) or a
+   genuinely exhausted history (on load-older, since an empty page also sets `hasMore` to
+   `false`). Fixed by making all four throw instead of swallowing, and adding the actual
+   try/catch to the hook itself — `usePaginatedMessages.js` now exposes `loadError` (initial
+   load failed) and `loadOlderError` (a load-older page failed) alongside its existing state,
+   matching this hook's own established "fix once, in one shared place, for all four screens"
+   precedent from when it was first built.
+   - **`ChatScreen.js`**: gained a new `messagesLoadError` branch (named to avoid colliding with
+     the screen's own pre-existing `loadError`, used for the profile/match fetch) rendering
+     `LoadErrorState` with `onRetry={loadInitial}` instead of falling through to the "Say hi"
+     empty state. The `ListFooterComponent` gained a `loadOlderError` branch — a tappable
+     "Couldn't load older messages — tap to retry" row — instead of silently, falsely reporting
+     "The start of your conversation."
+   - **`GatheringChatScreen.js`** / **`CommunityChatScreen.js`** / **`BusinessConversationScreen.js`**
+     — identical treatment: a new full-screen `LoadErrorState` branch (none of these three had
+     any load-error handling at all before this pass, unlike `ChatScreen.js`) plus the same
+     `loadOlderError` retry row in each screen's `ListFooterComponent`.
+   - `BusinessDashboardScreen.js`'s owner-side `loadConversationMessages()` (a different,
+     non-infinite-scroll caller of `getBusinessMessagesPage()`) already wrapped its call in
+     `.catch(() => [])` — confirmed unaffected by the throw, no regression there.
+   - Verified via a direct `@babel/core` parse of all 8 touched files (clean) and a full `npx
+     expo export --platform ios` (clean, no bundling errors — edits to existing files only, no
+     new files).
+2. **`BusinessDashboardScreen.js`'s secondary tab loaders had no try/catch of their own — DONE,
+   all 10 wrapped.** Per this file's own earlier framing: none of these gate the screen's main
+   `loading` flag (`loadMyPartner`/`loadStats` already had their own try/catch and are what
+   actually gates it), so there was never a stuck-spinner risk — the real gap was a silent,
+   unindicated failure leaving that one section's data empty/stale with nothing distinguishing
+   it from "genuinely nothing here," plus an unhandled promise rejection on every real failure.
+   Wrapped `loadPartnershipRequests`, `loadOffers`, `loadGatherings` (including its per-gathering
+   `Promise.all` breakdown fetch), `loadGrowth`, `loadConversations`, `loadNeedsAttention`,
+   `loadTopMembers`, `loadVisitFrequency`, `loadInsights`, and `loadCommunities` — each in its
+   own try/catch, logging to `console.error` and leaving that section's state exactly as it was
+   before the failed call, matching the exact pattern the two already-correct loaders in this
+   same file (`loadOpportunities`/`loadMyAvailability`) already established ("Non-fatal — the
+   rest of the dashboard already loaded independently."). `loadConversations` specifically now
+   returns `[]` on failure instead of rejecting, so the `useFocusEffect`'s
+   `loadConversations(...).then((results) => loadNeedsAttention(...))` chain still runs
+   `loadNeedsAttention` with an empty list instead of silently never calling it at all.
+   Deliberately proportionate, not expanded: no new per-section error/retry UI was built for any
+   of the 10 — that would be a materially larger change than what was flagged as a small, low-
+   priority gap; a section that fails to load now fails safely and silently-but-loggably, same
+   risk posture as before, just without the unhandled rejection and with the failure now visible
+   in logs instead of invisible everywhere.
+   - Verified via a direct `@babel/core` parse (clean, part of the same 8-file batch above,
+     `BusinessDashboardScreen.js` being the 9th) and the same full `npx expo export --platform
+     ios` (clean, no bundling errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: a genuinely broken network
+mid-conversation-load on each of the four chat screens surfaces the new `LoadErrorState` (not
+easily simulable without real device network throttling), that tapping "Try Again"/the
+load-older retry row actually recovers once connectivity returns, and that a business dashboard
+whose partner has zero data in one of the 10 wrapped sections still renders that section's
+existing empty state correctly (no regression from the new try/catch wrapping).
+
 ## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, all 6 findings DONE, build-wise
 
 Written before implementation, same restart-safety convention as every other plan-first section

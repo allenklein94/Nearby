@@ -119,12 +119,16 @@ export default function ChatScreen({ route, navigation }) {
     if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt);
     const { data, error } = await query;
     if (error) {
+      // Was swallowed into an empty array -- indistinguishable from a
+      // genuinely empty/exhausted conversation to usePaginatedMessages.
+      // Throw so the hook's own try/catch can surface a real error state
+      // instead of a silent, misleading "nothing here."
       console.error('loadMessages page error', error);
-      return [];
+      throw error;
     }
     return data ?? [];
   }, [matchId]);
-  const { messages, setMessages, loadInitial, loadOlder, prependMessage, updateMessage, hasMore, loadingOlder } = usePaginatedMessages(fetchPage);
+  const { messages, setMessages, loadInitial, loadOlder, prependMessage, updateMessage, hasMore, loadingOlder, loadError: messagesLoadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer();
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
@@ -1071,6 +1075,17 @@ export default function ChatScreen({ route, navigation }) {
     );
   }
 
+  // Was previously indistinguishable from a genuinely empty conversation
+  // (fetchPage swallowed the error into []), which would have rendered
+  // the "Say hi" empty state below instead of a real error + retry.
+  if (messagesLoadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your messages." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -1117,11 +1132,20 @@ export default function ChatScreen({ route, navigation }) {
           onEndReached={loadOlder}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
-            // Renders visually at the TOP under `inverted`.
+            // Renders visually at the TOP under `inverted`. loadOlderError
+            // was previously indistinguishable from "no more history" --
+            // fetchPage swallowed the failure into an empty page, which
+            // silently set hasMore to false. Now a real failed page load
+            // shows a real retry instead of a false "start of your
+            // conversation" the user has no way to tell apart from truth.
             loadingOlder ? (
               <View style={{ paddingVertical: spacing.md }}>
                 <ActivityIndicator color={colors.textTertiary} />
               </View>
+            ) : loadOlderError ? (
+              <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
+                <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+              </TouchableOpacity>
             ) : !hasMore && messages.length > 0 ? (
               <Text style={styles.historyStartText}>The start of your conversation</Text>
             ) : null
@@ -1402,6 +1426,7 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   historyStartText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.md },
+  historyErrorText: { color: colors.primary, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   firstMessageHint: { ...typography.caption, color: colors.primary, textAlign: 'center', marginTop: spacing.sm, fontWeight: '600' },

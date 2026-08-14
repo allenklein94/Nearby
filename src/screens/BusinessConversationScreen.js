@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { getBusinessMessagesPage, sendMessageToBusiness } from '../services/brandOffers';
 import ReportBlockModal from '../components/ReportBlockModal';
+import LoadErrorState from '../components/LoadErrorState';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
@@ -18,7 +19,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
     ({ limit, beforeCreatedAt }) => getBusinessMessagesPage(partnerId, null, { limit, beforeCreatedAt }),
     [partnerId]
   );
-  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder } = usePaginatedMessages(fetchPage);
+  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer();
   const [reportTarget, setReportTarget] = useState(null);
 
@@ -87,6 +88,18 @@ export default function BusinessConversationScreen({ route, navigation }) {
     });
   }
 
+  // Was previously indistinguishable from a genuinely empty conversation --
+  // getBusinessMessagesPage() used to swallow a real query error into an
+  // empty array, which would have rendered the "Say hi" empty state below
+  // instead of a real error + retry.
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load this conversation." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -111,6 +124,10 @@ export default function BusinessConversationScreen({ route, navigation }) {
               <View style={{ paddingVertical: spacing.md }}>
                 <ActivityIndicator color={colors.textTertiary} />
               </View>
+            ) : loadOlderError ? (
+              <TouchableOpacity onPress={loadOlder} accessibilityLabel="Couldn't load older messages, tap to retry" accessibilityRole="button">
+                <Text style={styles.historyErrorText}>Couldn't load older messages — tap to retry</Text>
+              </TouchableOpacity>
             ) : !hasMore && messages.length > 0 ? (
               <Text style={styles.historyStartText}>The start of your conversation with {partnerName}</Text>
             ) : null
@@ -158,6 +175,7 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   historyStartText: { color: colors.textTertiary, fontSize: 12, textAlign: 'center', paddingVertical: spacing.md },
+  historyErrorText: { color: colors.primary, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
   bubble: {

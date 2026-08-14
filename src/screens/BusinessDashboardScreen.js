@@ -221,8 +221,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   );
 
   async function loadPartnershipRequests(partnerId) {
-    const results = await getPendingPartnershipRequestsForPartner(partnerId);
-    setPartnershipRequests(results);
+    try {
+      const results = await getPendingPartnershipRequestsForPartner(partnerId);
+      setPartnershipRequests(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadPartnershipRequests failed', e);
+    }
   }
 
   async function loadOpportunities(partnerId) {
@@ -385,66 +390,100 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   async function loadOffers(partnerId) {
-    const results = await getMyBusinessOffers(partnerId);
-    setOffers(results);
-    const counts = await getRedemptionCounts(results.map((o) => o.id));
-    setOfferRedemptionCounts(counts);
+    try {
+      const results = await getMyBusinessOffers(partnerId);
+      setOffers(results);
+      const counts = await getRedemptionCounts(results.map((o) => o.id));
+      setOfferRedemptionCounts(counts);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadOffers failed', e);
+    }
   }
 
   async function loadGatherings(partnerId) {
-    const results = await getMyBusinessGatherings(partnerId);
-    setGatherings(results);
+    try {
+      const results = await getMyBusinessGatherings(partnerId);
+      setGatherings(results);
 
-    const breakdowns = await Promise.all(
-      results.map(async (g) => {
-        const { data } = await supabase.rpc('get_gathering_attendee_breakdown', { gathering_id_param: g.id });
-        return [g.id, data?.[0] ?? null];
-      })
-    );
-    setGatheringBreakdowns(Object.fromEntries(breakdowns));
+      const breakdowns = await Promise.all(
+        results.map(async (g) => {
+          const { data } = await supabase.rpc('get_gathering_attendee_breakdown', { gathering_id_param: g.id });
+          return [g.id, data?.[0] ?? null];
+        })
+      );
+      setGatheringBreakdowns(Object.fromEntries(breakdowns));
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadGatherings failed', e);
+    }
   }
 
   async function loadGrowth(partnerId) {
-    const { data, error } = await supabase.rpc('get_business_growth', { partner_id_param: partnerId });
-    if (!error) setGrowth(data?.[0] ?? null);
+    try {
+      const { data, error } = await supabase.rpc('get_business_growth', { partner_id_param: partnerId });
+      if (!error) setGrowth(data?.[0] ?? null);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadGrowth failed', e);
+    }
   }
 
   async function loadConversations(partnerId) {
-    const results = await getBusinessConversations(partnerId);
-    setConversations(results);
-    return results;
+    try {
+      const results = await getBusinessConversations(partnerId);
+      setConversations(results);
+      return results;
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      // Returning [] (rather than letting this reject) also keeps the
+      // .then(loadNeedsAttention) chain in useFocusEffect from silently
+      // never running at all on a failure.
+      console.error('loadConversations failed', e);
+      return [];
+    }
   }
 
   async function loadNeedsAttention(partnerId, conversationsList) {
-    // Genuine, real actionable items — not invented busywork. A
-    // pending gathering approval and unread messages are the only
-    // two things I can compute honestly right now without guessing.
-    const tasks = [];
+    try {
+      // Genuine, real actionable items — not invented busywork. A
+      // pending gathering approval and unread messages are the only
+      // two things I can compute honestly right now without guessing.
+      const tasks = [];
 
-    const { count: pendingCount } = await supabase
-      .from('gathering_interest')
-      .select('id, gatherings!inner(hosting_partner_id)', { count: 'exact', head: true })
-      .eq('gatherings.hosting_partner_id', partnerId)
-      .eq('status', 'pending');
-    if (pendingCount > 0) {
-      tasks.push({ label: `${pendingCount} attendee request${pendingCount === 1 ? '' : 's'} waiting for approval`, onPress: () => setSection('gatherings') });
+      const { count: pendingCount } = await supabase
+        .from('gathering_interest')
+        .select('id, gatherings!inner(hosting_partner_id)', { count: 'exact', head: true })
+        .eq('gatherings.hosting_partner_id', partnerId)
+        .eq('status', 'pending');
+      if (pendingCount > 0) {
+        tasks.push({ label: `${pendingCount} attendee request${pendingCount === 1 ? '' : 's'} waiting for approval`, onPress: () => setSection('gatherings') });
+      }
+
+      // fromBusiness comes straight off get_business_conversations_summary's
+      // last_from_business column now (see getBusinessConversations) — the
+      // old client-grouped version never actually carried this field, so
+      // this filter was silently always true (`!undefined`) before.
+      const unreadCount = conversationsList.filter((c) => !c.fromBusiness).length;
+      if (unreadCount > 0) {
+        tasks.push({ label: `${unreadCount} conversation${unreadCount === 1 ? '' : 's'} waiting for a reply`, onPress: () => setSection('inbox_modal') });
+      }
+
+      setNeedsAttention(tasks);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadNeedsAttention failed', e);
     }
-
-    // fromBusiness comes straight off get_business_conversations_summary's
-    // last_from_business column now (see getBusinessConversations) — the
-    // old client-grouped version never actually carried this field, so
-    // this filter was silently always true (`!undefined`) before.
-    const unreadCount = conversationsList.filter((c) => !c.fromBusiness).length;
-    if (unreadCount > 0) {
-      tasks.push({ label: `${unreadCount} conversation${unreadCount === 1 ? '' : 's'} waiting for a reply`, onPress: () => setSection('inbox_modal') });
-    }
-
-    setNeedsAttention(tasks);
   }
 
   async function loadTopMembers(partnerId) {
-    const results = await getBusinessTopMembers(partnerId);
-    setTopMembers(results);
+    try {
+      const results = await getBusinessTopMembers(partnerId);
+      setTopMembers(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadTopMembers failed', e);
+    }
   }
 
   async function handleToggleMemberHistory(member) {
@@ -481,8 +520,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   async function loadVisitFrequency(partnerId) {
-    const result = await getBusinessVisitFrequency(partnerId);
-    setVisitFrequency(result);
+    try {
+      const result = await getBusinessVisitFrequency(partnerId);
+      setVisitFrequency(result);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadVisitFrequency failed', e);
+    }
   }
 
   // Bounded to the most recent 50 rather than the full thread — this view
@@ -514,15 +558,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   async function loadInsights(partnerId) {
-    const result = await getBusinessInsights(partnerId);
-    setInsights(result);
-    const owed = await getEstimatedAmountOwed(partnerId).catch(() => ({ redemptionCount: 0, estimatedAmount: 0 }));
-    setEstimatedOwed(owed);
+    try {
+      const result = await getBusinessInsights(partnerId);
+      setInsights(result);
+      const owed = await getEstimatedAmountOwed(partnerId).catch(() => ({ redemptionCount: 0, estimatedAmount: 0 }));
+      setEstimatedOwed(owed);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadInsights failed', e);
+    }
   }
 
   async function loadCommunities(partnerId) {
-    const results = await getBusinessCommunities(partnerId);
-    setCommunities(results);
+    try {
+      const results = await getBusinessCommunities(partnerId);
+      setCommunities(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadCommunities failed', e);
+    }
   }
 
   function formatDate(iso) {

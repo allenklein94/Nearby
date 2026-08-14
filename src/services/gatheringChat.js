@@ -17,8 +17,12 @@ export async function getGatheringMessagesPage(gatheringId, { limit = 50, before
 
   const { data, error } = await query;
   if (error) {
+    // Was swallowed into an empty array -- indistinguishable from a
+    // genuinely empty/exhausted conversation to usePaginatedMessages, the
+    // caller. Throw so the hook's own try/catch can surface a real error
+    // state instead of a silent, misleading "nothing here."
     console.error('getGatheringMessagesPage error', error);
-    return [];
+    throw error;
   }
   return data ?? [];
 }
