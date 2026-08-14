@@ -180,6 +180,14 @@ export function routeNotificationTap(data) {
         navigationRef.navigate('BusinessProfile', { partnerId: data.partner_id });
       }
       break;
+    case 'business_offer_received':
+      if (data.request_id) {
+        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id });
+      }
+      break;
+    case 'business_offer_accepted':
+      navigationRef.navigate('BusinessDashboard');
+      break;
     default:
       break;
   }

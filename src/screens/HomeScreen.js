@@ -73,6 +73,7 @@ export default function HomeScreen({ navigation }) {
   const [intentText, setIntentText] = useState('');
   const [intentThinking, setIntentThinking] = useState(false);
   const [intentResults, setIntentResults] = useState(null);
+  const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
   const [intentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   const period = getTimePeriod();
 
@@ -202,10 +203,17 @@ export default function HomeScreen({ navigation }) {
   // community/business_partner intents skip the resolver entirely -- it
   // only ever resolves against gathering-shaped supply (gatherings and
   // perks), never an existing community or a business partnership.
+  // Phase 2 extends the empty-result case: rather than falling straight
+  // through to creation, a gathering-shaped ask that Tiers 1/3 genuinely
+  // couldn't cover now also offers Tier 4 -- asking real nearby businesses
+  // -- as a real, first-class option alongside "create it yourself,"
+  // never framed as a fallback after "the real options" failed, per the
+  // plan's own locked product principle.
   async function handleHomeIntentSubmit() {
     if (!intentText.trim()) return;
     setIntentThinking(true);
     setIntentResults(null);
+    setIntentEmptyFallback(null);
     const typedText = intentText.trim();
     try {
       const result = await classifyCreateRequest(typedText);
@@ -216,7 +224,7 @@ export default function HomeScreen({ navigation }) {
         if (resolved.length > 0) {
           setIntentResults({ items: resolved, classifyResult: result, typedText });
         } else {
-          proceedToCreation(result, typedText);
+          setIntentEmptyFallback({ classifyResult: result, typedText });
         }
       }
     } catch (e) {
@@ -236,7 +244,21 @@ export default function HomeScreen({ navigation }) {
 
   function handleIntentResultsDismiss() {
     setIntentResults(null);
+    setIntentEmptyFallback(null);
     setIntentText('');
+  }
+
+  function handleAskBusiness() {
+    const { classifyResult, typedText } = intentEmptyFallback;
+    setIntentEmptyFallback(null);
+    setIntentText('');
+    navigation.navigate('AskBusiness', {
+      prefillText: typedText,
+      prefillCategory: classifyResult.category ?? null,
+      prefillPartySize: classifyResult.partySize ?? null,
+      prefillBudgetMax: classifyResult.budgetMax ?? null,
+      prefillDateWindow: classifyResult.dateWindow ?? null,
+    });
   }
 
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
@@ -318,6 +340,22 @@ export default function HomeScreen({ navigation }) {
               ))}
               <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText)}>
                 <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleIntentResultsDismiss}>
+                <Text style={styles.intentResultsDismiss}>Try something else</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {intentEmptyFallback && (
+            <View style={styles.intentResults}>
+              <Text style={styles.intentResultsHeading}>Nothing already happening for this</Text>
+              <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusiness}>
+                <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
+                <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText)}>
+                <Text style={styles.intentResultsCreateNew}>Or create it yourself →</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
                 <Text style={styles.intentResultsDismiss}>Try something else</Text>
@@ -785,6 +823,11 @@ const getStyles = (colors) => StyleSheet.create({
   intentResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   intentResultsCreateNew: { color: colors.primary, fontWeight: '600', fontSize: 14, marginTop: spacing.sm },
   intentResultsDismiss: { color: colors.textTertiary, fontSize: 13, marginTop: spacing.sm },
+  askBusinessButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
+  },
+  askBusinessButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   plansCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,

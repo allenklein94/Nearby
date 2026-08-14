@@ -6,6 +6,7 @@ import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusin
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
+import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
@@ -16,8 +17,17 @@ const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Dashboard' },
   { key: 'gatherings', icon: '🎉', label: 'Gatherings' },
   { key: 'community', icon: '🏘️', label: 'Community' },
+  { key: 'requests', icon: '🎯', label: 'Requests' },
   { key: 'insights', icon: '📊', label: 'Insights' },
   { key: 'business', icon: '⚙️', label: 'Business' },
+];
+
+const OFFER_TYPE_OPTIONS = [
+  { key: 'standard', label: 'Standard' },
+  { key: 'discount', label: 'Discount' },
+  { key: 'perk', label: 'Perk' },
+  { key: 'upgrade', label: 'Upgrade' },
+  { key: 'alt_time', label: 'Alt. time' },
 ];
 
 export default function BusinessDashboardScreen({ navigation }) {
@@ -62,6 +72,12 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [savingNote, setSavingNote] = useState(false);
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [partnershipRequests, setPartnershipRequests] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
+  const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
+  const [offerModalRequestId, setOfferModalRequestId] = useState(null);
+  const [offerTypeInput, setOfferTypeInput] = useState('standard');
+  const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
+  const [offerPriceInput, setOfferPriceInput] = useState('');
   const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
   const [confirmingCode, setConfirmingCode] = useState(false);
   const [respondingToRequestId, setRespondingToRequestId] = useState(null);
@@ -150,6 +166,7 @@ export default function BusinessDashboardScreen({ navigation }) {
         loadTopMembers(selectedPartner.id);
         loadVisitFrequency(selectedPartner.id);
         loadPartnershipRequests(selectedPartner.id);
+        loadOpportunities(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -157,6 +174,54 @@ export default function BusinessDashboardScreen({ navigation }) {
   async function loadPartnershipRequests(partnerId) {
     const results = await getPendingPartnershipRequestsForPartner(partnerId);
     setPartnershipRequests(results);
+  }
+
+  async function loadOpportunities(partnerId) {
+    try {
+      const results = await getBusinessOpportunities(partnerId);
+      setOpportunities(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  function openOfferModal(requestId) {
+    setOfferModalRequestId(requestId);
+    setOfferTypeInput('standard');
+    setOfferDescriptionInput('');
+    setOfferPriceInput('');
+  }
+
+  async function handleSubmitOffer() {
+    if (!offerDescriptionInput.trim()) {
+      Alert.alert('Add a description', 'Say what you can offer.');
+      return;
+    }
+    setRespondingOpportunityId(offerModalRequestId);
+    try {
+      const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
+      await submitBusinessOfferResponse(offerModalRequestId, {
+        offerType: offerTypeInput,
+        offerDescription: offerDescriptionInput.trim(),
+        offerPrice: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
+      });
+      setOfferModalRequestId(null);
+      await loadOpportunities(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setRespondingOpportunityId(null);
+  }
+
+  async function handleDeclineOpportunity(requestId) {
+    setRespondingOpportunityId(requestId);
+    try {
+      await declineBusinessOpportunity(requestId);
+      await loadOpportunities(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setRespondingOpportunityId(null);
   }
 
   async function handleRespondToPartnershipRequest(requestId, approve) {
@@ -744,6 +809,59 @@ export default function BusinessDashboardScreen({ navigation }) {
               </>
             )}
 
+            {section === 'requests' && (
+              <>
+                <Text style={styles.sectionHeader}>Business Opportunities</Text>
+                <Text style={styles.helperText}>
+                  Real customers asking for something nearby -- respond with a real offer, or let
+                  a low-fit one pass.
+                </Text>
+                {opportunities.length === 0 ? (
+                  <Text style={styles.emptyText}>No requests yet.</Text>
+                ) : (
+                  opportunities.map((o) => (
+                    <View key={o.id} style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>{o.business_requests?.raw_text}</Text>
+                      <Text style={styles.breakdownText}>
+                        {[
+                          o.business_requests?.category,
+                          o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
+                          o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
+                        ].filter(Boolean).join(' · ') || 'No further details given'}
+                      </Text>
+                      {o.status === 'pending' && o.business_requests?.status === 'open' && (
+                        <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { backgroundColor: colors.primary, marginRight: spacing.sm }]}
+                            onPress={() => openOfferModal(o.request_id)}
+                            disabled={respondingOpportunityId === o.request_id}
+                            accessibilityLabel="Make an offer"
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.smallActionButtonText}>Make an Offer</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                            onPress={() => handleDeclineOpportunity(o.request_id)}
+                            disabled={respondingOpportunityId === o.request_id}
+                            accessibilityLabel="Decline this request"
+                            accessibilityRole="button"
+                          >
+                            {respondingOpportunityId === o.request_id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Not for me</Text>}
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {o.status !== 'pending' && (
+                        <Text style={styles.breakdownText}>
+                          {{ offered: 'You made an offer', accepted: 'They accepted your offer!', declined: 'You declined', expired: 'No longer open', cancelled: 'They cancelled', completed: 'Completed' }[o.status] ?? o.status}
+                        </Text>
+                      )}
+                    </View>
+                  ))
+                )}
+              </>
+            )}
+
             {section === 'insights' && (
               <>
               {(insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
@@ -1165,6 +1283,65 @@ export default function BusinessDashboardScreen({ navigation }) {
                 <Text style={styles.submitButtonText}>{postingUpdate ? 'Sending...' : 'Send to Followers'}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setUpdateModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={!!offerModalRequestId} animationType="slide" transparent onRequestClose={() => setOfferModalRequestId(null)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Make an Offer</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                Never just a discount -- offer whatever fits: your normal price, a discount, a
+                perk, an upgrade, or a different time that works better.
+              </Text>
+              <View style={styles.chipRow}>
+                {OFFER_TYPE_OPTIONS.map((o) => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.chip, offerTypeInput === o.key && styles.chipSelected]}
+                    onPress={() => setOfferTypeInput(o.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={o.label}
+                    accessibilityState={{ selected: offerTypeInput === o.key }}
+                  >
+                    <Text style={[styles.chipText, offerTypeInput === o.key && styles.chipTextSelected]}>{o.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm, minHeight: 80 }]}
+                placeholder="What are you offering? e.g. Table for 4 at 7:30, 15% off the check"
+                placeholderTextColor={colors.textTertiary}
+                value={offerDescriptionInput}
+                onChangeText={setOfferDescriptionInput}
+                multiline
+                accessibilityLabel="Offer description"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Price (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={offerPriceInput}
+                onChangeText={setOfferPriceInput}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Offer price, optional"
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmitOffer}
+                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim()}
+                accessibilityLabel={respondingOpportunityId === offerModalRequestId ? 'Sending' : 'Send offer'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? 'Sending...' : 'Send Offer'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </View>

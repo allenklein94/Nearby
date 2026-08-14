@@ -4,15 +4,16 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phase 1 (both sub-steps) DONE, Phase 2 not started
+## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phases 1 and 2 DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what's
 actually landed vs. still just this plan. The scope, the resolver design, the schema shape, and
 the phase order below were all reviewed and explicitly locked by the user in a second pass (not
 silently assumed). Phase 1's own two sub-steps (1a: intent-box UI, 1b: the Tier 1/3 resolver) are
-both now built, committed, and pushed — see their own status notes inline below. Phase 2
-(Business Fulfillment schema + RPCs) has not been started.
+both now built, committed, and pushed — see their own status notes inline below. **Phase 2
+(Business Fulfillment schema + RPCs) is now also done** — see its own status note appended after
+the Phase 2 plan text further down this section.
 
 ### Context and locked decisions
 
@@ -115,7 +116,7 @@ not before it, even though it's numbered ahead of Tier 3/4 in priority. Phase 1 
 Tiers 1 and 3 first (both fully backed by existing functions today) and add the Tier 2
 friends/matches piece once Phase 2's `business_requests` table exists to source it from.
 
-### Locked schema for Business Fulfillment (Phase 2) — designed, not yet applied
+### Locked schema for Business Fulfillment (Phase 2) — designed and now applied/built, see this section's own Phase 2 status note further down
 
 User-facing name is **"Business Fulfillment"** (never "engine"/"matching engine" in any
 user-visible copy — that language is fine internally in this doc and in code comments, not in
@@ -300,10 +301,57 @@ Building, in order:
 - ✅ Completion/outcome tracking (Phase 2)
 
 **Phase 1 (both checklist items above) is now built — see the Phase 1a/1b status notes further
-up this section for the full detail.** Phase 2 onward (1:1 business request through completion
-tracking) has not been started. Everything in this plan not yet built (resolver tiers beyond
-1/3, schema shape, enum names, phase order, the no-stranger-discovery principle) is locked, per
-the design work already done, and ready to build when Phase 2 is picked up.
+up this section for the full detail.**
+
+**Phase 2 — DONE.** Built exactly to the locked schema/RPC design above, no design changes
+during implementation. Picked back up after a codespace restart hit mid-build — on resume,
+`git status` showed the migration (`20260814_business_fulfillment.sql`), the new
+`services/businessFulfillment.js`, `AskBusinessScreen.js`, `BusinessRequestDetailScreen.js`, and
+edits to `RootNavigator.js`/`HomeScreen.js`/`notifications.js`/`BusinessDashboardScreen.js` all
+already present — everything was finished except one piece: `BusinessDashboardScreen.js` had the
+Requests tab's list/decline UI and all the offer-submission state/handlers
+(`offerModalRequestId`/`handleSubmitOffer`/`OFFER_TYPE_OPTIONS`) already wired, but the actual
+"Make an Offer" modal JSX was never added — `openOfferModal()` had nothing to open. Added it,
+matching this screen's own established modal style exactly (same `overlay`/`sheet`/`chipRow`
+convention as the adjacent Edit Profile/Post Update modals) — an offer-type chip row
+(Standard/Discount/Perk/Upgrade/Alt. time, never hard-coded to discount, matching the plan's own
+flexible-offer-shape requirement), a description field, an optional price field, and Send/Cancel.
+- **Schema/RPCs**: already applied to production (confirmed live — both tables, all 8 functions,
+  and the `expire-stale-business-requests` cron job all exist) from before the restart interrupted
+  the session; nothing needed re-applying.
+- **Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied,
+  using real profiles (`Claude` as requester, `Allen`/managing `Coastal Coffee` as the business)
+  and real disposable test coordinates (`Coastal Coffee` has no lat/lng seeded in production, so
+  its coordinates were set temporarily for the test and reverted after): `create_business_request`
+  correctly fanned out to the one real nearby active partner (`notifiedCount: 1`) and created a
+  real `pending` opportunity row; `submit_business_offer` correctly flipped it to `offered` with
+  real offer terms; a non-owner calling `submit_business_offer` for that business was correctly
+  rejected (`You do not manage a business.`); a non-owner of the *request* calling
+  `accept_business_offer` was correctly rejected (`You do not own this request.`); the real
+  requester's `accept_business_offer` succeeded, flipping the offer to `accepted` and the parent
+  request to `fulfilled`; a second `accept_business_offer` call on the same offer was correctly
+  rejected (`This request has already been resolved.`) — the reservation-integrity guard actually
+  holds, not just exists; `complete_business_reservation` by the business owner correctly flipped
+  it to `completed`. Also verified the RLS recursion-safe SELECT policy directly: a stranger
+  querying the request row directly got nothing back; the business owner (via
+  `business_request_offer_exists_for_caller()`) correctly saw it. All test rows deleted and
+  `Coastal Coffee`'s coordinates reverted to `null` afterward — confirmed production back to its
+  exact pre-test baseline (0 `business_requests`, 0 `business_request_offers`).
+- **Client-side verified via a direct `@babel/core` parse** of every touched/added file (clean)
+  and a full `npx expo export --platform ios` (clean, no bundling errors).
+- **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+  run-through — next session should confirm the full loop in the running app: submitting an ask
+  from Home's intent box when Tiers 1/3 come back empty, tapping "Ask Nearby Businesses" and
+  landing on `AskBusinessScreen` with the right prefill, a business owner seeing the new
+  opportunity on their dashboard's Requests tab and submitting a real offer via the now-added
+  modal, the consumer seeing and accepting that offer on `BusinessRequestDetailScreen`, and both
+  push-notification taps (`business_offer_received` → `BusinessRequestDetail`,
+  `business_offer_accepted` → `BusinessDashboard`) landing correctly on a real device.
+
+Everything in this plan not yet built (Tier 2 people-matching, gathering/community → business
+demand, proactive business availability, the broader "matching" framing layer — Phases 3-5) is
+locked, per the design work already done, and ready to build when picked up — see each phase's
+own plan text above.
 
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
 
