@@ -3,10 +3,15 @@ import { supabase, functionUrl } from './supabase';
 // The Create Assistant -- a free, unbranded natural-language box on
 // CreateHubScreen that classifies what the user's typing into an intent
 // plus best-effort prefill fields, routing to the right creation flow.
-// Distinct from the premium-gated AI Concierge (services/aiConcierge.js):
-// this is never labeled "AI" in the UI and has no premium gate, per the
-// user's own call that Premium should sell convenience, not permission to
-// use Create at all. No specific date/time extraction -- the user still
+// Never labeled "AI" in the UI and has no premium gate, per the user's
+// own call that Premium should sell convenience, not permission to use
+// Create at all. The separate premium-gated AI Concierge
+// (services/aiConcierge.js, Discover's own natural-language box) was
+// removed outright (Aug 14 2026, per the product-critique follow-through
+// in CLAUDE.md) -- it was a second, competing "what do you want" resolver
+// with a different candidate set and a different gate; Home's own intent
+// box (services/intentResolver.js) is now the one canonical entry point.
+// No specific date/time extraction -- the user still
 // picks that on the gathering wizard's own step. As of the Intent Layer
 // plan's Phase 1b, the response also carries a coarse dateWindow bucket
 // (today/tonight/tomorrow/weekend/flexible) plus best-effort partySize/

@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
-import { resolveIntent } from '../services/intentResolver';
+import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -210,24 +210,30 @@ export default function HomeScreen({ navigation }) {
     setIntentResults(null);
   }
 
-  // A submitted intent checks every real existing fulfillment path via
-  // services/intentResolver.js (gatherings, communities the caller
-  // belongs to, friends/matches with a compatible open ask, perks, and a
-  // business's own live posted availability) before ever falling through
-  // to creation. community/business_partner intents skip the resolver
-  // entirely -- it only ever resolves against gathering-shaped supply,
-  // never an existing community or a business partnership request.
-  // resolveIntent() ranks whatever it finds by one shared relevance
-  // score, not a fixed priority order -- see
-  // PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md, which
+  // A submitted intent checks every real existing fulfillment path before
+  // ever falling through to creation. business_partner intents skip
+  // resolution entirely -- "propose a specific business as a sponsor" has
+  // no existing-supply concept to check. gathering/unclear intents go
+  // through resolveIntent() (services/intentResolver.js -- gatherings,
+  // communities the caller belongs to, friends/matches with a compatible
+  // open ask, perks, and a business's own live posted availability),
+  // ranked by one shared relevance score, not a fixed priority order --
+  // see PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md, which
   // found and closed the gap where a rigid tier order let a handful of
   // loosely-matching gatherings silently starve out a better-fitting perk
-  // or business availability posting. Only when the resolver genuinely
-  // finds nothing across every real source does the empty-result fallback
-  // below offer "ask nearby businesses fresh, then wait for a real
-  // offer" -- a real, first-class option, distinct from the ranked
-  // results only because it's asynchronous (no answer yet), never framed
-  // as a fallback after "the real options" failed.
+  // or business availability posting. community intents go through the
+  // dedicated resolveCommunityIntent() -- previously this branch skipped
+  // resolution outright and went straight to creation, a real, confirmed
+  // logic bug: it meant "I want to start a run club" would offer to
+  // create a duplicate even when a matching community already existed.
+  // See CLAUDE.md's "skeptical first-time-user critique" section,
+  // recommendation 2, for the full writeup. Only when a resolver
+  // genuinely finds nothing does the caller see either the gathering
+  // path's "ask nearby businesses fresh, then wait for a real offer"
+  // fallback (asynchronous, never framed as a fallback after "the real
+  // options" failed) or, for a community intent, proceed straight to
+  // creation -- asking a business to sponsor an as-yet-nonexistent
+  // community doesn't make sense, so that path has no business-ask step.
   async function handleHomeIntentSubmit() {
     if (!intentText.trim()) return;
     setIntentThinking(true);
@@ -236,8 +242,15 @@ export default function HomeScreen({ navigation }) {
     const typedText = intentText.trim();
     try {
       const result = await classifyCreateRequest(typedText);
-      if (result.intent === 'community' || result.intent === 'business_partner') {
+      if (result.intent === 'business_partner') {
         proceedToCreation(result, typedText);
+      } else if (result.intent === 'community') {
+        const resolved = await resolveCommunityIntent({ category: result.category, rawText: typedText });
+        if (resolved.length > 0) {
+          setIntentResults({ items: resolved, classifyResult: result, typedText });
+        } else {
+          proceedToCreation(result, typedText);
+        }
       } else {
         const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText });
         if (resolved.length > 0) {
@@ -368,23 +381,63 @@ export default function HomeScreen({ navigation }) {
               )}
               <Text style={styles.intentResultsHeading}>Already happening near you</Text>
               {intentResults.items.map((item) => (
-                <TouchableOpacity
-                  key={`${item.type}-${item.id}`}
-                  style={styles.intentResultRow}
-                  onPress={() => handleIntentResultTap(item)}
-                >
-                  <Ionicons
-                    name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
-                    size={18}
-                    color={colors.primary}
-                    style={styles.intentResultIcon}
-                  />
-                  <View style={styles.intentResultTextCol}>
-                    <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-                    {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                item.type === 'friend_request' ? (
+                  // Product-critique follow-through, Aug 14 2026
+                  // (recommendation 3): this used to be a whole-row tap
+                  // straight to a bare ViewProfile with no way to act on
+                  // the shared ask -- ViewProfileScreen has no Message
+                  // button of its own, only Add Friend, which doesn't
+                  // apply to an already-connected person. Now: two real,
+                  // explicit actions -- View Profile always, Message only
+                  // when item.matchId is genuinely set (a plain accepted
+                  // friendship has no messages channel behind it at all --
+                  // only a real dating match does), so the row never
+                  // implies an action that isn't actually possible.
+                  <View key={`${item.type}-${item.id}`} style={styles.intentResultRow}>
+                    <Ionicons
+                      name={INTENT_RESULT_ICONS[item.type]}
+                      size={18}
+                      color={colors.primary}
+                      style={styles.intentResultIcon}
+                    />
+                    <View style={styles.intentResultTextCol}>
+                      <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                      {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                      <View style={styles.friendRequestActions}>
+                        <TouchableOpacity onPress={() => handleIntentResultTap(item)} accessibilityLabel="View Profile" accessibilityRole="button">
+                          <Text style={styles.friendRequestActionText}>View Profile</Text>
+                        </TouchableOpacity>
+                        {item.matchId && (
+                          <TouchableOpacity
+                            onPress={() => { setIntentResults(null); navigation.navigate('Chat', { matchId: item.matchId }); }}
+                            accessibilityLabel="Message"
+                            accessibilityRole="button"
+                          >
+                            <Text style={styles.friendRequestActionTextPrimary}>Message</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    key={`${item.type}-${item.id}`}
+                    style={styles.intentResultRow}
+                    onPress={() => handleIntentResultTap(item)}
+                  >
+                    <Ionicons
+                      name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
+                      size={18}
+                      color={colors.primary}
+                      style={styles.intentResultIcon}
+                    />
+                    <View style={styles.intentResultTextCol}>
+                      <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                      {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                )
               ))}
               <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText)}>
                 <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
@@ -876,6 +929,9 @@ const getStyles = (colors) => StyleSheet.create({
   intentResultTextCol: { flex: 1 },
   intentResultTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
   intentResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  friendRequestActions: { flexDirection: 'row', marginTop: spacing.xs, gap: spacing.md },
+  friendRequestActionText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  friendRequestActionTextPrimary: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   intentResultsCreateNew: { color: colors.primary, fontWeight: '600', fontSize: 14, marginTop: spacing.sm },
   intentResultsDismiss: { color: colors.textTertiary, fontSize: 13, marginTop: spacing.sm },
   askBusinessButton: {

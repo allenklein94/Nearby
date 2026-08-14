@@ -102,7 +102,7 @@ export default function CreateHubScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Create</Text>
-          <Text style={styles.subtitle}>What do you want to do?</Text>
+          <Text style={styles.subtitle}>What do you want to create?</Text>
 
           {(activeSubCategory || showSomethingElse) && (
             <TouchableOpacity onPress={resetGrid} accessibilityLabel="Back" accessibilityRole="button">

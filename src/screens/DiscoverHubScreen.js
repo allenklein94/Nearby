@@ -276,7 +276,7 @@ export default function DiscoverHubScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Discover</Text>
-        <Text style={styles.subtitle}>What are you looking for?</Text>
+        <Text style={styles.subtitle}>Explore what's happening nearby.</Text>
 
         <View style={styles.searchBarWrap}>
           <Text style={styles.searchIcon}>🔍</Text>
@@ -294,17 +294,6 @@ export default function DiscoverHubScreen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
-
-        <TouchableOpacity
-          style={styles.conciergeRow}
-          onPress={() => navigation.navigate('AIConcierge')}
-          activeOpacity={0.85}
-          accessibilityLabel="Ask the AI Concierge what you're looking for"
-          accessibilityRole="button"
-        >
-          <Text style={styles.conciergeRowText}>✨ Ask AI Concierge what to do</Text>
-          <Text style={styles.conciergeRowChevron}>›</Text>
-        </TouchableOpacity>
 
         <View style={styles.filterRow}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
@@ -763,13 +752,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   searchIcon: { fontSize: 14, marginRight: spacing.sm },
   searchInput: { flex: 1, color: colors.textPrimary, paddingVertical: spacing.sm, fontSize: 14 },
   searchClear: { color: colors.textTertiary, fontSize: 16, paddingLeft: spacing.sm },
-  conciergeRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.primaryMuted,
-    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary, paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm, marginBottom: spacing.md,
-  },
-  conciergeRowText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
-  conciergeRowChevron: { color: colors.primary, fontSize: 18, fontWeight: '700' },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,

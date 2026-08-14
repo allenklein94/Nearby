@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
-import { getMyCommunities } from './communities';
+import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers } from './brandOffers';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability } from './businessFulfillment';
 
@@ -208,6 +208,59 @@ async function resolveCommunities(category) {
     }));
 }
 
+// Product-critique follow-through, Aug 14 2026 (CLAUDE.md's "skeptical
+// first-time-user critique" section, recommendation 2): a real, confirmed
+// logic bug, not just UX polish -- a `community`-classified intent
+// ("I want to start a run club") previously skipped the resolver
+// entirely and went straight to creation, never checking whether a
+// matching community already exists, even one the caller already belongs
+// to. `resolveCommunities()` above only ever answers "am I already in
+// one" (used as Tier 2 of the *gathering*-shaped resolveIntent() below) --
+// this is the community-intent's own counterpart, answering "does one
+// exist at all," checking both the caller's own communities (reusing
+// getMyCommunities()) and public communities the caller hasn't joined yet
+// (getPublicCommunities(), same already-established 200-row cap, filtered
+// client-side by category -- no new query shape). Gated on a real
+// category, same reasoning as resolveCommunities() above -- an
+// uncategorized "browse everything public" result would be noise, not a
+// real match; a null category here (rare -- the classifier normally
+// assigns one for a community-shaped ask) correctly returns no results,
+// which HomeScreen.js then treats the same as "checked, found nothing" --
+// proceeds straight to creation, not a fabricated match.
+export async function resolveCommunityIntent({ category, rawText }) {
+  if (!category) return [];
+  const meaningfulWords = extractMeaningfulWords(rawText);
+
+  const [mineResult, publicResult] = await Promise.allSettled([
+    getMyCommunities(),
+    getPublicCommunities(),
+  ]);
+  const mine = mineResult.status === 'fulfilled' ? mineResult.value : [];
+  const myIds = new Set(mine.map((c) => c.id));
+
+  const joined = mine
+    .filter((c) => c.interest_tag === category)
+    .map((c) => ({
+      type: 'community',
+      id: c.id,
+      title: c.name,
+      subtitle: "You're already a member",
+      score: SCORE_OWN_NETWORK + titleMentionBonus(c.name, meaningfulWords),
+    }));
+
+  const discoverable = (publicResult.status === 'fulfilled' ? publicResult.value : [])
+    .filter((c) => c.interest_tag === category && !myIds.has(c.id))
+    .map((c) => ({
+      type: 'community',
+      id: c.id,
+      title: c.name,
+      subtitle: 'A public community — not yet joined',
+      score: SCORE_INTEREST_MATCH + titleMentionBonus(c.name, meaningfulWords),
+    }));
+
+  return [...joined, ...discoverable].sort((a, b) => b.score - a.score).slice(0, RESULT_CAP);
+}
+
 async function resolveConnectedRequests(category, dateWindow) {
   const { start, end } = dateWindowToDateRange(dateWindow);
   const connected = await getConnectedOpenBusinessRequests({
@@ -221,6 +274,12 @@ async function resolveConnectedRequests(category, dateWindow) {
     userId: r.requester_id,
     title: `${r.requester_display_name ?? 'A friend'} is also looking for this`,
     subtitle: r.raw_text,
+    // Product-critique follow-through, Aug 14 2026 (recommendation 3):
+    // a plain accepted friendship has no messages/matches row behind it
+    // at all -- only a real dating match does -- so Message is only ever
+    // offered when the RPC's own match_id genuinely resolves to one, not
+    // assumed just because this is a "connected" result.
+    matchId: r.match_id ?? null,
     score: SCORE_OWN_NETWORK,
   }));
 }

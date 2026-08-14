@@ -150,6 +150,13 @@ export async function declineBusinessOpportunity(requestId) {
 // branch you asked bug (PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_
 // 2026-08-14.md, finding 2). dateEnd defaults to dateStart server-side
 // when omitted, so a single-day caller can still pass just dateStart.
+// Each row also carries match_id (nullable) -- see
+// 20260814_business_fulfillment_tier2_weekend_range_match_id.sql,
+// product-critique follow-through recommendation 3 -- a real matches row
+// between the caller and the requester if one exists, null when the only
+// connection is a plain accepted friendship (which has no messages
+// channel behind it at all). Lets the client offer a real Message action
+// only when one is genuinely possible.
 export async function getConnectedOpenBusinessRequests({ category = null, dateStart = null, dateEnd = null } = {}) {
   const { data, error } = await supabase.rpc('get_connected_open_business_requests', {
     category_param: category,

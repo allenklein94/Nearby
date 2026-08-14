@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: skeptical first-time-user product critique of the intent-first Home (Aug 14 2026) — READ-ONLY, no code changed, decision pending with the user
+## Outstanding: skeptical first-time-user product critique of the intent-first Home (Aug 14 2026) — critique DONE (read-only); recommendations 1-4 DONE, build-wise; recommendation 5 explicitly deferred by the user
 
 **Explicit instruction, given directly, not to be silently acted on**: after the Intent Layer +
 Business Fulfillment architecture (all 4 phases) and the UX walkthrough's 6 findings were both
@@ -127,30 +127,120 @@ Concierge" row competes with Home's box for the identical territory with differe
 different premium gate. A new user is more likely to notice "there are two ask-boxes that behave
 differently" than absorb the actual differentiation.
 
-### Five highest-priority changes (not built — decision pending)
+### Five highest-priority changes
 
-1. **Kill the redundant "ask box."** Fold AI Concierge's capability into Home's one resolver, or
-   remove the Discover entry point. Two competing natural-language boxes with different result
-   sets and different premium gates is the single biggest thing undermining "one coherent
-   product."
-2. **Route community-classified intents through the resolver too**, so a community-shaped ask
-   checks for an existing/joined match before offering to create a duplicate — closes the one real
-   gap in the "checks everything first" promise (#2a).
-3. **Give the friend/match result somewhere to go** — either add a message affordance to that
-   specific tap-through, or drop the framing so it doesn't imply an action that isn't actually
-   there (#3).
-4. **Reconcile the three "what do you want" phrasings** (Home / Create / Discover) into language
-   that makes the difference between them legible — today they read as the same feature
-   stuttering across three tabs (#1, #10).
-5. **Tighten Home's hierarchy below the box** — fewer, more clearly subordinate sections, so the
-   page visibly defers to the intent box instead of sitting atop an otherwise-unchanged
-   12-section scroll (#7).
+1. **DONE — kill the redundant "ask box."** User's own framing: "I would not build a second
+   resolver. Make Home the canonical intent entry point. Discover can remain about
+   browsing/discovery." Removed outright rather than merged: `DiscoverHubScreen.js`'s "✨ Ask AI
+   Concierge what to do" row (and its now-unused `conciergeRow*` styles) is gone;
+   `AIConciergeScreen.js` and `services/aiConcierge.js` were deleted (confirmed zero remaining
+   references anywhere in `src/` beyond one explanatory comment); the `AIConcierge` route/import
+   were removed from `RootNavigator.js`. **Deliberately not touched**: the deployed
+   `ai-concierge` Supabase Edge Function itself — removing a client entry point is a product
+   decision within this session's own scope; un-deploying a live Edge Function is a separate,
+   more infrastructural action nobody asked for. Flagged here rather than silently left
+   ambiguous: `ai-concierge` remains deployed but now has zero client callers anywhere in this
+   app. `services/createAssistant.js`'s own header comment (which used to explain Create
+   Assistant as "distinct from the premium-gated AI Concierge") was updated to record the
+   removal instead of pointing at a file that no longer exists. Verified via a full `npx expo
+   export --platform ios` — clean, **1862 modules** (two fewer than the prior 1864 baseline,
+   matching the two deleted files exactly; no new files this pass).
+2. **DONE — fix community intents, a real logic bug, not just polish.** Matches the user's own
+   stated flow exactly: `Intent → Existing community? → Yes → show it / No → offer creation`. New
+   `resolveCommunityIntent({ category, rawText })` in `intentResolver.js` — checks both
+   communities the caller already belongs to (reusing `getMyCommunities()`, same as the existing
+   gathering-branch's `resolveCommunities()`) **and** public communities the caller hasn't joined
+   yet (`getPublicCommunities()`, same already-established 200-row cap, filtered client-side by
+   category — no new query shape), plus the same title-mention tie-breaker
+   (`extractMeaningfulWords`/`titleMentionBonus`) the UX-walkthrough's Finding 6 already built for
+   gatherings, reused here rather than duplicated. Gated on a real category, matching
+   `resolveCommunities()`'s own established reasoning (an uncategorized "browse everything"
+   result would be noise). `HomeScreen.js`'s `handleHomeIntentSubmit()` now branches
+   `community`-classified intents through this resolver — a match renders in the same
+   `intentResults` panel every other result type already uses (tapping navigates to the real
+   `CommunityDetail`, unchanged); genuinely zero matches proceeds straight to creation (no
+   "Ask Nearby Businesses" step offered here — that only makes sense for a gathering-shaped ask,
+   not "start a community," matching the user's own two-branch flow exactly, not a three-branch
+   one). `business_partner` intents are unchanged (still skip resolution — "propose a specific
+   business as sponsor" has no existing-supply concept to check). Verified via a direct
+   `@babel/core` parse of both touched files (clean) and the same full `npx expo export` above
+   (1862 modules, no new files). **Not done yet, same standing gap as everywhere else in this
+   file**: no manual simulator/device run-through, and no live re-run against real data — next
+   session should confirm typing a community-shaped ask that matches a real existing (joined or
+   public-not-yet-joined) community surfaces it instead of offering to create a duplicate, and
+   that a genuinely non-matching ask still falls through to creation cleanly.
+3. **DONE — give the friend/match result somewhere real to go, without overbuilding it.** Per
+   the user's own explicit guidance ("if messaging isn't appropriate under your existing privacy
+   model, then the result should instead communicate what the user can actually do") — checked
+   first, rather than assumed, whether messaging is actually possible for every "connected"
+   result: `respondToFriendRequest()` (`friends.js`) only ever flips a `friendships` row to
+   `accepted`, it never creates a `matches` row — so a plain accepted friendship has **no**
+   messages channel behind it at all; only a real `matches` row does. A blanket "Message" button
+   would have been a second broken promise, not a fix. Instead:
+   `get_connected_open_business_requests` (the RPC behind this whole tier) now also returns a
+   real `match_id` (nullable) — a genuine `matches` row between the caller and the requester if
+   one exists, `null` when the only connection is a plain friendship — via
+   `20260814_business_fulfillment_tier2_weekend_range_match_id.sql` (a real DROP + CREATE, since
+   the return shape changed, not just the arguments — matches this schema's own established
+   discipline for exactly this situation, e.g. the weekend-range migration immediately before
+   it). `resolveConnectedRequests()` (`intentResolver.js`) now carries `matchId` through onto
+   each `friend_request` candidate. `HomeScreen.js`'s rendering of a `friend_request` result
+   changed from a single whole-row tap straight to a bare profile, to two explicit actions —
+   **View Profile** (always, reuses the existing `handleIntentResultTap`) and **Message** (only
+   when `item.matchId` is genuinely set, navigating to `Chat` with that real `matchId`) — so the
+   row never implies an action that isn't actually possible; when no match exists, it honestly
+   offers only what's real, matching the user's own instruction not to overbuild past that.
+   **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+   the new function's grants (`authenticated`/`service_role`/`postgres`, no `anon`/`public`) and
+   its real body via `pg_get_functiondef`. Real, disposable test data against two genuinely
+   different connection shapes using real existing profiles: a temporary friendship (Claude ↔
+   Google voice, who share no real `matches` row) plus a temporary `business_requests` row from
+   Google voice — calling the RPC as Claude correctly returned `match_id: null`. Separately, using
+   the real pre-existing Claude ↔ Allen pair (which has **both** an accepted friendship and a real
+   match) plus a temporary `business_requests` row from Claude — calling the RPC as Allen
+   correctly returned the real `matches.id` for that pair, and, in the same call, also correctly
+   returned Google voice's request with *its own* real match id with Allen (a different pair
+   entirely) — proving the per-pair lookup is genuinely scoped, not a blanket "any match exists"
+   flag. All test rows (2 `business_requests`, 1 temporary `friendships` row) deleted afterward;
+   confirmed production back to its exact pre-test baseline (0 business requests, 1 friendship).
+   **Verified via a real from-scratch migration replay** (36 files, `psql -v ON_ERROR_STOP=1`,
+   exit 0 throughout, the two known image-version gaps patched as always) — the new function
+   confirmed to exist with the right 3-argument signature in the freshly-rebuilt database.
+   Container removed. Client-side verified via a direct `@babel/core` parse of all three touched
+   files (clean) and the same full `npx expo export` above (1862 modules, no new files — this was
+   entirely edits to existing files plus one new migration). **Not done yet, same standing gap as
+   everywhere else in this file**: no manual simulator/device run-through — next session should
+   confirm both the View-Profile-only and View-Profile-plus-Message row variants render correctly
+   against real data, and that tapping Message lands cleanly on the right real `Chat` thread.
+4. **DONE — reconcile Home/Create/Discover, without eliminating Create.** Matches the user's own
+   locked mental model exactly, not a compromise: **Home** ("What do you want to do?") is left
+   completely untouched, exactly as-is, per explicit instruction. **Create**'s subtitle changed
+   from the literal duplicate "What do you want to do?" to **"What do you want to create?"**
+   (`CreateHubScreen.js`) — same screen, same icon grid, same behavior, only the one line of copy
+   changed, now honestly describing a creation-only picker instead of echoing Home's own
+   resolver-backed question. **Discover**'s subtitle changed from "What are you looking for?" to
+   **"Explore what's happening nearby."** (`DiscoverHubScreen.js`), reinforcing browsing rather
+   than echoing an ask-box framing — paired with item 1's removal of the AI Concierge row, Discover
+   no longer poses any "what do you want" question at all, just search/filter/browse. Verified via
+   a direct `@babel/core` parse of both files (clean) and the same full `npx expo export` above.
+   **Not done yet, same standing gap as everywhere else in this file**: no manual simulator/device
+   run-through — next session should confirm all three subtitles read correctly in place and that
+   the difference between the three tabs' jobs is legible in actual use, not just on paper.
+5. **Deliberately deferred, per the user's own explicit reasoning, not silently skipped.** The
+   user's own words: "I don't think you should suddenly delete or collapse all that content...
+   you have another problem first: what does Nearby's Home actually need to accomplish? I'd solve
+   that after the first four changes... if you start deleting sections now, you could accidentally
+   damage the existing product to make the new concept look cleaner." Home's 12+-section length
+   below the intent box is unchanged — correctly so, per this explicit instruction. Not
+   re-opened without being asked.
 
-**Status: read-only critique complete, nothing implemented.** Per explicit instruction, this is
-the decision point — none of the five recommendations above should be built without the user
-picking which (if any) to act on first. This section should be updated (not silently deleted)
-once that decision is made and/or any of the five items are actually built, matching this file's
-own standing plan-then-status convention.
+**Status: recommendations 1-4 are DONE, build-wise — schema/RPC pieces verified live against
+production plus a from-scratch migration replay, client pieces verified via a clean
+`npx expo export --platform ios` after the full set of changes.** Recommendation 5 is
+deliberately not built, per the user's own explicit reasoning above — Home's own real job needs
+to be answered first, not treated as a byproduct of making the new intent box look more dominant.
+**Standing limitation, same as everywhere else in this file**: no manual simulator/device
+run-through of any of the four built changes — flagged per-item above.
 
 ## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, all 6 findings DONE, build-wise
 
