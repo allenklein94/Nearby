@@ -6,7 +6,7 @@ import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusin
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
@@ -29,6 +29,35 @@ const OFFER_TYPE_OPTIONS = [
   { key: 'upgrade', label: 'Upgrade' },
   { key: 'alt_time', label: 'Alt. time' },
 ];
+
+// Same 24-tag list business_requests/business_availability's own category
+// CHECK constraints validate against (mirrors AskBusinessScreen.js's own
+// copy of create-assistant's VALID_CATEGORIES) -- kept local rather than
+// imported so this file has no new cross-screen dependency.
+const AVAILABILITY_CATEGORY_OPTIONS = [
+  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
+  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
+  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
+  'Volunteering', 'Meditation', 'Running',
+];
+
+// "Time-boxed... right now" per the plan's own framing -- starts_at is
+// always the moment of posting, the business only ever picks how long it
+// stays valid. Keeps this a quick posting action, not a full date/time
+// picker for something meant to be posted in the moment.
+const AVAILABILITY_DURATION_OPTIONS = [
+  { key: '1h', label: '1 hour', hours: 1 },
+  { key: '2h', label: '2 hours', hours: 2 },
+  { key: '4h', label: '4 hours', hours: 4 },
+  { key: 'restOfDay', label: 'Rest of today', hours: null },
+];
+
+const AVAILABILITY_STATUS_COPY = {
+  active: 'Live — matching open requests',
+  filled: 'Filled up',
+  expired: 'Expired',
+  cancelled: 'Cancelled',
+};
 
 export default function BusinessDashboardScreen({ navigation }) {
   const { colors, shadow } = useTheme();
@@ -75,6 +104,17 @@ export default function BusinessDashboardScreen({ navigation }) {
   const [opportunities, setOpportunities] = useState([]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
+  const [myAvailability, setMyAvailability] = useState([]);
+  const [postAvailabilityModalVisible, setPostAvailabilityModalVisible] = useState(false);
+  const [availabilityTitleInput, setAvailabilityTitleInput] = useState('');
+  const [availabilityDescriptionInput, setAvailabilityDescriptionInput] = useState('');
+  const [availabilityCategoryInput, setAvailabilityCategoryInput] = useState(null);
+  const [availabilityOfferTypeInput, setAvailabilityOfferTypeInput] = useState('standard');
+  const [availabilityPriceInput, setAvailabilityPriceInput] = useState('');
+  const [availabilityCapacityInput, setAvailabilityCapacityInput] = useState('');
+  const [availabilityDurationKey, setAvailabilityDurationKey] = useState('2h');
+  const [postingAvailability, setPostingAvailability] = useState(false);
+  const [cancelingAvailabilityId, setCancelingAvailabilityId] = useState(null);
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
@@ -167,6 +207,7 @@ export default function BusinessDashboardScreen({ navigation }) {
         loadVisitFrequency(selectedPartner.id);
         loadPartnershipRequests(selectedPartner.id);
         loadOpportunities(selectedPartner.id);
+        loadMyAvailability(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -222,6 +263,75 @@ export default function BusinessDashboardScreen({ navigation }) {
       Alert.alert('Error', e.message);
     }
     setRespondingOpportunityId(null);
+  }
+
+  async function loadMyAvailability(partnerId) {
+    try {
+      const results = await getMyBusinessAvailability(partnerId);
+      setMyAvailability(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  function openPostAvailabilityModal() {
+    setAvailabilityTitleInput('');
+    setAvailabilityDescriptionInput('');
+    setAvailabilityCategoryInput(null);
+    setAvailabilityOfferTypeInput('standard');
+    setAvailabilityPriceInput('');
+    setAvailabilityCapacityInput('');
+    setAvailabilityDurationKey('2h');
+    setPostAvailabilityModalVisible(true);
+  }
+
+  async function handlePostAvailability() {
+    if (!availabilityTitleInput.trim()) {
+      Alert.alert('Add a title', 'Say what you have available, e.g. "4 empty tables tonight".');
+      return;
+    }
+    setPostingAvailability(true);
+    try {
+      const duration = AVAILABILITY_DURATION_OPTIONS.find((d) => d.key === availabilityDurationKey);
+      const startsAt = new Date();
+      const endsAt = duration.hours
+        ? new Date(startsAt.getTime() + duration.hours * 60 * 60 * 1000)
+        : new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate(), 23, 59, 59);
+      const priceNum = availabilityPriceInput.trim() ? parseFloat(availabilityPriceInput.trim()) : null;
+      const capacityNum = availabilityCapacityInput.trim() ? parseInt(availabilityCapacityInput.trim(), 10) : null;
+      const { matchedCount } = await postBusinessAvailability({
+        category: availabilityCategoryInput,
+        title: availabilityTitleInput.trim(),
+        description: availabilityDescriptionInput.trim() || null,
+        offerType: availabilityOfferTypeInput,
+        price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
+        capacity: Number.isFinite(capacityNum) && capacityNum > 0 ? capacityNum : null,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+      });
+      setPostAvailabilityModalVisible(false);
+      await loadMyAvailability(selectedPartner.id);
+      Alert.alert(
+        'Posted!',
+        matchedCount > 0
+          ? `We matched this against ${matchedCount} open request${matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
+          : 'No open requests match this right now, but it stays live for anyone who asks while it\'s active.'
+      );
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setPostingAvailability(false);
+  }
+
+  async function handleCancelAvailability(availabilityId) {
+    setCancelingAvailabilityId(availabilityId);
+    try {
+      await cancelBusinessAvailability(availabilityId);
+      await loadMyAvailability(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setCancelingAvailabilityId(null);
   }
 
   async function handleRespondToPartnershipRequest(requestId, approve) {
@@ -859,6 +969,50 @@ export default function BusinessDashboardScreen({ navigation }) {
                     </View>
                   ))
                 )}
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
+                  <Text style={styles.sectionHeader}>Your Availability</Text>
+                  <TouchableOpacity
+                    style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                    onPress={openPostAvailabilityModal}
+                    accessibilityLabel="Post availability"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.smallActionButtonText}>+ Post Availability</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.helperText}>
+                  Have open seats or a quiet night? Post it and we'll match it against open
+                  requests nearby automatically -- no need to wait for someone to ask.
+                </Text>
+                {myAvailability.length === 0 ? (
+                  <Text style={styles.emptyText}>Nothing posted yet.</Text>
+                ) : (
+                  myAvailability.map((a) => (
+                    <View key={a.id} style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>{a.title}</Text>
+                      <Text style={styles.breakdownText}>
+                        {[
+                          a.category,
+                          a.capacity ? `${a.remaining_capacity ?? 0}/${a.capacity} left` : null,
+                          a.price != null ? `$${Number(a.price).toFixed(2)}` : null,
+                        ].filter(Boolean).join(' · ') || 'No further details given'}
+                      </Text>
+                      <Text style={styles.breakdownText}>{AVAILABILITY_STATUS_COPY[a.status] ?? a.status}</Text>
+                      {a.status === 'active' && (
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                          onPress={() => handleCancelAvailability(a.id)}
+                          disabled={cancelingAvailabilityId === a.id}
+                          accessibilityLabel="Cancel this availability"
+                          accessibilityRole="button"
+                        >
+                          {cancelingAvailabilityId === a.id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Cancel</Text>}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))
+                )}
               </>
             )}
 
@@ -1342,6 +1496,113 @@ export default function BusinessDashboardScreen({ navigation }) {
                 <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? 'Sending...' : 'Send Offer'}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={postAvailabilityModalVisible} animationType="slide" transparent onRequestClose={() => setPostAvailabilityModalVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Post Availability</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                We'll match this against open requests near you right now, and keep matching
+                new ones for as long as it stays live.
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="4 empty tables tonight"
+                placeholderTextColor={colors.textTertiary}
+                value={availabilityTitleInput}
+                onChangeText={setAvailabilityTitleInput}
+                accessibilityLabel="Availability title"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm, minHeight: 70 }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={availabilityDescriptionInput}
+                onChangeText={setAvailabilityDescriptionInput}
+                multiline
+                accessibilityLabel="Availability description, optional"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Category (optional)</Text>
+              <View style={styles.chipRow}>
+                {AVAILABILITY_CATEGORY_OPTIONS.map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[styles.chip, availabilityCategoryInput === c && styles.chipSelected]}
+                    onPress={() => setAvailabilityCategoryInput(availabilityCategoryInput === c ? null : c)}
+                    accessibilityRole="button"
+                    accessibilityLabel={c}
+                    accessibilityState={{ selected: availabilityCategoryInput === c }}
+                  >
+                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{c}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What are you offering?</Text>
+              <View style={styles.chipRow}>
+                {OFFER_TYPE_OPTIONS.map((o) => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.chip, availabilityOfferTypeInput === o.key && styles.chipSelected]}
+                    onPress={() => setAvailabilityOfferTypeInput(o.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={o.label}
+                    accessibilityState={{ selected: availabilityOfferTypeInput === o.key }}
+                  >
+                    <Text style={[styles.chipText, availabilityOfferTypeInput === o.key && styles.chipTextSelected]}>{o.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Price (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={availabilityPriceInput}
+                onChangeText={setAvailabilityPriceInput}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Price, optional"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="How many spots? (optional, e.g. 4)"
+                placeholderTextColor={colors.textTertiary}
+                value={availabilityCapacityInput}
+                onChangeText={(t) => setAvailabilityCapacityInput(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                accessibilityLabel="Capacity, optional"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>How long should this stay live?</Text>
+              <View style={styles.chipRow}>
+                {AVAILABILITY_DURATION_OPTIONS.map((d) => (
+                  <TouchableOpacity
+                    key={d.key}
+                    style={[styles.chip, availabilityDurationKey === d.key && styles.chipSelected]}
+                    onPress={() => setAvailabilityDurationKey(d.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={d.label}
+                    accessibilityState={{ selected: availabilityDurationKey === d.key }}
+                  >
+                    <Text style={[styles.chipText, availabilityDurationKey === d.key && styles.chipTextSelected]}>{d.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                style={[styles.submitButton, { marginTop: spacing.md }]}
+                onPress={handlePostAvailability}
+                disabled={postingAvailability || !availabilityTitleInput.trim()}
+                accessibilityLabel={postingAvailability ? 'Posting' : 'Post availability'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{postingAvailability ? 'Posting...' : 'Post Availability'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPostAvailabilityModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </View>

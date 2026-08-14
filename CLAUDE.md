@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phases 1-3 DONE (gatherings only for Phase 3; communities deliberately deferred)
+## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phases 1-4 DONE (gatherings only for Phase 3; communities deliberately deferred both for Phase 3 and Phase 4's demand side)
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what's
@@ -13,7 +13,8 @@ the phase order below were all reviewed and explicitly locked by the user in a s
 silently assumed). Phase 1's own two sub-steps (1a: intent-box UI, 1b: the Tier 1/3 resolver) are
 both now built, committed, and pushed — see their own status notes inline below. **Phase 2
 (Business Fulfillment schema + RPCs) is now also done** — see its own status note appended after
-the Phase 2 plan text further down this section.
+the Phase 2 plan text further down this section. **Phase 4 (proactive business availability) is
+now also done** — see its own status note appended right after Phase 3's.
 
 ### Context and locked decisions
 
@@ -288,8 +289,11 @@ Not doing, in any phase above unless explicitly re-opened:
 - ❌ No premature universal/AI-driven matching algorithm — ranking stays simple/explainable
   until there's real outcome data (matches this file's own existing "don't use opaque AI
   reasoning as the sole basis for ranking" rule from the AI Concierge section)
-- ❌ No proactive business availability yet (Phase 4, not V1)
-- ❌ No gathering→business demand yet (Phase 3, not V1)
+- ~~❌ No proactive business availability yet (Phase 4, not V1)~~ — this was the original V1
+  scope boundary; Phase 4 was subsequently explicitly picked up and is now done, see its own
+  status note below. Left struck-through rather than deleted so the original V1 line is legible.
+- ~~❌ No gathering→business demand yet (Phase 3, not V1)~~ — same: Phase 3 was subsequently
+  picked up and is now done (gatherings only), see its own status note below.
 
 Building, in order:
 - ✅ Intent entry point (Phase 1)
@@ -299,6 +303,8 @@ Building, in order:
 - ✅ Consumer acceptance (Phase 2)
 - ✅ Reservation/commitment, server-enforced (Phase 2)
 - ✅ Completion/outcome tracking (Phase 2)
+- ✅ Gathering → business demand generation (Phase 3, gatherings only)
+- ✅ Proactive business availability, two-way matching (Phase 4)
 
 **Phase 1 (both checklist items above) is now built — see the Phase 1a/1b status notes further
 up this section for the full detail.**
@@ -464,10 +470,115 @@ the device or exposed to the client (same narrow-need exception to the coordinat
   (real title, real party size, no date/party-size inputs), and that the resulting request
   flows through offer/accept exactly like a solo one on `BusinessRequestDetailScreen`.
 
-Everything in this plan not yet built (proactive business availability, the broader "matching"
-framing layer — Phases 4-5, plus community demand generation, deliberately deferred within Phase
-3 itself per the note above) is locked, per the design work
-already done, and ready to build when picked up — see each phase's own plan text above.
+**Phase 4 — DONE.** Built per the plan's own locked framing ("businesses posting time-boxed
+availability the resolver can match against open requests without a consumer asking first").
+Genuinely two-way, both directions real, both landing in the exact same
+`business_requests`/`business_request_offers` rows Phase 2 already built — no second lifecycle,
+no new consumer-facing UI surface: a matched offer is indistinguishable on
+`BusinessRequestDetailScreen` from one a business typed by hand, confirmed by re-reading that
+screen's render logic (generic over `offer_description`/`offer_price`/`status`, no
+availability-specific branch needed).
+- **Schema** (`20260814_business_fulfillment_availability.sql`): new `business_availability`
+  table (`partner_id`, `category`, `title`, `description`, `offer_type`, `price`, `capacity`/
+  `remaining_capacity`, `starts_at`/`ends_at`, `radius_miles`, `status`
+  `active|expired|cancelled|filled`) — owner-only SELECT RLS, no INSERT/UPDATE policy at all
+  (every write goes through a SECURITY DEFINER RPC, matching this schema's established
+  convention). `business_request_offers` gained a nullable `availability_id` FK, so an
+  availability-sourced offer is traceable back to the posting that generated it without a new
+  join table.
+- **Two-way matching, both real**: `post_business_availability(...)` immediately scans currently-
+  open `business_requests` (category/date/time-window/radius match, capped at 10, matching the
+  existing fan-out's own "don't overwhelm supply/demand" cap) and upserts a real `'offered'` row
+  — with a real push (`business_offer_received`, the same type Phase 2's manual-offer path
+  already sends) — for each match, not a bare `'pending'` placeholder, since the business already
+  declared its terms in advance. The reverse direction — a brand-new `business_request` (solo or
+  gathering-sourced) immediately scanning active availability — is a new internal
+  `_match_request_to_availability()` helper, called from both `create_business_request` and
+  `create_business_request_for_gathering` right after their existing Phase 2/3 fan-out, additive
+  only (nothing about the existing fan-out/notify behavior changed). Both directions share one
+  upsert shape: `on conflict (request_id, partner_id) do update ... where
+  business_request_offers.status = 'pending'` — an already-`'offered'` row (e.g. from a different,
+  earlier-matching availability posting) is never clobbered, confirmed live (see below).
+- **Real reservation integrity for the *shared* scarcity one posting introduces**: `capacity`/
+  `remaining_capacity` is decremented with a `FOR UPDATE` lock only at `accept_business_offer()`
+  time (being offered doesn't consume a slot, only being accepted does) — additive to Phase 2's
+  own per-request-winner lock, a genuinely different scarcity axis (one posting's capacity is
+  shared across many different requests' offers, not scoped to a single request). Hitting zero
+  flips the posting to `'filled'`; a second accept against a just-filled posting is rejected
+  server-side even though its own per-request offer was independently valid. `cancel_business_
+  availability()` (owner-only) also expires every not-yet-accepted offer that posting had already
+  generated, since the business's declared terms no longer exist. `expire_stale_business_
+  requests()` (the existing cron job) now also expires lapsed availability and its pending/offered
+  offspring, same pattern as its existing request-expiry branch.
+- **Client**: `postBusinessAvailability()`/`cancelBusinessAvailability()`/
+  `getMyBusinessAvailability()` added to `services/businessFulfillment.js`. Found the codespace
+  restart had left `BusinessDashboardScreen.js` mid-wired (state/imports present, `loadMyAvailability`
+  referenced but never defined, no modal JSX — the identical "wired but the modal was never
+  added" shape Phase 2's own status note already documented for its Make-an-Offer modal) —
+  finished it: `loadMyAvailability()`, `openPostAvailabilityModal()`/`handlePostAvailability()`/
+  `handleCancelAvailability()`, a real "Your Availability" list on the Requests tab (title,
+  category/remaining-capacity/price line, status line, Cancel button while active) with a
+  "+ Post Availability" button, and a full posting modal (title/description, a category chip row
+  over the same 24-tag list `business_requests`/`business_availability`'s own CHECK constraints
+  validate against, the existing `OFFER_TYPE_OPTIONS` chip row reused as-is, price, capacity, and
+  a duration chip row — 1h/2h/4h/rest of today, since `starts_at` is always "the moment of
+  posting," matching the plan's own "time-boxed... right now" framing rather than a full date/time
+  picker for something meant to be posted in the moment).
+- **Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied —
+  the migration was already live from before the restart, confirmed directly (table, all 4
+  functions, the new column, and correct `authenticated`-only grants all present) rather than
+  re-applying blind. Real disposable test data, `Coastal Coffee`'s coordinates temporarily set as
+  in every prior pass touching this partner: `Allen` posted a capacity-1 availability with zero
+  open requests yet (`matchedCount: 0`); `Claude` then created a matching request and its
+  fan-out-created `'pending'` row was confirmed immediately upgraded to `'offered'` with the
+  availability's real terms (`offer_type: discount`, `offer_price: 5.00`, `availability_id` set)
+  — proving the "without a consumer asking first" claim, not just that the function runs.
+  `Allen Klein` created a second matching request and independently got its own real `'offered'`
+  row against the same posting. `Claude` accepted their offer — `remaining_capacity` correctly
+  dropped 1→0 and the posting flipped to `'filled'`; `Allen Klein`'s subsequent accept attempt on
+  their own independently-valid offer was correctly rejected (`This availability just filled
+  up.`) — the shared-capacity lock actually holds across two different requests, not just within
+  one. Reverse direction: `Google voice` created a request with no match (posting #1 already
+  filled); `Allen` posted a second, unlimited-capacity availability and it correctly matched
+  (`matchedCount: 1`), while `Allen Klein`'s existing `'offered'` row against posting #1 was
+  confirmed untouched by posting #2's own matching pass (the `where status = 'pending'` upsert
+  guard holds). Ownership checks: a non-owner (`Claude`) calling `cancel_business_availability`
+  was correctly rejected (`You do not manage a business.`); the real owner's cancel succeeded,
+  and the one pending offer it had generated was confirmed flipped to `'expired'`.
+  `get_my_business_availability` returned both postings for the owner and zero for a non-owner.
+  All test rows (3 requests, their offers, both availability postings) deleted and `Coastal
+  Coffee`'s coordinates reverted to `null` afterward; production confirmed back to its exact
+  pre-test baseline (0 requests, 0 offers, 0 availability postings).
+- **Verified via a real from-scratch migration replay** (18 files, `psql -v ON_ERROR_STOP=1`,
+  exit 0 throughout), per this file's migration-discipline rule — hit a new wrinkle this pass,
+  worth recording since it's a real, reusable fix and not specific to this migration: the cached
+  test image's `postgres` role isn't actually a Postgres superuser in this image (`supabase_admin`
+  is), and the data directory's own `postgresql.conf` doesn't inherit `/etc/postgresql/
+  postgresql.conf`'s `shared_preload_libraries` on a bare `docker run` — so `create extension
+  pg_cron`/`pg_trgm` both failed with `permission denied`/`ERROR: ... must be loaded via
+  shared_preload_libraries` until `shared_preload_libraries` was set directly in the data
+  directory's own config (via `docker cp` while stopped, since it's a postmaster-context setting
+  needing a full restart) and the two extensions needing superuser were created once as
+  `supabase_admin` before replaying the rest as `postgres`. Once past that, all 18 files applied
+  cleanly in order; the new table, all 4 new/changed functions, and the new `availability_id`
+  column all confirmed to exist in the freshly-rebuilt database. Container removed afterward.
+- Verified client-side via a full `npx expo export --platform ios` — clean, 1864 modules
+  (unchanged — edits to two existing files only, no new client files; the one new file this pass
+  is a `.sql` migration, not bundled).
+- **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+  run-through — next session should confirm the "Your Availability" list and posting modal render
+  and behave correctly in the running app (category/duration/offer-type chip rows, the Cancel
+  button disappearing once a posting is no longer active), and that a real availability-matched
+  offer shows up correctly on a real device's `BusinessRequestDetailScreen` and push notification.
+- **Deliberately not built, matching Phase 3's own community-deferral reasoning**: no way for a
+  community (as opposed to a gathering) to generate demand that availability could match against
+  — same "no scheduled date/precise location to source it from" gap Phase 3 already flagged,
+  unchanged by this phase.
+
+Everything in this plan not yet built (the broader "matching" framing layer — Phase 5, plus
+community demand generation, deliberately deferred within Phase 3 and reaffirmed in Phase 4 per
+the notes above) is locked, per the design work already done, and ready to build when picked up
+— see each phase's own plan text above.
 
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
 

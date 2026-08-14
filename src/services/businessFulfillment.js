@@ -152,3 +152,38 @@ export async function getConnectedOpenBusinessRequests({ category = null, date =
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// ---- Phase 4: proactive business availability ----
+// A business posts real, time-boxed availability ("4 empty seats
+// tonight") and it's immediately matched against every currently-open
+// business_requests row server-side -- no separate "browse availability"
+// screen was built, since the match happens automatically and the
+// consumer just sees a real offer show up on BusinessRequestDetailScreen,
+// same as if a business had responded manually.
+export async function postBusinessAvailability({ category = null, title, description = null, offerType = null, price = null, capacity = null, startsAt, endsAt, radiusMiles = 15 }) {
+  const { data, error } = await supabase.rpc('post_business_availability', {
+    category_param: category,
+    title_param: title,
+    description_param: description,
+    offer_type_param: offerType,
+    price_param: price,
+    capacity_param: capacity,
+    starts_at_param: startsAt,
+    ends_at_param: endsAt,
+    radius_miles_param: radiusMiles,
+  });
+  if (error) throw new Error(error.message);
+  return { availabilityId: data.availabilityId, matchedCount: data.matchedCount };
+}
+
+export async function cancelBusinessAvailability(availabilityId) {
+  const { data, error } = await supabase.rpc('cancel_business_availability', { availability_id_param: availabilityId });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function getMyBusinessAvailability(partnerId) {
+  const { data, error } = await supabase.rpc('get_my_business_availability', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
