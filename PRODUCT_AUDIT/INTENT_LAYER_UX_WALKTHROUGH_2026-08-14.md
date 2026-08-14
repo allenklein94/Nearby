@@ -349,11 +349,15 @@ above, not a ranking issue.
    `getGatheringFitReasons()` is still called for its `reasons` text only, unmodified itself — see
    CLAUDE.md's "Intent Layer UX walkthrough fixes" plan, finding 1, for the full writeup.
    `src/services/intentResolver.js` vs. `src/services/gatherings.js:923-957`.
-2. **"Weekend" means two different date ranges within the same intent resolution.**
-   `matchesDateWindow('weekend')` (gatherings) covers Saturday through Sunday;
-   `dateWindowToDateParam('weekend')` (connected friend-requests) collapses to Saturday only. A
-   friend's genuinely-this-weekend Sunday ask is silently excluded from Tier 2 while a Sunday
-   gathering correctly surfaces. `src/services/intentResolver.js:44-70` vs. `:78-98`.
+2. **FIXED, 2026-08-14.** ~~"Weekend" means two different date ranges within the same intent
+   resolution.~~ `matchesDateWindow('weekend')` (gatherings) covered Saturday through Sunday;
+   `dateWindowToDateParam('weekend')` (connected friend-requests) collapsed to Saturday only. A
+   friend's genuinely-this-weekend Sunday ask was silently excluded from Tier 2 while a Sunday
+   gathering correctly surfaced. Fixed via a real date-range RPC (`get_connected_open_business_
+   requests` now takes `date_start_param`/`date_end_param`) and a new `dateWindowToDateRange()`
+   sharing the exact Sat-Sun boundary `matchesDateWindow()` already used — verified live with a
+   real Sunday friend-request that the old single-date call would have missed and the new range
+   call correctly finds. See CLAUDE.md's "Intent Layer UX walkthrough fixes" plan, finding 2.
 3. **The "Alt. time" offer type has no actual time input anywhere, on either side.**
    `business_request_offers.proposed_time` / `submitBusinessOfferResponse()`'s `proposedTime` is
    never set by any caller and never rendered by `BusinessRequestDetailScreen` in either the

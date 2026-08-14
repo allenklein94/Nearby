@@ -143,11 +143,18 @@ export async function declineBusinessOpportunity(requestId) {
 // row with an overlapping category/date right now" -- see the Tier 2
 // retrofit migration (20260814_business_fulfillment_tier2.sql) for why
 // this is a narrow SECURITY DEFINER RPC rather than a broadened SELECT
-// policy on business_requests itself.
-export async function getConnectedOpenBusinessRequests({ category = null, date = null } = {}) {
+// policy on business_requests itself. Takes a real date *range*
+// (dateStart/dateEnd), not a single exact date -- see
+// 20260814_business_fulfillment_tier2_weekend_range.sql, which closed a
+// real "weekend" meant two different things depending on which resolver
+// branch you asked bug (PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_
+// 2026-08-14.md, finding 2). dateEnd defaults to dateStart server-side
+// when omitted, so a single-day caller can still pass just dateStart.
+export async function getConnectedOpenBusinessRequests({ category = null, dateStart = null, dateEnd = null } = {}) {
   const { data, error } = await supabase.rpc('get_connected_open_business_requests', {
     category_param: category,
-    date_param: date,
+    date_start_param: dateStart,
+    date_end_param: dateEnd,
   });
   if (error) throw new Error(error.message);
   return data ?? [];

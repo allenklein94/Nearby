@@ -57,6 +57,31 @@ current as each lands.
    new `dateWindowToDateRange()` replacing `dateWindowToDateParam()`, computing the exact same
    Sat-through-Sun boundary `matchesDateWindow()` already uses — one real definition of "weekend,"
    shared by both branches instead of two.
+
+   **Finding 2 — DONE.** `20260814_business_fulfillment_tier2_weekend_range.sql` drops the old
+   single-`date_param` `get_connected_open_business_requests` and creates the real 3-arg
+   (`category_param`/`date_start_param`/`date_end_param`) version, exactly as planned.
+   `getConnectedOpenBusinessRequests()` (`businessFulfillment.js`) now takes `dateStart`/`dateEnd`;
+   `intentResolver.js`'s `dateWindowToDateParam()` was replaced with `dateWindowToDateRange()`,
+   computing the identical Saturday-through-Sunday span `matchesDateWindow()` already used for
+   gatherings — one real "weekend" definition now, not two. **Verified live against production**
+   (`enmosvippabmuqslzrox`), not just applied: confirmed the old 1-date signature is gone (only
+   the new 3-arg one exists) and grants survived (`authenticated` yes, `anon`/`public` no); real
+   disposable test — a genuine accepted-friend pair (`Claude`↔`Allen`), a real open request from
+   `Claude` dated the upcoming Sunday — calling the RPC as `Allen` with the *old buggy* single-
+   Saturday-only range correctly returned nothing (proving the bug was real), calling it with the
+   real Saturday-through-Sunday range correctly returned the Sunday request; a non-matching
+   category, a date outside the range, and a non-friend caller were all separately confirmed still
+   correctly excluded (no regression); a null/null passthrough call still returned it (matches the
+   RPC's own documented behavior). Test row deleted afterward; production confirmed back to its
+   exact pre-test baseline (0 rows). **Verified via a real from-scratch migration replay** (21
+   files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) — the new 3-arg function confirmed to
+   exist, the old 1-date signature confirmed gone, in the freshly-rebuilt database. Client-side
+   verified via a direct `@babel/core` parse of both touched files (clean) and a full `npx expo
+   export --platform ios` (clean). **Not done yet, same standing gap as everywhere else in this
+   file**: no manual simulator/device run-through — next session should confirm a real "this
+   weekend" ask surfaces a friend's genuinely-Sunday open request in the actual running app, not
+   just via direct RPC calls.
 3. **The "Alt. time" offer-type chip has no time input anywhere, business or consumer side.**
    `business_request_offers.proposed_time`/`submit_business_offer`'s `proposed_time_param` already
    exist and work server-side (verified — no schema/RPC change needed for this one) but no caller

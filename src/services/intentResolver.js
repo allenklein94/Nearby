@@ -69,32 +69,45 @@ function matchesDateWindow(scheduledAt, dateWindow) {
   return true;
 }
 
-// Translates the same coarse dateWindow vocabulary above into a concrete
-// date for comparing against business_requests.date (a plain date column,
-// unlike gatherings' scheduled_at timestamp) — same today/tomorrow/weekend
-// boundaries as matchesDateWindow, just returning a date instead of a
-// range check. Returns null for 'flexible'/unset, meaning "don't filter by
-// date" — matches the RPC's own (date_param is null or ...) passthrough.
-function dateWindowToDateParam(dateWindow) {
-  if (!dateWindow || dateWindow === 'flexible') return null;
+// Translates the same coarse dateWindow vocabulary above into a real date
+// *range* for comparing against business_requests.date (a plain date
+// column, unlike gatherings' scheduled_at timestamp) — the exact same
+// today/tomorrow/weekend boundaries matchesDateWindow already uses, kept
+// as a genuine range rather than collapsing to a single date. Previously
+// this returned just Saturday for 'weekend', while matchesDateWindow's
+// own 'weekend' case (used to filter gatherings) already covered the
+// full Saturday-through-Sunday span — the same word meant two different
+// ranges depending on which resolver branch you asked, so a friend's
+// genuinely-this-weekend Sunday ask was silently excluded from Tier 2
+// while a Sunday gathering correctly surfaced (PRODUCT_AUDIT/
+// INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md, finding 2). Returns
+// {start: null, end: null} for 'flexible'/unset, meaning "don't filter by
+// date" — matches the RPC's own (date_start_param is null or ...)
+// passthrough.
+function dateWindowToDateRange(dateWindow) {
+  if (!dateWindow || dateWindow === 'flexible') return { start: null, end: null };
   const now = new Date();
   const todayStart = startOfDay(now);
   if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') {
-    return todayStart.toISOString().slice(0, 10);
+    const d = todayStart.toISOString().slice(0, 10);
+    return { start: d, end: d };
   }
   if (dateWindow === 'tomorrow') {
     const d = new Date(todayStart);
     d.setDate(d.getDate() + 1);
-    return d.toISOString().slice(0, 10);
+    const s = d.toISOString().slice(0, 10);
+    return { start: s, end: s };
   }
   if (dateWindow === 'weekend') {
     const dayOfWeek = todayStart.getDay();
     const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
-    const d = new Date(todayStart);
-    d.setDate(d.getDate() + daysUntilSaturday);
-    return d.toISOString().slice(0, 10);
+    const saturday = new Date(todayStart);
+    saturday.setDate(saturday.getDate() + daysUntilSaturday);
+    const sunday = new Date(saturday);
+    sunday.setDate(sunday.getDate() + 1);
+    return { start: saturday.toISOString().slice(0, 10), end: sunday.toISOString().slice(0, 10) };
   }
-  return null;
+  return { start: null, end: null };
 }
 
 // getGatheringFitReasons() (services/gatherings.js) is the shared scorer
@@ -163,9 +176,11 @@ async function resolveCommunities(category) {
 }
 
 async function resolveConnectedRequests(category, dateWindow) {
+  const { start, end } = dateWindowToDateRange(dateWindow);
   const connected = await getConnectedOpenBusinessRequests({
     category: category ?? null,
-    date: dateWindowToDateParam(dateWindow),
+    dateStart: start,
+    dateEnd: end,
   });
   return connected.map((r) => ({
     type: 'friend_request',
