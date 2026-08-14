@@ -580,6 +580,82 @@ community demand generation, deliberately deferred within Phase 3 and reaffirmed
 the notes above) is locked, per the design work already done, and ready to build when picked up
 — see each phase's own plan text above.
 
+**Resolver integration fix, Aug 14 2026 — DONE.** Two read-only audits
+(`PRODUCT_AUDIT/INTENT_LAYER_PHASE1_AUDIT_2026-08-14.md` and
+`PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md`) found that `intentResolver.js`,
+despite every individual fulfillment path (gatherings, perks, connected friend/match asks, the
+business request/offer engine) genuinely working, was not actually behaving as one coherent
+intent-resolution system: communities were never queried at all, the business engine was a
+structural dead-end only reached when every other branch returned zero results (never a scored
+candidate), and there was no cross-type relevance ranking anywhere — a handful of loosely
+category-matching gatherings could silently starve out a perfectly-fitting perk or a business's
+own live availability, purely because gatherings always ran first and filled the result cap
+before anything else was even queried. Closed directly, on top of the already-existing
+plumbing — no new transaction system, no major UI change:
+- **Communities**: `resolveIntent()` now also queries `getMyCommunities()`, gated on a real
+  detected category (a null category has no real signal to rank an "all your communities" list
+  by, unlike gatherings which still have date/distance/attendance — so this branch stays silent
+  rather than surfacing noise). Matches taps through to `CommunityDetail`.
+- **Business availability as a real, synchronous candidate, not a fallback**: new
+  `search_active_business_availability(category, latitude, longitude, radius_miles)` SECURITY
+  DEFINER RPC (`20260814_business_fulfillment_availability_search.sql`) — `business_availability`
+  has owner-only SELECT RLS, so this is a narrow, read-only RPC (same "scoped to exactly what's
+  displayed" convention as `get_connected_open_business_requests`), using the identical haversine
+  formula `_match_request_to_availability()` already uses server-side. A business's own posted
+  availability is intentionally discoverable supply — not subject to the no-stranger-discovery
+  rule, which only applies to people. Tapping a matched availability candidate navigates to
+  `AskBusinessScreen` prefilled from both the original intent and the specific posting (a new
+  "X already has this available" banner, informational only) rather than auto-submitting —
+  same "review before commit" discipline every other result type already follows (tapping a
+  gathering navigates to its detail, doesn't auto-join). Submitting from there is likely, not
+  guaranteed, to land as an immediate real offer via the same matching plumbing every request
+  already goes through — the posting could fill up in the meantime, and that's stated honestly in
+  the banner, not hidden.
+- **Cross-type relevance ranking**: all five branches (gatherings, communities, connected
+  friend/match asks, perks, business availability) now fetch in parallel
+  (`Promise.allSettled`, one location fetch shared between perks and business availability) and
+  score on one shared axis — reusing `getGatheringFitReasons()`'s own established weights
+  (interest match = 5, close distance = 3, happening now/today = 2) rather than inventing a new
+  scale, plus a flat "own network" weight (6) for community-membership and friend/match
+  candidates, since a real signal from the caller's own connections is weighted a little above a
+  plain category match, consistent with this app's standing no-stranger-discovery principle.
+  Perks and business availability were previously unscored entirely (sorted by recency only) —
+  both now get a real, comparable score from their own actual fields (interest-tag targeting,
+  and for availability, real haversine distance + the fact that eligibility itself already
+  guarantees "available right now"). Merged, sorted descending, capped at 4 — same display
+  budget as before, but now genuinely "best fulfillment first," not "gatherings first, business
+  last." The "ask nearby businesses fresh and wait" fallback still exists, but is now correctly
+  reserved for the case where all five real sources come back empty, not four.
+- **Verified live against production** (`enmosvippabmuqslzrox`): confirmed grants
+  (`authenticated` yes, `anon` no); real disposable test data (a temporary `Coastal Coffee`
+  availability posting, its coordinates temporarily set as in every prior pass touching this
+  partner) — a matching category+nearby-point call correctly returned the posting with
+  `distance_miles: 0`; a non-matching category and an out-of-radius point both correctly
+  returned zero rows; a null-category/null-location call correctly returned it unfiltered,
+  matching the RPC's own documented passthrough behavior. All test data deleted and Coastal
+  Coffee's coordinates reverted to null afterward; production confirmed back to its exact
+  pre-test baseline (0 availability postings).
+- **Verified via a real from-scratch migration replay** — caught and fixed a real filename-
+  ordering bug in the process, not just confirmed the happy path: the new migration was
+  originally named `20260814_business_availability_search.sql`, which sorts alphabetically
+  *before* `20260814_business_fulfillment_availability.sql` (the migration that creates the
+  `business_availability` table this one depends on) — a fresh Supabase CLI apply, which applies
+  migrations in filename lexical order, would have failed on `relation "business_availability"
+  does not exist`. Confirmed this failure actually reproduces in a real replay, then renamed the
+  file to `20260814_business_fulfillment_availability_search.sql` (sorts correctly, right after
+  its dependency) and reran the full 20-file replay from a truly fresh container — exit 0 on
+  every file, the new function confirmed to exist in the freshly-rebuilt database. Container
+  removed afterward.
+- Client-side verified via a direct `@babel/core` parse of every touched file (clean) and a full
+  `npx expo export --platform ios` (clean, no bundling errors).
+- **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+  run-through — next session should confirm the ranked result list actually renders sensibly
+  against real mixed data (a gathering, a community, a perk, and a business availability posting
+  all matching the same category at once), that the new community/business-availability icons
+  render correctly, and that tapping a business availability result and submitting from
+  `AskBusinessScreen` genuinely lands as an immediate `offered` row when the matched posting is
+  still live.
+
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section

@@ -187,3 +187,22 @@ export async function getMyBusinessAvailability(partnerId) {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// ---- Intent Layer resolver integration fix (see
+// PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md) ----
+// Read-only search over already-posted standing availability, so the Home
+// resolver can treat live business supply as a real, scored candidate
+// instead of a dead-end fallback only reached when everything else is
+// empty. business_availability has owner-only SELECT RLS, so this goes
+// through the same narrow "RPC scoped to exactly what's needed" shape as
+// getConnectedOpenBusinessRequests above, not a broadened SELECT policy.
+export async function searchActiveBusinessAvailability({ category = null, latitude = null, longitude = null, radiusMiles = 15 } = {}) {
+  const { data, error } = await supabase.rpc('search_active_business_availability', {
+    category_param: category,
+    latitude_param: latitude,
+    longitude_param: longitude,
+    radius_miles_param: radiusMiles,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}

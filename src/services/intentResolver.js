@@ -1,9 +1,31 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
+import { getMyCommunities } from './communities';
 import { getActiveOffers } from './brandOffers';
-import { getConnectedOpenBusinessRequests } from './businessFulfillment';
+import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability } from './businessFulfillment';
 
-const RESOLVER_RESULT_CAP = 4;
+const RESULT_CAP = 4;
+
+// Shared relevance weights, kept on the same scale
+// getGatheringFitReasons() already established (interest match = 5, close
+// distance = 3, happening today/now = 2) so every candidate type competes
+// on one real, comparable axis instead of a fixed tier-fill order. See
+// PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md for why this
+// replaced the old sequential "gatherings fill 4 slots, then maybe
+// friend-asks, then maybe perks" design -- that design let a handful of
+// loosely-matching gatherings silently starve out a perfectly-matching
+// perk or a business's own live availability, since nothing was ever
+// scored against anything else.
+const SCORE_INTEREST_MATCH = 5;
+const SCORE_CLOSE_DISTANCE = 3;
+const SCORE_HAPPENING_NOW = 2;
+// A real signal from the caller's own social graph (already a member /
+// a friend independently asking for the same thing) is weighted a little
+// above a plain interest-tag match, matching this app's standing
+// no-stranger-discovery principle: your own network is worth more than an
+// anonymous category match, but this is still a flat weight for a real,
+// present signal -- not a fabricated score.
+const SCORE_OWN_NETWORK = 6;
 
 function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -75,81 +97,161 @@ function dateWindowToDateParam(dateWindow) {
   return null;
 }
 
-// Tiers 1-3 of the Intent Layer's resolver (CLAUDE.md's "Intent Layer +
-// Business Fulfillment" plan). Tier 2 (friends/matches who've
-// independently expressed compatible intent) was sequenced right after
-// Phase 2 landed, per the plan's own note — it sources its signal from
-// Phase 2's business_requests table via a narrow SECURITY DEFINER RPC, not
-// a broadened SELECT policy. Tier 4 (asking a business for a real offer)
-// is Phase 2's AskBusinessScreen, reached from Home when this resolver
-// returns nothing. This function only ever reads already-real,
-// already-existing supply/social-graph signal — no fabricated results,
-// and nothing here creates or commits to anything.
-export async function resolveIntent({ category, dateWindow }) {
-  const results = [];
+async function resolveGatherings(category, dateWindow) {
+  const nearby = await getNearbyGatherings('wide');
+  const relevant = nearby.filter((g) => {
+    if (category && g.interest_tag !== category) return false;
+    return matchesDateWindow(g.scheduled_at, dateWindow);
+  });
+  return relevant.map((gathering) => {
+    const { score, reasons } = getGatheringFitReasons(gathering);
+    return {
+      type: 'gathering',
+      id: gathering.id,
+      title: gathering.title,
+      subtitle: reasons[0] ?? null,
+      score,
+    };
+  });
+}
 
+// Communities have no scheduled date/urgency signal the way a gathering
+// does, so with no detected category there's no real signal that any
+// particular community the caller belongs to is relevant to this specific
+// ask -- unlike gatherings (which still have date/distance/attendance to
+// rank by), an uncategorized "all your communities" result would be noise,
+// not a real match. Gated on a real category instead of surfaced broadly.
+async function resolveCommunities(category) {
+  if (!category) return [];
+  const mine = await getMyCommunities();
+  return mine
+    .filter((c) => c.interest_tag === category)
+    .map((c) => ({
+      type: 'community',
+      id: c.id,
+      title: c.name,
+      subtitle: "You're already a member",
+      score: SCORE_OWN_NETWORK,
+    }));
+}
+
+async function resolveConnectedRequests(category, dateWindow) {
+  const connected = await getConnectedOpenBusinessRequests({
+    category: category ?? null,
+    date: dateWindowToDateParam(dateWindow),
+  });
+  return connected.map((r) => ({
+    type: 'friend_request',
+    id: r.id,
+    userId: r.requester_id,
+    title: `${r.requester_display_name ?? 'A friend'} is also looking for this`,
+    subtitle: r.raw_text,
+    score: SCORE_OWN_NETWORK,
+  }));
+}
+
+async function resolvePerks(category, location) {
+  if (!location) return [];
+  const offers = await getActiveOffers(location.latitude, location.longitude);
+  const relevant = category ? offers.filter((o) => !o.target_interest_tag || o.target_interest_tag === category) : offers;
+  return relevant.map((offer) => ({
+    type: 'perk',
+    id: offer.id,
+    title: offer.title,
+    subtitle: offer.brand_partners?.name ?? null,
+    // A perk with no target_interest_tag is visible to everyone (no real
+    // match signal); one that's actually targeted at this category is a
+    // real, comparable match, same weight as a gathering's own interest
+    // match.
+    score: offer.target_interest_tag && offer.target_interest_tag === category ? SCORE_INTEREST_MATCH : 0,
+  }));
+}
+
+// Real, live business supply -- a business already declared these terms
+// in advance (Phase 4's "proactive availability"), so unlike the Tier 4
+// fallback below, this is genuinely queryable right now, not something
+// that requires submitting a fresh ask and waiting. This is what makes
+// the business path a real candidate instead of a dead end -- see the
+// integration audit for the gap this closes.
+async function resolveBusinessAvailability(category, location) {
+  if (!location) return [];
+  const rows = await searchActiveBusinessAvailability({
+    category: category ?? null,
+    latitude: location.latitude,
+    longitude: location.longitude,
+  });
+  return rows.map((row) => {
+    let score = 0;
+    // Only count as a real category match when the posting itself is
+    // targeted -- an untargeted posting matching by virtue of category
+    // being null isn't a genuine signal, same reasoning as perks above.
+    if (category && row.category && row.category === category) score += SCORE_INTEREST_MATCH;
+    if (row.distance_miles != null && row.distance_miles < 2) score += SCORE_CLOSE_DISTANCE;
+    // Eligibility already guarantees ends_at > now(), so any result here
+    // is, by construction, available right now -- a real "happening now"
+    // signal, not a guess.
+    score += SCORE_HAPPENING_NOW;
+    return {
+      type: 'business_availability',
+      id: row.id,
+      partnerId: row.partner_id,
+      title: `${row.partner_name} has availability`,
+      subtitle: row.price != null ? `${row.title} · $${row.price}` : row.title,
+      matchedAvailability: {
+        partnerName: row.partner_name,
+        title: row.title,
+        description: row.description,
+        offerType: row.offer_type,
+        price: row.price,
+      },
+      score,
+    };
+  });
+}
+
+// Resolves a submitted intent against every real, already-existing
+// fulfillment path Nearby has -- gatherings, communities the caller
+// already belongs to, friends/matches independently asking for the same
+// thing, standing perks, and a business's own already-posted live
+// availability -- and ranks them on one shared, real-signal score instead
+// of a fixed hierarchy. Only when every one of these genuinely returns
+// nothing does the caller ever see the "ask nearby businesses fresh, then
+// wait for a real offer" fallback (HomeScreen's own intentEmptyFallback
+// branch) -- that path stays a distinct, secondary option because it's a
+// materially different kind of result (asynchronous, not yet answered),
+// not because business supply is inherently lower priority than social
+// supply. No fabricated results, no stranger discovery — every branch
+// here reads already-real, already-existing data, and nothing here
+// creates or commits to anything.
+export async function resolveIntent({ category, dateWindow }) {
+  let location = null;
   try {
-    const nearby = await getNearbyGatherings('wide');
-    const relevant = nearby.filter((g) => {
-      if (category && g.interest_tag !== category) return false;
-      return matchesDateWindow(g.scheduled_at, dateWindow);
-    });
-    const scored = relevant
-      .map((g) => ({ gathering: g, ...getGatheringFitReasons(g) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, RESOLVER_RESULT_CAP);
-    for (const { gathering, reasons } of scored) {
-      results.push({
-        type: 'gathering',
-        id: gathering.id,
-        title: gathering.title,
-        subtitle: reasons[0] ?? null,
-      });
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status === 'granted') {
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
     }
   } catch (e) {
-    console.error('resolveIntent gatherings error', e);
+    console.error('resolveIntent location error', e);
   }
 
-  if (results.length < RESOLVER_RESULT_CAP) {
-    try {
-      const connected = await getConnectedOpenBusinessRequests({
-        category: category ?? null,
-        date: dateWindowToDateParam(dateWindow),
-      });
-      for (const r of connected.slice(0, RESOLVER_RESULT_CAP - results.length)) {
-        results.push({
-          type: 'friend_request',
-          id: r.id,
-          userId: r.requester_id,
-          title: `${r.requester_display_name ?? 'A friend'} is also looking for this`,
-          subtitle: r.raw_text,
-        });
-      }
-    } catch (e) {
-      console.error('resolveIntent connected requests error', e);
+  const branches = await Promise.allSettled([
+    resolveGatherings(category, dateWindow),
+    resolveCommunities(category),
+    resolveConnectedRequests(category, dateWindow),
+    resolvePerks(category, location),
+    resolveBusinessAvailability(category, location),
+  ]);
+
+  const candidates = [];
+  for (const branch of branches) {
+    if (branch.status === 'fulfilled') {
+      candidates.push(...branch.value);
+    } else {
+      console.error('resolveIntent branch error', branch.reason);
     }
   }
 
-  if (results.length < RESOLVER_RESULT_CAP) {
-    try {
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const offers = await getActiveOffers(location.coords.latitude, location.coords.longitude);
-        const relevant = category ? offers.filter((o) => !o.target_interest_tag || o.target_interest_tag === category) : offers;
-        for (const offer of relevant.slice(0, RESOLVER_RESULT_CAP - results.length)) {
-          results.push({
-            type: 'perk',
-            id: offer.id,
-            title: offer.title,
-            subtitle: offer.brand_partners?.name ?? null,
-          });
-        }
-      }
-    } catch (e) {
-      console.error('resolveIntent offers error', e);
-    }
-  }
-
-  return results;
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates.slice(0, RESULT_CAP);
 }

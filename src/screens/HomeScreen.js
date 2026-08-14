@@ -28,6 +28,20 @@ const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Aftern
 // mount, not re-randomized on every keystroke.
 const INTENT_PLACEHOLDER_EXAMPLES = ['Dinner tonight…', 'Something fun Saturday…', 'Find a pickleball game…'];
 
+// One icon per real resolver candidate type (intentResolver.js) -- kept as
+// a lookup rather than a ternary chain now that there are 4 real types,
+// not 2. 'community' reuses the same glyph as Home's own "Your
+// Communities" section header for visual consistency; 'business_availability'
+// reuses the same glyph as the empty-fallback's "Ask Nearby Businesses"
+// button, since it's the same underlying supply.
+const INTENT_RESULT_ICONS = {
+  perk: 'gift-outline',
+  friend_request: 'person-outline',
+  community: 'business-outline',
+  business_availability: 'storefront-outline',
+  gathering: 'people-outline',
+};
+
 const PERIOD_SUBTITLES = {
   morning: 'What sounds good this morning?',
   afternoon: 'What sounds good this afternoon?',
@@ -196,19 +210,24 @@ export default function HomeScreen({ navigation }) {
     setIntentResults(null);
   }
 
-  // Phase 1b of the Intent Layer plan (CLAUDE.md) -- closes the gap Phase
-  // 1a deliberately left open. A submitted intent now checks Tiers 1
-  // (already-relevant gatherings) and 3 (existing perks) via
-  // services/intentResolver.js before ever falling through to creation.
-  // community/business_partner intents skip the resolver entirely -- it
-  // only ever resolves against gathering-shaped supply (gatherings and
-  // perks), never an existing community or a business partnership.
-  // Phase 2 extends the empty-result case: rather than falling straight
-  // through to creation, a gathering-shaped ask that Tiers 1/3 genuinely
-  // couldn't cover now also offers Tier 4 -- asking real nearby businesses
-  // -- as a real, first-class option alongside "create it yourself,"
-  // never framed as a fallback after "the real options" failed, per the
-  // plan's own locked product principle.
+  // A submitted intent checks every real existing fulfillment path via
+  // services/intentResolver.js (gatherings, communities the caller
+  // belongs to, friends/matches with a compatible open ask, perks, and a
+  // business's own live posted availability) before ever falling through
+  // to creation. community/business_partner intents skip the resolver
+  // entirely -- it only ever resolves against gathering-shaped supply,
+  // never an existing community or a business partnership request.
+  // resolveIntent() ranks whatever it finds by one shared relevance
+  // score, not a fixed priority order -- see
+  // PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md, which
+  // found and closed the gap where a rigid tier order let a handful of
+  // loosely-matching gatherings silently starve out a better-fitting perk
+  // or business availability posting. Only when the resolver genuinely
+  // finds nothing across every real source does the empty-result fallback
+  // below offer "ask nearby businesses fresh, then wait for a real
+  // offer" -- a real, first-class option, distinct from the ranked
+  // results only because it's asynchronous (no answer yet), never framed
+  // as a fallback after "the real options" failed.
   async function handleHomeIntentSubmit() {
     if (!intentText.trim()) return;
     setIntentThinking(true);
@@ -234,6 +253,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   function handleIntentResultTap(item) {
+    const { classifyResult, typedText } = intentResults ?? {};
     setIntentResults(null);
     if (item.type === 'gathering') {
       navigation.navigate('GatheringDetail', { gatheringId: item.id });
@@ -241,6 +261,25 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate('BrandOffers', { highlightOfferId: item.id });
     } else if (item.type === 'friend_request') {
       navigation.navigate('ViewProfile', { userId: item.userId });
+    } else if (item.type === 'community') {
+      navigation.navigate('CommunityDetail', { communityId: item.id });
+    } else if (item.type === 'business_availability') {
+      // A business already declared these terms in advance -- tapping
+      // this doesn't submit anything by itself (same "review before
+      // commit" discipline every other result type here already follows,
+      // e.g. tapping a gathering navigates to its detail rather than
+      // auto-joining) -- it lands on the real ask screen, prefilled from
+      // both the original intent and the specific posting matched, so
+      // submitting there is very likely to land as an immediate real
+      // offer rather than a cold ask.
+      navigation.navigate('AskBusiness', {
+        prefillText: typedText ?? '',
+        prefillCategory: classifyResult?.category ?? null,
+        prefillPartySize: classifyResult?.partySize ?? null,
+        prefillBudgetMax: classifyResult?.budgetMax ?? null,
+        prefillDateWindow: classifyResult?.dateWindow ?? null,
+        matchedAvailability: item.matchedAvailability ?? null,
+      });
     }
   }
 
@@ -328,7 +367,7 @@ export default function HomeScreen({ navigation }) {
                   onPress={() => handleIntentResultTap(item)}
                 >
                   <Ionicons
-                    name={item.type === 'perk' ? 'gift-outline' : item.type === 'friend_request' ? 'person-outline' : 'people-outline'}
+                    name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
                     size={18}
                     color={colors.primary}
                     style={styles.intentResultIcon}

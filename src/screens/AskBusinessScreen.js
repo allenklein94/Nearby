@@ -66,6 +66,16 @@ export default function AskBusinessScreen({ navigation, route }) {
   const gatheringId = route.params?.gatheringId ?? null;
   const gatheringTitle = route.params?.gatheringTitle ?? null;
   const gatheringPartySize = route.params?.gatheringPartySize ?? null;
+  // Set only when reached by tapping a live business_availability
+  // candidate on Home's intent results (see intentResolver.js /
+  // PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md) --
+  // informational only, doesn't change what gets submitted. The business
+  // already declared these terms in advance, so submitting below is
+  // likely (not guaranteed -- the posting could fill up in the meantime)
+  // to land as an immediate real offer via the same
+  // _match_request_to_availability() matching every request already goes
+  // through, rather than a cold ask with nothing behind it yet.
+  const matchedAvailability = route.params?.matchedAvailability ?? null;
 
   const [text, setText] = useState(route.params?.prefillText ?? '');
   const [category, setCategory] = useState(route.params?.prefillCategory ?? null);
@@ -119,8 +129,23 @@ export default function AskBusinessScreen({ navigation, route }) {
           <Text style={styles.subtitle}>
             {gatheringId
               ? `Asking on behalf of your ${gatheringPartySize ?? ''}-person gathering — real nearby businesses can respond with a real offer for the group.`
-              : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
+              : matchedAvailability
+                ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
+                : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
           </Text>
+
+          {matchedAvailability && (
+            <View style={styles.matchedAvailabilityBanner}>
+              <Text style={styles.matchedAvailabilityTitle}>{matchedAvailability.partnerName}</Text>
+              <Text style={styles.matchedAvailabilityText}>
+                {matchedAvailability.title}
+                {matchedAvailability.price != null ? ` · $${matchedAvailability.price}` : ''}
+              </Text>
+              {matchedAvailability.description ? (
+                <Text style={styles.matchedAvailabilityDescription}>{matchedAvailability.description}</Text>
+              ) : null}
+            </View>
+          )}
 
           <Text style={styles.label}>What do you want?</Text>
           <TextInput
@@ -215,6 +240,13 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   heading: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  matchedAvailabilityBanner: {
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  matchedAvailabilityTitle: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
+  matchedAvailabilityText: { ...typography.body, color: colors.primary, fontWeight: '600', marginBottom: 2 },
+  matchedAvailabilityDescription: { ...typography.caption, color: colors.textSecondary },
   label: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.md },
   textArea: {
     ...typography.body, color: colors.textPrimary, backgroundColor: colors.surface,
