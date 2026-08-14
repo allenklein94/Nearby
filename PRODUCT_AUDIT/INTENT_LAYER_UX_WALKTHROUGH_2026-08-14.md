@@ -337,14 +337,18 @@ above, not a ranking issue.
 
 ## Cross-cutting findings (candidates for the next fix pass — not modified this pass)
 
-1. **Gathering popularity (attendee count) silently dominates the resolver's "one shared score."**
-   `intentResolver.js` reuses `getGatheringFitReasons()` verbatim, but that function adds
-   `Math.min(attendeeCount, 10)` and `+1` for `beginner_friendly` — neither is mentioned in the
-   resolver's own "shared weights" comment, and together they can outweigh every other type's
-   maximum possible score (perk max 5, business-availability max 10, community/friend-request
-   flat 6). This is the same class of problem the Aug 14 integration audit already fixed once
-   (tier-order bias) reappearing as score-magnitude bias. `src/services/intentResolver.js:100-116`
-   vs. `src/services/gatherings.js:923-957`.
+1. **FIXED, 2026-08-14.** ~~Gathering popularity (attendee count) silently dominates the
+   resolver's "one shared score."~~ `intentResolver.js` reused `getGatheringFitReasons()`
+   verbatim, but that function adds `Math.min(attendeeCount, 10)` and `+1` for
+   `beginner_friendly` — neither was mentioned in the resolver's own "shared weights" comment,
+   and together they could outweigh every other type's maximum possible score (perk max 5,
+   business-availability max 10, community/friend-request flat 6). This was the same class of
+   problem the Aug 14 integration audit already fixed once (tier-order bias) reappearing as
+   score-magnitude bias. Fixed via a new resolver-local `scoreGatheringForResolver()` that scores
+   only interest-match/close-distance/happening-today on the resolver's own documented scale;
+   `getGatheringFitReasons()` is still called for its `reasons` text only, unmodified itself — see
+   CLAUDE.md's "Intent Layer UX walkthrough fixes" plan, finding 1, for the full writeup.
+   `src/services/intentResolver.js` vs. `src/services/gatherings.js:923-957`.
 2. **"Weekend" means two different date ranges within the same intent resolution.**
    `matchesDateWindow('weekend')` (gatherings) covers Saturday through Sunday;
    `dateWindowToDateParam('weekend')` (connected friend-requests) collapses to Saturday only. A

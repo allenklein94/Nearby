@@ -97,6 +97,33 @@ function dateWindowToDateParam(dateWindow) {
   return null;
 }
 
+// getGatheringFitReasons() (services/gatherings.js) is the shared scorer
+// Home's Best Pick and GatheringDetailScreen's "Why this fits you" already
+// use -- but its real score also adds up to +10 for attendee count and +1
+// for beginner-friendly, neither of which belongs on the *cross-type*
+// scale this resolver actually documents (interest match/close distance/
+// happening today, same SCORE_* constants every other branch below uses).
+// Left uncalled for scoring here on purpose -- a popular gathering would
+// otherwise systematically outrank a perfectly-fitting perk or business
+// availability posting, the exact bias PRODUCT_AUDIT/
+// INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md found. getGatheringFitReasons()
+// is still called below for its `reasons` text (a real, richer subtitle)
+// -- only the *score* it returns is unused, so Home's Best Pick and
+// GatheringDetailScreen (both real, already-shipped, unmodified) are
+// unaffected by this.
+function scoreGatheringForResolver(gathering) {
+  let score = 0;
+  if (gathering.matchesYourInterests) score += SCORE_INTEREST_MATCH;
+  if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
+    score += SCORE_CLOSE_DISTANCE;
+  }
+  const scheduled = new Date(gathering.scheduled_at);
+  const now = new Date();
+  const isToday = scheduled.getFullYear() === now.getFullYear() && scheduled.getMonth() === now.getMonth() && scheduled.getDate() === now.getDate();
+  if (isToday) score += SCORE_HAPPENING_NOW;
+  return score;
+}
+
 async function resolveGatherings(category, dateWindow) {
   const nearby = await getNearbyGatherings('wide');
   const relevant = nearby.filter((g) => {
@@ -104,13 +131,13 @@ async function resolveGatherings(category, dateWindow) {
     return matchesDateWindow(g.scheduled_at, dateWindow);
   });
   return relevant.map((gathering) => {
-    const { score, reasons } = getGatheringFitReasons(gathering);
+    const { reasons } = getGatheringFitReasons(gathering);
     return {
       type: 'gathering',
       id: gathering.id,
       title: gathering.title,
       subtitle: reasons[0] ?? null,
-      score,
+      score: scoreGatheringForResolver(gathering),
     };
   });
 }

@@ -35,6 +35,17 @@ current as each lands.
    is still called for its `reasons` array (subtitle text only, not score) — **not modified
    itself**, so Home's Best Pick and `GatheringDetailScreen`'s "Why this fits you" (both real,
    already-shipped consumers of that function) are completely unaffected.
+
+   **Finding 1 — DONE.** New `scoreGatheringForResolver()` in `intentResolver.js`, exactly as
+   planned — scores each candidate from only `matchesYourInterests`/`distanceMiles < 2`/`isToday`
+   using the resolver's own `SCORE_*` constants; `getGatheringFitReasons()` is still called once
+   per gathering for its `reasons` array (subtitle text only, score discarded). Verified via a
+   direct `@babel/core` parse (clean). **Not done yet, same standing gap as everywhere else in
+   this file**: no manual simulator/device run-through, and no live re-run of the 5 walkthrough
+   intents against real data (this sandbox can't mint a real signed-in session to call
+   `create-assistant`) — next session should confirm a popular-but-loosely-matching gathering no
+   longer systematically outranks a well-targeted perk/business-availability/friend-ask in a real
+   result list.
 2. **"Weekend" means two different date ranges inside the same intent resolution.**
    `matchesDateWindow('weekend')` (gatherings) covers Saturday through Sunday;
    `dateWindowToDateParam('weekend')` (the Tier 2 connected-friend-request branch) collapses to
