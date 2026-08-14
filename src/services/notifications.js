@@ -185,6 +185,9 @@ export function routeNotificationTap(data) {
         navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id });
       }
       break;
+    case 'business_opportunity_received':
+      navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
+      break;
     case 'business_offer_accepted':
       navigationRef.navigate('BusinessDashboard');
       break;

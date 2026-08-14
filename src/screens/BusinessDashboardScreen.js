@@ -59,10 +59,10 @@ const AVAILABILITY_STATUS_COPY = {
   cancelled: 'Cancelled',
 };
 
-export default function BusinessDashboardScreen({ navigation }) {
+export default function BusinessDashboardScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [section, setSection] = useState('home');
+  const [section, setSection] = useState(route?.params?.initialSection ?? 'home');
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
