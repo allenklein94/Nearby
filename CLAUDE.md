@@ -4,6 +4,263 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, ready to start Phase 1, NO CODE CHANGES YET
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what's
+actually landed vs. still just this plan. **Still a plan only — zero code/schema touched.** The
+scope, the resolver design, the schema shape, and the phase order below were all reviewed and
+explicitly locked by the user in a second pass (not silently assumed); what remains before
+Phase 1 can start is purely a placement decision (where exactly the intent box lives on Home)
+and then actually writing code — no open design questions remain in this plan.
+
+### Context and locked decisions
+
+The user pasted a long external strategy conversation arguing Nearby's differentiation shouldn't
+be "find what's nearby" (crowded — Google Maps/Yelp/Eventbrite/Meetup territory) but "figure out
+what I should do right now" — an **intent-first** product where a natural-language ask ("dinner
+tonight for two, under $100") gets resolved against whatever can actually fulfill it, and where a
+**business** becomes a first-class fulfillment path alongside gatherings/communities/matches, not
+just a perk-redemption bolt-on. Three decisions are now locked, across two rounds of review:
+
+1. **Scope: additive, not a pivot, not a separate tab.** Dating/matches/gatherings/communities/
+   perks stay the core, untouched. A new **universal intent layer** goes on Home ("What do you
+   want to do?"), resolving against existing supply first, with a **new 1:1 consumer→business
+   request/offer/reservation flow** as a first-class fulfillment path when nothing existing
+   covers it — framed to the user as "can Nearby make this happen," never as a fallback after
+   the "real" options failed. Long-term, gatherings/communities should also *generate* business
+   demand ("find us somewhere to go" for an existing gathering), not just receive it — Phase 3+,
+   not V1.
+2. **V1 depth: full non-monetary state machine, no payment.** The new business flow needs a real
+   `request → opportunity → offer → accept → reservation → complete` lifecycle with genuine
+   server-side reservation integrity (no double-accepting the same slot), flexible offer shapes
+   (normal price / discount / perk / upgrade / alternate time — never hard-coded to "discount"),
+   and expiration/decline/cancellation branches. Stripe/payment collection is explicitly
+   deferred — matches this file's own long-standing "needs the user present for that decision"
+   stance on the existing business-billing gap (see "Outstanding: Billing / Monetization").
+3. **Locked product principle — no stranger discovery, ever, via intent.** Stated explicitly so
+   it's a hard constraint in the spec, not an inferred preference:
+
+   > Nearby responds to what you want — not by exposing strangers, but by finding the best
+   > available way for your existing Nearby network, local businesses, gatherings, communities,
+   > and other trusted supply to make it happen.
+
+   Person-based intent results may only ever include users already connected through an
+   existing friendship, match, gathering, or other explicitly established relationship — never a
+   text-search or proximity-search over unconnected nearby individuals. Business discovery is
+   **not** subject to this restriction — businesses are intentionally participating as
+   discoverable supply, that's the whole point of the fulfillment flow. This directly extends
+   two already-standing rules elsewhere in this file (Discover's unified search deliberately
+   excludes People; Create 2.0's locked decision #3 rejected proximity/interest-based stranger
+   surfacing for invite suggestions) rather than introducing a new one.
+
+### Current-state mapping — verified against real files/schema, not assumed from memory
+
+| Target architecture piece | Current reality |
+|---|---|
+| "What do you want to do?" intent box | **Doesn't exist on Home.** `HomeScreen.js` today opens with a greeting + period-aware subtitle ("What sounds good tonight?") + Quick Picks chips (fixed/personalized category list, tap → browse `Gatherings` filtered by category) — browse-first, not a free-text ask. |
+| NL intent → structured classification | **Exists, scoped to *creating*, not *discovering/requesting*.** `supabase/functions/create-assistant/index.ts` (verified directly) takes free text and returns `{intent: "gathering"|"community"|"business_partner"|"unclear", title, category, businessName}` via a real Haiku call, not premium-gated, rate-limited via the shared `check_and_increment_ai_use` RPC. Right shape, right pattern to extend — needs a new `intent: "request"` branch plus a genuine *resolve-against-existing-supply* step, which it doesn't do today (only ever routes to a creation screen). |
+| Tier 1/2 resolve → gatherings, communities, friends/matches | **Gatherings/communities exist and are reusable as-is**: `getNearbyGatherings()` (bounded SQL RPC), `getGatheringFitReasons()` (shared real-signal scorer already powering Home's Best Pick/Discover's Recommended), `getPublicCommunities()`/`searchPublicCommunities()` (indexed trigram search). **Friends/matches expressing "compatible intent" does not exist as a concept anywhere** — there is no signal today for "a friend also wants X right now." This is new, not a reuse of an existing query — see Phase 1 scope note below. |
+| Tier 3 resolve → perks/standing offers | **Exists.** `getActiveOffers()`/`searchOffers()`, `brand_offers` (verified schema) — already supports `target_interest_tag`, location radius, group-unlock thresholds, multiple `reward_type` shapes. A *standing* offer a business posts once for anyone to redeem, not a live per-request response — reusable as one resolver branch, not the same mechanism as Tier 4. |
+| Tier 4: business "opportunity → offer → accept → reservation" (1:1, per-request) | **Does not exist at all.** `brand_offers` is a standing post, not a live response to a specific ask. `business_partnership_requests` (verified schema) is the closest precedent — but it's a *gathering/community organizer naming one specific business*, single-target, no competing offers, no consumer-facing accept/reserve step. Good pattern to borrow conventions from (polymorphic target, SECURITY DEFINER RPCs, `status` enum, partial-unique-index anti-duplicate guard), not a table to repurpose. |
+| "Matching" extended beyond person↔person | `matches` (verified schema) is a `profiles`-to-`profiles` table wired deeply into 1:1 chat semantics (`messages.match_id`, disappearing messages, icebreakers, read receipts) via `source_gathering_id`/`source_friendship_id`. Overloading it for person↔business would drag in chat/relationship semantics that don't apply to a reservation. **Locked: new dedicated tables for the business flow (below), not an extension of `matches`.** |
+
+### Locked resolver design: a 4-tier priority hierarchy, no stranger branch
+
+Replaces the earlier vaguer "resolve against gatherings/communities/perks/people" framing with an
+explicit priority order, so "resolver" isn't a vague catch-all — each tier is checked in order,
+and Tier 4 (asking a business) only fires when tiers 1-3 don't adequately cover the intent:
+
+```
+                    USER INTENT
+                         ↓
+                  INTENT RESOLVER
+                         ↓
+        ┌────────────────┼────────────────┐
+        ↓                ↓                ↓
+   EXISTING SOCIAL   EXISTING SUPPLY   BUSINESS
+   (Tier 1-2)         (Tier 3)         FULFILLMENT
+        │                │             (Tier 4)
+        ↓                ↓                ↓
+ your plans /        gatherings /      request
+ relevant existing   perks              ↓
+ gatherings /                         offers
+ friends & matches                      ↓
+ with compatible                     accept
+ intent / your                          ↓
+ communities                        reservation
+```
+
+- **Tier 1 — your own existing commitments/opportunities.** Already-fetched `getHomeDashboard()`
+  data (Your Plans) and gatherings already relevant to the intent (via `getGatheringFitReasons()`
+  against the parsed category/date/party-size). This is "did I already have something that
+  matches" before anything else.
+- **Tier 2 — your existing social graph.** Communities you already belong to (`getMyCommunities()`),
+  and friends/matches who have *independently* expressed a compatible intent recently — new
+  concept, not a reuse of an existing table (see below). Never a stranger.
+- **Tier 3 — existing business supply.** Standing perks (`getActiveOffers()`/`searchOffers()`).
+- **Tier 4 — new business request.** Only when Tiers 1-3 don't adequately fulfill the intent:
+  broadcast the request to eligible businesses and let them respond with a real offer (the new
+  mechanic, Phase 2 below).
+
+**Tier 2's "friends/matches with compatible intent" is new and needs its own small schema
+decision, not free** — flagged explicitly rather than assumed to already exist: the simplest
+honest version is that submitting an intent request (Tier 4, `business_requests` below) is
+itself the signal — a resolver can check "do any of my accepted friends/matches have an `open`
+`business_requests` row with an overlapping category/date/time window right now" and surface
+that as a Tier 2 match instead of proceeding to Tier 4. That reuses Phase 2's own table rather
+than inventing a separate "intent broadcast" concept — worth confirming when Phase 1 is actually
+built, but it means Tier 2's people-matching piece is naturally sequenced *after* Phase 2 lands,
+not before it, even though it's numbered ahead of Tier 3/4 in priority. Phase 1 should ship
+Tiers 1 and 3 first (both fully backed by existing functions today) and add the Tier 2
+friends/matches piece once Phase 2's `business_requests` table exists to source it from.
+
+### Locked schema for Business Fulfillment (Phase 2) — designed, not yet applied
+
+User-facing name is **"Business Fulfillment"** (never "engine"/"matching engine" in any
+user-visible copy — that language is fine internally in this doc and in code comments, not in
+the product). Two new tables, matching this schema's own demonstrated preference for collapsing
+a lifecycle into one row with a status enum + per-phase timestamps (e.g.
+`gathering_interest.on_my_way_at`/`checked_in_at`, `business_partner_requests.reviewed_at`)
+rather than a table per state transition — the user reviewed and endorsed this shape explicitly
+("don't over-normalize it").
+
+- **`business_requests`** — the consumer's ask. `id`, `requester_id → profiles`, `raw_text`,
+  `category` (nullable, reuses `create-assistant`'s existing `VALID_CATEGORIES` list),
+  `party_size`, `budget_min`/`budget_max` (nullable), `date`, `time_window_start`/
+  `time_window_end`, `latitude`/`longitude`, `radius_miles`, `created_at`, `expires_at`, and
+  **`status`: `'open' | 'fulfilled' | 'expired' | 'cancelled'`** (lowercase snake_case, matching
+  every existing `status` enum in this schema — e.g. `business_partner_requests.status`,
+  `gathering_interest.status` — not the SCREAMING_CASE used in discussion for readability).
+- **`business_request_offers`** — one row per `(request_id, partner_id)`, collapsing
+  opportunity-sent → offer-submitted → accepted → reservation → completion into one lifecycle
+  row: `id`, `request_id → business_requests`, `partner_id → brand_partners`, `offer_type`
+  (`'standard' | 'discount' | 'perk' | 'upgrade' | 'alt_time'` — never hard-coded to discount),
+  `offer_price`, `offer_description`, `proposed_time`, `created_at`, `expires_at`,
+  `responded_at`, `accepted_at`, `completed_at`, and **`status`: `'pending' | 'offered' |
+  'accepted' | 'declined' | 'expired' | 'cancelled' | 'completed'`** — `pending` = opportunity
+  sent, business hasn't responded; `offered` = business responded with real offer terms;
+  `accepted` = consumer picked this one; `completed` = the reservation was fulfilled (closes the
+  ✅ "completion/outcome tracking" scope item below); `declined`/`expired`/`cancelled` are the
+  terminal non-winning branches.
+- **Server-side reservation integrity, not client-side**: a partial unique index —
+  `unique (request_id) where status in ('accepted', 'completed')` — guarantees only one offer
+  per request can ever win, enforced at the database level. Same anti-double-approval pattern
+  this schema already uses (`business_partner_requests_pending_unique`, the `FOR UPDATE` lock in
+  `join_gathering()`'s capacity check).
+- **Two SECURITY DEFINER RPCs**, no direct client INSERT/UPDATE on either table, matching this
+  schema's established convention:
+  - `submit_business_offer(request_id, offer_type, offer_price, offer_description,
+    proposed_time)` — checks the caller manages the offer row's `partner_id`, checks the row is
+    still `pending`, flips it to `offered`.
+  - `accept_business_offer(offer_id)` — checks the caller owns the parent `business_requests`
+    row, locks that row `for update` (same race-condition discipline as `join_gathering()`),
+    checks no sibling offer has already won, flips the winner to `accepted` and every sibling
+    `pending`/`offered` row on the same request to `expired`, flips the parent request to
+    `fulfilled` — all in one transaction.
+  - A third RPC for completion (`complete_business_reservation(offer_id)` or similar, business-
+    or consumer-triggered) and the outcome/rating shape are **not yet designed** — flagged as
+    part of Phase 2's own build, not this planning pass; `gathering_feedback` is the obvious
+    precedent to reuse the shape of.
+- **Fan-out** ("send this request to N eligible businesses") reuses `getActiveOffers()`'s
+  existing radius/category-targeting logic conceptually, but needs a new resolver function — not
+  yet designed. **A real, explicitly-flagged concern carried over from this file's Business RPC
+  section**: don't notify every eligible business on every request — needs the same "don't
+  overwhelm supply" cap this file has already worried about for a different feature. Not
+  designed in detail this pass.
+
+### Phased build order — locked, 5 phases
+
+1. **Home intent entry + resolver, Tiers 1 and 3 only (no new schema) — split into two
+   controlled sub-steps, per explicit instruction not to build the resolver while placing the
+   UI.**
+
+   **Locked placement, exact spec** (resolved by the user, not a Claude judgment call): a new,
+   dedicated section at the very top of Home, immediately below the greeting/subtitle and above
+   the existing "Your Plans" section — never relabeling or repurposing Your Plans (a
+   fundamentally different job: "what I've already committed to" vs. the intent box's "what do I
+   want right now"), never a new bottom-tab/nav destination. Compact, not chatbot-sized: one
+   heading ("What do you want to do?"), one text input with rotating placeholder examples
+   ("Dinner tonight…", "Something fun Saturday…", "Find a pickleball game…"), one button. Uses
+   the existing Nearby visual language (theme tokens, card style already established by
+   `plansCard`/`forecastCard`), not a separate AI/chat UI treatment.
+
+   **Phase 1a — DONE, UI placement + submission wired only as far as necessary, no resolver.**
+   `HomeScreen.js` gained the intent section exactly as spec'd above, wired to the *exact same*
+   `classifyCreateRequest()` (`services/createAssistant.js`) + intent-routing logic
+   `CreateHubScreen.js`'s "Something Else" box already uses — `gathering`/`community`/
+   `business_partner`/`unclear` all route to the same three creation screens with the same
+   prefill shape. **Deliberately not new logic** — this reuses the existing create-assistant
+   infrastructure verbatim rather than inventing anything, per the explicit instruction to keep
+   this sub-step controlled. This means the box currently behaves identically to Create's
+   "Something Else," just relocated to Home as the universal entry point — it does **not** yet
+   check Tiers 1/3 (existing gatherings/perks) before routing to creation. That gap is real and
+   expected, not a bug — it's exactly what Phase 1b closes. Placed immediately after the
+   greeting/subtitle, before the insight line/banners cluster and "Your Plans" — genuinely the
+   first content block in the scroll, matching the locked spec's "first actionable element"
+   framing. Verified via a direct `@babel/core` parse (clean) and a full `npx expo export
+   --platform ios` — clean, **1860 modules, unchanged** (edit to one existing file only, reusing
+   the already-existing `createAssistant.js` service — no new files). **Not done, same standing
+   gap as everywhere else in this file**: no manual simulator/device run-through of the new
+   section's placement/spacing relative to the banners cluster and Your Plans below it, or of the
+   rotating placeholder examples actually reading well against the compact input width.
+
+   **Phase 1b — NOT STARTED.** Extend `create-assistant` with a `request`-shaped output
+   (structured party_size/budget/date/time/category, not just title/category) and build the
+   actual Tier 1 (Your Plans / already-relevant gatherings via `getGatheringFitReasons()`) and
+   Tier 3 (existing perks via `getActiveOffers()`) resolver, so a submitted intent checks
+   existing supply *before* falling through to creation. Only once this lands does the intent
+   box start doing what Phase 1 of the overall plan actually promises — Phase 1a alone is UI
+   plumbing, not the resolver.
+2. **Business Fulfillment** — the 2-table schema above, the two (+ completion) RPCs, a "Business
+   Opportunities" inbox on `BusinessDashboardScreen.js` (accept/offer UI, reusing its existing
+   card/row conventions), and a consumer-side offer-review/accept screen. This is the real new
+   mechanic. Once this lands, retrofit Tier 2 into Phase 1's resolver (open `business_requests`
+   rows from accepted friends/matches with an overlapping window).
+3. **Gathering/community → business demand** — "8 of us are going out Saturday, find us
+   somewhere to eat" is a materially stronger business request than a solo ask (real party size,
+   real date, real potential spend) — this is where a gathering becomes a demand generator for
+   Business Fulfillment, not just a receiver of sponsorship (`business_partnership_requests`'s
+   existing single-target shape). Needs the *broadcast-with-competing-offers* shape from Phase 2,
+   so it's sequenced after, not folded into Phase 2. Own design pass once Phase 2 is proven.
+4. **Proactive business availability** ("we have 4 empty seats tonight") — businesses posting
+   time-boxed availability the resolver can match against open requests without a consumer
+   asking first. Needs Phase 2's matching/notification plumbing already working.
+5. **Expand "matching" as a concept** (person↔business, gathering↔business) — not a schema
+   change on its own, a framing/analytics layer once Phases 2-4 have produced real transaction
+   data (which requests succeed, which offers convert, which businesses respond, which
+   incentives/times/intent-types work) to reason about. Deliberately not attempted before real
+   outcome data exists.
+
+### Hard constraints for this whole build — locked, not to be silently relaxed
+
+Not doing, in any phase above unless explicitly re-opened:
+- ❌ No Stripe / payment collection
+- ❌ No new bottom tab / separate marketplace surface
+- ❌ No removal of existing functionality
+- ❌ No deprioritizing dating/matches/gatherings/communities/perks
+- ❌ No stranger discovery of any kind, ever, via intent (locked product principle above)
+- ❌ No major Home rewrite (this is additive UI, not a redesign of what's already there)
+- ❌ No premature universal/AI-driven matching algorithm — ranking stays simple/explainable
+  until there's real outcome data (matches this file's own existing "don't use opaque AI
+  reasoning as the sole basis for ranking" rule from the AI Concierge section)
+- ❌ No proactive business availability yet (Phase 4, not V1)
+- ❌ No gathering→business demand yet (Phase 3, not V1)
+
+Building, in order:
+- ✅ Intent entry point (Phase 1)
+- ✅ Existing-supply resolver, Tiers 1 and 3 (Phase 1)
+- ✅ 1:1 business request (Phase 2)
+- ✅ Business offer (Phase 2)
+- ✅ Consumer acceptance (Phase 2)
+- ✅ Reservation/commitment, server-enforced (Phase 2)
+- ✅ Completion/outcome tracking (Phase 2)
+
+**Nothing in this section has been built.** The only remaining open item before Phase 1 can
+start is where exactly the intent box lives on Home (new section vs. relabeling something
+existing) — everything else in this plan (resolver tiers, schema shape, enum names, phase order,
+the no-stranger-discovery principle) is locked.
+
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section

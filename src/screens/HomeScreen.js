@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
+import { classifyCreateRequest } from '../services/createAssistant';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -20,6 +21,11 @@ import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPi
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
 const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Afternoon', evening: 'Tonight', weekend: 'This Weekend' };
+
+// Phase 1a of the Intent Layer plan (CLAUDE.md) -- rotating placeholder
+// examples for the new "What do you want to do?" box. Picked once per
+// mount, not re-randomized on every keystroke.
+const INTENT_PLACEHOLDER_EXAMPLES = ['Dinner tonight…', 'Something fun Saturday…', 'Find a pickleball game…'];
 
 const PERIOD_SUBTITLES = {
   morning: 'What sounds good this morning?',
@@ -63,6 +69,9 @@ export default function HomeScreen({ navigation }) {
   const [unratedGathering, setUnratedGathering] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
+  const [intentText, setIntentText] = useState('');
+  const [intentThinking, setIntentThinking] = useState(false);
+  const [intentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   const period = getTimePeriod();
 
   const load = useCallback(async () => {
@@ -166,6 +175,34 @@ export default function HomeScreen({ navigation }) {
     if (myId) await supabase.from('profiles').update({ home_quick_pick_categories: null }).eq('id', myId);
   }
 
+  // Phase 1a of the Intent Layer plan (CLAUDE.md) -- wires submission into
+  // the existing create-assistant classify/route infrastructure only as
+  // far as necessary, exactly matching CreateHubScreen's "Something Else"
+  // handler. Deliberately does NOT check existing gatherings/perks first
+  // (Tiers 1/3 of the intent resolver) -- that's Phase 1b, not yet built,
+  // so every submission here still routes straight to a creation screen.
+  async function handleHomeIntentSubmit() {
+    if (!intentText.trim()) return;
+    setIntentThinking(true);
+    try {
+      const result = await classifyCreateRequest(intentText.trim());
+      const typedText = intentText.trim();
+      if (result.intent === 'gathering') {
+        navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
+      } else if (result.intent === 'community') {
+        navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
+      } else if (result.intent === 'business_partner') {
+        navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
+      } else {
+        navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
+      }
+      setIntentText('');
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setIntentThinking(false);
+  }
+
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
     ? getPinnedQuickPicks(pinnedQuickPicks, period, categoryStyleFor)
     : getPersonalizedQuickPicks(period, dashboard?.becauseYouLikeCategories, categoryStyleFor);
@@ -196,6 +233,31 @@ export default function HomeScreen({ navigation }) {
       >
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
         <Text style={styles.subtitle}>{PERIOD_SUBTITLES[period]}</Text>
+
+        <View style={styles.intentSection}>
+          <Text style={styles.intentHeading}>What do you want to do?</Text>
+          <View style={styles.intentInputRow}>
+            <TextInput
+              style={styles.intentInput}
+              placeholder={intentPlaceholder}
+              placeholderTextColor={colors.textTertiary}
+              value={intentText}
+              onChangeText={setIntentText}
+              onSubmitEditing={handleHomeIntentSubmit}
+              returnKeyType="go"
+              accessibilityLabel="What do you want to do?"
+            />
+            <TouchableOpacity
+              style={[styles.intentButton, (intentThinking || !intentText.trim()) && styles.intentButtonDisabled]}
+              onPress={handleHomeIntentSubmit}
+              disabled={intentThinking || !intentText.trim()}
+              accessibilityLabel="Find it"
+              accessibilityRole="button"
+            >
+              {intentThinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.intentButtonText}>Find it</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {(() => {
           const insight = getHomeInsight(dashboard);
@@ -630,6 +692,23 @@ const getStyles = (colors) => StyleSheet.create({
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   insightLine: { color: colors.primary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
+  intentSection: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  intentHeading: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
+  intentInputRow: { flexDirection: 'row', alignItems: 'center' },
+  intentInput: {
+    flex: 1, ...typography.body, color: colors.textPrimary, backgroundColor: colors.surfaceElevated,
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginRight: spacing.sm,
+  },
+  intentButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full,
+    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, minWidth: 68, alignItems: 'center', justifyContent: 'center',
+  },
+  intentButtonDisabled: { opacity: 0.5 },
+  intentButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   plansCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,
