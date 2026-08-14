@@ -346,7 +346,7 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
         <Text style={styles.subtitle}>{PERIOD_SUBTITLES[period]}</Text>
 
-        <View style={styles.intentSection}>
+        <View style={[styles.intentSection, shadow.card]}>
           <Text style={styles.intentHeading}>What do you want to do?</Text>
           <View style={styles.intentInputRow}>
             <TextInput
@@ -360,7 +360,7 @@ export default function HomeScreen({ navigation }) {
               accessibilityLabel="What do you want to do?"
             />
             <TouchableOpacity
-              style={[styles.intentButton, (intentThinking || !intentText.trim()) && styles.intentButtonDisabled]}
+              style={[styles.intentButton, shadow.button, (intentThinking || !intentText.trim()) && styles.intentButtonDisabled]}
               onPress={handleHomeIntentSubmit}
               disabled={intentThinking || !intentText.trim()}
               accessibilityLabel="Find it"
@@ -476,6 +476,70 @@ export default function HomeScreen({ navigation }) {
           return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
         })()}
 
+        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0) && (
+          <>
+            <Text style={styles.sectionHeader}>Your Plans</Text>
+            <View style={styles.plansCard}>
+              {dashboard.plansGoing.length > 0 && (
+                <>
+                  <Text style={styles.subLabel}>Going</Text>
+                  {dashboard.plansGoing.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={styles.planRow}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're going`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
+                      <View style={styles.planInfo}>
+                        <Text style={styles.planTitle}>{plan.title}</Text>
+                        <Text style={styles.planMeta}>
+                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="going" />
+                        </Text>
+                      </View>
+                      <Text style={styles.planChevron}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+              {dashboard.plansHosting.length > 0 && (
+                <>
+                  <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>Hosting</Text>
+                  {dashboard.plansHosting.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={styles.planRow}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're hosting`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
+                      <View style={styles.planInfo}>
+                        <Text style={styles.planTitle}>{plan.title}</Text>
+                        <Text style={styles.planMeta}>
+                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="hosting" />
+                        </Text>
+                      </View>
+                      <Text style={styles.planChevron}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.seeAllPlansButton}
+              onPress={() => navigation.navigate('Plans')}
+              accessibilityLabel="See all plans"
+              accessibilityRole="button"
+            >
+              <Text style={styles.seeAllPlansText}>See All Plans →</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
         {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {pendingInvitesCount > 0 && (
@@ -562,70 +626,6 @@ export default function HomeScreen({ navigation }) {
               </View>
             )}
           </View>
-        )}
-
-        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0) && (
-          <>
-            <Text style={styles.sectionHeader}>Your Plans</Text>
-            <View style={styles.plansCard}>
-              {dashboard.plansGoing.length > 0 && (
-                <>
-                  <Text style={styles.subLabel}>Going</Text>
-                  {dashboard.plansGoing.map((plan) => (
-                    <TouchableOpacity
-                      key={plan.id}
-                      style={styles.planRow}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
-                      activeOpacity={0.85}
-                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're going`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
-                      <View style={styles.planInfo}>
-                        <Text style={styles.planTitle}>{plan.title}</Text>
-                        <Text style={styles.planMeta}>
-                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="going" />
-                        </Text>
-                      </View>
-                      <Text style={styles.planChevron}>›</Text>
-                    </TouchableOpacity>
-                  ))}
-                </>
-              )}
-              {dashboard.plansHosting.length > 0 && (
-                <>
-                  <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>Hosting</Text>
-                  {dashboard.plansHosting.map((plan) => (
-                    <TouchableOpacity
-                      key={plan.id}
-                      style={styles.planRow}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
-                      activeOpacity={0.85}
-                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're hosting`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
-                      <View style={styles.planInfo}>
-                        <Text style={styles.planTitle}>{plan.title}</Text>
-                        <Text style={styles.planMeta}>
-                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="hosting" />
-                        </Text>
-                      </View>
-                      <Text style={styles.planChevron}>›</Text>
-                    </TouchableOpacity>
-                  ))}
-                </>
-              )}
-            </View>
-            <TouchableOpacity
-              style={styles.seeAllPlansButton}
-              onPress={() => navigation.navigate('Plans')}
-              accessibilityLabel="See all plans"
-              accessibilityRole="button"
-            >
-              <Text style={styles.seeAllPlansText}>See All Plans →</Text>
-            </TouchableOpacity>
-          </>
         )}
 
         <View style={styles.quickPicksHeaderRow}>
@@ -904,20 +904,36 @@ const getStyles = (colors) => StyleSheet.create({
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   insightLine: { color: colors.primary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
+  // Home Visual Hierarchy Audit, recommendation #1 (2026-08-14): this is
+  // Home's one hero element -- "This is where I start," not "here's
+  // another card." primaryMuted + a colors.primary border is the same
+  // colored-card language already used elsewhere on this screen (perks/
+  // invites banners, Best Pick), so it stays inside the existing Nearby
+  // visual system rather than inventing a new promotional style; what
+  // sets this container apart is shadow.card (applied via style array in
+  // the JSX) -- otherwise reserved for the FAB alone -- plus the largest
+  // padding and a full spacing.xl gap below it, so it reads as lifted and
+  // deliberately breathing-room'd rather than louder-colored.
   intentSection: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.lg,
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
+    padding: spacing.lg, marginBottom: spacing.xl,
   },
-  intentHeading: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
+  // typography.title matches the greeting directly above it -- an
+  // existing scale, not a new one -- so the heading reads as the
+  // screen's real headline rather than a card label.
+  intentHeading: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.sm },
   intentInputRow: { flexDirection: 'row', alignItems: 'center' },
+  // colors.surface (plain, not surfaceElevated) reads as a clearly
+  // separate, tappable field against the now-colored intentSection
+  // background behind it, rather than blending into it.
   intentInput: {
-    flex: 1, ...typography.body, color: colors.textPrimary, backgroundColor: colors.surfaceElevated,
+    flex: 1, ...typography.body, color: colors.textPrimary, backgroundColor: colors.surface,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
-    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, marginRight: spacing.sm,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.md, marginRight: spacing.sm,
   },
   intentButton: {
     backgroundColor: colors.primary, borderRadius: radius.full,
-    paddingVertical: spacing.sm, paddingHorizontal: spacing.md, minWidth: 68, alignItems: 'center', justifyContent: 'center',
+    paddingVertical: spacing.md, paddingHorizontal: spacing.lg, minWidth: 68, alignItems: 'center', justifyContent: 'center',
   },
   intentButtonDisabled: { opacity: 0.5 },
   intentButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },

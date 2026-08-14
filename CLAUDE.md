@@ -295,11 +295,72 @@ not inferred. Headline findings:
   recommendations (no section removed) are in the audit file itself — read that file, not this
   summary, before building any of them.
 
-**Not done, deliberately, per the user's own repeatedly-stated caution in this same reply**
-("very cautious about letting Claude keep 'improving' things without real user evidence"): none
-of the 6 recommendations have been built. The user's own next-step framing was "visual
-hierarchy pass only, then test the app as a first-time user again" — waiting on an explicit
-go-ahead before touching `HomeScreen.js` again, not proceeding on the audit's own momentum.
+**Recommendations #1 and #2 — explicitly approved and built (Aug 14 2026), the other 4
+deliberately left untouched.** The user reviewed the audit and gave exact, scoped-down
+instructions: build #1 (hero treatment for the intent box) and #2 (move the banner cluster
+below Your Plans) together, as one change — not #3-6, not a broader redesign. Explicit
+guardrails given directly: no section removed/renamed/redesigned (Quick Picks, Communities,
+stats, Because You Like, Weekly Recap, Browse all untouched), no navigation change, no resolver
+change, no business-engine change, and the hero treatment must stay "calm, useful, local" —
+not a large promotional/AI-styled card.
+
+- **#2 — banner cluster reordered below Your Plans.** Pure JSX reorder in `HomeScreen.js`, no
+  logic touched: the `(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || sinceAway)`
+  block (pending-invites banner → perks banner → weather card → since-away banner) now renders
+  *after* the `Your Plans` block instead of before it. Every banner's own condition, content,
+  and behavior is byte-for-byte unchanged — confirmed via `git diff`, which shows a clean
+  cut-and-paste of the same two blocks, nothing else touched. New render order: intent box →
+  insight line → Your Plans (conditional) → banner cluster (conditional) → Quick Picks → ...,
+  closing the exact "4 cards interrupting hero→primary" conflict the audit's Finding A flagged.
+- **#1 — intent box given a real hero treatment**, scoped tightly to the box itself:
+  - **Container**: `intentSection`'s background/border changed from plain `colors.surface` +
+    neutral `colors.border` (the same treatment as ordinary content cards) to
+    `colors.primaryMuted` + a 1.5px `colors.primary` border — reusing the exact colored-card
+    language the pending-invites/perks banners and Best Pick already use elsewhere on this same
+    screen, not a new color introduced. What actually sets it apart: `shadow.card` (applied via
+    a style array in the JSX, `[styles.intentSection, shadow.card]`) — previously the FAB was
+    the *only* element on the whole screen with any shadow; the intent box is now the only
+    *content* card with one, giving it a genuinely unique "lifted" quality nothing else shares.
+    Padding increased to `spacing.lg` (18, tied for the largest on the page) and the gap below
+    it increased from `spacing.lg` to `spacing.xl` (24) for real breathing room before whatever
+    follows.
+  - **Heading**: `intentHeading` changed from `typography.headline` (20/700) to
+    `typography.title` (26/700) — reuses the exact size already used one line up for the
+    greeting, an existing token, not an invented one.
+  - **Input field**: `intentInput`'s background changed from `colors.surfaceElevated` (a tinted
+    surface that would blend into the now-colored card behind it) to plain `colors.surface`, so
+    it reads as a clearly separate, tappable field against the hero card's tinted background.
+    Vertical padding increased slightly (`spacing.sm` → `spacing.md`) for better proportion at
+    the card's new larger size.
+  - **CTA**: the "Find it" button gained `shadow.button` (the same primary-CTA shadow token the
+    FAB already uses) and slightly larger padding, so it reads as a real primary action, not
+    just a colored pill.
+  - Verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform
+    ios` (clean, no bundling errors — edit to one existing file only, no new files).
+
+**Visual verification (code-level — no simulator/device access in this sandbox, same standing
+limitation as everywhere else in this file, stated plainly rather than claimed otherwise)**:
+reasoned through the actual computed render order and style values rather than the source diff
+alone. Render order now genuinely reads intent box → Your Plans → everything else, matching the
+requested "hero → secondary → supporting" structure exactly. The intent box is now the only
+card-shaped element anywhere on Home with a shadow, the largest heading below the greeting
+itself, and the most padding — on first scroll (before anything else has loaded further down),
+it unambiguously reads as "start here," not "another card." One honest, non-blocking residual
+note: the intent box's *color/border* language (`primaryMuted` + 1.5px `primary` border) is
+still shared with the Best Pick card deep in the "Because You Like…" cluster — matching by
+design, since inventing a second "loud" color treatment would violate "preserve the existing
+Nearby visual language," and the two never appear adjacent in scroll position, so this doesn't
+undermine the hero read in practice. Your Plans' own header (`sectionHeader`) was deliberately
+left unchanged, per the explicit "do not redesign Quick Picks/Communities/etc." instruction —
+recommendation #3 (a heavier Your Plans header) was not part of what was approved this pass.
+Both #1 and #2 were achievable cleanly within the existing design system — nothing to report as
+blocked.
+
+**Not done, deliberately**: recommendations #3-6 from the audit (a heavier Your Plans header,
+dialing down Best Pick, labeling the quick-stats card, fixing Your Communities' undersized
+header) were not built — not approved this pass. No manual simulator/device run-through — next
+session (or the user directly) should confirm the reordered/restyled Home actually reads as
+intended on a real device, matching this file's standing limitation everywhere else.
 
 ## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, all 6 findings DONE, build-wise
 
