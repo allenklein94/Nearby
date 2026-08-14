@@ -239,7 +239,7 @@ export default function HomeScreen({ navigation }) {
       if (result.intent === 'community' || result.intent === 'business_partner') {
         proceedToCreation(result, typedText);
       } else {
-        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow });
+        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText });
         if (resolved.length > 0) {
           setIntentResults({ items: resolved, classifyResult: result, typedText });
         } else {

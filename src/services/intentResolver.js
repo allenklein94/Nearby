@@ -27,6 +27,38 @@ const SCORE_HAPPENING_NOW = 2;
 // present signal -- not a fabricated score.
 const SCORE_OWN_NETWORK = 6;
 
+// Finding 6 (PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md): the
+// 24-tag category system is the resolver's real precision ceiling --
+// "pickleball" collapses to "Sports" with no narrowing anywhere. Expanding
+// the taxonomy or building real sub-category matching is a genuinely large
+// product decision, not attempted here -- this is a small, honest
+// tie-breaker on top of category matching, not a replacement for it: a
+// gathering whose own title literally contains a meaningful word from the
+// caller's raw typed text (4+ characters, common stopwords excluded) gets
+// a flat bonus at SCORE_HAPPENING_NOW's own weight, matching an existing
+// scale rather than inventing a new one.
+const STOPWORDS = new Set([
+  'this', 'that', 'with', 'from', 'have', 'want', 'looking', 'need',
+  'something', 'anything', 'some', 'more', 'than', 'into', 'about',
+  'tonight', 'today', 'tomorrow', 'weekend', 'people', 'group', 'find',
+  'make', 'happen', 'around', 'there', 'their', 'them', 'they', 'what',
+  'when', 'where', 'which', 'would', 'could', 'should', 'doing', 'like',
+  'just', 'really', 'very', 'also', 'then', 'over', 'under', 'because',
+  'being', 'been', 'were', 'your', 'mine', 'ours', 'theirs', 'each', 'other',
+]);
+
+function extractMeaningfulWords(rawText) {
+  if (!rawText) return [];
+  const words = rawText.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+  return words.filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+}
+
+function titleMentionBonus(title, meaningfulWords) {
+  if (!title || meaningfulWords.length === 0) return 0;
+  const lowerTitle = title.toLowerCase();
+  return meaningfulWords.some((w) => lowerTitle.includes(w)) ? SCORE_HAPPENING_NOW : 0;
+}
+
 function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -137,12 +169,13 @@ function scoreGatheringForResolver(gathering) {
   return score;
 }
 
-async function resolveGatherings(category, dateWindow) {
+async function resolveGatherings(category, dateWindow, rawText) {
   const nearby = await getNearbyGatherings('wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
     return matchesDateWindow(g.scheduled_at, dateWindow);
   });
+  const meaningfulWords = extractMeaningfulWords(rawText);
   return relevant.map((gathering) => {
     const { reasons } = getGatheringFitReasons(gathering);
     return {
@@ -150,7 +183,7 @@ async function resolveGatherings(category, dateWindow) {
       id: gathering.id,
       title: gathering.title,
       subtitle: reasons[0] ?? null,
-      score: scoreGatheringForResolver(gathering),
+      score: scoreGatheringForResolver(gathering) + titleMentionBonus(gathering.title, meaningfulWords),
     };
   });
 }
@@ -265,7 +298,7 @@ async function resolveBusinessAvailability(category, location) {
 // supply. No fabricated results, no stranger discovery — every branch
 // here reads already-real, already-existing data, and nothing here
 // creates or commits to anything.
-export async function resolveIntent({ category, dateWindow }) {
+export async function resolveIntent({ category, dateWindow, rawText }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
@@ -293,7 +326,7 @@ export async function resolveIntent({ category, dateWindow }) {
   }
 
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow),
+    resolveGatherings(category, dateWindow, rawText),
     resolveCommunities(category),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),

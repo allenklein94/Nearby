@@ -368,18 +368,38 @@ above, not a ranking issue.
    `BusinessRequestDetailScreen.js` now renders the real proposed time (and `offer_price`, which
    was also silently dropped once an offer moved to `accepted`) on both offer-card states. See
    CLAUDE.md's "Intent Layer UX walkthrough fixes" plan, finding 3.
-4. **The empty-fallback's "try widening what you're looking for" has no widening control.**
-   `AskBusinessScreen.js` submits with a hardcoded `radiusMiles: 15` — there is no radius input
-   anywhere on the screen, so the copy invites an action the UI doesn't offer.
-   `src/screens/BusinessRequestDetailScreen.js:135`.
-5. **"I want to meet people" (and any ask the classifier can't place) silently becomes a
-   gatherings browse with no explanation.** The no-stranger-discovery refusal is correct by
-   design, but it's invisible — nothing tells the user that gatherings/communities *are* Nearby's
-   answer to "meet people," so the connection between what they asked and what they got is never
-   made. Most consequential finding in the set relative to the user's own framing question.
-6. **The 24-tag category system is the resolver's real precision ceiling.** A specific ask
-   ("pickleball," a named cuisine, a named artist) always collapses to the nearest broad bucket
-   before any branch runs, with no secondary text-match narrowing and no indication to the user
-   that this collapse happened.
+4. **FIXED, 2026-08-14.** ~~The empty-fallback's "try widening what you're looking for" has no
+   widening control.~~ `AskBusinessScreen.js` submitted with a hardcoded `radiusMiles: 15` — no
+   radius input existed anywhere on the screen, so the copy invited an action the UI didn't
+   offer. Fixed: a real radius chip row (15/30/50 mi) on `AskBusinessScreen.js`, threaded through
+   both `submitBusinessRequest`/`submitBusinessRequestForGathering`'s already-existing
+   `radiusMiles` param. The submit navigation now carries the original ask's real prefill fields
+   forward onto `BusinessRequestDetail`'s route params; when `notifiedCount === 0` and the
+   request isn't a duplicate, the banner gets a real "Try a Wider Radius →" button (push, not
+   replace) that opens a fresh `AskBusiness` pre-filled from those fields, defaulting to the next
+   radius tier up from what was actually used. See CLAUDE.md's "Intent Layer UX walkthrough
+   fixes" plan, finding 4.
+5. **FIXED, 2026-08-14.** ~~"I want to meet people" (and any ask the classifier can't place)
+   silently becomes a gatherings browse with no explanation.~~ The no-stranger-discovery refusal
+   was correct by design but invisible — nothing told the user that gatherings/communities *are*
+   Nearby's answer to "meet people." Fixed, copy-only, no new logic: when
+   `classifyResult.intent === 'unclear'`, both the ranked-results panel and the empty-fallback
+   panel on `HomeScreen.js` now show one honest explanatory line above their existing content,
+   stating plainly that Nearby doesn't search for individual people directly and that
+   gatherings/communities are the real mechanism for meeting people here. See CLAUDE.md's
+   "Intent Layer UX walkthrough fixes" plan, finding 5.
+6. **PARTIALLY MITIGATED, 2026-08-14.** The 24-tag category system is the resolver's real
+   precision ceiling — a specific ask ("pickleball," a named cuisine, a named artist) always
+   collapses to the nearest broad bucket before any branch runs. Expanding the taxonomy or
+   building real sub-category matching is a genuinely large product decision, **not attempted**
+   this pass — flagged, not silently half-solved. What was built: `resolveIntent()` gained an
+   optional `rawText` param (the caller's own literal typed text); `resolveGatherings()` now
+   gives a small flat bonus (`SCORE_HAPPENING_NOW`'s own weight) to any gathering whose title
+   contains a real, meaningful word (4+ characters, common stopwords excluded) from the raw
+   text — a literal "the gathering's own title says pickleball" tie-breaker on top of category
+   matching, not a replacement for the 24-tag ceiling. See CLAUDE.md's "Intent Layer UX
+   walkthrough fixes" plan, finding 6.
 
-None of the above were fixed in this pass — this was a read-only walkthrough, per instruction.
+All six findings above are now closed (four real fixes, one copy-only fix, one deliberately
+partial/flagged mitigation) — see CLAUDE.md's "Intent Layer UX walkthrough fixes" section for
+the full per-finding build/verification detail.

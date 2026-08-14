@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, not yet built
+## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, all 6 findings DONE, build-wise
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -186,6 +186,24 @@ current as each lands.
    says pickleball" signal, not a new taxonomy. Explicitly documented as a tie-breaker on top of
    category matching, not a replacement for the 24-tag ceiling — the ceiling itself stays open,
    named here so a future session doesn't have to rediscover it.
+
+   **Finding 6 — DONE (the deliberately partial mitigation, as planned — the 24-tag ceiling
+   itself stays open, not attempted).** `resolveIntent()` in `intentResolver.js` gained the
+   planned optional `rawText` param; `HomeScreen.js`'s one call site now passes
+   `rawText: typedText` (the caller's own literal typed text, already in scope — no new data
+   collected). `resolveGatherings()` now computes a real, honest tie-breaker: a new
+   `extractMeaningfulWords()` helper lowercases the raw text and keeps only 4+ character words
+   not in a small hardcoded stopword list; a new `titleMentionBonus()` adds `SCORE_HAPPENING_NOW`
+   (2, the same existing weight, not a new scale) to any gathering whose own title contains one of
+   those words. Applied additively on top of `scoreGatheringForResolver()`'s existing score —
+   every other branch (communities/friend-requests/perks/business availability) is completely
+   unaffected, since none of them take `rawText`. Verified via a direct `@babel/core` parse
+   (clean) and a full `npx expo export --platform ios` (clean, 1864 modules, unchanged — edits to
+   two existing files only, no new files). **Not done yet, same standing gap as everywhere else in
+   this file**: no manual simulator/device run-through, and no live re-run against real data — next
+   session should confirm a gathering whose title literally names something from the typed text
+   (e.g. a gathering titled "Pickleball Meetup" against a "find a pickleball game" ask) now ranks
+   above an otherwise-equal same-category gathering with no title match.
 
 **Verification plan, matching this file's established convention**: finding 2's RPC signature
 change gets applied to production and verified live (both a Saturday-only and a genuine Sunday
