@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
+import { resolveIntent } from '../services/intentResolver';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -71,6 +72,7 @@ export default function HomeScreen({ navigation }) {
   const [quickPicksEditVisible, setQuickPicksEditVisible] = useState(false);
   const [intentText, setIntentText] = useState('');
   const [intentThinking, setIntentThinking] = useState(false);
+  const [intentResults, setIntentResults] = useState(null);
   const [intentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   const period = getTimePeriod();
 
@@ -175,32 +177,66 @@ export default function HomeScreen({ navigation }) {
     if (myId) await supabase.from('profiles').update({ home_quick_pick_categories: null }).eq('id', myId);
   }
 
-  // Phase 1a of the Intent Layer plan (CLAUDE.md) -- wires submission into
-  // the existing create-assistant classify/route infrastructure only as
-  // far as necessary, exactly matching CreateHubScreen's "Something Else"
-  // handler. Deliberately does NOT check existing gatherings/perks first
-  // (Tiers 1/3 of the intent resolver) -- that's Phase 1b, not yet built,
-  // so every submission here still routes straight to a creation screen.
+  // Routes a classified intent straight to its creation screen -- the
+  // Phase 1a behavior, now only reached (a) for community/business_partner
+  // intents, which the resolver doesn't apply to, or (b) once Phase 1b's
+  // resolver has already checked Tiers 1/3 and genuinely found nothing.
+  function proceedToCreation(result, typedText) {
+    if (result.intent === 'gathering') {
+      navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
+    } else if (result.intent === 'community') {
+      navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
+    } else if (result.intent === 'business_partner') {
+      navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
+    } else {
+      navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
+    }
+    setIntentText('');
+    setIntentResults(null);
+  }
+
+  // Phase 1b of the Intent Layer plan (CLAUDE.md) -- closes the gap Phase
+  // 1a deliberately left open. A submitted intent now checks Tiers 1
+  // (already-relevant gatherings) and 3 (existing perks) via
+  // services/intentResolver.js before ever falling through to creation.
+  // community/business_partner intents skip the resolver entirely -- it
+  // only ever resolves against gathering-shaped supply (gatherings and
+  // perks), never an existing community or a business partnership.
   async function handleHomeIntentSubmit() {
     if (!intentText.trim()) return;
     setIntentThinking(true);
+    setIntentResults(null);
+    const typedText = intentText.trim();
     try {
-      const result = await classifyCreateRequest(intentText.trim());
-      const typedText = intentText.trim();
-      if (result.intent === 'gathering') {
-        navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
-      } else if (result.intent === 'community') {
-        navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
-      } else if (result.intent === 'business_partner') {
-        navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
+      const result = await classifyCreateRequest(typedText);
+      if (result.intent === 'community' || result.intent === 'business_partner') {
+        proceedToCreation(result, typedText);
       } else {
-        navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
+        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow });
+        if (resolved.length > 0) {
+          setIntentResults({ items: resolved, classifyResult: result, typedText });
+        } else {
+          proceedToCreation(result, typedText);
+        }
       }
-      setIntentText('');
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
     }
     setIntentThinking(false);
+  }
+
+  function handleIntentResultTap(item) {
+    setIntentResults(null);
+    if (item.type === 'gathering') {
+      navigation.navigate('GatheringDetail', { gatheringId: item.id });
+    } else if (item.type === 'perk') {
+      navigation.navigate('BrandOffers', { highlightOfferId: item.id });
+    }
+  }
+
+  function handleIntentResultsDismiss() {
+    setIntentResults(null);
+    setIntentText('');
   }
 
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
@@ -257,6 +293,37 @@ export default function HomeScreen({ navigation }) {
               {intentThinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.intentButtonText}>Find it</Text>}
             </TouchableOpacity>
           </View>
+
+          {intentResults && (
+            <View style={styles.intentResults}>
+              <Text style={styles.intentResultsHeading}>Already happening near you</Text>
+              {intentResults.items.map((item) => (
+                <TouchableOpacity
+                  key={`${item.type}-${item.id}`}
+                  style={styles.intentResultRow}
+                  onPress={() => handleIntentResultTap(item)}
+                >
+                  <Ionicons
+                    name={item.type === 'perk' ? 'gift-outline' : 'people-outline'}
+                    size={18}
+                    color={colors.primary}
+                    style={styles.intentResultIcon}
+                  />
+                  <View style={styles.intentResultTextCol}>
+                    <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                    {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText)}>
+                <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleIntentResultsDismiss}>
+                <Text style={styles.intentResultsDismiss}>Try something else</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {(() => {
@@ -709,6 +776,15 @@ const getStyles = (colors) => StyleSheet.create({
   },
   intentButtonDisabled: { opacity: 0.5 },
   intentButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  intentResults: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  intentResultsHeading: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.sm },
+  intentResultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
+  intentResultIcon: { marginRight: spacing.sm },
+  intentResultTextCol: { flex: 1 },
+  intentResultTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
+  intentResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  intentResultsCreateNew: { color: colors.primary, fontWeight: '600', fontSize: 14, marginTop: spacing.sm },
+  intentResultsDismiss: { color: colors.textTertiary, fontSize: 13, marginTop: spacing.sm },
   plansCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,

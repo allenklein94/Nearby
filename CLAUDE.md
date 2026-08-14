@@ -4,15 +4,15 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, ready to start Phase 1, NO CODE CHANGES YET
+## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phase 1 (both sub-steps) DONE, Phase 2 not started
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` for what's
-actually landed vs. still just this plan. **Still a plan only — zero code/schema touched.** The
-scope, the resolver design, the schema shape, and the phase order below were all reviewed and
-explicitly locked by the user in a second pass (not silently assumed); what remains before
-Phase 1 can start is purely a placement decision (where exactly the intent box lives on Home)
-and then actually writing code — no open design questions remain in this plan.
+actually landed vs. still just this plan. The scope, the resolver design, the schema shape, and
+the phase order below were all reviewed and explicitly locked by the user in a second pass (not
+silently assumed). Phase 1's own two sub-steps (1a: intent-box UI, 1b: the Tier 1/3 resolver) are
+both now built, committed, and pushed — see their own status notes inline below. Phase 2
+(Business Fulfillment schema + RPCs) has not been started.
 
 ### Context and locked decisions
 
@@ -205,13 +205,56 @@ rather than a table per state transition — the user reviewed and endorsed this
    section's placement/spacing relative to the banners cluster and Your Plans below it, or of the
    rotating placeholder examples actually reading well against the compact input width.
 
-   **Phase 1b — NOT STARTED.** Extend `create-assistant` with a `request`-shaped output
-   (structured party_size/budget/date/time/category, not just title/category) and build the
-   actual Tier 1 (Your Plans / already-relevant gatherings via `getGatheringFitReasons()`) and
-   Tier 3 (existing perks via `getActiveOffers()`) resolver, so a submitted intent checks
-   existing supply *before* falling through to creation. Only once this lands does the intent
-   box start doing what Phase 1 of the overall plan actually promises — Phase 1a alone is UI
-   plumbing, not the resolver.
+   **Phase 1b — DONE.** Closes the gap Phase 1a deliberately left open: a submitted intent now
+   checks existing supply before ever falling through to creation.
+   - **`create-assistant` extended with a request-shaped output**, additive to the existing
+     `intent`/`title`/`category`/`businessName` fields, not a replacement: `dateWindow` (one of
+     `today`/`tonight`/`tomorrow`/`weekend`/`flexible`, model-picked from the same coarse
+     vocabulary `GatheringsScreen.js`'s own date-filter chips already use — never a specific date
+     or clock time, matching this file's standing "AI never infers/assigns a specific date or
+     time from free text" rule), `partySize` (best-effort whole number, e.g. "8 of us" → 8), and
+     `budgetMax` (best-effort whole-dollar ceiling, e.g. "under $100" → 100) — all three
+     server-validated (whole numbers in a sane range, `dateWindow` checked against the fixed
+     list) before being returned, never trusted raw from the model. Deployed to production and
+     re-verified live rather than assumed: `verify_jwt: true`, `status: ACTIVE`, and an
+     unauthenticated request to the function gateway still correctly 401s.
+   - **New `src/services/intentResolver.js`, `resolveIntent({category, dateWindow})`** — Tier 1
+     (already-relevant gatherings, via the *same* already-fetched-shape `getNearbyGatherings('wide')`
+     + the *same* shared `getGatheringFitReasons()` scorer Home's own Best Pick and
+     `GatheringDetailScreen` already use, so ranking can't drift between surfaces) filtered by
+     category and the new coarse `dateWindow`, and Tier 3 (standing perks, via the existing
+     `getActiveOffers()`, filtered by `target_interest_tag` and gated on real location
+     permission — silently skipped, not an error, when permission isn't granted) — capped at 4
+     results total, gatherings first. No new schema, no new query shape invented — every result
+     is real, already-existing supply. Tier 2 (friends/matches with compatible intent) is still
+     correctly not built here, per the plan's own sequencing — it needs Phase 2's
+     `business_requests` table to source its signal from.
+   - **`HomeScreen.js`'s `handleHomeIntentSubmit` rewritten**: `community`/`business_partner`
+     intents skip the resolver entirely (it only ever resolves gathering-shaped supply) and route
+     straight to creation as before. `gathering`/`unclear` intents now call `resolveIntent()`
+     first — a non-empty result renders inline under the intent box ("Already happening near
+     you", each row tapping straight to the real `GatheringDetail`/`BrandOffers` — the latter via
+     `BrandOffers`'s already-existing `highlightOfferId` scroll-to-and-highlight param, not a new
+     screen capability), with an honest "None of these? Create it yourself →" escape hatch that
+     proceeds to the exact same creation routing Phase 1a already had, and a "Try something else"
+     reset. An empty resolver result still falls straight through to creation automatically —
+     matching the plan's own "checks existing supply *before* falling through to creation"
+     framing, not "instead of."
+   - Verified via a direct `@babel/core`-parser syntax check of all three touched/added files
+     (clean) and a full `npx expo export --platform ios` — clean, **1861 modules** (one more than
+     the 1860 Phase-1a baseline — the one new `intentResolver.js`; every other touched file was
+     an edit).
+   - **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+     run-through — next session should confirm the resolved-results list renders correctly
+     against real nearby gatherings/perks, that tapping a result lands cleanly on the right
+     detail screen, that the "create it yourself" escape hatch still produces the exact same
+     prefilled creation screen Phase 1a already verified, and that a genuinely empty resolver
+     result (no matching gatherings or perks nearby) falls through to creation without any
+     visible hiccup.
+
+   Tier 2's people-matching piece remains correctly sequenced *after* Phase 2 (business
+   fulfillment) lands, exactly as this plan's own resolver-design section above already laid
+   out — not attempted in this phase.
 2. **Business Fulfillment** — the 2-table schema above, the two (+ completion) RPCs, a "Business
    Opportunities" inbox on `BusinessDashboardScreen.js` (accept/offer UI, reusing its existing
    card/row conventions), and a consumer-side offer-review/accept screen. This is the real new
@@ -256,10 +299,11 @@ Building, in order:
 - ✅ Reservation/commitment, server-enforced (Phase 2)
 - ✅ Completion/outcome tracking (Phase 2)
 
-**Nothing in this section has been built.** The only remaining open item before Phase 1 can
-start is where exactly the intent box lives on Home (new section vs. relabeling something
-existing) — everything else in this plan (resolver tiers, schema shape, enum names, phase order,
-the no-stranger-discovery principle) is locked.
+**Phase 1 (both checklist items above) is now built — see the Phase 1a/1b status notes further
+up this section for the full detail.** Phase 2 onward (1:1 business request through completion
+tracking) has not been started. Everything in this plan not yet built (resolver tiers beyond
+1/3, schema shape, enum names, phase order, the no-stranger-discovery principle) is locked, per
+the design work already done, and ready to build when Phase 2 is picked up.
 
 ## Outstanding: visual-identity critique response (Home quick-pick icon consistency + action-oriented greeting) — DONE
 
