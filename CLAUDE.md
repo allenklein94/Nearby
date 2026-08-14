@@ -4,6 +4,106 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, not yet built
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and the
+per-finding status notes below for what's actually landed vs. still just this plan.
+
+**Context**: once the Intent Layer + Business Fulfillment work below (all 4 phases + the resolver
+integration fix) was DONE, the user asked for a read-only, code-traced end-to-end walkthrough of
+5 representative intents — not another architecture audit, a genuine "does this feel like one
+product" pass — before building anything further. Full walkthrough (per-intent classification,
+resolver branches, ranking, screen-by-screen experience) is in
+`PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md`. Six real, confirmed findings came out
+of it — none are crashes or broken transactions, all are ranking/coverage/copy-honesty gaps. User
+asked to fix all six, committing incrementally with this file and the walkthrough doc both kept
+current as each lands.
+
+**Locked fix decisions, one per finding, so implementation doesn't re-litigate them mid-build:**
+
+1. **Gathering popularity (attendee count) silently dominates the resolver's "one shared score."**
+   `intentResolver.js`'s `resolveGatherings()` currently scores each candidate via the *shared*
+   `getGatheringFitReasons()` (`services/gatherings.js`) — which adds up to +10 for attendee
+   count and +1 for beginner-friendly, neither ever mentioned in the resolver's own "shared
+   weights" comment, both large enough to make a popular-but-loosely-matching gathering
+   systematically outrank a perfectly-fitting perk/business-availability/friend-ask. **Fix**: a
+   new resolver-local `scoreGatheringForResolver()` computing score from only the three factors
+   the resolver actually documents (interest match, close distance, happening today), using the
+   exact same `SCORE_INTEREST_MATCH`/`SCORE_CLOSE_DISTANCE`/`SCORE_HAPPENING_NOW` constants every
+   other branch already uses — genuinely comparable across all five types. `getGatheringFitReasons()`
+   is still called for its `reasons` array (subtitle text only, not score) — **not modified
+   itself**, so Home's Best Pick and `GatheringDetailScreen`'s "Why this fits you" (both real,
+   already-shipped consumers of that function) are completely unaffected.
+2. **"Weekend" means two different date ranges inside the same intent resolution.**
+   `matchesDateWindow('weekend')` (gatherings) covers Saturday through Sunday;
+   `dateWindowToDateParam('weekend')` (the Tier 2 connected-friend-request branch) collapses to
+   Saturday only, because `get_connected_open_business_requests`'s `date_param` is a single exact
+   date. **Fix**: the RPC gains a real date *range* (`date_start_param`/`date_end_param`,
+   replacing the single `date_param` — an old-signature drop + new-signature create, not an
+   in-place `CREATE OR REPLACE`, since the parameter shape changes), matched via `br.date between
+   date_start_param and coalesce(date_end_param, date_start_param)`. `intentResolver.js` gets a
+   new `dateWindowToDateRange()` replacing `dateWindowToDateParam()`, computing the exact same
+   Sat-through-Sun boundary `matchesDateWindow()` already uses — one real definition of "weekend,"
+   shared by both branches instead of two.
+3. **The "Alt. time" offer-type chip has no time input anywhere, business or consumer side.**
+   `business_request_offers.proposed_time`/`submit_business_offer`'s `proposed_time_param` already
+   exist and work server-side (verified — no schema/RPC change needed for this one) but no caller
+   anywhere ever sets or renders it. **Fix, client-only**: `BusinessDashboardScreen.js`'s "Make an
+   Offer" modal gains a real `DateTimePicker` (same `mode="datetime"`/spinner-on-iOS pattern
+   `CreateGatheringScreen.js` already established, `minimumDate: new Date()`), shown only when
+   `offerTypeInput === 'alt_time'`, threaded through `submitBusinessOfferResponse()`'s already-
+   existing `proposedTime` param. `BusinessRequestDetailScreen.js` renders `proposed_time` (real
+   formatted date/time) on both the `offered` and `accepted` offer-card states when present.
+4. **The empty-fallback's "try widening what you're looking for" has no widening control** —
+   `AskBusinessScreen.js` always submits with a hardcoded `radiusMiles: 15`, and
+   `BusinessRequestDetailScreen` is reached via `navigation.replace()`, so there's no back-
+   button path to the form to actually widen anything even if there were a control. **Fix**: a
+   real radius chip row (15/30/50 mi) added to `AskBusinessScreen.js`, threaded through both
+   `submitBusinessRequest`/`submitBusinessRequestForGathering`'s already-existing `radiusMiles`
+   param (no RPC change needed — both RPCs already accept it). The submit navigation now also
+   carries the original ask's real prefill fields forward onto `BusinessRequestDetail`'s route
+   params (text/category/partySize/budgetMax/dateWindow/gatheringId, whichever apply), and when
+   `notifiedCount === 0` (and not a duplicate), the banner gets a real "Try a Wider Radius →"
+   button that navigates (push, not replace, so back navigation works) to a fresh `AskBusiness`
+   pre-filled from those carried-forward fields — the copy now describes a control that actually
+   exists.
+5. **"I want to meet people who are into this activity" is a real, silent dead end.** No
+   person-discovery branch exists in the resolver — correct, per the locked no-stranger-discovery
+   principle — but the refusal is never communicated; an `unclear`-classified ask just silently
+   becomes a generic gatherings browse with zero framing connecting "gatherings/communities are
+   how you meet people here" to what was actually typed. **Fix, copy-only, no new logic**: when
+   `classifyResult.intent === 'unclear'` (the one classification bucket that's neither a named
+   creation intent nor a resolver-shaped category ask), both the ranked-results panel and the
+   empty-fallback panel on `HomeScreen.js` gain one honest explanatory line above their existing
+   content — plain language, no jargon, plainly stating Nearby doesn't search for individual
+   people directly and that gatherings/communities are the real mechanism for meeting people here.
+6. **The 24-tag category system is the resolver's real precision ceiling** — "pickleball"
+   collapses to "Sports" with no narrowing anywhere, silently, for every branch that filters by
+   category. This is a genuinely large product decision (expanding the taxonomy, or adding real
+   sub-category matching) — **not attempted as a full fix this pass**, flagged instead, matching
+   this file's own standing convention for exactly this shape of gap (a real, confirmed issue too
+   large to silently half-solve). **Partial, honest mitigation actually built**: `resolveIntent()`
+   gains an optional `rawText` param (the caller's own literal typed text, already available on
+   `HomeScreen.js` as `typedText` — no new data collected). `resolveGatherings()` gives a small
+   flat bonus (`SCORE_HAPPENING_NOW`'s own weight, 2 — matching an existing scale rather than
+   inventing a new one) to any gathering whose title contains a real, meaningful word (4+
+   characters, common stopwords excluded) from the raw text — a literal "the gathering's own title
+   says pickleball" signal, not a new taxonomy. Explicitly documented as a tie-breaker on top of
+   category matching, not a replacement for the 24-tag ceiling — the ceiling itself stays open,
+   named here so a future session doesn't have to rediscover it.
+
+**Verification plan, matching this file's established convention**: finding 2's RPC signature
+change gets applied to production and verified live (both a Saturday-only and a genuine Sunday
+friend-ask now match a "weekend" query; a non-matching date still correctly excluded), plus a
+real from-scratch migration replay. Every client-only fix gets a direct `@babel/core` parse of
+every touched file and a full `npx expo export --platform ios` after each increment. Each finding
+is its own commit, pushed individually, with both this section and the walkthrough doc's own
+"Cross-cutting findings" list updated to mark it fixed before moving to the next — not batched at
+the end, so a mid-session restart never loses more than one finding's worth of work. **Standing
+limitation, same as everywhere else in this file**: no manual simulator/device run-through — 
+flagged per finding below same as every other section in this file.
+
 ## Outstanding: Intent Layer + Business Fulfillment (strategic architecture, Aug 14 2026) — PLAN LOCKED, Phases 1-4 DONE (gatherings only for Phase 3; communities deliberately deferred both for Phase 3 and Phase 4's demand side)
 
 Written before implementation, same restart-safety convention as every other plan-first section
