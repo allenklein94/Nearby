@@ -242,6 +242,65 @@ to be answered first, not treated as a byproduct of making the new intent box lo
 **Standing limitation, same as everywhere else in this file**: no manual simulator/device
 run-through of any of the four built changes — flagged per-item above.
 
+**Recommendation 5, follow-up (Aug 14 2026): "what does Home need to accomplish" — answered by
+the user directly, plus a read-only visual hierarchy audit — DONE, no code changed.** Asked
+which of several hierarchy approaches to take; the user's answer, given directly, locks the
+target model rather than leaving it open:
+
+```
+HERO         What do you want to do?        (intent box)
+PRIMARY      Your Plans
+CONTEXT      Happening Near You / Your Communities
+PERSONALIZATION   Because You Like… / Weekly Recap
+EXPLORE      Browse
+```
+
+**Explicit instruction, locked, not to be re-litigated**: do NOT remove any section, do NOT
+move Your Plans (must stay immediately below the intent box — "What do you want to do?" paired
+with "What are you already doing?" is a deliberate one-two), no new tab, no second AI entry
+point, do not touch Discover, do not touch the business engine. The 6/10 hierarchy score isn't
+a length problem — "a long Home can work if the hierarchy is obvious" — it's that every section
+currently carries similar visual weight. The only thing authorized before any visual-weight
+build: a read-only visual hierarchy audit (exact scope given directly: vertical order,
+approximate visual prominence, card sizes, spacing, headings, CTA density per section; whether
+the intent box is visually dominant; whether Your Plans reads as clearly secondary; which lower
+sections compete most for attention; recommend hierarchy/spacing/visual-weight changes only,
+not section removal).
+
+**Audit — DONE**, `PRODUCT_AUDIT/HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md` — read directly from
+`HomeScreen.js`'s real JSX/styles and `theme.js`'s real color/spacing/typography/shadow values,
+not inferred. Headline findings:
+- **The intent box has the least visually distinctive styling of any card on the screen** —
+  plain `colors.surface` + a neutral 1px `colors.border`, the same treatment as ordinary content
+  cards further down (Quick-stats, `trendingCard`, `continueCommunityCard`). Three *lower*-tier
+  elements are styled *louder*: the pending-invites banner, the perks banner, and the Best Pick
+  card (all `colors.primaryMuted` background + `colors.primary` border) — Best Pick specifically
+  matches the intent box's own heading size (`typography.headline`) while using a thicker
+  1.5px border and the single largest padding value (`spacing.lg`) on the page.
+- **A real ordering conflict with the locked model**: the banner cluster (pending invites →
+  perks → weather → since-away, up to 4 full-width cards) currently renders *between* the
+  intent box and Your Plans — breaking the "hero, then primary" adjacency the user explicitly
+  wants, even though Your Plans' own position relative to everything else is otherwise correct.
+- **Your Plans has no visual elevation over Quick Picks** — both use the byte-identical
+  `sectionHeader` style (13px caption, uppercase, `textTertiary` — the lightest text color in
+  the palette). Every section header on Home (Your Plans/Quick Picks/Happening Near You/Because
+  You Like…) uses this same muted treatment regardless of target tier; Your Communities' header
+  is smaller still (11px, looks like drift, not a deliberate demotion).
+- **CTA density doesn't track the tiers either** — "Because You Like…" (tier 4,
+  "personalization") is the single densest cluster on the page, routinely denser than Your Plans
+  (tier 2, meant to read as primary).
+- **The FAB is the only element anywhere on this screen with a shadow** (`shadow.button`) —
+  confirmed via a direct grep, not assumed.
+- Full detail, every style value measured, and 6 ranked hierarchy/spacing/visual-weight-only
+  recommendations (no section removed) are in the audit file itself — read that file, not this
+  summary, before building any of them.
+
+**Not done, deliberately, per the user's own repeatedly-stated caution in this same reply**
+("very cautious about letting Claude keep 'improving' things without real user evidence"): none
+of the 6 recommendations have been built. The user's own next-step framing was "visual
+hierarchy pass only, then test the app as a first-time user again" — waiting on an explicit
+go-ahead before touching `HomeScreen.js` again, not proceeding on the audit's own momentum.
+
 ## Outstanding: Intent Layer UX walkthrough fixes (Aug 14 2026) — PLAN LOCKED, all 6 findings DONE, build-wise
 
 Written before implementation, same restart-safety convention as every other plan-first section
