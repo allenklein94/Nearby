@@ -40,3 +40,27 @@ const DEFAULT_ICON = 'star-outline';
 export function iconNameForCategory(tag) {
   return QUICK_PICK_ICON_BY_CATEGORY[tag] || DEFAULT_ICON;
 }
+
+// Icon lookup for Create's own option tiles (CreateHubScreen's grid,
+// StartSomethingModal's FAB flow, and the Dinner sub-grid inside it) —
+// these items carry a real interest_tag `category` most of the time, so
+// this defers to iconNameForCategory() above whenever one's present, and
+// only falls back to a label keyed lookup for the handful of options that
+// don't have one (the catch-all "Something Else" tile, and the Dinner
+// sub-grid's cuisine leaves, which are one level more specific than any
+// canonical interest_tag).
+const SUB_OPTION_ICON_BY_LABEL = {
+  Pizza: 'pizza-outline',
+  Mexican: 'restaurant-outline',
+  Sushi: 'restaurant-outline',
+  Burgers: 'fast-food-outline',
+  Healthy: 'nutrition-outline',
+  Italian: 'restaurant-outline',
+  "Doesn't matter": 'shuffle-outline',
+};
+
+export function iconNameForOption(item) {
+  if (item.category) return iconNameForCategory(item.category);
+  if (item.label === 'Something Else') return 'ellipsis-horizontal-outline';
+  return SUB_OPTION_ICON_BY_LABEL[item.label] || DEFAULT_ICON;
+}

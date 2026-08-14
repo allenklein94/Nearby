@@ -89,6 +89,40 @@ the plan's own predicted count (1859 + the one new file). **Not done, same stand
 everywhere else in this file**: no manual simulator/device run-through of the new icons' actual
 rendered appearance or the new subtitle copy across all four periods.
 
+**Second follow-up, Aug 14 2026: extended Ionicons to Create's icon grid + the Start Something
+modal, per a third external critique.** The critique repeated the emoji-vs-line-icon complaint
+(🍽️🎤🚶 etc.) alongside app-icon-geometry and coral-usage feedback — checked against current
+code before acting, since Home's own quick-pick chips and 14 other emoji had already been
+converted in the two passes directly above this one. The critique's specific complaint was real,
+just not on Home: `CreateHubScreen.js`'s primary "what do you want to do?" icon grid and
+`StartSomethingModal.js` (the Home FAB's "+ Start Something" flow, including its Dinner
+sub-grid — Pizza/Mexican/Sushi/etc.) both still rendered raw mixed-style emoji via plain
+`<Text>{item.icon}</Text>`, never touched by the Home-scoped passes. Closed by extending
+`src/constants/quickPickIcons.js` with a new `iconNameForOption(item)` resolver — defers to the
+existing `iconNameForCategory()` for any option carrying a real `interest_tag` `category` (covers
+every top-level Create tile: Coffee/Dinner/Walk/Sports/Games/Music/Volunteer, and every
+period-based option `StartSomethingModal` falls back to via `getQuickPrompts()`), a fixed
+`'ellipsis-horizontal-outline'` for the catch-all "Something Else" tile, and a small new
+label-keyed map for the Dinner sub-grid's cuisine leaves (Pizza/Mexican/Sushi/Burgers/Healthy/
+Italian/"Doesn't matter" — one level more specific than any canonical tag, so no existing lookup
+covered them). Both `CreateHubScreen.js` and `StartSomethingModal.js` now render
+`<Ionicons name={iconNameForOption(item)} .../>` in place of the old emoji `<Text>`, matching the
+nav bar's own style exactly. The underlying `icon` (emoji) fields on `CREATE_HUB_OPTIONS`/
+`SUB_OPTIONS`/`getQuickPrompts()` stay untouched (unused now, harmless, matching the original
+Home pass's own precedent of leaving the data shape alone). **Deliberately left unconverted, per
+narrow scope**: the "👥 Create a Community" secondary-row emoji on `CreateHubScreen.js` — the ask
+was specifically the icon grid + Start Something modal, not a full sweep of every emoji on the
+screen. **App icon geometry (the critique's other ask) — out of scope, flagged rather than
+faked**: no image-editing capability exists in this code session to redraw the two-circle mark;
+same standing limitation as every other design-asset request in this file. **Coral-as-action
+convention** — no action needed this pass; a full classification audit of every `colors.primary`
+usage in the app was already completed the same day, see `PRODUCT_AUDIT/CORAL_AUDIT_PROGRESS.md`.
+Verified via a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors). **Not done, same standing gap as
+everywhere else in this file**: no manual simulator/device run-through of the new icons' actual
+rendered appearance in the Create grid or the Start Something modal (including the Dinner
+sub-grid's new cuisine icons).
+
 **Follow-up, same day: extended Ionicons to the rest of Home's emoji, per a second external
 critique (with a real screenshot this time).** The critique reacted to the actual app rather
 than a code-only claim, and reconfirmed the same coral/cream/dark-brown palette, five-tab nav,

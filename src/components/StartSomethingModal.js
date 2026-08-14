@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getQuickPrompts } from '../utils/timeContext';
+import { iconNameForOption } from '../constants/quickPickIcons';
 
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
@@ -96,7 +98,7 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
                 accessibilityLabel={item.label}
                 accessibilityRole="button"
               >
-                <Text style={styles.optionIcon}>{item.icon}</Text>
+                <Ionicons name={iconNameForOption(item)} size={26} color={colors.primary} style={styles.optionIcon} />
                 <Text style={styles.optionLabel}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -119,7 +121,7 @@ const getStyles = (colors) => StyleSheet.create({
     width: '31%', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     paddingVertical: spacing.md, alignItems: 'center',
   },
-  optionIcon: { fontSize: 26, marginBottom: spacing.xs },
+  optionIcon: { marginBottom: spacing.xs },
   optionLabel: { color: colors.textPrimary, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
 });

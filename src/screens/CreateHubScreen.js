@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CREATE_HUB_OPTIONS, SUB_OPTIONS } from '../components/StartSomethingModal';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { iconNameForOption } from '../constants/quickPickIcons';
 
 const SOMETHING_ELSE_LABEL = 'Something Else';
 
@@ -148,7 +150,7 @@ export default function CreateHubScreen({ navigation }) {
                     accessibilityLabel={item.label}
                     accessibilityRole="button"
                   >
-                    <Text style={styles.gridItemIcon}>{item.icon}</Text>
+                    <Ionicons name={iconNameForOption(item)} size={30} color={colors.primary} style={styles.gridItemIcon} />
                     <Text style={styles.gridItemLabel}>{item.label}</Text>
                   </TouchableOpacity>
                 ))}
@@ -186,7 +188,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     width: '31%', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     paddingVertical: spacing.lg, alignItems: 'center', ...shadow.card,
   },
-  gridItemIcon: { fontSize: 32, marginBottom: spacing.xs },
+  gridItemIcon: { marginBottom: spacing.xs },
   gridItemLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   somethingElseBox: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
