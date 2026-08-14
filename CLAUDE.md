@@ -124,6 +124,29 @@ current as each lands.
    button that navigates (push, not replace, so back navigation works) to a fresh `AskBusiness`
    pre-filled from those carried-forward fields — the copy now describes a control that actually
    exists.
+
+   **Finding 4 — DONE.** Built exactly as planned. `AskBusinessScreen.js` gained a real "Search
+   radius" chip row (15/30/50 mi, defaulting to 15 or, when arriving via the widen flow, whatever
+   `prefillRadiusMiles` was carried forward), shown for both the solo and gathering-mode paths,
+   threaded into both `submitBusinessRequest`/`submitBusinessRequestForGathering` calls as
+   `radiusMiles` (no RPC change needed — both already accepted the param). `handleSubmit()`'s
+   `navigation.replace('BusinessRequestDetail', ...)` now also carries every real prefill field
+   forward (`prefillText`/`prefillCategory`/`prefillPartySize`/`prefillBudgetMax`/
+   `prefillDateWindow`/`prefillRadiusMiles`/`gatheringId`/`gatheringTitle`/`gatheringPartySize`).
+   `BusinessRequestDetailScreen.js`'s empty-fallback banner copy now honestly names the radius
+   that came up empty ("within {N} miles"), and — only when `notifiedCount === 0` and the request
+   isn't a duplicate — shows a real "Try a Wider Radius →" button that `navigation.push()`es a
+   fresh `AskBusiness` pre-filled from the carried-forward fields, defaulting to the next radius
+   tier up (15→30, 30 or 50→50) so the retry is a genuinely wider search, not just the same 15mi
+   ask replayed. Push (not replace) is used specifically so back navigation from the fresh form
+   returns to the original request, matching the plan's own stated reasoning. Verified via a
+   direct `@babel/core` parse of both touched files (clean) and a full `npx expo export --platform
+   ios` (clean, 1864 modules, unchanged — both files were edits, no new files). **Not done yet,
+   same standing gap as everywhere else in this file**: no manual simulator/device run-through —
+   next session should confirm the radius chips render/select correctly in both solo and
+   gathering-mode AskBusiness, that a genuinely empty-radius submission shows the widen button,
+   and that tapping it lands on a fresh form with every field (including the bumped-up radius)
+   correctly pre-filled, with Back correctly returning to the original request.
 5. **"I want to meet people who are into this activity" is a real, silent dead end.** No
    person-discovery branch exists in the resolver — correct, per the locked no-stranger-discovery
    principle — but the refusal is never communicated; an `unclear`-classified ask just silently

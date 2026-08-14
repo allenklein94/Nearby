@@ -50,6 +50,25 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const justSubmitted = route.params?.justSubmitted ?? false;
   const notifiedCount = route.params?.notifiedCount ?? 0;
   const isDuplicate = route.params?.duplicate ?? false;
+  // Finding 4: the original ask's own fields, carried forward so "Try a
+  // Wider Radius" can push a fresh, pre-filled AskBusiness instead of
+  // sending the user back to a blank form.
+  const prefillFields = {
+    prefillText: route.params?.prefillText ?? null,
+    prefillCategory: route.params?.prefillCategory ?? null,
+    prefillPartySize: route.params?.prefillPartySize ?? null,
+    prefillBudgetMax: route.params?.prefillBudgetMax ?? null,
+    prefillDateWindow: route.params?.prefillDateWindow ?? null,
+    gatheringId: route.params?.gatheringId ?? null,
+    gatheringTitle: route.params?.gatheringTitle ?? null,
+    gatheringPartySize: route.params?.gatheringPartySize ?? null,
+  };
+  const priorRadiusMiles = route.params?.prefillRadiusMiles ?? 15;
+  const widerRadiusMiles = priorRadiusMiles < 30 ? 30 : 50;
+
+  function handleTryWiderRadius() {
+    navigation.push('AskBusiness', { ...prefillFields, prefillRadiusMiles: widerRadiusMiles });
+  }
 
   const [request, setRequest] = useState(null);
   const [offers, setOffers] = useState([]);
@@ -144,8 +163,18 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 ? "You already have an open request just like this — here it is, no need to ask twice."
                 : notifiedCount > 0
                 ? `We asked ${notifiedCount} nearby business${notifiedCount === 1 ? '' : 'es'} — you'll be notified as offers come in.`
-                : "We couldn't find a nearby business to ask right now — try widening what you're looking for."}
+                : `We couldn't find a nearby business to ask within ${priorRadiusMiles} miles — try widening your search.`}
             </Text>
+            {!isDuplicate && notifiedCount === 0 && (
+              <TouchableOpacity
+                style={styles.widerRadiusButton}
+                onPress={handleTryWiderRadius}
+                accessibilityLabel={`Try a wider radius, ${widerRadiusMiles} miles`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.widerRadiusButtonText}>Try a Wider Radius →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -211,6 +240,8 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   banner: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
   bannerText: { ...typography.body, color: colors.textSecondary },
+  widerRadiusButton: { marginTop: spacing.sm, alignSelf: 'flex-start' },
+  widerRadiusButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   statusLine: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.lg },
   emptyText: { ...typography.body, color: colors.textSecondary },

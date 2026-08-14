@@ -26,6 +26,14 @@ const DATE_OPTIONS = [
   { key: 'flexible', label: "I'm flexible" },
 ];
 
+// PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md finding 4 -- the
+// empty-fallback's own "try widening what you're looking for" copy
+// previously had no real control behind it; this is that control, threaded
+// straight through to submitBusinessRequest/submitBusinessRequestForGathering's
+// already-existing radiusMiles param (no RPC change needed -- both already
+// accept it).
+const RADIUS_OPTIONS = [15, 30, 50];
+
 function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
@@ -82,6 +90,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   const [partySize, setPartySize] = useState(route.params?.prefillPartySize ? String(route.params.prefillPartySize) : '');
   const [budgetMax, setBudgetMax] = useState(route.params?.prefillBudgetMax ? String(route.params.prefillBudgetMax) : '');
   const [dateWindow, setDateWindow] = useState(route.params?.prefillDateWindow && route.params.prefillDateWindow !== 'flexible' && route.params.prefillDateWindow !== 'now' ? route.params.prefillDateWindow : 'flexible');
+  const [radiusMiles, setRadiusMiles] = useState(RADIUS_OPTIONS.includes(route.params?.prefillRadiusMiles) ? route.params.prefillRadiusMiles : 15);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
@@ -94,6 +103,9 @@ export default function AskBusinessScreen({ navigation, route }) {
       const budgetMaxNum = budgetMax.trim() ? parseInt(budgetMax.trim(), 10) : null;
       const safeBudgetMax = Number.isInteger(budgetMaxNum) && budgetMaxNum > 0 ? budgetMaxNum : null;
 
+      const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
+      const safePartySize = Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null;
+
       let result;
       if (gatheringId) {
         result = await submitBusinessRequestForGathering({
@@ -101,18 +113,36 @@ export default function AskBusinessScreen({ navigation, route }) {
           text: text.trim(),
           category,
           budgetMax: safeBudgetMax,
+          radiusMiles,
         });
       } else {
-        const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
         result = await submitBusinessRequest({
           text: text.trim(),
           category,
-          partySize: Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null,
+          partySize: safePartySize,
           budgetMax: safeBudgetMax,
           date: toDateParam(dateWindow),
+          radiusMiles,
         });
       }
-      navigation.replace('BusinessRequestDetail', { requestId: result.requestId, justSubmitted: true, notifiedCount: result.notifiedCount, duplicate: result.duplicate });
+      // Finding 4: carry the original ask's real prefill fields forward so
+      // the "Try a Wider Radius" button on BusinessRequestDetail can push a
+      // fresh AskBusiness pre-filled from them, rather than a dead end.
+      navigation.replace('BusinessRequestDetail', {
+        requestId: result.requestId,
+        justSubmitted: true,
+        notifiedCount: result.notifiedCount,
+        duplicate: result.duplicate,
+        prefillText: text.trim(),
+        prefillCategory: category,
+        prefillPartySize: safePartySize,
+        prefillBudgetMax: safeBudgetMax,
+        prefillDateWindow: dateWindow,
+        prefillRadiusMiles: radiusMiles,
+        gatheringId,
+        gatheringTitle,
+        gatheringPartySize,
+      });
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
     }
@@ -219,6 +249,21 @@ export default function AskBusinessScreen({ navigation, route }) {
                 accessibilityLabel="Budget max"
               />
             </View>
+          </View>
+
+          <Text style={styles.label}>Search radius</Text>
+          <View style={styles.chipRow}>
+            {RADIUS_OPTIONS.map((r) => (
+              <TouchableOpacity
+                key={r}
+                style={[styles.chip, radiusMiles === r && styles.chipSelected]}
+                onPress={() => setRadiusMiles(r)}
+                accessibilityLabel={`${r} miles`}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.chipText, radiusMiles === r && styles.chipTextSelected]}>{r} mi</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <TouchableOpacity
