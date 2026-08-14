@@ -1494,11 +1494,13 @@ edits to three existing files only, no new files).
 run-through — next session should confirm Profile's collapsed business row renders and routes
 correctly in all three underlying states (managing a business, a pending/denied application on
 file, no application at all), and that Create/Settings no longer show any business row at all.
-**Phase 6 (Clean Inbox) is still not started** — this file's own build order calls for it before
-Phase 7; it was skipped over by whichever session started this Phase 7 work mid-restart. Not
-silently resequenced — flagged here so the next session either does Phase 6 next (per the
-original order) or explicitly re-confirms skipping ahead to Phase 8 is fine, rather than
-assuming the order no longer matters.
+**Stale note removed here (cleanup pass, Aug 14 2026)**: this paragraph used to read "Phase 6
+(Clean Inbox) is still not started," written mid-build by the session doing Phase 7 before
+realizing Phase 6 had, in fact, already landed — see Phase 6's own real DONE writeup earlier in
+this section (the `getUpcomingReminders()`/`ActivityScreen.js` "Your Plans" vs. same-day-nudge
+split) and this whole plan's own closing "All 8 phases of this plan are now DONE" line further
+below. Left in place at the time as an honest flag rather than silently resequenced; corrected
+now that all 8 phases are confirmed done, so a future session doesn't re-read it as a real gap.
 
 **Phase 8 — Weekly Recap ↔ Momentum merge.** Home's "This Week" recap card becomes a short
 one-line summary ("2 gatherings · 3 new connections") with a "View Momentum →" link, instead of
@@ -1539,12 +1541,16 @@ computed independently on both screens, "Meet People" vs. "N people nearby" as t
 to `Nearby`) are **not** in scope here — the user's plan only asks to change what Home surfaces
 about itself, not to deduplicate Discover's independent computation of the same signals.
 
-**Status: Phases 1-4 (Home) DONE, built together as one pass since all four are Home-scoped
-edits to the same two files, per the plan's own note that they'd likely land as one continuous
-edit. Delta report below, per the user's own explicit "report a delta, not another full audit"
-instruction. Phases 5-8 (Profile/Settings, Inbox, Business consolidation, Weekly Recap/Momentum)
-remain PLANNED ONLY, not started — do not batch ahead into them without this delta being reviewed
-first.**
+**Status at the time this delta was written: Phases 1-4 (Home) DONE, built together as one pass
+since all four are Home-scoped edits to the same two files, per the plan's own note that they'd
+likely land as one continuous edit. Delta report below, per the user's own explicit "report a
+delta, not another full audit" instruction. Phases 5-8 (Profile/Settings, Inbox, Business
+consolidation, Weekly Recap/Momentum) were PLANNED ONLY at this point, not yet started.**
+**Updated status (cleanup pass, Aug 14 2026): stale as of this rewrite — Phases 5-8 were all
+subsequently built and confirmed DONE later in this same section (their own individual status
+notes are further down), closing out "All 8 phases of this whole restructure."** Left the
+original wording above unedited beyond this note, since it's an accurate snapshot of the delta
+report that follows it, just no longer the section's current status.
 
 **Delta — what actually changed in `HomeScreen.js`/`homeDashboard.js` (both files, edits only, no
 new files):**
@@ -1732,7 +1738,7 @@ written by cross-referencing both parts against each other, appended to the same
 committed (`d86af1d5`). The whole deliverable is now assembled end-to-end — nothing left to
 build for this item.
 
-## Outstanding: Current UI Map for IA review — IN PROGRESS
+## Outstanding: Current UI Map for IA review — DONE (map + the follow-up quick-picks build)
 
 Written before the map itself, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` and the
@@ -2600,7 +2606,7 @@ actually shows a growth curve tied to platform-wide scale. Next real input this 
 manual device/simulator pass exercising everything flagged "not done" across steps 1-10, same
 standing limitation as literally every other section in this file.
 
-## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — IN PROGRESS, Home started
+## Outstanding: UI polish pass ("I already know what to do here" vs. "wow, there's a lot of stuff") — DONE except item 4 (loading-state strings), which is intentionally only partially closed — see item 4's own note below
 
 The user pasted a detailed UI-polish feedback doc (10 numbered items + a "5 I'd do first" list +
 a per-tab breakdown) aimed at making the app read as decisively-designed rather than
