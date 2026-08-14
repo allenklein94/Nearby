@@ -224,5 +224,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     marginTop: spacing.md,
   },
   empty: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
-  errorDetail: { color: colors.primary, marginTop: spacing.md, textAlign: 'center', fontSize: 12, fontFamily: 'monospace' },
+  errorDetail: { color: colors.danger, marginTop: spacing.md, textAlign: 'center', fontSize: 12, fontFamily: 'monospace' },
 });

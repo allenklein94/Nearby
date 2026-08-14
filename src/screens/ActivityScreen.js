@@ -266,10 +266,13 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
     }
   }
 
+  // Unlike MatchesScreen's identical-looking badge (a real TouchableOpacity
+  // opening the compatibility report), this text is a passive stat inside an
+  // already-tappable row, not its own tap target — so it never uses brand
+  // coral, only the "great match" success color when it applies.
   function compatibilityColor(score) {
     if (score >= 70) return colors.success;
-    if (score >= 40) return colors.primary;
-    return colors.textTertiary;
+    return colors.textSecondary;
   }
 
   function handleCardPress(item) {

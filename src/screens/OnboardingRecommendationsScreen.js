@@ -120,7 +120,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
   missionCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
   },
   missionLabel: { color: colors.primary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },

@@ -212,7 +212,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   cardTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
-  deleteText: { color: colors.primary, fontSize: 12, opacity: 0.7 },
+  deleteText: { color: colors.danger, fontSize: 12, opacity: 0.7 },
   fieldBlock: { marginBottom: spacing.sm },
   fieldLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: 2 },
   fieldText: { ...typography.body, color: colors.textPrimary, lineHeight: 20 },

@@ -7,6 +7,73 @@ across 94 files (`src/screens/`, `src/components/`, `src/navigation/RootNavigato
 into 4 roughly-balanced batches by occurrence count, worked 2 at a time (this codebase's own
 standing "cap agents at 2 concurrent" convention).
 
+## Follow-up, 2026-08-14: targeted coral-semantic cleanup — DONE
+
+The user reviewed the audit above and asked for a real, but deliberately narrow, cleanup rather
+than a broader redesign — explicit instruction: **do not change the overall palette, do not
+redesign components, do not touch navigation/IA, do not touch coral used for genuine CTAs/
+selected nav/other real actions.** Established rule going forward: brand coral = actionable/
+interactive only; neutral styling = informational/static; `colors.danger` = destructive/error.
+Five targeted changes, all applied, all verified via a clean `@babel/core` parse of every touched
+file plus a full `npx expo export --platform ios` (clean, no bundling errors):
+
+1. **Static info/stat card borders removed** — the six confirmed non-tappable
+   `primaryMuted`-bg + `primary`-border cards from the audit's "info-card border" category each
+   swapped to the neutral `colors.surface`/`colors.border` pair already used by this codebase's
+   own plain info cards (e.g. `statCard`): `BusinessDashboardScreen.js`'s `estimatedOwedBanner`/
+   `insightsCard`/`growthCard`, `DiscoveryScreen.js`'s `calloutBanner`, `OnboardingRecommendations
+   Screen.js`'s `missionCard`, `BillingScreen.js`'s `planCardActive` (kept its 1.5px extra border
+   width so the "this is your current plan" distinction still reads, just without brand color).
+   **Deliberately untouched, per scope**: the text labels inside these same cards that also carry
+   coral (`estimatedOwedLabel`, `breakdownText`, `missionLabel`) — those are the audit's separate
+   "stat/count highlighting" category, not the "card border" pattern the user's ask named, and
+   touching them would have gone beyond "targeted."
+2. **`GatheringDetailScreen.js`'s three lookalike cards** — confirmed via the actual JSX (not
+   just the audit's earlier read) that `communityCard` is the one genuinely wrapped in a
+   `TouchableOpacity` (→ `CommunityDetail`); `reasonsCard` and `youreInPanel` are both plain
+   `<View>`s. Both non-tappable ones swapped to the same neutral `surface`/`border` pair;
+   `communityCard` left untouched, still coral.
+3. **`ActivityScreen.js`/`MatchesScreen.js` compatibility-signal inconsistency** — read both
+   `compatibilityColor()` definitions directly: both return `colors.success` (not coral) for a
+   genuinely great match (≥70%), `colors.primary` for a mid-range match, `colors.textTertiary`
+   below that. `MatchesScreen.js`'s usage is a real `TouchableOpacity` badge (opens the
+   compatibility report) — left unchanged, correctly coral. `ActivityScreen.js`'s usage is a
+   passive stat nested in an already-tappable row, not its own tap target — its local
+   `compatibilityColor()` (used nowhere else in that file) now returns `colors.textSecondary`
+   instead of `colors.primary` for the mid-range case; the `colors.success` branch is untouched
+   since it was never coral in the first place.
+4. **Delete actions → `colors.danger`** — `GoodbyeArchiveListScreen.js` and
+   `ChemistryDiaryListScreen.js`'s `deleteText` (both were `colors.primary`) now use
+   `colors.danger`, matching this codebase's own existing convention elsewhere (e.g.
+   `ChatScreen.js`'s `sendErrorText`).
+5. **`PaywallScreen.js`'s debug/error text → `colors.danger`** — confirmed `errorDetail`
+   (`Debug: {errorMessage}`, shown when RevenueCat offerings fail to load) is genuine error
+   messaging, not decoration; swapped from `colors.primary`.
+
+**Remaining coral used decoratively, not touched this pass (out of the explicit "targeted only"
+scope, listed here per the user's own request to report what's still left)**: loading spinners
+(the largest category, present in most files — no real alternative convention exists for a
+spinner in this app); the sender-identity chat-bubble background across 6 chat surfaces
+(deliberate, load-bearing color-coding, not a mistake — recommend keeping as-is rather than
+folding into the hard rule); stat/count-highlighting text (`GatheringsScreen.js`'s `styles.time`,
+`BusinessDashboardScreen.js`'s `statNumber`/`offerRedemptionCount`/`breakdownText`/
+`estimatedOwedLabel`, `ProfileScreen.js`'s `completenessBarFill`, `ChemistryDiaryListScreen.js`'s
+`insightBarFill`, `MomentumScreen.js`'s `barFill`, `RewardsScreen.js`'s `progressFill`,
+`BrandOffersScreen.js`/`BusinessProfileScreen.js`'s `scarcityText`, `InviteFriendsScreen.js`'s
+`codeText`, `OnboardingRecommendationsScreen.js`'s `missionLabel`) — a real, consistent house
+pattern, but a much larger and more scattered change than "remove a border from a static card,"
+deliberately left for its own explicit decision rather than swept in here; avatar/photo rings
+(`MatchCelebrationModal.js`, `SightingsOverviewMap.js`, `StoriesRow.js`); "stat nested inside an
+already-tappable row" cases beyond the one fixed (`HomeScreen.js`'s `continueCommunityDetail`,
+`GatheringsScreen.js`'s `styles.time`, `OnboardingRecommendationsScreen.js`'s `cardMatch`,
+`PlacesScreen.js`'s `placeGatherings`, `CommunityCalendar.js`'s gathering-presence dot).
+
+**Not done, same standing gap as everywhere else in this codebase's history**: no manual
+simulator/device run-through of any of the 8 touched screens — next session should confirm the
+neutral cards still read clearly against their surrounding content, the Activity compat text
+still looks reasonable without coral, and both Delete buttons/the Paywall error text render
+correctly in the danger color on a real device.
+
 ## Classification rubric (given to every batch agent, restated here for consistency)
 
 - **ACTIONABLE**: coral is applied to something the user taps to perform a real action — a

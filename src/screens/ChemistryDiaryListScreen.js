@@ -324,7 +324,7 @@ const getStyles = (colors) => StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm },
   cardTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   cardDate: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  deleteText: { color: colors.primary, fontSize: 12, opacity: 0.7 },
+  deleteText: { color: colors.danger, fontSize: 12, opacity: 0.7 },
   signalsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   signalChip: { backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   signalChipText: { color: colors.primary, fontSize: 12, fontWeight: '600' },

@@ -692,7 +692,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   womenOnlyBadgeText: { color: '#ec4899', fontSize: 11, fontWeight: '700' },
   reasonsCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginTop: spacing.md,
   },
   sectionLabel: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
@@ -755,7 +755,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   countdownLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '600', marginTop: 2 },
   countdownDivider: { width: 1, height: 28, backgroundColor: colors.border },
   youreInPanel: {
-    marginTop: spacing.xl, backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    marginTop: spacing.xl, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center',
   },
   youreInTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: 4 },

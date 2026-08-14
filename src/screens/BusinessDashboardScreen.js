@@ -1227,14 +1227,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   offerRedemptionCount: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 4 },
   estimatedOwedBanner: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
   estimatedOwedLabel: { color: colors.primary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   estimatedOwedValue: { color: colors.textPrimary, fontSize: 28, fontWeight: '800', marginTop: 2 },
   estimatedOwedDetail: { color: colors.textTertiary, fontSize: 11, marginTop: 4 },
   insightsCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
   insightLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 4, lineHeight: 18 },
@@ -1250,7 +1250,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   smallActionButton: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', minWidth: 80 },
   smallActionButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   growthCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginTop: spacing.md,
   },
   growthLine: { color: colors.textPrimary, fontSize: 13, marginBottom: 2 },

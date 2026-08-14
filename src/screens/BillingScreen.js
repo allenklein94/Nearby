@@ -167,7 +167,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,
   },
-  planCardActive: { borderWidth: 1.5, borderColor: colors.primary },
+  planCardActive: { borderWidth: 1.5, borderColor: colors.border },
   planEmoji: { fontSize: 36, marginBottom: spacing.xs },
   planTitle: { ...typography.title, color: colors.textPrimary, fontSize: 20 },
   planSubtext: { color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },

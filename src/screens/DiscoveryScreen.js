@@ -896,8 +896,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modeButtonTextActive: { color: '#fff' },
   calloutBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
-    marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
+    marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
   calloutText: { flex: 1, color: colors.primary, fontSize: 12, fontWeight: '600', marginRight: spacing.sm, lineHeight: 16 },
   calloutDismiss: { color: colors.primary, fontSize: 12, fontWeight: '800' },
