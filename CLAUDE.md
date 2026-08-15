@@ -228,7 +228,40 @@ limitation, same as everywhere else in this file**: no manual simulator/device r
   yet for either Part 1 or Part 2's migrations — flagged for a dedicated catch-up pass rather
   than silently skipped. No manual simulator/device run-through, no admin-facing screen yet to
   view these numbers (that's Part 9's job).
-- Part 3 (architecture hardening audit): not started
+- **Part 3 (architecture hardening audit): DONE.** Full findings in
+  `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` — read that file for the complete
+  record; summarized here. Pulled every live state-machine RPC's *current* body directly via
+  `pg_get_functiondef()` against production (not reconstructed from migration files, which can
+  be stale relative to a later `CREATE OR REPLACE`) for `business_requests`/
+  `business_request_offers`/`business_availability`, `gathering_interest`, and
+  `social_invites`. **Two real, confirmed races found and fixed**
+  (`20260815_architecture_hardening_race_fixes.sql`), both `CREATE OR REPLACE`, same signature:
+  (1) `accept_business_offer()` read the offer row with no lock, checked its status against that
+  stale read, then much later did a **blind** update with no re-check — a concurrent
+  `decline_business_offer()`/cron expiry landing in that window could be silently overwritten
+  back to `accepted`. Fixed by locking the offer row `for update` at the first read, matching
+  every sibling function on the same table. (2) `approve_gathering_interest()` had no status
+  guard and no lock on the target interest row at all — a retried/double-tapped approve call on
+  an *already-approved* row would re-count capacity **including itself**, and at exactly-at-
+  capacity would silently demote an already-approved attendee back to `waitlisted`. Fixed with
+  the same lock-and-require-`pending` double-review guard this schema already uses for
+  `business_partner_requests`/`id_verification_submissions`. **Verified live against
+  production, not just reasoned about**: for fix #2 specifically, reproduced the exact
+  before/after against a real disposable capacity-1 test gathering — first approve succeeds,
+  second approve is now correctly rejected (`This request has already been reviewed`), and the
+  row is confirmed still `approved`, not demoted. For fix #1, confirmed the happy-path accept
+  still succeeds unchanged (the new lock adds no regression) using a real disposable business
+  request/offer against `Coastal Coffee` (coordinates temporarily set, reverted after). All test
+  data deleted afterward; both tables confirmed back to their exact pre-test baseline (0 rows).
+  Everything else read (`submit_business_offer`/`decline_business_offer`/
+  `complete_business_reservation`/`cancel_business_request`/`join_gathering`/`leave_gathering`/
+  `respond_to_social_invite`/the `expire_stale_business_requests` cron) was confirmed already
+  correctly guarded — no change needed, not silently skipped. No client files touched (pure
+  backend RPC fixes), so no `npx expo export` needed for this part. **Not done this pass**: no
+  from-scratch Docker migration replay (same disclosed gap as Parts 1-2); `set_community_member_role`
+  and the plain-client `respondToFriendRequest()` path were read in passing but not independently
+  deep-audited — flagged as genuinely not-reached rather than confirmed-clean, in the audit
+  file's own "Not reached this pass" section.
 - Part 4 (UX coherence confirm): not started
 - Part 5 (marketplace reliability): not started
 - Part 6 (privacy controls): not started
