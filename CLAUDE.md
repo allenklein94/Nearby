@@ -4,6 +4,57 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## FEATURE FREEZE / STABILIZATION (declared 2026-08-15) — read this before starting new work
+
+**The codebase is now in feature-freeze/stabilization mode, effective 2026-08-15, per explicit
+user instruction given directly after the 10/10 roadmap's 9 parts and the intent-layer UX pass
+both finished.** The instruction, restated so it isn't softened by a future session: **no new
+product surfaces or architectural changes without evidence from real-user data.** This is a
+deliberate mode change, not a pause between features — the product now has a real, working core
+loop (intent-first Home, a 5-tier resolver, a full business-fulfillment marketplace, real
+analytics instrumentation) and the highest-leverage work left is proving that loop against real
+usage, not building more of it speculatively.
+
+**What this means concretely for a session picking this file up**:
+- Do not start a new roadmap section, a new screen, a new schema table, or a new architectural
+  layer on your own initiative, even if this file's own history makes the next "obvious" step
+  look tempting. If the user asks for one anyway, that's their call to make — this freeze
+  constrains autonomous scope-expansion, not a direct explicit request.
+- Bug fixes, security fixes, and stabilization work (the shape of the Aug 15 architecture-
+  hardening race-condition fixes) are **not** covered by this freeze — those are exactly the
+  kind of grounded, evidence-based work a stabilization period exists for. The distinction is
+  "fixing something real and already built" vs. "building something new."
+- The single reference document for how the current system actually works — architecture,
+  every critical state machine, the migration sequence, resolver behavior, business marketplace
+  behavior, RLS/privacy rules, the analytics funnel, and known limitations — is
+  `PRODUCT_AUDIT/PRODUCTION_ARCHITECTURE_2026-08-15.md`. Read that file, not this one, for a
+  synthesized current-state picture; this file remains the granular build-by-build log behind
+  every claim in it.
+- **Migration-replay gap closed 2026-08-15**: Parts 1-5 of the 10/10 roadmap (below) had each
+  individually disclosed "no from-scratch Docker migration replay run for this specific
+  migration" at the time they landed. A full from-scratch replay of all 29 current
+  `supabase/migrations/` files, in order, against a truly empty Postgres 15.1.0.147 database,
+  now passes clean end-to-end (exit 0 on every file) — see
+  `PRODUCT_AUDIT/PRODUCTION_ARCHITECTURE_2026-08-15.md` §2 for the full method and result. This
+  retroactively closes that disclosed gap for every part, not just the ones that ran their own
+  replay at the time.
+- **Candidate north-star metric for pilot evaluation, named explicitly rather than left buried**:
+  repeat intent rate — the fraction of real users who come back and ask Nearby for something a
+  second time (ideally across a materially different context, not the same request twice). This
+  is a direct proxy for the actual product thesis ("whenever I want to do something, I'll just
+  ask Nearby" replacing "browse an app"). It's already computed today, twice, at two
+  granularities — `get_intent_funnel_stats()`'s 30-day same-category repeat-submission rate and
+  `get_market_validation_stats()`'s 7/30-day cross-session return rate — and already rendered on
+  the admin-only Market Validation dashboard, just not currently called out there as *the*
+  metric to watch above the others. See `PRODUCT_AUDIT/PRODUCTION_ARCHITECTURE_2026-08-15.md`
+  §7 for the full reasoning. No UI change was made to elevate it this pass — that's exactly the
+  kind of design decision this freeze defers until real pilot data exists to justify it.
+- **Pilot readiness, not further feature development, is the priority from here.** The biggest,
+  most-repeated standing gap across this entire file's history is real: no manual simulator/
+  device run-through has ever been performed, for any feature, across the whole build history —
+  see the architecture doc's §8 for the full known-limitations list. Closing that gap (a real
+  device pass) is worth more right now than any new build.
+
 ## Outstanding: "10/10 roadmap" (Aug 15 2026) — PLAN LOCKED, executing part by part
 
 Written before implementation, same restart-safety convention as every other plan-first section
