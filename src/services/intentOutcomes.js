@@ -4,6 +4,7 @@
 // outcome always means "unknown," never a default negative.
 import { supabase } from './supabase';
 import { findRecurringIntentPattern, formatSmartPlaceholder } from '../utils/intentPatterns';
+import { getTimePeriod } from '../utils/timeContext';
 
 // Fire-and-forget by design -- this is telemetry-shaped, not a blocking
 // step in the user's own flow. Matches this codebase's established
@@ -34,6 +35,16 @@ export async function recordIntentSelection({ rawText, category, dateWindow, res
 // null on failure) so callers can thread it onto a later
 // recordIntentSelection() call, giving the funnel a real join instead of
 // an approximation across two unlinked tables.
+//
+// local_period fix (V2 acceptance audit, Defect B -- see
+// PRODUCT_AUDIT/V2_ACCEPTANCE_REPORT_2026-08-15.md): captured here, at
+// submission time, using the exact same getTimePeriod() every other
+// period-aware surface in this app already uses. This is the only point
+// where the user's real local wall-clock time is actually knowable --
+// intent_submissions.created_at is a plain timestamptz, and Postgres has
+// no way to recover which real-world local time it corresponds to after
+// the fact. get_cross_user_intent_patterns() groups by this stored value
+// now, not by extract()-ing the UTC-stored created_at.
 export async function recordIntentSubmission({ rawText, category, dateWindow, intentKind, hadAnyResult, reachedBusinessFallback }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -48,6 +59,7 @@ export async function recordIntentSubmission({ rawText, category, dateWindow, in
         intent_kind: intentKind ?? null,
         had_any_result: !!hadAnyResult,
         reached_business_fallback: !!reachedBusinessFallback,
+        local_period: getTimePeriod(),
       })
       .select('id')
       .single();
