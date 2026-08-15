@@ -4,6 +4,162 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 15 2026 — "Nearby V3/V4" strategic vision (demand intelligence, reverse marketplace,
+## planning engine) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **nothing in this section has been built.** The user pasted a second, larger
+external strategic pitch, framed as 4 layers (V1 Discovery / V2 Intent / V3 Marketplace /
+V4 Intelligence) and 8 concrete numbered ideas, explicitly asking for a plan in this file
+**before** any execution — not a request to build yet.
+
+**Headline finding, checked directly against the real code before writing a single line of plan
+text, not accepted at face value**: most of this pitch is not a new idea to this codebase. It's
+the same 10-layer "Nearby 2.0 Vision" (captured read-only, then partially built, both earlier the
+same day — see the two sections directly below this one) restated from a more polished narrative
+angle. Several of the 8 ideas are **already fully built and live in production right now**; one
+is already live in a simpler form and has a real, honest extension available; two are genuinely
+new mechanisms that need their own design lock before touching code; and two should **not** be
+built at this app's current real usage volume without violating this codebase's own repeatedly-
+stated conventions ("no invented numbers," "don't compose empty tiers into a plan that looks more
+complete than it is," "no premature black-box ranking until real outcome data exists"). Each of
+the 8 ideas is addressed on its own merits below, not silently folded into "already done" or
+silently deferred.
+
+### Idea-by-idea reality check
+
+1. **"Nearby Demand" — businesses see aggregate unmet demand, e.g. "37 people want this Saturday
+   7–10 PM."** Mostly already real: `get_aggregated_demand_for_partner()` (Layer 1, built earlier
+   today) already aggregates real open `business_requests` by category within a business's own
+   real fan-out radius, with real party-size and soonest-date. "Unmet" is already a real, correct
+   framing — `status = 'open'` genuinely means not yet fulfilled. **What's genuinely missing and
+   genuinely buildable now, no fabrication**: time-window granularity. `business_requests` already
+   has real `time_window_start`/`time_window_end` columns, collected from every real ask, and the
+   existing RPC doesn't surface them — it only reports category-level counts. Scoped into Phase A
+   below.
+2. **"Businesses respond to demand" — a business sees a rollup and can convert it into a real
+   offer.** Already fully real and already shipped, just not by this name: this is exactly what
+   `post_business_availability()` (Aug 14, Phase 4 of Business Fulfillment) already does — a
+   business declares real terms, the system matches them against every currently-open real
+   request in reach and notifies both sides. **What's missing is a one-tap shortcut from the
+   "Demand Near You" card straight into that existing flow**, pre-filled with the real category
+   (and, once Phase A lands, the real dominant time window) instead of making the owner re-type
+   it into a separate "+ Post Availability" form. Pure wiring, no new mechanism. Scoped into
+   Phase B below.
+3. **"Aggregate compatible people" — friends/matches who independently want the same thing get
+   surfaced together.** Already real and already shipped: this is Layer 3, "Group intent"
+   (`get_my_group_intent_signals()`, the dismissible Home card, the threshold-crossing push) —
+   built and, as of the same-day follow-up audit, fixed to respect `intent_visibility`. **What's
+   genuinely new and not yet built**: the pitch's own next beat — actually letting those
+   independently-asking friends *merge* into one real joint ask (shared party size, one shared
+   `business_requests` row) rather than each still submitting and resolving separately. This is a
+   real, new mechanism, not a wiring gap — flagged as Phase D below with its own open design
+   questions, not silently assumed.
+4. **"Nearby becomes a planning engine" — full composed multi-part itineraries ("Dinner + live
+   music, 7:00 PM, $130, 2 available") with a single Reserve action.** **Not honestly buildable
+   right now, and this isn't a wiring gap — it's the exact risk this file's own vision doc already
+   named and deliberately avoided once already.** Layer 4 ("make it happen" multi-option planning,
+   built earlier today) is a pure client-side *regrouping* of `resolveIntent()`'s own already-real
+   results by type ("here's a gathering, here's a perk, here's a community") — it never composes
+   two different real sources into one purchasable plan, and never adds a unified reservation
+   step. Actually building what idea 4 describes would mean fabricating a plan across sources this
+   app doesn't yet have enough real simultaneous supply to honestly compose from (near-zero real
+   `business_requests`/`business_availability` volume today, per every "Demand Near You" empty
+   state currently shown in production) — exactly the "composing three empty tiers would be worse
+   than today's honest single ranked list" risk the original vision doc named for Layer 4 and this
+   file deliberately respected. **Not scheduled.** Real evidence bar to revisit, stated plainly
+   rather than left vague: the Market Validation dashboard's own per-tier resolver hit-rate stats
+   (already tracked, built Aug 15) would need to show multiple tiers regularly returning real
+   candidates for the same ask *before* a real composed-plan-plus-reservation object is worth
+   designing.
+5. **Personalization — "you usually go out Friday nights, want me to find something?"** Already
+   real and already shipped: this is Layer 6, "Predictive Nearby" — the dismissible Home nudge
+   built on a real 3+-occurrence pattern, tap-to-act only, never auto-submitted. The pitch's own
+   example is, almost verbatim, what already ships today. **Nothing further scheduled here** —
+   noted explicitly so a future session doesn't rebuild it believing it's new.
+6. **"Nearby score" — a single blended contextual confidence percentage** ("98% match," folding
+   preference history, social compatibility, business reliability, price, distance into one
+   number). **Not honestly buildable, and not recommended even once more data exists.** This is
+   precisely the shape of thing this file's own standing rules already warn against twice over:
+   "no premature universal/AI-driven matching algorithm — ranking stays simple/explainable until
+   real outcome data exists" (Business Fulfillment's own hard constraints), and this codebase's
+   consistent practice everywhere real fit is shown — `getGatheringFitReasons()`,
+   `get_host_reputation()`, `formatPartnerReliabilityLine()` — is always a list of real, itemized,
+   individually-true facts, never a single collapsed opaque score. Collapsing those into one
+   invented percentage wouldn't become honest just because more data exists later; it would still
+   be a fabricated blend of real signals with arbitrarily-chosen weights. **Recommendation, not
+   just a deferral**: if this is revisited, it should stay itemized reasons (already built, already
+   correct), never a single percentage — flagged here so it isn't quietly built the wrong way in a
+   future session.
+7. **Business side becomes intelligent — reliability differentiates outcomes, not just gets
+   displayed.** Already real for *display*: Layer 7 (`get_marketplace_reliability_rankings()`,
+   admin-only, threshold-gated at 5 real opportunities) and the earlier `get_partner_avg_
+   response_time()`/`get_partner_offer_reputation()` (10/10 roadmap Part 5) already compute real
+   per-partner reliability. **What's genuinely missing and genuinely buildable now, no
+   fabrication**: reliability isn't yet *used* anywhere — fan-out (`_business_request_fanout()`)
+   and availability-matching notify every eligible business in plain radius/category order, and a
+   consumer sees offers in whatever order they arrived, not ranked by the real reliability data
+   that already exists. Scoped into Phase C below, gated on the same real 5-opportunity threshold
+   already established (a partner below it is left in today's plain order, never penalized for
+   having no history yet).
+8. **The Intent Graph as a strategic moat / "reverse marketplace" framing.** Not a discrete build
+   item — matches this file's own existing framing of the original vision doc's Layers 8/9/10
+   almost exactly ("8 is what mature 1+5 look like once both are mature," a description of an
+   emergent outcome, not something to build directly). Layer 2 (`get_cross_user_intent_patterns()`,
+   built and timezone-bug-fixed earlier today) is already the honest, real infrastructure this
+   framing describes as its own raw material — nothing further to schedule here independent of
+   real volume accumulating over time.
+
+### What this plan actually schedules — Phases A–C, real and buildable now; Phase D flagged with
+### open design questions; nothing else in this section is scheduled
+
+**Phase A — real time-window granularity on aggregated demand.** Extend
+`get_aggregated_demand_for_partner()` (and `notify_aggregated_demand_threshold()`'s own crossing
+check, so the two stay consistent) to also bucket by real overlapping `time_window_start`/
+`time_window_end` ranges, not just category — using already-collected real data, the same
+"no new signal, just surface what's already there" discipline every other Aug 15 layer used.
+`BusinessDashboardScreen.js`'s "Demand Near You" section gains the real time-window line
+alongside the existing category/party-size/soonest-date line.
+
+**Phase B — one-tap "Turn this into an offer" shortcut.** A button on each "Demand Near You" row,
+pre-filling `postBusinessAvailability()`'s existing modal with the real category (and, once
+Phase A lands, the dominant real time window) instead of requiring the owner to separately open
+"+ Post Availability" and re-enter it by hand. No new backend mechanism — this is UI wiring onto
+the already-real, already-verified Phase 4 availability-posting flow.
+
+**Phase C — reliability-weighted fan-out and offer ordering.** `_business_request_fanout()` and
+the availability-matching path both currently order/notify eligible businesses by plain
+radius/category match only. Extend both to prefer (not exclusively surface — every eligible
+business still gets included) partners with a real, established completion-rate track record
+(reusing `get_partner_offer_reputation()`'s already-computed real numbers, gated on the same real
+5-opportunity threshold `formatPartnerReliabilityLine()` already uses client-side), and order a
+consumer's own offer list by the same real signal once several offers exist for one request. A
+partner below the threshold is never penalized — it's ordered exactly where it would have landed
+today, since there's no real history yet to rank it by.
+
+**Phase D — real friend-group merging, flagged with open design questions, not started.**
+Converting "3 connected people independently have an open ask in the same category" (already
+real, Layer 3) into one real, jointly-owned `business_requests` row is a genuinely new mechanism,
+not a wiring extension of anything that exists — real open questions, not yet resolved, listed
+here rather than guessed at: does merging require explicit consent from every participant (almost
+certainly yes, given this file's own hard "no auto-acting on someone else's behalf" convention
+already established for Layers 3/6's own dismissible-only cards), what happens to each
+participant's own already-submitted individual request once merged (cancelled? left standing as a
+fallback?), who "owns" the resulting joint request for accept/decline purposes, and how party size
+and budget reconcile across people who may have specified different numbers. Not scheduled until
+these are actually resolved — this file's own established practice is to flag a real open design
+question rather than build a guessed answer.
+
+**Explicitly not scheduled anywhere in this plan, restated plainly so a future session doesn't
+treat "V3/V4" as a green light to build them anyway**: idea 4 (composed multi-source itineraries
++ unified reservation) and idea 6 (a single blended confidence percentage) — both named above with
+the specific reason and, where one exists, the real evidence bar that would need to be crossed
+first.
+
+**Status: plan only, per direct instruction — nothing in Phases A–D has been built.** Next step is
+the user's own review/go-ahead on which phase(s) to actually execute, same as every other
+plan-first section in this file's history.
+
 ## Aug 15 2026 — Nearby 2.0 partial build, explicitly requested by the user, overriding the freeze for this scope — IN PROGRESS
 
 Written before/alongside implementation, same restart-safety convention as every other plan-first
