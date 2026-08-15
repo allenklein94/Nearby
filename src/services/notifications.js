@@ -205,6 +205,21 @@ export function routeNotificationTap(data) {
     case 'group_intent_signal':
       navigationRef.navigate('MainTabs', { screen: 'Home' });
       break;
+    // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- every group-plan
+    // event, whether it's a fresh invite, a response, a budget re-consent
+    // ping, or a live reservation confirming, all land on the same real
+    // GroupPlan detail screen, which renders whatever's actually true for
+    // the caller right now rather than needing a distinct destination per
+    // event shape.
+    case 'group_plan_invite':
+    case 'group_plan_response':
+    case 'group_plan_confirmed':
+    case 'group_plan_offer_pending':
+    case 'group_plan_reservation_confirmed':
+      if (data.proposal_id) {
+        navigationRef.navigate('GroupPlan', { proposalId: data.proposal_id });
+      }
+      break;
     default:
       break;
   }

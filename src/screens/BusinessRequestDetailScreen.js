@@ -2,6 +2,8 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
+import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans';
+import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -11,6 +13,7 @@ const STATUS_COPY = {
   fulfilled: { label: 'You accepted an offer', color: 'primary' },
   expired: { label: 'This request expired', color: null },
   cancelled: { label: 'You cancelled this request', color: null },
+  merged: { label: 'Combined into a group plan', color: 'primary' },
 };
 
 const OFFER_STATUS_COPY = {
@@ -82,6 +85,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // with a real offer showing, so the consumer isn't blind to whether a
   // business actually follows through before deciding whether to accept.
   const [partnerStats, setPartnerStats] = useState({});
+  // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- group intent -> a real
+  // jointly-consented request. Three real, independent signals sourced
+  // from this exact request, none fabricated: real connected people with
+  // a real open request in the same category (candidates to invite),
+  // whether this exact request is itself someone else's invite waiting
+  // on the caller (myPendingGroupPlanId), and whether this request was
+  // already combined into a confirmed group plan (via superseded_by_
+  // group_plan_id / group_plan_id, both plain columns on `request`).
+  const [myId, setMyId] = useState(null);
+  const [groupPlanCandidates, setGroupPlanCandidates] = useState([]);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
+  const [myPendingGroupPlanId, setMyPendingGroupPlanId] = useState(null);
+  const [proposingGroupPlan, setProposingGroupPlan] = useState(false);
 
   // "Nearby V3/V4" plan, Phase C: order the consumer's own offer list by
   // the same real completion-rate signal Phase C's fan-out now prefers,
@@ -120,6 +136,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData?.session?.user?.id ?? null;
+      setMyId(uid);
+
       const result = await getBusinessRequestWithOffers(requestId);
       setRequest(result.request);
       setOffers(result.offers);
@@ -133,11 +153,54 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           .then((entries) => setPartnerStats(Object.fromEntries(entries.map(([id, [reputation, responseTime]]) => [id, { reputation, responseTime }]))))
           .catch((e) => console.error('getPartnerOfferReputation/getPartnerAvgResponseTime failed', e));
       }
+
+      // Real candidates to invite into a group plan: connected people who
+      // already have a real, open request in the same category. Only
+      // worth fetching for the caller's own open request -- no signal
+      // to compute if it's someone else's, already resolved, or has no
+      // category at all.
+      if (result.request.status === 'open' && result.request.requester_id === uid && result.request.category) {
+        getGroupPlanCandidates({ category: result.request.category, date: result.request.date })
+          .then((candidates) => setGroupPlanCandidates(candidates.filter((c) => c.id !== requestId)))
+          .catch((e) => console.error('getGroupPlanCandidates failed', e));
+      } else {
+        setGroupPlanCandidates([]);
+      }
+
+      // Is this exact request itself an invite someone else sent the
+      // caller, still waiting on a response?
+      if (uid) {
+        supabase
+          .from('group_plan_participants')
+          .select('proposal_id')
+          .eq('source_request_id', requestId)
+          .eq('user_id', uid)
+          .eq('status', 'invited')
+          .maybeSingle()
+          .then(({ data }) => setMyPendingGroupPlanId(data?.proposal_id ?? null))
+          .catch((e) => console.error('group_plan_participants pending-invite check failed', e));
+      }
     } catch (e) {
       setLoadError(true);
     }
     setLoading(false);
   }, [requestId]);
+
+  function toggleGroupPlanCandidate(id) {
+    setSelectedCandidateIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function handleProposeGroupPlan() {
+    if (selectedCandidateIds.length === 0) return;
+    setProposingGroupPlan(true);
+    try {
+      const proposalId = await proposeGroupPlan(requestId, selectedCandidateIds);
+      navigation.replace('GroupPlan', { proposalId });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setProposingGroupPlan(false);
+  }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -201,6 +264,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   const statusCopy = STATUS_COPY[request.status] ?? { label: request.status, color: null };
   const hasWinner = offers.some((o) => o.status === 'accepted' || o.status === 'completed');
+  const isGroupPlanRequest = !!request.group_plan_id;
+  const isMergedIntoGroupPlan = request.status === 'merged' && !!request.superseded_by_group_plan_id;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -230,6 +295,48 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         <Text style={styles.rawText}>{request.raw_text}</Text>
         <Text style={[styles.statusLine, statusCopy.color === 'primary' && { color: colors.primary }]}>{statusCopy.label}</Text>
 
+        {myPendingGroupPlanId && (
+          <View style={styles.groupPlanBanner}>
+            <Text style={styles.groupPlanBannerText}>👥 Someone wants to make this a group plan with you.</Text>
+            <TouchableOpacity
+              style={styles.groupPlanBannerButton}
+              onPress={() => navigation.navigate('GroupPlan', { proposalId: myPendingGroupPlanId })}
+              accessibilityLabel="View group plan invite"
+              accessibilityRole="button"
+            >
+              <Text style={styles.groupPlanBannerButtonText}>View & Respond →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {isMergedIntoGroupPlan && (
+          <View style={styles.groupPlanBanner}>
+            <Text style={styles.groupPlanBannerText}>This request became part of a shared group plan.</Text>
+            <TouchableOpacity
+              style={styles.groupPlanBannerButton}
+              onPress={() => navigation.navigate('GroupPlan', { proposalId: request.superseded_by_group_plan_id })}
+              accessibilityLabel="View group plan"
+              accessibilityRole="button"
+            >
+              <Text style={styles.groupPlanBannerButtonText}>View Group Plan →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {isGroupPlanRequest && (
+          <View style={styles.groupPlanBanner}>
+            <Text style={styles.groupPlanBannerText}>👥 This is a shared group plan — everyone in the group confirms offers together.</Text>
+            <TouchableOpacity
+              style={styles.groupPlanBannerButton}
+              onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
+              accessibilityLabel="View group plan"
+              accessibilityRole="button"
+            >
+              <Text style={styles.groupPlanBannerButtonText}>View Group Plan →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {offers.length === 0 ? (
           <Text style={styles.emptyText}>No businesses have responded yet.</Text>
         ) : (
@@ -248,7 +355,17 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
-                  {!hasWinner && (
+                  {!hasWinner && isGroupPlanRequest && (
+                    <TouchableOpacity
+                      style={styles.acceptButton}
+                      onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
+                      accessibilityLabel="Confirm this offer with the group"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.acceptButtonText}>Confirm With the Group →</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!hasWinner && !isGroupPlanRequest && (
                     <TouchableOpacity
                       style={styles.acceptButton}
                       onPress={() => handleAccept(o.id)}
@@ -280,6 +397,37 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             </View>
             );
           })
+        )}
+
+        {request.status === 'open' && groupPlanCandidates.length > 0 && (
+          <View style={styles.groupPlanSection}>
+            <Text style={styles.groupPlanSectionTitle}>👥 People you know are also asking for this</Text>
+            <Text style={styles.helperText}>Do this together? Everyone you pick has to say yes first — nobody gets added without agreeing.</Text>
+            {groupPlanCandidates.map((c) => {
+              const selected = selectedCandidateIds.includes(c.id);
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.candidateRow, selected && styles.candidateRowSelected]}
+                  onPress={() => toggleGroupPlanCandidate(c.id)}
+                  accessibilityLabel={`${selected ? 'Remove' : 'Add'} ${c.requester_display_name ?? 'this person'} to the group plan`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {c.requester_display_name ?? 'Someone you know'}</Text>
+                  {c.raw_text ? <Text style={styles.candidateText} numberOfLines={1}>{c.raw_text}</Text> : null}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              style={[styles.groupPlanButton, selectedCandidateIds.length === 0 && styles.groupPlanButtonDisabled]}
+              onPress={handleProposeGroupPlan}
+              disabled={selectedCandidateIds.length === 0 || proposingGroupPlan}
+              accessibilityLabel="Make this a group plan"
+              accessibilityRole="button"
+            >
+              {proposingGroupPlan ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Make It a Group Plan →</Text>}
+            </TouchableOpacity>
+          </View>
         )}
 
         {request.status === 'open' && (
@@ -316,4 +464,24 @@ const getStyles = (colors) => StyleSheet.create({
   completeButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   completeButtonText: { color: colors.primary, fontWeight: '700' },
   cancelLink: { color: colors.textTertiary, fontSize: 14, textAlign: 'center', marginTop: spacing.lg },
+  groupPlanBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  groupPlanBannerText: { ...typography.body, color: colors.textPrimary, marginBottom: spacing.xs },
+  groupPlanBannerButton: { alignSelf: 'flex-start' },
+  groupPlanBannerButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
+  groupPlanSection: { marginTop: spacing.lg, marginBottom: spacing.md },
+  groupPlanSectionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
+  helperText: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
+  candidateRow: {
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.sm, marginBottom: spacing.xs,
+  },
+  candidateRowSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  candidateName: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
+  candidateText: { ...typography.caption, color: colors.textSecondary, marginTop: 1 },
+  groupPlanButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.sm },
+  groupPlanButtonDisabled: { opacity: 0.5 },
+  groupPlanButtonText: { color: '#fff', fontWeight: '700' },
 });

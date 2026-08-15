@@ -278,11 +278,202 @@ first.
 
 **Status: Phases A, B, and C are DONE, build-wise (see their own status notes above) — Phase A was
 picked up and finished after a codespace restart interrupted the session mid-build, Phases B and C
-followed in the same session. Phase D remains plan only, not started** — it has real, unresolved
-open design questions (consent, ownership, reconciliation) listed in its own paragraph above, per
-this file's own established practice of flagging a real open design question rather than building
-a guessed answer. Next step is the user's own review/go-ahead on those questions before Phase D
-can be picked up, same as every other plan-first section in this file's history.
+followed in the same session. Phase D is now also DONE, build-wise — see its own full writeup
+below.**
+
+## Aug 15 2026 — Phase D, real friend-group consent → a jointly-owned business request — DONE
+
+Direct follow-up to Phase D's own flagged open design questions above (consent, ownership,
+reconciliation). Per the user's own explicit instruction, these were **not** left for a coding
+session to guess at — the user reviewed the open questions directly and gave an exact, locked
+14-rule specification, framed explicitly as "I would make the calls as follows" and "don't let
+Claude make these decisions itself, because they define the social/transaction model." Every rule
+below is the user's own decision, not inferred — this build is a direct, literal implementation of
+that spec, not a reinterpretation of it.
+
+**Locked rules, restated exactly as given, so a future session never re-litigates them:**
+1. Explicit consent from every participant — never a silent merge.
+2. Existing individual requests are never deleted — they transition to a real "merged/superseded"
+   state and keep their own history.
+3. The resulting shared request is group-owned — the initiator is the operational submitter, not
+   a unilateral owner.
+4. A merged individual request must not also independently generate a duplicate business
+   opportunity.
+5. Party size is the real sum of every committed participant's own party size + any guests —
+   never averaged, never invented.
+6. Budget is reconciled into a real group range; the group's final number is always set
+   explicitly, never silently averaged or overwritten.
+7. A material change (date/time/budget/party size/offer) after someone already consented requires
+   real re-consent from them, not a silent carry-forward.
+8. A business offer is only accepted on the group's behalf once every currently-required
+   participant has explicitly confirmed it — never a single person's own tap.
+9. A decline doesn't automatically kill the group — the initiator explicitly decides whether to
+   wait, exclude, or continue with who's left.
+10. A participant leaving after a real offer exists invalidates that offer's not-yet-complete
+    confirmations, so the remaining group can't coast to a reservation on stale consent.
+11. Never expose a participant to an unexpected business transaction.
+12. User-facing terminology is "group plan" / "do this together" — never "merge" or "proposal" on
+    screen.
+13. A complete, real audit trail — every individual request, every consent, every roster change,
+    every offer confirmation, stays queryable, nothing silently overwritten.
+14. Stay entirely within the existing "no stranger discovery via intent" boundary — every
+    candidate participant must already have a real, open, same-category `business_requests` row
+    of their own, and must already be a genuinely connected person (accepted friendship or match)
+    — the identical connected-set definition Tier 2 (`get_connected_open_business_requests`) and
+    Layer 3 (`get_my_group_intent_signals`) already use, re-validated server-side on every write,
+    never trusted from the client. No new social-graph surface of any kind.
+
+**Schema** (`20260815_v3_group_plans_phase_d.sql`): three new tables —
+`group_plan_proposals` (initiator, category, real reconciled `proposed_budget_min`/
+`proposed_budget_max` computed from real individual `budget_max` values at proposal time,
+`agreed_budget_max` set only via an explicit RPC call, `status`
+`pending|confirmed|cancelled|expired`, `resulting_request_id`), `group_plan_participants` (one
+row per person, `source_request_id` pointing at their own real pre-existing request,
+`party_size`/`guest_count`, `status` `invited|accepted|declined|left`), and
+`group_plan_offer_confirmations` (one row per `(offer, participant)` confirmation — the real
+mechanism behind rule 8). `business_requests` gained `group_plan_id` (set on the one real shared
+request a confirmed group plan produces) and `superseded_by_group_plan_id` (set on each merged
+individual request) — both nullable, zero behavior change for every pre-existing row — plus a
+widened `status` check adding `'merged'` as a new, additive value alongside the existing
+`open|fulfilled|expired|cancelled`.
+
+Seven new SECURITY DEFINER RPCs, no direct client INSERT/UPDATE anywhere on any of the three new
+tables, matching this schema's established convention:
+- **`propose_group_plan(source_request_id, invitee_source_request_ids[])`** — the initiator's own
+  real open request becomes participant #1 (auto-accepted, since proposing is itself consent);
+  every invitee id is independently re-validated server-side against rule 14's exact connected-set
+  definition (accepted friendship or match, real open same-category request, `intent_visibility =
+  'friends_and_matches'`) — a stale or spoofed client-supplied id is silently skipped, never
+  trusted. Computes the real budget range from real individual `budget_max` values (rule 6).
+- **`respond_to_group_plan(proposal_id, accept)`** — each invitee's own explicit consent (rule 1),
+  double-response guarded.
+- **`set_group_plan_budget(proposal_id, agreed_budget_max)`** — initiator-only, bounded to the real
+  proposed range, and — rule 7's actual mechanism — resets every already-accepted non-initiator
+  participant back to `'invited'` (with a real push telling them why) whenever the budget genuinely
+  changes, so nobody's silently held to terms they never actually saw.
+- **`confirm_group_plan(proposal_id, exclude_user_ids[])`** — initiator-only, requires an explicitly
+  set `agreed_budget_max` and 2+ real accepted participants (rule 9's "wait or continue" is this
+  explicit call, not an automatic majority rule); `exclude_user_ids` lets the initiator continue
+  without someone even if they already accepted ("continue without Sarah"); anyone who never
+  actually accepted is automatically left out of the final roster. Creates the one real shared
+  `business_requests` row (party size = real sum, budget = the real explicit agreed number, real
+  coordinates from the initiator's own already-collected source request — never re-typed), fans it
+  out via the exact same `_business_request_fanout()`/`_match_request_to_availability()` every
+  solo/gathering-sourced request already uses (no second fan-out mechanism), and flips every
+  accepted participant's own individual source request to `'merged'` — never deleted, its own
+  history intact (rule 2) — while anyone excluded/declined/never-responded keeps their own request
+  exactly as it was, still independently open and fulfillable.
+- **`cancel_group_plan(proposal_id)`** — initiator-only, pending-only; since individual requests
+  are never touched pre-confirmation, there's nothing to restore.
+- **`leave_group_plan(proposal_id)`** — any non-initiator participant, at any stage. Leaving after
+  the group's real request already exists clears that person's own not-yet-complete offer
+  confirmations (rule 10) — this does **not** attempt a live capacity/price re-quote from the
+  business (that's not this RPC's job, and still only happens for real inside the accept logic's
+  own existing capacity lock, same as every solo request); disclosed as a real, deliberate scope
+  boundary, not silently glossed over.
+- **`confirm_group_plan_offer(proposal_id, offer_id)`** — rule 8's actual mechanism: one
+  confirmation row per accepted participant; the count is checked against every currently-accepted
+  participant on every call; only the confirmation that makes `confirmed = required` actually
+  triggers acceptance, via a new internal `_accept_business_offer_internal()` (the identical logic
+  `accept_business_offer` already uses, minus its own requester-ownership check — caller authority
+  here comes from "every required participant confirmed," not from `auth.uid()` owning the row).
+  Locked down with zero grants to any role, callable only via a nested SECURITY DEFINER call, same
+  established pattern as `_business_request_fanout()`. Everyone still waiting gets a real push
+  telling them a decision needs their confirmation too.
+- **`accept_business_offer()` itself gained exactly one new guard** (`CREATE OR REPLACE`, every
+  other line byte-for-byte unchanged from the live, already-`FOR UPDATE`-locked version pulled
+  fresh from production before editing): a request with `group_plan_id` set can never be accepted
+  by its own `requester_id` alone — only `confirm_group_plan_offer`, once every required
+  participant has confirmed, can accept it. This is rule 11's actual enforcement, not just a UI
+  convention — even a client bug or a direct RPC call can't let the initiator unilaterally accept
+  on the group's behalf.
+- Two new additive SELECT RLS policies (OR'd with the existing requester-only/business-only ones,
+  never narrowing anything) so every group participant — not just the initiator — can see the
+  real shared request and its real offers, via a new `is_group_plan_participant(proposal_id,
+  user_id)` helper matching the same SECURITY-DEFINER-bypasses-RLS mitigation this schema already
+  established for `is_blocked()`/`is_community_visible_to()` (internal `auth.uid() = user_id_param`
+  guard, never answers for an arbitrary pair). `expire_stale_business_requests()` (the existing
+  hourly cron job) gained one additive block expiring a stale never-decided `pending` proposal on
+  its own real schedule — folded into the existing sweep, not a new cron job.
+
+**Client**: new `src/services/groupPlans.js` (thin RPC wrappers matching every other
+business-fulfillment service file's own shape) and `src/screens/GroupPlanScreen.js` + `GroupPlan`
+route — the one real screen every participant sees, rendering whatever's actually true for the
+caller right now (invited → Accept/Decline; accepted, pending → Leave; initiator, pending → set
+budget/confirm-with-exclude/cancel; confirmed → real offers with a live "N of M confirmed" count
+and a Confirm-for-the-Group action). Copy never says "merge" or "proposal" anywhere on screen,
+matching rule 12 exactly — "Group Plan," "Join Shared Request," "Continue without." Three real
+entry points on `BusinessRequestDetailScreen.js` (the natural place, since a group plan always
+starts from a real, already-open individual request): a "👥 People you know are also asking for
+this" section (sourced from the exact same connected-set RPC Tier 2 already uses, checkbox picker,
+"Make It a Group Plan →") shown on the caller's own open request; a "Someone wants to make this a
+group plan with you" banner when this exact request is itself someone else's still-pending
+invite; and a "This became part of a shared group plan" / "This is a shared group plan" banner
+once merged/confirmed — the screen's own solo Accept button is replaced with a "Confirm With the
+Group →" link for a group-plan request, so the UI never even offers an action the RPC would now
+reject. Five new push-tap routes (`group_plan_invite`/`_response`/`_confirmed`/`_offer_pending`/
+`_reservation_confirmed`), all landing on the same `GroupPlanScreen` — it renders whatever's
+currently true, so one destination correctly covers every event shape.
+
+**Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied — real
+disposable test data, four full scenarios, using the real connected pairs already in production
+(`Claude`↔`Allen` accepted friendship, `Google voice`↔`Allen` match): (1) the full happy path —
+Allen proposed with Claude+Google voice as real open-Coffee-request holders (budgets $50/$75/$100)
+→ real proposed range `$50–$100` → both accepted → double-respond correctly rejected → budget
+below/above range correctly rejected → non-initiator budget-set correctly rejected → setting
+budget to $50 correctly reset both non-initiator participants back to `invited` (rule 7, proven,
+not assumed) → confirm correctly rejected with only 1 of 3 truly accepted → both re-accepted →
+non-initiator confirm correctly rejected → confirm succeeded with real `partySize: 4` (1+1+2, rule
+5) and `budget_max: 50` → all three individual source requests correctly flipped to `merged` with
+`superseded_by_group_plan_id` set (rule 2) → double-confirm correctly rejected → a real disposable
+offer inserted against the resulting request → **a direct solo `accept_business_offer` call by the
+initiator was correctly rejected** ("every participant needs to confirm it together" — rule 11's
+actual enforcement, proven against a real attempt, not just present in the SQL text) → a random
+non-participant's confirm attempt correctly rejected → Claude confirmed (1 of 3) → re-confirming
+was correctly idempotent → Google voice confirmed (2 of 3, offer still `offered`) → Allen's final
+confirmation correctly triggered the real accept (`offer.status: accepted`, `request.status:
+fulfilled`). (2) Real RLS verified with an actual role switch (`set role authenticated`, not just
+`auth.uid()` inside an RPC) — a genuine stranger (`Allen Klein`, not a participant) got real `null`
+back querying the proposal/participants/resulting request/offers directly; every real participant
+correctly saw all four. (3) Leaving pre-confirmation — Claude left before the group's real request
+existed → confirmed their own source request stayed `open`, never touched, while Google voice's
+(who stayed and accepted) correctly merged; resulting party size correctly `3` (1+2). (4) Explicit
+initiator exclusion of an already-accepted participant at confirm time — Google voice was excluded
+via `exclude_user_ids` after having genuinely accepted → their own source request correctly stayed
+`open` → resulting party size correctly `2` (Allen+Claude only), proving rule 9's "continue without
+Sarah" for someone who already said yes, not just someone who never responded. Also verified
+directly: non-initiator can't cancel; cancelling a pending proposal correctly leaves both source
+requests untouched; confirming after cancel correctly rejected; the extended
+`expire_stale_business_requests()` cron function runs clean. All test rows (14 disposable
+`business_requests`, 4 `group_plan_proposals` and their cascaded participants, 1
+`business_request_offers` row) deleted afterward, including nulling both sides of the
+`business_requests.group_plan_id` ↔ `group_plan_proposals.resulting_request_id` FK cycle before
+deleting either table — confirmed production back to its exact pre-test baseline (0 rows across
+every touched table). **Verified via a real from-scratch migration replay** (38 files, `psql -v
+ON_ERROR_STOP=1`, exit 0 throughout, `pg_cron`/`pg_trgm` created cleanly this run with no
+workaround needed) — all 3 new tables and all 9 new/changed functions (including
+`accept_business_offer` itself) confirmed to exist in the freshly-rebuilt database. Client-side
+verified via a direct `@babel/core` parse of all 5 touched/new files (clean), the full 42-test
+Jest suite (unchanged, still 42/42), and a full `npx expo export --platform ios` (clean, no
+bundling errors — two new files, `groupPlans.js` and `GroupPlanScreen.js`, every other touched
+file was an edit).
+
+**Deliberately not built, disclosed rather than silently skipped**: a live capacity/price
+re-quote from the business when a participant leaves after an offer already exists (rule 10's own
+text only requires invalidating stale confirmations, which is built; a true re-quote would need
+the business to actively re-price, which no mechanism in this schema does even for a solo
+request); a UI affordance for the initiator to remove an already-accepted participant *before*
+confirm time outside of the confirm-time exclude picker (the exclude list only ever applies at
+the moment of confirming, matching the RPC's own real shape — not a separate "kick" action); and
+`complete_business_reservation` was left completely untouched (marking a reservation complete is
+an operational step after the group's real acceptance already happened via full consent, not a
+new binding decision the 14 rules govern).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the full flow end-to-end in the running app: proposing
+from a real open request's candidate list, receiving and responding to a real push-delivered
+invite, the budget re-consent reset actually surfacing correctly to a re-invited participant, and
+the "N of M confirmed" offer-confirmation UI updating correctly across two real accounts.
 
 ## Aug 15 2026 — Nearby 2.0 partial build, explicitly requested by the user, overriding the freeze for this scope — IN PROGRESS
 
