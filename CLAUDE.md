@@ -4,6 +4,167 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: "10/10 roadmap" (Aug 15 2026) — PLAN LOCKED, executing part by part
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and the
+per-part status notes below for what's actually landed vs. still just this plan. The user pasted
+a 9-area strategic roadmap (core concept, differentiation, architecture, UX coherence, business
+marketplace, privacy/social, Home, technical validation, market validation) aimed at moving the
+product from "8/10" to "10/10," and asked directly: plan all parts first, put the plan in this
+file, then execute each part, committing/pushing and updating this file as each lands.
+
+**Two parts of the original roadmap are honestly not executable by a coding session at all,
+flagged up front rather than faked**: **market validation** (#9, real retention/activation/
+conversion numbers) needs real users generating real data over real time — a coding session can
+build the instrumentation and the dashboard that would *display* those numbers, but cannot
+manufacture the numbers themselves. **Load testing / production monitoring** (part of #8) needs
+live deployed infrastructure and real traffic this sandbox doesn't have — same standing
+limitation as the "no manual simulator/device run-through" line repeated throughout this file.
+Both are scoped down below to "build the real instrumentation, be honest that the numbers behind
+it don't exist yet."
+
+**Build order — dependency-driven, not the roadmap's own numbering**: Part 1 (outcome tracking)
+comes first because Part 2's fulfillment-rate metrics and Part 9's dashboard both need real
+outcome data to exist before they can show anything real. Part 4 (UX coherence) is mostly
+already done by this file's own extensive history (Home/Create/Discover reconciliation, IA
+restructure rounds 2-3, all DONE per the sections below this one) — that part is a confirm-and-
+close-residual-gaps pass, not a rebuild, so it's sequenced last and kept small.
+
+1. **Outcome tracking loop** (closes roadmap #1). New `intent_outcomes` table — one row per
+   intent-resolver result a user actually acted on (tapped through to), independent of which of
+   the 5 resolver branches it came from (gathering/community/friend-request/perk/business
+   availability) or whether it then went through the full business request→offer→accept→
+   complete lifecycle (which already has its own `completed_at` on `business_request_offers`,
+   untouched — this table sits one level up, tracking the *intent's* outcome, not just the
+   business transaction's). Columns: `id`, `user_id`, `raw_text`, `category`, `date_window`,
+   `result_type` (`gathering|community|friend_request|perk|business_availability|business_offer|
+   created_new`), `result_id`, `selected_at`, `outcome` (`great|okay|not_for_me`, nullable until
+   answered), `would_repeat` boolean nullable, `answered_at`. A new `record_intent_selection()`
+   RPC fires the moment `HomeScreen.js`'s result-tap handler navigates to a real detail screen
+   (or "create it yourself" is chosen → `result_type: 'created_new'`) — this is the one new
+   client call site, in the same handler the resolver-results panel already uses. A new
+   `record_intent_outcome()` RPC is called from a lightweight, dismissible "How did it go?"
+   prompt (👍/😐/👎 + optional "Would you do this again?") — reuses `GatheringFeedbackModal`'s
+   existing visual language rather than inventing a new component, shown once per outcome row on
+   next Home visit after `selected_at` is at least a real elapsed window (start at 4 hours, not
+   a fabricated number dressed as science — just "probably happened by now" for a same-day ask).
+   No outcome is ever fabricated or defaulted — a `null` outcome just means the user was never
+   asked or didn't answer, and every query reading this table treats `null` as "unknown," never
+   as a de facto negative.
+2. **Differentiation metrics** (closes roadmap #2). Depends on Part 1's `intent_outcomes` plus a
+   new `intent_submissions` log — one row per `resolveIntent()` call (not just successful ones),
+   capturing `raw_text`/`category`/`date_window`/which tier(s) returned a real candidate/whether
+   the business-fallback path was reached, written from the same `HomeScreen.js` call site.
+   A new SECURITY DEFINER RPC `get_intent_funnel_stats()` (admin-only, matching this schema's
+   `check_is_admin()` gate) computes, from real rows only: % of submissions with any resolver
+   result, % resolved without reaching business fallback, % of results that were tapped through
+   (`intent_outcomes.selected_at` join), % that reached a real business reservation, % answered
+   `great`/`okay`/`not_for_me`, and a repeat-submission rate (same user submitting a
+   similar-category ask again within 30 days). Every number is a real query result — no
+   placeholder/target numbers written into the UI. Feeds Part 9's dashboard directly.
+3. **Architecture hardening audit** (closes roadmap #3). A real, code-level audit — not another
+   generic "run more tests" pass — of every state machine already in this schema
+   (`business_requests`/`business_request_offers`/`business_availability`,
+   `gathering_interest`, `community_members`, `friendships`) for: (a) whether every legal status
+   transition is actually guarded server-side (not just client-side) against an illegal jump,
+   (b) idempotency of every write RPC under a retried call, (c) whether every scarcity resource
+   (gathering capacity, offer capacity, one-request-one-winner) is still locked correctly after
+   this session's additions since Aug 8's original Capacity/Waitlist pass. Read-only findings
+   first, written to `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`, then fix what's
+   real — matching this file's own established "audit first, then fix what's confirmed" pattern,
+   not a blind patch pass.
+4. **UX coherence confirm** (closes roadmap #4). Per this file's own extensive prior history
+   (Home/Create/Discover terminology reconciliation, round-2/round-3 IA restructures, all DONE),
+   this is very likely already substantially true — this part is a direct re-read of the current
+   Home/Create/Discover/Inbox/Profile subtitle copy and navigation to confirm "what is this
+   helping me accomplish" is answerable at a glance on each, and close only genuinely-still-open
+   gaps found, not a rebuild.
+5. **Business marketplace reliability** (closes roadmap #5). Real plumbing already exists —
+   `business_request_offers.expires_at`/`responded_at`, `business_requests.expires_at`, the
+   `expire-stale-business-requests` cron job (all live per the Aug 14 Business Fulfillment
+   section) — this part surfaces it and closes real gaps: (a) a real "businesses typically
+   respond within X minutes" line on `AskBusinessScreen`/`BusinessRequestDetailScreen`, computed
+   from a new `get_partner_avg_response_time()` RPC (real median of `responded_at - created_at`
+   across that partner's own past offers — `null`/hidden copy for a partner with no history yet,
+   never a fabricated "usually fast!"); (b) a real partner reputation RPC
+   (`get_partner_reputation()`: response rate, acceptance rate, completion rate, all real
+   percentages from real rows, `null` for insufficient history) surfaced on
+   `BusinessProfileScreen`/`AskBusinessScreen`'s candidate list so a consumer isn't blind to
+   which businesses actually follow through; (c) confirm capacity integrity end-to-end
+   (re-verify live, don't just re-read) for the two independent scarcity axes Phase 4 already
+   built (per-request winner, per-availability-posting capacity) since two more weeks of schema
+   changes have landed since that was last verified live.
+6. **Privacy / social granular controls** (closes roadmap #6). The existing architecture already
+   has a locked, hard "no stranger discovery via intent, ever" principle — this part is
+   deliberately scoped to *within* that boundary, not a re-opening of it: a new
+   `profiles.intent_visibility` column (`friends_and_matches|nobody`, default
+   `friends_and_matches` — matches current behavior exactly, zero regression for existing users)
+   gates whether a user's own open `business_requests` rows are eligible to surface to a
+   friend/match via the resolver's Tier 2 (`get_connected_open_business_requests`) — a real,
+   additive `where (requester profile's intent_visibility = 'friends_and_matches')` clause on
+   that RPC. A new "Who can see my requests" row in Settings' Privacy & Safety section, plain
+   two-option picker, no new taxonomy invented. Explicitly not touched: dating discovery
+   (`show_me`/`discovery_gender` already cover that, unrelated surface), and the no-stranger-
+   discovery boundary itself (still absolute, this setting only ever narrows an already-friends-
+   only surface further, never widens it).
+7. **Home progressive personalization** (closes roadmap #7). The Aug 14 hierarchy work locked
+   Home's section order/content and explicitly deferred recommendations #3-6 — this part does
+   **not** reopen any of that. What it adds, additively, within the already-approved hero
+   treatment: the intent box's rotating placeholder text (already period-aware per earlier work)
+   becomes real-history-aware for a returning user with enough data — a new
+   `getMyIntentPatterns()` reading the user's own `intent_submissions`/`intent_outcomes` rows
+   (from Part 1/2, so this is correctly sequenced after them) for a real, recurring
+   day-of-week + time-window + category pattern (e.g., "Friday nights → Coffee" appearing 3+
+   times), surfaced only as one smarter placeholder example ("Coffee tonight?") among the
+   existing rotation — never replacing the box, never auto-submitting, never shown for a user
+   without a real repeated pattern (falls back to today's static examples exactly as before).
+   Zero new sections, zero reordering — this is scoped to one input's placeholder text only, per
+   the explicit "no length/hierarchy changes beyond what was already approved" boundary this
+   file's Aug 14 section already locked.
+8. **Technical validation** (closes roadmap #8, the buildable half). No test infrastructure
+   exists in this repo at all today (confirmed: no `jest`/test runner in `package.json`, zero
+   `*.test.*` files) — this part stands it up rather than assuming it's just missing coverage.
+   Jest + `babel-jest` for pure-function unit tests (`intentResolver.js`'s
+   `scoreGatheringForResolver`/`dateWindowToDateRange`/`extractMeaningfulWords`/
+   `titleMentionBonus`, `timeContext.js`'s `formatHeroDateTime`/quick-pick personalization,
+   `gatheringIndoorOutdoor.js`) — these run anywhere, no device/network needed, closing a real
+   and previously totally-absent layer of verification. For the critical path and real failure
+   modes (double-accept race, expiry, decline, duplicate submission) — extends this file's own
+   already-established "verify live against production with real disposable test data, clean up
+   after" convention into real repeatable scripts under `scripts/live-verify/`, rather than a
+   one-off manual session each time, so the next schema change can re-run the same checks instead
+   of re-deriving them. **Load testing and a real production-monitoring dashboard are not
+   attempted** — flagged, not faked; both need live deployed infrastructure and real traffic this
+   sandbox doesn't have.
+9. **Market validation dashboard** (closes roadmap #9, the buildable half). Depends on Parts 1-2.
+   A new admin-only `MarketValidationScreen.js` (reuses the existing `isAdmin`-gated Settings
+   pattern) rendering `get_intent_funnel_stats()`'s real numbers, plus real 7/30-day return-rate
+   and partner response/acceptance/completion-rate queries. **Explicitly not claimed as "10/10 on
+   market validation"** — the screen will show honest, mostly-near-zero numbers for a long while
+   in a young app with little real usage, which is the correct, honest state, not a bug to hide.
+   This part's job is making sure the *numbers exist and are real* the moment there's real usage
+   to measure, not manufacturing usage.
+
+**Verification convention for this whole plan, matching every other section in this file**: every
+schema change gets applied to production and verified live with real disposable test data, plus a
+from-scratch migration replay before being considered done; every client change gets a full
+`npx expo export --platform ios`; each part is its own commit, pushed individually, with this
+section's own status notes updated to mark it DONE before moving to the next part — not batched
+at the end, so a mid-session restart never loses more than one part's worth of work. **Standing
+limitation, same as everywhere else in this file**: no manual simulator/device run-through.
+
+**Status: plan locked, parts execute below as they land — check each part's own status line.**
+- Part 1 (outcome tracking): not started
+- Part 2 (differentiation metrics): not started
+- Part 3 (architecture hardening audit): not started
+- Part 4 (UX coherence confirm): not started
+- Part 5 (marketplace reliability): not started
+- Part 6 (privacy controls): not started
+- Part 7 (Home personalization): not started
+- Part 8 (technical validation): not started
+- Part 9 (market validation dashboard): not started
+
 ## Outstanding: skeptical first-time-user product critique of the intent-first Home (Aug 14 2026) — critique DONE (read-only); recommendations 1-4 DONE, build-wise; recommendation 5 explicitly deferred by the user
 
 **Explicit instruction, given directly, not to be silently acted on**: after the Intent Layer +
