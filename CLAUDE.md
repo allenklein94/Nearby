@@ -281,7 +281,43 @@ limitation, same as everywhere else in this file**: no manual simulator/device r
   **No code changes made — this part's own job was to confirm, not rebuild**, per the plan's own
   framing that this was very likely already substantially true given this file's extensive prior
   IA-reconciliation history.
-- Part 5 (marketplace reliability): not started
+- **Part 5 (marketplace reliability): DONE.** Two new real, public-safe RPCs
+  (`20260815_partner_response_reputation.sql`) over a partner's own past `business_request_offers`
+  rows — no ownership check needed, same posture as the existing `get_business_follower_count`
+  (only real, already-aggregated counts/percentages of a business's own past behavior, no PII):
+  `get_partner_avg_response_time()` (real median minutes-to-respond, using `percentile_cont`, only
+  over rows with a real `responded_at`) and `get_partner_offer_reputation()` (response rate,
+  acceptance rate, completion rate — three distinct funnel stages, each `nullif(...,0)`-guarded).
+  New `getPartnerAvgResponseTime()`/`getPartnerOfferReputation()` client wrappers plus a shared
+  `formatPartnerReliabilityLine()` in `services/businessFulfillment.js` (used identically by both
+  screens so they can never render two different summaries of the same numbers) — deliberately
+  silent until a partner has 5+ real past opportunities, so a brand-new business never shows a
+  damning "0% accepted" born from having zero history rather than a real problem. Surfaced on
+  `BusinessRequestDetailScreen.js` (a per-offer reliability line, shown only while the consumer is
+  actually deciding — `offered`/`accepted` states — fetched per unique responding partner) and
+  `BusinessProfileScreen.js` (the public business header, alongside but clearly distinct from the
+  existing gathering-hosting `getBusinessReputation()` welcoming/would-attend-again line, a
+  different signal entirely). **Verified live against production**: confirmed grants
+  (`authenticated` yes, `anon` no); a partner with zero history returns honest nulls/zeros, not
+  fabricated defaults; built a real disposable 4-row dataset spanning the full funnel (completed/
+  accepted/declined/pending, with real elapsed response-time gaps) and confirmed every one of the
+  7 returned fields matched hand-calculated arithmetic exactly (75.0% response rate, 66.7%
+  acceptance rate, 50.0% completion rate, 5-minute median response time). All test rows deleted
+  afterward. **Also re-verified both scarcity axes live end-to-end**, per the plan's own item (c)
+  — hadn't been re-checked since Phase 4 landed, and two more weeks of schema changes have layered
+  on top since: (1) per-request winner (already re-proven in Part 3's own regression test) and
+  (2) the shared-capacity axis across *different* requests matched to the same availability
+  posting — posted a real capacity-1 availability for `Coastal Coffee`, had two genuinely
+  independent consumers each get their own real `offered` row against it, confirmed the first
+  accept correctly consumed the only slot (`remaining_capacity: 0`, `status: filled`) and the
+  second consumer's own independently-valid offer was correctly rejected
+  (`This availability just filled up.`) — the shared-capacity lock still holds correctly after
+  everything built on top of it since Aug 14. All test data (2 requests, 2 offers, 1 availability
+  posting) deleted and `Coastal Coffee`'s coordinates reverted to `null` afterward. Client verified
+  via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios` (clean, no
+  bundling errors, edits to three existing files, no new files — module count unchanged). **Not
+  done this pass**: no from-scratch Docker migration replay (same disclosed gap as Parts 1-3); no
+  manual simulator/device run-through of either new reliability line's rendering.
 - Part 6 (privacy controls): not started
 - Part 7 (Home personalization): not started
 - Part 8 (technical validation): not started

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation } from '../services/businessFulfillment';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -34,6 +34,7 @@ function formatProposedTime(iso) {
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
+
 
 // The consumer-side offer-review/accept screen -- Phase 2 of the Intent
 // Layer plan (CLAUDE.md). Reached right after submitting a request
@@ -76,6 +77,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [loadError, setLoadError] = useState(false);
   const [actingOfferId, setActingOfferId] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) --
+  // partnerId -> { reputation, responseTime }, fetched for every partner
+  // with a real offer showing, so the consumer isn't blind to whether a
+  // business actually follows through before deciding whether to accept.
+  const [partnerStats, setPartnerStats] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,6 +90,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       setRequest(result.request);
       setOffers(result.offers);
       setLoadError(false);
+
+      const partnerIds = [...new Set(result.offers.filter((o) => o.status === 'offered' || o.status === 'accepted').map((o) => o.partner_id))];
+      if (partnerIds.length > 0) {
+        Promise.all(
+          partnerIds.map(async (id) => [id, await Promise.all([getPartnerOfferReputation(id), getPartnerAvgResponseTime(id)])])
+        )
+          .then((entries) => setPartnerStats(Object.fromEntries(entries.map(([id, [reputation, responseTime]]) => [id, { reputation, responseTime }]))))
+          .catch((e) => console.error('getPartnerOfferReputation/getPartnerAvgResponseTime failed', e));
+      }
     } catch (e) {
       setLoadError(true);
     }
@@ -184,9 +199,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {offers.length === 0 ? (
           <Text style={styles.emptyText}>No businesses have responded yet.</Text>
         ) : (
-          offers.map((o) => (
+          offers.map((o) => {
+            const stats = partnerStats[o.partner_id];
+            const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
+            return (
             <View key={o.id} style={styles.offerCard}>
               <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? 'A business'}</Text>
+              {reputationLine && (o.status === 'offered' || o.status === 'accepted') ? (
+                <Text style={styles.offerReputationLine}>{reputationLine}</Text>
+              ) : null}
               <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
               {o.status === 'offered' && (
                 <>
@@ -223,7 +244,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 </>
               )}
             </View>
-          ))
+            );
+          })
         )}
 
         {request.status === 'open' && (
@@ -250,6 +272,7 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md,
   },
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  offerReputationLine: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },

@@ -220,3 +220,42 @@ export async function searchActiveBusinessAvailability({ category = null, latitu
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// ---- 10/10 roadmap Part 5: business marketplace reliability (see
+// CLAUDE.md's "10/10 roadmap" plan) ----
+// Both real, public-safe aggregates over a partner's own past
+// business_request_offers rows -- null/zero for a partner with no history
+// yet, never a fabricated "usually fast!" placeholder.
+export async function getPartnerAvgResponseTime(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_avg_response_time', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data?.[0] ?? null;
+}
+
+export async function getPartnerOfferReputation(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_offer_reputation', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data?.[0] ?? null;
+}
+
+// Shared formatting so BusinessRequestDetailScreen and BusinessProfileScreen
+// never drift onto two different renderings of the same underlying
+// numbers. Only speaks once there's genuinely enough history to say
+// anything honest (5+ past opportunities) -- a 0-of-1 "0% acceptance"
+// would read as damning noise, not a real signal, for a partner who has
+// simply never gotten an opportunity before.
+export function formatPartnerReliabilityLine(reputation, responseTime) {
+  if (!reputation || reputation.total_opportunities < 5) return null;
+  const parts = [];
+  if (responseTime?.median_response_minutes != null && responseTime.response_sample_size >= 3) {
+    const mins = Number(responseTime.median_response_minutes);
+    parts.push(mins < 60 ? `usually responds in ~${mins} min` : `usually responds in ~${Math.round(mins / 60)}h`);
+  }
+  if (reputation.acceptance_rate != null) {
+    parts.push(`${Math.round(reputation.acceptance_rate)}% of offers accepted`);
+  }
+  if (reputation.completion_rate != null) {
+    parts.push(`${Math.round(reputation.completion_rate)}% completed`);
+  }
+  return parts.length > 0 ? `⭐ ${parts.join(' · ')}` : null;
+}

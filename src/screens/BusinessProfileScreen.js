@@ -14,6 +14,7 @@ import {
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
+import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -41,10 +42,16 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [lovedTags, setLovedTags] = useState([]);
   const [reputation, setReputation] = useState(null);
   const [photoUrls, setPhotoUrls] = useState([]);
+  // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) -- the
+  // business-fulfillment request/offer reliability line, distinct from
+  // `reputation` above (which is the gathering-hosting welcoming/would-
+  // attend-again reputation, a different signal entirely).
+  const [fulfillmentReputation, setFulfillmentReputation] = useState(null);
+  const [fulfillmentResponseTime, setFulfillmentResponseTime] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep] = await Promise.all([
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime] = await Promise.all([
         getBusinessProfile(partnerId),
         getBusinessFollowerCount(partnerId),
         isFollowingBusiness(partnerId),
@@ -52,6 +59,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
         getBusinessActiveOffers(partnerId),
         getBusinessLovedTags(partnerId),
         getBusinessReputation(partnerId),
+        getPartnerOfferReputation(partnerId),
+        getPartnerAvgResponseTime(partnerId),
       ]);
 
       setPartner(profile);
@@ -61,6 +70,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setOffers(activeOffers);
       setLovedTags(tags);
       setReputation(rep);
+      setFulfillmentReputation(fulfillRep);
+      setFulfillmentResponseTime(fulfillResponseTime);
       setLoadError(false);
 
       if (activeOffers.length > 0) {
@@ -167,6 +178,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
             </Text>
           </View>
         </View>
+
+        {formatPartnerReliabilityLine(fulfillmentReputation, fulfillmentResponseTime) && (
+          <Text style={styles.reliabilityLine}>{formatPartnerReliabilityLine(fulfillmentReputation, fulfillmentResponseTime)}</Text>
+        )}
 
         {partner.description ? <Text style={styles.description}>{partner.description}</Text> : null}
 
@@ -296,6 +311,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   logoPlaceholderText: { fontSize: 28 },
   title: { ...typography.title, color: colors.textPrimary },
   meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
+  reliabilityLine: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   followButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', ...shadow.button },
