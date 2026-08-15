@@ -6,6 +6,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
+import { recordIntentSelection, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt } from '../services/intentOutcomes';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -89,6 +90,8 @@ export default function HomeScreen({ navigation }) {
   const [intentResults, setIntentResults] = useState(null);
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
   const [intentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
+  const [outcomePrompt, setOutcomePrompt] = useState(null);
+  const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
   const period = getTimePeriod();
 
   const load = useCallback(async () => {
@@ -113,6 +116,8 @@ export default function HomeScreen({ navigation }) {
         setUnratedGathering(unrated);
         const pendingInvites = await getPendingInvitesCount(myId);
         setPendingInvitesCount(pendingInvites);
+        const pendingOutcome = await getPendingIntentOutcomePrompt();
+        setOutcomePrompt(pendingOutcome);
       } catch (e) {
         // These are supplementary cards, not core functionality — a
         // failure here should never block social forecast/location
@@ -206,6 +211,20 @@ export default function HomeScreen({ navigation }) {
     } else {
       navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
     }
+    // Only a real "no existing supply matched, I'm creating something new"
+    // moment counts as a trackable intent outcome -- a business_partner
+    // proposal has no existing-supply concept to have checked against, so
+    // it's not part of this loop.
+    if (result.intent !== 'business_partner') {
+      recordIntentSelection({
+        rawText: typedText,
+        category: result.category ?? null,
+        dateWindow: result.dateWindow ?? null,
+        resultType: 'created_new',
+        resultId: null,
+        resultTitle: result.title ?? typedText,
+      });
+    }
     setIntentText('');
     setIntentResults(null);
   }
@@ -268,6 +287,14 @@ export default function HomeScreen({ navigation }) {
   function handleIntentResultTap(item) {
     const { classifyResult, typedText } = intentResults ?? {};
     setIntentResults(null);
+    recordIntentSelection({
+      rawText: typedText,
+      category: classifyResult?.category ?? null,
+      dateWindow: classifyResult?.dateWindow ?? null,
+      resultType: item.type,
+      resultId: item.id ?? null,
+      resultTitle: item.title,
+    });
     if (item.type === 'gathering') {
       navigation.navigate('GatheringDetail', { gatheringId: item.id });
     } else if (item.type === 'perk') {
@@ -302,10 +329,41 @@ export default function HomeScreen({ navigation }) {
     setIntentText('');
   }
 
+  async function handleOutcomeAnswer(outcome) {
+    if (!outcomePrompt || outcomeSubmitting) return;
+    setOutcomeSubmitting(true);
+    try {
+      await recordIntentOutcome(outcomePrompt.id, { outcome });
+    } catch (e) {
+      console.error('recordIntentOutcome failed', e);
+    }
+    setOutcomePrompt(null);
+    setOutcomeSubmitting(false);
+  }
+
+  async function handleOutcomeDismiss() {
+    if (!outcomePrompt) return;
+    const id = outcomePrompt.id;
+    setOutcomePrompt(null);
+    try {
+      await dismissIntentOutcomePrompt(id);
+    } catch (e) {
+      console.error('dismissIntentOutcomePrompt failed', e);
+    }
+  }
+
   function handleAskBusiness() {
     const { classifyResult, typedText } = intentEmptyFallback;
     setIntentEmptyFallback(null);
     setIntentText('');
+    recordIntentSelection({
+      rawText: typedText,
+      category: classifyResult.category ?? null,
+      dateWindow: classifyResult.dateWindow ?? null,
+      resultType: 'created_new',
+      resultId: null,
+      resultTitle: typedText,
+    });
     navigation.navigate('AskBusiness', {
       prefillText: typedText,
       prefillCategory: classifyResult.category ?? null,
@@ -540,8 +598,34 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
+            {outcomePrompt && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    How did it go with {outcomePrompt.result_title ?? 'that'}?
+                  </Text>
+                  <TouchableOpacity onPress={handleOutcomeDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.outcomePromptRow}>
+                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('great')} disabled={outcomeSubmitting} accessibilityLabel="Great" accessibilityRole="button">
+                    <Text style={styles.outcomePromptButtonEmoji}>👍</Text>
+                    <Text style={styles.outcomePromptButtonLabel}>Great</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('okay')} disabled={outcomeSubmitting} accessibilityLabel="Okay" accessibilityRole="button">
+                    <Text style={styles.outcomePromptButtonEmoji}>😐</Text>
+                    <Text style={styles.outcomePromptButtonLabel}>Okay</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.outcomePromptButton} onPress={() => handleOutcomeAnswer('not_for_me')} disabled={outcomeSubmitting} accessibilityLabel="Not for me" accessibilityRole="button">
+                    <Text style={styles.outcomePromptButtonEmoji}>👎</Text>
+                    <Text style={styles.outcomePromptButtonLabel}>Not for me</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
             {pendingInvitesCount > 0 && (
               <TouchableOpacity
                 style={styles.pendingInvitesBanner}
@@ -1014,6 +1098,16 @@ const getStyles = (colors) => StyleSheet.create({
   // a bespoke margin per call site.
   bannerContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: spacing.sm },
   bannerIcon: { marginRight: spacing.xs },
+  outcomePromptCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.md,
+  },
+  outcomePromptHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.sm },
+  outcomePromptText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 14, marginRight: spacing.sm },
+  outcomePromptRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  outcomePromptButton: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs },
+  outcomePromptButtonEmoji: { fontSize: 20, marginBottom: 2 },
+  outcomePromptButtonLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,
