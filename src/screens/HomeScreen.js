@@ -7,6 +7,8 @@ import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns } from '../services/intentOutcomes';
+import { getMyGroupIntentSignals } from '../services/businessFulfillment';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -92,6 +94,15 @@ export default function HomeScreen({ navigation }) {
   const [intentPlaceholder, setIntentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   const [outcomePrompt, setOutcomePrompt] = useState(null);
   const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
+  // Nearby 2.0 vision, partial build (see CLAUDE.md's "Nearby 2.0 Vision"
+  // doc, layers 6 "Predictive Nearby" and 3 "Group intent") -- both are
+  // real, dismissible Home nudges, never auto-acting, built on data this
+  // app already collects. Dismissal is local/ephemeral (AsyncStorage, not
+  // a DB row) since neither card is tied to a specific answerable record
+  // the way the outcome-prompt card above is -- dismissing just means
+  // "not today," and a fresh day naturally re-evaluates the real pattern.
+  const [predictivePattern, setPredictivePattern] = useState(null);
+  const [groupIntentSignal, setGroupIntentSignal] = useState(null);
   const period = getTimePeriod();
 
   const load = useCallback(async () => {
@@ -128,6 +139,35 @@ export default function HomeScreen({ navigation }) {
         if (pattern?.placeholderText) {
           const pool = [...INTENT_PLACEHOLDER_EXAMPLES, pattern.placeholderText];
           setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
+        }
+
+        // Nearby 2.0 vision layer 6, "Predictive Nearby" -- a real
+        // proactive nudge, not just a smarter placeholder: the same
+        // 3+-occurrence pattern above, but only ever a dismissible
+        // suggestion the user explicitly taps to act on, never
+        // auto-submitted. Dismissed for today via a local, per-day key --
+        // a fresh day re-evaluates honestly rather than nagging forever.
+        if (pattern?.category) {
+          const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${pattern.category}_${pattern.period}`;
+          const dismissed = await AsyncStorage.getItem(dismissKey);
+          if (!dismissed) setPredictivePattern(pattern);
+        }
+
+        // Nearby 2.0 vision layer 3, "Group intent" -- real, dismissible:
+        // shown only when the RPC's own real >=2-connected-people
+        // threshold is actually crossed, never fabricated. Takes the top
+        // (highest-count) real signal only, so this reads as one honest
+        // nudge, not a list of speculative categories.
+        try {
+          const groupSignals = await getMyGroupIntentSignals();
+          if (groupSignals.length > 0) {
+            const top = groupSignals[0];
+            const dismissKey = `group_intent_dismiss_${new Date().toDateString()}_${top.category}_${top.request_count}`;
+            const dismissed = await AsyncStorage.getItem(dismissKey);
+            if (!dismissed) setGroupIntentSignal(top);
+          }
+        } catch (e) {
+          console.error('getMyGroupIntentSignals failed', e);
         }
       } catch (e) {
         // These are supplementary cards, not core functionality — a
@@ -265,12 +305,13 @@ export default function HomeScreen({ navigation }) {
   // options" failed) or, for a community intent, proceed straight to
   // creation -- asking a business to sponsor an as-yet-nonexistent
   // community doesn't make sense, so that path has no business-ask step.
-  async function handleHomeIntentSubmit() {
-    if (!intentText.trim()) return;
+  async function handleHomeIntentSubmit(overrideText) {
+    const typedText = (overrideText ?? intentText).trim();
+    if (!typedText) return;
+    if (overrideText) setIntentText(overrideText);
     setIntentThinking(true);
     setIntentResults(null);
     setIntentEmptyFallback(null);
-    const typedText = intentText.trim();
     try {
       const result = await classifyCreateRequest(typedText);
       if (result.intent === 'business_partner') {
@@ -378,6 +419,38 @@ export default function HomeScreen({ navigation }) {
     } catch (e) {
       console.error('dismissIntentOutcomePrompt failed', e);
     }
+  }
+
+  function handlePredictiveAct() {
+    if (!predictivePattern) return;
+    const category = predictivePattern.category;
+    const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${predictivePattern.category}_${predictivePattern.period}`;
+    setPredictivePattern(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    handleHomeIntentSubmit(category);
+  }
+
+  function handlePredictiveDismiss() {
+    if (!predictivePattern) return;
+    const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${predictivePattern.category}_${predictivePattern.period}`;
+    setPredictivePattern(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+  }
+
+  function handleGroupIntentAct() {
+    if (!groupIntentSignal) return;
+    const dismissKey = `group_intent_dismiss_${new Date().toDateString()}_${groupIntentSignal.category}_${groupIntentSignal.request_count}`;
+    const category = groupIntentSignal.category;
+    setGroupIntentSignal(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    handleHomeIntentSubmit(category);
+  }
+
+  function handleGroupIntentDismiss() {
+    if (!groupIntentSignal) return;
+    const dismissKey = `group_intent_dismiss_${new Date().toDateString()}_${groupIntentSignal.category}_${groupIntentSignal.request_count}`;
+    setGroupIntentSignal(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
   }
 
   function handleAskBusiness() {
@@ -646,8 +719,38 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
+            {predictivePattern && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    🔮 Want me to find something for {predictivePattern.category.toLowerCase()}?
+                  </Text>
+                  <TouchableOpacity onPress={handlePredictiveDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handlePredictiveAct} accessibilityLabel="Find something" accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>Yes, find something →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {groupIntentSignal && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    👥 {groupIntentSignal.request_count} people you know are looking for {groupIntentSignal.category.toLowerCase()}
+                  </Text>
+                  <TouchableOpacity onPress={handleGroupIntentDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleGroupIntentAct} accessibilityLabel="Find something together" accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>Find something for the group →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             {outcomePrompt && (
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
@@ -1156,6 +1259,8 @@ const getStyles = (colors) => StyleSheet.create({
   outcomePromptButton: { flex: 1, alignItems: 'center', paddingVertical: spacing.xs },
   outcomePromptButtonEmoji: { fontSize: 20, marginBottom: 2 },
   outcomePromptButtonLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
+  predictiveActButton: { alignSelf: 'flex-start', paddingVertical: 6 },
+  predictiveActButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,

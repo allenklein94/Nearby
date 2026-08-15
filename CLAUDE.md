@@ -4,6 +4,127 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 15 2026 — Nearby 2.0 partial build, explicitly requested by the user, overriding the freeze for this scope — IN PROGRESS
+
+Written before/alongside implementation, same restart-safety convention as every other plan-first
+section in this file — if a codespace restart hits mid-build, check `git status`/`git log` and
+the per-layer status notes below for what's actually landed vs. still just this plan. Direct
+follow-up to the read-only "Nearby 2.0 Vision" capture below: the user came back and explicitly
+asked to "implement and build Nearby 2.0 missing features and parts." Per the freeze's own rule
+("this freeze constrains autonomous scope-expansion, not a direct explicit request... if the user
+asks for one anyway, that's their call to make"), this is exactly that direct request — it
+overrides the freeze for the scope described here, not a silent reopening of it.
+
+**Scope was not "build all ten layers blind."** The vision doc itself states each layer has a
+real, named "evidence bar" — most explicitly require real usage volume this young app doesn't
+have yet (near-zero real `business_requests`/`intent_submissions` rows in production today).
+Building an "intent graph learning model" or a mature "aggregated demand" surface against
+fabricated/padded numbers would violate this codebase's single most-repeated convention (no
+invented numbers, every percentage `nullif`-guarded, honest near-zero over a fabricated signal —
+see the Market Validation dashboard's own stated philosophy). So this pass picked the subset of
+the ten layers that are genuinely buildable *right now* as real, honest mechanisms over data this
+schema already collects — reads honestly near-zero today, becomes real the moment real usage
+exists — and left the rest flagged rather than faked:
+
+- **Layer 6, "Predictive Nearby" — DONE.** A real proactive, dismissible Home nudge built on the
+  same 3+-occurrence real pattern `intentPatterns.js` already computes (previously only ever fed
+  a smarter placeholder string) — "🔮 Want me to find something for {category}?" Tapping "Yes,
+  find something" is the one and only trigger (never auto-submitted, matching the vision's own
+  explicit "must never auto-act" rule) — it pre-fills and submits the intent box with that
+  category, reusing the exact same `handleHomeIntentSubmit()` flow every other entry point already
+  goes through, not a new code path. `handleHomeIntentSubmit()` gained an optional override-text
+  param for this (`handleHomeIntentSubmit(category)`) — every existing call site (the box's own
+  Enter/Find-it) is unaffected since the param defaults to reading `intentText` exactly as before.
+  Dismissal is local/ephemeral (`AsyncStorage`, keyed per real day + category + period) rather
+  than a DB row, since this isn't tied to a specific answerable record the way the outcome-prompt
+  card is — dismissing just means "not today," and a fresh day naturally re-evaluates the real
+  pattern rather than nagging forever.
+- **Layer 3, "Group intent" — DONE.** New `get_my_group_intent_signals()` SECURITY DEFINER RPC
+  (`20260815_group_intent_and_aggregated_demand.sql`) — reuses the exact same "connected" set
+  definition `get_connected_open_business_requests` already established (accepted friendships
+  union matches, both directions), but instead of returning one row per matching request (Tier
+  2's existing resolve-time behavior, unchanged), this proactively rolls up the caller's *entire*
+  connected network's real open `business_requests` by category, surfacing only when a real 2+
+  threshold is crossed (`having count(distinct requester_id) >= 2`) — "N people you know are
+  looking for {category}," with the top real signal only (not a list of speculative categories).
+  New `getMyGroupIntentSignals()` client wrapper (`services/businessFulfillment.js`) and a second
+  dismissible Home card, same tap-to-act/dismiss shape as the predictive-nearby card above,
+  reusing `handleHomeIntentSubmit()` the same way. Tier 2's own per-request resolver behavior
+  (`resolveConnectedRequests` in `intentResolver.js`) is completely unchanged — this is a new,
+  additive proactive surface, not a replacement.
+- **Layer 1, "Aggregated demand → business opportunities" — DONE, the literal example from the
+  vision doc.** New `get_aggregated_demand_for_partner(partner_id)` SECURITY DEFINER RPC (same
+  migration file) — owner-only (`profiles.managed_partner_id = partner_id_param`, same ownership
+  check every other business-facing RPC in this schema uses, returns empty rather than erroring
+  for a non-owner), aggregates real open `business_requests` by category within this business's
+  own actual fan-out reach — "near you" is defined exactly the way real eligibility already works
+  elsewhere (`_match_request_to_availability`'s own haversine formula, reused verbatim): within
+  the *requester's own* stated `radius_miles` of the business's location, not an arbitrary fixed
+  radius, so a business never sees "nearby demand" its own real fan-out logic wouldn't actually
+  have reached. New `getAggregatedDemandForPartner()` client wrapper and a real "📊 Demand Near
+  You" section on `BusinessDashboardScreen.js`'s Requests tab, directly above the existing
+  per-request "Business Opportunities" list — real counts, real total party size, real soonest
+  date, honest "No aggregated demand nearby yet" empty state with copy saying plainly that this
+  is expected at this stage, never padded to look more populated than it is.
+- **Layer 5 ("dynamic/competitive offers") and Layer 7 ("reliability score marketplace-wide") —
+  confirmed already substantially real, not rebuilt.** Checked directly rather than assumed:
+  `business_requests`' fan-out (`_business_request_fanout()`) already notifies up to 10 eligible
+  businesses per request and `accept_business_offer()` already picks a winner among however many
+  respond — the "dynamic" mechanism the vision doc describes already exists, matching the doc's
+  own "This already exists in miniature" framing almost verbatim. `get_partner_avg_response_time`/
+  `get_partner_offer_reputation` (10/10 roadmap Part 5) already compute the real per-partner
+  reliability signal the doc describes; only the "rank businesses against each other" comparative
+  framing is new, and wasn't built this pass — no build item was skipped by mistake here, both
+  were independently re-verified as already real before being left alone.
+- **Layer 2 ("intent graph / learning system") — deliberately not attempted, per the vision doc's
+  own explicit framing: "this is explicitly the slowest-maturing layer... not a build question
+  yet."** Would need real volume over real time to learn a pattern from at all; building it now
+  would mean training/deriving something from data that doesn't exist, which is fabrication, not
+  a feature.
+- **Layer 4 ("make it happen" multi-option planning) — deliberately not attempted, per the
+  vision doc's own stated risk**: "composing three empty tiers into 'three ways to make it happen'
+  would be worse than today's honest single ranked list." The underlying tiers (especially
+  business availability and Tier 2) don't yet reliably return enough real candidates to compose
+  into multiple honest complete plans without either padding or frequently showing 1-of-3 real
+  options dressed up as three — revisit once real per-tier hit rates are known (Market Validation
+  dashboard already tracks the inputs needed to make that call).
+- **Layers 8/9/10 — not separable build items, per the vision doc's own text** (8 is what 1+5
+  look like once both are mature; 9 is a future positioning/naming decision, not a build item;
+  10 folds entirely into 4). Nothing to build independently for any of the three.
+
+**Verification, matching this file's established convention**: the new migration
+(`20260815_group_intent_and_aggregated_demand.sql`) was applied to production
+(`enmosvippabmuqslzrox`) and verified live with real disposable test data, not just applied —
+using the two real pre-existing connections in production (`Claude`↔`Allen` accepted friendship,
+`Google voice`↔`Allen` match), two real disposable `business_requests` rows (same category,
+different requesters) correctly produced `request_count: 2` for `Allen` (connected to both) and
+correctly produced nothing for `Claude` (only connected to `Allen`, not `Google voice`) —
+confirming the group-intent threshold and the connected-set scoping both hold. For the demand
+RPC: temporarily set `Coastal Coffee`'s coordinates near the two test requests — the real owner
+(`Allen`) correctly got `{category: 'Coffee', request_count: 2, total_party_size: 2}` back, a
+non-owner (`Claude`) correctly got nothing, and moving the partner's coordinates out of both
+requests' radius correctly returned nothing (confirming the real haversine/radius filter, not a
+coincidence). All test rows deleted and `Coastal Coffee`'s coordinates reverted to `null`
+afterward — confirmed production back to its exact pre-test baseline (0 `business_requests`).
+**Verified via a real from-scratch migration replay** (31 files, `psql -v ON_ERROR_STOP=1`, exit
+0 throughout) — both new functions confirmed to exist in the freshly-rebuilt database. Client
+side verified via a direct `@babel/core` parse of all three touched/new files (clean), the full
+42-test Jest suite (unchanged, still 42/42), and a full `npx expo export --platform ios` (clean,
+no bundling errors).
+
+**Not done yet, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm both new Home cards render/dismiss/act correctly
+against real data, that a genuinely fresh account with no real pattern or connected group-ask
+shows neither card, and that the Business Dashboard's new "Demand Near You" section renders
+correctly for an owner account (including its honest empty state, which is what real production
+will show today given near-zero real request volume).
+
+**Standing constraint reaffirmed for any future continuation of this pass**: build only what's
+honestly buildable without fabricating a signal — read the vision doc's own per-layer "evidence
+bar" before picking up anything not covered above, and re-verify live against production with
+real disposable test data before considering any addition done, matching every other schema
+change in this file's history.
+
 ## Aug 15 2026 — "Nearby 2.0" strategic vision captured, read-only, reaffirms the freeze
 
 The user shared a detailed external strategic vision (aggregated cross-user demand → business

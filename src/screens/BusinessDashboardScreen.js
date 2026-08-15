@@ -7,7 +7,7 @@ import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusin
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
@@ -103,6 +103,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [visitFrequency, setVisitFrequency] = useState(null);
   const [partnershipRequests, setPartnershipRequests] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
+  const [aggregatedDemand, setAggregatedDemand] = useState([]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   const [myAvailability, setMyAvailability] = useState([]);
@@ -215,6 +216,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadVisitFrequency(selectedPartner.id);
         loadPartnershipRequests(selectedPartner.id);
         loadOpportunities(selectedPartner.id);
+        loadAggregatedDemand(selectedPartner.id);
         loadMyAvailability(selectedPartner.id);
       }
     }, [selectedPartner])
@@ -234,6 +236,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const results = await getBusinessOpportunities(partnerId);
       setOpportunities(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  // Nearby 2.0 vision layer 1, "Aggregated demand -> business
+  // opportunities" (see CLAUDE.md's "Nearby 2.0 Vision" doc): real,
+  // quantified nearby demand rolled up by category, not one-request-at-a-
+  // time. Honestly empty until real request volume exists nearby -- never
+  // padded to look more populated than it is.
+  async function loadAggregatedDemand(partnerId) {
+    try {
+      const results = await getAggregatedDemandForPartner(partnerId);
+      setAggregatedDemand(results);
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
     }
@@ -1009,7 +1025,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
             {section === 'requests' && (
               <>
-                <Text style={styles.sectionHeader}>Business Opportunities</Text>
+                <Text style={styles.sectionHeader}>📊 Demand Near You</Text>
+                <Text style={styles.helperText}>
+                  Real open requests within reach of your business right now, grouped by
+                  category -- a quantified early signal, not a review score. Reads near-zero
+                  until there's real volume nearby, which is expected this early on.
+                </Text>
+                {aggregatedDemand.length === 0 ? (
+                  <Text style={styles.emptyText}>No aggregated demand nearby yet.</Text>
+                ) : (
+                  aggregatedDemand.map((d) => (
+                    <View key={d.category} style={styles.gatheringRow}>
+                      <Text style={styles.offerTitle}>
+                        {d.request_count} {d.request_count === 1 ? 'person is' : 'people are'} looking for {d.category}
+                      </Text>
+                      <Text style={styles.breakdownText}>
+                        {[
+                          d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
+                          d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </Text>
+                    </View>
+                  ))
+                )}
+
+                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Business Opportunities</Text>
                 <Text style={styles.helperText}>
                   Real customers asking for something nearby -- respond with a real offer, or let
                   a low-fit one pass.

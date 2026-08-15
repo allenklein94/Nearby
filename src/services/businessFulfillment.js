@@ -226,6 +226,31 @@ export async function searchActiveBusinessAvailability({ category = null, latitu
 // Both real, public-safe aggregates over a partner's own past
 // business_request_offers rows -- null/zero for a partner with no history
 // yet, never a fabricated "usually fast!" placeholder.
+// ---- Nearby 2.0 vision, partial build (see CLAUDE.md's "Nearby 2.0
+// Vision" doc + the Aug 15 2026 "Nearby 2.0 partial build" plan) ----
+// Layer 3, "Group intent": the caller's own connected network (accepted
+// friendships union matches, same definition getConnectedOpenBusinessRequests
+// already uses), rolled up to "N people I know are independently looking
+// for the same kind of thing" -- real counts only, empty array (not a
+// fabricated zero-state) when nothing crosses the real 2+ threshold.
+export async function getMyGroupIntentSignals() {
+  const { data, error } = await supabase.rpc('get_my_group_intent_signals');
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// Layer 1, "Aggregated demand -> business opportunities": real open
+// business_requests within this business's own real fan-out reach,
+// grouped by category. Owner-only server-side (returns empty for a
+// non-owner rather than erroring, same convention as every other
+// business-facing RPC here) -- honestly near-zero until real request
+// volume exists nearby, never padded.
+export async function getAggregatedDemandForPartner(partnerId) {
+  const { data, error } = await supabase.rpc('get_aggregated_demand_for_partner', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function getPartnerAvgResponseTime(partnerId) {
   const { data, error } = await supabase.rpc('get_partner_avg_response_time', { partner_id_param: partnerId });
   if (error) throw new Error(error.message);
