@@ -38,7 +38,8 @@ export default function RehearsalRoomScreen({ navigation }) {
 
   async function sendMessage() {
     if (!text.trim() || sending) return;
-    const userMessage = { role: 'user', text: text.trim() };
+    const messageText = text.trim();
+    const userMessage = { role: 'user', text: messageText };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setText('');
@@ -56,7 +57,7 @@ export default function RehearsalRoomScreen({ navigation }) {
         },
         body: JSON.stringify({ scenario: scenario.key, history: newMessages }),
       });
-    const result = await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
         if (response.status === 403) {
@@ -70,6 +71,8 @@ export default function RehearsalRoomScreen({ navigation }) {
           return;
         }
         Alert.alert('Error', result.error || 'Could not continue the practice conversation.');
+        setMessages(messages);
+        setText(messageText);
         setSending(false);
         return;
       }
@@ -78,6 +81,8 @@ export default function RehearsalRoomScreen({ navigation }) {
       setMessages((prev) => [...prev, { role: 'ai', text: result.reply }]);
     } catch (e) {
       Alert.alert('Error', e.message);
+      setMessages(messages);
+      setText(messageText);
     }
     setSending(false);
   }
