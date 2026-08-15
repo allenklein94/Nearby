@@ -6,7 +6,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
-import { recordIntentSelection, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt } from '../services/intentOutcomes';
+import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt } from '../services/intentOutcomes';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -201,7 +201,7 @@ export default function HomeScreen({ navigation }) {
   // Phase 1a behavior, now only reached (a) for community/business_partner
   // intents, which the resolver doesn't apply to, or (b) once Phase 1b's
   // resolver has already checked Tiers 1/3 and genuinely found nothing.
-  function proceedToCreation(result, typedText) {
+  function proceedToCreation(result, typedText, submissionId) {
     if (result.intent === 'gathering') {
       navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
     } else if (result.intent === 'community') {
@@ -223,6 +223,7 @@ export default function HomeScreen({ navigation }) {
         resultType: 'created_new',
         resultId: null,
         resultTitle: result.title ?? typedText,
+        submissionId,
       });
     }
     setIntentText('');
@@ -262,20 +263,35 @@ export default function HomeScreen({ navigation }) {
     try {
       const result = await classifyCreateRequest(typedText);
       if (result.intent === 'business_partner') {
-        proceedToCreation(result, typedText);
+        // No existing-supply concept to check for a business-partner
+        // proposal -- logged for the funnel's own intent_kind breakdown,
+        // but never counted as "had a result" or "reached fallback."
+        const submissionId = await recordIntentSubmission({
+          rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
+          intentKind: 'business_partner', hadAnyResult: false, reachedBusinessFallback: false,
+        });
+        proceedToCreation(result, typedText, submissionId);
       } else if (result.intent === 'community') {
         const resolved = await resolveCommunityIntent({ category: result.category, rawText: typedText });
+        const submissionId = await recordIntentSubmission({
+          rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
+          intentKind: 'community', hadAnyResult: resolved.length > 0, reachedBusinessFallback: false,
+        });
         if (resolved.length > 0) {
-          setIntentResults({ items: resolved, classifyResult: result, typedText });
+          setIntentResults({ items: resolved, classifyResult: result, typedText, submissionId });
         } else {
-          proceedToCreation(result, typedText);
+          proceedToCreation(result, typedText, submissionId);
         }
       } else {
         const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText });
+        const submissionId = await recordIntentSubmission({
+          rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
+          intentKind: result.intent, hadAnyResult: resolved.length > 0, reachedBusinessFallback: resolved.length === 0,
+        });
         if (resolved.length > 0) {
-          setIntentResults({ items: resolved, classifyResult: result, typedText });
+          setIntentResults({ items: resolved, classifyResult: result, typedText, submissionId });
         } else {
-          setIntentEmptyFallback({ classifyResult: result, typedText });
+          setIntentEmptyFallback({ classifyResult: result, typedText, submissionId });
         }
       }
     } catch (e) {
@@ -285,7 +301,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   function handleIntentResultTap(item) {
-    const { classifyResult, typedText } = intentResults ?? {};
+    const { classifyResult, typedText, submissionId } = intentResults ?? {};
     setIntentResults(null);
     recordIntentSelection({
       rawText: typedText,
@@ -294,6 +310,7 @@ export default function HomeScreen({ navigation }) {
       resultType: item.type,
       resultId: item.id ?? null,
       resultTitle: item.title,
+      submissionId,
     });
     if (item.type === 'gathering') {
       navigation.navigate('GatheringDetail', { gatheringId: item.id });
@@ -353,7 +370,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   function handleAskBusiness() {
-    const { classifyResult, typedText } = intentEmptyFallback;
+    const { classifyResult, typedText, submissionId } = intentEmptyFallback;
     setIntentEmptyFallback(null);
     setIntentText('');
     recordIntentSelection({
@@ -363,6 +380,7 @@ export default function HomeScreen({ navigation }) {
       resultType: 'created_new',
       resultId: null,
       resultTitle: typedText,
+      submissionId,
     });
     navigation.navigate('AskBusiness', {
       prefillText: typedText,
@@ -497,7 +515,7 @@ export default function HomeScreen({ navigation }) {
                   </TouchableOpacity>
                 )
               ))}
-              <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText)}>
+              <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId)}>
                 <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>
@@ -519,7 +537,7 @@ export default function HomeScreen({ navigation }) {
                 <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
                 <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText)}>
+              <TouchableOpacity onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId)}>
                 <Text style={styles.intentResultsCreateNew}>Or create it yourself →</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleIntentResultsDismiss}>

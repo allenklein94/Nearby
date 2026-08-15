@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 // step in the user's own flow. Matches this codebase's established
 // "failures are swallowed with a console log, same as the post-gathering
 // feedback modal's philosophy" convention for non-critical writes.
-export async function recordIntentSelection({ rawText, category, dateWindow, resultType, resultId, resultTitle }) {
+export async function recordIntentSelection({ rawText, category, dateWindow, resultType, resultId, resultTitle, submissionId }) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -20,9 +20,41 @@ export async function recordIntentSelection({ rawText, category, dateWindow, res
       result_type: resultType,
       result_id: resultId ?? null,
       result_title: resultTitle ?? null,
+      submission_id: submissionId ?? null,
     });
   } catch (e) {
     console.error('recordIntentSelection failed', e);
+  }
+}
+
+// 10/10 roadmap Part 2: one row per real resolveIntent()/
+// resolveCommunityIntent() call, successful or not -- feeds
+// get_intent_funnel_stats() (admin-only). Returns the new row's id (or
+// null on failure) so callers can thread it onto a later
+// recordIntentSelection() call, giving the funnel a real join instead of
+// an approximation across two unlinked tables.
+export async function recordIntentSubmission({ rawText, category, dateWindow, intentKind, hadAnyResult, reachedBusinessFallback }) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from('intent_submissions')
+      .insert({
+        user_id: user.id,
+        raw_text: rawText ?? null,
+        category: category ?? null,
+        date_window: dateWindow ?? null,
+        intent_kind: intentKind ?? null,
+        had_any_result: !!hadAnyResult,
+        reached_business_fallback: !!reachedBusinessFallback,
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    return data?.id ?? null;
+  } catch (e) {
+    console.error('recordIntentSubmission failed', e);
+    return null;
   }
 }
 

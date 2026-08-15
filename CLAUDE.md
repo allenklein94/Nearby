@@ -199,7 +199,35 @@ limitation, same as everywhere else in this file**: no manual simulator/device r
   Same standing gap as everywhere else in this file: no manual simulator/device run-through — next
   session should confirm the outcome-prompt card renders/dismisses/submits correctly against real
   data, and that a genuinely fresh account with no intent history shows no card at all.
-- Part 2 (differentiation metrics): not started
+- **Part 2 (differentiation metrics): DONE, build-wise.** New `intent_submissions` table (one
+  row per real `resolveIntent()`/`resolveCommunityIntent()` call, successful or not — owner-
+  scoped RLS, same no-RPC-needed shape as Part 1) plus a `submission_id` nullable FK added onto
+  Part 1's `intent_outcomes`, so "% of results selected" is a real join, not an approximation
+  across two unlinked tables. New admin-only `get_intent_funnel_stats()` SECURITY DEFINER RPC
+  (`check_is_admin(auth.uid())` gate, matching this schema's established admin-RPC pattern) —
+  returns real counts/percentages only, every percentage `nullif(...,0)`-guarded against a
+  zero-denominator division rather than defaulting to a fabricated value: submission volume,
+  % with any resolver result, % reaching the business-ask fallback, % of results actually tapped
+  through, % of answered outcomes that were positive, and a 30-day same-category repeat-
+  submission rate. `HomeScreen.js`'s `handleHomeIntentSubmit` now logs a real submission at every
+  branch (`business_partner`/`community`/`gathering`/`unclear`), threading the returned
+  `submissionId` through `intentResults`/`intentEmptyFallback` state onto every downstream
+  `recordIntentSelection()` call (`handleIntentResultTap`, both "create it yourself" escape
+  hatches via `proceedToCreation`, and `handleAskBusiness`) so every selection is genuinely
+  linked back to the submission that produced it. **Verified live against production**, not just
+  applied: confirmed a non-admin's call to `get_intent_funnel_stats()` is correctly rejected
+  (`Only admins can view funnel stats`); built a real disposable scenario (2 submissions, 1 with
+  a result, 1 reaching fallback, both same category within the 30-day window, 1 linked outcome
+  answered `great`) and confirmed the real admin account's call returned exact, hand-checked
+  arithmetic on every one of the 13 returned fields (50.0% with-result, 50.0% reaching fallback,
+  100.0% selected, 100.0% positive, 100.0% repeat) — not just that the RPC runs, that its numbers
+  are actually correct. All test rows deleted afterward; both tables confirmed empty. Client
+  verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios`
+  (clean, 1863 modules, unchanged — edits to two existing files only, no new files this part).
+  **Not done this pass, same disclosed gap as Part 1**: no from-scratch Docker migration replay
+  yet for either Part 1 or Part 2's migrations — flagged for a dedicated catch-up pass rather
+  than silently skipped. No manual simulator/device run-through, no admin-facing screen yet to
+  view these numbers (that's Part 9's job).
 - Part 3 (architecture hardening audit): not started
 - Part 4 (UX coherence confirm): not started
 - Part 5 (marketplace reliability): not started
