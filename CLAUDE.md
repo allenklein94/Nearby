@@ -4,6 +4,51 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 15 2026 — Full-System Connectivity & Integration Audit — DONE, scope honestly narrower than planned
+
+Read-only audit, no application code changed. User asked for a full 24-section connectivity/
+integration audit (8 research domains) proving, with real code citations, whether every
+entity/action in Nearby actually connects end-to-end (UI → service → DB → RLS → realtime →
+notification → every downstream screen) rather than just working in isolation. Full report:
+`PRODUCT_AUDIT/CONNECTIVITY_AUDIT_2026-08-15.md`; process record and per-domain scope:
+`PRODUCT_AUDIT/CONNECTIVITY_AUDIT_PROGRESS.md`; the one fully-completed background-fork domain:
+`PRODUCT_AUDIT/connectivity_domain_C_group_merge.md`.
+
+**Scope came in narrower than the original 8-domain plan, disclosed plainly in the report
+itself rather than padded.** Background-fork dispatch proved unreliable in this environment —
+two forks misread their own scope as "you're the orchestrator" and produced no usable output;
+one hit a real session-limit API error mid-run. One fork (Domain C — the Phase D group-plan
+deep audit) produced a genuinely thorough result and was kept verbatim. Everything else in the
+final report is direct code-reading by the primary session, targeted at the highest-risk,
+newest, least-scrutinized surface (Phase D group plans, added the same day) rather than a
+uniform sweep of all 24 sections.
+
+**Headline finding**: overall connectivity ~85% — the core consumer↔business request/offer/
+accept lifecycle is genuinely solid (DB-enforced state transitions with row locks, RLS
+correctly scoped everywhere checked, all 42 real push-notification types have a real client
+route with zero gaps either direction, zero dangling `navigate()` calls to unregistered routes,
+a fake-connectivity sweep for TODOs/mock data/placeholder logic came back clean). The deduction
+is concentrated almost entirely in Phase D (group plans): functionally complete and internally
+correct in isolation, but **entirely invisible from Home, Activity, the dedicated Plans screen,
+and the app-wide pending-invites count** — the only way to discover a pending group-plan
+invite, a budget needing re-consent, or an offer awaiting confirmation is a push notification
+tap, with no other path anywhere in the app if it's missed — plus two real race conditions
+(`confirm_group_plan_offer`, cross-proposal double-commitment) and one real state-cleanup gap
+(`confirm_group_plan` merging a participant's request without cascading to that request's
+already-generated `business_request_offers`, leaving orphaned rows that render incoherently).
+Full ranked top-10 list, connectivity matrix, and fix-order recommendation are in the report
+itself.
+
+**Explicitly NOT reached this pass, disclosed rather than assumed clean**: a full type/contract
+sweep across all ~40 service files, gathering/`gathering_interest` state-machine
+re-verification, a realtime-leak resweep beyond `GroupPlanScreen`, an RLS resweep beyond group
+plans, and performance/scale beyond what `PRODUCT_AUDIT/SCALABILITY_AUDIT.md` already covers.
+Each is substantial enough to deserve its own dedicated future pass, per this file's own
+established "cap agents, one focused pass at a time" convention — not attempted together again
+via parallel forks given how unreliably that went this time. **Nothing built or fixed this
+pass** — the group-plan visibility gap and the two race conditions are real, live, unfixed bugs
+in production, flagged for a future session to actually close.
+
 ## Aug 15 2026 — "Nearby V3/V4" strategic vision (demand intelligence, reverse marketplace,
 ## planning engine) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED
 
