@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories } from './gatherings';
 import { isIndoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { getMyGroupPlans } from './groupPlans';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -104,21 +105,64 @@ export async function getInboxUnreadCount() {
 }
 
 // Pending gathering-join requests (for hosts), pending friend requests,
-// and pending gathering/community invites — the three things Inbox's
-// Requests/Invites tabs actually surface, kept separate from
-// getInboxUnreadCount()'s messages/notices so Home can show a real
-// "N pending invites" banner without also counting unread chat messages.
+// pending gathering/community invites, and pending group-plan action
+// items — the things Inbox's Requests/Invites tabs and (as of the Aug 15
+// connectivity audit's Finding G.1) group plans actually surface, kept
+// separate from getInboxUnreadCount()'s messages/notices so Home can show
+// a real "N pending invites" banner without also counting unread chat
+// messages. Group plans were previously invisible here entirely — the
+// only way to discover a pending invite/re-consent/offer-confirmation was
+// tapping the one real push notification for it; this closes that gap.
 export async function getPendingInvitesCount(myIdParam) {
   const myId = myIdParam ?? (await supabase.auth.getSession()).data?.session?.user?.id;
   if (!myId) return 0;
 
-  const [{ count: pendingRequestCount }, { count: pendingFriendRequestCount }, { count: pendingInviteCount }] = await Promise.all([
+  const [{ count: pendingRequestCount }, { count: pendingFriendRequestCount }, { count: pendingInviteCount }, pendingGroupPlanCount] = await Promise.all([
     supabase.from('gathering_interest').select('id, gatherings!inner(host_id)', { count: 'exact', head: true }).eq('status', 'pending').eq('gatherings.host_id', myId),
     supabase.from('friendships').select('id', { count: 'exact', head: true }).eq('status', 'pending').neq('requested_by', myId).or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('social_invites').select('id', { count: 'exact', head: true }).eq('invitee_id', myId).eq('status', 'pending'),
+    getPendingGroupPlanActionCount(myId),
   ]);
 
-  return (pendingRequestCount ?? 0) + (pendingFriendRequestCount ?? 0) + (pendingInviteCount ?? 0);
+  return (pendingRequestCount ?? 0) + (pendingFriendRequestCount ?? 0) + (pendingInviteCount ?? 0) + pendingGroupPlanCount;
+}
+
+// Real group-plan action items still waiting on this caller specifically
+// — a still-open invite to respond to, or an offer on a confirmed group
+// plan that needs this caller's own confirmation (rule 8: accepted only
+// once every currently-required participant has explicitly confirmed).
+// Both are real, already-queryable signals off the existing group_plan_*
+// tables — no new table, no fabricated count.
+async function getPendingGroupPlanActionCount(myId) {
+  const [{ count: invitedCount }, { data: acceptedRows }] = await Promise.all([
+    supabase
+      .from('group_plan_participants')
+      .select('id, group_plan_proposals!inner(status)', { count: 'exact', head: true })
+      .eq('user_id', myId)
+      .eq('status', 'invited')
+      .eq('group_plan_proposals.status', 'pending'),
+    supabase
+      .from('group_plan_participants')
+      .select('proposal_id, group_plan_proposals!inner(status, resulting_request_id)')
+      .eq('user_id', myId)
+      .eq('status', 'accepted')
+      .eq('group_plan_proposals.status', 'confirmed'),
+  ]);
+
+  const myOpenOffers = acceptedRows ?? [];
+  const proposalIds = myOpenOffers.map((row) => row.proposal_id);
+  const requestIds = myOpenOffers.map((row) => row.group_plan_proposals?.resulting_request_id).filter(Boolean);
+  if (requestIds.length === 0) return invitedCount ?? 0;
+
+  const [{ data: offeredRows }, { data: myConfirmations }] = await Promise.all([
+    supabase.from('business_request_offers').select('id, request_id').in('request_id', requestIds).eq('status', 'offered'),
+    supabase.from('group_plan_offer_confirmations').select('offer_id').eq('user_id', myId).in('proposal_id', proposalIds),
+  ]);
+
+  const confirmedOfferIds = new Set((myConfirmations ?? []).map((c) => c.offer_id));
+  const needsMyConfirmation = (offeredRows ?? []).filter((o) => !confirmedOfferIds.has(o.id)).length;
+
+  return (invitedCount ?? 0) + needsMyConfirmation;
 }
 
 export async function getSocialForecast(latitude, longitude) {
@@ -429,6 +473,19 @@ export async function getHomeDashboard() {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
 
+  // Finding G.1 (Aug 15 2026 connectivity audit): a confirmed group
+  // plan's own resulting business_requests row was a real, already-
+  // queryable commitment (group_plan_id set at confirm time) that "Your
+  // Plans" never read — the only way to discover it was one of the 5
+  // real group-plan push notifications. Reuses getMyGroupPlans() (also
+  // called directly by PlansScreen) rather than a second copy of the same
+  // query. No per-row scheduled_at exists on business_requests the way it
+  // does on gatherings (date + a time window instead), so this stays a
+  // third, separate group rather than being merged into plansGoing/
+  // plansHosting.
+  const plansGroupAll = await getMyGroupPlans().catch(() => []);
+  const plansGroup = [...plansGroupAll].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')).slice(0, 3);
+
   // "Because you're into X/Y/Z" — real nearby gatherings matching the
   // caller's own most-frequent past interest categories (a genuine
   // signal, not a fabricated one), excluding anything already committed
@@ -517,6 +574,7 @@ export async function getHomeDashboard() {
     weeklyRecap,
     plansGoing,
     plansHosting,
+    plansGroup,
     friendsActivity,
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,

@@ -11,6 +11,7 @@ import { getPendingFriendRequests, respondToFriendRequest } from '../services/fr
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
+import { getMyPendingGroupPlanInvites } from '../services/groupPlans';
 import SkeletonGridCard from '../components/SkeletonGridCard';
 import LoadErrorState from '../components/LoadErrorState';
 import * as Haptics from 'expo-haptics';
@@ -57,10 +58,13 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   const [requestPhotoUrls, setRequestPhotoUrls] = useState({});
 
   // Invitations — pending friend requests + pending gathering/community
-  // invites, combined (formerly Inbox's "Invites" tab).
+  // invites, combined (formerly Inbox's "Invites" tab). Group plan
+  // invites joined the same combined list per Finding G.1 (Aug 15 2026
+  // connectivity audit) — previously only reachable via a push tap.
   const [friendRequests, setFriendRequests] = useState([]);
   const [friendRequestPhotoUrls, setFriendRequestPhotoUrls] = useState({});
   const [socialInvites, setSocialInvites] = useState([]);
+  const [groupPlanInvites, setGroupPlanInvites] = useState([]);
 
   // Upcoming — a same-day nudge, not a second calendar. Home's own
   // "Your Plans" section is the canonical place for every upcoming
@@ -189,9 +193,10 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
 
   const loadInvitations = useCallback(async () => {
     try {
-      const [friends, invites] = await Promise.all([getPendingFriendRequests(), getMyReceivedInvites()]);
+      const [friends, invites, groupPlans] = await Promise.all([getPendingFriendRequests(), getMyReceivedInvites(), getMyPendingGroupPlanInvites()]);
       setFriendRequests(friends);
       setSocialInvites(invites);
+      setGroupPlanInvites(groupPlans);
       const urlEntries = await Promise.all(
         friends.map(async (f) => {
           if (!f.photo_url) return [f.friendshipId, null];
@@ -323,10 +328,12 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   }
 
   // Combined so "Invitations" reflects real invites of every kind this
-  // app actually has (friend requests + gathering/community invites).
+  // app actually has (friend requests + gathering/community invites +,
+  // per Finding G.1, group-plan invites).
   const combinedInvites = [
     ...friendRequests.filter((f) => !respondedFriendIds[f.friendshipId]).map((f) => ({ kind: 'friend', ...f })),
     ...socialInvites.map((i) => ({ kind: 'social', ...i })),
+    ...groupPlanInvites.map((g) => ({ kind: 'groupPlan', ...g })),
   ];
 
   function renderGroup(groupName) {
@@ -363,7 +370,22 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
       return (
         <View key="invitations" style={styles.group}>
           <Text style={styles.groupHeader}>🤝 Invitations ({combinedInvites.length})</Text>
-          {combinedInvites.map((item) => item.kind === 'friend' ? (
+          {combinedInvites.map((item) => item.kind === 'groupPlan' ? (
+            <TouchableOpacity
+              key={`group-plan-${item.proposalId}`}
+              style={styles.row}
+              onPress={() => navigation.navigate('GroupPlan', { proposalId: item.proposalId })}
+              accessibilityLabel={`${item.initiatorName} wants to make a group plan with you`}
+              accessibilityRole="button"
+            >
+              <View style={[styles.rowAvatar, styles.avatarPlaceholder]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>{item.initiatorName}</Text>
+                <Text style={styles.rowSubtitle}>wants to make your {item.category} request a group plan</Text>
+              </View>
+              <Text style={styles.textButtonLabel}>View & Respond →</Text>
+            </TouchableOpacity>
+          ) : item.kind === 'friend' ? (
             <View key={`friend-${item.friendshipId}`} style={styles.row}>
               {friendRequestPhotoUrls[item.friendshipId] ? (
                 <Image source={{ uri: friendRequestPhotoUrls[item.friendshipId] }} style={styles.rowAvatar} />

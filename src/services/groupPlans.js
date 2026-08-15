@@ -25,6 +25,58 @@ export async function getGroupPlanCandidates({ category, date = null } = {}) {
   return data ?? [];
 }
 
+// Finding G.1 (Aug 15 2026 connectivity audit): group plans had no
+// aggregate visibility surface anywhere -- the only way to discover one
+// was a push notification tap. Real commitments only: every accepted-
+// participant's own confirmed proposal, with the real resulting
+// business_requests row it produced (still open, or already fulfilled) --
+// no fabricated status, no pending/invited-only rows (those belong on the
+// pending-invites count, not "your plans").
+export async function getMyGroupPlans() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data: participations } = await supabase
+    .from('group_plan_participants')
+    .select('proposal_id')
+    .eq('user_id', myId)
+    .eq('status', 'accepted');
+  const proposalIds = (participations ?? []).map((row) => row.proposal_id);
+  if (proposalIds.length === 0) return [];
+
+  const { data: requests } = await supabase
+    .from('business_requests')
+    .select('id, raw_text, category, status, date, group_plan_id')
+    .in('group_plan_id', proposalIds)
+    .in('status', ['open', 'fulfilled']);
+
+  return requests ?? [];
+}
+
+// Finding G.1's other real half: a pending group-plan invite (rule 1,
+// explicit per-participant consent) had no path into Activity's own
+// "Needs Your Attention" cluster, the exact place every other pending
+// invite/request in this app already surfaces.
+export async function getMyPendingGroupPlanInvites() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data } = await supabase
+    .from('group_plan_participants')
+    .select('proposal_id, group_plan_proposals!inner(status, category, profiles!group_plan_proposals_initiator_id_fkey(display_name))')
+    .eq('user_id', myId)
+    .eq('status', 'invited')
+    .eq('group_plan_proposals.status', 'pending');
+
+  return (data ?? []).map((row) => ({
+    proposalId: row.proposal_id,
+    category: row.group_plan_proposals?.category,
+    initiatorName: row.group_plan_proposals?.profiles?.display_name ?? 'Someone you know',
+  }));
+}
+
 export async function proposeGroupPlan(sourceRequestId, inviteeSourceRequestIds) {
   const { data, error } = await supabase.rpc('propose_group_plan', {
     source_request_id_param: sourceRequestId,

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -71,6 +71,26 @@ export default function GroupPlanScreen({ navigation, route }) {
   }, [proposalId]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Was focus-only (§F, Aug 15 2026 connectivity audit) — a participant
+  // actively viewing this screen while another participant confirmed/
+  // left/got excluded saw stale state (a stale "N of M confirmed" count
+  // in particular) until they navigated away and back. Every other
+  // multi-party live-coordination screen in this app already has a real
+  // realtime channel; this was the one exception. A whole-screen re-fetch
+  // on any event is the simplest correct approach for a screen this
+  // low-frequency — no per-row optimistic patching attempted.
+  useEffect(() => {
+    if (!proposalId) return undefined;
+    const channel = supabase
+      .channel(`group_plan:${proposalId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_plan_proposals', filter: `id=eq.${proposalId}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_plan_participants', filter: `proposal_id=eq.${proposalId}` }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_plan_offer_confirmations', filter: `proposal_id=eq.${proposalId}` }, () => load())
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [proposalId, load]);
 
   async function runAction(fn) {
     setActing(true);

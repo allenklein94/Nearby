@@ -113,18 +113,113 @@ closed exactly per that report's own suggested fix, no design changes during imp
   exit 0 throughout, no `pg_cron`/`pg_trgm` workaround needed this run) — the new index and all
   5 touched/new functions confirmed to exist in the freshly-rebuilt database.
 
-**Finding G.1 (group-plan visibility on Home/Activity/pending-count), §F (GroupPlanScreen
-realtime), and §B.8 (this documentation gap itself) — queued next in this same pass, not yet
-built as of this commit.** Picking this up: read the audit's §I fix order (items 4-6) and
-Finding G.1's own recommended fix (`CONNECTIVITY_AUDIT_2026-08-15.md`) before starting —
-group-plan awareness needs to land in `getPendingInvitesCount()` and `getHomeDashboard()`'s
-"Your Plans" computation, `GroupPlanScreen.js` needs a real Realtime channel matching every
-other multi-party coordination screen's existing pattern, and this file itself needs the
-`20260815_v2_audit_fixes.sql` documentation gap closed. **The NOT REACHED domains from the
-original audit** (full type/contract sweep, full realtime-leak resweep, full RLS resweep beyond
-group plans, gathering/`gathering_interest` state-machine re-verification, performance/scale
-beyond `SCALABILITY_AUDIT.md`) remain out of scope for this pass too, per the audit's own §I
-item 7 — each recommended as its own dedicated future pass.
+**Finding G.1 (group-plan visibility on Home/Activity/the dedicated Plans screen/pending-count)
+— DONE.** Closes the single highest-product-value finding in the report: a fully-built feature
+(group plans) was reachable only via one of 5 push-notification taps, with zero other path
+anywhere in the app.
+- `getPendingInvitesCount()` (`homeDashboard.js`, backs both Home's pending-invites banner and
+  the Inbox tab badge) gained a 4th real source alongside the existing three (pending
+  host-approval gathering requests, pending friend requests, pending social invites): pending
+  group-plan action items via a new `getPendingGroupPlanActionCount()` — the union of (a)
+  `group_plan_participants` rows where the caller is `status = 'invited'` on a still-`pending`
+  proposal, and (b) offers on a `confirmed` proposal the caller is an `accepted` participant of
+  that still need the caller's own confirmation (no row yet in
+  `group_plan_offer_confirmations` for that caller/offer pair) — both real, already-queryable
+  signals, no new table.
+- New `getMyGroupPlans()` (`services/groupPlans.js`) — the caller's own `confirmed` group plans'
+  resulting `business_requests` rows (`group_plan_id is not null`, status `open` or `fulfilled`)
+  — it already had `group_plan_id` set as a real, queryable signal per accepted participant,
+  just never read anywhere. `getHomeDashboard()`'s "Your Plans" computation now calls this and
+  exposes it as a new `plansGroup` array (capped at 3, same convention as `plansGoing`/
+  `plansHosting`). `HomeScreen.js` renders it as a third "Group Plans" sub-group under "Your
+  Plans" (real raw_text/category, a "Sent to nearby businesses"/"Reservation confirmed" status
+  line), tapping through to `GroupPlanScreen` — not `GatheringDetail`, since a group plan's own
+  detail view already covers everything a participant needs.
+- `PlansScreen.js` (the dedicated "complete commitment calendar" screen) now also calls
+  `getMyGroupPlans()` and renders every one of the caller's group plans as real rows on the
+  Upcoming tab, distinct from the sortable gathering rows above them (a group plan has a
+  `date`/time-window, not a gathering-shaped `scheduled_at`, so it's a genuinely separate row
+  shape, not merged into the same sortable list).
+- New `getMyPendingGroupPlanInvites()` (`services/groupPlans.js`) — the other real half:
+  `ActivityScreen.js`'s "🤝 Invitations" group (already a combined friend-request +
+  social-invite list) now also includes pending group-plan invites, rendered the same way
+  `BusinessRequestDetailScreen.js`'s own existing group-plan banner already does (a "View &
+  Respond →" row navigating straight to `GroupPlanScreen`, not inline Accept/Decline buttons —
+  reuses that screen's already-complete accept/decline/budget UI instead of duplicating it).
+- **Verified live end-to-end against production**, not just applied: built a real disposable
+  group-plan scenario (`Claude`↔`Allen`) and, at every step (invited → accepted → budget-reset →
+  re-accepted → confirmed → offer received → 1-of-2 confirmed → 2-of-2 confirmed/fulfilled), ran
+  the *exact* query shape each new client function uses **under real RLS** (`set role
+  authenticated` + `set_config('request.jwt.claims', ...)`, not just as `postgres`) — every one
+  returned the real, correct row at the real, correct moment: `getMyPendingGroupPlanInvites`'s
+  join correctly returned the pending invite only while `invited`+`pending`; a genuine
+  non-participant (`Google voice`) correctly got zero rows back from the same queries at every
+  step; `plansGroup`'s two-step query correctly returned the shared request only once
+  `confirmed`, with `status` flipping from `open` to `fulfilled` exactly when the real offer
+  flow completed; the needs-confirmation branch correctly counted 1 before Claude's own
+  confirmation and 0 immediately after. All test data deleted afterward — confirmed production
+  back to its exact pre-test baseline (0 rows across every touched table).
+- Verified via a direct parse of all touched files and a full `npx expo export --platform ios`
+  (clean, 1870 modules).
+
+**§F (GroupPlanScreen realtime subscription) — DONE, plus a much larger, previously-undetected
+production bug found and fixed while building it.** `GroupPlanScreen.js` previously had only a
+`useFocusEffect(() => { load(); })` — a participant watching the screen while another
+participant confirmed/left/got excluded saw stale state until navigating away and back. Added a
+real Supabase Realtime channel (`group_plan:{proposalId}`, subscribed to `postgres_changes` on
+`group_plan_participants`/`group_plan_offer_confirmations`/`group_plan_proposals` filtered by
+`proposal_id`/`id`) — any event triggers a full re-fetch of the screen (simplest correct
+approach for a screen this low-frequency, no per-row optimistic patching). Channel is properly
+cleaned up on unmount.
+
+**Real bug found while verifying this would actually work, not assumed**: confirmed live via
+`pg_publication_tables`/`pg_publication` that the `supabase_realtime` publication only ever had
+**one** table in it — `messages` (`puballtables: false`, no migration in this repo's history
+ever ran an `ALTER PUBLICATION ... ADD TABLE` for anything). This means every *other* screen's
+Realtime channel in this whole app — gathering chat, community chat, business conversation,
+message reactions, the relationship-tools collaborative screens (Shared Decisions, Stress Test,
+Timeline Planner, Trip Planning, Relationship Constitution, Shared Playlist, Memory Vault),
+`GatheringsScreen`'s live attendee-count subscription, and this pass's own new `GroupPlanScreen`
+channel — has *never* actually been able to receive a live event: Postgres logical replication
+only streams changes for tables genuinely in the publication a slot subscribes to, independent
+of whether the client subscribes correctly. This is the real root cause behind a "not verified:
+an actual live message arriving on a second device" gap this file has disclosed several times
+before (e.g. the scalability-audit polling→realtime pass) — not a coincidence, an actual
+standing defect. Fixed via `supabase/migrations/20260815_v5_realtime_publication_fix.sql` — a
+`DO` block (not a bare `ALTER PUBLICATION` list, since Postgres 15 has no `ADD TABLE IF NOT
+EXISTS` and `messages` was already a real member, added by hand outside any migration, so a bare
+unconditional add would fail on re-apply) adding all 16 real tables any client channel actually
+subscribes to (grepped exhaustively, not guessed) — `messages` included, so a from-scratch
+replay of this repo alone now reproduces the real live-production realtime state exactly,
+closing a real "can't rebuild production from committed files alone" gap for this specific
+piece. **Verified live**: `pg_publication_tables` confirmed all 16 present after applying;
+re-running the same idempotent migration against production a second time correctly no-op'd
+with zero error (proving the `DO` block's conditional guard actually works, not just that the
+bare statement happened to succeed once). **Verified via 3 separate real from-scratch migration
+replays** across this whole pass (39 files through v4, then 40 through v5 twice — once
+non-idempotent, once with the final idempotent `DO`-block version) — all exit 0, the final
+replay confirming all 16 tables present with zero manual dashboard step needed.
+
+**§B.8 (CLAUDE.md documentation gap for `20260815_v2_audit_fixes.sql`) — DONE, this note is the
+fix.** That migration is real, applied, and correct — it fixes a genuine `intent_visibility=
+'nobody'` bypass in `get_my_group_intent_signals()` and its notify trigger (an opted-out user's
+name/request was still surfaced to their network) and a UTC-vs-local-timezone bucketing bug in
+`get_cross_user_intent_patterns()`. Source report: `PRODUCT_AUDIT/V2_ACCEPTANCE_REPORT_2026-08-15.md`.
+Recorded here so a future session reading this file (as every session is told to) knows both
+bugs and their fixes exist, and doesn't reintroduce either.
+
+**Not done this pass, same standing gap as everywhere else in this file**: no manual
+simulator/device run-through — next session should confirm the new "Group Plans" card on Home's
+Your Plans, the Plans screen's group-plan rows, and Activity's group-plan invite row all render
+and tap through correctly, and — the one thing only a real device pass can prove, now that the
+realtime publication fix theoretically enables it for the first time — that two real accounts
+viewing the same live `GroupPlanScreen` (or gathering/community/business chat, or any of the
+relationship-tools collaborative screens) genuinely see each other's actions arrive live,
+without navigating away and back or manually refreshing. **Also not attempted, per the audit's
+own recommended fix order (§I item 7)**: the NOT REACHED domains from the original audit (full
+type/contract sweep, full RLS resweep beyond group plans, gathering/`gathering_interest`
+state-machine re-verification, performance/scale beyond `SCALABILITY_AUDIT.md`) — each still
+recommended as its own dedicated future pass, not bundled into this one.
 
 ## Aug 15 2026 — "Nearby V3/V4" strategic vision (demand intelligence, reverse marketplace,
 ## planning engine) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED

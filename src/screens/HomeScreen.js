@@ -703,7 +703,7 @@ export default function HomeScreen({ navigation }) {
           return insight ? <Text style={styles.insightLine}>{insight}</Text> : null;
         })()}
 
-        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0) && (
+        {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0 || dashboard?.plansGroup?.length > 0) && (
           <>
             <Text style={styles.sectionHeader}>Your Plans</Text>
             <View style={styles.plansCard}>
@@ -748,6 +748,30 @@ export default function HomeScreen({ navigation }) {
                         <Text style={styles.planTitle}>{plan.title}</Text>
                         <Text style={styles.planMeta}>
                           {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="hosting" />
+                        </Text>
+                      </View>
+                      <Text style={styles.planChevron}>›</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+              {dashboard.plansGroup?.length > 0 && (
+                <>
+                  <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>Group Plans</Text>
+                  {dashboard.plansGroup.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={styles.planRow}
+                      onPress={() => navigation.navigate('GroupPlan', { proposalId: plan.group_plan_id })}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${plan.raw_text}, group plan`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.planIcon}>{categoryStyleFor(plan.category).icon}</Text>
+                      <View style={styles.planInfo}>
+                        <Text style={styles.planTitle}>{plan.raw_text}</Text>
+                        <Text style={styles.planMeta}>
+                          👥 {plan.status === 'fulfilled' ? 'Reservation confirmed' : 'Sent to nearby businesses'}
                         </Text>
                       </View>
                       <Text style={styles.planChevron}>›</Text>

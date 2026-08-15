@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
+import { getMyGroupPlans } from '../services/groupPlans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
 import GatheringStatusBadge, { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
@@ -25,15 +26,22 @@ export default function PlansScreen({ navigation, route }) {
   const [tab, setTab] = useState(route?.params?.initialTab ?? 'upcoming');
   const [attending, setAttending] = useState({ upcoming: [], past: [] });
   const [hosting, setHosting] = useState({ upcoming: [], past: [] });
+  // Finding G.1 (Aug 15 2026 connectivity audit): group plans (real
+  // jointly-owned business_requests rows) were entirely absent from this
+  // screen even though it's meant to be "the caller's own complete
+  // commitment calendar" — the only prior way to discover one was a push
+  // notification tap.
+  const [groupPlans, setGroupPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [attendingData, hostingData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings()]);
+      const [attendingData, hostingData, groupPlanData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings(), getMyGroupPlans()]);
       setAttending(attendingData);
       setHosting(hostingData);
+      setGroupPlans(groupPlanData);
       setLoadError(false);
     } catch (e) {
       setLoadError(true);
@@ -47,10 +55,11 @@ export default function PlansScreen({ navigation, route }) {
       let cancelled = false;
       (async () => {
         try {
-          const [attendingData, hostingData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings()]);
+          const [attendingData, hostingData, groupPlanData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings(), getMyGroupPlans()]);
           if (cancelled) return;
           setAttending(attendingData);
           setHosting(hostingData);
+          setGroupPlans(groupPlanData);
           setLoadError(false);
         } catch (e) {
           if (!cancelled) setLoadError(true);
@@ -65,6 +74,7 @@ export default function PlansScreen({ navigation, route }) {
   );
 
   const openGathering = (gatheringId) => navigation.navigate('GatheringDetail', { gatheringId });
+  const openGroupPlan = (proposalId) => navigation.navigate('GroupPlan', { proposalId });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -115,6 +125,15 @@ export default function PlansScreen({ navigation, route }) {
       listData.push({ type: 'row', key: row.gathering.id, ...row });
     }
   }
+  // Group plans have no scheduled_at (real, not fabricated — the shared
+  // request has a date + time window, not a gathering-shaped timestamp),
+  // so they render as a real, separate set of rows on the Upcoming tab
+  // only, never merged into the sortable gathering list above.
+  if (tab === 'upcoming') {
+    for (const plan of groupPlans) {
+      listData.push({ type: 'groupPlanRow', key: `group-plan-${plan.id}`, plan });
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -157,6 +176,30 @@ export default function PlansScreen({ navigation, route }) {
           renderItem={({ item }) => {
             if (item.type === 'header') {
               return <Text style={styles.sectionHeader}>{item.label}</Text>;
+            }
+            if (item.type === 'groupPlanRow') {
+              const plan = item.plan;
+              const categoryStyle = categoryStyleFor(plan.category);
+              return (
+                <TouchableOpacity
+                  style={styles.planRow}
+                  onPress={() => openGroupPlan(plan.group_plan_id)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${plan.raw_text}, group plan`}
+                  accessibilityRole="button"
+                >
+                  <View style={[styles.planIconWrap, { backgroundColor: categoryStyle.color + '30' }]}>
+                    <Text style={styles.planIcon}>{categoryStyle.icon}</Text>
+                  </View>
+                  <View style={styles.planInfo}>
+                    <Text style={styles.planTitle}>{plan.raw_text}</Text>
+                    <Text style={styles.planMeta}>
+                      👥 Group plan · {plan.status === 'fulfilled' ? 'Reservation confirmed' : 'Sent to nearby businesses'}
+                    </Text>
+                  </View>
+                  <Text style={styles.planChevron}>›</Text>
+                </TouchableOpacity>
+              );
             }
             const g = item.gathering;
             const categoryStyle = categoryStyleFor(g.interest_tag);
