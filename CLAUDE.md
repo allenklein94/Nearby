@@ -191,15 +191,71 @@ confirm tapping the new button on a real "Demand Near You" row correctly opens t
 right category chip pre-selected and the right suggested title, and that posting from there still
 correctly matches against real open requests the same way the blank-start path already does.
 
-**Phase C — reliability-weighted fan-out and offer ordering.** `_business_request_fanout()` and
-the availability-matching path both currently order/notify eligible businesses by plain
-radius/category match only. Extend both to prefer (not exclusively surface — every eligible
-business still gets included) partners with a real, established completion-rate track record
-(reusing `get_partner_offer_reputation()`'s already-computed real numbers, gated on the same real
-5-opportunity threshold `formatPartnerReliabilityLine()` already uses client-side), and order a
-consumer's own offer list by the same real signal once several offers exist for one request. A
-partner below the threshold is never penalized — it's ordered exactly where it would have landed
-today, since there's no real history yet to rank it by.
+**Phase C — reliability-weighted fan-out and offer ordering. DONE.** `_business_request_fanout()`
+and `_match_request_to_availability()` both previously ordered/notified eligible businesses by
+plain radius/recency only. Both re-pointed (`20260815_v3_reliability_weighted_fanout.sql`,
+`create or replace`, same signatures, only the `ORDER BY` — and, for the fan-out, the CTE it reads
+from — changed; every other line, including the push-notification logic, is byte-for-byte
+unchanged) to prefer — not exclusively surface, every eligible business within radius still gets
+included, same eligibility bound as before — partners with a real, established completion-rate
+track record: `(established desc, completion_rate desc nulls last, distance/recency asc)`, where
+`established` means 5+ real past `business_request_offers` rows for that partner, the same real
+threshold `formatPartnerReliabilityLine()` already uses client-side. `completion_rate` is computed
+inline (the exact same arithmetic `get_partner_offer_reputation()` already uses, not called as an
+RPC since this runs inside another SECURITY DEFINER function over the same table) rather than
+invented. A partner below the threshold is never penalized — `completion_rate` is `null` for them,
+`nulls last` groups every non-established partner together below the established ones, and within
+that group the original distance-asc/recency-desc tie-break is completely unchanged, so a
+brand-new partner lands exactly where it would have today. Both function bodies were pulled fresh
+from live production before editing (confirmed byte-identical to the last local migration, no
+drift to reconcile) rather than reconstructed from a possibly-stale local copy.
+
+`BusinessRequestDetailScreen.js`'s own offer list is now also ordered by the same real signal —
+a new `displayOffers` (derived via `useMemo` from the already-fetched `offers`/`partnerStats`, no
+new query) reorders only the subset of offers still in `'offered'` status (the ones a consumer is
+genuinely deciding between) by the identical established/completion-rate rule, and only when 2+
+such offers actually exist to choose between (a single live offer has nothing to compare against).
+Every other row — pending/declined/accepted/expired/completed — keeps its original `created_at`
+position untouched, matching the plan's own "never penalized, ordered exactly where it would have
+landed today" framing for every row this reordering doesn't touch.
+
+**Real bug caught and fixed while drafting, before it ever touched a database**: the fan-out's own
+first draft had `select e.id, e.id` in the `INSERT ... SELECT` (both columns reading the partner
+id, neither the actual `request_id_param`) — caught by re-reading the file before applying it
+anywhere, fixed to `select request_id_param, e.id`.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed both
+internal helpers remain correctly locked down post-`CREATE OR REPLACE` (`authenticated`/`anon`
+both still `false` on `EXECUTE` — neither is, or was ever meant to be, directly callable by any
+client, only from within `create_business_request`/`create_business_request_for_gathering`/
+`post_business_availability`). Built a real disposable scenario — two real test `brand_partners`
+rows at the exact same coordinates (so distance can't explain any ordering difference), one given
+5 real historical `business_request_offers` rows (via 5 distinct real disposable
+`business_requests`, since the partial unique index requires one offer row per request per
+partner) all `completed` — confirmed `get_partner_offer_reputation()` returns
+`total_opportunities: 5, completion_rate: "100.0"` exactly, crossing the real threshold — the
+other left with zero history. Calling `_business_request_fanout()` directly on a real new request
+correctly inserted the established partner's offer row *before* the no-history partner's (physical
+insertion order confirmed via `ctid`), even though both are equidistant — proving the ordering is
+genuinely driven by reliability, not a coincidence of distance or timestamp. All test rows (both
+partners, all 6 disposable requests, their offers) deleted afterward — confirmed production back
+to its exact pre-test baseline (1 real partner, 0 `business_requests`). **Also verified via a
+larger controlled scenario in a local Docker replay** (see below) with 3 partners at 3 genuinely
+different distances plus a cap-exceeding 6-posting availability-matching scenario — confirmed the
+established, high-completion partner wins even when it's the *farthest* away, confirmed a lower-
+completion established partner still outranks every no-history partner, and confirmed
+`_match_request_to_availability`'s own `LIMIT 5` correctly drops the lowest-priority (no-history)
+postings first when eligible candidates exceed the cap, not an arbitrary subset. **Verified via a
+real from-scratch migration replay** (37 files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) —
+both re-pointed functions confirmed to exist with their new reliability-weighted `ORDER BY` in the
+freshly-rebuilt database (the same replay run used for the larger scenario test above, before the
+container was torn down). Client-side verified via a direct `@babel/core` parse of both touched
+files (clean) and a full `npx expo export --platform ios` (clean, no bundling errors — edits to
+two existing files, one new migration, no new client files). **Not done, same standing gap as
+everywhere else in this file**: no manual simulator/device run-through — next session should
+confirm the reordered offer list reads correctly on a real device once 2+ real offers exist for
+the same request, and that the reliability line already shown per offer
+(`formatPartnerReliabilityLine`) stays visually consistent with the new tap order.
 
 **Phase D — real friend-group merging, flagged with open design questions, not started.**
 Converting "3 connected people independently have an open ask in the same category" (already
@@ -220,11 +276,13 @@ treat "V3/V4" as a green light to build them anyway**: idea 4 (composed multi-so
 the specific reason and, where one exists, the real evidence bar that would need to be crossed
 first.
 
-**Status: Phases A and B are DONE, build-wise (see their own status notes above) — Phase A was
-picked up and finished after a codespace restart interrupted the session mid-build, Phase B
-followed the same session. Phases C–D remain plan only, not yet started.** Next step is the
-user's own review/go-ahead on which of C/D to execute next, same as every other plan-first
-section in this file's history.
+**Status: Phases A, B, and C are DONE, build-wise (see their own status notes above) — Phase A was
+picked up and finished after a codespace restart interrupted the session mid-build, Phases B and C
+followed in the same session. Phase D remains plan only, not started** — it has real, unresolved
+open design questions (consent, ownership, reconciliation) listed in its own paragraph above, per
+this file's own established practice of flagging a real open design question rather than building
+a guessed answer. Next step is the user's own review/go-ahead on those questions before Phase D
+can be picked up, same as every other plan-first section in this file's history.
 
 ## Aug 15 2026 — Nearby 2.0 partial build, explicitly requested by the user, overriding the freeze for this scope — IN PROGRESS
 

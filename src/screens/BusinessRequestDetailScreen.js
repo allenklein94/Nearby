@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
@@ -82,6 +82,40 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // with a real offer showing, so the consumer isn't blind to whether a
   // business actually follows through before deciding whether to accept.
   const [partnerStats, setPartnerStats] = useState({});
+
+  // "Nearby V3/V4" plan, Phase C: order the consumer's own offer list by
+  // the same real completion-rate signal Phase C's fan-out now prefers,
+  // once several live offers exist to actually choose between -- reusing
+  // the already-fetched partnerStats, no new query. Deliberately scoped
+  // to just the 'offered' rows (the ones a consumer is genuinely deciding
+  // between) rather than re-sorting the whole timeline -- pending/
+  // declined/accepted/expired/completed rows keep their existing
+  // created_at position, matching the plan's own "a partner below the
+  // threshold is never penalized -- it's ordered exactly where it would
+  // have landed today" for every row this reordering doesn't touch.
+  const displayOffers = useMemo(() => {
+    const offeredIndices = [];
+    offers.forEach((o, i) => { if (o.status === 'offered') offeredIndices.push(i); });
+    if (offeredIndices.length < 2) return offers;
+
+    function reliabilityRank(offer) {
+      const rep = partnerStats[offer.partner_id]?.reputation;
+      const established = !!rep && rep.total_opportunities >= 5;
+      return { established, completionRate: established ? (rep.completion_rate ?? -1) : null };
+    }
+    const reordered = offeredIndices
+      .map((i) => offers[i])
+      .sort((a, b) => {
+        const rankA = reliabilityRank(a);
+        const rankB = reliabilityRank(b);
+        if (rankA.established !== rankB.established) return rankA.established ? -1 : 1;
+        if (rankA.established) return rankB.completionRate - rankA.completionRate;
+        return 0; // neither established -- stable sort preserves original (created_at) order
+      });
+    const result = [...offers];
+    offeredIndices.forEach((originalIndex, k) => { result[originalIndex] = reordered[k]; });
+    return result;
+  }, [offers, partnerStats]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -199,7 +233,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {offers.length === 0 ? (
           <Text style={styles.emptyText}>No businesses have responded yet.</Text>
         ) : (
-          offers.map((o) => {
+          displayOffers.map((o) => {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
             return (
