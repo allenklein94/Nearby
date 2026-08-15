@@ -168,11 +168,28 @@ the old 4-column shape. Client-side verified via a direct `@babel/core` parse (c
 run-through — next session should confirm the new time-window line renders correctly on a real
 device against real "Demand Near You" data.
 
-**Phase B — one-tap "Turn this into an offer" shortcut.** A button on each "Demand Near You" row,
-pre-filling `postBusinessAvailability()`'s existing modal with the real category (and, once
-Phase A lands, the dominant real time window) instead of requiring the owner to separately open
-"+ Post Availability" and re-enter it by hand. No new backend mechanism — this is UI wiring onto
-the already-real, already-verified Phase 4 availability-posting flow.
+**Phase B — one-tap "Turn this into an offer" shortcut. DONE.** A "→ Turn into an offer" button
+was added to each "Demand Near You" row (`BusinessDashboardScreen.js`) — pure UI wiring, no new
+backend mechanism, onto the already-real, already-verified Phase 4 `postBusinessAvailability()`
+modal. `openPostAvailabilityModal()` now takes an optional `{ category, dominantPeriod }` prefill:
+the category chip is pre-selected to the row's own real category, and the title field is
+pre-filled with a real, honest suggested string naming the category and (when Phase A's own
+`dominant_period` is present for that category) the dominant time window — e.g. "Coffee available
+this evening" — falling back to "Coffee available" when no dominant period exists yet for that
+category. Every field, including the pre-filled title, stays fully editable before Post — nothing
+is auto-submitted, matching this file's own standing "review before commit" convention for every
+other tap-through result type. The existing bare "+ Post Availability" button (blank-start path)
+was updated to call the same function with no prefill (`() => openPostAvailabilityModal()`
+instead of passing the function directly as the `onPress` handler, which would otherwise have
+passed React's synthetic event object as the new optional `prefill` param — harmless in practice
+since an event object has no `.category`/`.dominantPeriod` properties, but fixed to be explicit
+rather than rely on that coincidence). Verified via a direct `@babel/core` parse (clean) and a
+full `npx expo export --platform ios` (clean, no bundling errors — edit to one existing file
+only, no new files, no schema change needed for this phase). **Not done, same standing gap as
+everywhere else in this file**: no manual simulator/device run-through — next session should
+confirm tapping the new button on a real "Demand Near You" row correctly opens the modal with the
+right category chip pre-selected and the right suggested title, and that posting from there still
+correctly matches against real open requests the same way the blank-start path already does.
 
 **Phase C — reliability-weighted fan-out and offer ordering.** `_business_request_fanout()` and
 the availability-matching path both currently order/notify eligible businesses by plain
@@ -203,10 +220,11 @@ treat "V3/V4" as a green light to build them anyway**: idea 4 (composed multi-so
 the specific reason and, where one exists, the real evidence bar that would need to be crossed
 first.
 
-**Status: Phase A is DONE, build-wise (see its own status note above) — picked up and finished
-after a codespace restart interrupted the session mid-build. Phases B–D remain plan only, not yet
-started.** Next step is the user's own review/go-ahead on which of B/C/D to execute next, same as
-every other plan-first section in this file's history.
+**Status: Phases A and B are DONE, build-wise (see their own status notes above) — Phase A was
+picked up and finished after a codespace restart interrupted the session mid-build, Phase B
+followed the same session. Phases C–D remain plan only, not yet started.** Next step is the
+user's own review/go-ahead on which of C/D to execute next, same as every other plan-first
+section in this file's history.
 
 ## Aug 15 2026 — Nearby 2.0 partial build, explicitly requested by the user, overriding the freeze for this scope — IN PROGRESS
 

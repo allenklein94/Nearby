@@ -315,10 +315,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
-  function openPostAvailabilityModal() {
-    setAvailabilityTitleInput('');
+  // "Nearby V3/V4" plan, Phase B: an optional prefill from a "Demand Near
+  // You" row -- the real category (and, when Phase A's own dominant_period
+  // is present, a real suggested title naming it) instead of requiring the
+  // owner to separately open "+ Post Availability" and re-type it by hand.
+  // Pure UI wiring -- postBusinessAvailability() itself is unchanged, and
+  // every field stays editable before Post, same as the blank-start path.
+  function openPostAvailabilityModal(prefill) {
+    const category = prefill?.category ?? null;
+    const period = prefill?.dominantPeriod ?? null;
+    setAvailabilityTitleInput(
+      category ? (period ? `${category} available this ${period}` : `${category} available`) : ''
+    );
     setAvailabilityDescriptionInput('');
-    setAvailabilityCategoryInput(null);
+    setAvailabilityCategoryInput(category);
     setAvailabilityOfferTypeInput('standard');
     setAvailabilityPriceInput('');
     setAvailabilityCapacityInput('');
@@ -1050,6 +1060,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           d.dominant_period ? `mostly ${d.dominant_period} (${d.dominant_period_count} of ${d.request_count})` : null,
                         ].filter(Boolean).join(' · ')}
                       </Text>
+                      {/* "Nearby V3/V4" plan, Phase B: no new backend mechanism --
+                          this pre-fills the already-real, already-verified Phase 4
+                          availability-posting modal instead of making the owner
+                          re-open "+ Post Availability" and re-type the category. */}
+                      <TouchableOpacity
+                        style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                        onPress={() => openPostAvailabilityModal({ category: d.category, dominantPeriod: d.dominant_period })}
+                        accessibilityLabel={`Turn ${d.category} demand into an offer`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.smallActionButtonText}>→ Turn into an offer</Text>
+                      </TouchableOpacity>
                     </View>
                   ))
                 )}
@@ -1107,7 +1129,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={styles.sectionHeader}>Your Availability</Text>
                   <TouchableOpacity
                     style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                    onPress={openPostAvailabilityModal}
+                    onPress={() => openPostAvailabilityModal()}
                     accessibilityLabel="Post availability"
                     accessibilityRole="button"
                   >
