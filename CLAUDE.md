@@ -4,6 +4,23 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 15 2026 — "Nearby 2.0" strategic vision captured, read-only, reaffirms the freeze
+
+The user shared a detailed external strategic vision (aggregated cross-user demand → business
+opportunities, an "intent graph" learning system, group intent, multi-option "make it happen"
+planning, dynamic/competitive business offers, predictive suggestions, marketplace-wide
+reliability scoring) arguing the current build is a foundation, not a finished product. The
+vision's own explicit instruction was **not** "build this" — it was to capture it as a ranked
+vision document while keeping the current product frozen, letting real usage data decide which
+parts (if any) are ever worth building. That's exactly what the standing feature freeze below
+already calls for, so this was executed as documentation, not implementation: **zero application
+code was touched.** Full ranked writeup, with each layer mapped to what already exists in this
+schema and a rough "what evidence would justify revisiting this" note per layer, is in
+`PRODUCT_AUDIT/NEARBY_2.0_VISION_2026-08-15.md` — read that file, not this summary, before ever
+picking one of these up. **Nothing in it is scheduled, approved, or a "next obvious step" — the
+freeze's own rule applies to it exactly as it applies to everything else in this file: build from
+it only on an explicit future request, never on inferred momentum from its own existence.**
+
 ## FEATURE FREEZE / STABILIZATION (declared 2026-08-15) — read this before starting new work
 
 **The codebase is now in feature-freeze/stabilization mode, effective 2026-08-15, per explicit
