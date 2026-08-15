@@ -45,9 +45,86 @@ re-verification, a realtime-leak resweep beyond `GroupPlanScreen`, an RLS reswee
 plans, and performance/scale beyond what `PRODUCT_AUDIT/SCALABILITY_AUDIT.md` already covers.
 Each is substantial enough to deserve its own dedicated future pass, per this file's own
 established "cap agents, one focused pass at a time" convention — not attempted together again
-via parallel forks given how unreliably that went this time. **Nothing built or fixed this
-pass** — the group-plan visibility gap and the two race conditions are real, live, unfixed bugs
-in production, flagged for a future session to actually close.
+via parallel forks given how unreliably that went this time. **Nothing built or fixed in the
+audit pass itself** — see the direct follow-up below for what was subsequently fixed.
+
+## Aug 15 2026 — connectivity audit fixes: Findings C1/C2/C3 (backend, DONE) — Findings G.1/F
+(frontend visibility + realtime) and §B.8 (doc gap) queued next in this same pass
+
+Direct follow-up to the connectivity audit above, asked explicitly to fix everything the audit
+flagged. Followed the audit's own recommended fix order (§I) — backend items 1-3 first (same
+migration, same function family), frontend items 4-5 and the doc-only item 6 next.
+
+**Backend/RPC fixes — DONE, one migration
+(`supabase/migrations/20260815_v4_group_plan_fixes.sql`), all three of Domain C's findings
+closed exactly per that report's own suggested fix, no design changes during implementation.**
+- **Finding C2 (row lock)**: `confirm_group_plan_offer` now locks `group_plan_proposals` and
+  the specific `business_request_offers` row `for update` at the top, before the quorum count
+  read — closes the "two concurrent last confirmations both see sub-quorum, neither triggers
+  acceptance" race, matching the same locking discipline the Aug 15 architecture-hardening pass
+  already applied to `accept_business_offer`/`approve_gathering_interest`.
+- **Finding C1 (cascade)**: `confirm_group_plan` now expires every `pending`/`offered`
+  `business_request_offers` row belonging to a just-merged participant's own original request,
+  in the same statement block that flips the parent to `'merged'` — mirrors
+  `cancel_business_request`'s own adjacent-line pattern exactly. No frontend change was needed:
+  both `BusinessRequestDetailScreen.js`'s offer-accept gate (`o.status === 'offered'`) and
+  `BusinessDashboardScreen.js`'s Requests-tab render (`o.status === 'pending' && ...status ===
+  'open'`) already correctly handle an `'expired'` offer — they just never received the state
+  transition that would have made them fire.
+- **Finding C3 (cross-proposal exclusivity)**: a new partial unique index,
+  `group_plan_participants_active_source_request_idx` on `(source_request_id) where status in
+  ('invited', 'accepted')`, makes it structurally impossible for the same person's still-open
+  request to be an active participant in two concurrently-pending group plans at once.
+  `propose_group_plan`'s two participant inserts (initiator + each invitee) now catch the new
+  index's conflict — the initiator's own insert re-raises a clear error; an invitee's insert is
+  silently skipped, matching the function's own already-established convention for any other
+  invitee whose request changed between fetch and submit. **Two real, previously-latent gaps
+  had to be closed in the same migration before this index was safe to add, found while
+  designing the fix, not by the original audit**: neither `cancel_group_plan` nor
+  `expire_stale_business_requests()` ever reset a still-`invited`/`accepted` participant row
+  back to a terminal status when their proposal died — without fixing that first, the new index
+  would have permanently locked a cancelled or expired proposal's participants out of ever
+  joining a future group plan. Both functions now flip their proposal's still-active
+  participants to `'left'` as part of the same cancel/expire sweep (a one-time backfill `UPDATE`
+  in the same migration also frees any pre-existing dead rows before the index is created).
+- **Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied —
+  real disposable test data using the real connected pairs already in production
+  (`Claude`↔`Allen` friendship, `Google voice`↔`Allen` match): proposed a real group plan
+  (Allen→Claude), then, while Claude was still only `invited`, proposed a **second**,
+  independent group plan from a second Allen request also inviting Claude's same request —
+  correctly rejected end-to-end (`'None of the people you invited could be added...'`), and
+  confirmed the second proposal's attempted insert rolled back cleanly with zero orphan rows
+  (Finding C3, proven, not just present in the SQL text). Continued the first plan through
+  accept → budget-set → re-accept → confirm — confirmed both original individual requests'
+  real pre-existing offers (one `pending`, one `offered`, inserted to simulate a business having
+  already responded before the merge) were correctly flipped to `'expired'` by the same call
+  that merged their parent requests (Finding C1, proven against real rows, not inferred).
+  Continued further: inserted a real offer on the new shared request, confirmed the row-lock fix
+  doesn't regress the normal (non-racing) path — 1 of 2 required confirmations correctly did
+  *not* trigger acceptance, 2 of 2 correctly did (`offer.status: accepted`,
+  `request.status: fulfilled`), and a third, repeat confirm call was correctly rejected
+  (Finding C2, proven against the real happy path, not just the lock clause's presence).
+  All test data (5 disposable `business_requests`, their offers, 1 `group_plan_proposals` and
+  its participants) deleted afterward, including nulling both sides of the
+  `business_requests.group_plan_id` ↔ `group_plan_proposals.resulting_request_id` FK cycle
+  before deleting either table (the same known gotcha this file has hit before) — confirmed
+  production back to its exact pre-test baseline (0 rows across every touched table).
+- **Verified via a real from-scratch migration replay** (39 files, `psql -v ON_ERROR_STOP=1`,
+  exit 0 throughout, no `pg_cron`/`pg_trgm` workaround needed this run) — the new index and all
+  5 touched/new functions confirmed to exist in the freshly-rebuilt database.
+
+**Finding G.1 (group-plan visibility on Home/Activity/pending-count), §F (GroupPlanScreen
+realtime), and §B.8 (this documentation gap itself) — queued next in this same pass, not yet
+built as of this commit.** Picking this up: read the audit's §I fix order (items 4-6) and
+Finding G.1's own recommended fix (`CONNECTIVITY_AUDIT_2026-08-15.md`) before starting —
+group-plan awareness needs to land in `getPendingInvitesCount()` and `getHomeDashboard()`'s
+"Your Plans" computation, `GroupPlanScreen.js` needs a real Realtime channel matching every
+other multi-party coordination screen's existing pattern, and this file itself needs the
+`20260815_v2_audit_fixes.sql` documentation gap closed. **The NOT REACHED domains from the
+original audit** (full type/contract sweep, full realtime-leak resweep, full RLS resweep beyond
+group plans, gathering/`gathering_interest` state-machine re-verification, performance/scale
+beyond `SCALABILITY_AUDIT.md`) remain out of scope for this pass too, per the audit's own §I
+item 7 — each recommended as its own dedicated future pass.
 
 ## Aug 15 2026 — "Nearby V3/V4" strategic vision (demand intelligence, reverse marketplace,
 ## planning engine) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED
