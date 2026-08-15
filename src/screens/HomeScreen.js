@@ -45,6 +45,37 @@ const INTENT_RESULT_ICONS = {
   gathering: 'people-outline',
 };
 
+// Nearby 2.0 vision layer 4, "make it happen" multi-option planning (see
+// CLAUDE.md's "Nearby 2.0 Vision" doc) -- scoped down from the vision
+// doc's own full framing, deliberately: it explicitly warns that
+// "composing three empty tiers... would be worse than today's honest
+// single ranked list." This never composes anything that isn't already
+// real -- it's a pure regrouping of resolveIntent()'s own already-fetched
+// results, only when there's genuine diversity across tiers (2+ distinct
+// real result types) to group in the first place. A single-type result
+// set (by far the common case today) renders exactly as before -- no
+// visual change, no risk of dressing up one real result as "three ways."
+const INTENT_RESULT_TYPE_LABELS = {
+  gathering: '🎉 Already happening',
+  community: '🏘️ A community for this',
+  friend_request: '👥 Someone you know wants this too',
+  perk: '🎁 A perk that fits',
+  business_availability: '🏪 A business has this ready',
+};
+
+function groupIntentResultsByType(items) {
+  const order = [];
+  const groups = new Map();
+  for (const item of items) {
+    if (!groups.has(item.type)) {
+      groups.set(item.type, []);
+      order.push(item.type);
+    }
+    groups.get(item.type).push(item);
+  }
+  return order.map((type) => ({ type, items: groups.get(type) }));
+}
+
 const PERIOD_SUBTITLES = {
   morning: 'What sounds good this morning?',
   afternoon: 'What sounds good this afternoon?',
@@ -392,6 +423,75 @@ export default function HomeScreen({ navigation }) {
     }
   }
 
+  // Extracted so the multi-option grouped view (layer 4) and the
+  // original flat view can share the exact same per-item rendering,
+  // including the friend_request row's two-action treatment -- no
+  // behavior duplicated or drifted between the two layouts.
+  function renderIntentResultItem(item) {
+    if (item.type === 'friend_request') {
+      return (
+        <View key={`${item.type}-${item.id}`} style={styles.intentResultRow}>
+          <Ionicons
+            name={INTENT_RESULT_ICONS[item.type]}
+            size={18}
+            color={colors.primary}
+            style={styles.intentResultIcon}
+          />
+          <View style={styles.intentResultTextCol}>
+            <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+            {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+            <View style={styles.friendRequestActions}>
+              <TouchableOpacity onPress={() => handleIntentResultTap(item)} accessibilityLabel="View Profile" accessibilityRole="button">
+                <Text style={styles.friendRequestActionText}>View Profile</Text>
+              </TouchableOpacity>
+              {item.matchId && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const { classifyResult, typedText, submissionId } = intentResults ?? {};
+                    setIntentResults(null);
+                    recordIntentSelection({
+                      rawText: typedText,
+                      category: classifyResult?.category ?? null,
+                      dateWindow: classifyResult?.dateWindow ?? null,
+                      resultType: item.type,
+                      resultId: item.id ?? null,
+                      resultTitle: item.title,
+                      submissionId,
+                    });
+                    navigation.navigate('Chat', { matchId: item.matchId });
+                  }}
+                  accessibilityLabel="Message"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.friendRequestActionTextPrimary}>Message</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      );
+    }
+    return (
+      <TouchableOpacity
+        key={`${item.type}-${item.id}`}
+        style={styles.intentResultRow}
+        onPress={() => handleIntentResultTap(item)}
+      >
+        <Ionicons
+          name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
+          size={18}
+          color={colors.primary}
+          style={styles.intentResultIcon}
+        />
+        <View style={styles.intentResultTextCol}>
+          <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+          {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+      </TouchableOpacity>
+    );
+  }
+
   function handleIntentResultsDismiss() {
     setIntentResults(null);
     setIntentEmptyFallback(null);
@@ -539,85 +639,33 @@ export default function HomeScreen({ navigation }) {
                   that might fit.
                 </Text>
               )}
-              <Text style={styles.intentResultsHeading}>Already happening near you</Text>
-              {intentResults.items.map((item) => (
-                item.type === 'friend_request' ? (
-                  // Product-critique follow-through, Aug 14 2026
-                  // (recommendation 3): this used to be a whole-row tap
-                  // straight to a bare ViewProfile with no way to act on
-                  // the shared ask -- ViewProfileScreen has no Message
-                  // button of its own, only Add Friend, which doesn't
-                  // apply to an already-connected person. Now: two real,
-                  // explicit actions -- View Profile always, Message only
-                  // when item.matchId is genuinely set (a plain accepted
-                  // friendship has no messages channel behind it at all --
-                  // only a real dating match does), so the row never
-                  // implies an action that isn't actually possible.
-                  <View key={`${item.type}-${item.id}`} style={styles.intentResultRow}>
-                    <Ionicons
-                      name={INTENT_RESULT_ICONS[item.type]}
-                      size={18}
-                      color={colors.primary}
-                      style={styles.intentResultIcon}
-                    />
-                    <View style={styles.intentResultTextCol}>
-                      <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-                      {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
-                      <View style={styles.friendRequestActions}>
-                        <TouchableOpacity onPress={() => handleIntentResultTap(item)} accessibilityLabel="View Profile" accessibilityRole="button">
-                          <Text style={styles.friendRequestActionText}>View Profile</Text>
-                        </TouchableOpacity>
-                        {item.matchId && (
-                          <TouchableOpacity
-                            onPress={() => {
-                              // Bug fix (Aug 15 2026 stabilization-pass bug hunt): this
-                              // action used to navigate straight to Chat with no
-                              // recordIntentSelection() call at all, unlike every other
-                              // exit point from this panel -- a real, undercounted gap in
-                              // the outcome-tracking funnel (Part 1/2's own design intent
-                              // was "every real exit point," and Message is a real one).
-                              const { classifyResult, typedText, submissionId } = intentResults ?? {};
-                              setIntentResults(null);
-                              recordIntentSelection({
-                                rawText: typedText,
-                                category: classifyResult?.category ?? null,
-                                dateWindow: classifyResult?.dateWindow ?? null,
-                                resultType: item.type,
-                                resultId: item.id ?? null,
-                                resultTitle: item.title,
-                                submissionId,
-                              });
-                              navigation.navigate('Chat', { matchId: item.matchId });
-                            }}
-                            accessibilityLabel="Message"
-                            accessibilityRole="button"
-                          >
-                            <Text style={styles.friendRequestActionTextPrimary}>Message</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    key={`${item.type}-${item.id}`}
-                    style={styles.intentResultRow}
-                    onPress={() => handleIntentResultTap(item)}
-                  >
-                    <Ionicons
-                      name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
-                      size={18}
-                      color={colors.primary}
-                      style={styles.intentResultIcon}
-                    />
-                    <View style={styles.intentResultTextCol}>
-                      <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-                      {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                  </TouchableOpacity>
-                )
-              ))}
+              {(() => {
+                const distinctTypes = new Set(intentResults.items.map((i) => i.type)).size;
+                if (distinctTypes >= 2) {
+                  const grouped = groupIntentResultsByType(intentResults.items);
+                  return (
+                    <>
+                      <Text style={styles.intentResultsHeading}>
+                        I found {grouped.length} ways to make this happen
+                      </Text>
+                      {grouped.map((group) => (
+                        <View key={group.type} style={{ marginBottom: spacing.sm }}>
+                          <Text style={styles.intentGroupLabel}>
+                            {INTENT_RESULT_TYPE_LABELS[group.type] ?? group.type}
+                          </Text>
+                          {group.items.map((item) => renderIntentResultItem(item))}
+                        </View>
+                      ))}
+                    </>
+                  );
+                }
+                return (
+                  <>
+                    <Text style={styles.intentResultsHeading}>Already happening near you</Text>
+                    {intentResults.items.map((item) => renderIntentResultItem(item))}
+                  </>
+                );
+              })()}
               <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId)}>
                 <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
               </TouchableOpacity>
@@ -1175,6 +1223,7 @@ const getStyles = (colors) => StyleSheet.create({
   intentResults: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
   intentUnclearNote: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 18 },
   intentResultsHeading: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.sm },
+  intentGroupLabel: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginBottom: 4 },
   intentResultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   intentResultIcon: { marginRight: spacing.sm },
   intentResultTextCol: { flex: 1 },

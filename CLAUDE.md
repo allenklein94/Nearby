@@ -119,6 +119,94 @@ shows neither card, and that the Business Dashboard's new "Demand Near You" sect
 correctly for an owner account (including its honest empty state, which is what real production
 will show today given near-zero real request volume).
 
+**Second increment, same day, asked to keep building — three more real pieces, all DONE.**
+
+- **Layer 4, "make it happen" multi-option planning — DONE, scoped exactly per the vision doc's
+  own stated risk.** Purely a client-side regrouping of `resolveIntent()`'s own already-real,
+  already-fetched results — never composes anything that isn't already there. `HomeScreen.js`'s
+  intent-results panel now checks how many *distinct* real result types came back
+  (`gathering`/`community`/`friend_request`/`perk`/`business_availability`); when 2+ distinct
+  types are present, it renders "I found N ways to make this happen" with each type grouped
+  under its own real label (🎉 Already happening / 🏘️ A community for this / 👥 Someone you know
+  wants this too / 🎁 A perk that fits / 🏪 A business has this ready) instead of one flat list.
+  When results are all one type (by far the common case today, and the only case a young app
+  with sparse per-tier supply will usually hit), the panel renders exactly as it did before this
+  pass — zero visual change, avoiding the doc's own named risk of "composing three empty tiers"
+  into a misleadingly complete-looking plan. The per-item rendering (including the
+  `friend_request` type's two-action View-Profile/Message treatment) was extracted into a shared
+  `renderIntentResultItem()` so the grouped and flat layouts can't drift from each other.
+- **Layer 3 extended — real, throttled push notifications, not just a Home card.** New
+  `notify_group_intent_threshold()` AFTER INSERT trigger on `business_requests`
+  (`20260815_group_intent_and_demand_notifications.sql`) — for every one of the new request's own
+  real connections (same friendships-union-matches definition as the resolve-time RPC), checks
+  whether this new row is genuinely the one that pushes that connection's own group-intent count
+  from 1 to 2 for this category, and only then sends a real push (reusing the same
+  `vault.decrypted_secrets`/`net.http_post`-to-`send-push` pattern every other push in this schema
+  already uses) — never fires again for the 3rd/4th/etc. request in the same category, so it
+  can't nag. New `group_intent_signal` push-tap route (`services/notifications.js`) lands on
+  Home, where the dismissible card built in the first increment re-fetches and renders fresh.
+- **Layer 1 extended — the same real, throttled push pattern for businesses.** New
+  `notify_aggregated_demand_threshold()` AFTER INSERT trigger (same migration file) — for every
+  active business genuinely within the new request's own real fan-out reach (identical haversine
+  definition as `get_aggregated_demand_for_partner()`), fires exactly once when real nearby
+  demand for that category first reaches 2, notifying every profile that manages that business.
+  New `aggregated_demand_growing` push-tap route lands on `BusinessDashboard`'s Requests tab,
+  where the "Demand Near You" section built in the first increment lives.
+- **Layer 7, "Business reliability score as a real differentiator" — the one real gap beyond
+  what already existed, now DONE.** Confirmed most of this layer was already real
+  (`get_partner_avg_response_time`/`get_partner_offer_reputation`, 10/10 roadmap Part 5) — what
+  was missing was the "genuinely comparative, marketplace-wide" ranking the vision doc names
+  explicitly. New `get_marketplace_reliability_rankings()` SECURITY DEFINER RPC
+  (`20260815_marketplace_reliability_rankings.sql`, admin-only via the same `check_is_admin` gate
+  `get_intent_funnel_stats`/`get_market_validation_stats` already use) — every qualifying
+  partner's real response/acceptance/completion rate and median response time, ranked by
+  completion rate, silent below the same real 5-opportunity threshold
+  `formatPartnerReliabilityLine()` already established client-side for the single-partner case.
+  New "🏆 Top-Performing Businesses" section on `MarketValidationScreen.js`, right after the
+  existing Marketplace Reliability card — honest "No businesses have enough real history yet"
+  empty state, matching this dashboard's own established philosophy exactly.
+
+**Verification for this second increment, matching the same convention as the first**: both new
+migrations applied to production and verified live with real disposable test data, not just
+applied. For the two triggers: reused the same real connected-pair/Coastal-Coffee-coordinates
+scenario as increment one — a first test request correctly caused no push (crossing check
+requires a prior count of exactly 1, and it was 0), a second, same-category request from a
+different connected requester correctly fired both triggers exactly once each (confirmed via two
+new `net._http_response` rows at the same timestamp, both a real HTTP 200 from the live
+`send-push` function with a real Expo push-ticket id back — the full pipeline genuinely ran, not
+just that the SQL didn't error), and a third request in the same category correctly did **not**
+re-fire either trigger (confirmed via no new `net._http_response` rows). For the rankings RPC: a
+real admin call correctly returned an empty array (no partner has 5+ real opportunities in
+production today); a non-admin call was correctly rejected; and a real disposable 5-row test
+dataset (1 pending, 1 declined, 1 accepted, 2 completed) for the one real partner produced
+`response_rate: 80.0, acceptance_rate: 75.0, completion_rate: 66.7, median_response_minutes: 10`
+— hand-checked and exactly correct, not just "the function runs." All test rows deleted and
+`Coastal Coffee`'s coordinates reverted to `null` afterward; production confirmed back to its
+exact pre-test baseline (0 `business_requests`, 0 `business_request_offers`) both times.
+**Verified via a real from-scratch migration replay** (33 files, `psql -v ON_ERROR_STOP=1`, exit
+0 throughout) — all 5 functions across both new migrations from this whole pass (the two RPCs
+from increment 1 plus the two trigger functions and the rankings RPC from increment 2) confirmed
+to exist in the freshly-rebuilt database. Client-side verified via a direct `@babel/core` parse
+of all four touched/new files (clean), the full 42-test Jest suite (unchanged, still 42/42), and
+a full `npx expo export --platform ios` (clean, no bundling errors).
+
+**Not done yet, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the grouped multi-option Home panel renders correctly
+when a real ask genuinely returns 2+ distinct result types (uncommon at today's real supply
+levels, worth constructing a real multi-type scenario to check), and that a real device actually
+receives and can tap through both new push types once real usage exists to trigger them (the
+live test above proved the pipeline runs end-to-end and Expo's push service accepted both
+notifications, but didn't confirm on-device delivery/tap-through, which no code-only session can
+verify).
+
+**All eight of the ten vision layers have now been addressed one way or another**: 1, 3, 4, 6, 7
+built as real, honest mechanisms this pass; 5 and 7's baseline were confirmed already real before
+extending 7 further; 2 remains deliberately unbuilt (needs real volume over time the app doesn't
+have); 8/9/10 remain correctly not-separable-build-items per the vision doc's own text. Nothing
+further is queued here — the next real input this specific plan needs is either a manual device
+pass on everything flagged above, or the vision doc's own evidence bars actually being crossed
+by real usage data for layer 2 or a deeper version of 1/4/7.
+
 **Standing constraint reaffirmed for any future continuation of this pass**: build only what's
 honestly buildable without fabricating a signal — read the vision doc's own per-layer "evidence
 bar" before picking up anything not covered above, and re-verify live against production with

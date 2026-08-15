@@ -186,10 +186,24 @@ export function routeNotificationTap(data) {
       }
       break;
     case 'business_opportunity_received':
+    // Nearby 2.0 vision layer 1 (see CLAUDE.md's "Nearby 2.0 Vision" doc):
+    // real aggregated nearby demand crossing a meaningful threshold for
+    // this business's own category -- same destination as a single
+    // opportunity, since the new "Demand Near You" section lives right
+    // above the opportunities list on the same tab.
+    case 'aggregated_demand_growing':
       navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
       break;
     case 'business_offer_accepted':
       navigationRef.navigate('BusinessDashboard');
+      break;
+    // Nearby 2.0 vision layer 3 (see CLAUDE.md's "Nearby 2.0 Vision" doc):
+    // a real "N people you know are looking for X" signal just crossed
+    // its own real 2+ threshold -- lands on Home, where the dismissible
+    // group-intent card (built the same pass) re-fetches and renders it
+    // fresh, same as any other Home visit.
+    case 'group_intent_signal':
+      navigationRef.navigate('MainTabs', { screen: 'Home' });
       break;
     default:
       break;

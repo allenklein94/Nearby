@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getIntentFunnelStats, getMarketValidationStats } from '../services/marketValidation';
+import { getIntentFunnelStats, getMarketValidationStats, getMarketplaceReliabilityRankings } from '../services/marketValidation';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
@@ -50,6 +50,7 @@ export default function MarketValidationScreen() {
   const styles = getStyles(colors, shadow);
   const [funnel, setFunnel] = useState(null);
   const [market, setMarket] = useState(null);
+  const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -58,10 +59,11 @@ export default function MarketValidationScreen() {
     setLoadError(false);
     (async () => {
       try {
-        const [funnelStats, marketStats] = await Promise.all([getIntentFunnelStats(), getMarketValidationStats()]);
+        const [funnelStats, marketStats, rankingStats] = await Promise.all([getIntentFunnelStats(), getMarketValidationStats(), getMarketplaceReliabilityRankings()]);
         if (!cancelled) {
           setFunnel(funnelStats);
           setMarket(marketStats);
+          setRankings(rankingStats);
         }
       } catch (e) {
         if (!cancelled) setLoadError(true);
@@ -174,6 +176,38 @@ export default function MarketValidationScreen() {
           <View style={styles.divider} />
           <StatRow label="Businesses with real opportunities" value={formatCount(market?.partners_with_opportunities)} />
         </View>
+
+        <Text style={styles.groupHeader} accessibilityRole="header">🏆 Top-Performing Businesses</Text>
+        <Text style={styles.subtitle}>
+          Nearby 2.0 vision layer 7 — a real, per-business comparative ranking, not just one
+          blended number. Silent below 5 real opportunities per business — never padded to look
+          more populated than it honestly is. Reads empty for a long while in a young marketplace,
+          same as everything else on this screen.
+        </Text>
+        {rankings.length === 0 ? (
+          <View style={[styles.card, shadow.card]}>
+            <Text style={styles.emptyRankingsText}>No businesses have enough real history yet.</Text>
+          </View>
+        ) : (
+          rankings.map((r, i) => (
+            <View key={r.partner_id} style={[styles.card, shadow.card, { marginBottom: spacing.sm }]}>
+              <Text style={styles.rankingName}>#{i + 1} {r.partner_name}</Text>
+              <Text style={styles.statSublabel}>{formatCount(r.total_opportunities)} real opportunities</Text>
+              <View style={styles.divider} />
+              <StatRow label="Response rate" value={formatPct(r.response_rate)} />
+              <View style={styles.divider} />
+              <StatRow label="Acceptance rate" value={formatPct(r.acceptance_rate)} />
+              <View style={styles.divider} />
+              <StatRow label="Completion rate" value={formatPct(r.completion_rate)} />
+              {r.median_response_minutes != null && (
+                <>
+                  <View style={styles.divider} />
+                  <StatRow label="Median response time" value={`${formatCount(r.median_response_minutes)} min`} />
+                </>
+              )}
+            </View>
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -190,5 +224,7 @@ function getStyles(colors, shadow) {
     statSublabel: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
     statValue: { ...typography.headline, color: colors.primary, fontWeight: '700' },
     divider: { height: 1, backgroundColor: colors.border },
+    emptyRankingsText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+    rankingName: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
   });
 }

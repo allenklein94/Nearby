@@ -24,3 +24,17 @@ export async function getMarketValidationStats() {
   if (error) throw new Error(error.message);
   return data?.[0] ?? null;
 }
+
+// Nearby 2.0 vision layer 7, "Business reliability score as a real
+// differentiator" (see CLAUDE.md's "Nearby 2.0 Vision" doc) -- the one
+// real gap beyond what already existed: a genuinely comparative,
+// per-partner ranking, not just one blended marketplace-wide number.
+// Admin-only, same gate as the two functions above. Silent (empty array)
+// below the RPC's own real 5-opportunity threshold per partner -- never
+// padded with a partner that doesn't have enough real history to rank
+// honestly yet.
+export async function getMarketplaceReliabilityRankings() {
+  const { data, error } = await supabase.rpc('get_marketplace_reliability_rankings');
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
