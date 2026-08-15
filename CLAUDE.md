@@ -262,7 +262,25 @@ limitation, same as everywhere else in this file**: no manual simulator/device r
   and the plain-client `respondToFriendRequest()` path were read in passing but not independently
   deep-audited — flagged as genuinely not-reached rather than confirmed-clean, in the audit
   file's own "Not reached this pass" section.
-- Part 4 (UX coherence confirm): not started
+- **Part 4 (UX coherence confirm): DONE, confirmed already true, no rebuild needed.** Direct
+  re-read of the actual current subtitle copy on all 5 primary surfaces, not assumed from this
+  file's own history: **Home** — hero heading "What do you want to do?" (the intent box itself)
+  plus a period-aware greeting subtitle above it; **Create** — "What do you want to create?"
+  (distinct phrasing from Home, matches the roadmap's own suggested wording almost verbatim);
+  **Discover** — "Explore what's happening nearby." (pure browse framing, no ask-box language at
+  all); **Inbox** — "Messages, requests, and everything else waiting for you."; **Profile** —
+  "Your story, your stats, your circle." Every one of the 5 answers "what is this helping me
+  accomplish" at a glance, each in genuinely distinct language, matching the roadmap's own
+  "Home/Create/Discover" example almost exactly. Also re-confirmed no duplicate intent-entry
+  mechanism has crept back in: grepped for any second "what do you want"-style box anywhere in
+  `src/screens/` — the only other match is `AskBusinessScreen.js`'s "What do you want?" field
+  label, which is a form field *inside* the business-ask flow reached only after Home's own
+  resolver already ran and found nothing (a continuation of one already-submitted intent, not a
+  second competing ask-box) — and confirmed the AI Concierge removal (Aug 14, recommendation 1)
+  is still fully clean, only one explanatory code comment references it, zero live imports.
+  **No code changes made — this part's own job was to confirm, not rebuild**, per the plan's own
+  framing that this was very likely already substantially true given this file's extensive prior
+  IA-reconciliation history.
 - Part 5 (marketplace reliability): not started
 - Part 6 (privacy controls): not started
 - Part 7 (Home personalization): not started
