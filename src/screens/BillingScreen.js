@@ -54,6 +54,8 @@ export default function BillingScreen({ navigation }) {
         restored ? 'Your premium access has been restored.' : 'No active premium subscription found for this account.'
       );
       if (restored) load();
+    } catch (e) {
+      Alert.alert('Restore failed', e.message || 'Could not restore your purchases. Please try again.');
     } finally {
       setRestoring(false);
     }

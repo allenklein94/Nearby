@@ -40,11 +40,16 @@ export default function LoginScreen() {
       return Alert.alert(t('login.invalidNumber'), t('login.invalidNumberMessage'));
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
-    setLoading(false);
-    if (error) return Alert.alert('Error', error.message);
-    setE164Phone(formatted);
-    setOtpSent(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
+      setLoading(false);
+      if (error) return Alert.alert('Error', error.message);
+      setE164Phone(formatted);
+      setOtpSent(true);
+    } catch (e) {
+      setLoading(false);
+      Alert.alert('Error', e.message);
+    }
   }
 
   async function verifyOtp() {
@@ -79,13 +84,18 @@ export default function LoginScreen() {
       return;
     }
 
-    const { error } = await supabase.auth.verifyOtp({
-      phone: e164Phone,
-      token: otp,
-      type: 'sms',
-    });
-    setLoading(false);
-    if (error) return Alert.alert('Error', error.message);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        phone: e164Phone,
+        token: otp,
+        type: 'sms',
+      });
+      setLoading(false);
+      if (error) return Alert.alert('Error', error.message);
+    } catch (e) {
+      setLoading(false);
+      Alert.alert('Error', e.message);
+    }
   }
 
   return (

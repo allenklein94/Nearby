@@ -87,60 +87,65 @@ export default function CompleteProfileScreen() {
     }
 
     setSubmitting(true);
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-
-    // Picks up whatever was answered during the pre-signup onboarding
-    // questions, if any exist — someone could reach this screen
-    // without having gone through that flow (e.g., an existing
-    // account somehow ending up here), so this is genuinely optional.
-    let onboardingAnswers = {};
     try {
-      const stored = await AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY);
-      if (stored) {
-        onboardingAnswers = JSON.parse(stored);
-        await AsyncStorage.removeItem(ONBOARDING_ANSWERS_KEY);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+
+      // Picks up whatever was answered during the pre-signup onboarding
+      // questions, if any exist — someone could reach this screen
+      // without having gone through that flow (e.g., an existing
+      // account somehow ending up here), so this is genuinely optional.
+      let onboardingAnswers = {};
+      try {
+        const stored = await AsyncStorage.getItem(ONBOARDING_ANSWERS_KEY);
+        if (stored) {
+          onboardingAnswers = JSON.parse(stored);
+          await AsyncStorage.removeItem(ONBOARDING_ANSWERS_KEY);
+        }
+      } catch (e) {
+        console.error('Failed to read onboarding answers', e);
       }
-    } catch (e) {
-      console.error('Failed to read onboarding answers', e);
-    }
 
-    const { error: profileError } = await supabase.from('profiles').upsert({
-      id: userId,
-      display_name: displayName.trim(),
-      birthdate: birthdate.toISOString().split('T')[0],
-      interests,
-      terms_accepted_at: new Date().toISOString(),
-      ...(onboardingAnswers.onboarding_motivations ? { onboarding_motivations: onboardingAnswers.onboarding_motivations } : {}),
-      ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
-      ...(onboardingAnswers.monthly_interests ? { monthly_interests: onboardingAnswers.monthly_interests, monthly_interests_updated_at: new Date().toISOString() } : {}),
-    });
-    if (!profileError) {
-      // Marks this as a fresh signup so the navigator shows the
-      // recommendations screen first instead of jumping straight to
-      // MainTabs — checked and cleared the very next time the app's
-      // main stack renders, so it only ever fires once.
-      await AsyncStorage.setItem('just_completed_signup', 'true').catch(() => null);
-    }
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: userId,
+        display_name: displayName.trim(),
+        birthdate: birthdate.toISOString().split('T')[0],
+        interests,
+        terms_accepted_at: new Date().toISOString(),
+        ...(onboardingAnswers.onboarding_motivations ? { onboarding_motivations: onboardingAnswers.onboarding_motivations } : {}),
+        ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
+        ...(onboardingAnswers.monthly_interests ? { monthly_interests: onboardingAnswers.monthly_interests, monthly_interests_updated_at: new Date().toISOString() } : {}),
+      });
+      if (!profileError) {
+        // Marks this as a fresh signup so the navigator shows the
+        // recommendations screen first instead of jumping straight to
+        // MainTabs — checked and cleared the very next time the app's
+        // main stack renders, so it only ever fires once.
+        await AsyncStorage.setItem('just_completed_signup', 'true').catch(() => null);
+      }
 
-    if (profileError) {
+      if (profileError) {
+        setSubmitting(false);
+        return Alert.alert('Error', profileError.message);
+      }
+
+      try {
+        await uploadProfilePhoto(userId, photoAsset);
+      } catch (e) {
+        setSubmitting(false);
+        return Alert.alert('Photo upload failed', e.message);
+      }
+
       setSubmitting(false);
-      return Alert.alert('Error', profileError.message);
-    }
-
-    try {
-      await uploadProfilePhoto(userId, photoAsset);
+      Alert.alert(
+        'Almost there',
+        'Your profile is saved. Your photo is being reviewed and will appear to others shortly — usually within a few minutes.'
+      );
+      refreshProfile();
     } catch (e) {
       setSubmitting(false);
-      return Alert.alert('Photo upload failed', e.message);
+      Alert.alert('Error', e.message || 'Something went wrong saving your profile. Please try again.');
     }
-
-    setSubmitting(false);
-    Alert.alert(
-      'Almost there',
-      'Your profile is saved. Your photo is being reviewed and will appear to others shortly — usually within a few minutes.'
-    );
-    refreshProfile();
   }
 
   return (
@@ -245,7 +250,7 @@ export default function CompleteProfileScreen() {
         <TouchableOpacity
           style={[styles.button, !agreedToTerms && styles.buttonDisabled]}
           onPress={submit}
-          disabled={submitting}
+          disabled={submitting || !agreedToTerms}
           activeOpacity={0.85}
           accessibilityLabel={submitting ? t('completeProfile.saving') : t('completeProfile.continue')}
           accessibilityRole="button"

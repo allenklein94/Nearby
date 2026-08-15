@@ -52,12 +52,16 @@ export default function PaywallScreen({ navigation }) {
   }
 
   async function handleRestore() {
-    const restored = await restorePurchases();
-    if (restored) {
-      Alert.alert('Restored', 'Your premium access has been restored.');
-      navigation.goBack();
-    } else {
-      Alert.alert('Nothing to restore', 'No active premium subscription found.');
+    try {
+      const restored = await restorePurchases();
+      if (restored) {
+        Alert.alert('Restored', 'Your premium access has been restored.');
+        navigation.goBack();
+      } else {
+        Alert.alert('Nothing to restore', 'No active premium subscription found.');
+      }
+    } catch (e) {
+      Alert.alert('Restore failed', e.message || 'Could not restore your purchases. Please try again.');
     }
   }
 
