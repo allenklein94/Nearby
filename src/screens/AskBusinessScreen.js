@@ -41,7 +41,14 @@ function startOfDay(d) {
 function toDateParam(dateWindow) {
   const now = new Date();
   const todayStart = startOfDay(now);
-  if (dateWindow === 'today') return todayStart.toISOString().slice(0, 10);
+  // 'tonight'/'now' are real values create-assistant can return
+  // (VALID_DATE_WINDOWS includes 'tonight') but previously had no branch
+  // here at all -- fell through to the final `return null`, silently
+  // dropping the "same day" signal from a submitted business request. Bug
+  // found during Aug 15 2026 stabilization-pass bug hunt; matches
+  // intentResolverScoring.js's own matchesDateWindow(), which already
+  // treats today/tonight/now as equivalent.
+  if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') return todayStart.toISOString().slice(0, 10);
   if (dateWindow === 'tomorrow') {
     const d = new Date(todayStart);
     d.setDate(d.getDate() + 1);
@@ -49,7 +56,12 @@ function toDateParam(dateWindow) {
   }
   if (dateWindow === 'weekend') {
     const dayOfWeek = todayStart.getDay();
-    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+    // Sunday (0) is the tail end of the *current* weekend, not 6 days
+    // before the next one -- the old wraparound math silently pushed a
+    // Sunday submission's business request a full week out. Bug found
+    // during Aug 15 2026 stabilization-pass bug hunt (same fix applied to
+    // intentResolverScoring.js's matchesDateWindow/dateWindowToDateRange).
+    const daysUntilSaturday = dayOfWeek === 0 ? -1 : 6 - dayOfWeek;
     const d = new Date(todayStart);
     d.setDate(d.getDate() + daysUntilSaturday);
     return d.toISOString().slice(0, 10);
@@ -89,7 +101,15 @@ export default function AskBusinessScreen({ navigation, route }) {
   const [category, setCategory] = useState(route.params?.prefillCategory ?? null);
   const [partySize, setPartySize] = useState(route.params?.prefillPartySize ? String(route.params.prefillPartySize) : '');
   const [budgetMax, setBudgetMax] = useState(route.params?.prefillBudgetMax ? String(route.params.prefillBudgetMax) : '');
-  const [dateWindow, setDateWindow] = useState(route.params?.prefillDateWindow && route.params.prefillDateWindow !== 'flexible' && route.params.prefillDateWindow !== 'now' ? route.params.prefillDateWindow : 'flexible');
+  // 'tonight' is a real value create-assistant can return, but this
+  // screen's own chip set only has today/tomorrow/weekend/flexible --
+  // previously an incoming 'tonight' was kept as-is, so no chip ever
+  // rendered as selected and toDateParam() (before its own fix above)
+  // silently submitted no date at all. Normalized to 'today' here, same
+  // as toDateParam() itself now treats them as equivalent.
+  const rawPrefillDateWindow = route.params?.prefillDateWindow;
+  const normalizedPrefillDateWindow = rawPrefillDateWindow === 'tonight' || rawPrefillDateWindow === 'now' ? 'today' : rawPrefillDateWindow;
+  const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow && normalizedPrefillDateWindow !== 'flexible' ? normalizedPrefillDateWindow : 'flexible');
   const [radiusMiles, setRadiusMiles] = useState(RADIUS_OPTIONS.includes(route.params?.prefillRadiusMiles) ? route.params.prefillRadiusMiles : 15);
   const [submitting, setSubmitting] = useState(false);
 

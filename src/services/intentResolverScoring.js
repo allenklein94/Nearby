@@ -94,7 +94,12 @@ export function matchesDateWindow(scheduledAt, dateWindow) {
   }
   if (dateWindow === 'weekend') {
     const dayOfWeek = todayStart.getDay();
-    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+    // Sunday (0) is itself the tail end of the *current* weekend, not 6
+    // days before the next one -- `(6 - dayOfWeek + 7) % 7` wrapped Sunday
+    // all the way around to next Saturday, silently excluding the rest of
+    // today (and everything scheduled later today) from a "this weekend"
+    // match. Bug found during Aug 15 2026 stabilization-pass bug hunt.
+    const daysUntilSaturday = dayOfWeek === 0 ? -1 : 6 - dayOfWeek;
     const saturdayStart = new Date(todayStart);
     saturdayStart.setDate(saturdayStart.getDate() + daysUntilSaturday);
     const mondayStart = new Date(saturdayStart);
@@ -128,7 +133,8 @@ export function dateWindowToDateRange(dateWindow) {
   }
   if (dateWindow === 'weekend') {
     const dayOfWeek = todayStart.getDay();
-    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+    // Same fix as matchesDateWindow() above -- see its comment.
+    const daysUntilSaturday = dayOfWeek === 0 ? -1 : 6 - dayOfWeek;
     const saturday = new Date(todayStart);
     saturday.setDate(saturday.getDate() + daysUntilSaturday);
     const sunday = new Date(saturday);

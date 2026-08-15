@@ -19,7 +19,7 @@ export default function CommunityChatScreen({ route }) {
     ({ limit, beforeCreatedAt }) => getCommunityMessagesPage(communityId, { limit, beforeCreatedAt }),
     [communityId]
   );
-  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
+  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadingInitial, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer();
   const [myUserId, setMyUserId] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
@@ -90,6 +90,18 @@ export default function CommunityChatScreen({ route }) {
     return (
       <SafeAreaView style={styles.container}>
         <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
+  // loadingInitial was never checked here -- every mount briefly rendered
+  // the messages.length === 0 branch below ("Say hi to everyone in...")
+  // before the first page had actually loaded, for every community chat
+  // regardless of how much real history it has.
+  if (loadingInitial) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
       </SafeAreaView>
     );
   }

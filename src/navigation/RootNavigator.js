@@ -380,7 +380,28 @@ export default function RootNavigator() {
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="CommunityChat" component={CommunityChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.communityName ? `${route.params.communityName} Chat` : 'Community Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen
+              name="CommunityChat"
+              component={CommunityChatScreen}
+              options={({ route, navigation }) => ({
+                headerShown: true,
+                title: route.params?.communityName ? `${route.params.communityName} Chat` : 'Community Chat',
+                headerStyle: { backgroundColor: colors.background },
+                headerTintColor: colors.textPrimary,
+                headerShadowVisible: false,
+                headerRight: () =>
+                  route.params?.communityId ? (
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('CommunityDetail', { communityId: route.params.communityId })}
+                      style={{ paddingHorizontal: 8 }}
+                      accessibilityLabel={route.params?.communityName ? `View ${route.params.communityName}'s community page` : 'View community page'}
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
+                  ) : null,
+              })}
+            />
             <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'List Your Business', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MyBusinessApplication" component={MyBusinessApplicationScreen} options={{ headerShown: true, title: 'My Application', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

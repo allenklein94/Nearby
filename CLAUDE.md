@@ -55,6 +55,118 @@ usage, not building more of it speculatively.
   see the architecture doc's §8 for the full known-limitations list. Closing that gap (a real
   device pass) is worth more right now than any new build.
 
+## Aug 15 2026 — bug hunt (feature-freeze-compatible stabilization work) + two explicitly-requested features (photo comments, community-chat→community-page link) — DONE
+
+Direct follow-up to the feature-freeze declaration above, same day. Two parallel fork-based bug
+hunts were run over the newest, least-scrutinized code (the intent layer/business fulfillment
+client code, and the messaging pagination system + business dashboard loaders) — this is exactly
+the kind of grounded, evidence-based stabilization work the freeze explicitly keeps in scope.
+Real bugs were found and fixed, not fabricated to have something to report:
+
+1. **Weekend date-window math wrapped a Sunday all the way to next Saturday**, in three separate
+   copies of the same `(6 - dayOfWeek + 7) % 7` formula — `intentResolverScoring.js`'s
+   `matchesDateWindow()`/`dateWindowToDateRange()`, `AskBusinessScreen.js`'s `toDateParam()`, and
+   `GatheringsScreen.js`'s own date filter. Failure scenario: a real user asking "something fun
+   this weekend" (or filtering Gatherings by Weekend) on a Sunday afternoon would have the rest
+   of that same Sunday silently excluded from results. Fixed in all three
+   (`dayOfWeek === 0 ? -1 : 6 - dayOfWeek`), verified against real 2026-08-15/16/17/19 dates and
+   the existing 15-test `intentResolverScoring.test.js` suite (still 15/15 passing).
+2. **`AskBusinessScreen.js` had no `'tonight'` branch** in its date chips or `toDateParam()`,
+   even though `create-assistant`'s real classifier can return `dateWindow: 'tonight'` — a
+   "dinner tonight" ask that fell through to the business-ask form showed no chip selected and
+   silently dropped the date signal entirely on submit. Fixed by normalizing `tonight`/`now` →
+   `today` at both the initial-state seed and inside `toDateParam()`.
+3. **`HomeScreen.js`'s "Message" action on a Tier-2 (connected friend/match) intent result never
+   called `recordIntentSelection()`**, unlike the "View Profile" button right next to it —
+   every time a user picked Message instead of View Profile on that result type, the tap was
+   invisibly dropped from `intent_outcomes`, undercounting the funnel's own "results tapped
+   through" percentage on the Market Validation dashboard. Fixed — Message now records the
+   selection before navigating, matching every other exit point.
+4. **A real duplicate-message race between optimistic send and realtime echo in
+   `ChatScreen.js`**, across all 6 optimistic-send paths (`sendMessage`/`sendGif`/
+   `handlePickVideo`/`handlePickPhoto`/`handleStopRecording`/`suggestDateNight`): if the
+   realtime channel's own INSERT echo for a just-sent message arrived before the REST response
+   resolved (a real, plausible ordering — the two race independently), the later blind
+   temp-id→real-id swap added a second entry under the same real id, a genuine duplicate + a
+   React key collision in the FlatList. Fixed with a shared `replaceOptimisticMessage()` helper
+   that checks whether the real id is already present (from the realtime echo) before swapping,
+   dropping the placeholder instead of duplicating when it is.
+5. **`loadingInitial` from `usePaginatedMessages` was destructured nowhere in any of the four
+   chat screens** (`ChatScreen`/`GatheringChatScreen`/`CommunityChatScreen`/
+   `BusinessConversationScreen`) — every one of them gated only on `messages.length === 0`,
+   meaning every mount (or every focus, for the business screen) briefly rendered the wrong
+   "say hi, be the first to message" empty state — including the designated-first-messenger hint
+   and AI-icebreaker button — for every conversation, including ones with substantial real
+   history, until the first page resolved. Fixed in all four: a real loading-spinner branch now
+   gates ahead of the empty/list branch, matching this codebase's own established full-screen
+   spinner pattern.
+6. **`BusinessDashboardScreen.js`'s `handleToggleMemberHistory()` had no try/catch** around
+   either of its two awaited calls (`getBusinessMemberGatheringHistory`/
+   `getBusinessCustomerNote`) — a thrown error left that member's expanded row permanently
+   stuck on its loading spinner. Fixed with try/catch/finally around both, matching this
+   screen's own already-established non-fatal-loader convention for its other 10 loaders.
+
+**Verified clean, nothing changed** (both forks cross-checked client assumptions against the
+real, current RPC signatures rather than assuming): `intentResolver.js`, `intentOutcomes.js`,
+`marketValidation.js`, `intentPatterns.js`, `businessFulfillment.js`,
+`BusinessRequestDetailScreen.js`, `MarketValidationScreen.js`, `BusinessDashboardScreen.js`'s
+Make-an-Offer/Post-Availability modals, `usePaginatedMessages.js`'s cursor logic, every chat
+screen's realtime-channel cleanup, and `scripts/live-verify/*.js`'s RPC argument shapes.
+
+**Two explicitly-requested features, built on top of (and overriding, per direct instruction)
+the feature freeze for these two items only:**
+
+- **Comment on someone's picture** — confirmed absent anywhere in the codebase before this pass
+  (grepped for any existing photo-comment concept — zero hits). New `photo_comments` table
+  (`20260815_photo_comments.sql`) — `photo_owner_id` (real FK) + `photo_ref` (plain text, not a
+  FK — reuses the exact same sentinel `ViewProfileScreen.js`'s own `photos` array already keys
+  on: `'main'` for the profile's main photo, the real `profile_photos.id` for an extra photo —
+  no second id scheme invented, since the main photo has no row/id of its own to reference).
+  SELECT/INSERT both gated through the same `is_blocked()` SECURITY DEFINER helper every other
+  cross-user table in this schema already uses — a blocked pair can neither see nor post
+  comments on each other's photos, either direction. DELETE allowed for the commenter or the
+  photo's own owner (a real, if lightweight, moderation lever). No RPC needed — RLS alone fully
+  covers it, same "personal/social record table, no SECURITY DEFINER needed" precedent as
+  `intent_outcomes`/`gathering_questions`. New `src/services/photoComments.js`
+  (`getPhotoComments`/`addPhotoComment`/`deletePhotoComment`). `src/components/PhotoLightbox.js`
+  (the existing full-screen photo viewer, previously only ever opened from
+  `ViewProfileScreen.js`, the one screen where "someone else's picture" is actually being
+  viewed) gained an optional comments panel — a 💬 toggle button, a scrollable comment list, and
+  a text input, gated on new optional `photoOwnerId`/`photoRef`/`myUserId` props (all three
+  `undefined` for any future caller that doesn't pass them, so nothing else using this component
+  is affected). Runs the same `checkTextModeration()` gate every other free-text input in this
+  app already goes through. `ViewProfileScreen.js` now tracks which photo's `id` (not just its
+  signed URL) is open in the lightbox and passes all three new props through.
+  **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+  grants (`authenticated`/`postgres`/`service_role` yes, `anon` no); real disposable test using
+  the two real profiles in production — a non-blocked comment insert and read both succeeded;
+  after inserting a real block row, the identical insert was correctly rejected by RLS
+  (`42501`) and the identical read correctly returned 0 rows; the photo owner (not the
+  commenter) successfully deleted the comment, confirming the owner-moderation policy branch.
+  All test rows (the comment, the block) deleted afterward; production confirmed back to its
+  exact pre-test baseline (0 rows in both tables). **Verified via a real from-scratch migration
+  replay** — all 30 files (the prior 29 plus this one) replay clean, exit 0, against a truly
+  empty database; `photo_comments` confirmed to exist in the freshly-rebuilt schema.
+- **Community page reachable directly from community chat** — confirmed absent before this pass
+  (`CommunityChatScreen.js`'s header was a plain title with no back-link, and the screen body
+  had no `navigation.navigate('CommunityDetail', ...)` call anywhere). Fixed via a
+  `headerRight` button on the `CommunityChat` route in `RootNavigator.js` (an
+  `information-circle-outline` Ionicon, matching this app's established icon-not-emoji
+  convention for UI chrome) — navigates to `CommunityDetail` using the same `communityId` the
+  chat screen was already opened with, no new params/props threaded anywhere. Hidden if a
+  `communityId` genuinely isn't present (defensive, shouldn't happen given the one real call
+  site always passes it).
+
+**Verification for this whole pass**: all 13 touched files parse clean via a direct
+`@babel/core` + `babel-preset-expo` transform; the full Jest suite (42 tests, 4 files) passes
+unchanged; a full `npx expo export --platform ios` completed with no bundling errors.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of either new feature or any of the 6 bug fixes — next session should confirm the
+comments panel renders/posts/deletes correctly on a real device, that the community-page header
+button navigates correctly, and that the duplicate-message-race fix (#4 above) actually holds
+under a real concurrent send + realtime delivery, which no static read can fully prove.
+
 ## Outstanding: "10/10 roadmap" (Aug 15 2026) — PLAN LOCKED, executing part by part
 
 Written before implementation, same restart-safety convention as every other plan-first section

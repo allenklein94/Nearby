@@ -128,7 +128,7 @@ export default function ChatScreen({ route, navigation }) {
     }
     return data ?? [];
   }, [matchId]);
-  const { messages, setMessages, loadInitial, loadOlder, prependMessage, updateMessage, hasMore, loadingOlder, loadError: messagesLoadError, loadOlderError } = usePaginatedMessages(fetchPage);
+  const { messages, setMessages, loadInitial, loadOlder, prependMessage, updateMessage, hasMore, loadingOlder, loadingInitial, loadError: messagesLoadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer();
   const [userId, setUserId] = useState(null);
   const [otherUser, setOtherUser] = useState(null);
@@ -182,6 +182,24 @@ export default function ChatScreen({ route, navigation }) {
       .is('read_at', null);
 
     updateBadgeCount(myId);
+  }
+
+  // A real race between the realtime channel's own echo of a just-sent
+  // message (the INSERT handler in init(), which calls prependMessage)
+  // and this function's own insert().select() resolving client-side --
+  // the postgres_changes event can arrive before the REST response does.
+  // If it does, prependMessage already added the real row (its dedupe
+  // only matches by id, and the optimistic placeholder's id is a
+  // temporary "optimistic-..." string, not the real one) -- blindly
+  // swapping the placeholder for the real row here would then add a
+  // second entry under the same real id. Checked once, reused at every
+  // optimistic-send call site below.
+  function replaceOptimisticMessage(optimisticId, realMessage) {
+    setMessages((prev) => {
+      const alreadyDelivered = prev.some((m) => m.id === realMessage.id && m.id !== optimisticId);
+      if (alreadyDelivered) return prev.filter((m) => m.id !== optimisticId);
+      return prev.map((m) => (m.id === optimisticId ? realMessage : m));
+    });
   }
 
   useEffect(() => {
@@ -520,7 +538,7 @@ export default function ChatScreen({ route, navigation }) {
         .select()
         .single();
       if (error) throw error;
-      setMessages((prev) => [data, ...prev]);
+      setMessages((prev) => (prev.some((m) => m.id === data.id) ? prev : [data, ...prev]));
       posthog.capture('date_night_suggested');
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -822,7 +840,7 @@ export default function ChatScreen({ route, navigation }) {
       }
 
       posthog.capture('voice_note_sent');
-      setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+      replaceOptimisticMessage(optimisticMessage.id, data);
     } catch (e) {
       setUploadingVoice(false);
       Alert.alert('Error', e.message);
@@ -902,7 +920,7 @@ export default function ChatScreen({ route, navigation }) {
         }
 
         posthog.capture('message_sent');
-        setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+        replaceOptimisticMessage(optimisticMessage.id, data);
       } catch (e) {
         // Remove the optimistic bubble so a failed send doesn't look like
         // it went through — the hook restores the draft and shows a real
@@ -941,7 +959,7 @@ export default function ChatScreen({ route, navigation }) {
     }
 
     posthog.capture('gif_sent');
-    setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+    replaceOptimisticMessage(optimisticMessage.id, data);
   }
 
   async function handlePickVideo() {
@@ -982,7 +1000,7 @@ export default function ChatScreen({ route, navigation }) {
       }
 
       posthog.capture('chat_video_sent');
-      setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+      replaceOptimisticMessage(optimisticMessage.id, data);
     } catch (e) {
       setUploadingPhoto(false);
       Alert.alert('Error', e.message);
@@ -1027,7 +1045,7 @@ export default function ChatScreen({ route, navigation }) {
       }
 
       posthog.capture('chat_photo_sent');
-      setMessages((prev) => prev.map((m) => (m.id === optimisticMessage.id ? data : m)));
+      replaceOptimisticMessage(optimisticMessage.id, data);
     } catch (e) {
       setUploadingPhoto(false);
       Alert.alert('Error', e.message);
@@ -1082,6 +1100,20 @@ export default function ChatScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <LoadErrorState message="Couldn't load your messages." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
+  // loadingInitial (from usePaginatedMessages) was never checked here --
+  // every mount briefly rendered the messages.length === 0 branch below
+  // (the "Say hi" empty state, including its designated-first-messenger
+  // hint and AI icebreaker button) before the first page had actually
+  // loaded, for every conversation regardless of how much real history it
+  // has, then flashed to the real messages once loadInitial() resolved.
+  if (loadingInitial) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
       </SafeAreaView>
     );
   }

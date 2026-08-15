@@ -496,7 +496,26 @@ export default function HomeScreen({ navigation }) {
                         </TouchableOpacity>
                         {item.matchId && (
                           <TouchableOpacity
-                            onPress={() => { setIntentResults(null); navigation.navigate('Chat', { matchId: item.matchId }); }}
+                            onPress={() => {
+                              // Bug fix (Aug 15 2026 stabilization-pass bug hunt): this
+                              // action used to navigate straight to Chat with no
+                              // recordIntentSelection() call at all, unlike every other
+                              // exit point from this panel -- a real, undercounted gap in
+                              // the outcome-tracking funnel (Part 1/2's own design intent
+                              // was "every real exit point," and Message is a real one).
+                              const { classifyResult, typedText, submissionId } = intentResults ?? {};
+                              setIntentResults(null);
+                              recordIntentSelection({
+                                rawText: typedText,
+                                category: classifyResult?.category ?? null,
+                                dateWindow: classifyResult?.dateWindow ?? null,
+                                resultType: item.type,
+                                resultId: item.id ?? null,
+                                resultTitle: item.title,
+                                submissionId,
+                              });
+                              navigation.navigate('Chat', { matchId: item.matchId });
+                            }}
                             accessibilityLabel="Message"
                             accessibilityRole="button"
                           >

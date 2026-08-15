@@ -93,7 +93,7 @@ export default function GatheringChatScreen({ route }) {
     ({ limit, beforeCreatedAt }) => getGatheringMessagesPage(gatheringId, { limit, beforeCreatedAt }),
     [gatheringId]
   );
-  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
+  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadingInitial, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer(draftText ?? '');
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -164,6 +164,18 @@ export default function GatheringChatScreen({ route }) {
     return (
       <SafeAreaView style={styles.container}>
         <LoadErrorState message="Couldn't load this chat." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
+  // loadingInitial was never checked here -- every mount briefly rendered
+  // the messages.length === 0 branch below ("Say hi to everyone
+  // attending...") before the first page had actually loaded, for every
+  // gathering chat regardless of how much real history it has.
+  if (loadingInitial) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
       </SafeAreaView>
     );
   }

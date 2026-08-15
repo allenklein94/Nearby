@@ -58,6 +58,8 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [intentionChangeCount, setIntentionChangeCount] = useState(0);
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxPhotoUri, setLightboxPhotoUri] = useState(null);
+  const [lightboxPhotoRef, setLightboxPhotoRef] = useState(null);
+  const [myUserId, setMyUserId] = useState(null);
   const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
   const [mutualFriends, setMutualFriends] = useState([]);
@@ -117,6 +119,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
       setProfile(data);
       setPhotos(allPhotos);
+      setMyUserId(myId ?? null);
       setLoadError(false);
       setLoading(false);
 
@@ -180,8 +183,9 @@ export default function ViewProfileScreen({ route, navigation }) {
     setSendingFriendRequest(false);
   }
 
-  function openLightbox(uri) {
+  function openLightbox(uri, photoId) {
     setLightboxPhotoUri(uri);
+    setLightboxPhotoRef(photoId ?? null);
     setLightboxVisible(true);
   }
 
@@ -262,7 +266,7 @@ export default function ViewProfileScreen({ route, navigation }) {
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 activeOpacity={0.95}
-                onPress={() => openLightbox(item.signedUrl)}
+                onPress={() => openLightbox(item.signedUrl, item.id)}
                 accessibilityLabel={`${profile.display_name}'s photo ${index + 1} of ${photos.length}, tap to view full screen`}
                 accessibilityRole="button"
               >
@@ -490,6 +494,9 @@ export default function ViewProfileScreen({ route, navigation }) {
         visible={lightboxVisible}
         photoUri={lightboxPhotoUri}
         onClose={() => setLightboxVisible(false)}
+        photoOwnerId={userId}
+        photoRef={lightboxPhotoRef}
+        myUserId={myUserId}
       />
     </SafeAreaView>
   );

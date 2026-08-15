@@ -494,13 +494,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setExpandedMemberId(member.user_id);
     if (!memberHistories[member.user_id]) {
       setLoadingMemberHistory(true);
-      const history = await getBusinessMemberGatheringHistory(selectedPartner.id, member.user_id);
-      setMemberHistories((prev) => ({ ...prev, [member.user_id]: history }));
-      setLoadingMemberHistory(false);
+      try {
+        const history = await getBusinessMemberGatheringHistory(selectedPartner.id, member.user_id);
+        setMemberHistories((prev) => ({ ...prev, [member.user_id]: history }));
+      } catch (e) {
+        console.error('Failed to load member gathering history', e);
+      } finally {
+        setLoadingMemberHistory(false);
+      }
     }
-    const existingNote = await getBusinessCustomerNote(selectedPartner.id, member.user_id);
-    setNoteDraft(existingNote?.note ?? '');
-    setTagsDraft((existingNote?.tags ?? []).join(', '));
+    try {
+      const existingNote = await getBusinessCustomerNote(selectedPartner.id, member.user_id);
+      setNoteDraft(existingNote?.note ?? '');
+      setTagsDraft((existingNote?.tags ?? []).join(', '));
+    } catch (e) {
+      console.error('Failed to load business customer note', e);
+    }
   }
 
   async function handleSaveNote(member) {

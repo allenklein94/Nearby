@@ -19,7 +19,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
     ({ limit, beforeCreatedAt }) => getBusinessMessagesPage(partnerId, null, { limit, beforeCreatedAt }),
     [partnerId]
   );
-  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
+  const { messages, loadInitial, loadOlder, prependMessage, hasMore, loadingOlder, loadingInitial, loadError, loadOlderError } = usePaginatedMessages(fetchPage);
   const { text, setText, send, sendError } = useChatComposer();
   const [reportTarget, setReportTarget] = useState(null);
 
@@ -96,6 +96,18 @@ export default function BusinessConversationScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <LoadErrorState message="Couldn't load this conversation." onRetry={loadInitial} />
+      </SafeAreaView>
+    );
+  }
+
+  // loadingInitial was never checked here -- every focus of this screen
+  // briefly rendered the messages.length === 0 branch below ("Say hi
+  // to...") before the first page had actually loaded, for every
+  // conversation regardless of how much real history it has.
+  if (loadingInitial) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
       </SafeAreaView>
     );
   }

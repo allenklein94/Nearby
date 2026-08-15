@@ -72,7 +72,10 @@ function matchesDateFilter(scheduledAt, filterKey) {
 
   if (filterKey === 'weekend') {
     const dayOfWeek = todayStart.getDay();
-    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
+    // Sunday (0) is already inside the current weekend -- (6 - 0 + 7) % 7
+    // would wrap all the way to next Saturday, silently excluding the rest
+    // of today. Same fix as intentResolverScoring.js's matchesDateWindow.
+    const daysUntilSaturday = dayOfWeek === 0 ? -1 : 6 - dayOfWeek;
     const saturdayStart = new Date(todayStart);
     saturdayStart.setDate(saturdayStart.getDate() + daysUntilSaturday);
     const mondayStart = new Date(saturdayStart);
