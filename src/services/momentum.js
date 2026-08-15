@@ -82,7 +82,14 @@ export async function getMomentumStats() {
   });
 
   let currentStreak = 0;
-  for (let i = weeks.length - 1; i >= 0; i--) {
+  // The current week (weeks[length-1]) is still in progress — a 0 there just
+  // means "nothing yet," not "a quiet week," so it shouldn't zero out an
+  // otherwise-real streak from fully-elapsed weeks before it. Only start
+  // counting from the current week if it already has activity; otherwise
+  // begin from the most recent *completed* week.
+  let streakIndex = weeks.length - 1;
+  if (weeks[streakIndex].count === 0) streakIndex -= 1;
+  for (let i = streakIndex; i >= 0; i--) {
     if (weeks[i].count > 0) currentStreak += 1;
     else break;
   }
