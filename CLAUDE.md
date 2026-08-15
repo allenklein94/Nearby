@@ -21,6 +21,58 @@ picking one of these up. **Nothing in it is scheduled, approved, or a "next obvi
 freeze's own rule applies to it exactly as it applies to everything else in this file: build from
 it only on an explicit future request, never on inferred momentum from its own existence.**
 
+## Aug 15 2026 — second bug hunt of the day (freeze-compatible stabilization), one real fix
+
+Direct follow-up to the day's earlier 6-fix bug hunt, matching the exact same shape: two
+parallel fork-based passes (capped at 2 concurrent) over code not covered by the earlier pass —
+this time the relationship-longevity tool screens and the memory/legacy/rewards/momentum
+screens, both areas that had only ever gotten load-error-handling scrutiny before, never a real
+logic-bug read.
+
+1. **`getMomentumStats()`'s streak calculation would display 0 for a genuine multi-week streak
+   for most of every week — real bug, fixed** (`services/momentum.js`). The streak-counting loop
+   started from the current, still-in-progress calendar week and broke to 0 the instant that
+   week's own count was 0 — true almost the entire week, right up until the user actually
+   attends or hosts something. A user with a real 7-week streak would see Momentum read "0" every
+   Monday morning, indistinguishable from a genuinely broken streak, until they acted that week.
+   Fixed: the loop now only starts counting from the current week if it already has real
+   activity; otherwise it starts from the most recently *completed* week, so an in-progress
+   week's own zero no longer masquerades as a confirmed quiet one. Verified via a direct
+   `@babel/core` parse and a full `npx expo export --platform ios` (clean, no bundling errors —
+   edit to one existing file only).
+
+**Relationship-tools screens (Rehearsal Room, Stress Test, Shared Decisions, Shared Playlist,
+Trip Planning, Timeline Planner, Relationship Constitution/Legacy/Tools/Hub, Music Mode) — read
+in full along with every service they import, verified clean, no changes needed.** Specifically
+checked and confirmed correct rather than assumed: every `navigation.navigate()` target across
+all 11 screens resolves to a real registered route; `RelationshipToolsScreen`'s `MATCH_TOOLS`
+list still correctly matches `ChatScreen`'s "Do Something Together" menu per the existing parity
+fix; the `matches` table's FK-join select shape is consistent with 4 other real working call
+sites; `MusicModeScreen`'s Spotify OAuth token/track-storage shapes match what
+`ViewProfileScreen`/`compatibility.js` actually consume; the 6-screen near-identical scaffold
+family (Stress Test/Shared Decisions/Trip Planning/Timeline Planner/Relationship Constitution)
+has no copy-paste drift between any screen and its own service file. One low-severity, non-silent
+gap noted but not fixed: `RehearsalRoomScreen.sendMessage()` leaves an optimistically-added
+message in the transcript with no retry/rollback if the AI chat call fails with a non-403 error
+(just an `Alert`) — flagged rather than invented a fix with no precedent elsewhere to match.
+
+**Also verified clean, no changes**: `ChemistryDiaryEntryScreen`/`GoodbyeArchiveEntryScreen`/
+`LegacyLibraryScreen`/`MemoryVaultScreen`/`MemoryVaultIndexScreen`/`RelationshipEmergencyKitScreen`/
+`InsightsScreen` and their services. One out-of-scope observation noted, not acted on:
+`MemoryVaultScreen.js` has no loading spinner on initial mount (shows its empty-category state
+until data resolves) — same class of gap the earlier UX-cohesion pass fixed elsewhere, but this
+screen wasn't in that pass's original file list; flagged rather than fixed to avoid scope creep
+beyond "real bug" for this pass. One design judgment call surfaced, not resolved either way:
+`RewardsScreen.js`'s progress-bar percentage measures raw points against the next tier's
+absolute threshold rather than progress within the *current* tier's range, so the bar reads
+further along than "progress toward next tier" implies once a user is past the first tier —
+not a clear defect, left for a future explicit call rather than silently changed.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of the Momentum streak fix — next session should confirm a real multi-week streak
+now correctly displays its full count on a fresh Monday-morning load, not just that the logic
+reads correctly.
+
 ## FEATURE FREEZE / STABILIZATION (declared 2026-08-15) — read this before starting new work
 
 **The codebase is now in feature-freeze/stabilization mode, effective 2026-08-15, per explicit
