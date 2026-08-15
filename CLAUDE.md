@@ -167,6 +167,49 @@ comments panel renders/posts/deletes correctly on a real device, that the commun
 button navigates correctly, and that the duplicate-message-race fix (#4 above) actually holds
 under a real concurrent send + realtime delivery, which no static read can fully prove.
 
+## Aug 15 2026 — group-chat sender profile tap-through + honest "Message" affordance — DONE
+
+Direct follow-up to the community-chat→community-page link built earlier the same day. The user
+asked directly whether tapping someone's profile from a group chat (to add friend/comment/
+message them) was built — checked the real code first rather than guessing: **it wasn't, in
+either group chat screen.** `CommunityChatScreen.js`/`GatheringChatScreen.js` both only had a
+long-press on the sender's name (report/block, via `ReportBlockModal`) — no tap anywhere, on the
+name or the avatar, to reach that person's profile. (1:1 `ChatScreen.js` already has this — its
+header already navigates to `ViewProfile` — this gap was specific to the two group chat screens.)
+
+**Built, explicit request, overriding the freeze for this one item**:
+- Both `CommunityChatScreen.js` and `GatheringChatScreen.js` gained a `navigation` prop (neither
+  destructured it before — React Navigation already passes it to every registered screen, so
+  this needed no `RootNavigator.js` change) and now navigate to `ViewProfile` on tapping a
+  non-own sender's avatar or name, keeping the existing long-press report/block action on the
+  name intact (`onPress` and `onLongPress` coexist fine on the same `TouchableOpacity`).
+- **"Add friend"** was already real (`ViewProfileScreen`'s existing Add Friend button) — tapping
+  through from a group chat now just reaches it for the first time.
+- **"Comment"** was already real as of the pass earlier this same day (photo comments, opened
+  via `ViewProfileScreen`'s photo lightbox) — also now reachable for the first time from a group
+  chat via the same tap-through.
+- **"Chat with them directly"** — checked rather than assumed, and built honestly rather than
+  faked: a plain accepted friendship has no messaging channel behind it at all
+  (`respondToFriendRequest()` only ever flips a `friendships` row, it never creates a `matches`
+  row — this exact fact was already established and documented in this file's own Aug 14 UX-
+  critique fix #3). Unconditionally adding a "Message" button on `ViewProfile` would have been a
+  second broken promise, not a fix. Instead: `ViewProfileScreen.js`'s `load()` now also checks
+  for a real `matches` row between the viewer and the profile (same `.or()` shape its own
+  existing friendship check already uses) and only renders a "💬 Message" button
+  (`navigation.navigate('Chat', { matchId })`) when one genuinely exists — matching the exact
+  "only ever offer what's real" precedent the Aug 14 fix already set for Home's friend-request
+  intent results, just applied here to every profile view generally rather than one specific
+  result type.
+- Verified via a direct `@babel/core` parse of all three touched files (clean), the full 42-test
+  Jest suite (unchanged), and a full `npx expo export --platform ios` (clean, no bundling
+  errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm tapping a sender's avatar/name in both group chat
+screens lands correctly on their profile, that the long-press report/block action still works
+alongside the new tap, and that the Message button correctly appears only for a real match and
+correctly routes to the right conversation.
+
 ## Outstanding: "10/10 roadmap" (Aug 15 2026) — PLAN LOCKED, executing part by part
 
 Written before implementation, same restart-safety convention as every other plan-first section

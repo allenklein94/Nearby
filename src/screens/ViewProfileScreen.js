@@ -62,6 +62,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [myUserId, setMyUserId] = useState(null);
   const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
   const [friendRequestSent, setFriendRequestSent] = useState(false);
+  const [matchId, setMatchId] = useState(null);
   const [mutualFriends, setMutualFriends] = useState([]);
   const [hostStats, setHostStats] = useState(null);
   const [hostReputation, setHostReputation] = useState(null);
@@ -149,6 +150,19 @@ export default function ViewProfileScreen({ route, navigation }) {
           const report = generateCompatibilityReport(myProfile, data);
           setCompatibilityReport(report);
         }
+
+        // A "Message" button only ever shows when a real matches row
+        // exists — a plain accepted friendship has no messaging channel
+        // behind it at all (respondToFriendRequest() never creates a
+        // matches row, confirmed elsewhere in this codebase), so showing
+        // Message unconditionally for any connection would be a second
+        // broken promise, not a real feature.
+        const { data: match } = await supabase
+          .from('matches')
+          .select('id')
+          .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
+          .maybeSingle();
+        setMatchId(match?.id ?? null);
       }
 
       navigation.setOptions({
@@ -323,6 +337,18 @@ export default function ViewProfileScreen({ route, navigation }) {
               <Text style={styles.addFriendButtonText}>
                 {friendRequestSent ? '✓ Request Sent' : '🤝 Add Friend'}
               </Text>
+            </TouchableOpacity>
+          )}
+
+          {!isOwnProfile && matchId && (
+            <TouchableOpacity
+              style={styles.messageButton}
+              onPress={() => navigation.navigate('Chat', { matchId })}
+              activeOpacity={0.85}
+              accessibilityLabel={`Message ${profile.display_name}`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.messageButtonText}>💬 Message</Text>
             </TouchableOpacity>
           )}
 
@@ -558,6 +584,12 @@ const getStyles = (colors) => StyleSheet.create({
   },
   addFriendButtonSent: { borderColor: colors.success },
   addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  messageButton: {
+    alignSelf: 'flex-start', backgroundColor: colors.primary,
+    borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  messageButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   chemistryDiaryLink: { alignSelf: 'flex-start', marginBottom: spacing.md },
   chemistryDiaryLinkText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
   mutualFriendsText: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.sm },

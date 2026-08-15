@@ -13,7 +13,7 @@ import { Alert, ActivityIndicator } from 'react-native';
 import useChatComposer from '../hooks/useChatComposer';
 import usePaginatedMessages from '../hooks/usePaginatedMessages';
 
-export default function GatheringChatScreen({ route }) {
+export default function GatheringChatScreen({ route, navigation }) {
   const { gatheringId, gatheringTitle, draftText } = route.params;
   const { colors } = useTheme();
   const [postingStory, setPostingStory] = useState(false);
@@ -221,17 +221,24 @@ export default function GatheringChatScreen({ route }) {
             return (
               <View style={[styles.messageRow, isMe && styles.messageRowMe]}>
                 {!isMe && (
-                  photoUrls[item.sender_id] ? (
-                    <Image source={{ uri: photoUrls[item.sender_id] }} style={styles.avatar} />
-                  ) : (
-                    <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                  )
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
+                    accessibilityLabel={`View ${item.profiles?.display_name ?? 'this person'}'s profile`}
+                    accessibilityRole="button"
+                  >
+                    {photoUrls[item.sender_id] ? (
+                      <Image source={{ uri: photoUrls[item.sender_id] }} style={styles.avatar} />
+                    ) : (
+                      <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                    )}
+                  </TouchableOpacity>
                 )}
                 <View style={{ maxWidth: '75%' }}>
                   {!isMe && (
                     <TouchableOpacity
+                      onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
                       onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name })}
-                      accessibilityLabel={`${item.profiles?.display_name}, hold to report or block`}
+                      accessibilityLabel={`${item.profiles?.display_name}, view profile, hold to report or block`}
                     >
                       <Text style={styles.senderName}>{item.profiles?.display_name}</Text>
                     </TouchableOpacity>
