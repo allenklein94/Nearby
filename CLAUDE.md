@@ -113,13 +113,60 @@ silently deferred.
 ### What this plan actually schedules — Phases A–C, real and buildable now; Phase D flagged with
 ### open design questions; nothing else in this section is scheduled
 
-**Phase A — real time-window granularity on aggregated demand.** Extend
-`get_aggregated_demand_for_partner()` (and `notify_aggregated_demand_threshold()`'s own crossing
-check, so the two stay consistent) to also bucket by real overlapping `time_window_start`/
-`time_window_end` ranges, not just category — using already-collected real data, the same
+**Phase A — real time-window granularity on aggregated demand. DONE.** Extended
+`get_aggregated_demand_for_partner()` to also bucket by real `time_window_start` clock times
+(morning/afternoon/evening, reusing this app's own established period boundaries) alongside the
+existing category/party-size/soonest-date breakdown — using already-collected real data, the same
 "no new signal, just surface what's already there" discipline every other Aug 15 layer used.
-`BusinessDashboardScreen.js`'s "Demand Near You" section gains the real time-window line
-alongside the existing category/party-size/soonest-date line.
+Deliberately narrower than this paragraph's own original parenthetical, per a real scope
+reconsideration made while building, not a scope cut: `notify_aggregated_demand_threshold()`'s
+own crossing check was **not** also scoped to a time bucket — its one real job ("tell the
+business real demand just crossed a meaningful threshold, go look") doesn't need per-period
+bookkeeping to do that honestly, and scoping it that way would multiply the fire-once dedup logic
+(per category × period, not just per category) for no real payoff at today's real volume; left
+unchanged. `BusinessDashboardScreen.js`'s "Demand Near You" section gains the real time-window
+line ("mostly evening (2 of 3)") alongside the existing category/party-size/soonest-date line,
+shown only when at least one real open request in that category actually specified a time.
+
+**Real bug caught and fixed while building, not just applying**: the migration's first draft used
+bare `category`/`soonest_date`/`dominant_period` identifiers inside the function body's CTEs —
+applied cleanly but failed at *call time* with "column reference is ambiguous," since a bare
+identifier matching a plpgsql OUT parameter name is ambiguous with a same-named table/CTE column
+anywhere in the function body, not just in the final SELECT list. Fixed by renaming every CTE
+column away from the OUT-parameter names before aggregating.
+
+**Real, previously-undocumented filename-ordering bug found and fixed during the from-scratch
+migration replay** (the same class of bug this file has hit and fixed before, e.g. the Aug 14
+`business_fulfillment_availability_search` rename): this migration's own file initially sorted
+*before* `20260815_group_intent_and_aggregated_demand.sql` alphabetically — but that later file
+contains a `create or replace function get_aggregated_demand_for_partner(...)` restoring the
+**old, narrower 4-column return shape**, which would have clobbered (or failed against) this
+migration's 6-column version on a true from-scratch replay, even though it applied fine against
+already-live production (which already had the 6-column version as the newest definition).
+Confirmed by actually replaying the full folder in filename order and tracing the dependency,
+not just by inspection. Fixed by renaming this file to `20260815_v3_aggregated_demand_time_
+window.sql` — sorts after every other real `20260815_*` file, including its own dependency —
+rather than leaving a landmine for the next full replay.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed grants
+(`authenticated` yes, `anon` no); a real disposable 4-row scenario (3 Coffee requests — 2 real
+evening time windows, 1 real morning — plus 1 with no time window at all) against a real
+temporarily-coordinated `Coastal Coffee` produced hand-checked-exact output at every step —
+`request_count: 3, dominant_period: 'evening', dominant_period_count: 2` before the no-time-
+window request, `request_count: 4` with the dominant period/count correctly unchanged after it
+(a request with no time window counts toward the total but never shifts the dominant period); a
+second category (`Music`) with zero time-windowed requests correctly returned
+`dominant_period: null, dominant_period_count: null` rather than a fabricated default; a
+non-owner's call correctly returned nothing. All test rows deleted and `Coastal Coffee`'s
+coordinates reverted to `null` afterward — confirmed production back to its exact pre-test
+baseline (0 `business_requests`). **Verified via a real from-scratch migration replay** (35
+files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout, the filename-ordering fix above already
+folded in) — the new 6-column function confirmed to exist in the freshly-rebuilt database, not
+the old 4-column shape. Client-side verified via a direct `@babel/core` parse (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors — edit to one existing file only).
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new time-window line renders correctly on a real
+device against real "Demand Near You" data.
 
 **Phase B — one-tap "Turn this into an offer" shortcut.** A button on each "Demand Near You" row,
 pre-filling `postBusinessAvailability()`'s existing modal with the real category (and, once
@@ -156,9 +203,10 @@ treat "V3/V4" as a green light to build them anyway**: idea 4 (composed multi-so
 the specific reason and, where one exists, the real evidence bar that would need to be crossed
 first.
 
-**Status: plan only, per direct instruction — nothing in Phases A–D has been built.** Next step is
-the user's own review/go-ahead on which phase(s) to actually execute, same as every other
-plan-first section in this file's history.
+**Status: Phase A is DONE, build-wise (see its own status note above) — picked up and finished
+after a codespace restart interrupted the session mid-build. Phases B–D remain plan only, not yet
+started.** Next step is the user's own review/go-ahead on which of B/C/D to execute next, same as
+every other plan-first section in this file's history.
 
 ## Aug 15 2026 — Nearby 2.0 partial build, explicitly requested by the user, overriding the freeze for this scope — IN PROGRESS
 

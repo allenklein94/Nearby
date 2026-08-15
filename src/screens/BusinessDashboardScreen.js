@@ -1043,6 +1043,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         {[
                           d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
                           d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                          // "Nearby V3/V4" plan, Phase A: a real time-window
+                          // breakdown of already-collected data (business_requests.
+                          // time_window_start), not a new signal -- only shown when
+                          // at least one real open request actually specified a time.
+                          d.dominant_period ? `mostly ${d.dominant_period} (${d.dominant_period_count} of ${d.request_count})` : null,
                         ].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
