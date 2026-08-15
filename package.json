@@ -5,7 +5,8 @@
   "scripts": {
     "start": "expo start",
     "ios": "expo run:ios",
-    "android": "expo run:android"
+    "android": "expo run:android",
+    "test": "jest"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -49,7 +50,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
     "@types/react": "~19.1.10",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
     "typescript": "~5.9.2"
   },
   "private": true

@@ -3,6 +3,7 @@
 // later, honestly, whether it went well -- no fabricated numbers, a null
 // outcome always means "unknown," never a default negative.
 import { supabase } from './supabase';
+import { findRecurringIntentPattern, formatSmartPlaceholder } from '../utils/intentPatterns';
 
 // Fire-and-forget by design -- this is telemetry-shaped, not a blocking
 // step in the user's own flow. Matches this codebase's established
@@ -95,4 +96,33 @@ export async function dismissIntentOutcomePrompt(id) {
     .update({ answered_at: new Date().toISOString() })
     .eq('id', id);
   if (error) throw error;
+}
+
+// 10/10 roadmap Part 7: Home progressive personalization. Reads the
+// caller's own real intent_submissions rows (RLS already scopes this to
+// "only ever my own rows," same as every table this pattern uses
+// elsewhere) for a real, recurring day-of-week + time-window + category
+// pattern -- never invented, never shown for a user without one. Bounded
+// to the most recent 200 rows, matching this codebase's own established
+// "plain .limit() cap, no pagination UI built yet" convention for a
+// personal-record query like this. Fire-and-forget-shaped like the rest
+// of this file -- a failure here should never block Home's own load.
+export async function getMyIntentPatterns() {
+  try {
+    const { data, error } = await supabase
+      .from('intent_submissions')
+      .select('category, created_at')
+      .not('category', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    const pattern = findRecurringIntentPattern(data ?? []);
+    if (!pattern) return null;
+    const placeholderText = formatSmartPlaceholder(pattern);
+    if (!placeholderText) return null;
+    return { ...pattern, placeholderText };
+  } catch (e) {
+    console.error('getMyIntentPatterns failed', e);
+    return null;
+  }
 }

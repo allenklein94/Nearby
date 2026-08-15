@@ -72,6 +72,7 @@ import InsightsScreen from '../screens/InsightsScreen';
 import MomentumScreen from '../screens/MomentumScreen';
 import PlansScreen from '../screens/PlansScreen';
 import RewardsScreen from '../screens/RewardsScreen';
+import MarketValidationScreen from '../screens/MarketValidationScreen';
 import BusinessAIAssistantScreen from '../screens/BusinessAIAssistantScreen';
 import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import ChemistryDiaryEntryScreen from '../screens/ChemistryDiaryEntryScreen';
@@ -352,6 +353,7 @@ export default function RootNavigator() {
             <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: 'Your Momentum', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: 'Your Plans', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Rewards" component={RewardsScreen} options={{ headerShown: true, title: 'Your Rewards', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="MarketValidation" component={MarketValidationScreen} options={{ headerShown: true, title: 'Market Validation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAssistant" component={BusinessAIAssistantScreen} options={{ headerShown: true, title: 'AI Assistant', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: 'Emergency Contacts', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: 'Music Mode', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

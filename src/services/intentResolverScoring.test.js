@@ -1,0 +1,117 @@
+// 10/10 roadmap Part 8: technical validation. Unit tests for
+// intentResolverScoring.js's pure functions -- run anywhere, no
+// device/network needed.
+const {
+  extractMeaningfulWords,
+  titleMentionBonus,
+  matchesDateWindow,
+  dateWindowToDateRange,
+  scoreGatheringForResolver,
+  SCORE_HAPPENING_NOW,
+  SCORE_INTEREST_MATCH,
+  SCORE_CLOSE_DISTANCE,
+} = require('./intentResolverScoring');
+
+describe('extractMeaningfulWords', () => {
+  it('keeps 4+ character words and drops stopwords', () => {
+    // "want", "find", and "tonight" are all in the stopword list on
+    // purpose (see the source file's own comment) -- only "pickleball"
+    // and "game" survive.
+    expect(extractMeaningfulWords('I want to find a pickleball game tonight')).toEqual(['pickleball', 'game']);
+  });
+
+  it('returns an empty array for null/empty input', () => {
+    expect(extractMeaningfulWords(null)).toEqual([]);
+    expect(extractMeaningfulWords('')).toEqual([]);
+  });
+
+  it('is case-insensitive and strips punctuation', () => {
+    expect(extractMeaningfulWords('COFFEE, anyone?')).toEqual(['coffee', 'anyone']);
+  });
+});
+
+describe('titleMentionBonus', () => {
+  it('awards the bonus when the title contains a meaningful word', () => {
+    expect(titleMentionBonus('Pickleball Meetup', ['pickleball'])).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when there is no overlap', () => {
+    expect(titleMentionBonus('Coffee Chat', ['pickleball'])).toBe(0);
+  });
+
+  it('awards nothing with no meaningful words or no title', () => {
+    expect(titleMentionBonus('Coffee Chat', [])).toBe(0);
+    expect(titleMentionBonus(null, ['coffee'])).toBe(0);
+  });
+});
+
+describe('matchesDateWindow', () => {
+  it('always matches when dateWindow is unset or flexible', () => {
+    expect(matchesDateWindow(new Date().toISOString(), null)).toBe(true);
+    expect(matchesDateWindow(new Date().toISOString(), 'flexible')).toBe(true);
+  });
+
+  it('matches "today" only for a timestamp on today\'s calendar date', () => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    expect(matchesDateWindow(today.toISOString(), 'today')).toBe(true);
+    expect(matchesDateWindow(tomorrow.toISOString(), 'today')).toBe(false);
+  });
+
+  it('matches "weekend" for a Saturday and a Sunday, not a weekday', () => {
+    // Anchor "now" to a known Wednesday (2026-08-12) so this test is
+    // deterministic regardless of when it actually runs.
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-12T12:00:00Z'));
+    try {
+      const saturday = new Date('2026-08-15T20:00:00Z').toISOString();
+      const sunday = new Date('2026-08-16T10:00:00Z').toISOString();
+      const monday = new Date('2026-08-17T10:00:00Z').toISOString();
+      expect(matchesDateWindow(saturday, 'weekend')).toBe(true);
+      expect(matchesDateWindow(sunday, 'weekend')).toBe(true);
+      expect(matchesDateWindow(monday, 'weekend')).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+});
+
+describe('dateWindowToDateRange', () => {
+  it('returns null/null for flexible/unset', () => {
+    expect(dateWindowToDateRange('flexible')).toEqual({ start: null, end: null });
+    expect(dateWindowToDateRange(undefined)).toEqual({ start: null, end: null });
+  });
+
+  it('returns a single-day range for "today"', () => {
+    const { start, end } = dateWindowToDateRange('today');
+    expect(start).toBe(end);
+    expect(start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('returns a genuine Saturday-through-Sunday range for "weekend", never just Saturday', () => {
+    const { start, end } = dateWindowToDateRange('weekend');
+    const startDate = new Date(`${start}T00:00:00Z`);
+    const endDate = new Date(`${end}T00:00:00Z`);
+    expect(startDate.getUTCDay()).toBe(6); // Saturday
+    expect(endDate.getUTCDay()).toBe(0); // Sunday
+    expect(endDate.getTime() - startDate.getTime()).toBe(24 * 60 * 60 * 1000);
+  });
+});
+
+describe('scoreGatheringForResolver', () => {
+  it('scores an interest match, close distance, and happening-today independently', () => {
+    const todayIso = new Date().toISOString();
+    const gathering = { matchesYourInterests: true, distanceMiles: 0.5, scheduled_at: todayIso };
+    expect(scoreGatheringForResolver(gathering)).toBe(SCORE_INTEREST_MATCH + SCORE_CLOSE_DISTANCE + SCORE_HAPPENING_NOW);
+  });
+
+  it('scores zero for a distant, non-matching, non-today gathering', () => {
+    const gathering = { matchesYourInterests: false, distanceMiles: 50, scheduled_at: '2020-01-01T00:00:00Z' };
+    expect(scoreGatheringForResolver(gathering)).toBe(0);
+  });
+
+  it('does not add distance points at exactly the 2-mile boundary', () => {
+    const gathering = { matchesYourInterests: false, distanceMiles: 2, scheduled_at: '2020-01-01T00:00:00Z' };
+    expect(scoreGatheringForResolver(gathering)).toBe(0);
+  });
+});

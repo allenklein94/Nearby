@@ -6,7 +6,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
-import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt } from '../services/intentOutcomes';
+import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns } from '../services/intentOutcomes';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import { supabase } from '../services/supabase';
@@ -89,7 +89,7 @@ export default function HomeScreen({ navigation }) {
   const [intentThinking, setIntentThinking] = useState(false);
   const [intentResults, setIntentResults] = useState(null);
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
-  const [intentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
+  const [intentPlaceholder, setIntentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   const [outcomePrompt, setOutcomePrompt] = useState(null);
   const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
   const period = getTimePeriod();
@@ -118,6 +118,17 @@ export default function HomeScreen({ navigation }) {
         setPendingInvitesCount(pendingInvites);
         const pendingOutcome = await getPendingIntentOutcomePrompt();
         setOutcomePrompt(pendingOutcome);
+
+        // 10/10 roadmap Part 7: a real, recurring pattern (if one exists
+        // for right now) joins the existing static rotation as one more
+        // example -- never replaces the box, never auto-submits, never
+        // shown for a user without a real repeated pattern (falls back to
+        // today's static examples exactly as before).
+        const pattern = await getMyIntentPatterns();
+        if (pattern?.placeholderText) {
+          const pool = [...INTENT_PLACEHOLDER_EXAMPLES, pattern.placeholderText];
+          setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
+        }
       } catch (e) {
         // These are supplementary cards, not core functionality — a
         // failure here should never block social forecast/location

@@ -63,6 +63,7 @@ export default function SettingsScreen({ navigation }) {
   const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
+  const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
 
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -118,6 +119,7 @@ export default function SettingsScreen({ navigation }) {
       setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
+      setIntentVisibility(data.intent_visibility ?? 'friends_and_matches');
     }
   }
 
@@ -167,6 +169,20 @@ export default function SettingsScreen({ navigation }) {
     setDiscoveryViewStyle(style);
     const { error } = await supabase.from('profiles').update({ discovery_view_style: style }).eq('id', userId);
     if (error) {
+      Alert.alert('Error', error.message);
+    }
+  }
+
+  // 10/10 roadmap Part 6: a plain two-option picker, no new taxonomy --
+  // narrows an already-friends/matches-only surface
+  // (get_connected_open_business_requests, Tier 2 of the intent resolver)
+  // further, never widens the locked no-stranger-discovery boundary.
+  async function updateIntentVisibility(value) {
+    const previous = intentVisibility;
+    setIntentVisibility(value);
+    const { error } = await supabase.from('profiles').update({ intent_visibility: value }).eq('id', userId);
+    if (error) {
+      setIntentVisibility(previous);
       Alert.alert('Error', error.message);
     }
   }
@@ -757,6 +773,33 @@ export default function SettingsScreen({ navigation }) {
               accessibilityLabel="I message first"
             />
           </View>
+          <View style={styles.divider} />
+          <View>
+            <Text style={styles.settingLabel}>Who can see my requests</Text>
+            <Text style={styles.helperText}>
+              A "Coffee tonight?" request you post stays within Nearby's usual friends/matches-only
+              boundary either way — this only controls whether a friend or match can see it as a
+              suggested match for their own ask.
+            </Text>
+            <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
+              <TouchableOpacity
+                style={[styles.chip, intentVisibility === 'friends_and_matches' && styles.chipSelected]}
+                onPress={() => updateIntentVisibility('friends_and_matches')}
+                accessibilityRole="button"
+                accessibilityLabel="Friends & matches"
+              >
+                <Text style={[styles.chipText, intentVisibility === 'friends_and_matches' && styles.chipTextSelected]}>Friends & Matches</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.chip, intentVisibility === 'nobody' && styles.chipSelected]}
+                onPress={() => updateIntentVisibility('nobody')}
+                accessibilityRole="button"
+                accessibilityLabel="Nobody"
+              >
+                <Text style={[styles.chipText, intentVisibility === 'nobody' && styles.chipTextSelected]}>Nobody</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">Safety</Text>
@@ -839,6 +882,17 @@ export default function SettingsScreen({ navigation }) {
               accessibilityRole="button"
             >
               <Text style={styles.rowButtonText}>Review Verifications (Admin)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('MarketValidation')}
+              activeOpacity={0.85}
+              accessibilityLabel="Market validation dashboard, admin"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Market Validation (Admin)</Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
           </>

@@ -318,10 +318,190 @@ limitation, same as everywhere else in this file**: no manual simulator/device r
   bundling errors, edits to three existing files, no new files — module count unchanged). **Not
   done this pass**: no from-scratch Docker migration replay (same disclosed gap as Parts 1-3); no
   manual simulator/device run-through of either new reliability line's rendering.
-- Part 6 (privacy controls): not started
-- Part 7 (Home personalization): not started
-- Part 8 (technical validation): not started
-- Part 9 (market validation dashboard): not started
+- **Part 6 (privacy controls): DONE.** New `profiles.intent_visibility` column
+  (`friends_and_matches|nobody`, default `friends_and_matches` — matches current behavior
+  exactly, zero regression) via `20260815_intent_visibility.sql`. `get_connected_open_business_requests`
+  (the RPC behind the resolver's Tier 2) gained one additive real condition —
+  `and p.intent_visibility = 'friends_and_matches'` on the requester-profile join — same 3-arg
+  signature, plain `CREATE OR REPLACE` (no return-shape change, no `drop function` needed this
+  time). New "Who can see my requests" row in Settings' Privacy section (`SettingsScreen.js`) —
+  a plain two-option chip picker (Friends & Matches / Nobody), reusing the screen's own existing
+  `chip`/`chipSelected` styles, no new taxonomy invented. Explicitly not touched, per the plan's
+  own scope: dating discovery (`show_me`/`discovery_gender`, an unrelated surface) and the
+  no-stranger-discovery boundary itself (this setting only ever narrows an already-friends-only
+  surface further, never widens it — Tier 2 was already friends/matches-only before this column
+  existed). **Verified live against production** (`enmosvippabmuqslzrox`), not just applied:
+  confirmed grants (`authenticated` yes, `anon` no); using the one real accepted-friend pair in
+  production (`Claude`↔`Allen`), inserted a real disposable open `business_requests` row from
+  `Claude` — calling the RPC as `Allen` correctly saw it with `Claude`'s default
+  `intent_visibility`; setting `Claude`'s `intent_visibility` to `'nobody'` correctly made it
+  disappear from the identical call; a raw attempt to set the column to an invalid value was
+  correctly rejected by the new CHECK constraint. `Claude`'s `intent_visibility` reverted to its
+  default and the test request row deleted afterward — confirmed production back to its exact
+  pre-test state. **Verified via a real from-scratch migration replay** (28 files, `psql -v
+  ON_ERROR_STOP=1`, exit 0 throughout) — the new column and the updated function both confirmed
+  to exist in the freshly-rebuilt database. Client-side verified via a direct `@babel/core` parse
+  (clean) and a full `npx expo export --platform ios` (clean, no bundling errors — edit to one
+  existing file only, no new client files this part). **Not done this pass, same standing gap as
+  everywhere else in this file**: no manual simulator/device run-through — next session should
+  confirm the picker renders/saves correctly against real data and that a friend/match genuinely
+  stops seeing a "nobody"-set requester's open asks in the running app, not just via direct RPC
+  calls.
+- **Part 7 (Home personalization): DONE.** New pure `src/utils/intentPatterns.js` —
+  `findRecurringIntentPattern(rows, now)` groups the caller's own real `intent_submissions`
+  history (category set) by real `(day-of-week, time-period, category)`, using the same
+  `getTimePeriod()` bucketing Quick Picks already uses, and returns the one pattern that's both
+  occurred 3+ times *and* matches right now (e.g. a real "Friday nights → Coffee" pattern only
+  surfaces on an actual Friday evening) — `formatSmartPlaceholder()` turns that into one line
+  ("Coffee tonight?"). New `getMyIntentPatterns()` in `services/intentOutcomes.js` — a plain
+  owner-scoped `select` (RLS already covers "only ever my own rows," same as everything else in
+  that file, no new RPC needed), bounded to the most recent 200 rows, matching this codebase's
+  own established plain-`.limit()`-cap convention for a personal-record query. `HomeScreen.js`
+  wired at the exact point Part 1's own dashboard-supplementary fetch already runs: when a real
+  pattern is found, its placeholder text joins the existing static rotation
+  (`INTENT_PLACEHOLDER_EXAMPLES`) as one more option — never replacing the box, never
+  auto-submitting, never shown for a user without a real repeated pattern (falls back to today's
+  static examples exactly as before, matching the plan's own explicit boundary). Zero new
+  sections, zero hierarchy changes — scoped to one input's placeholder text only, per the
+  locked "no length/hierarchy changes beyond what was already approved" boundary this file's Aug
+  14 Home-hierarchy section already set. Verified via a direct `@babel/core` parse of all three
+  touched/new files (clean) and a full `npx expo export --platform ios` (clean, no bundling
+  errors — edits to two existing files plus the one new `intentPatterns.js`, now also counted in
+  Part 8's own module-count delta below since both parts landed in the same pass). **Not done
+  this pass, same standing gap as everywhere else in this file**: no manual simulator/device
+  run-through — next session should confirm a real account with a genuine 3+ times repeated
+  Friday-night-shaped (or any other real day/period) intent pattern actually sees the smarter
+  placeholder show up in the rotation at the right moment, and that an account with no real
+  pattern sees no change at all.
+- **Part 8 (technical validation): DONE, the buildable half.** Confirmed the plan's own premise
+  first — no test runner (`jest`/`babel-jest`) was anywhere in `package.json`, zero `*.test.*`
+  files existed anywhere in the repo. Stood up real Jest infrastructure without touching how the
+  app itself bundles: read `node_modules/@expo/metro-config/build/loadBabelConfig.js` directly
+  to confirm this repo has never had a root `babel.config.js`/`.babelrc`(`.js`) and Metro
+  silently falls back to `babel-preset-expo` when none exists — adding a root `babel.config.js`
+  for Jest would have flipped that fallback onto whatever the new file said, a real risk to the
+  app bundle for a change that's only supposed to add test infrastructure. Used a deliberately
+  differently-named `jest.babel.config.js` instead (not one of the three filenames Metro checks
+  for) plus `jest.config.js` pointing Jest's `transform` option at it explicitly via an absolute
+  path — the two build pipelines stay completely independent, confirmed by a full, unmodified
+  `npx expo export --platform ios` still succeeding afterward. `jest`/`babel-jest`/
+  `@babel/preset-env` added as real `devDependencies` (versions matched to the `babel-jest@29.7.0`
+  already present transitively in `node_modules`, to avoid a version mismatch), `"test": "jest"`
+  script added to `package.json`.
+  **Refactor needed before the tests could even be written, not just written around**: the five
+  named pure functions in `intentResolver.js` (`scoreGatheringForResolver`/`dateWindowToDateRange`/
+  `extractMeaningfulWords`/`titleMentionBonus`, plus `matchesDateWindow`) weren't exported, and —
+  more importantly — importing `intentResolver.js` directly in a plain Node/Jest environment
+  would transitively pull in `expo-location`/`@react-native-async-storage/async-storage`/
+  `react-native-url-polyfill`, all native modules that throw outside a real React Native runtime.
+  Extracted all five verbatim (zero behavior change, confirmed via a line-by-line diff before
+  trusting it) into a new zero-import `src/services/intentResolverScoring.js`;
+  `intentResolver.js` now imports every one of them instead of defining local copies. This is a
+  real, permanent architectural improvement (the module is now genuinely unit-testable), not a
+  test-only shim — `intentResolver.js` itself is otherwise completely unchanged.
+  **42 real tests across 4 files, all passing**: `intentResolverScoring.test.js` (word
+  extraction/stopwords, title-mention bonus, date-window matching including a real
+  Saturday-through-Sunday weekend boundary check via `jest.useFakeTimers().setSystemTime()`
+  anchored to a known date — not a flaky "whenever this happens to run" test — and the
+  interest/distance/happening-today scoring math including the exact 2-mile non-inclusive
+  boundary), `timeContext.test.js` (`formatHeroDateTime`'s Today/Tomorrow/real-date branches,
+  `getTimePeriod`'s weekend-regardless-of-hour rule, `getQuickPrompts`'s fallback,
+  `getPersonalizedQuickPicks`/`getPinnedQuickPicks`'s real-history-vs-static-default and
+  period-flavor-vs-generic-fallback branches), `gatheringIndoorOutdoor.test.js`
+  (`isIndoorCategory`'s indoor/outdoor/deliberately-unclassified/unknown cases, plus a sweep
+  confirming no category is ever double-classified), and `intentPatterns.test.js` (Part 7's own
+  new pure functions — the 3-occurrence threshold, the "must match right now" gate using a real
+  anchored Friday-vs-Wednesday date pair, and the placeholder-text formatting). Two real
+  authoring mistakes were caught and fixed by actually running the suite, not assumed correct
+  from reading the source: two of my own test's expected outputs didn't account for "want"/
+  "find"/"tonight" all being real entries in `extractMeaningfulWords`' own stopword list, and one
+  fixture date I'd labeled "a Wednesday" was actually a second Friday — both are exactly the
+  class of bug a real test run catches that a code read doesn't.
+  **Real, repeatable `scripts/live-verify/` scripts for the critical path, per the plan's own
+  named failure modes** (double-accept race, expiry, decline, duplicate submission) — a shared
+  `lib/db.js` (runs real SQL against production via the Supabase Management API, the same
+  technique this file's own history has used by hand in every prior session, now turned into
+  something re-runnable) plus four scripts: `business-offer-double-accept.js` (Part 3's own
+  `accept_business_offer()` fix — a second accept on an already-fulfilled request must be
+  rejected), `gathering-approve-double-review.js` (Part 3's `approve_gathering_interest()` fix —
+  a second approve on an already-approved interest row must be rejected, not silently
+  re-processed), `business-request-expiry-and-decline.js` (the hourly
+  `expire_stale_business_requests()` cron genuinely expires a stale open request and its
+  pending/offered offspring; `decline_business_offer()` transitions correctly and rejects a
+  second decline), and `business-request-duplicate-submission.js` (`create_business_request()`'s
+  own spam guard returns the same request id for a literal repeat ask, doesn't create a second
+  row or re-run the fan-out). Each script creates real, clearly-tagged (`live-verify:`) disposable
+  test data and deletes it in a `finally` block. `gathering-approve-double-review.js` specifically
+  captures and restores (rather than blindly deletes) any pre-existing match row between its two
+  test profiles first — a direct, deliberate lesson from this same file's own earlier documented
+  mistake (the Capacity/Waitlist section's `on conflict do update ... where source_gathering_id
+  is null` accidentally retargeting a real production match row onto test data, then deleting it
+  during cleanup) — this script is written so that exact mistake can't recur. **Actually run
+  against production this pass, not just written**: all four scripts, via `run-all.js`, passed
+  every one of their assertions live; production was independently confirmed back to its exact
+  pre-run baseline afterward (0 business_requests, 0 offers, the pre-existing 3 real
+  `gathering_interest` rows and 1 real match with `source_gathering_id: null` both untouched).
+  **Not attempted, disclosed rather than silently skipped, per the plan's own scope boundary**:
+  load testing and a real production-monitoring dashboard — both explicitly flagged in this
+  plan's own opening paragraph as needing live deployed infrastructure and real traffic this
+  sandbox doesn't have, not a gap in this part's own execution. Verified via a full `npx expo
+  export --platform ios` (clean, **1867 modules** — two more than the prior 1865 baseline, which
+  already included Part 7's own `intentPatterns.js`; this part's two new client-bundled files are
+  `intentResolverScoring.js` and Part 9's `marketValidation.js`/`MarketValidationScreen.js`
+  pushed the count further, see Part 9's own note for the final number).
+- **Part 9 (market validation dashboard): DONE, the buildable half.** New admin-only
+  `get_market_validation_stats()` SECURITY DEFINER RPC (`check_is_admin(auth.uid())` gate,
+  matching `get_intent_funnel_stats()`'s own established pattern) via
+  `20260815_market_validation_stats.sql` — real 7/30-day return rate (from `intent_submissions`,
+  the one real cross-session activity signal this app has instrumented since Part 2: of every
+  distinct submitter, what fraction has a *second* submission at least 7/30 real days after
+  their first), plus a marketplace-wide partner reliability rollup (the exact same response-rate/
+  acceptance-rate/completion-rate math Part 5's `get_partner_offer_reputation()` already computes
+  for one partner, aggregated here across every partner's `business_request_offers` rows at
+  once) — every percentage `nullif(...,0)`-guarded against a zero denominator, matching this
+  schema's own established convention, never defaulting to a fabricated value. New
+  `src/services/marketValidation.js` (`getIntentFunnelStats()` — Part 2's RPC finally gets a real
+  client caller; `getMarketValidationStats()`) and `src/screens/MarketValidationScreen.js` — three
+  real sections (Intent Funnel, Return Rate, Marketplace Reliability), reusing `RewardsScreen.js`/
+  `InsightsScreen.js`'s own established loading/error-state/card patterns, a plain "—" for any
+  null (never a fabricated 0%). Reachable from a new "Market Validation (Admin)" row in
+  Settings' existing admin-only Business group (`isAdmin`-gated, same pattern as Business
+  Dashboard/Requests/Review Verifications right above it), new `MarketValidation` route in
+  `RootNavigator.js`. **Explicitly not claimed as "10/10 on market validation" anywhere on the
+  screen** — its own subtitle says so directly; this app is young enough that every number will
+  honestly read near-zero for a long while, which is the correct, honest state per the plan's own
+  framing, not a bug to hide. **Verified live against production**, not just applied: confirmed
+  grants (`authenticated` yes, `anon` no) and that a non-admin's call is correctly rejected
+  (`Only admins can view market validation stats`); built a real disposable scenario (2
+  submitters, one with a second submission exactly 10 real days after their first — crossing the
+  7-day bar, not the 30-day one — and a real 4-row partner-offer funnel spanning completed/
+  accepted/declined/pending) and confirmed every one of the 13 returned fields matched
+  hand-calculated arithmetic exactly (50.0% 7-day return rate, 0.0% 30-day, 75.0% response rate,
+  66.7% acceptance rate, 50.0% completion rate). All test rows deleted afterward; production
+  confirmed back to its exact pre-test baseline (0 rows in every touched table). **Verified via a
+  real from-scratch migration replay** (28 files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout,
+  same replay run that also covered Part 6's migration) — the new function confirmed to exist in
+  the freshly-rebuilt database. Client-side verified via a direct `@babel/core` parse of all four
+  touched/new files (clean) and a full `npx expo export --platform ios` (clean, **1867 modules**,
+  four more than the pre-Parts-6–9 baseline of 1865 — the four new client files this whole
+  Parts-6–9 pass added: `intentPatterns.js`, `intentResolverScoring.js`, `marketValidation.js`,
+  `MarketValidationScreen.js` — every other touched file across all four parts was an edit).
+  **Not done this pass, same standing gap as everywhere else in this file**: no manual
+  simulator/device run-through — next session should confirm the dashboard renders correctly for
+  a real admin account and that its three sections read clearly against genuinely near-zero real
+  numbers, not just non-zero test data.
+
+**All 9 parts of the 10/10 roadmap are now DONE, build-wise** — every schema change applied to
+production and verified live with real disposable test data, every migration replayed clean from
+a truly empty database, every client change verified via a clean `npx expo export --platform ios`.
+Parts 1-5's own individual "not done this pass" gaps (mostly a missing from-scratch Docker replay
+for their own specific migrations, disclosed at the time rather than silently skipped) were **not**
+retroactively closed by this session's own replay run, which only re-proves the schema as it
+exists *today* — the disclosed gap was always about verifying each part's migration in isolation
+at the time it landed, and that specific verification still didn't happen for Parts 1-5. The one
+standing gap repeated at the bottom of literally every part in this whole plan — no manual
+simulator/device run-through — remains open for all 9 parts; that's real, external verification no
+code-only session in this sandbox has ever been able to perform.
 
 ## Outstanding: skeptical first-time-user product critique of the intent-first Home (Aug 14 2026) — critique DONE (read-only); recommendations 1-4 DONE, build-wise; recommendation 5 explicitly deferred by the user
 
