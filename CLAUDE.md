@@ -199,13 +199,61 @@ live test above proved the pipeline runs end-to-end and Expo's push service acce
 notifications, but didn't confirm on-device delivery/tap-through, which no code-only session can
 verify).
 
-**All eight of the ten vision layers have now been addressed one way or another**: 1, 3, 4, 6, 7
-built as real, honest mechanisms this pass; 5 and 7's baseline were confirmed already real before
-extending 7 further; 2 remains deliberately unbuilt (needs real volume over time the app doesn't
-have); 8/9/10 remain correctly not-separable-build-items per the vision doc's own text. Nothing
-further is queued here — the next real input this specific plan needs is either a manual device
-pass on everything flagged above, or the vision doc's own evidence bars actually being crossed
-by real usage data for layer 2 or a deeper version of 1/4/7.
+**Third increment, same day, asked to keep building the next layer — layer 2, DONE, the same
+"real instrumentation, not a fabricated model" treatment already proven out for layers 1/3/7.**
+
+Re-read the vision doc's own layer 2 text before touching it, since it explicitly calls this
+"the slowest-maturing layer... not a build question yet" — the risk here was building something
+that *pretends* to have learned a pattern from data that doesn't exist. Resolved the same way
+layers 1/3/7 were: build the real, honest cross-user aggregation *infrastructure* the doc's own
+text names as the raw material ("every submission is structured signal... over enough volume
+this becomes a real model"), not a trained model — gated on a real double threshold so it can
+never be mistaken for more than it is.
+
+- New `get_cross_user_intent_patterns()` SECURITY DEFINER RPC (admin-only, same `check_is_admin`
+  gate as every other Market Validation RPC) — groups every user's real `intent_submissions` rows
+  by `category` + a real `(day-of-week, time-of-day)` bucket, reusing `getTimePeriod()`'s exact
+  bucketing rule in SQL (weekend if Sat/Sun, else morning/afternoon/evening by hour) rather than
+  inventing a second definition of "period." Distinct from `intentPatterns.js`'s own existing
+  per-user pattern detection (10/10 roadmap Part 7, Home's smarter placeholder text) — that's one
+  user's own history; this is the same grouping applied *across every user at once*, which is
+  what makes it a genuine cross-user signal rather than a personalization feature. Silent below a
+  real double gate: **10+ submissions AND 3+ distinct users** in the bucket — the second guard
+  specifically closes the gap a naive count-only threshold would leave open (one person
+  submitting the same ask ten times in a loop could otherwise read as a real cross-user pattern).
+- New `getCrossUserIntentPatterns()` client wrapper and a "📈 Cross-User Demand Patterns" section
+  on `MarketValidationScreen.js`, right after the Top-Performing Businesses section from the
+  second increment — each qualifying bucket's real submission count, distinct-user count, %
+  resolved, and % reaching business fallback; honest "No real cross-user pattern yet" empty
+  state, matching this dashboard's own established philosophy.
+
+**Verified live against production**, not just applied: confirmed grants (`authenticated` yes,
+`anon` no) and that a non-admin call is correctly rejected. A real disposable 12-row dataset (3
+distinct real profiles, category `Coffee`, all timestamped a real Wednesday afternoon) correctly
+surfaced with hand-checked-exact arithmetic (`submission_count: 12, distinct_users: 3,
+pct_with_result: 75.0, pct_reached_fallback: 25.0`) — not just that the function runs. A second,
+separate 15-row dataset in a different category from only 2 distinct users — enough to cross the
+count-10 threshold alone — was confirmed to correctly **not** surface, proving the distinct-user
+guard actually holds and isn't just present in the SQL text. All 27 test rows deleted afterward;
+production confirmed back to its exact pre-test baseline (0 `intent_submissions`). **Verified via
+a real from-scratch migration replay** (34 files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) —
+the new function confirmed to exist in the freshly-rebuilt database. Client-side verified via a
+direct `@babel/core` parse of both touched files (clean), the full 42-test Jest suite (unchanged,
+still 42/42), and a full `npx expo export --platform ios` (clean, no bundling errors).
+
+**Not done yet, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new section renders correctly for a real admin
+account, both in its honest empty state (what production will show today) and once real
+cross-user volume eventually crosses the double threshold.
+
+**All nine of the ten vision layers have now been addressed one way or another**: 1, 2, 3, 4, 6,
+7 built as real, honest mechanisms across this whole pass; 5's baseline was confirmed already
+real before this pass started; 8/9/10 remain correctly not-separable-build-items per the vision
+doc's own text — 8 is what mature 1+5 look like, 9 is a future positioning decision with nothing
+to build, 10 folds entirely into 4. Nothing further is queued here — the next real input this
+specific plan needs is either a manual device pass on everything flagged above, or the vision
+doc's own evidence bars actually being crossed by real usage data for a deeper version of any of
+the six built layers.
 
 **Standing constraint reaffirmed for any future continuation of this pass**: build only what's
 honestly buildable without fabricating a signal — read the vision doc's own per-layer "evidence

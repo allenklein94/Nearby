@@ -38,3 +38,20 @@ export async function getMarketplaceReliabilityRankings() {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// Nearby 2.0 vision layer 2, "The intent graph / learning system" -- the
+// vision doc's own text calls this "the slowest-maturing layer... not a
+// build question yet." This is deliberately NOT a trained model or a
+// fabricated "understanding" -- it's the real, honest cross-user
+// aggregation infrastructure (category x real day/time bucket, across
+// every user at once, not just one person's own history) the doc's own
+// text describes as the raw material a graph would eventually be built
+// from. Silent below a real double threshold (10+ submissions AND 3+
+// distinct users per bucket) server-side -- never padded, never shown
+// for what could be one person's own repeated submissions mistaken for a
+// cross-user pattern.
+export async function getCrossUserIntentPatterns() {
+  const { data, error } = await supabase.rpc('get_cross_user_intent_patterns');
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}

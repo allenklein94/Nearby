@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getIntentFunnelStats, getMarketValidationStats, getMarketplaceReliabilityRankings } from '../services/marketValidation';
+import { getIntentFunnelStats, getMarketValidationStats, getMarketplaceReliabilityRankings, getCrossUserIntentPatterns } from '../services/marketValidation';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
@@ -51,6 +51,7 @@ export default function MarketValidationScreen() {
   const [funnel, setFunnel] = useState(null);
   const [market, setMarket] = useState(null);
   const [rankings, setRankings] = useState([]);
+  const [patterns, setPatterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -59,11 +60,12 @@ export default function MarketValidationScreen() {
     setLoadError(false);
     (async () => {
       try {
-        const [funnelStats, marketStats, rankingStats] = await Promise.all([getIntentFunnelStats(), getMarketValidationStats(), getMarketplaceReliabilityRankings()]);
+        const [funnelStats, marketStats, rankingStats, patternStats] = await Promise.all([getIntentFunnelStats(), getMarketValidationStats(), getMarketplaceReliabilityRankings(), getCrossUserIntentPatterns()]);
         if (!cancelled) {
           setFunnel(funnelStats);
           setMarket(marketStats);
           setRankings(rankingStats);
+          setPatterns(patternStats);
         }
       } catch (e) {
         if (!cancelled) setLoadError(true);
@@ -205,6 +207,32 @@ export default function MarketValidationScreen() {
                   <StatRow label="Median response time" value={`${formatCount(r.median_response_minutes)} min`} />
                 </>
               )}
+            </View>
+          ))
+        )}
+
+        <Text style={styles.groupHeader} accessibilityRole="header">📈 Cross-User Demand Patterns</Text>
+        <Text style={styles.subtitle}>
+          Nearby 2.0 vision layer 2 — the real raw material a demand model would eventually be
+          built from, not a trained model itself. Silent below 10 real submissions from at least
+          3 distinct real people in the same category/time bucket, so one person's own repeated
+          asks can never read as a cross-user pattern.
+        </Text>
+        {patterns.length === 0 ? (
+          <View style={[styles.card, shadow.card]}>
+            <Text style={styles.emptyRankingsText}>No real cross-user pattern yet.</Text>
+          </View>
+        ) : (
+          patterns.map((p) => (
+            <View key={`${p.category}-${p.period}`} style={[styles.card, shadow.card, { marginBottom: spacing.sm }]}>
+              <Text style={styles.rankingName}>{p.category} — {p.period}</Text>
+              <Text style={styles.statSublabel}>
+                {formatCount(p.submission_count)} submissions from {formatCount(p.distinct_users)} people
+              </Text>
+              <View style={styles.divider} />
+              <StatRow label="Got any resolver result" value={formatPct(p.pct_with_result)} />
+              <View style={styles.divider} />
+              <StatRow label="Reached business fallback" value={formatPct(p.pct_reached_fallback)} />
             </View>
           ))
         )}
