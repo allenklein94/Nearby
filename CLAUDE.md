@@ -73,6 +73,24 @@ run-through of the Momentum streak fix — next session should confirm a real mu
 now correctly displays its full count on a fresh Monday-morning load, not just that the logic
 reads correctly.
 
+**Follow-up, same day: the flagged Rehearsal Room low-severity gap was fixed, asked for
+directly.** `RehearsalRoomScreen.js`'s `sendMessage()` left the optimistically-added user
+message stranded in the transcript with no rollback if the AI call failed for any reason other
+than the 403 premium gate — it looked sent but never actually reached the AI, and the
+already-cleared input meant the user had to retype it from scratch. Chose a rollback fix over a
+"failed message + retry tap" UI treatment, since this conversation is entirely local React
+state (never persisted anywhere, thrown away on leaving the screen) and no other screen in this
+codebase has an existing failed-message retry pattern to match — a new status-field-plus-UI
+treatment would be over-engineering for a screen this low-traffic. On any failure path (both the
+generic-error branch and the catch block), `messages` now reverts to its pre-send state and
+`text` is restored to what the user typed, so a failed send leaves no phantom "sent" bubble and
+no lost input. The 403 premium-gate branch is unchanged — it already resets the whole scenario,
+which is correct since the session genuinely can't continue there. Verified via a direct
+`@babel/core` parse and a full `npx expo export --platform ios` (clean, no bundling errors — edit
+to one existing file only). **Not done, same standing gap as everywhere else in this file**: no
+manual simulator/device run-through — next session should confirm a genuinely failed send
+restores the typed text and removes the stranded bubble correctly in the running app.
+
 ## FEATURE FREEZE / STABILIZATION (declared 2026-08-15) — read this before starting new work
 
 **The codebase is now in feature-freeze/stabilization mode, effective 2026-08-15, per explicit
