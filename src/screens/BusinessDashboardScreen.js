@@ -1614,7 +1614,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     key={o.key}
                     style={[styles.chip, offerTypeInput === o.key && styles.chipSelected]}
-                    onPress={() => setOfferTypeInput(o.key)}
+                    onPress={() => {
+                      // PRODUCT_AUDIT/CONNECTIVITY_AUDIT_2026-08-15.md top-10 item 6: a
+                      // previously-picked alt-time value used to survive switching to a
+                      // different offer type and back, silently resurfacing a stale time
+                      // instead of prompting a fresh pick. Reset it the moment the type
+                      // stops being 'alt_time' -- the submit path already nulled it out of
+                      // what got sent, this just keeps the modal's own local state honest.
+                      if (o.key !== 'alt_time') setOfferProposedTime(null);
+                      setOfferTypeInput(o.key);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={o.label}
                     accessibilityState={{ selected: offerTypeInput === o.key }}

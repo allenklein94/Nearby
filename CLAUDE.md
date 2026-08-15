@@ -221,6 +221,24 @@ type/contract sweep, full RLS resweep beyond group plans, gathering/`gathering_i
 state-machine re-verification, performance/scale beyond `SCALABILITY_AUDIT.md`) — each still
 recommended as its own dedicated future pass, not bundled into this one.
 
+**Top-10 item 6 (stale `proposed_time` when switching offer types away from and back to "Alt.
+time") — also closed while going through the rest of this list.** Confirmed via direct read
+that the actual submitted offer was never wrong (`BusinessDashboardScreen.js`'s submit path
+already nulled `proposedTime` whenever `offerTypeInput !== 'alt_time'`) — the real gap was
+purely local modal state: a previously-picked time could silently resurface if the business
+switched away from "Alt. time" and back within the same modal session. Fixed with a one-line
+reset (`setOfferProposedTime(null)`) on the chip's own `onPress`, whenever the newly-selected
+type isn't `'alt_time'`. Verified via a direct parse and a full `npx expo export --platform
+ios` (clean).
+
+**Every concrete, actionable finding in the connectivity audit's own top-10 list (items 1-6) is
+now fixed. Item 7 (two-round-trip group-plan consent) is explicitly the audit's own "working as
+designed, not a defect" note, not something to fix.** What remains open, per the audit's own
+§I item 7 and restated immediately above: the NOT REACHED domains (full type/contract sweep,
+full RLS resweep beyond group plans, gathering state-machine re-verification, performance/scale
+beyond `SCALABILITY_AUDIT.md`) — each still recommended as its own dedicated future pass, and a
+real manual device run-through of everything built/fixed across this whole audit-fix effort.
+
 ## Aug 15 2026 — "Nearby V3/V4" strategic vision (demand intelligence, reverse marketplace,
 ## planning engine) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED
 
