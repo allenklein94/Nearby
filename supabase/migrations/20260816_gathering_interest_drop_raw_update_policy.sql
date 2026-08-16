@@ -1,0 +1,38 @@
+-- Scorecard to 10, Phase 2 item 2 (full state-machine sweep): a real,
+-- previously-undocumented gap found while reading every gathering_interest
+-- RLS policy against approve_gathering_interest()'s own real guarantees.
+--
+-- gathering_interest has always had a direct, client-writable UPDATE
+-- policy ("Hosts can approve interest, respecting the same safety checks
+-- ...") letting a host flip a row's status straight to 'approved'/'denied'
+-- via a raw table write -- bypassing approve_gathering_interest() (the
+-- SECURITY DEFINER RPC every real client call site actually uses,
+-- confirmed via a full grep of src/ -- there is no direct
+-- .update('gathering_interest', ...) anywhere) entirely. The RLS
+-- with_check only re-validates women-only/blocks -- it has NO capacity
+-- check (a host could approve past a gathering's real capacity, the exact
+-- thing the Aug 8 2026 Capacity/Waitlist build exists to prevent),
+-- NO double-review guard (any row, regardless of current status --
+-- pending, already-approved, already-waitlisted -- can be re-written),
+-- and never inserts the real `matches` row approve_gathering_interest()
+-- creates on a genuine approval, which would leave an "approved" attendee
+-- with no actual match/chat channel.
+--
+-- Fixed by dropping the raw policy outright, matching this schema's own
+-- established convention for every comparable state-machine table
+-- (business_requests/business_request_offers/group_plan_* all have zero
+-- direct client UPDATE policies -- every write goes through a SECURITY
+-- DEFINER RPC). approve_gathering_interest() is unaffected -- it's
+-- SECURITY DEFINER and writes as the function owner, not through this
+-- policy.
+--
+-- NOT YET APPLIED to production as of this commit -- the ad-hoc DROP
+-- POLICY was blocked by this session's own auto-mode safety classifier
+-- (a destructive DDL statement run outside a reviewed migration file),
+-- correctly so. Apply this migration explicitly (Management API or the
+-- Supabase SQL editor) once reviewed, then verify live: a raw client
+-- UPDATE attempt on gathering_interest.status must be rejected by RLS
+-- (42501) for every role, while approve_gathering_interest() itself must
+-- continue to work unchanged.
+
+drop policy if exists "Hosts can approve interest, respecting the same safety checks a" on gathering_interest;
