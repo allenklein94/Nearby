@@ -4,6 +4,127 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, build-wise; not yet applied to production
+
+A new, explicit, opt-in "swipe to meet new people looking to make friends" surface — a
+completely separate product surface from dating discovery, per direct user request. The user
+was asked to make two exact candidate-pool exclusion calls before this was built (rather than
+letting a coding session guess at them, matching this file's own established practice for
+locked social/product-model decisions — see Phase D's own "don't let Claude make these calls
+itself" precedent further down this file). Both were resolved directly by the user, restated
+here exactly as given so a future session never re-litigates them:
+
+**Locked rules:**
+1. **An existing pending friend request (either direction) excludes both users from friend
+   discovery.** Reasoning: showing Allen to Sarah in the swipe deck while Allen's own friend
+   request to Sarah is still pending would create two parallel, confusing social paths to the
+   same outcome, and risks reading as social pressure on the recipient.
+2. **A previously declined friend request/friendship (either direction) also excludes both
+   users.** Reasoning: a decline should mean "don't ask me again through another mechanism" —
+   letting the discovery deck resurface someone who was already explicitly declined would let a
+   user bypass that decline by waiting.
+3. Since `friendships.status` only ever has 3 values (pending/accepted/declined), "any
+   `friendships` row exists between the pair, in any status" is the single condition that
+   covers all of: already friends, pending either direction, and previously declined either
+   direction — exactly rules 1+2 combined into one check.
+4. **Friend-discovery swipes are recorded server-side, both likes and passes**, in their own
+   new table — never reusing the dating `notices` table. Keeps dating/friend preferences, RLS,
+   analytics, and deletion completely independent. A recorded "pass" is durable across
+   sessions/devices/reinstalls, so "don't show me someone I've already passed" actually holds.
+5. **No exact distance is ever shown** — only a coarse bucketed label ("Nearby" / "A few miles
+   away" / "In the wider area"), computed from the same coarse `wide_area` grid column
+   Browse/Crossed Paths already use. This is a social-discovery feature, not a location-
+   discovery tool.
+6. The intent resolver is not touched — Friend Discovery stays a completely separate,
+   explicitly opt-in surface, not folded into the no-stranger-discovery-via-intent boundary
+   (that boundary governs the resolver specifically; a person who has explicitly opted in to a
+   dedicated "meet strangers who also opted in" deck is a different, already-consented-to
+   surface, same reasoning that already separates dating discovery from the resolver).
+
+**Built exactly to those rules, no design changes during implementation** (`20260816_friend_discovery.sql`):
+- `profiles.open_to_friend_discovery` — a plain, self-editable boolean, default `false`, same
+  "user's own preference, no `trusted_update` guard needed" posture as `interests`/
+  `intent_visibility`.
+- New `friend_discovery_swipes` table (`from_user`, `to_user`, `direction` `like|pass`, unique
+  on `(from_user, to_user)`) — RLS enabled with **zero policies**, deny-by-default for every
+  role/operation, matching the `group_plan_*`/`business_availability` precedent rather than
+  dating `notices`' partially-open SELECT policy: a recipient of an unreciprocated like must
+  never be able to query this table directly and learn they were liked. Every read/write goes
+  through a SECURITY DEFINER RPC.
+- `get_friend_discovery_candidates(limit_param)` — real candidates only, excluding: existing
+  friends/matches, blocked pairs (either direction, via the already-`SECURITY DEFINER`,
+  self-scoped `is_blocked()`), any existing `friendships` row in any status (rules 1-3 above,
+  one `not exists` check), and anyone already swiped by the caller. Ranked by shared interests +
+  shared communities + mutual friends, then coarse distance, then random. Both callers opted in
+  independently — a candidate row additionally requires `open_to_friend_discovery = true` on
+  the *candidate's* own profile, defensively re-checked again inside the swipe-recording RPC.
+- `record_friend_discovery_swipe(target_user_id, direction)` — re-checks both parties are
+  opted in, re-checks blocks, re-checks the same "any friendships row or existing match"
+  exclusion server-side (never trusts a stale client), inserts the durable swipe row
+  (`on conflict do nothing`), and on a genuine mutual like creates a real `accepted`
+  `friendships` row + a real `matches` row (the same row shape a normal accepted friend request
+  already produces — a real messaging channel, not a dating-styled object with different
+  semantics) in one transaction, then sends a real "New friend! 🎉" push
+  (`friend_discovery_match` type). Two existing triggers
+  (`enforce_friend_request_daily_limit()`, `notify_new_match()`) gained a narrow
+  `app.trusted_update`-gated bypass so this system-mediated friendship doesn't get blocked by
+  the unrelated daily manual-friend-request cap or fire confusing dating-flavored "New match!
+  ... noticed each other" copy — both bypasses are inert for every normal client-driven
+  insert/update path, which never sets that flag. Confirmed before relying on this: neither of
+  the two new Aug 16 RLS-sweep identity-guard triggers on `matches`/`friendships`
+  (`on_match_updated_protect_participants`/`on_friendship_updated_protect_participants`, added
+  earlier the same day in the full RLS resweep above) fire on INSERT — both are `BEFORE UPDATE`
+  only — so they don't interfere with this RPC's direct inserts. Also confirmed
+  `notify_friend_request()` (the existing `AFTER INSERT` trigger on `friendships`) already
+  guards its own push on `new.status = 'pending'`, so inserting directly as `'accepted'`
+  correctly sends no confusing "wants to be your friend" push — no additional bypass needed
+  there.
+- New `src/services/friendDiscovery.js` (thin wrappers: `isOpenToFriendDiscovery`/
+  `setOpenToFriendDiscovery`/`getFriendDiscoveryCandidates`/`recordFriendDiscoverySwipe`).
+- New `src/components/FriendDiscoverySwipeCards.js` — its own card component, not a reskin of
+  the dating `SwipeableDiscoveryCards` (shares the swipe-mechanics shape — PanResponder
+  threshold, animated LIKE/PASS stamps, a two-deep stack — but surfaces interests/communities/
+  mutual-friends/bio, never a dating-oriented proximity/compatibility readout; distance is
+  always the coarse bucket from the RPC, never exact).
+- New `src/components/FriendMatchCelebrationModal.js` — its own copy ("New Friend!" / "you're
+  now friends"), not a reskin of `MatchCelebrationModal` (dating's "It's a Match!"), matching
+  the locked "clean new-friend moment, not a dating-style event" framing.
+- New `src/screens/FriendDiscoveryScreen.js` + `FriendDiscovery` route (`RootNavigator.js`) —
+  the one real entry point: an explainer + Turn On when not yet opted in, the real swipe deck
+  once opted in, an inline Off toggle in the header, and the celebration modal on a mutual
+  match ("Say Hi →" deep-links straight into the real `matches` row's `Chat`). Reachable from a
+  new "🤝 Meet New People" card on `DiscoverHubScreen.js` (All-tab only) and a new "Meet New
+  Friends" toggle in `SettingsScreen.js` (mirrors the screen's own toggle — either can turn it
+  on/off, same underlying column). `routeNotificationTap()` in `services/notifications.js`
+  gained the `friend_discovery_match` push-tap case, routed the same as every other
+  match/message-shaped tap.
+
+**Verification this pass**: all 8 touched/new files parse clean via a direct `@babel/core`
+transform; the full 42-test Jest suite passes unchanged; a full `npx expo export --platform
+ios` completed clean with no bundling errors (1874 modules — four more than the prior baseline,
+the four new client files: `friendDiscovery.js`, `FriendDiscoverySwipeCards.js`,
+`FriendMatchCelebrationModal.js`, `FriendDiscoveryScreen.js`; every other touched file was an
+edit). Every column/constraint/function the new migration references was independently
+cross-checked against the real live schema (`friendships.requested_by`/`status` CHECK,
+`matches.source_friendship_id` FK, `is_blocked(uuid, uuid)`'s real signature, `profiles.
+wide_area`'s "lat,lng" text format — matching `services/proximity.js`'s own existing parsing of
+the same column exactly, not guessed) and the two new Aug 16 RLS-sweep identity-guard triggers
+were confirmed UPDATE-only so they don't interfere with this feature's INSERT-only writes.
+
+**Not done this pass, disclosed rather than silently skipped**: the migration has **not** been
+applied to production — this pass was scoped specifically to build/parse/export verification,
+not a live deploy. Before this is genuinely done, matching every other schema change in this
+file's history: apply `20260816_friend_discovery.sql` to production and verify live with real
+disposable test data (a real mutual like producing a real `friendships`+`matches` row and a real
+push; a one-sided like producing no match; a pending/declined `friendships` pair correctly
+excluded from `get_friend_discovery_candidates`; a blocked pair correctly excluded both
+directions; the daily-friend-request-limit bypass and the dating-styled push bypass both
+verified live, not just reasoned through), plus a real from-scratch migration replay. Same
+standing gap as everywhere else in this file: no manual simulator/device run-through — next
+session should confirm the swipe deck renders/animates correctly, the explainer→Turn On→deck
+flow reads clearly, the celebration modal's Say Hi correctly lands on the real new `Chat`
+thread, and the Settings toggle and the screen's own header toggle stay in sync.
+
 ## Aug 16 2026 — full RLS resweep (the "full RLS resweep beyond group plans and the tables
 ## touched this pass" item, flagged as deliberately deferred in several earlier sections) — DONE
 

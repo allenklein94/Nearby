@@ -98,6 +98,7 @@ export function routeNotificationTap(data) {
   switch (data.type) {
     case 'match':
     case 'new_match':
+    case 'friend_discovery_match':
     case 'message':
     case 'gathering_approved':
     case 'playlist_addition':

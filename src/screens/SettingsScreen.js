@@ -56,6 +56,7 @@ export default function SettingsScreen({ navigation }) {
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
   const [genderHidden, setGenderHidden] = useState(false);
+  const [friendDiscoveryEnabled, setFriendDiscoveryEnabled] = useState(false);
   const [myEthnicity, setMyEthnicity] = useState(null);
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
@@ -112,6 +113,7 @@ export default function SettingsScreen({ navigation }) {
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
       setGenderHidden(data.gender_hidden ?? false);
+      setFriendDiscoveryEnabled(data.open_to_friend_discovery ?? false);
       setMyEthnicity(data.ethnicity ?? null);
       setEthnicityHidden(data.ethnicity_hidden ?? false);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
@@ -553,6 +555,26 @@ export default function SettingsScreen({ navigation }) {
           >
             <Text style={styles.buttonText}>Save Preferences</Text>
           </TouchableOpacity>
+        </View>
+
+        <Text style={styles.sectionLabel} accessibilityRole="header">Friend Discovery</Text>
+        <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Meet New Friends</Text>
+              <Text style={styles.helperText}>
+                Swipe to meet new people looking to make friends nearby — completely separate
+                from dating discovery above. Off by default; only people who've also turned this
+                on can ever show up in your deck.
+              </Text>
+            </View>
+            <Switch
+              value={friendDiscoveryEnabled}
+              onValueChange={(v) => toggleNotifPref('open_to_friend_discovery', v, setFriendDiscoveryEnabled)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Meet New Friends"
+            />
+          </View>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>

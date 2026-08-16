@@ -23,6 +23,7 @@ import CompleteProfileScreen from '../screens/CompleteProfileScreen';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
 import HomeScreen from '../screens/HomeScreen';
 import DiscoverHubScreen from '../screens/DiscoverHubScreen';
+import FriendDiscoveryScreen from '../screens/FriendDiscoveryScreen';
 import CreateHubScreen from '../screens/CreateHubScreen';
 import InboxScreen from '../screens/InboxScreen';
 import CommunitiesScreen from '../screens/CommunitiesScreen';
@@ -416,6 +417,7 @@ export default function RootNavigator() {
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: 'Edit Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="FriendDiscovery" component={FriendDiscoveryScreen} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>

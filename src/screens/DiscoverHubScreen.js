@@ -379,6 +379,23 @@ export default function DiscoverHubScreen({ navigation }) {
           )}
 
           {isAll && (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate('FriendDiscovery')}
+              activeOpacity={0.85}
+              accessibilityLabel="Meet New People, an explicit opt-in friend discovery deck"
+              accessibilityRole="button"
+            >
+              <Text style={styles.cardIcon}>🤝</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>Meet New People</Text>
+                <Text style={styles.cardSubtitle}>Swipe to make new friends, separate from dating</Text>
+              </View>
+              <Text style={styles.cardChevron}>›</Text>
+            </TouchableOpacity>
+          )}
+
+          {isAll && (
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
               <TouchableOpacity
                 style={styles.quickTimeCard}
