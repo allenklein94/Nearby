@@ -6,25 +6,32 @@ cross-reference nine files (with different dates, different scopes, and — in a
 findings that were later fixed by a *different* report than the one that found them) to answer
 "what's actually still broken in this backend right now."
 
-**This file supersedes none of its sources** — each original is left exactly as written (several
-of them are point-in-time audit snapshots that intentionally were never edited after the fact, so
-the record of what was true *when found* stays intact). This document is a synthesis layer on top,
-re-verified against the live repo one more time while consolidating (see the "Re-verified while
-consolidating" callouts below) so its status column reflects the actual current codebase, not just
-what each source claimed as of its own write date.
+**Update, 2026-08-16**: the 8 individual reports listed below (everything except #9) plus their
+one companion process-record file (`CONNECTIVITY_AUDIT_PROGRESS.md`) were deleted from the
+working tree per direct request, now that this document carries their findings — this document
+*does* now supersede those 8 sources; they're gone, not just superseded-but-still-around. All 8
+remain fully recoverable from git history if the original full-detail text (line-by-line SQL
+citations, complete live-test transcripts) is ever needed again — nothing was permanently lost,
+this consolidated document's own §5 is a narrative summary of each, not a byte-for-byte copy.
+`PRODUCTION_ARCHITECTURE_2026-08-15.md` (#9) was deliberately kept — it isn't itself an
+audit/findings report the way the other 8 are, it's this codebase's standing architecture
+reference (state machines, migration sequence, RLS rules, analytics funnel, known limitations),
+still pointed to by name elsewhere in `CLAUDE.md`, and this document only summarizes
+cross-references to it rather than reproducing its full content.
 
-**Source reports consolidated here** (all in `PRODUCT_AUDIT/`, chronological):
-1. `CRITICAL_MISSING_FEATURES.md` (2026-08-09 refresh) — ranked gap list
-2. `AUDIT_CHANGELOG.md` (2026-08-09) — the running FIXED/STILL-PRESENT classification log
-3. `SCALABILITY_AUDIT.md` (2026-08-10) — client-fetch/polling scalability pass
-4. `ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` — RPC race-condition audit
-5. `V2_ACCEPTANCE_REPORT_2026-08-15.md` — independent acceptance review of the "Nearby 2.0" diff
-6. `V3_V4_PHASES_A_D_AUDIT_2026-08-15.md` — Phases A–D (demand intelligence + group plans) handoff
-7. `CONNECTIVITY_AUDIT_2026-08-15.md` — full-system connectivity/integration audit
-8. `connectivity_domain_C_group_merge.md` — the one fully-completed background-fork deep-dive
+**Source reports originally consolidated here** (all were in `PRODUCT_AUDIT/`, chronological;
+🗑️ = deleted 2026-08-16, recoverable via git history):
+1. 🗑️ `CRITICAL_MISSING_FEATURES.md` (2026-08-09 refresh) — ranked gap list
+2. 🗑️ `AUDIT_CHANGELOG.md` (2026-08-09) — the running FIXED/STILL-PRESENT classification log
+3. 🗑️ `SCALABILITY_AUDIT.md` (2026-08-10) — client-fetch/polling scalability pass
+4. 🗑️ `ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` — RPC race-condition audit
+5. 🗑️ `V2_ACCEPTANCE_REPORT_2026-08-15.md` — independent acceptance review of the "Nearby 2.0" diff
+6. 🗑️ `V3_V4_PHASES_A_D_AUDIT_2026-08-15.md` — Phases A–D (demand intelligence + group plans) handoff
+7. 🗑️ `CONNECTIVITY_AUDIT_2026-08-15.md` — full-system connectivity/integration audit
+8. 🗑️ `connectivity_domain_C_group_merge.md` — the one fully-completed background-fork deep-dive
    (Phase D group plans), folded into #7
-9. `PRODUCTION_ARCHITECTURE_2026-08-15.md` — synthesized reference architecture (not itself a
-   findings report, but the authoritative current-state doc these findings resolve into)
+9. **(kept)** `PRODUCTION_ARCHITECTURE_2026-08-15.md` — synthesized reference architecture (not
+   itself a findings report, but the authoritative current-state doc these findings resolve into)
 
 **Deliberately not folded in**: the UI/IA/UX-design-review cluster (`UI_IA_REVIEW_FOR_EXTERNAL_AI`,
 `CURRENT_UI_MAP`, `HOME_VISUAL_HIERARCHY_AUDIT`, `INTENT_LAYER_*` walkthroughs, `CORAL_AUDIT_PROGRESS`,
@@ -442,20 +449,23 @@ freshly-rebuilt schema.
 
 ---
 
-## 7. Document map (originals, for anyone who needs the full transcript behind a summarized line)
+## 7. Document map (§5 has the narrative summary of each; the 8 originals are deleted, recoverable via git history if the full line-by-line transcript is ever needed)
 
-| Topic | Full source |
+| Topic | Full source (🗑️ = deleted 2026-08-16, recoverable via `git log -- PRODUCT_AUDIT/<file>`) |
 |---|---|
-| Group plans — connectivity gaps + Domain C race conditions | `CONNECTIVITY_AUDIT_2026-08-15.md`, `connectivity_domain_C_group_merge.md`, `CONNECTIVITY_AUDIT_PROGRESS.md` |
-| RPC race-condition hardening | `ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` |
-| V2 diff acceptance (predictive/group-intent/demand/rankings) | `V2_ACCEPTANCE_REPORT_2026-08-15.md` |
-| Phases A–D (time-window demand, offer shortcut, reliability ranking, group plans) | `V3_V4_PHASES_A_D_AUDIT_2026-08-15.md` |
-| Current architecture snapshot (state machines, RLS rules, analytics funnel, known limitations) | `PRODUCTION_ARCHITECTURE_2026-08-15.md` |
-| Client fetch/polling scalability | `SCALABILITY_AUDIT.md` |
-| Original ranked gap list + refresh classification | `CRITICAL_MISSING_FEATURES.md`, `AUDIT_CHANGELOG.md` |
-| Full build-by-build history behind every fix referenced above | `CLAUDE.md` |
+| Group plans — connectivity gaps + Domain C race conditions | 🗑️ `CONNECTIVITY_AUDIT_2026-08-15.md`, `connectivity_domain_C_group_merge.md`, `CONNECTIVITY_AUDIT_PROGRESS.md` — see §5.1 |
+| RPC race-condition hardening | 🗑️ `ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` — see §5.2 |
+| V2 diff acceptance (predictive/group-intent/demand/rankings) | 🗑️ `V2_ACCEPTANCE_REPORT_2026-08-15.md` — see §5.3 |
+| Phases A–D (time-window demand, offer shortcut, reliability ranking, group plans) | 🗑️ `V3_V4_PHASES_A_D_AUDIT_2026-08-15.md` — see §5.4 |
+| Current architecture snapshot (state machines, RLS rules, analytics funnel, known limitations) | **(kept)** `PRODUCTION_ARCHITECTURE_2026-08-15.md` |
+| Client fetch/polling scalability | 🗑️ `SCALABILITY_AUDIT.md` — see §5.5 |
+| Original ranked gap list + refresh classification | 🗑️ `CRITICAL_MISSING_FEATURES.md`, `AUDIT_CHANGELOG.md` — see §5.6 |
+| Full build-by-build history behind every fix referenced above, including this deletion itself | `CLAUDE.md` |
 
-*No application code was changed to produce this document. Where this document's status column
-disagrees with a source report's own point-in-time text, that's intentional — the source reports
-are frozen snapshots (several explicitly say so in their own opening lines); this document is the
-one place meant to stay current.*
+*No application code was changed to produce the original version of this document; the 2026-08-16
+follow-up (fixing the "still open" items, then deleting the 8 consolidated sources) is recorded
+in `CLAUDE.md`'s own "Aug 16 2026" section. Where this document's status column disagrees with a
+source report's own point-in-time text, that's intentional — the source reports were frozen
+snapshots (several explicitly said so in their own opening lines); this document is the one place
+meant to stay current, and — as of 2026-08-16 — the only place this specific detail lives in the
+working tree at all.*

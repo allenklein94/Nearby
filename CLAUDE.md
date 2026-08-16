@@ -128,15 +128,41 @@ framing**:
 above — read that file for the current single source of truth on this whole audit thread, not
 this section's own summary of it.
 
+**Follow-up, same day: the 8 individual reports that were consolidated above, plus their one
+companion process-record file, were deleted** (`git rm`), per direct request, now that
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` carries their findings —
+`CRITICAL_MISSING_FEATURES.md`, `AUDIT_CHANGELOG.md`, `SCALABILITY_AUDIT.md`,
+`ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`, `V2_ACCEPTANCE_REPORT_2026-08-15.md`,
+`V3_V4_PHASES_A_D_AUDIT_2026-08-15.md`, `CONNECTIVITY_AUDIT_2026-08-15.md`,
+`connectivity_domain_C_group_merge.md`, and `CONNECTIVITY_AUDIT_PROGRESS.md` (a scratch/process
+file tied 1:1 to the connectivity audit, with no independent value once that report was gone).
+**`PRODUCTION_ARCHITECTURE_2026-08-15.md` was deliberately kept, not deleted** — unlike the other
+8, it isn't itself an audit/findings report; it's the standing architecture reference this file's
+own Feature Freeze section (further below) still points to by name as "the single reference
+document for how the current system actually works," and the consolidated doc only summarizes
+cross-references to it rather than reproducing its full state-machine/RLS/migration-sequence/
+analytics-funnel detail — deleting it would have been real information loss with no full
+replacement, unlike the other 8, whose entire content genuinely is now captured in the
+consolidated doc. Every "read PRODUCT_AUDIT/X.md for the full/complete detail" pointer elsewhere
+in this file for one of the 9 deleted files was updated in place to redirect to
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md`'s own relevant section, rather than left
+dangling — a few purely historical, past-tense narrative mentions (describing what a session did
+on a given date, not instructing a future session to go read the file) were left as-is, matching
+this file's own established practice of not rewriting history. All 9 deleted files remain
+recoverable from git history if ever needed — nothing was permanently lost, just removed from the
+live working tree.
+
 ## Aug 15 2026 — Full-System Connectivity & Integration Audit — DONE, scope honestly narrower than planned
 
 Read-only audit, no application code changed. User asked for a full 24-section connectivity/
 integration audit (8 research domains) proving, with real code citations, whether every
 entity/action in Nearby actually connects end-to-end (UI → service → DB → RLS → realtime →
-notification → every downstream screen) rather than just working in isolation. Full report:
-`PRODUCT_AUDIT/CONNECTIVITY_AUDIT_2026-08-15.md`; process record and per-domain scope:
-`PRODUCT_AUDIT/CONNECTIVITY_AUDIT_PROGRESS.md`; the one fully-completed background-fork domain:
-`PRODUCT_AUDIT/connectivity_domain_C_group_merge.md`.
+notification → every downstream screen) rather than just working in isolation. **Full report,
+process record, and the Domain C (group-plan) deep-dive were originally three separate files
+(`CONNECTIVITY_AUDIT_2026-08-15.md`, `CONNECTIVITY_AUDIT_PROGRESS.md`,
+`connectivity_domain_C_group_merge.md`) — all three were deleted 2026-08-16 after being folded
+into `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md`; read that file for this audit's detail
+now.**
 
 **Scope came in narrower than the original 8-domain plan, disclosed plainly in the report
 itself rather than padded.** Background-fork dispatch proved unreliable in this environment —
@@ -166,7 +192,8 @@ itself.
 **Explicitly NOT reached this pass, disclosed rather than assumed clean**: a full type/contract
 sweep across all ~40 service files, gathering/`gathering_interest` state-machine
 re-verification, a realtime-leak resweep beyond `GroupPlanScreen`, an RLS resweep beyond group
-plans, and performance/scale beyond what `PRODUCT_AUDIT/SCALABILITY_AUDIT.md` already covers.
+plans, and performance/scale beyond what `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md`'s §5.5
+(originally `SCALABILITY_AUDIT.md`, deleted 2026-08-16 after being folded in) already covers.
 Each is substantial enough to deserve its own dedicated future pass, per this file's own
 established "cap agents, one focused pass at a time" convention — not attempted together again
 via parallel forks given how unreliably that went this time. **Nothing built or fixed in the
@@ -328,7 +355,8 @@ replay confirming all 16 tables present with zero manual dashboard step needed.
 fix.** That migration is real, applied, and correct — it fixes a genuine `intent_visibility=
 'nobody'` bypass in `get_my_group_intent_signals()` and its notify trigger (an opted-out user's
 name/request was still surfaced to their network) and a UTC-vs-local-timezone bucketing bug in
-`get_cross_user_intent_patterns()`. Source report: `PRODUCT_AUDIT/V2_ACCEPTANCE_REPORT_2026-08-15.md`.
+`get_cross_user_intent_patterns()`. Source report: originally `PRODUCT_AUDIT/V2_ACCEPTANCE_REPORT_2026-08-15.md`,
+deleted 2026-08-16 after being folded into `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.3.
 Recorded here so a future session reading this file (as every session is told to) knows both
 bugs and their fixes exist, and doesn't reintroduce either.
 
@@ -342,7 +370,8 @@ relationship-tools collaborative screens) genuinely see each other's actions arr
 without navigating away and back or manually refreshing. **Also not attempted, per the audit's
 own recommended fix order (§I item 7)**: the NOT REACHED domains from the original audit (full
 type/contract sweep, full RLS resweep beyond group plans, gathering/`gathering_interest`
-state-machine re-verification, performance/scale beyond `SCALABILITY_AUDIT.md`) — each still
+state-machine re-verification, performance/scale beyond `CONSOLIDATED_AUDIT_2026-08-15.md`'s §5.5,
+originally `SCALABILITY_AUDIT.md`, deleted 2026-08-16 after being folded in) — each still
 recommended as its own dedicated future pass, not bundled into this one.
 
 **Top-10 item 6 (stale `proposed_time` when switching offer types away from and back to "Alt.
@@ -360,7 +389,8 @@ now fixed. Item 7 (two-round-trip group-plan consent) is explicitly the audit's 
 designed, not a defect" note, not something to fix.** What remains open, per the audit's own
 §I item 7 and restated immediately above: the NOT REACHED domains (full type/contract sweep,
 full RLS resweep beyond group plans, gathering state-machine re-verification, performance/scale
-beyond `SCALABILITY_AUDIT.md`) — each still recommended as its own dedicated future pass, and a
+beyond `CONSOLIDATED_AUDIT_2026-08-15.md`'s §5.5, originally `SCALABILITY_AUDIT.md`, deleted
+2026-08-16 after being folded in) — each still recommended as its own dedicated future pass, and a
 real manual device run-through of everything built/fixed across this whole audit-fix effort.
 
 ## Aug 15 2026 — "Nearby V3/V4" strategic vision (demand intelligence, reverse marketplace,
@@ -1451,7 +1481,8 @@ close-residual-gaps pass, not a rebuild, so it's sequenced last and kept small.
    (b) idempotency of every write RPC under a retried call, (c) whether every scarcity resource
    (gathering capacity, offer capacity, one-request-one-winner) is still locked correctly after
    this session's additions since Aug 8's original Capacity/Waitlist pass. Read-only findings
-   first, written to `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`, then fix what's
+   first, written to `ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` (deleted 2026-08-16, folded
+   into `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.2), then fix what's
    real — matching this file's own established "audit first, then fix what's confirmed" pattern,
    not a blind patch pass.
 4. **UX coherence confirm** (closes roadmap #4). Per this file's own extensive prior history
@@ -1608,9 +1639,10 @@ limitation, same as everywhere else in this file**: no manual simulator/device r
   yet for either Part 1 or Part 2's migrations — flagged for a dedicated catch-up pass rather
   than silently skipped. No manual simulator/device run-through, no admin-facing screen yet to
   view these numbers (that's Part 9's job).
-- **Part 3 (architecture hardening audit): DONE.** Full findings in
-  `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` — read that file for the complete
-  record; summarized here. Pulled every live state-machine RPC's *current* body directly via
+- **Part 3 (architecture hardening audit): DONE.** Full findings were originally in
+  `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`, deleted 2026-08-16 after being
+  folded into `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.2 — read that file for the
+  complete record; summarized here too. Pulled every live state-machine RPC's *current* body directly via
   `pg_get_functiondef()` against production (not reconstructed from migration files, which can
   be stale relative to a later `CREATE OR REPLACE`) for `business_requests`/
   `business_request_offers`/`business_availability`, `gathering_interest`, and
@@ -5055,9 +5087,10 @@ it (both warm and cold-start) lands on `BusinessDashboard`/`MyBusinessApplicatio
 Prompted directly by the Aug 9 2026 `getNearbyGatherings()` fix (moved gathering browse from
 "download everything, filter on device" to a real SQL-bounded RPC — see "second AI's post-
 refresh review" below). The user asked the natural follow-up: audit the rest of the app for
-the same pattern before assuming it was a one-off. Full findings are written up in
-`PRODUCT_AUDIT/SCALABILITY_AUDIT.md` — read that file for the complete file/line evidence; this
-section is the execution plan distilled from it. **Status, updated as each of the 10 execution
+the same pattern before assuming it was a one-off. Full findings were originally written up in
+`PRODUCT_AUDIT/SCALABILITY_AUDIT.md`, deleted 2026-08-16 after being folded into
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.5 — read that file for the complete file/line
+evidence; this section is the execution plan distilled from it. **Status, updated as each of the 10 execution
 steps lands (check the numbered list further down for per-step status) — check `git log`/
 `git status` before assuming anything beyond what's marked DONE below actually landed**, same
 restart-safety convention as every other plan-first section in this file.
@@ -6368,9 +6401,10 @@ section immediately above for the full account; this is the same finding, cross-
 independently by both the direct investigation and Agent B's live catalog analysis. The flywheel
 trace found no new BROKEN or MISSING transition across all 20 steps. Full item-by-item
 classification, new findings (a 12-file-wider hardcoded-URL scope, two small dead-code items,
-`hosting_partner_id` self-edit now confirmed protected), and package housekeeping notes are all
-in `PRODUCT_AUDIT/AUDIT_CHANGELOG.md` — read that file, not this section, for the complete
-record; this section is intentionally kept short since the changelog is now the durable home for
+`hosting_partner_id` self-edit now confirmed protected), and package housekeeping notes were all
+in `PRODUCT_AUDIT/AUDIT_CHANGELOG.md`, deleted 2026-08-16 after being folded into
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.6 — read that file for the complete
+record now; this section is intentionally kept short since the consolidated doc is now the durable home for
 this detail.
 
 ## Aug 9 2026 — push-notification cold-start tap silently dropped (fixed)
@@ -7075,8 +7109,9 @@ A full read-only product/UX/architecture audit was built at `/workspaces/Nearby/
 (13 files + `AUDIT_SUMMARY.json`, zipped copy at `PRODUCT_AUDIT.zip` in both the repo root and
 inside that folder) for the user to hand to a *different* AI for independent critique. No
 application code was touched to produce it. Full detail, citations, and file/line references for
-every item below live in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (ranked P0/P1/P2) and
-`PRODUCT_AUDIT/AI_HANDOFF.md` — this section is the fix-it to-do list distilled from that audit,
+every item below originally lived in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md` (ranked
+P0/P1/P2, deleted 2026-08-16 after being folded into `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md`
+§5.6) and `PRODUCT_AUDIT/AI_HANDOFF.md` — this section is the fix-it to-do list distilled from that audit,
 written here specifically so a fresh session (post-restart) picks it up automatically the same
 way every other section in this file works, rather than depending on this conversation's memory.
 
@@ -7156,8 +7191,9 @@ path to invite a non-app-user to a specific gathering (only a generic app referr
 `NoticesScreen.js` fully dead code, `MatchesScreen`'s dangling `RootNavigator.js` import,
 hardcoded backend URLs/keys inline in `LoginScreen.js`/`ProfileScreen.js`/
 `RehearsalRoomScreen.js`, `PlacesScreen.js`'s broken empty state (malformed `ListEmptyComponent`
-prop). Full detail on every one of these is in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md`
-(items 11-20 there). **Two items originally on this list are now closed, both via the Aug 9 2026
+prop). Full detail on every one of these was in `PRODUCT_AUDIT/CRITICAL_MISSING_FEATURES.md`
+(items 11-20 there), deleted 2026-08-16 after being folded into
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.6. **Two items originally on this list are now closed, both via the Aug 9 2026
 flywheel trace audit above — not re-detailed here**: `OnboardingRecommendationsScreen.js`'s
 recommendation cards not deep-linking (trace leg 1) and no nudge to join the community behind a
 gathering just attended (trace leg 5's `GatheringDetailScreen` community card).

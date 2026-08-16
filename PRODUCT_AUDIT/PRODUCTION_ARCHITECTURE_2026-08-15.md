@@ -197,8 +197,9 @@ file alone shows:
    `id_verification_submissions`.
 
 Both were reproduced against real disposable test data before and after the fix (not just
-reasoned about) — see `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` for the full
-before/after transcripts. **Not independently deep-audited this pass** (flagged, not silently
+reasoned about) — see `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` §5.2 (originally
+`ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`, deleted 2026-08-16 after being folded in) for the
+full before/after transcripts. **Not independently deep-audited this pass** (flagged, not silently
 skipped, in that audit's own "Not reached this pass" section): `set_community_member_role` and
 the plain-client `respondToFriendRequest()` path were read but not adversarially tested.
 
@@ -412,11 +413,12 @@ each claim above and should be treated as more authoritative for any specific in
 
 - `CLAUDE.md` — the complete build log, session by session, with every live-verification
   transcript.
-- `PRODUCT_AUDIT/ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` — the full race-condition audit
-  behind §3.5.
+- `PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` — the single current status ledger for the
+  whole backend/connectivity-audit thread (§5.2 covers the race-condition audit behind §3.5
+  above; §5.6 covers the running FIXED/STILL-PRESENT classification log, originally
+  `ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md` and `AUDIT_CHANGELOG.md`, both deleted 2026-08-16
+  after being folded in).
 - `PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md` /
   `INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md` / `INTENT_LAYER_PHASE1_AUDIT_2026-08-14.md` —
   the resolver's own build/audit history.
 - `PRODUCT_AUDIT/DATABASE_AND_DATA_MODEL.md` — schema detail predating this pass.
-- `PRODUCT_AUDIT/AUDIT_CHANGELOG.md` — the running FIXED/STILL-PRESENT classification log from
-  every full product-audit refresh.
