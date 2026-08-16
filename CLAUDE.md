@@ -34,9 +34,129 @@ reached. Several already-fixed races are proven correct only via *sequential* re
 sandbox has never been able to force two genuinely overlapping DB transactions), which is weaker
 than proving the actual race closed.
 
-1. [ ] Systematic SECURITY DEFINER audit — read all ~103 functions once, purpose-built to find
-   ownership-check gaps (the exact bug shape that's already caught 6 real bugs this way this
-   month alone).
+1. [x] **Systematic SECURITY DEFINER audit — DONE.** Turned out to be ~148 functions live in
+   production today (the ~103 estimate was stale), 136 of them `authenticated`-callable. Split
+   alphabetically into two batches of 68, each audited by its own fork (matching this repo's own
+   established "cap agents at 2 concurrent" convention), hunting specifically for the ownership-
+   check-gap shape already found 6 times this month. Full findings, file/line detail, and
+   exploit scenarios are in `PRODUCT_AUDIT/SECDEF_AUDIT_BATCH1.md` and
+   `PRODUCT_AUDIT/SECDEF_AUDIT_BATCH2.md` — read those for the complete record; summarized here.
+   **8 real findings across both batches, all fixed and verified live against production with
+   real disposable test data (or, where real production rows already existed, a read-only test
+   against them), not just applied**:
+   - `get_mutual_friends(other_user_id)` had no relationship/block check at all — callable
+     against any user id in the app, including a blocked pair, returning that stranger's real
+     mutual-friend names/photos. Fixed with an `is_blocked()` guard only, deliberately **not**
+     also requiring an existing friendship/match — `get_mutual_friends` is called from
+     `ViewProfileScreen`, which is legitimately reachable in dating-discovery contexts where
+     viewing a genuine stranger's profile (and their real mutual-friend count, the same
+     "N mutual friends" convention Hinge/Tinder use) is the whole point of that surface. The
+     locked "no stranger discovery, ever" principle elsewhere in this file is scoped to the
+     intent layer specifically (Home's ask box, Business Fulfillment, Friend Discovery) — dating
+     discovery has always been a deliberately separate, not-restricted-the-same-way surface
+     throughout this file's history, so this fix matches existing precedent rather than
+     inventing a new one. **Verified live**: a real temporary mutual-friend scenario (two
+     temporary friendships creating a genuine overlap) confirmed the function returns the real
+     mutual friend before a block, and returns nothing once one party blocks the other — all
+     test rows deleted afterward, confirmed back to the real pre-existing baseline (1
+     friendship, 0 blocks).
+   - `get_my_group_intent_signals()` was missing the `is_blocked()` check its own sibling
+     `get_connected_open_business_requests()` already has (same connected-set definition, built
+     the same day) — a blocked friend/match could still surface in the "N people you know are
+     looking for X" Home nudge with their real name. One-line fix matching the sibling exactly.
+     **Verified live**: a real temporary 2-requester group-intent scenario (using the real
+     `Claude`↔`Allen` friendship and `Google voice`↔`Allen` match already in production) showed
+     `request_count: 2` before a block; after `Allen` blocked `Google voice`, the whole group
+     correctly disappeared (only 1 connected requester left, below the real `>= 2` threshold —
+     not a coincidence, direct proof the block guard fired). Test rows deleted afterward.
+   - `check_is_admin(uid)` was directly RPC-callable with an arbitrary uid, letting any user
+     learn whether an arbitrary account is an admin — low severity (no PII/capability leak on
+     its own) but a real, unnecessary information disclosure. **First attempted fix (revoking
+     `authenticated`'s execute grant) broke a real production function live** —
+     `get_intent_funnel_stats()` (which calls `check_is_admin(auth.uid())` internally) started
+     failing with a permission error the moment the grant was revoked, contradicting this file's
+     own earlier claim that a nested SECURITY-DEFINER-to-SECURITY-DEFINER call bypasses this
+     kind of lockdown (that claim was made for `_business_request_fanout`, a different call
+     shape — whatever the precise mechanism, this was observed to break live and reverted
+     immediately, before it could affect a real user). **Real fix applied instead**: an internal
+     `auth.uid() = uid` guard, matching `is_blocked()`'s own established defensive pattern — a
+     no-op for every real caller (which always passes `auth.uid()`), closes the disclosure for
+     a caller probing someone else's id. **Verified live**: `check_is_admin(self)` still returns
+     the real answer; `check_is_admin(someone else's id)` now returns `false` regardless of the
+     real answer; `get_intent_funnel_stats()` confirmed still correctly admin-gated afterward
+     (a real non-admin call still correctly rejected with its own "Only admins" message, proving
+     the internal nested call succeeded rather than erroring).
+   - `increment_browse_views(user_id_param, ...)` — **HIGH severity**, the exact
+     `check_and_increment_ai_use` bug shape, unfixed until now: any authenticated user could pass
+     an arbitrary victim's id directly to burn their daily Browse allowance to the cap, denying
+     them a real Discovery surface for the rest of their day, repeatably. Fixed with the same
+     `auth.uid() = user_id_param` guard `check_and_increment_ai_use` already uses. **Verified
+     live**: a real attempt to burn `Allen`'s allowance as `Claude` was correctly rejected
+     (`allowed: false`, `Allen`'s real counter confirmed untouched at 0); `Allen`'s own
+     legitimate call still worked correctly, reverted afterward.
+   - `get_sighting_fuzzed_coords(sighting_ids)` bypassed `sightings`' real RLS
+     (`auth.uid() = user_a/user_b, not is_blocked`) with zero ownership check of its own —
+     confirmed via a full grep that no client code anywhere calls this RPC today (real
+     defense-in-depth, not a currently-reachable exploit, same posture as the earlier
+     `business_partner_requests` anon-grant close). Fixed with the same ownership filter the
+     table's own RLS already enforces. **Verified live** against a real temporary test sighting:
+     a real party to the sighting gets real fuzzed coordinates back; a stranger gets nothing.
+     Test row deleted afterward.
+   - `has_mutual_notice(from_id, to_id)` — identical no-ownership-check shape, confirmed via grep
+     to have zero client callers anywhere (likely superseded by `check_mutual_notice`, also
+     uncalled) — kept rather than deleted (not worth a migration just to remove dead-but-harmless
+     code) but guarded the same way in case something calls it later. **Verified live** against
+     the one real pre-existing mutual-notice pair in production (`Claude`↔`Allen`, untouched,
+     no test data needed): the real pair gets the real `true` answer; an uninvolved third real
+     profile (`Google voice`) probing that same pair gets `false` regardless.
+   - `get_weather_result(request_id_param)` trusted an unscoped shared id space
+     (`net._http_response`, shared by every async job in the app) with no check the caller
+     actually submitted that specific request — low real severity (no lat/lng ever echoed back,
+     so a cross-user hit only leaks another user's local weather condition, itself near-public)
+     but a real gap. Closed properly with a new `weather_requests(request_id, user_id)` mapping
+     table (RLS-enabled, zero client-facing policy — both read and write only ever happen inside
+     the two SECURITY DEFINER functions, matching this schema's "no direct client access,
+     RPC-mediated" convention) rather than a five-minute guard, since there was genuinely nothing
+     to check the request id against before this. **Verified live**: a real weather request
+     submitted by `Allen` reads back correctly for `Allen`; the identical request id read by
+     `Claude` returns nothing. Test row deleted afterward.
+   - **Hygiene**: 9 cron-only functions (`delete_expired_disappearing_messages`/
+     `delete_expired_stories`/`expire_live_tracking_sessions`/
+     `generate_next_recurring_gathering`/`purge_expired_sightings`/`send_birthday_reminders`/
+     `send_first_mission_reminders`/`send_gathering_reminders`/`send_match_reminders`, 3 more —
+     `expire_stale_business_requests`/`generate_monthly_invoices`/`send_momentum_nudges` — were
+     already correctly locked down in an earlier session) still carried `authenticated`'s default
+     execute grant despite taking zero client-supplied target and being meant to run only via
+     their own `pg_cron` job. Revoked from `authenticated`/`anon` — confirmed live via
+     `cron.job.username` that every one of these runs directly as `postgres` (which owns them,
+     and object owners always retain full privileges on their own objects regardless of grants
+     to other roles), so this is a materially different, unambiguously-safe situation from the
+     `check_is_admin` nested-call surprise above — not a repeat of that mistake. **Verified
+     live**: all 9 confirmed `authenticated`-execute now `false`; `purge_expired_sightings()`
+     confirmed still runs cleanly as the real cron-invoking role.
+   - **Not flagged as findings, read and confirmed correct**: `count_redemptions_since`/
+     `get_offer_redemption_counts` (public aggregate by design), every `get_business_*` RPC
+     (already ownership-checked from an earlier session), `get_gathering_meetup_point`/
+     `get_connected_open_business_requests`/`get_friend_discovery_candidates` (correctly gated),
+     every state-machine RPC (`accept_business_offer`, `approve_gathering_interest`,
+     `confirm_group_plan*`, etc. — none let a caller repoint an identity column at an uninvolved
+     third party, the specific `matches`/`friendships` hijack shape from the Aug 16 resweep does
+     not recur anywhere in either batch), every admin-gated `get_*_stats`/`get_*_funnel` RPC,
+     and all ~15 `RETURNS trigger` functions (over-broad grant hygiene only — Postgres itself
+     rejects any direct call to a trigger-type function outside real trigger context, so this
+     isn't exploitable, not worth a dedicated fix). One secondary observation, not scored as a
+     finding: `match_contacts_to_users(phone_numbers)` has no visible rate limit, which could be
+     a phone-number-enumeration vector at scale if called directly bypassing the app's own
+     contact-picker UI — flagged for a future pass, not fixed this session.
+   - Applied via 3 migrations (`20260816_secdef_audit_batch1_fixes.sql`,
+     `20260816_secdef_audit_batch1_check_is_admin_guard.sql`,
+     `20260816_secdef_audit_batch2_fixes.sql`) — split into 3 rather than 1 specifically because
+     of the `check_is_admin` revert-and-refix, so the broken intermediate state is never what a
+     future replay reconstructs. **Verified via a real from-scratch migration replay**: all 50
+     `supabase/migrations/` files (Docker `supabase/postgres:15.1.0.147`, healthy-status-gated,
+     the two known image-version gaps patched as always) applied clean, exit 0, zero errors —
+     confirms all three new migrations, including the revert-and-refix sequence, replay correctly
+     from a truly empty database.
 2. [ ] Build a real concurrency harness (two genuinely parallel DB sessions) and re-prove the
    handful of races currently proven only sequentially under true overlap.
 3. [ ] Turn the ~15 one-off `live-verify` proofs scattered through this file's history into a
