@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
@@ -25,6 +25,7 @@ export default function MemoryVaultScreen({ route }) {
   const [memories, setMemories] = useState([]);
   const [drafts, setDrafts] = useState({});
   const [submittingCategory, setSubmittingCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     load();
@@ -48,6 +49,7 @@ export default function MemoryVaultScreen({ route }) {
   async function load() {
     const data = await getMemoryItems(matchId);
     setMemories(data);
+    setLoading(false);
   }
 
   async function handleAdd(categoryKey) {
@@ -70,6 +72,14 @@ export default function MemoryVaultScreen({ route }) {
       Alert.alert('Error', e.message);
     }
     setSubmittingCategory(null);
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+      </SafeAreaView>
+    );
   }
 
   return (

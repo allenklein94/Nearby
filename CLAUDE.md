@@ -4,6 +4,138 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — closed 5 of the real, previously-disclosed-but-left-alone gaps from this
+## file's own audit history — DONE
+
+Direct follow-up to the acceptance audit's own repeated practice of naming a real, small,
+non-critical gap and explicitly leaving it unfixed rather than silently building a partial fix
+("flagged, not fixed" / "disclosed rather than glossed over"). The user asked directly to go
+back through those disclosures and close the ones that were genuinely still open — not another
+audit pass, a fix pass against findings this file had already made. Five real items were
+identified by re-reading this file's own history; all five are now closed.
+
+1. **`join_gathering()`'s idempotent-return path always returned `match_id: null`, even when a
+   real match already existed** — the one real, disclosed-not-fixed gap named in Wave 2A of the
+   acceptance audit ("the idempotent-return path doesn't re-look-up an already-real `match_id`,
+   always returning `null` on that path even when a match genuinely exists"). A retried/
+   double-tapped join on an already-`approved` request would silently tell the client "no
+   match" even though one was created the first time. Fixed: the idempotent branch now looks up
+   the real `matches` row when the existing status is `'approved'`, matching what the
+   fresh-insert branch already did. **Verified live**: joined a real disposable test gathering
+   as `Claude`, confirmed the first call returned a real `match_id`; called `join_gathering`
+   again for the same gathering/user (the exact idempotent path) — before this fix this would
+   have returned `match_id: null`, now correctly returns the same real match id both times. Test
+   gathering/interest/match deleted afterward.
+2. **`confirm_group_plan()`'s block check only ever covered the initiator↔invitee edge, never
+   two non-initiator participants blocked from each other** — the one real, explicitly-disclosed
+   residual gap from the same day's Group Plan block-check fix ("a full fix would need an
+   all-pairs block check across the whole confirmed roster at `confirm_group_plan` time — a
+   larger change than this pass's scope, flagged here as a real, known, disclosed residual
+   gap"). Fixed: `confirm_group_plan` now does a real all-pairs check across the final accepted
+   roster (post any initiator exclusion) right before the roster is locked in and a real shared
+   `business_requests` row is created — a generic rejection message, same posture as every other
+   blocked-pair rejection in this schema, never reveals which side blocked which. Queries
+   `blocks` directly rather than through `is_blocked()`, since `is_blocked()` only ever answers
+   for a pair where `auth.uid()` is one of the two ids (the Aug 8 defensive guard) — calling it
+   for a non-initiator pair would silently return `false` and defeat the exact check this fix
+   exists to add; a direct query is safe here since the function is already `SECURITY DEFINER`
+   and reads other RLS-protected tables the same way throughout this schema. **Verified live,
+   end-to-end, both directions**: built a real 3-person group plan (`Allen` initiator, `Claude` +
+   `Google voice` invitees, using their own real open `business_requests`) through propose →
+   both accept → budget set → both re-accept (rule 7's reset, confirmed still correct) →
+   inserted a real block between the two non-initiator participants (`Claude`↔`Google voice`) →
+   `confirm_group_plan` as `Allen` was correctly rejected with the new message, and the
+   transaction rolled back cleanly (proposal still `pending`, zero orphan rows) → removed the
+   block → the identical confirm call now succeeded (`partySize: 3`, a real shared request
+   created) — proving the happy path is unaffected, not just that the new check exists. All test
+   rows (3 disposable `business_requests`, 1 `group_plan_proposals` + participants, 1 block, the
+   resulting shared request) deleted afterward, including nulling both sides of the
+   `business_requests.group_plan_id` ↔ `group_plan_proposals.resulting_request_id` FK cycle
+   before deleting either — confirmed production back to its exact pre-test baseline.
+3. **`business_partner_requests`' raw admin `UPDATE` RLS policy had no status check of its own**
+   — flagged in the Aug 16 RLS resweep as "a holdover from before
+   `approve_business_partner_request()`/`deny_business_partner_request()` existed... still
+   technically lets any `is_admin` session bypass those RPCs' pending-status guard via a direct
+   table write... not touched this pass." Fixed: the policy now also requires `status =
+   'pending'`, matching the RPCs' own double-review guard — both RPCs are `SECURITY DEFINER` and
+   bypass RLS entirely, so this only closes the direct-write path, not the real approve/deny
+   flow. **A real, previously-undetected finding surfaced while verifying this**: `authenticated`
+   never actually held an `UPDATE` grant on this table at all (checked via
+   `information_schema.role_table_grants`) — the flagged policy was unreachable for a real admin
+   session regardless, since Postgres checks table-level `GRANT`s before `RLS`. Meanwhile `anon`
+   held a raw `UPDATE`/`DELETE`/`INSERT`/`SELECT` grant on the same table with no matching
+   policy backing it up — the identical stray default-privileges artifact this file's own
+   "Known conventions" section already warns about for functions, just never checked for tables
+   until now. Not currently exploitable (`auth.uid()` is null for `anon`, so both the admin-only
+   `UPDATE` policy and the owner-only `INSERT` policy already reject it) but real defense-in-
+   depth hygiene, matching the Community Leaders section's own "caught and fixed my own
+   mistake... revoke ... from public, anon" precedent. Tightened to exactly what each role
+   legitimately needs: `authenticated` keeps `INSERT` (submit your own request) + `SELECT` (view
+   own/admin-all) only; `anon` gets nothing. **Verified live**: as the real admin (`Allen`), a
+   direct raw `UPDATE` attempt on an already-`approved` disposable test row was rejected
+   (post-grant-tightening: `permission denied for table`, confirming the grant fix; the RLS
+   policy fix itself was independently verified by inspecting the policy's `qual` and via the
+   from-scratch replay below) and the row was confirmed genuinely untouched; a direct call to
+   `deny_business_partner_request()` (the real RPC, `SECURITY DEFINER`) still executed correctly
+   end-to-end afterward (`Request not found or already reviewed` for a bogus id, not a
+   permission error) — confirming the grant/policy tightening didn't break the legitimate RPC
+   path. Test row deleted afterward.
+4. **`relationship_legacy_entries`' `SELECT` policy (`qual: true`, every role) let a raw API
+   call select `submitted_by`/`match_id` even though the feature's own client
+   (`getLegacyEntries()`) deliberately never reads either column** — flagged in the Aug 16 RLS
+   resweep as "a mild info-leak against the feature's own anonymized framing; flagged, not
+   fixed, since fixing it well means either restructuring the table (a view without those
+   columns) or accepting the current 'anonymized by client convention only' posture is
+   intentional." Built the view. RLS filters rows, not columns, so the real fix is a narrow
+   `relationship_legacy_entries_public` view exposing only the five anonymized fields (`id`,
+   the four `what_*` text fields, `created_at`) — never `submitted_by`/`match_id`, enforced at
+   the DB layer, not just by the client's own select list. The base table's public `SELECT`
+   policy was dropped entirely (no anon/authenticated read of the raw table at all now); the
+   `INSERT` policy — the real submission path, `auth.uid() = submitted_by` + a real match-
+   membership check — is completely unchanged. `services/relationshipLegacy.js`'s
+   `getLegacyEntries()` now reads from the view instead of the base table. **Verified live,
+   exhaustively**: a real, unrelated authenticated user (`Allen`) querying the base table
+   directly now correctly gets zero rows (was previously `qual: true` for everyone); the same
+   user querying the new view correctly gets real rows with only the five safe columns; directly
+   selecting `submitted_by` through the view fails with `column "submitted_by" does not exist`
+   (not just "not returned" — genuinely absent from the view's own column list); `anon` can
+   still read the view (preserving the original "Anyone can read legacy entries" intent — this
+   is a deliberately public, anonymized wisdom library, not a private one). Also confirmed the
+   real submission path is unaffected: a genuine `INSERT` as `Google voice` (via the same real
+   match-membership check the policy already required) still succeeds, matching the app's own
+   real `.insert()` call shape (no `RETURNING`, so Postgres's RLS-on-`RETURNING` behavior —
+   which *would* reject the return value now that the base table has no `SELECT` policy — never
+   actually applies to the real client code). Test row deleted afterward.
+5. **`MemoryVaultScreen.js` has no loading spinner on initial mount** — flagged in the second
+   bug hunt of Aug 15 2026 as "this screen wasn't in that pass's original file list; flagged
+   rather than fixed to avoid scope creep beyond 'real bug' for this pass." Fixed: added the
+   same `loading` state + full-screen `ActivityIndicator` branch every sibling screen in this
+   file's own UX-cohesion pass already uses (`GoodbyeArchiveListScreen.js`'s established
+   pattern) — previously the screen showed every category's "nothing yet" empty text until
+   `getMemoryItems()` resolved, indistinguishable from a genuinely empty vault.
+   `getMemoryItems()` already swallows its own Supabase errors into `[]` (confirmed by reading
+   the service function), so this can't produce a stuck spinner on a normal failure — no
+   try/catch was added beyond the existing service-level handling, matching this file's own
+   "don't expand scope beyond the flagged gap" discipline.
+
+**Verification for all five, matching this file's own established convention**: every schema
+change (items 1–4) applied to production (`enmosvippabmuqslzrox`) and verified live with real
+disposable test data as shown above, all test rows deleted afterward and production confirmed
+back to its exact pre-test baseline; a real from-scratch migration replay (47 files, `psql -v
+ON_ERROR_STOP=1`, exit 0 throughout, the two known image-version gaps patched as always) confirms
+all four schema changes exist in a freshly-rebuilt database, not just live production. Client
+changes (items 1–5 collectively touch `MemoryVaultScreen.js` and `relationshipLegacy.js`)
+verified via a direct `@babel/core` parse of both files (clean), the full 42-test Jest suite
+(unchanged, still 42/42), and a full `npx expo export --platform ios` (clean, no bundling
+errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of the `MemoryVaultScreen.js` spinner. The other four fixes are pure backend/RLS
+changes with no client code touched (beyond the `relationshipLegacy.js` view repoint, already
+covered by the export/parse check above), so there's nothing new to click through there beyond
+re-confirming Group Plan confirmation and Relationship Legacy submission still work end-to-end
+in the running app.
+
 ## Aug 16 2026 — honest scorecard, asked for directly, right after the acceptance audit closed
 
 The user asked directly, right after the full-system acceptance audit (below) finished, for an
