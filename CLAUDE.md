@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, build-wise; not yet applied to production
+## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, applied and verified live
 
 A new, explicit, opt-in "swipe to meet new people looking to make friends" surface — a
 completely separate product surface from dating discovery, per direct user request. The user
@@ -111,17 +111,92 @@ wide_area`'s "lat,lng" text format — matching `services/proximity.js`'s own ex
 the same column exactly, not guessed) and the two new Aug 16 RLS-sweep identity-guard triggers
 were confirmed UPDATE-only so they don't interfere with this feature's INSERT-only writes.
 
-**Not done this pass, disclosed rather than silently skipped**: the migration has **not** been
-applied to production — this pass was scoped specifically to build/parse/export verification,
-not a live deploy. Before this is genuinely done, matching every other schema change in this
-file's history: apply `20260816_friend_discovery.sql` to production and verify live with real
-disposable test data (a real mutual like producing a real `friendships`+`matches` row and a real
-push; a one-sided like producing no match; a pending/declined `friendships` pair correctly
-excluded from `get_friend_discovery_candidates`; a blocked pair correctly excluded both
-directions; the daily-friend-request-limit bypass and the dating-styled push bypass both
-verified live, not just reasoned through), plus a real from-scratch migration replay. Same
-standing gap as everywhere else in this file: no manual simulator/device run-through — next
-session should confirm the swipe deck renders/animates correctly, the explainer→Turn On→deck
+**Migration was already live in production from before a codespace restart interrupted the
+original build session** — discovered this by checking first rather than blindly re-running
+`create table` (which would have errored): the table, column, both new functions, and both
+trigger bypasses all already existed. Re-verified every piece against the real live schema
+before trusting it (not assumed carried-over-correctly): pulled `record_friend_discovery_swipe`'s
+full live body via `pg_get_functiondef` and confirmed it's byte-for-byte the committed version;
+confirmed grants (`authenticated`/`service_role`/`postgres` execute on both RPCs, no `anon`;
+zero raw table privileges on `friend_discovery_swipes` for `anon`/`authenticated`, only
+`service_role`/`postgres`); confirmed RLS is enabled with exactly 0 policies (deny-by-default,
+every access mediated by the RPCs); confirmed both `enforce_friend_request_daily_limit()` and
+`notify_new_match()` carry the `trusted_update` bypass live, not just in the migration file.
+
+**Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied —
+real disposable test scenarios using the 4 real profiles already in production (Allen Klein,
+Allen, Google voice, Claude), every scenario isolated to its own previously-unconnected pair so
+results couldn't cross-contaminate, each verified from both sides, all cleaned up afterward:
+- **Happy path**: Allen Klein and Claude (no prior relationship) opted in; Claude liked Allen
+  Klein first — correctly returned `is_mutual_match: false`, no friendship/match created, the
+  durable `like` row recorded; confirmed Allen Klein was then correctly excluded from Claude's
+  own future candidate list (already-swiped exclusion). Allen Klein liked back — correctly
+  returned `is_mutual_match: true` with a real `match_id`; confirmed a real `accepted`
+  `friendships` row was created (`requested_by` = Allen Klein, the second/reciprocal liker) and
+  a real `matches` row correctly linked via `source_friendship_id` to that new friendship
+  (`source_gathering_id` correctly null — not conflated with a gathering-sourced match).
+- **Daily-limit bypass, proven not just present in the SQL**: captured Allen Klein's
+  `friend_requests_sent_today`/`_date` before the mutual-match call (0/null) and confirmed it
+  was still 0/null immediately after — the system-mediated friendship genuinely never touched
+  the unrelated manual daily cap. Separately confirmed the trigger fires normally for a real
+  client-driven insert (a raw test `pending` friendship bumped the counter to 1 exactly as
+  expected), proving the bypass is narrowly scoped to the `trusted_update` path, not a blanket
+  disablement.
+- **Dating-push suppression, proven via a real request count, not assumed**: captured
+  `net._http_response`'s high-water mark before the mutual-match call, confirmed exactly **one**
+  new row after it (not two) — the dating-flavored `notify_new_match()` trigger's own push was
+  genuinely suppressed by its `trusted_update` bypass, only the real "New friend! 🎉" push from
+  `record_friend_discovery_swipe` fired. That one row was a genuine HTTP 200 from the live
+  `send-push` function with a real Expo push-ticket id back — the full pipeline actually ran.
+- **Idempotency**: a repeat `like` call on the now-connected pair correctly returned
+  `is_mutual_match: false, match_id: null` (via the `v_already_connected` re-check) with zero
+  errors and no duplicate friendship/match row created.
+- **Pending-request exclusion (rule 1), both directions**: confirmed Allen Klein↔Allen were
+  mutually visible as candidates *before* a temporary pending `friendships` row existed between
+  them, confirmed both correctly excluded from each other's candidate list once it existed, and
+  confirmed a swipe attempt between them was rejected *without* corrupting the pending row's own
+  status (still `pending` after the attempt, not silently flipped).
+- **Declined-request exclusion (rule 2), both directions**: same shape, using a temporary
+  `declined` `friendships` row between Claude↔Google voice — both directions correctly excluded,
+  and a swipe attempt correctly rejected without resurrecting the declined row.
+- **Blocked-pair exclusion, both directions**: confirmed Allen Klein↔Google voice were mutually
+  visible before a temporary block existed, confirmed both the blocker's own session and the
+  blocked party's own session correctly excluded each other after it (re-confirming the Aug 8
+  `is_blocked()` `SECURITY DEFINER` fix holds for this new use case too — a blocked party's own
+  session genuinely sees the exclusion, not just the blocker's), and confirmed a swipe attempt
+  from the blocked party was rejected with zero rows written to `friend_discovery_swipes`.
+- **Existing real match / existing real accepted friendship exclusion**: used the two real,
+  already-existing production relationships directly (Google voice↔Allen's real match, Claude↔
+  Allen's real accepted friendship) rather than fabricated data — both correctly excluded each
+  pair from each other's candidate list, both directions, with zero new rows created (pure
+  opt-in toggling, non-destructive).
+- **Pass durability (rule 4, the "pass" half)**: Allen Klein passed on Google voice — confirmed
+  a real `pass` row was recorded, confirmed Google voice was then correctly excluded from Allen
+  Klein's own future candidate list (same durability a `like` gets), and confirmed no friendship/
+  match was created from a pass.
+- **Coarse-distance-bucket honesty (rule 5)**: temporarily set real `wide_area` coordinates
+  ~1 mile apart between two test profiles — the RPC correctly returned `"Nearby"`; moved one
+  ~50 miles away — correctly returned `"In the wider area"`. Confirmed the RPC never returns a
+  raw number at any distance, only one of the three bucket labels.
+
+All test state was fully reverted afterward: the test friendship/match/swipes deleted, all 4
+profiles' `open_to_friend_discovery` reset to `false`, `wide_area` restored exactly (including a
+real pre-existing value on Claude's profile that had to be captured and restored, not just
+nulled), and the two daily-limit counters bumped by raw test inserts (Allen Klein's, Claude's)
+reset to their captured 0/null baseline. Confirmed production back to its exact pre-test state:
+1 friendship (Claude↔Allen, accepted), 1 match (Google voice↔Allen), 0 blocks, 0
+`friend_discovery_swipes`. **One thing deliberately left untouched, disclosed rather than
+silently "fixed"**: Allen's and Google voice's `friend_requests_sent_today`/`_date` show values
+that weren't captured before testing started, since no test insert ever used either as
+`requested_by` — no trigger path this session exercised could have touched them, so they're real
+pre-existing app usage, not test fallout, and were correctly left alone rather than guessed at.
+
+**Not done this pass, disclosed rather than silently skipped**: no real from-scratch migration
+replay (the from-empty-database Docker method this file's own migration-discipline rule calls
+for) — the live-application-plus-live-verification above is real and thorough, but this specific
+gap against the file's own stated convention wasn't closed this pass. Same standing gap as
+everywhere else in this file: no manual simulator/device run-through — next session should
+confirm the swipe deck renders/animates correctly on a real device, the explainer→Turn On→deck
 flow reads clearly, the celebration modal's Say Hi correctly lands on the real new `Chat`
 thread, and the Settings toggle and the screen's own header toggle stay in sync.
 
