@@ -24,6 +24,37 @@ that. (2) A couple of gaps need a real product decision from the user, not a Cla
 call (matching this file's own long-standing convention for exactly this kind of decision) —
 flagged inline rather than silently picked.
 
+**Updated honest assessment (Aug 16 2026, later same day, asked for directly after Phases 1-2
+landed) — the original Aug 16 scorecard table further down this file is left untouched (this
+file doesn't rewrite history), this note is the current read on the 2 rows actually touched so
+far:**
+- **Backend architecture & security rigor: genuinely improved, real 9 → 9.5-ish, not yet a clean
+  10.** Phase 1's own 3 items are all done — the concurrency harness is real and proven (3 races
+  now shown to hold under genuine Postgres-level overlap, not just sequential replay), and the
+  harness turned up a real, previously-unknown finding: `is_blocked()` proven correct under
+  actual RLS (not just the `request.jwt.claims`-only technique this file's own history had
+  already flagged once as a false-negative risk). Held back from a clean 10 by two honest gaps:
+  the group-plan races (Findings C2/C3) are still only proven sequentially, and the harness
+  itself is new — one round of use, not the kind of repeated, battle-tested tool the rest of this
+  file's security work has behind it.
+- **Data integrity / correctness under load: genuinely improved, real 8 → 9.** This is the
+  category that moved the most and for the best reason — Phase 2's full state-machine sweep
+  found a real, previously-undocumented bug, not just re-verified existing fixes:
+  `gathering_interest` had a direct, client-writable raw UPDATE RLS policy that let a host
+  bypass `approve_gathering_interest()` entirely (no capacity check, no double-review guard, no
+  match creation) — a genuine capacity/waitlist-corruption vector that existed in production this
+  whole time, now closed and verified live. That's exactly the kind of scrutiny this category's
+  score is supposed to reward. Held back from a clean 10 by the same infra-blocked item this
+  file has always named honestly: real load testing and a production-monitoring dashboard need
+  live traffic this sandbox doesn't have, not more code.
+- **Every other row is unchanged** — Feature completeness, Product Coherence, Analytics,
+  Monetization, Real-World Validation, and Documentation were not touched by Phases 1-2's work.
+  Real-World Validation in particular (1/10, "no session has ever run this app on a simulator or
+  a real device") is completely untouched by anything in this whole initiative so far, and stays
+  the single biggest real risk regardless of how far the code-closeable categories climb —
+  restated here so a future session doesn't read "Phase 1-2 done" as "the app is meaningfully
+  more validated," which it isn't.
+
 ### Phase 1 — Backend architecture & security rigor: 9 → 10 (fully code-closeable)
 
 **Why not 10 today**: every real security bug this file has ever found (admin self-escalation,
