@@ -119,16 +119,94 @@ under an actual dropped connection, which no code-only session can truly simulat
 `GroupPlanScreen`'s two new analytics writes don't introduce any visible delay/hitch to the
 confirm/confirm-offer button flow.
 
-**Wave 2A of the acceptance audit is still not run** — the race/state-edge-case sweep
-(duplicate-tap idempotency across 5 RPCs, a simultaneous-accept race check on
-`confirm_group_plan_offer` specifically, business-offer-expiry enforcement, `leave_group_plan`'s
-confirmation-clearing behavior, terminal-state checks, and the "does `business_requests`/
-`group_plan_*` have any block check at all" open question) was dispatched as a background fork in
-an earlier session that ended before it returned, and — per `PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md`'s
-own continuation-plan note — a new session can't recover a prior session's background fork.
-Picked up fresh immediately after this fix pass; see that file's own "Wave 2A findings" section
-(added after this CLAUDE.md entry, if it landed the same session) for the result, or its
-CONTINUATION PLAN section if it's still outstanding.
+**Wave 2A of the acceptance audit — DONE, run immediately after the Wave 2B fixes above, in the
+same session (not dispatched as a background fork this time — run directly, sequentially).**
+Full detail in `PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md`'s own "Wave 2A findings" section;
+summarized here. 8/8 items resolved: duplicate-tap idempotency across `join_gathering`
+(VERIFIED-LIVE — a genuine duplicate join returns the real existing status with zero new row,
+though a real, minor, disclosed-not-fixed cosmetic gap was found: the idempotent-return path
+doesn't re-look-up an already-real `match_id`, always returning `null` on that path even when a
+match genuinely exists), `confirm_group_plan_offer`/`accept_business_offer`/
+`respond_to_group_plan`/`record_friend_discovery_swipe` (all VERIFIED-CODE-READ, each either
+idempotent-by-design or correctly terminal-rejecting a repeat call, matching this schema's own
+established convention either way); the simultaneous-accept race in `confirm_group_plan_offer`
+(VERIFIED-CODE-READ — the proposal row is locked `FOR UPDATE` at the top of the function,
+serializing every concurrent call for that proposal before any count is read); business-offer
+expiry (VERIFIED-LIVE — the `expire-stale-business-requests` cron job confirmed genuinely active
+in `cron.job`, and a real disposable manually-expired offer was confirmed correctly rejected by
+`accept_business_offer`); `leave_group_plan`'s confirmation-clearing (VERIFIED-CODE-READ, correctly
+scoped to only the leaving participant's own confirmation row, not everyone else's real consent);
+`respond_to_group_plan(false)`/`decline_business_offer` terminal-state guards (VERIFIED-CODE-READ,
+both reject a second call outright, no resurrection possible); `cancel_business_request`/
+`cancel_group_plan` not corrupting already-progressed state (VERIFIED-CODE-READ, both require
+`status = 'open'`/`'pending'` respectively before allowing any write); and Friend Discovery's
+pending/declined exclusion rules (CITED from the original Aug 16 2026 build's own live
+verification, not re-proven, since nothing this session touched that logic).
+
+**A real, previously-uncleaned leftover from an earlier (incomplete) attempt at this exact wave
+was found and removed before this pass's own tests began** — one disposable "ACCEPTANCE-AUDIT-TEST
+expiry test" `business_requests` row and its one offer, evidently left behind when a prior
+session's background-fork attempt at Wave 2A ended before it could clean up. Deleted both,
+confirmed production back to 0 rows in both tables before this pass's own testing started —
+flagged plainly as a real instance of test-data leakage across sessions, not silently absorbed.
+
+**The one genuinely new finding — the audit's own "highest-value unanswered question," resolved
+definitively: yes, a real gap existed.** Read every function in the full `business_requests`/
+`group_plan_*` chain (`get_connected_open_business_requests`, `propose_group_plan`,
+`respond_to_group_plan`, `confirm_group_plan`, `confirm_group_plan_offer`,
+`create_business_request`, `_business_request_fanout`, `submit_business_offer`,
+`post_business_availability`) — **none of them referenced `blocks`/`is_blocked` anywhere**, and
+`blocks` has zero triggers (confirmed live via `pg_trigger`), so blocking someone never cascades
+to remove a pre-existing accepted `friendships` row or `matches` row (the identical fact this
+file's own earlier `invite_friend_to_gathering` fix already established for a different feature —
+see the "Aug 8 2026 — second restart, found and fixed a real block-check gap" section further
+down this file). Net effect: two people who blocked each other but still had an old accepted
+friendship/match row could still see each other's open request in Home's own Tier 2 resolver
+results, and one could propose — and the other accept — a real group plan together, seeing each
+other's name and party size in the shared roster. A genuine bypass of the block; dating
+discovery's own equivalent surface already correctly excludes blocked pairs, this newer surface
+never got the same treatment.
+
+**Fixed** (`20260816_group_plan_block_check.sql`): `get_connected_open_business_requests` (the one
+RPC sourcing both Home's Tier 2 resolver results and `getGroupPlanCandidates()`'s own invite
+picker) gained `and not is_blocked(auth.uid(), br.requester_id)`; `propose_group_plan`'s own
+invitee-eligibility subquery gained the identical check as a defensive server-side re-validation
+(never trust a stale client candidate list, matching this schema's established convention); a new
+defensive check was added to `respond_to_group_plan` for the case where a block is created
+*after* an invite was sent but *before* the invitee responds — a generic rejection message,
+same posture as `join_gathering`'s own blocked-pair rejection, never reveals which side blocked
+which. **Verified live against production end-to-end**, not just applied: confirmed all three
+functions' grants unchanged (`authenticated` yes, `anon` no) and all three now contain
+`is_blocked` in their live `prosrc`. Real disposable test using the one real accepted-friend pair
+already in production (Claude↔Allen): confirmed Allen genuinely saw Claude's open request via
+`get_connected_open_business_requests` before any block, confirmed it correctly disappeared the
+instant a real block row existed; a `propose_group_plan` attempt while blocked was correctly
+rejected with **zero** orphan rows left behind (the whole transaction rolled back, not just the
+failed insert); removing the block let the identical proposal succeed normally (happy path
+unaffected); re-adding the block *after* a real pending invite already existed correctly rejected
+`respond_to_group_plan`'s accept call without corrupting the participant's own `'invited'` status,
+and removing the block again let the identical accept call succeed. All test state deleted
+afterward; production confirmed back to its exact pre-test baseline.
+
+**Deliberately, honestly scoped, not silently claimed fully closed**: this fix covers the
+initiator↔invitee relationship only — `propose_group_plan`'s own design is hub-and-spoke around
+the initiator (every invitee is checked against the initiator's own connections, never against
+each other), so two *non-initiator* participants who are both genuinely connected to the
+initiator but blocked from each other could still end up in the same group-plan roster without
+this fix catching it. A full fix would need an all-pairs block check across the whole confirmed
+roster at `confirm_group_plan` time — a larger change than this pass's scope, flagged here as a
+real, known, disclosed residual gap.
+
+**The whole acceptance audit is now complete — 12/12 journeys traced, 13/13 nasty cases
+exercised, every real finding across both waves fixed and verified live** (except the two small,
+disclosed, non-critical residuals named above — `join_gathering`'s cosmetic `match_id` gap and
+the non-initiator-pair block-check scope limit). Per the audit's own opening limitation, restated
+plainly one more time: none of this can answer whether Nearby *feels* good in a real person's
+hands — that needs an actual device pass, which no session in this sandbox has ever had access
+to. The honest recommendation, matching what the user themselves already floated before this
+audit began: the mechanics are now about as proven-sound as a code-only audit can make them —
+the highest-value next step is a real device in front of a real person, not further code-only
+verification.
 
 ## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, applied, verified live, and replayed clean from scratch
 
