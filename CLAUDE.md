@@ -4,6 +4,33 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — honest scorecard, asked for directly, right after the acceptance audit closed
+
+The user asked directly, right after the full-system acceptance audit (below) finished, for an
+honest assessment of where the app actually stands — not a status report on what was built, a
+subjective grade. Given as two separate numbers rather than one blended score, because they
+answer genuinely different questions and blending them would hide the real risk:
+
+| Category | Score | Why |
+|---|---|---|
+| Backend architecture & security rigor | 9/10 | RLS on every table, SECURITY DEFINER RPCs with real ownership checks, race conditions closed with row locks (not just app-level discipline). The acceptance audit itself found and fixed a real admin self-escalation bug, blocked users still able to message each other, an RLS recursion bug, and (same day) a Friend Discovery mutual-swipe race and a group-plan block-check gap — unusually disciplined self-auditing for a pre-launch app. |
+| Feature completeness / breadth | 9/10 | Dating, gatherings, communities, a full business marketplace (request→offer→accept→reservation), group plans with 14 locked consent rules, friend discovery, AI-assisted intent resolution, rewards, momentum, relationship tools. Genuinely working mechanism throughout, not stubs. |
+| Product coherence / IA | 7/10 | Went through multiple deliberate restructuring passes (Home hierarchy, Settings regroup, Inbox split) specifically to fix "too much stuff, no hierarchy." Still a long Home screen and a wide surface area for a product nobody outside this household has used yet. |
+| Data integrity / correctness under load | 8/10 | Duplicate-tap idempotency, simultaneous-accept races, expiry, cancellation — all checked live against production, not assumed. The Friend Discovery mutual-swipe race found this same session is exactly the kind of bug this level of scrutiny exists to catch. |
+| Analytics / self-awareness | 7/10 | A real funnel (submissions → results → selections → outcomes), a market-validation dashboard, honest near-zero numbers instead of fabricated ones. Group Plans' own funnel coverage is still partial (see Wave 2B below). |
+| Monetization readiness | 2/10 | No payment processor connected at all. Business invoices sit in `draft` forever — correctly and repeatedly deferred rather than half-built, but there's no real revenue path today. |
+| **Real-world validation** | **1/10** | The number that matters most. Every check across this entire file's history was done by reading code and hitting the database directly — **no session has ever run this app on a simulator or a real device.** Gestures, animations, push delivery, onboarding pacing, whether the intent box actually reads as magical — none of it has been observed once. |
+| Documentation / continuity discipline | 9/10 | This file itself — every session's work is traceable, verified, and honest about what's still open, which is why multi-session work (like the acceptance audit below) survives restarts cleanly. |
+
+**Overall: strong as an engineering artifact (≈8.5/10) — the backend is more rigorously verified
+than most apps that already have real users, and real bugs get found and fixed, not glossed
+over. Much weaker as a validated product (≈3/10)** — essentially 4 real profiles in production,
+zero device runs, ever. Every "verified live" claim in this file's history means "verified
+against real database state with synthetic test data," not "a real person did this on their
+phone and it worked." That gap — not any specific remaining backend defect — is the real risk
+right now, and no further code-only auditing closes it. The highest-leverage next move is a real
+phone in front of a real person on the actual golden paths, not more backend hardening.
+
 ## Aug 16 2026 — full-system acceptance audit, Wave 2B's 4 gaps fixed — DONE; Wave 2A still open
 
 Direct follow-up to a full-system "does everything actually connect end-to-end, on a real phone"
