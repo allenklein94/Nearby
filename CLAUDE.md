@@ -4,6 +4,44 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — the other 3 progress bars reverted to coral too, closing the one open question
+## the coral-usage rule left standing — DONE
+
+Direct follow-up to the "coral-usage design rule locked" section immediately below this one,
+same day. That pass deliberately left one item unresolved: it reverted only `RewardsScreen.js`'s
+progress fill back to coral (the one the user had named specifically) and left the other 3
+progress bars this same earlier sweep had also demoted to neutral —
+`ProfileScreen.js`'s profile-completeness bar, `ChemistryDiaryListScreen.js`'s insight bar, and
+`MomentumScreen.js`'s weekly-activity bar chart — flagged as an open question rather than
+unilaterally reverting all 4.
+
+**The user's own answer, given directly, extends the locked rule rather than carving out a
+one-off exception for Rewards**: coral's job is "action, not decoration," but that doesn't mean
+coral can only ever be used for actions — a progress/completion/achievement indicator is a
+legitimate secondary semantic use of coral, provided it's visually unmistakable as
+non-interactive (matches the rule's own existing "Progress/data visualization... coral is fine
+when clearly non-interactive" carve-out — this wasn't a new exception, it was already-locked
+text this pass just finished applying consistently). The real risk the user flagged: four
+comparable progress bars rendered in four different colors reads as arbitrary, not as a design
+system — differing colors should only ever encode differing *meaning*, never used "merely for
+visual variation." Since all 4 represent the same semantic concept (user progress/completion/
+achievement, not four different things), all 4 should render identically.
+
+**Fixed**: `ProfileScreen.js`'s `completenessBarFill`, `ChemistryDiaryListScreen.js`'s
+`insightBarFill`, and `MomentumScreen.js`'s `barFill` (the weekly-activity mini bar chart) all
+reverted from `colors.textPrimary` back to `colors.primary`, matching `RewardsScreen.js`'s own
+`progressFill` exactly — all 4 progress indicators in the app now render in the identical coral
+treatment. `danger`/error colors remain untouched, reserved for genuine negative/destructive
+states only, per the locked rule's own fourth clause. Verified all three touched files still
+already use the theme-aware `useTheme()` hook (not a static `colors` import), so this doesn't
+reintroduce the dark-mode bug the `GatheringStatusBadge` fix (elsewhere in this file's Aug 15
+history) already caught once — and verified via a direct `@babel/core` parse of all three files
+(clean, no bundling errors).
+
+**Not done**: no manual simulator/device run-through — next session should confirm all 4
+progress bars actually read as one consistent visual language against real data, in both light
+and dark mode.
+
 ## Aug 16 2026 — coral-usage design rule locked, the visual system frozen — DONE
 
 Direct follow-up to the leftover-gaps fix pass immediately below: the user reviewed

@@ -1118,7 +1118,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   completenessTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 13, marginBottom: spacing.sm },
   completenessBarTrack: { height: 6, borderRadius: radius.full, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
-  completenessBarFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.textPrimary },
+  completenessBarFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.primary },
   completenessHint: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm },
   timelineLink: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
