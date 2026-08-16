@@ -178,3 +178,30 @@ not this tracker, for the actual report. Summary of what happened:
   to deserve its own session, per this file's own established "cap agents, one focused pass at a
   time" convention, rather than re-attempting all 7 remaining domains in parallel via forks
   again given how unreliably that went this time.
+
+## Follow-up, same day: every concrete finding from the delivered report is now FIXED
+
+Direct follow-up pass, asked explicitly to fix everything the report flagged. Full build/
+verification record lives in `CLAUDE.md`'s "Aug 15 2026 — connectivity audit fixes" sections;
+the report itself (`CONNECTIVITY_AUDIT_2026-08-15.md`) now carries a STATUS UPDATE banner and
+inline `[FIXED]` tags on every closed item, rather than being silently left to read as if the
+bugs were still live. Summary:
+- Findings C1/C2/C3 (Domain C) — fixed in `supabase/migrations/20260815_v4_group_plan_fixes.sql`.
+- Finding G.1 (group plans invisible from Home/Activity/Plans/pending-count) — fixed via two new
+  service functions (`getMyGroupPlans`/`getMyPendingGroupPlanInvites`) feeding all four surfaces.
+- §F finding (`GroupPlanScreen` no realtime) — fixed, and its own verification surfaced a much
+  bigger, previously-undetected bug: the `supabase_realtime` publication had only 1 of the 16
+  tables any real client channel in this app actually needs, meaning gathering/community/
+  business chat, message reactions, and every relationship-tools collaborative screen had never
+  been able to deliver a live event. Fixed via `supabase/migrations/20260815_v5_realtime_publication_fix.sql`.
+- §B.8 (CLAUDE.md documentation gap) — closed by the fix-pass's own CLAUDE.md entries.
+- Top-10 item 6 (stale `proposed_time`) — fixed, one-line local-state reset.
+- Top-10 item 7 — reconfirmed as "working as designed," not a defect, no fix needed.
+- The NOT REACHED domains (A/B/D/E/G/H's full originally-planned depth) remain genuinely not
+  reached — not attempted in the fix pass either, per the report's own §I item 7 recommendation
+  to keep each as its own dedicated future session.
+
+Every schema-touching fix was verified live against production with real disposable test data
+(including under real RLS via `set role authenticated`, not just as `postgres`) and via 3
+separate from-scratch migration replays across the two new migrations. No manual simulator/
+device run-through has been done for any of it — standing limitation, unchanged.

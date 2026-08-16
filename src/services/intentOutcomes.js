@@ -138,3 +138,24 @@ export async function getMyIntentPatterns() {
     return null;
   }
 }
+
+// Closes the "no impression/dismissal analytics for either Home nudge card"
+// gap (see PRODUCT_AUDIT/V2_ACCEPTANCE_REPORT_2026-08-15.md §10 and
+// CONSOLIDATED_AUDIT_2026-08-15.md's still-open list) -- fire-and-forget,
+// same non-blocking convention as every other write in this file. Never
+// throws into the caller; a failure here should never affect the nudge
+// card's own real behavior.
+export async function recordNudgeEvent(nudgeType, event, category) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('home_nudge_events').insert({
+      user_id: user.id,
+      nudge_type: nudgeType,
+      event,
+      category: category ?? null,
+    });
+  } catch (e) {
+    console.error('recordNudgeEvent failed', e);
+  }
+}

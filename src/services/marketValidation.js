@@ -55,3 +55,15 @@ export async function getCrossUserIntentPatterns() {
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
+// Closes "no impression/dismissal analytics for either new Home nudge card"
+// (V2_ACCEPTANCE_REPORT_2026-08-15.md §10) -- real shown/dismissed/acted
+// counts per nudge type, from home_nudge_events (see services/
+// intentOutcomes.js's recordNudgeEvent), the one number that would
+// actually validate whether either nudge earns its own screen real
+// estate. Admin-only, same gate as every other function in this file.
+export async function getHomeNudgeStats() {
+  const { data, error } = await supabase.rpc('get_home_nudge_stats');
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}

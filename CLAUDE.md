@@ -4,6 +4,130 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — consolidated the backend/connectivity audit reports, then fixed the concrete
+## items from its own "still open" list — DONE
+
+Direct follow-up to a request to consolidate the several backend/connectivity-audit reports
+written Aug 9–15 (`CRITICAL_MISSING_FEATURES.md`, `AUDIT_CHANGELOG.md`, `SCALABILITY_AUDIT.md`,
+`ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`, `V2_ACCEPTANCE_REPORT_2026-08-15.md`,
+`V3_V4_PHASES_A_D_AUDIT_2026-08-15.md`, `CONNECTIVITY_AUDIT_2026-08-15.md` +
+`connectivity_domain_C_group_merge.md`, `PRODUCTION_ARCHITECTURE_2026-08-15.md`) into one file —
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md` — with a single master status ledger (51 rows)
+and one "what's genuinely still open" section, rather than nine separately-dated files each
+partially superseding the others. The user then asked to fix what was still open in that list.
+
+**Re-verifying the ledger before fixing anything turned up 5 items that were already resolved,
+not actually open** — the "still open" classification in some source reports had gone stale
+(a later same-day fix in one report wasn't cross-referenced by the earlier report that flagged
+the gap). Checked each directly against current code rather than trusting either report's own
+text: `ChemistryDiaryListScreen.js` already has a real "+ Add Entry" button;
+`AdminBusinessRequestsScreen.js`'s Approve/Deny asymmetry is gone (both already call real RPCs,
+`approve_business_partner_request`/`deny_business_partner_request`); `GatheringDetailScreen.js`'s
+pending panel already has a working "Withdraw Request" action; `FeaturesOverviewScreen.js`
+genuinely has no tap-through by design (a static glossary, not a broken nav — matches this
+file's own earlier conclusion, just not yet reflected in the ledger); the 12-file hardcoded-URL
+scope from the Aug 9 refresh is fully closed (`grep` for the literal project URL across `src/`
+returns exactly one hit — the legitimate `SUPABASE_URL` constant itself). Also reclassified one
+item from "still open" to "already built": `CRITICAL_MISSING_FEATURES.md` claimed no proactive
+streak/reward-tier-proximity push existed; `send_momentum_nudges()` (real, live, in the
+baseline) does exactly that — the claim was stale the moment it was written, not fixed later.
+
+**Real, concrete gaps fixed this pass, all four schema-touching pieces applied to production and
+re-verified via a from-scratch 42-file migration replay (exit 0) before being called done**:
+
+1. **Duplicate-tap protection on Home's two nudge "act" buttons** (predictive-pattern nudge,
+   group-intent nudge) — flagged by the V2 acceptance report as missing; the main intent box's
+   own "Find it" button was already `disabled={intentThinking}`, but the two newer nudge buttons
+   weren't gated the same way. Both now share the identical `intentThinking` guard
+   (`HomeScreen.js`), so a fast double-tap can no longer fire `handleHomeIntentSubmit()` twice.
+2. **Composite indexes closing the flagged spatial-scan risk**
+   (`20260816_business_demand_index_hardening.sql`) — the V2 acceptance report named a real,
+   not-yet-triggered cost: both `notify_group_intent_threshold()` and
+   `notify_aggregated_demand_threshold()` (AFTER INSERT triggers on `business_requests`) filter
+   by `(status='open', category=..., expires_at > now())` before computing a per-row haversine,
+   but the only existing index (`business_requests_open_expires_idx`) doesn't include `category`
+   — every insert forced a scan of every open row regardless of category. Added
+   `business_requests_open_category_idx (category, expires_at) where status='open'` and
+   `brand_partners_active_coords_idx (id) where active and lat/lng not null` (the aggregated-
+   demand trigger's own outer loop over active partners) — plain partial B-tree indexes matching
+   this schema's own established `business_requests_open_expires_idx` shape, not a new PostGIS/
+   geography extension (deliberately consistent with this codebase's existing choice everywhere
+   else that does proximity filtering — a bounding-box/haversine compute, not a spatial index
+   type this project has never used). **Verified live**: both indexes confirmed present via
+   `pg_indexes` immediately after applying.
+3. **Home nudge impression/dismissal/action analytics** (`20260816_home_nudge_analytics.sql`) —
+   closes the V2 acceptance report's own §10 finding: neither new Home card (predictive pattern,
+   group intent) recorded whether it was shown, dismissed, or acted on, so there was no way to
+   compute the one number that would actually validate whether either nudge earns its own screen
+   real estate. New `home_nudge_events` table (`user_id`, `nudge_type` `predictive|group_intent`,
+   `event` `shown|dismissed|acted`, `category`) — same plain owner-scoped `for all using
+   (auth.uid() = user_id)` RLS shape as `intent_submissions`/`intent_outcomes`, no RPC needed for
+   the write side. New `recordNudgeEvent()` in `services/intentOutcomes.js` (fire-and-forget,
+   matching every other write in that file). Wired into `HomeScreen.js` at all three real
+   lifecycle points: "shown" fires once per distinct nudge instance per app session (a
+   `useRef`-backed in-memory set keyed on the same `dismissKey` the existing per-day dismiss
+   logic already computes — this screen's `useFocusEffect` re-runs the "should I show a nudge"
+   check on every focus, so a naive "log shown here" would have inflated the impression count
+   every time the user tabbed back to Home); "dismissed"/"acted" fire from the existing dismiss/
+   act handlers. New admin-only `get_home_nudge_stats()` RPC (`check_is_admin` gate, matching
+   `get_intent_funnel_stats`'s own shape exactly, every percentage `nullif(...,0)`-guarded) +
+   `getHomeNudgeStats()` client wrapper + a new "🔔 Home Nudge Performance" section on
+   `MarketValidationScreen.js`, same honest-empty-state convention as every other section there.
+   **Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied:
+   real disposable test rows inserted as a real profile (`Claude`) — a genuine stranger
+   (`Allen Klein`) correctly saw 0 of Claude's rows and was correctly rejected attempting to
+   insert a row claiming Claude's `user_id` (`42501`, RLS); the same non-admin profile calling
+   `get_home_nudge_stats()` was correctly rejected (`Only admins can view nudge stats`); the real
+   admin (`Allen`) calling it got hand-checked-exact numbers matching what was inserted exactly
+   (`predictive: shown 2, dismissed 1 (50.0%), acted 0 (0.0%)`; `group_intent: shown 1, dismissed
+   0, acted 1 (100.0%)`). All test rows deleted afterward; confirmed `home_nudge_events` back to
+   0 rows.
+4. **Realtime-leak resweep beyond `GroupPlanScreen`** (flagged NOT REACHED by the connectivity
+   audit) — re-checked, not just re-flagged. Grepped every screen using `.channel(` (13 total,
+   all 12 besides `GroupPlanScreen` itself, which was already covered) and confirmed each has a
+   real cleanup (`removeChannel`/`unsubscribe`) in its effect's own return — no new leak found.
+   Cross-checked every real `table:` name referenced across all 13 screens' `postgres_changes`
+   subscriptions against the 16-table `supabase_realtime` publication list
+   (`20260815_v5_realtime_publication_fix.sql`) — all 16 real subscribed tables are covered, no
+   gap. **Verified live**: `select count(*) from pg_publication_tables where pubname =
+   'supabase_realtime'` returns 16 against production, matching the client-side count exactly.
+   This closes the realtime-resweep NOT REACHED item as genuinely re-verified clean, not assumed.
+
+**Verification for all four**: all four touched/new files (`HomeScreen.js`,
+`intentOutcomes.js`, `marketValidation.js`, `MarketValidationScreen.js`) parse clean via a direct
+`@babel/core` transform; the full 42-test Jest suite passes unchanged; a full `npx expo export
+--platform ios` completed with no bundling errors. Both new migrations were replayed from a
+truly empty database alongside all 40 prior migration files (42 total, `psql -v
+ON_ERROR_STOP=1`, exit 0 throughout) — the new indexes, table, and RPC all confirmed to exist in
+the freshly-rebuilt database, not just live production.
+
+**Deliberately left open, not silently skipped, per the consolidated audit's own "still open"
+framing**:
+- **No payment processor for business billing** — unchanged standing decision; needs the user
+  present for a real external account/money-movement call, not something to build
+  autonomously.
+- **Business partner *onboarding* stays admin-approval-gated** — re-confirmed still true
+  (`approve_business_partner_request` is still a real, live, admin-only RPC) and still a
+  deliberate, previously-restated decision, not an oversight.
+- **A full type/contract sweep** (service function return shape vs. what every calling screen
+  destructures, across all ~40 service files), **a full RLS resweep beyond group plans and the
+  tables touched this pass** (the other ~50 tables' policies), and **a full
+  `gathering`/`gathering_interest` state-machine re-verification beyond the two specific races
+  already fixed** — all three are exactly the shape of audit the connectivity audit's own §I
+  item 7 recommended keeping as separate, dedicated future passes rather than bundling
+  shallow versions into an already-busy session; not attempted here, not claimed clean by
+  omission.
+- **Duplicate-tap/idempotency behavior downstream of the Anthropic classifier call itself**, and
+  the classifier call's own live behavior — still can't be exercised; this sandbox has never had
+  a way to mint a real signed-in session's access token.
+- **No manual simulator/device run-through, load testing, or a real production-monitoring
+  dashboard** — all three are standing, repeatedly-disclosed limitations of every session that
+  has worked on this codebase, not something this pass could close.
+
+`PRODUCT_AUDIT/CONSOLIDATED_AUDIT_2026-08-15.md`'s own ledger/§3 was updated to match everything
+above — read that file for the current single source of truth on this whole audit thread, not
+this section's own summary of it.
+
 ## Aug 15 2026 — Full-System Connectivity & Integration Audit — DONE, scope honestly narrower than planned
 
 Read-only audit, no application code changed. User asked for a full 24-section connectivity/

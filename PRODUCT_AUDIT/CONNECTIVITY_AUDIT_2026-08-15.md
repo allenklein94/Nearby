@@ -1,5 +1,42 @@
 # Nearby — Full-System Connectivity & Integration Audit (2026-08-15)
 
+**STATUS UPDATE (2026-08-15, same day, direct follow-up pass) — every concrete, actionable
+finding in this report is now fixed.** This document is kept as the original point-in-time
+report (nothing below this banner has been rewritten to pretend the bugs were never there) —
+read `CLAUDE.md`'s "Aug 15 2026 — connectivity audit fixes" sections for the full build/
+verification record. Quick map, so this file alone tells you what's still real vs. now closed:
+- **Findings C1, C2, C3** (§B items 2/3/5, §D, Domain C) — **FIXED**,
+  `supabase/migrations/20260815_v4_group_plan_fixes.sql`. Verified live against production with
+  real disposable test data (including reproducing the exact race/orphan scenarios and
+  confirming they no longer occur) and via 3 separate from-scratch migration replays.
+- **Finding G.1** (§B item 1, §G.1 — group plans invisible from Home/Activity/Plans/pending
+  count) — **FIXED**. `getMyGroupPlans()`/`getMyPendingGroupPlanInvites()`
+  (`services/groupPlans.js`) now feed Home's "Your Plans", `PlansScreen`, `ActivityScreen`'s
+  Invitations group, and `getPendingInvitesCount()`. Verified live under real RLS
+  (`set role authenticated`), not just as `postgres`.
+- **§F finding** (GroupPlanScreen has no realtime subscription) — **FIXED**, plus a much larger
+  bug found while verifying it: the `supabase_realtime` publication only ever had **one** table
+  in it (`messages`) — every other realtime channel in this app (gathering/community/business
+  chat, message reactions, every relationship-tools collaborative screen,
+  `GatheringsScreen`'s live attendee count) had never actually been able to receive a live
+  event. Fixed via `supabase/migrations/20260815_v5_realtime_publication_fix.sql`, an idempotent
+  migration adding all 16 real tables any client channel subscribes to.
+- **§B.8** (documentation gap for `20260815_v2_audit_fixes.sql`) — **FIXED**; that migration and
+  its own bugs are now recorded in `CLAUDE.md`.
+- **Top-10 item 6** (stale `proposed_time` on the business offer modal) — **FIXED**, one-line
+  local-state reset in `BusinessDashboardScreen.js`.
+- **Top-10 item 7** (two-round-trip group-plan consent cost) — **not a defect**, per this
+  report's own original framing — explicitly working as designed, nothing to fix.
+- **Everything marked NOT REACHED/UNVERIFIED below is still exactly that** — a full type/
+  contract sweep across all ~40 service files, a full RLS resweep beyond group plans,
+  gathering/`gathering_interest` state-machine re-verification, and performance/scale beyond
+  `SCALABILITY_AUDIT.md` were explicitly **not** attempted in the same follow-up pass, per this
+  report's own §I item 7 recommendation to keep each as its own dedicated future pass rather
+  than bundle them in. No manual simulator/device run-through has been done for anything in this
+  report or its fixes — standing limitation, same as everywhere else in this codebase's history.
+
+---
+
 **Scope note, stated honestly up front rather than padded**: the original plan for this audit
 was 8 parallel research domains covering all 24 sections of the requested spec exhaustively.
 Background-fork dispatch proved unreliable in this environment (two forks misread their own
@@ -49,46 +86,46 @@ assumed clean.
 
 ## B. Top 10 Connectivity Problems (ranked)
 
-1. **P1 — Group plans are entirely absent from Home, Activity, the dedicated Plans screen, and
+1. **[FIXED 2026-08-15, same day] P1 — Group plans are entirely absent from Home, Activity, the dedicated Plans screen, and
    the app-wide pending-invites count.** The only way to discover a pending group-plan invite,
    a budget that needs your re-consent, or an offer waiting on your confirmation is a push
    notification tap — if it's missed, dismissed, or the device didn't receive it, there is no
    other path to it anywhere in the app. See §G.1 below.
-2. **P1 — `confirm_group_plan` merges a participant's individual request without cascading to
+2. **[FIXED 2026-08-15, same day] P1 — `confirm_group_plan` merges a participant's individual request without cascading to
    that request's own already-generated `business_request_offers` rows**, leaving orphaned
    `pending`/`offered` offers that render incoherently (a blank, unexplained row on the business
    dashboard; a live but always-server-rejected "Accept This Offer" button next to the correct
    "went to a group plan" banner on the consumer's screen). Domain C Finding C1.
-3. **P1 — `confirm_group_plan_offer` has no row lock on its quorum-counting path** — the exact
+3. **[FIXED 2026-08-15, same day] P1 — `confirm_group_plan_offer` has no row lock on its quorum-counting path** — the exact
    "last person to act triggers an irreversible transaction" race this codebase's own Aug 15
    architecture-hardening pass explicitly closed for `accept_business_offer`/
    `approve_gathering_interest`, left open here because this function was added the same day but
    in a different migration. Concrete failure: 2 of 2 remaining confirmations tapped
    concurrently can both read "not yet at quorum" and never trigger acceptance even though the
    true committed state has reached quorum. Domain C Finding C2.
-4. **P2 — `GroupPlanScreen` has no realtime subscription**, only a focus-triggered refetch — a
+4. **[FIXED 2026-08-15, same day] P2 — `GroupPlanScreen` has no realtime subscription**, only a focus-triggered refetch — a
    participant actively viewing the screen while another participant confirms/leaves/gets
    excluded sees stale state (a stale "N of M confirmed" count in particular) until they
    navigate away and back. Every other multi-party live-coordination surface in this codebase
    (chat, both group-chat variants, business messaging) uses a real Supabase Realtime channel;
    this is the one new exception.
-5. **P2 — No exclusivity between two concurrently-pending group-plan proposals inviting the same
+5. **[FIXED 2026-08-15, same day] P2 — No exclusivity between two concurrently-pending group-plan proposals inviting the same
    person's still-open request** — a real, DB-unenforced gap (no unique constraint), narrower
    window than #2/#3 but the same underlying class of problem: one person's party size/capacity
    can be double-committed across two unrelated group plans. Domain C Finding C3.
-6. **P2 — `business_request_offers.proposed_time`/offer-type edit history has one known,
+6. **[FIXED 2026-08-15, same day] P2 — `business_request_offers.proposed_time`/offer-type edit history has one known,
    previously-disclosed non-blocking gap** (re-selecting "Alt. time" after switching away can
    leave a stale proposed time attached) — carried over from CLAUDE.md's own disclosed-not-fixed
    list, re-confirmed still true, not re-litigated in depth this pass; included here only so it
    isn't silently dropped from a connectivity report that's specifically about exactly this class
    of gap.
-7. **P3 — Two-round-trip consent cost for every real group plan** (accept invite → get reset to
+7. **[NOT A DEFECT — no fix needed] P3 — Two-round-trip consent cost for every real group plan** (accept invite → get reset to
    `invited` the moment the initiator sets a budget, even on the very first budget-set call →
    re-accept) is a real, working-as-designed UX cost of rule 7's own re-consent requirement, not
    a defect — flagged because it's exactly the kind of "does the state machine actually work the
    way the product intends" question this audit asks, and it's worth the product owner knowing
    it applies on the *first* budget-set, not just later changes.
-8. **P3 (documentation gap, not a code gap) — `20260815_v2_audit_fixes.sql` and its own source
+8. **[FIXED 2026-08-15, same day] P3 (documentation gap, not a code gap) — `20260815_v2_audit_fixes.sql` and its own source
    report (`PRODUCT_AUDIT/V2_ACCEPTANCE_REPORT_2026-08-15.md`) are both real, applied, and
    correct, but CLAUDE.md's own build log — which otherwise documents literally every other
    schema change in this repo's history — never mentions either.** A future session reading only
@@ -331,30 +368,39 @@ disconnected)
 
 ## I. Recommended Fix Order (dependency-aware, not just "fix P0s first")
 
-1. **`confirm_group_plan_offer` row lock (Finding C2)** — smallest, most isolated fix (one
+**All 6 items below are now FIXED (2026-08-15, same day, direct follow-up pass) — see the STATUS
+UPDATE banner at the top of this file and `CLAUDE.md`'s own "connectivity audit fixes" sections
+for the full build/verification record. Fix order below is left exactly as originally
+recommended, for the record — items 1-3 were bundled into one migration as suggested (#3 note),
+#4/#5 landed together in a second pass, #6 is this file's own sibling doc-fix.**
+
+1. **[FIXED] `confirm_group_plan_offer` row lock (Finding C2)** — smallest, most isolated fix (one
    `for update` clause on 2 rows already being read), and it's the one true correctness bug with
    silent-data-loss potential (a reservation that should have happened doesn't) in this whole
    report. Fix this first because every other group-plan fix below touches the same function
    family and should be built/tested against the corrected locking behavior, not around it.
-2. **`confirm_group_plan` cascade-to-offers (Finding C1)** — database/RPC layer, same migration
+2. **[FIXED] `confirm_group_plan` cascade-to-offers (Finding C1)** — database/RPC layer, same migration
    file family as #1, no frontend change needed once shipped (existing UI gates already
    correctly suppress a properly-`expired` offer with zero further work). Do this second because
    it's the other real state-corruption-adjacent bug and, like #1, is purely additive SQL with a
    copy-paste-able pattern already proven twice elsewhere in this schema.
-3. **Cross-proposal exclusivity (Finding C3)** — same layer, same family, lower urgency (narrower
+3. **[FIXED] Cross-proposal exclusivity (Finding C3)** — same layer, same family, lower urgency (narrower
    race window) — bundle into the same migration as #1/#2 since all three touch the same
    functions and this is the natural point to also close this while already in the file.
-4. **Group-plan visibility on Home/Activity/Plans/pending-count (Finding G.1)** — depends on #1-3
+4. **[FIXED] Group-plan visibility on Home/Activity/Plans/pending-count (Finding G.1)** — depends on #1-3
    being done first only in the sense that it's better to wire up a *correct* group-plan state
    into the app's primary surfaces than a still-racy one; not a hard technical dependency, but
    the right sequencing. This is the single highest-product-value fix in this whole report — a
    fully-built feature is currently unreachable for anyone who misses one push notification.
-5. **`GroupPlanScreen` realtime subscription (Finding, §F)** — frontend-only, independent of 1-4,
-   can happen in parallel with any of them.
-6. **CLAUDE.md documentation gap for `20260815_v2_audit_fixes.sql`** — pure documentation, zero
+5. **[FIXED] `GroupPlanScreen` realtime subscription (Finding, §F)** — frontend-only, independent of 1-4,
+   can happen in parallel with any of them. **This fix's own verification surfaced a much larger
+   bug**: the `supabase_realtime` publication only had one table in it (`messages`) — every other
+   realtime channel in the app had never been able to receive a live event. Fixed in the same
+   migration (`20260815_v5_realtime_publication_fix.sql`).
+6. **[FIXED] CLAUDE.md documentation gap for `20260815_v2_audit_fixes.sql`** — pure documentation, zero
    code risk, do whenever convenient; matters only so a future session doesn't rediscover or
    accidentally reintroduce either bug it already fixed.
-7. **The NOT REACHED items** (full type/contract sweep, full realtime-leak resweep beyond
+7. **[STILL OPEN, unchanged] The NOT REACHED items** (full type/contract sweep, full realtime-leak resweep beyond
    GroupPlanScreen, full RLS resweep beyond group plans, gathering/gathering_interest state-
    machine re-verification, performance/scale beyond the existing `SCALABILITY_AUDIT.md`) —
    recommend a dedicated follow-up pass per item, not bundled into the same session as 1-6 above,
@@ -363,22 +409,25 @@ disconnected)
 
 ---
 
-## Connectivity Matrix (this pass's actual coverage)
+## Connectivity Matrix (this pass's actual coverage — original point-in-time table, left
+unedited; see the STATUS UPDATE banner at the top of this file for what's since been fixed)
 
 | Area | UI | Backend | DB | RLS | Realtime | Notifications | Navigation |
 |---|---|---|---|---|---|---|---|
 | Solo business request→offer→accept | 🟢 | 🟢 | 🟢 | 🟢 (spot-checked, group-plan-adjacent) | ⚪ n/a | 🟢 (42/42 routed) | 🟢 |
-| Group plans (Phase D) | 🟡 (2 races + 1 orphan-state bug) | 🟡 | 🟢 (RLS itself clean) | 🟢 | 🔴 (none) | 🟢 (routing correct, just unreachable without the push) | 🔴 (invisible from Home/Activity/Plans) |
+| Group plans (Phase D) | 🟡 (2 races + 1 orphan-state bug) → **all FIXED 2026-08-15** | 🟡 → **FIXED** | 🟢 (RLS itself clean) | 🟢 | 🔴 (none) → **FIXED, real channel added** | 🟢 (routing correct, just unreachable without the push) | 🔴 (invisible from Home/Activity/Plans) → **FIXED** |
 | Notification routing (all 42 real types) | 🟢 | 🟢 | ⚪ | ⚪ | ⚪ | 🟢 | 🟢 |
 | Navigation graph (registered vs. called routes) | 🟢 (zero dangling calls found) | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | 🟢 |
 | Fake-connectivity sweep (TODO/mock/placeholder) | 🟢 (clean) | 🟢 (clean) | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 | Gathering/gathering_interest state machine | ⚪ NOT REACHED | ⚪ NOT REACHED | ⚪ NOT REACHED | ⚪ NOT REACHED | ⚪ NOT REACHED | ⚪ NOT REACHED | ⚪ NOT REACHED |
 | Home/Activity/Plans non-group-plan consistency | ⚪ NOT REACHED (relies on prior CLAUDE.md work, not re-verified) | | | | | | |
 | Full type/contract sweep, full RLS resweep, performance/scale | ⚪ NOT REACHED | | | | | | |
+| *(new, found during the fix pass, not part of the original audit)* Realtime publication had only 1 of 16 needed tables | 🔴 → **FIXED, all 16 tables added** (`20260815_v5_realtime_publication_fix.sql`) | | | | | | |
 
 **🟢 = verified this pass with real citations. 🟡 = verified, real issue found. 🔴 = verified,
 broken. ⚪ = not applicable to this row, or explicitly not reached this pass (never claimed
-clean by omission).**
+clean by omission). Rows still marked NOT REACHED remain genuinely not reached — the follow-up
+fix pass did not attempt them, per §I item 7's own recommendation.**
 
 ---
 

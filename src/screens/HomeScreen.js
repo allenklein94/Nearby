@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -6,7 +6,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
-import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns } from '../services/intentOutcomes';
+import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals } from '../services/businessFulfillment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
@@ -135,6 +135,13 @@ export default function HomeScreen({ navigation }) {
   const [predictivePattern, setPredictivePattern] = useState(null);
   const [groupIntentSignal, setGroupIntentSignal] = useState(null);
   const period = getTimePeriod();
+  // Impression analytics dedupe: this screen's own useFocusEffect re-runs the
+  // "should I show a nudge" check on every focus, so a plain "log shown here"
+  // would inflate the impression count every time the user tabs back to Home.
+  // A per-session, in-memory set of already-logged dismissKeys keeps "shown"
+  // honest -- one real impression per distinct nudge instance per app launch,
+  // not one per refocus.
+  const loggedNudgeShownRef = useRef(new Set());
 
   const load = useCallback(async () => {
     try {
@@ -181,7 +188,13 @@ export default function HomeScreen({ navigation }) {
         if (pattern?.category) {
           const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${pattern.category}_${pattern.period}`;
           const dismissed = await AsyncStorage.getItem(dismissKey);
-          if (!dismissed) setPredictivePattern(pattern);
+          if (!dismissed) {
+            setPredictivePattern(pattern);
+            if (!loggedNudgeShownRef.current.has(dismissKey)) {
+              loggedNudgeShownRef.current.add(dismissKey);
+              recordNudgeEvent('predictive', 'shown', pattern.category);
+            }
+          }
         }
 
         // Nearby 2.0 vision layer 3, "Group intent" -- real, dismissible:
@@ -195,7 +208,13 @@ export default function HomeScreen({ navigation }) {
             const top = groupSignals[0];
             const dismissKey = `group_intent_dismiss_${new Date().toDateString()}_${top.category}_${top.request_count}`;
             const dismissed = await AsyncStorage.getItem(dismissKey);
-            if (!dismissed) setGroupIntentSignal(top);
+            if (!dismissed) {
+              setGroupIntentSignal(top);
+              if (!loggedNudgeShownRef.current.has(dismissKey)) {
+                loggedNudgeShownRef.current.add(dismissKey);
+                recordNudgeEvent('group_intent', 'shown', top.category);
+              }
+            }
           }
         } catch (e) {
           console.error('getMyGroupIntentSignals failed', e);
@@ -527,14 +546,17 @@ export default function HomeScreen({ navigation }) {
     const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${predictivePattern.category}_${predictivePattern.period}`;
     setPredictivePattern(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'acted', category);
     handleHomeIntentSubmit(category);
   }
 
   function handlePredictiveDismiss() {
     if (!predictivePattern) return;
     const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${predictivePattern.category}_${predictivePattern.period}`;
+    const category = predictivePattern.category;
     setPredictivePattern(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'dismissed', category);
   }
 
   function handleGroupIntentAct() {
@@ -543,14 +565,17 @@ export default function HomeScreen({ navigation }) {
     const category = groupIntentSignal.category;
     setGroupIntentSignal(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('group_intent', 'acted', category);
     handleHomeIntentSubmit(category);
   }
 
   function handleGroupIntentDismiss() {
     if (!groupIntentSignal) return;
     const dismissKey = `group_intent_dismiss_${new Date().toDateString()}_${groupIntentSignal.category}_${groupIntentSignal.request_count}`;
+    const category = groupIntentSignal.category;
     setGroupIntentSignal(null);
     AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('group_intent', 'dismissed', category);
   }
 
   function handleAskBusiness() {
@@ -803,7 +828,7 @@ export default function HomeScreen({ navigation }) {
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={handlePredictiveAct} accessibilityLabel="Find something" accessibilityRole="button">
+                <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handlePredictiveAct} disabled={intentThinking} accessibilityLabel="Find something" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Yes, find something →</Text>
                 </TouchableOpacity>
               </View>
@@ -818,7 +843,7 @@ export default function HomeScreen({ navigation }) {
                     <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.predictiveActButton} onPress={handleGroupIntentAct} accessibilityLabel="Find something together" accessibilityRole="button">
+                <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handleGroupIntentAct} disabled={intentThinking} accessibilityLabel="Find something together" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Find something for the group →</Text>
                 </TouchableOpacity>
               </View>

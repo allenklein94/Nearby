@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getIntentFunnelStats, getMarketValidationStats, getMarketplaceReliabilityRankings, getCrossUserIntentPatterns } from '../services/marketValidation';
+import { getIntentFunnelStats, getMarketValidationStats, getMarketplaceReliabilityRankings, getCrossUserIntentPatterns, getHomeNudgeStats } from '../services/marketValidation';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
@@ -52,6 +52,7 @@ export default function MarketValidationScreen() {
   const [market, setMarket] = useState(null);
   const [rankings, setRankings] = useState([]);
   const [patterns, setPatterns] = useState([]);
+  const [nudgeStats, setNudgeStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -60,12 +61,13 @@ export default function MarketValidationScreen() {
     setLoadError(false);
     (async () => {
       try {
-        const [funnelStats, marketStats, rankingStats, patternStats] = await Promise.all([getIntentFunnelStats(), getMarketValidationStats(), getMarketplaceReliabilityRankings(), getCrossUserIntentPatterns()]);
+        const [funnelStats, marketStats, rankingStats, patternStats, nudgeStatsResult] = await Promise.all([getIntentFunnelStats(), getMarketValidationStats(), getMarketplaceReliabilityRankings(), getCrossUserIntentPatterns(), getHomeNudgeStats()]);
         if (!cancelled) {
           setFunnel(funnelStats);
           setMarket(marketStats);
           setRankings(rankingStats);
           setPatterns(patternStats);
+          setNudgeStats(nudgeStatsResult);
         }
       } catch (e) {
         if (!cancelled) setLoadError(true);
@@ -233,6 +235,37 @@ export default function MarketValidationScreen() {
               <StatRow label="Got any resolver result" value={formatPct(p.pct_with_result)} />
               <View style={styles.divider} />
               <StatRow label="Reached business fallback" value={formatPct(p.pct_reached_fallback)} />
+            </View>
+          ))
+        )}
+
+        <Text style={styles.groupHeader} accessibilityRole="header">🔔 Home Nudge Performance</Text>
+        <Text style={styles.subtitle}>
+          Real shown/dismissed/acted counts for Home's two proactive nudge cards (predictive
+          pattern, group intent) — the one number that actually says whether either nudge earns
+          its own screen real estate, not just whether the mechanism works.
+        </Text>
+        {nudgeStats.every((n) => !n.shown_count) ? (
+          <View style={[styles.card, shadow.card]}>
+            <Text style={styles.emptyRankingsText}>No nudge impressions recorded yet.</Text>
+          </View>
+        ) : (
+          nudgeStats.map((n) => (
+            <View key={n.nudge_type} style={[styles.card, shadow.card, { marginBottom: spacing.sm }]}>
+              <Text style={styles.rankingName}>{n.nudge_type === 'predictive' ? 'Predictive Nudge' : 'Group Intent Nudge'}</Text>
+              <Text style={styles.statSublabel}>{formatCount(n.shown_count)} shown</Text>
+              <View style={styles.divider} />
+              <StatRow
+                label="Dismissed"
+                value={formatPct(n.pct_dismissed)}
+                sublabel={`${formatCount(n.dismissed_count)} of ${formatCount(n.shown_count)} shown`}
+              />
+              <View style={styles.divider} />
+              <StatRow
+                label="Acted on"
+                value={formatPct(n.pct_acted)}
+                sublabel={`${formatCount(n.acted_count)} of ${formatCount(n.shown_count)} shown`}
+              />
             </View>
           ))
         )}

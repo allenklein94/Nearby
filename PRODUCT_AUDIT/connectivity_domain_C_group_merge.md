@@ -1,5 +1,13 @@
 # Domain C — Group/Merged Request (Phase D group plans) deep audit
 
+**STATUS UPDATE (2026-08-15, same day): Findings C1, C2, and C3 below are all FIXED**, in
+`supabase/migrations/20260815_v4_group_plan_fixes.sql`, verified live against production with
+real disposable test data reproducing each exact scenario described below (the cascade, the
+race, and the cross-proposal double-commitment) and confirming none of them still occur, plus 3
+separate from-scratch migration replays. See `CLAUDE.md`'s "Aug 15 2026 — connectivity audit
+fixes" section for the full record. This file is otherwise left as originally written — the
+original findings text below is the real, accurate account of what was broken before the fix.
+
 Source: `supabase/migrations/20260815_v3_group_plans_phase_d.sql` (947 lines, read in full),
 cross-referenced against `supabase/migrations/20260814_business_fulfillment.sql`
 (`submit_business_offer`, `cancel_business_request`, `expire_stale_business_requests`),
@@ -41,7 +49,7 @@ documents this feature's own self-testing at build time, not an independent seco
 - `is_group_plan_participant()` correctly refuses to answer for a pair not involving the caller
   (`when auth.uid() <> user_id_param then false`) — same defensive shape as `is_blocked()`.
 
-## FINDING C1 — P1 — Confirmed: merging a group plan leaves the participants' own original
+## FINDING C1 — P1 — [FIXED 2026-08-15] Confirmed: merging a group plan leaves the participants' own original
 individual requests' *already-generated* business offers permanently orphaned, in a state both
 the business dashboard and the consumer's own request-detail screen render incoherently
 
@@ -127,7 +135,7 @@ stops leaving these rows dangling (the `business_requests?.status === 'open'` ga
 both screens would then correctly suppress everything with zero further UI work, since a
 `'merged'` parent's offers would legitimately read `'expired'`).
 
-## FINDING C2 — P1 — Confirmed: `confirm_group_plan_offer` has no row lock on its
+## FINDING C2 — P1 — [FIXED 2026-08-15] Confirmed: `confirm_group_plan_offer` has no row lock on its
 quorum-counting path — the exact "last confirmation" race the function exists to guard against
 
 **Evidence** (`20260815_v3_group_plans_phase_d.sql:816-905`). Every other accept-adjacent RPC in
@@ -180,7 +188,7 @@ the top of the function, exactly like `_accept_business_offer_internal` already 
 serializes concurrent confirmations from different participants on the same offer, so the count
 read inside the lock is always the true, committed count. Database/RPC-layer fix only.
 
-## FINDING C3 — P2 — Plausible: no exclusivity between two concurrently-pending group plan
+## FINDING C3 — P2 — [FIXED 2026-08-15] Plausible: no exclusivity between two concurrently-pending group plan
 proposals that both invite the same person's still-open request
 
 **Evidence**. `propose_group_plan` locks each invitee's `business_requests` row (`for update of
