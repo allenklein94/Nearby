@@ -60,7 +60,12 @@ real privacy/correctness defect in work shipped that same day — both fixed wit
 found. A messaging-polling pattern that was actively wasting bandwidth on every open chat screen,
 continuously, was found and replaced with real-time subscriptions plus real pagination. A set of
 smaller, older gaps (debug code shipped to production, an admin self-escalation exploit, several
-unbounded browse queries) from the original 2026-08-08/09 audit passes are all now closed.
+unbounded browse queries) from the original 2026-08-08/09 audit passes are all now closed. A full
+RLS resweep across all 60 public tables (2026-08-16, §5.8) then found and fixed two more P0
+identity-hijack bugs of the exact same severity class as the admin-escalation exploit above —
+`matches` and `friendships` could both have their "other party" silently repointed by a real
+participant, the friendships one chaining into a fabricated, auto-created match with a
+non-consenting victim — plus four smaller bugs of the same or an adjacent shape.
 
 **What remains genuinely open**, consolidated into one list rather than scattered across nine
 files, is in §3 below — read that section if you only read one part of this document.
@@ -130,14 +135,22 @@ claimed clean.
 | 50 | `invite_only` gathering join had no server-side enforcement — only the UI hid the button | P1 | (carried in Production Architecture §6) | ✅ FIXED — `join_gathering()` now hard-requires a real accepted invite |
 | 51 | Full 20-step product-flywheel trace | Verification pass | Audit Changelog | ✅ DONE — no new BROKEN/MISSING transition found; 2 real gaps from an earlier trace confirmed fixed |
 | 52 | Realtime-leak resweep beyond `GroupPlanScreen` — whether every screen added since the last realtime cleanup pass correctly has/doesn't need a subscription | Verification pass (was ⚪ NOT REACHED) | Connectivity Audit §F | ✅ RE-VERIFIED CLEAN 2026-08-16 — all 13 real `.channel()` screens have proper cleanup; all 16 real subscribed table names are covered by the `supabase_realtime` publication, confirmed live (`pg_publication_tables` count = 16) |
+| 53 | **`matches` UPDATE policy never pinned `user_a`/`user_b`** — any match participant could silently repoint who the *other* party is to an arbitrary third person, then message them via the now-hijacked match row, entirely bypassing every real match-formation flow | 🔴 P0 (found during the 2026-08-16 full RLS resweep, not in any prior report) | RLS Resweep §1 | ✅ FIXED — `20260816_rls_sweep_identity_column_guards.sql`, `prevent_match_participant_edit()` trigger, verified live (exploit blocked, legitimate `disappearing_mode` write unaffected) + via replay |
+| 54 | **`friendships` UPDATE policy never pinned `user_a`/`user_b`/`requested_by`** — the identical shape as row 53, but chains into a *fabricated* real match: `create_match_on_friendship_accepted` auto-creates a `matches` row the instant `status` flips to `'accepted'`, so hijacking the friendship and accepting it in one call fabricates a real match with a non-consenting victim | 🔴 P0 (found during the 2026-08-16 full RLS resweep) | RLS Resweep §2 | ✅ FIXED — same migration, `prevent_friendship_participant_edit()` trigger, verified live (hijack blocked, real accept still creates the real Allen↔Claude match, not a fabricated one) + via replay |
+| 55 | `gathering_interest` UPDATE (host approve/deny) never pinned `gathering_id`/`user_id`/`match_id` — a host could redirect someone else's interest row to a different gathering they also host, or reassign it to a different user, fabricating an attendance record | P2 (same root cause as 53/54, lower stakes — found 2026-08-16) | RLS Resweep §3 | ✅ FIXED — same migration, `prevent_gathering_interest_identity_edit()` trigger, verified live + via replay |
+| 56 | `gathering_questions` UPDATE (host answers) never pinned `gathering_id`/`asker_id`/`question_body` — a host could rewrite or reassign someone else's question while answering it | P2 (found 2026-08-16) | RLS Resweep §4 | ✅ FIXED — same migration, `prevent_gathering_question_identity_edit()` trigger, verified live + via replay |
+| 57 | `profile_photos` SELECT policy checked `photo_verified = true` but never `profile_hidden = false` (unlike `profiles`' own SELECT policy) — a hidden profile's extra photos would still be readable by anyone; confirmed currently latent (no client code anywhere sets `profile_hidden = true`), not live-exploitable today | Low (defense-in-depth, found 2026-08-16) | RLS Resweep §5 | ✅ FIXED — policy aligned with `profiles`' own rule, verified live under a real `authenticated` role switch |
+| 58 | `live_tracking_sessions` had zero `SELECT` grant for `authenticated` at all — `getMyActiveLiveTrackingSession()` (Date Safety Check-In's live-location-share status) has been silently permission-denied for every real user, always returning `null` | P2 (real, confirmed regression matching row 42's shape — found 2026-08-16) | RLS Resweep §6 | ✅ FIXED — `grant select`; separately confirmed `get_live_tracking_session(session_id)` (the "anyone with the link" read path) already existed and was already correct from an earlier, undocumented session — nothing further needed there |
+| 59 | Full RLS resweep — every one of the 60 public tables' real policies (136 total) and real grants, read systematically for the bug shapes rows 40–42/53–58 already represent | Verification pass (was ⚪ NOT REACHED, §3 item 3) | RLS Resweep (this pass) | ✅ DONE 2026-08-16 — closes the "full RLS resweep beyond group plans" item; see §5.8. Scope note: this was a systematic read of every policy *expression* plus every grant row, not an adversarial line-by-line re-read of all ~103 SECURITY DEFINER functions' own internal logic (that remains the separate, still-open "state-machine re-verification" item, §3 item 3's third bullet) |
 
 ---
 
 ## 3. What's genuinely still open (read this if nothing else)
 
-**Updated 2026-08-16** — every concretely fixable item from this section's original 2026-08-15
-version has now been closed (rows 14, 15, 16, and the realtime-resweep half of item 5 below); see
-§5.7 for the full account. What's left is either a deliberate standing decision or something this
+**Updated 2026-08-16 (twice)** — every concretely fixable item from this section's original
+2026-08-15 version has now been closed: rows 14, 15, 16, and the realtime-resweep half of item 3
+below (see §5.7), then the full RLS resweep half of item 3 below, plus 6 real bugs it found (see
+§5.8, rows 53–59). What's left is either a deliberate standing decision or something this
 sandboxed environment genuinely cannot do:
 
 1. **No payment processor for business billing.** Invoice math runs correctly and on schedule;
@@ -148,21 +161,27 @@ sandboxed environment genuinely cannot do:
    re-confirmed still true in current code as of 2026-08-16. This is a restated, deliberate
    decision (not an oversight), but it remains the actual scaling bottleneck for adding new
    partners without manual review. (Row 29)
-3. **Two of the three NOT REACHED sweeps from the Connectivity Audit are still genuinely not
-   reached** — both explicitly large enough to deserve their own dedicated pass rather than a
-   rushed, shallow version bundled into whatever session happens to be open (matching the
-   Connectivity Audit's own §I item 7 recommendation):
+3. **One of the three NOT REACHED sweeps from the Connectivity Audit is still genuinely not
+   reached; the other two are now closed.** Explicitly large enough to deserve their own
+   dedicated pass rather than a rushed, shallow version bundled into whatever session happens to
+   be open (matching the Connectivity Audit's own §I item 7 recommendation):
    - A full type/contract sweep (service function return shape vs. what every calling screen
-     destructures) across all ~40 service files — this exact class of bug has bitten this
-     codebase more than once already (the `bonus_notices`/`is_admin` guarded-column gaps, a
-     `loadingInitial` destructuring gap across 4 chat screens).
-   - A full RLS resweep beyond group plans and the specific tables touched in the 2026-08-16
-     pass — the other ~50 tables' policies were not independently re-audited; carried forward as
-     genuinely unverified, not assumed clean or broken.
+     destructures) across all ~40 service files — **still open.** This exact class of bug has
+     bitten this codebase more than once already (the `bonus_notices`/`is_admin` guarded-column
+     gaps, a `loadingInitial` destructuring gap across 4 chat screens).
+   - ~~A full RLS resweep beyond group plans and the specific tables touched in the 2026-08-16
+     pass~~ — **closed 2026-08-16.** All 60 public tables' real policies (136 total) and real
+     grants were read systematically against production; found and fixed 6 real bugs, 2 of them
+     P0-severity identity-hijack bugs (rows 53–59, §5.8). Scope note carried forward, not
+     silently dropped: this closes the *policy-expression* resweep, not an adversarial line-by-
+     line re-read of every SECURITY DEFINER function's own internal logic — see the next bullet.
    - `gathering_interest`/`gatherings` state-machine re-verification beyond the two specific
-     race fixes already made (Architecture Hardening Audit).
-   - **The realtime-leak resweep, the third item in this original list, is now closed** — see
-     row 52 and §5.7.
+     race fixes already made (Architecture Hardening Audit) — **still open**, and explicitly
+     distinct from the RLS resweep just closed: this is about whether every *legal status
+     transition* inside each RPC is correctly guarded, not about the RLS policies gating who can
+     call the RPC at all.
+   - ~~The realtime-leak resweep, the third item in this original list~~ — **closed**, see row 52
+     and §5.7.
 4. **Whether the Anthropic classifier call itself behaves correctly end-to-end** is still
    unverified — no live signed-in session has ever been available in this sandbox to mint a real
    access token and actually exercise it. (Duplicate-tap protection *downstream* of that call,
@@ -424,6 +443,103 @@ with no bundling errors; both new migrations replayed clean (exit 0) alongside a
 migration files from a truly empty database, with every new object confirmed to exist in the
 freshly-rebuilt schema.
 
+### 5.8 Full RLS resweep (2026-08-16)
+
+Direct follow-up, same day as §5.7: asked to run the RLS sweep — the item §3 item 3's second
+bullet had carried forward as genuinely unverified ("the other ~50 tables' policies were not
+independently re-audited"). Pulled every one of the 60 public tables' real RLS policies (136
+total) and real grants (`anon`/`authenticated`/`public`) live from production via the Management
+API — deliberately not read from migration files, which can drift from a later live
+`CREATE OR REPLACE`/`ALTER POLICY` (a lesson this document's own §2/§4 has already recorded more
+than once) — and read all 136 systematically for the same bug shapes rows 40–42 already
+represent (a missing column pin, a missing grant, a recursive/circular policy, a SELECT policy
+drifting out of sync with a sibling table's rule).
+
+**Two real, previously-undocumented, high-severity findings (rows 53–54) — the most serious
+findings of this whole pass, on par with row 39's admin self-escalation bug**: `matches` and
+`friendships` are both two-party tables whose UPDATE policy checks "is the caller one of the two
+parties" against both the OLD row (USING) and the NEW row (WITH CHECK) — but neither ever pinned
+the *other* party's id. A real participant could silently `UPDATE ... SET user_b = '<any other
+real id>'` on their own row and the WITH CHECK still passed, since it only re-checks "auth.uid()
+= user_a OR auth.uid() = user_b," which stays true as long as the caller's own slot is untouched.
+For `matches`, this is a direct path to messaging any user on the platform without their consent
+— once repointed, `messages`' own INSERT policy just re-checks the same (now-hijacked) `matches`
+row and allows it, bypassing every real match-formation flow (swiping, gathering co-attendance,
+business offers, group plans, friend acceptance) entirely. For `friendships` it's worse in
+practice: this schema already has a real `create_match_on_friendship_accepted` AFTER UPDATE
+trigger that auto-creates a `matches` row the instant `status` transitions to `'accepted'` — so a
+friend-request recipient could, in the *same* UPDATE call that legitimately accepts a real
+request, also repoint `user_a`/`user_b`/`requested_by` to an uninvolved third party, and the
+trigger would auto-fabricate a real match with that non-consenting victim, chaining straight into
+the same unconsented-messaging path without even touching `matches` directly.
+
+Fixed the same way this document's own row 39/47 already describe this codebase fixing the
+identical problem shape for `profiles.is_admin`/`is_premium` (and, it turned out,
+`gatherings/communities.hosting_partner_id` — already fixed and live from an earlier session,
+just never logged in this document or `CLAUDE.md` until this pass found and confirmed it via
+`pg_get_functiondef`/`pg_trigger`): a `BEFORE UPDATE` trigger per table that silently reverts a
+protected column back to its old value unless a real, explicitly-set `app.trusted_update` flag
+says otherwise. Scoped narrowly to only the true identity/consent columns — deliberately not
+`matches.source_gathering_id`/`source_friendship_id`, which are legitimately rewritten by
+`join_gathering()`/`leave_gathering()`/`approve_gathering_interest()`/
+`create_match_on_friendship_accepted()` via `on conflict (user_a, user_b) do update set
+source_gathering_id = ...`; confirmed by reading every one of those functions' live bodies first
+that none of them ever touch `user_a`/`user_b` themselves, so the fix needed zero changes to any
+RPC.
+
+**Two smaller findings of the identical shape (rows 55–56)**, fixed the same way since the
+pattern was already being applied: `gathering_interest`'s host-approve UPDATE could also rewrite
+`gathering_id`/`user_id`/`match_id`, redirecting someone's interest row to a different gathering
+or a different user, fabricating an attendance record; `gathering_questions`' host-answer UPDATE
+could likewise rewrite `gathering_id`/`asker_id`/`question_body`.
+
+**One defense-in-depth fix (row 57)**: `profile_photos`' SELECT policy checked
+`photo_verified = true` but never `profile_hidden = false`, unlike `profiles`' own SELECT
+policy — confirmed currently latent (no client code anywhere sets `profile_hidden = true`), not
+live-exploitable, but the two policies now say the same thing.
+
+**One real, confirmed regression (row 58) matching row 42's exact shape** (`gatherings` had no
+`authenticated` SELECT grant, found in the original 2026-08-08/09 audit): `live_tracking_sessions`
+has zero SELECT grant for `authenticated` at all — `getMyActiveLiveTrackingSession()` has been
+silently permission-denied for every real user, always returning `null`, meaning Date Safety
+Check-In's live-location-share status has never once correctly rendered. Fixed with a plain
+grant; separately confirmed the "anyone with the link can view" read path
+(`get_live_tracking_session`) already existed and was already correct, from an earlier session
+never logged here either.
+
+**Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied — 20
+real assertions across two verification passes, all passing, using the 4 real profiles already
+in production: the `matches`/`friendships` hijack attempts are both correctly blocked while their
+legitimate writes (`disappearing_mode`, accept) still work, and the friendship-accept trigger
+correctly still creates the real match, not a fabricated one; the `gathering_interest`/
+`gathering_questions` guards each block the identity rewrite while the real host writes go
+through; `profile_photos` correctly hides/un-hides based on `profile_hidden`, checked under a
+genuine `set local role authenticated` role switch after a first-pass false negative (running as
+the table-owner role bypasses RLS regardless of the `request.jwt.claims` GUC — caught this
+distinction empirically mid-verification, not assumed); `live_tracking_sessions` is now correctly
+readable by its own owner and still correctly invisible to a stranger. All test rows deleted
+afterward, production confirmed back to its exact pre-test baseline. **Verified via a real
+from-scratch migration replay** (43 files, exit 0 throughout) — all four new triggers, the
+updated `profile_photos` policy, and the `live_tracking_sessions` grant confirmed present in the
+freshly-rebuilt database.
+
+**Not done this pass, disclosed rather than silently skipped**: this was a systematic read of
+every policy's *expression*, not a live penetration-style probe of every one of the ~103
+SECURITY DEFINER functions' own internal logic (that's the shape of §5.2's audit, which only
+covered a handful of state-machine RPCs) — the still-open state-machine re-verification item in
+§3 remains genuinely separate and unaffected by this pass. Two lower-signal observations were
+made and deliberately left alone: `relationship_legacy_entries`' `qual: true` SELECT policy is a
+genuinely intentional shared/anonymized "wisdom library" design, but doesn't structurally prevent
+a raw API call from selecting the two columns (`submitted_by`/`match_id`) the client itself
+deliberately never selects — a mild info-leak against the feature's own anonymized framing, not
+fixed since a good fix means either a view or accepting the current client-side-only anonymization
+is intentional; `business_partner_requests`' pre-RPC-era raw admin UPDATE policy still technically
+lets an admin bypass `approve_business_partner_request()`/`deny_business_partner_request()`'s own
+pending-status guard via a direct table write — low risk given this app's small, already-trusted
+admin set, not touched. No manual simulator/device run-through — same standing limitation as
+everywhere else in this document — though this pass is pure backend/RLS, so there's no new client
+surface to click through beyond confirming `DateCheckInModal`'s live-tracking status now renders.
+
 ---
 
 ## 6. Verification methodology (carried from the source reports, applies throughout)
@@ -463,9 +579,9 @@ freshly-rebuilt schema.
 | Full build-by-build history behind every fix referenced above, including this deletion itself | `CLAUDE.md` |
 
 *No application code was changed to produce the original version of this document; the 2026-08-16
-follow-up (fixing the "still open" items, then deleting the 8 consolidated sources) is recorded
-in `CLAUDE.md`'s own "Aug 16 2026" section. Where this document's status column disagrees with a
-source report's own point-in-time text, that's intentional — the source reports were frozen
-snapshots (several explicitly said so in their own opening lines); this document is the one place
-meant to stay current, and — as of 2026-08-16 — the only place this specific detail lives in the
-working tree at all.*
+follow-ups (fixing the "still open" items, then deleting the 8 consolidated sources, then the full
+RLS resweep and its 6 fixes) are recorded in `CLAUDE.md`'s own "Aug 16 2026" sections. Where this
+document's status column disagrees with a source report's own point-in-time text, that's
+intentional — the source reports were frozen snapshots (several explicitly said so in their own
+opening lines); this document is the one place meant to stay current, and — as of 2026-08-16 —
+the only place this specific detail lives in the working tree at all.*
