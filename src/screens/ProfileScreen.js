@@ -1253,7 +1253,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   recordingIntroTime: { flex: 1, color: colors.textPrimary, fontWeight: '700', fontSize: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg },
   modalTitle: { ...typography.title, color: colors.textPrimary },
-  modalCancelText: { color: colors.primary, fontWeight: '600', textAlign: 'center' },
+  modalCancelText: { color: colors.textSecondary, fontWeight: '600', textAlign: 'center' },
   questionRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,

@@ -1062,5 +1062,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   signOutButton: { paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.sm },
   signOutText: { color: colors.textTertiary, fontSize: 14 },
   deleteButton: { paddingVertical: spacing.sm, alignItems: 'center' },
-  deleteText: { color: colors.primary, fontSize: 13, opacity: 0.7 },
+  deleteText: { color: colors.danger, fontSize: 13, opacity: 0.7 },
 });

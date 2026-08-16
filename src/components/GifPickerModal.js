@@ -103,7 +103,7 @@ const getStyles = (colors) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border, marginRight: spacing.sm,
   },
   cancelButton: { paddingHorizontal: spacing.sm },
-  cancelText: { color: colors.primary, fontWeight: '600' },
+  cancelText: { color: colors.textSecondary, fontWeight: '600' },
   gifTile: {
     flex: 1, aspectRatio: 1, margin: spacing.xs, borderRadius: radius.sm,
     overflow: 'hidden', backgroundColor: colors.surfaceElevated,

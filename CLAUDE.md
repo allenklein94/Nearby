@@ -4,6 +4,75 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — coral-usage design rule locked, the visual system frozen — DONE
+
+Direct follow-up to the leftover-gaps fix pass immediately below: the user reviewed
+`PRODUCT_AUDIT/CORAL_AUDIT_PROGRESS.md`'s own outstanding "needs a product decision" items and
+gave a real, explicit, locked rule for the whole app rather than leaving them as open judgment
+calls — restated here so a future session never re-derives it:
+
+> **Coral = action, not decoration.** Tappable and advances the user → coral. Informational →
+> must not visually impersonate a button. Destructive → `colors.danger`, never brand coral.
+> Progress/data visualization (a fill bar, an achievement indicator) → coral is fine when
+> clearly non-interactive, since it's a data signal, not a false affordance. Secondary actions
+> (Cancel, dismiss) → neutral/outlined, coral is reserved for a surface's *primary* action.
+
+Checked all 5 of the user's own named items against current code before touching anything —
+turned out 3 separate 2026-08-14 follow-up passes (fully documented in
+`PRODUCT_AUDIT/CORAL_AUDIT_PROGRESS.md`, referenced but undersold by this file's own earlier
+"no action needed this pass" line under the Ionicons section) had already implemented most of
+this exact rule: `ActivityScreen.js`'s "N% compatible" badge is already non-interactive/neutral
+(matches the user's own explicit "do NOT make it tappable just for consistency" instruction
+exactly); `MatchesScreen.js`'s badge is already a real tappable element, correctly still coral;
+`GatheringDetailScreen.js`'s three lookalike cards are already split correctly (only the real
+`TouchableOpacity` — the linked-community card — stays coral, the two static info cards are
+neutral, with the card's own real action button, "Say Hello," correctly staying coral inside a
+now-neutral panel); the two originally-flagged Delete links were already `colors.danger`.
+
+**What was actually still wrong, found and fixed this pass**:
+- **`RewardsScreen.js`'s progress-bar fill had been swept to neutral in an earlier pass** — the
+  opposite of what the user just asked for ("do not automatically remove coral from the progress
+  indicator... keep it"). Reverted to `colors.primary`, matching the rule's own explicit
+  progress/data-viz carve-out. Deliberately did **not** also revert the other 3 progress bars
+  (Profile completeness, Chemistry Diary insight, Momentum streak) that the same earlier pass had
+  swept the same way — the user named `RewardsScreen.js` specifically ("achievement
+  visualization"), not progress bars generally; flagged as an open question rather than
+  unilaterally applying the same reversal to all 4.
+- **A real, broader sweep for destructive/secondary actions (not limited to the two files the
+  original audit named) turned up 4 more genuine violations**, all fixed: `GatheringsScreen.js`'s
+  "Cancel [gathering]" text and `SettingsScreen.js`'s **"Delete Account"** text (the single most
+  destructive action in the app, previously coral at 70% opacity — now correctly `colors.danger`)
+  both moved to danger; `ProfileScreen.js`'s modal Cancel text (voice-intro recording, prompt
+  picker) and `GifPickerModal.js`'s Cancel text both moved to `colors.textSecondary`, matching
+  this app's own established neutral-secondary-action convention elsewhere
+  (`AdminVerificationScreen.js`'s `rejectButtonText`, `CommunityDetailScreen.js`'s
+  `leaveButtonText`).
+
+**Full final visual audit — every remaining coral element that is NOT an action, and why it's
+intentionally kept — is in `PRODUCT_AUDIT/CORAL_AUDIT_PROGRESS.md`'s own "Resolution pass"
+section**, per the user's own explicit ask. Summarized: loading spinners (no real alternative
+convention for a spinner), the 6-surface sender-identity chat-bubble convention (deliberate,
+load-bearing color-coding), selection-state chips/pills (a real interactive toggle state, not
+decoration), and two small, explicitly-flagged-not-decided items left open on purpose —
+`DiscoveryScreen.js`'s one-time callout tip's body text (borderline: sits right next to its own
+"Got it" dismiss action, reads as one small self-contained interactive unit) and whether the
+other 3 progress bars should also revert to coral. Every other `colors.primary` occurrence in
+the app (~460, up from the original audit's 423 — genuine growth from everything shipped since
+Aug 14, not drift) is a real primary action, selected state, or link.
+
+**Verified**: a direct `@babel/core` parse of all 5 touched files (clean), the full 42-test Jest
+suite (unchanged, still 42/42), and a full `npx expo export --platform ios` (clean, no bundling
+errors — every touched file was an edit, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the reverted Rewards progress fill still reads clearly
+against its track, and both fixed Cancel buttons read as a clear secondary action against their
+neutral surrounding chrome, not washed out.
+
+**Per the user's own explicit instruction, the visual system is now frozen** — no further
+coral-consistency sweeps are expected unless a future session's own work introduces a genuinely
+new pattern, or one of the two explicitly-flagged open judgment calls above gets a real decision.
+
 ## Aug 16 2026 — closed 5 of the real, previously-disclosed-but-left-alone gaps from this
 ## file's own audit history — DONE
 

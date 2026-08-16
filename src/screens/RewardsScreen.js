@@ -135,7 +135,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tierName: { ...typography.title, color: colors.textPrimary, fontSize: 20 },
   pointsText: { color: colors.textTertiary, fontSize: 13, marginTop: 4, marginBottom: spacing.md },
   progressTrack: { width: '100%', height: 8, backgroundColor: colors.surfaceElevated, borderRadius: radius.full, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: colors.textPrimary, borderRadius: radius.full },
+  // Kept coral deliberately, per the locked "coral = action, not decoration"
+  // rule's own carve-out: a progress/achievement fill isn't pretending to be
+  // an interactive control, it's a data visualization of real earned
+  // progress -- reverted here after an earlier pass had swept it into the
+  // same neutral treatment as every other progress bar in the app.
+  progressFill: { height: '100%', backgroundColor: colors.primary, borderRadius: radius.full },
   progressLabel: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm, textAlign: 'center' },
   sectionLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, textTransform: 'uppercase', letterSpacing: 0.5 },
   tierListCard: {

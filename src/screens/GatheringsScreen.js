@@ -1477,5 +1477,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   approveButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   approvedLabel: { color: colors.success, fontSize: 12, fontWeight: '700' },
   noInterestText: { color: colors.textTertiary, fontSize: 13 },
-  cancelGatheringText: { color: colors.primary, fontSize: 12, opacity: 0.7, fontWeight: '600' },
+  cancelGatheringText: { color: colors.danger, fontSize: 12, opacity: 0.7, fontWeight: '600' },
 });
