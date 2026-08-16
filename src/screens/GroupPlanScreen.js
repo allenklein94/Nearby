@@ -11,6 +11,7 @@ import {
   leaveGroupPlan,
   confirmGroupPlanOffer,
 } from '../services/groupPlans';
+import { recordIntentSelection } from '../services/intentOutcomes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -92,11 +93,12 @@ export default function GroupPlanScreen({ navigation, route }) {
     return () => supabase.removeChannel(channel);
   }, [proposalId, load]);
 
-  async function runAction(fn) {
+  async function runAction(fn, onSuccess) {
     setActing(true);
     try {
-      await fn();
+      const result = await fn();
       await load();
+      if (onSuccess) onSuccess(result);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -139,7 +141,32 @@ export default function GroupPlanScreen({ navigation, route }) {
     const label = excludeIds.length > 0 ? `Confirm without ${excludeIds.length} of them?` : 'Everyone in gets a real request sent to nearby businesses.';
     Alert.alert('Confirm this group plan?', label, [
       { text: 'Never mind', style: 'cancel' },
-      { text: 'Confirm', onPress: () => runAction(() => confirmGroupPlan(proposalId, excludeIds)) },
+      {
+        text: 'Confirm',
+        onPress: () => runAction(
+          () => confirmGroupPlan(proposalId, excludeIds),
+          // Wave 2B of the full-system acceptance audit (see
+          // PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found the whole
+          // Group Plan funnel wrote zero rows to intent_outcomes -- a
+          // group plan reaching the real business marketplace was
+          // invisible to Market Validation's own dashboard. This records
+          // it the same way HomeScreen's own "ask nearby businesses
+          // fresh" fallback already does (resultType: 'created_new' --
+          // a new business_requests row was genuinely just created).
+          // No submissionId: there's no single originating intent
+          // submission for a group plan (it's formed from several
+          // participants' own separate asks), so this is honestly
+          // recorded as unlinked rather than attributed to one.
+          (result) => recordIntentSelection({
+            rawText: null,
+            category: proposal.category,
+            dateWindow: proposal.date,
+            resultType: 'created_new',
+            resultId: result?.requestId ?? null,
+            resultTitle: `Group plan — ${proposal.category}`,
+          })
+        ),
+      },
     ]);
   }
 
@@ -153,7 +180,33 @@ export default function GroupPlanScreen({ navigation, route }) {
   function handleConfirmOffer(offerId) {
     Alert.alert('Confirm this offer for the group?', 'Once everyone confirms, the reservation locks in.', [
       { text: 'Never mind', style: 'cancel' },
-      { text: 'Confirm', onPress: () => runAction(() => confirmGroupPlanOffer(proposalId, offerId)) },
+      {
+        text: 'Confirm',
+        onPress: () => runAction(
+          () => confirmGroupPlanOffer(proposalId, offerId),
+          // Same Wave 2B gap as handleConfirm above -- this is the actual
+          // "10/10 success case" for the whole feature (a group plan
+          // that genuinely turned into a real reservation), and it was
+          // completely invisible to the outcome-tracking loop. Only
+          // recorded once every participant has actually confirmed
+          // (allConfirmed) -- an interim "N of M confirmed" call isn't
+          // an outcome yet, it's still in progress.
+          (result) => {
+            if (!result?.allConfirmed) return;
+            const offer = offers.find((o) => o.id === offerId);
+            recordIntentSelection({
+              rawText: null,
+              category: proposal.category,
+              dateWindow: proposal.date,
+              resultType: 'business_offer',
+              resultId: offerId,
+              resultTitle: offer?.brand_partners?.name
+                ? `${offer.brand_partners.name} — group plan`
+                : `Group plan — ${proposal.category}`,
+            });
+          }
+        ),
+      },
     ]);
   }
 

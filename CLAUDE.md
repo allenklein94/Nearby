@@ -4,6 +4,132 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — full-system acceptance audit, Wave 2B's 4 gaps fixed — DONE; Wave 2A still open
+
+Direct follow-up to a full-system "does everything actually connect end-to-end, on a real phone"
+acceptance audit the user asked for the same day — full method, scope, and journey-by-journey
+findings live in `PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md` (an incrementally-updated progress
+tracker, kept across restarts, per this file's own "cap agents, keep a progress file" convention
+— read that file for the complete record; this section is the fix-it summary). Waves 1A/1B
+(12/12 journeys clean, 0 gaps) and Wave 2B (client resilience + regression + analytics-capture
+checks) had already landed in an earlier pass of the same audit; Wave 2B surfaced 4 real,
+non-critical gaps (no data corruption, no privacy leak) — this pass fixed all 4, verified,
+committed, then continued straight into Wave 2A (the still-unfinished race/state-edge-case
+sweep), rather than stopping once the known gaps were closed.
+
+**Gap 1 — `FriendDiscoveryScreen.js`'s `load()` had zero error handling.** A network failure
+during `isOpenToFriendDiscovery()`/`getFriendDiscoveryCandidates()` was an unhandled promise
+rejection — `setLoading(false)` was never reached, so the screen was stuck on its spinner forever
+with no error state and no retry. This is the exact `LoadErrorState`-less pattern the Aug-15
+UX-cohesion pass was built to close everywhere else in the app; Friend Discovery shipped after
+that pass but was never brought under its own convention. Fixed: `load()` now wraps its body in
+try/catch, a new `loadError` state renders the shared `LoadErrorState` component (same
+"Couldn't load X" + working Try Again button every other screen in this app already uses) instead
+of an infinite spinner.
+
+**Gap 2 — `handleSwipe()` failures were invisible to the user.** `FriendDiscoverySwipeCards.js`
+visually advances the deck (`currentIndex` increments) regardless of whether the underlying
+`onSwipe` promise resolves or rejects — a network drop mid-swipe left the user believing they'd
+swiped (the card is gone) while the swipe was never recorded server-side. Worst case: a genuine
+mutual "like" could silently never register, with no way to know or retry (the candidate never
+resurfaces once scrolled past — `get_friend_discovery_candidates` already excludes anyone with
+*any* existing swipe row, including a failed one that never actually wrote). **Not fully solved**
+(the card animation can't be un-advanced after the fact — that's `FriendDiscoverySwipeCards`' own
+optimistic-advance design, deliberately left unchanged) **but no longer silent**: a failed swipe
+now shows a real `Alert` naming the person and the action that didn't save, with a Retry button
+that re-calls `recordFriendDiscoverySwipe` for that same target id directly (doesn't need the
+card's still-visible position in the deck, just the id) — the user now always finds out and can
+act on it immediately instead of never knowing.
+
+**Gap 3 — a real, previously-undocumented concurrent-mutual-swipe race, fixed, not just
+flagged.** `record_friend_discovery_swipe`'s mutual-match check
+(`select ... into v_reverse_like_exists`) had no row lock at all — under default READ COMMITTED
+isolation, if two people swiped "like" on each other in the same narrow window (both
+transactions' own insert not yet committed when the *other* transaction's reverse-check ran),
+both checks could correctly see "no reverse like yet" and both return `is_mutual_match: false`
+even though it was genuinely mutual — a silently dropped match with no retry path (same
+already-swiped exclusion as Gap 2 above means the candidate never resurfaces). Fixed in
+`20260816_friend_discovery_swipe_race_fix.sql` the same way every other race in this schema is
+fixed — `select id from profiles where id in (least(...), greatest(...)) order by id for update`
+at the very top of the function, before any other read or write — no new advisory-lock primitive
+introduced, matching this codebase's own established `SELECT ... FOR UPDATE` convention exactly.
+Locking both participants' own `profiles` rows in a fixed (least-id-first) order means two
+concurrent opposite-direction calls can't deadlock each other, and serializes any two swipes
+between the same pair — the second call's reverse-like check now always runs after the first
+call's insert has either committed or rolled back, so it's structurally impossible for both sides
+to see "no reverse like yet" when a real mutual like exists. **Verified live against production**
+(`enmosvippabmuqslzrox`), not just applied: confirmed the function's live `prosrc` now contains
+the lock and grants are unchanged (`authenticated` yes, `anon` no); ran a real disposable
+sequential two-step test against a genuinely unconnected real pair (Allen Klein↔Claude) — the
+first "like" correctly returned `is_mutual_match: false`, the reverse "like" correctly returned
+`is_mutual_match: true` with a real `match_id`, confirming the new lock doesn't break the
+ordinary (non-racing) happy path. All test state (the swipe rows, the friendship, the match, both
+profiles' `open_to_friend_discovery`) reverted afterward — confirmed production back to its exact
+pre-test baseline (1 match, 1 friendship, 0 swipes). **Not independently reproduced under true
+concurrency** — this sandbox can't force two interleaved DB transactions into the exact
+overlapping window the race needs, same disclosed limitation the original Wave 2B finding
+already stated for reproducing it in the first place; the fix's correctness rests on Postgres's
+own well-understood `FOR UPDATE` semantics plus the unchanged happy-path result, not on watching
+the race disappear empirically.
+
+**Gap 4 — the entire Group Plan (Phase D) funnel wrote zero rows to `intent_outcomes`, now
+partially wired, disclosed as partial rather than claimed complete.** A group plan that
+successfully turned into a real business reservation — the actual "10/10 success case" for this
+whole feature — was completely invisible to the Market Validation dashboard's own headline
+metrics, purely because Group Plans was layered onto the intent system as a distinct set of
+tables/RPCs and nobody wired the analytics write path through at the time. Fixed:
+`GroupPlanScreen.js`'s `runAction()` now accepts an optional `onSuccess(result)` callback
+(previously it just awaited the RPC and reloaded, discarding the return value) —
+`handleConfirm()` now calls `recordIntentSelection({resultType: 'created_new', resultId:
+result.requestId, ...})` once a group plan genuinely produces a new `business_requests` row
+(mirroring exactly how HomeScreen's own "ask nearby businesses fresh" fallback is already
+recorded), and `handleConfirmOffer()` calls `recordIntentSelection({resultType: 'business_offer',
+resultId: offerId, ...})` only once the RPC's own `allConfirmed` flag is true (the actual
+reservation locking in — an interim "N of M confirmed" call is correctly not treated as an
+outcome, it's still in progress). Both reuse the already-verified `recordIntentSelection()`
+fire-and-forget write path from `services/intentOutcomes.js` — no schema change, no new RPC.
+**Deliberately, honestly partial**: `submissionId` is always `null` for both calls — a group plan
+doesn't have one single originating `intent_submissions` row the way a solo ask does (it's formed
+from several participants' own separate individual asks), so attributing it to just one of them
+would misattribute it. This means both events now correctly count toward
+`outcomes_answered`/`outcomes_positive` (once someone eventually answers a real "how did it go"
+prompt for one) but correctly do **not** inflate `results_selected`'s ratio against
+`submissions_with_result` — the honest behavior for data with no real single submission to
+attribute to, not a bug. Real, disclosed remaining gap: the propose-time moment (before
+confirmation) still isn't logged, and the individual participants' own original asks' own
+`intent_submissions` rows are still not retroactively linked to the group plan they became part
+of — true full funnel parity for Group Plans would need a schema change (e.g. persisting a
+submission id onto `business_requests` at creation time) that was out of scope for this pass.
+Verified via a direct read of `intent_outcomes`' real `result_type` CHECK constraint —
+`'created_new'`/`'business_offer'` are both already-valid, already-used-elsewhere values, not
+invented — rather than a full live group-plan-to-reservation test, given the amount of disposable
+state (a proposal, multiple participants, an offer) that scenario would need to construct for a
+pure client-side wiring change onto an already-proven-correct write path, not new schema/RLS
+requiring its own live proof.
+
+**Verification for all four**: a direct `@babel/core` parse of both touched screens (clean), the
+full 42-test Jest suite (unchanged, still 42/42), and a full `npx expo export --platform ios`
+(clean, **1874 modules**, unchanged — edits to `FriendDiscoveryScreen.js`/`GroupPlanScreen.js`
+plus one new migration, no new client files this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of either fixed screen — next session should confirm `FriendDiscoveryScreen`'s new
+error state and swipe-retry alert both render and behave correctly on a real device (especially
+under an actual dropped connection, which no code-only session can truly simulate), and that
+`GroupPlanScreen`'s two new analytics writes don't introduce any visible delay/hitch to the
+confirm/confirm-offer button flow.
+
+**Wave 2A of the acceptance audit is still not run** — the race/state-edge-case sweep
+(duplicate-tap idempotency across 5 RPCs, a simultaneous-accept race check on
+`confirm_group_plan_offer` specifically, business-offer-expiry enforcement, `leave_group_plan`'s
+confirmation-clearing behavior, terminal-state checks, and the "does `business_requests`/
+`group_plan_*` have any block check at all" open question) was dispatched as a background fork in
+an earlier session that ended before it returned, and — per `PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md`'s
+own continuation-plan note — a new session can't recover a prior session's background fork.
+Picked up fresh immediately after this fix pass; see that file's own "Wave 2A findings" section
+(added after this CLAUDE.md entry, if it landed the same session) for the result, or its
+CONTINUATION PLAN section if it's still outstanding.
+
 ## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, applied, verified live, and replayed clean from scratch
 
 A new, explicit, opt-in "swipe to meet new people looking to make friends" surface — a
