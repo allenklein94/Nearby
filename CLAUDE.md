@@ -289,9 +289,105 @@ judgment call is still open.
    originated request attributes back to its real originating individual ask.
 2. [ ] Log the propose-time group-plan moment to `intent_outcomes` (today only confirm-time is
    logged).
-3. **Needs the user's own call, not a Claude judgment call**: should communities gain a real
-   location field so demand-generation can extend to them the way it already does for
-   gatherings? Nothing built here until this is answered.
+3. **RESOLVED — the user's own call, given directly, not a Claude judgment call: YES, add a real
+   geographic field to Communities. Locked design below — plan written, NOT YET BUILT, next
+   session should start here.**
+
+   **The user's own reasoning, restated so it isn't softened or re-litigated by a future
+   session**: a community like "Princeton Runners" or "Downtown Pickleball" has a real geographic
+   identity the way a purely-online group doesn't, and that's a genuinely useful signal for
+   intent → community matching ("I want to find a running group near me" should be able to tell
+   whether a candidate community is actually geographically relevant). But a community isn't
+   *at* a location the way a gathering is — it *serves an area*. So this is deliberately **not**
+   the same precise-coordinate model gatherings use. Locked naming: call the concept **"Community
+   Area,"** not "Location," everywhere it appears (schema, UI copy, code) — the distinction
+   matters and shouldn't get flattened back to "location" by a future session copying the
+   gathering pattern out of habit.
+
+   **Locked shape, given directly by the user, not to be re-derived**:
+   - **Optional, community-controlled** — never required at creation, never required to keep
+     using the community. A purely-online community (a book club with no physical meetup
+     tradition) stays exactly as valid as it is today.
+   - **Coarse-grained by default, never a precise/private address** — city/town + optional
+     neighborhood or general area name (e.g. "Princeton, NJ" / "📍 Downtown Princeton"), **not**
+     "123 Main Street." A community that genuinely needs a real venue address for some purpose
+     already has that at the *gathering* level (gatherings hosted under the community already
+     carry their own real `precise_lat`/`precise_lng`) — this field is deliberately never that.
+   - **An optional map point exists, but stays coarse** — same fuzzing posture this schema
+     already uses everywhere a location is shown at the "how a stranger sees it" resolution
+     (matching gatherings' own `area`/`wide_area` fuzzed-text convention, e.g.
+     `services/proximity.js`), not `communities`' own new precise column.
+   - **Used for discovery and intent resolution, not as a gate.** A community with no Area set
+     just never surfaces from a location-aware intent ask or a "near me" filter — it still
+     surfaces everywhere else (search, browse, direct link) exactly as it does today. Nothing
+     about existing communities regresses; this is purely additive.
+
+   **Concrete build plan, written before implementation, same restart-safety convention as every
+   other plan-first section in this file — check `git status`/`git log` for what's actually
+   landed vs. still just this plan**:
+   1. **Schema** — `communities` gains 4 nullable columns, all backward-compatible (every
+      existing row stays `null`, zero behavior change until a leader sets one):
+      `area_city text`, `area_region text` (state/province, keeps "Princeton" from colliding
+      with another "Princeton" elsewhere), `area_label text` (the optional neighborhood/general
+      description, e.g. "Downtown"), `area_lat`/`area_lng double precision` (the optional coarse
+      map point — genuinely optional even when city/region are set, matching the user's own "an
+      optional map point" framing as a third, separate layer, not a requirement of the first
+      two). No CHECK constraint forcing city+region together with the point — each of the three
+      layers (city/region text, label text, coarse point) is independently optional, matching
+      "coarse-grained... optional" as read literally, not inventing a stricter requirement the
+      user didn't ask for.
+   2. **RLS** — no new policy needed. These are plain columns on an already-RLS-covered table;
+      the existing owner/leader-scoped UPDATE path (whatever RPC or self-edit mechanism
+      `communities` already uses for name/description edits — check the live current mechanism
+      before building, since this file's own history has already found more than one table where
+      the assumed write path turned out to be different from what a session expected) is what
+      sets these too. Follow whatever that established pattern actually is, don't invent a new
+      one.
+   3. **Client — a real "Community Area" editor**, reusing existing UI conventions rather than a
+      new pattern: a plain text city/region entry (two short fields, not a full address form)
+      plus an optional label field, on `CommunityDetailScreen.js`'s existing creator/leader edit
+      surface (wherever name/description are already editable — same screen, same save action,
+      not a new screen). The optional map point, if built in the same pass, reuses whatever
+      existing "pick a coarse point" UI pattern this app already has (check
+      `SelectGatheringLocationScreen.js`/the gathering-creation Where step first — reuse, don't
+      reinvent) rather than a bespoke picker.
+   4. **Display** — `CommunityDetailScreen.js`/community cards show `area_label` (or, absent
+      that, `area_city` + `area_region`) as a small, clearly-secondary line near the community's
+      name — matching how a gathering's own coarse area text already renders elsewhere in this
+      app, not a prominent new UI element competing with the community's real identity (name,
+      icon, member count).
+   5. **Intent resolution integration** — this is the actual payoff the user's reasoning names
+      explicitly, so it's the real "done" bar for this item, not just the schema/UI: extend
+      `resolveIntent()`'s community branch (`intentResolver.js`) so that when a parsed intent
+      carries a real location signal (the caller's own current coarse location, matching how
+      every other location-aware resolver branch already sources it — never a location typed
+      into free text, per this file's own long-standing "AI never infers a specific date/time/
+      place from free text" rule extended to location the same way it already applies to date),
+      a candidate community with a real `area_lat`/`area_lng` (or, absent a point, a real
+      `area_city` matching the caller's own known city) gets a real, honest distance/locality
+      signal folded into its existing score — same shared-scoring-axis convention Aug 14's
+      resolver-integration fix already established for gatherings/perks/business availability
+      (`getGatheringFitReasons()`'s own weights, reused, not a new invented scale). A community
+      with no Area set is treated exactly as it is today — included by topic/membership signal
+      only, never penalized for the field being absent, matching "never a gate" above.
+      **Demand-generation** (the other half of the "communities becoming a real Tier 2 supply
+      source for aggregated-demand notifications" idea flagged elsewhere in this file's Aug 15
+      Business Fulfillment/V3-V4 history) is **not** part of this item's own bar — that's a
+      separate, larger mechanism (matching gatherings' own `notify_aggregated_demand_threshold()`
+      trigger shape) that becomes buildable *once* this schema exists, but wasn't asked for by
+      name in the user's own message above; flag it as a natural next step once Area exists,
+      don't silently fold it into this item's own scope.
+   6. **Verification, matching this file's own established convention**: apply the migration to
+      production and verify live with a real disposable test community (set a real Area, confirm
+      it round-trips; confirm a community with no Area set is completely unaffected everywhere);
+      re-verify via a from-scratch migration replay before considered done; full `npx expo export
+      --platform ios` after the client pieces land. Same standing limitation as everywhere else
+      in this file: no manual simulator/device run-through.
+
+   **Status: plan locked and written here, per direct instruction — nothing built yet. Next
+   session picking this up should start at step 1 (schema) and work down the list in order,
+   committing/pushing after each step per this file's own restart-safety convention, not batching
+   the whole thing into one commit.**
 4. [ ] Close `DiscoveryScreen.js`'s one remaining open coral judgment call (the one-time callout
    tip's borderline "Got it" dismiss-action case, flagged not-decided in the Aug 16 coral audit).
 
@@ -349,6 +445,29 @@ here and committed/pushed individually as it lands — not batched at the end �
 restart never loses more than one piece.
 
 **Status: plan locked, phases execute below as they land — check each phase's own status line.**
+
+**Where to pick this up next session — Phases 1-2 are fully DONE (see their own status lines
+above). Phase 3 is next, in this exact order, not batched:**
+1. **Start with the Community Area plan above (Phase 3 item 3)** — it's the biggest, most
+   schema-adjacent piece and now has a full locked design + build plan written, just not built.
+   Work steps 1-6 in order, committing after each.
+2. Then Phase 3 items 1-2 (the `submission_id` linkage on `business_requests` + propose-time
+   `intent_outcomes` logging for Group Plans) — small, mechanical, no open decision. **These are
+   also Phase 4 item 2's own fix** (shared, not built twice) — worth doing right before Phase 4
+   so the two phases' status notes can both point at the same commit.
+3. Then Phase 3 item 4 (the `DiscoveryScreen.js` coral judgment call) — smallest item in the
+   whole plan, a single copy-adjacent decision (the one-time callout tip's "Got it" dismiss
+   action), not schema-touching.
+4. **Then Phase 4**: item 1 (elevate "repeat intent rate" as the real headline metric on
+   `MarketValidationScreen.js` — the number is already computed, this is a visual-hierarchy
+   change to that one screen only) rides naturally right after item 2 lands (step 2 above), since
+   both touch the same Group Plans funnel story.
+5. **Then Phase 5 last**, per the plan's own execution order (its ceiling is capped at ~8 without
+   a real device pass regardless of what's built) — the 4 named, already-approved-in-spirit Home
+   hierarchy tweaks from `PRODUCT_AUDIT/HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md` recommendations
+   #3-6 (heavier Your Plans header, dial down Best Pick's visual weight, label the quick-stats
+   card, fix Your Communities' undersized header) — read that file's own text for the exact
+   styling deltas before touching `HomeScreen.js`, don't re-derive them from scratch.
 
 ## Aug 16 2026 — the other 3 progress bars reverted to coral too, closing the one open question
 ## the coral-usage rule left standing — DONE
