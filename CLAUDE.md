@@ -4,6 +4,131 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 16 2026 — full RLS resweep (the "full RLS resweep beyond group plans and the tables
+## touched this pass" item, flagged as deliberately deferred in several earlier sections) — DONE
+
+Asked directly to run the RLS sweep. Pulled every one of the 60 public tables' real RLS
+policies (136 total) and real grants (anon/authenticated/public) live from production via the
+Management API, rather than reading migration files (which can drift from a later live
+`CREATE OR REPLACE`/`ALTER POLICY`, a lesson this file has already learned more than once) —
+read all 136 systematically for the same bug shapes this file has already found and fixed once
+each (a missing column pin, a missing grant, a SELECT policy drifting out of sync with a
+sibling table's rule, a recursive/circular policy).
+
+**Two real, previously-undocumented, high-severity findings, both the identical root-cause
+shape — the single most serious findings of this whole sweep**: `matches` and `friendships` are
+both two-party tables whose UPDATE policy checks "is the caller one of the two parties" against
+both the OLD row (USING) and the NEW row (WITH CHECK) — but neither ever pins the *other*
+party's id. A real match/friendship participant could silently `UPDATE ... SET user_b =
+'<any other real id>'` on their own row and the WITH CHECK still passed, since it only
+re-checks "auth.uid() = user_a OR auth.uid() = user_b," which stays true as long as the
+caller's own slot is untouched. For `matches`, this is a direct path to messaging any user on
+the platform without their consent — once repointed, `messages`' own INSERT policy just
+re-checks the same (now-hijacked) `matches` row and happily allows it, completely bypassing
+every real match-formation flow (swiping, gathering co-attendance, business offers, group
+plans, friend acceptance). For `friendships` it's worse in practice, not just in theory: this
+schema already has a real `create_match_on_friendship_accepted` AFTER UPDATE trigger that
+auto-creates a `matches` row the instant `status` transitions to `'accepted'` — so a friend-
+request recipient could, in the *same* UPDATE call that legitimately accepts a real request,
+also repoint `user_a`/`user_b`/`requested_by` to an uninvolved third party, and the trigger
+would then auto-fabricate a real match with that non-consenting victim, chaining straight into
+the same unconsented-messaging path above without even touching `matches` directly.
+
+**Fixed the same way this codebase already fixed the identical problem shape for
+`profiles.is_admin`/`is_premium` and `gatherings/communities.hosting_partner_id`** (see
+`prevent_self_premium_edit()`/`prevent_hosting_partner_self_edit()` — the latter, it turned
+out, was *also* already fixed and live from an earlier session, just never called out in this
+file's own running log; found and confirmed via `pg_get_functiondef`/`pg_trigger` before
+assuming it still needed doing) — a new `BEFORE UPDATE` trigger per table that silently reverts
+a protected column back to its old value unless a real, explicitly-set `app.trusted_update`
+flag says otherwise, matching this schema's established defense-in-depth convention exactly
+(revert, don't raise). Scoped narrowly to only the true identity/consent columns
+(`matches.user_a`/`user_b`; `friendships.user_a`/`user_b`/`requested_by`) — deliberately **not**
+`matches.source_gathering_id`/`source_friendship_id`, which are legitimately rewritten by
+`join_gathering()`/`leave_gathering()`/`approve_gathering_interest()`/
+`create_match_on_friendship_accepted()` via `on conflict (user_a, user_b) do update set
+source_gathering_id = ...` — confirmed by pulling and reading every one of those functions'
+live bodies first, not assumed: none of them ever touch `user_a`/`user_b` themselves (they're
+the conflict target, never in the `SET` clause), so this fix needed zero changes to any of
+those functions.
+
+**Two smaller findings of the identical shape, fixed the same way since the pattern was already
+being applied and the cost was near-zero**:
+- `gathering_interest`: a host approving/denying interest could, in the same UPDATE, also
+  rewrite `gathering_id`/`user_id`/`match_id` on the row — redirecting someone else's interest
+  row to a different gathering the host also runs, or reassigning it to a different `user_id`,
+  fabricating an attendance record for someone who never asked. Guarded all three; the client
+  only ever sets `status`.
+- `gathering_questions`: a host answering a question could also rewrite the question's own
+  `gathering_id`/`asker_id`/`question_body`. Guarded all three; the client only ever sets
+  `answer_body`/`answered_at`.
+
+**One defense-in-depth fix, confirmed currently unexploitable but worth closing so the two
+policies say the same thing**: `profile_photos`' SELECT policy checked `photo_verified = true`
+but, unlike `profiles`' own SELECT policy, never also checked `profile_hidden = false` — so a
+profile that hides itself would still have its extra photos readable by anyone. Grepped the
+whole client before writing this: `profile_hidden` is a real column, defaults `false`, and no
+client code anywhere ever sets it `true` — there's no UI toggle for it today, so this was
+latent, not live. Fixed by aligning the policy with `profiles`' own rule exactly.
+
+**One real, confirmed regression, matching the exact shape of the "`gatherings` had no
+`authenticated` SELECT grant" bug this file already found and fixed once (Aug 9 2026)**:
+`live_tracking_sessions` has zero SELECT grant for `authenticated` at all — `services/
+liveTracking.js`'s `getMyActiveLiveTrackingSession()` does a direct `.select('id, expires_at')`
+against this table and has been silently permission-denied for every real user this whole time,
+always returning `null`, meaning `DateCheckInModal`'s live-location-share status has never once
+correctly rendered "you have an active session." Fixed with a plain `grant select`. Separately
+checked whether the table's "anyone with the link can view" promise (the feature's own code
+comment) was reachable at the RLS layer at all, since the one SELECT policy that exists only
+lets the session's own owner read it — found `get_live_tracking_session(session_id)` already
+exists live and already does exactly the right thing (a narrow SECURITY DEFINER read scoped to
+one session id, coordinates only while active and unexpired, granted to `anon`+`authenticated`)
+— also already fixed in an earlier session and never logged here. Nothing further needed there.
+
+**Verified live end-to-end against production** (`enmosvippabmuqslzrox`), not just applied, with
+real disposable test data using the 4 real profiles already in production (Allen, Allen Klein,
+Google voice, Claude) — 20 real assertions across two verification passes, all passing: the
+`matches` hijack attempt is now correctly blocked while the legitimate `disappearing_mode`
+column still updates normally; the `friendships` hijack attempt is correctly blocked while the
+legitimate accept still works, and the friendship-accept trigger correctly still creates the
+real Allen↔Claude match (not a fabricated one involving the stranger); the `gathering_interest`
+and `gathering_questions` guards each correctly block the identity-column rewrite while the
+real host-approve/host-answer writes still go through; `profile_photos` correctly hides a
+hidden profile's extra photo from a stranger (while the owner still sees their own) and
+correctly un-hides it once `profile_hidden` reverts — checked properly under a genuine `set
+local role authenticated` role switch, not just a `request.jwt.claims` GUC set while still
+connected as the table-owner role (which bypasses RLS regardless of the JWT claim — caught this
+distinction empirically mid-verification, via a false-negative first pass, before trusting any
+of the RLS-dependent results); `live_tracking_sessions` now correctly readable by its own owner
+under the real `authenticated` role, and still correctly invisible to a stranger (the grant
+fix alone didn't widen who RLS lets see it). All test rows deleted afterward; production
+confirmed back to its exact pre-test baseline. **Verified via a real from-scratch migration
+replay** (43 files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) — all four new triggers, the
+updated `profile_photos` policy, and the `live_tracking_sessions` grant all confirmed present
+in the freshly-rebuilt database.
+
+**Not done this pass, disclosed rather than silently skipped**: this was a systematic read of
+every policy's *expression*, not a live penetration-style probe of every one of the ~103
+SECURITY DEFINER functions' own internal logic (that's the shape of audit
+`ARCHITECTURE_HARDENING_AUDIT_2026-08-15.md`/§5.2 already did for the handful of state-machine
+RPCs it covered) — a few lower-signal observations were made and deliberately left alone rather
+than fixed: `relationship_legacy_entries`' SELECT policy (`qual: true`, roles `{public}`) is a
+genuinely intentional shared/anonymized "wisdom library" design (confirmed by reading
+`services/relationshipLegacy.js`, whose own `getLegacyEntries()` deliberately never selects
+`submitted_by`/`match_id` and shuffles results) — but the RLS itself doesn't prevent a raw API
+call from selecting those two columns anyway, which is a mild info-leak against the feature's
+own anonymized framing; flagged, not fixed, since fixing it well means either restructuring the
+table (a view without those columns) or accepting the current "anonymized by client convention
+only" posture is intentional. `business_partner_requests`' raw admin UPDATE RLS policy (a
+holdover from before `approve_business_partner_request()`/`deny_business_partner_request()`
+existed) still technically lets any `is_admin` session bypass those RPCs' pending-status guard
+via a direct table write — low risk (admins are a small, already-highly-trusted set in this
+app's threat model, not attacker-controlled), not touched this pass. No manual simulator/device
+run-through, same standing limitation as everywhere else in this file — though this pass's own
+fixes are pure backend/RLS changes with no client code touched, so there's nothing new to
+click through beyond re-confirming `DateCheckInModal`'s live-tracking status actually renders
+correctly now that its underlying query no longer errors.
+
 ## Aug 16 2026 — consolidated the backend/connectivity audit reports, then fixed the concrete
 ## items from its own "still open" list — DONE
 
