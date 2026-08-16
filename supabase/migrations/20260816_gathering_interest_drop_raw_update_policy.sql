@@ -26,13 +26,12 @@
 -- SECURITY DEFINER and writes as the function owner, not through this
 -- policy.
 --
--- NOT YET APPLIED to production as of this commit -- the ad-hoc DROP
--- POLICY was blocked by this session's own auto-mode safety classifier
--- (a destructive DDL statement run outside a reviewed migration file),
--- correctly so. Apply this migration explicitly (Management API or the
--- Supabase SQL editor) once reviewed, then verify live: a raw client
--- UPDATE attempt on gathering_interest.status must be rejected by RLS
--- (42501) for every role, while approve_gathering_interest() itself must
--- continue to work unchanged.
+-- Applied to production and verified live (see CLAUDE.md's Phase 2 item
+-- 2 status note): a raw client UPDATE attempt on gathering_interest.status
+-- now affects exactly 0 rows (RLS denies it outright, matching Postgres's
+-- normal "UPDATE whose USING clause matches nothing" behavior -- no
+-- exception, just zero rows changed), while approve_gathering_interest()
+-- itself was re-run on the same row immediately after and still worked
+-- correctly end-to-end.
 
 drop policy if exists "Hosts can approve interest, respecting the same safety checks a" on gathering_interest;

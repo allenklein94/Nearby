@@ -251,11 +251,20 @@ testing has never happened (needs live deployed infrastructure this sandbox does
    UPDATE policies, matching this schema's own established convention — `gathering_interest` was
    the one outlier. Fix written as `supabase/migrations/20260816_gathering_interest_drop_raw_
    update_policy.sql` (drops the policy outright; `approve_gathering_interest()` is SECURITY
-   DEFINER and unaffected). **Not yet applied to production** — the ad-hoc `DROP POLICY` was
-   correctly blocked by this session's own auto-mode safety classifier as a destructive DDL
-   statement run outside a reviewed migration; needs an explicit apply-and-verify-live pass next
-   session (or explicit user go-ahead), matching this file's own established migration
-   discipline rather than a session working around its own safety guardrail.
+   DEFINER and unaffected). **Applied to production and verified live, per direct user
+   instruction, DONE.** The migration was applied via the Management API; `pg_policies` confirms
+   `gathering_interest` now has exactly 3 policies left (INSERT + 2 SELECT), the raw UPDATE
+   policy is gone. **Verified live with real disposable test data**: a real host's raw
+   `UPDATE gathering_interest SET status = 'approved'` attempt (under genuine RLS — `SET ROLE
+   authenticated`, not just the `request.jwt.claims` GUC) now affects exactly 0 rows (RLS denies
+   it outright — Postgres doesn't raise on an UPDATE whose USING clause matches nothing, it just
+   returns zero rows affected, confirmed via a `RETURNING` probe) — the target row's `status`
+   is confirmed still `'pending'` afterward, proving the bypass is genuinely closed, not just
+   that the policy text changed. The real `approve_gathering_interest()` RPC was re-run
+   immediately after on the same row and still worked correctly end-to-end (`status: 'approved'`,
+   a real `matches` row created) — confirming the drop didn't break the legitimate path. All test
+   rows deleted afterward; production reconfirmed back to its exact pre-fix baseline (8
+   gatherings, 3 `gathering_interest`, 1 match).
 3. [x] **Wire the fixed races into a real automated regression suite — DONE, via
    `scripts/live-verify/`, not the Jest suite.** The Jest suite is pure-function unit tests with
    no DB access (confirmed by this file's own Part 8 history) — it structurally cannot exercise a
@@ -266,9 +275,8 @@ testing has never happened (needs live deployed infrastructure this sandbox does
    production-monitoring dashboard — both explicitly need live deployed infrastructure and real
    traffic, stated plainly rather than faked.
 
-**Status: Phase 2 items 1-3 are DONE, build/audit-wise — item 2's one real finding still needs its
-migration applied and verified live (flagged above, not silently left ambiguous). Item 4 remains
-correctly infra-blocked.**
+**Status: Phase 2 (items 1-3) is now fully DONE, including item 2's fix applied and verified live
+against production. Item 4 remains correctly infra-blocked.**
 
 ### Phase 3 — Feature completeness / breadth: 9 → 10 (mostly code-closeable, one decision needed)
 
