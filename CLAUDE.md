@@ -4,6 +4,133 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Outstanding: "Scorecard to 10" initiative — PLAN LOCKED, executing phase by phase
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and each
+phase's own status note below for what's actually landed vs. still just this plan.** Direct
+follow-up to the Aug 16 2026 "honest scorecard" section further below: the user asked for a real
+plan to take the scorecard's categories — starting from the top of the table down through
+**Analytics / self-awareness** (the first 5 rows; Monetization Readiness, Real-World Validation,
+and Documentation, the three rows below Analytics, are explicitly **not** in scope for this
+initiative) — from their current scores to 10/10, then asked to lock it in and start executing,
+checkpointing progress via commit/push as each piece lands so nothing is lost across a restart.
+
+**Two honest caveats stated up front, not softened later**: (1) some of these ceilings are not
+purely a code problem — Product Coherence in particular, and parts of Data Integrity and
+Analytics, genuinely depend on a real device pass and real usage data, which this file has
+repeatedly, plainly stated has never happened. No amount of additional code changes manufactures
+that. (2) A couple of gaps need a real product decision from the user, not a Claude judgment
+call (matching this file's own long-standing convention for exactly this kind of decision) —
+flagged inline rather than silently picked.
+
+### Phase 1 — Backend architecture & security rigor: 9 → 10 (fully code-closeable)
+
+**Why not 10 today**: every real security bug this file has ever found (admin self-escalation,
+the `matches`/`friendships` identity-hijack bug, `is_blocked()`'s historical-visibility gap,
+etc.) was caught by an *ad hoc* read, never a systematic sweep — the Aug 16 RLS resweep
+explicitly named "a full penetration-style audit of the ~103 SECURITY DEFINER functions" as not
+reached. Several already-fixed races are proven correct only via *sequential* replay (this
+sandbox has never been able to force two genuinely overlapping DB transactions), which is weaker
+than proving the actual race closed.
+
+1. [ ] Systematic SECURITY DEFINER audit — read all ~103 functions once, purpose-built to find
+   ownership-check gaps (the exact bug shape that's already caught 6 real bugs this way this
+   month alone).
+2. [ ] Build a real concurrency harness (two genuinely parallel DB sessions) and re-prove the
+   handful of races currently proven only sequentially under true overlap.
+3. [ ] Turn the ~15 one-off `live-verify` proofs scattered through this file's history into a
+   permanent `scripts/live-verify/` suite that runs after every future schema change.
+
+### Phase 2 — Data integrity / correctness under load: 8 → 10 (mostly code-closeable)
+
+**Why not 10 today**: same sequential-vs-true-concurrency gap as Phase 1; "full
+`gathering`/`gathering_interest` state-machine re-verification beyond the specific races already
+fixed" has been flagged as not-yet-done multiple times across this file's history; no automated
+regression test guards the ~15 already-fixed races against a future reintroduction; real load
+testing has never happened (needs live deployed infrastructure this sandbox doesn't have).
+
+1. [ ] Reuse Phase 1's concurrency harness to re-prove data-integrity races under genuine overlap.
+2. [ ] Do the still-flagged full state-machine sweep (not just the specific races already
+   patched).
+3. [ ] Wire the fixed races into a real automated regression suite (extending the existing
+   42-test Jest suite or a dedicated integration layer).
+4. **Infra-blocked, cannot close from this sandbox**: genuine load testing and a real
+   production-monitoring dashboard — both explicitly need live deployed infrastructure and real
+   traffic, stated plainly rather than faked.
+
+### Phase 3 — Feature completeness / breadth: 9 → 10 (mostly code-closeable, one decision needed)
+
+**Why not 10 today**: Group Plans' funnel doesn't retroactively link participants' original
+individual asks back to the group plan they became part of; community demand-generation was
+explicitly skipped because communities have no location field to source it from; one small coral
+judgment call is still open.
+
+1. [ ] Persist a `submission_id` onto `business_requests` at creation time so a group-plan-
+   originated request attributes back to its real originating individual ask.
+2. [ ] Log the propose-time group-plan moment to `intent_outcomes` (today only confirm-time is
+   logged).
+3. **Needs the user's own call, not a Claude judgment call**: should communities gain a real
+   location field so demand-generation can extend to them the way it already does for
+   gatherings? Nothing built here until this is answered.
+4. [ ] Close `DiscoveryScreen.js`'s one remaining open coral judgment call (the one-time callout
+   tip's borderline "Got it" dismiss-action case, flagged not-decided in the Aug 16 coral audit).
+
+### Phase 4 — Analytics / self-awareness: 7 → 10 (mostly code-closeable; the numbers stay
+### honestly near-zero without real usage regardless of what gets built)
+
+**Why not 10 today**: the instrumentation itself is genuinely comprehensive (funnel, market
+validation, cross-user patterns, nudge events) — the score is held down by (a) Group Plans'
+disclosed-partial funnel coverage, the same root cause as Phase 3 items 1-2 above, and (b) the
+"repeat intent rate" north-star metric being computed but deliberately never surfaced as *the*
+headline metric on the Market Validation dashboard.
+
+1. [ ] Elevate "repeat intent rate" as the visually-called-out north-star metric on
+   `MarketValidationScreen.js` — previously deferred "until real pilot data exists to justify
+   it," which was a choice, not a hard blocker; building it now doesn't fabricate anything, the
+   underlying number is already real.
+2. [ ] Shares its fix with Phase 3 items 1-2 (submission-id linkage, propose-time logging) —
+   closes Group Plans' funnel gap for both categories at once, not built twice.
+3. **Cannot close from code**: a real production-monitoring dashboard (infra), and the deeper
+   fact that every number on this dashboard reads honestly near-zero until real users generate
+   real data — stated plainly, not something more building changes.
+
+### Phase 5 — Product coherence / IA: 7 → 10 (capped without a device pass — lowest priority)
+
+**Why not 10 today, and why it can't fully close from code alone**: this file's own scorecard
+already states the real risk isn't a specific defect, it's that nothing has ever been validated
+on a real device with a real person. IA "coherence" at 10/10 means real users found it intuitive
+— not "reasoned through carefully," which is the ceiling of what a code-only session can ever
+produce.
+
+1. [ ] Execute the still-deferred Home hierarchy recommendations #3–6 from
+   `PRODUCT_AUDIT/HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md` (a heavier Your Plans header,
+   dialing down Best Pick's visual weight, labeling the quick-stats card, fixing Your
+   Communities' undersized header) — approved in spirit, never built.
+2. **Honest ceiling without a device pass: ~8.** Nothing else genuinely closes this category from
+   code alone — true 10 needs the single thing repeated in nearly every section of this file: a
+   real phone in someone's hands.
+
+### Execution order (not the same as the phase numbering above — sequenced for shared work)
+
+1. Phase 1 (backend security audit + concurrency harness) — build the harness once, reuse for
+   Phase 2.
+2. Phase 2 (data integrity sweep) — rides on the same harness.
+3. Phase 3 (feature-completeness quick closes) — small, mechanical, minus the one flagged
+   decision.
+4. Phase 4 (analytics quick win + the shared Group Plans fix from Phase 3).
+5. Phase 5 (Home hierarchy's code-closeable slice) — lowest priority, since its ceiling is capped
+   regardless.
+
+**Verification convention for this whole initiative, matching every other section in this
+file**: every schema change gets applied to production and verified live with real disposable
+test data, plus a from-scratch migration replay before being considered done; every client
+change gets a full `npx expo export --platform ios`; each phase's own status note is updated
+here and committed/pushed individually as it lands — not batched at the end — so a mid-session
+restart never loses more than one piece.
+
+**Status: plan locked, phases execute below as they land — check each phase's own status line.**
+
 ## Aug 16 2026 — the other 3 progress bars reverted to coral too, closing the one open question
 ## the coral-usage rule left standing — DONE
 
