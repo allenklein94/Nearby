@@ -4,7 +4,7 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, applied and verified live
+## Aug 16 2026 — Friend Discovery ("Meet New People" swipe deck) — DONE, applied, verified live, and replayed clean from scratch
 
 A new, explicit, opt-in "swipe to meet new people looking to make friends" surface — a
 completely separate product surface from dating discovery, per direct user request. The user
@@ -191,14 +191,29 @@ that weren't captured before testing started, since no test insert ever used eit
 `requested_by` — no trigger path this session exercised could have touched them, so they're real
 pre-existing app usage, not test fallout, and were correctly left alone rather than guessed at.
 
-**Not done this pass, disclosed rather than silently skipped**: no real from-scratch migration
-replay (the from-empty-database Docker method this file's own migration-discipline rule calls
-for) — the live-application-plus-live-verification above is real and thorough, but this specific
-gap against the file's own stated convention wasn't closed this pass. Same standing gap as
-everywhere else in this file: no manual simulator/device run-through — next session should
-confirm the swipe deck renders/animates correctly on a real device, the explainer→Turn On→deck
-flow reads clearly, the celebration modal's Say Hi correctly lands on the real new `Chat`
-thread, and the Settings toggle and the screen's own header toggle stay in sync.
+**Verified via a real from-scratch migration replay**, per this file's own migration-discipline
+rule — closed in a follow-up pass, same day: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, waited for its own `healthy` health-check status
+(not just `pg_isready`, per this file's own documented lesson about that distinction), dropped
+and recreated a truly empty `public` schema, patched the same two known image-version gaps this
+file has hit before (`auth.users.phone`, `storage.buckets.public`, test container only — not the
+committed migrations), and confirmed `pg_cron`/`pg_trgm` both created cleanly as the `postgres`
+role with no `supabase_admin`/`shared_preload_libraries` workaround needed this run. Ran the full
+`supabase/migrations/` folder in filename order (44 files, `psql -v ON_ERROR_STOP=1`) — **exit 0
+on every file, zero errors anywhere in the full replay log**. Confirmed in the freshly-rebuilt
+database afterward: `friend_discovery_swipes` exists with RLS enabled and exactly 0 policies,
+`profiles.open_to_friend_discovery` exists (`NOT NULL default false`), both new functions exist,
+and both trigger bypasses (`enforce_friend_request_daily_limit`/`notify_new_match`) carry the
+`trusted_update` guard — not assumed carried over, each individually re-queried post-replay.
+Container removed afterward. This closes the one remaining gap against this file's own stated
+"a fresh empty Supabase project can be rebuilt from committed files alone" claim for this
+feature.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the swipe deck renders/animates correctly on a real
+device, the explainer→Turn On→deck flow reads clearly, the celebration modal's Say Hi correctly
+lands on the real new `Chat` thread, and the Settings toggle and the screen's own header toggle
+stay in sync.
 
 ## Aug 16 2026 — full RLS resweep (the "full RLS resweep beyond group plans and the tables
 ## touched this pass" item, flagged as deliberately deferred in several earlier sections) — DONE
