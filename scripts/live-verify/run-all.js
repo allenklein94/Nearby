@@ -9,9 +9,13 @@ const path = require('path');
 
 const SCRIPTS = [
   'business-offer-double-accept.js',
+  'business-offer-double-accept-concurrent.js',
   'gathering-approve-double-review.js',
+  'gathering-approve-double-review-concurrent.js',
   'business-request-expiry-and-decline.js',
   'business-request-duplicate-submission.js',
+  'friend-discovery-swipe-race-concurrent.js',
+  'is-blocked-hides-blocker-from-blocked-party.js',
 ];
 
 let anyFailed = false;
