@@ -654,10 +654,12 @@ session's test data can leak across sessions if a session ends mid-verification.
 ### Summary of Wave 2A
 8/8 items resolved. One real, confirmed, previously-undocumented security/privacy gap found and
 fixed this wave (item 7 — no block check anywhere in the Group Plan/business-request chain,
-closed and verified live). One real, minor, non-corrupting cosmetic gap disclosed but not fixed
-(item 1 — `join_gathering`'s idempotent-return path omits an already-real `match_id`). Every
-other item (2-6, 8) came back genuinely clean — confirmed via a mix of fresh live function-body
-pulls and real disposable-data tests, not assumed from a stale reading of a migration file.
+closed and verified live — and, per the Aug 16 same-day update above, the block check's own
+disclosed initiator-only-pair scope limit is now also closed). One real, minor, non-corrupting
+cosmetic gap disclosed and, per the same update, since fixed (item 1 — `join_gathering`'s
+idempotent-return path now looks up the real `match_id` instead of omitting it). Every other item
+(2-6, 8) came back genuinely clean — confirmed via a mix of fresh live function-body pulls and
+real disposable-data tests, not assumed from a stale reading of a migration file.
 
 ## FINAL CONSOLIDATED REPORT (2026-08-16) — the whole audit is now DONE
 
@@ -693,15 +695,24 @@ check `is_blocked`). Every fix was verified live against production with real di
 cleaned up after each, before being considered done — matching this project's own established
 audit convention throughout its history.
 
-**What's still honestly open, disclosed rather than silently dropped**:
-- `join_gathering`'s idempotent-return path doesn't surface an already-real `match_id` on a
-  duplicate tap — real, minor, non-corrupting, not fixed (Wave 2A item 1).
-- The block-check fix is scoped to initiator↔invitee only, not a full all-pairs check across a
-  confirmed group plan's whole roster — a known, disclosed residual gap, not a full close
-  (Wave 2A item 7).
+**Update, Aug 16 2026, same day: both of the two real disclosed gaps below are now fixed too**
+(the third item — Group Plan's analytics wiring — remains a deliberate scope decision, not a
+bug; see CLAUDE.md's own "closed 5 of the real, previously-disclosed-but-left-alone gaps" entry
+for the full writeup and live-verification detail on both):
+- ~~`join_gathering`'s idempotent-return path doesn't surface an already-real `match_id` on a
+  duplicate tap~~ — **FIXED**: the idempotent branch now looks up the real `matches` row when
+  the existing status is `'approved'`, verified live (a repeat call for an already-approved
+  request now returns the same real `match_id` both times, not `null` the second time).
+- ~~The block-check fix is scoped to initiator↔invitee only, not a full all-pairs check across a
+  confirmed group plan's whole roster~~ — **FIXED**: `confirm_group_plan` now runs a real
+  all-pairs block check across the final accepted roster right before the shared request is
+  created, verified live end-to-end (a block between two non-initiator participants correctly
+  rejects confirmation with a clean rollback; removing it lets the identical confirm succeed).
 - Group Plan's analytics wiring is partial by design — no single originating `intent_submissions`
   row to attribute a multi-person group ask to, so `submissionId` is always null on both new
-  writes (Wave 2B item 4).
+  writes (Wave 2B item 4). **Still open, unchanged** — this needs a real schema change
+  (persisting a submission id onto `business_requests` at creation time) explicitly out of scope
+  for a quick fix pass, not a gap that was overlooked.
 
 **The one thing this audit was never going to be able to answer, restated plainly, per this
 file's own opening limitation**: every journey and nasty case above proves the *mechanics* are
