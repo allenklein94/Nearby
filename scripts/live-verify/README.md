@@ -119,6 +119,26 @@ CI-runnable as-is (just supply the token as a secret).
   `runSqlAsRls`) must lose visibility into the match/messages and be
   rejected from sending a new message — the exact bug the SECURITY
   DEFINER fix on `is_blocked()` closed.
+- `group-plan-confirm-offer-quorum-race-concurrent.js` — Finding C2,
+  closed. `confirm_group_plan_offer()`'s own first row lock (on
+  `group_plan_proposals`, not the offer row) genuinely serializes two
+  overlapping quorum-completing confirmations on a real 2-participant
+  group plan: the holder's own call correctly reads a pre-race count
+  (`allConfirmed: false`), the racer's call — genuinely blocked at the
+  Postgres level until the holder commits — correctly sees the fresh
+  count and triggers the real accept exactly once (the offer flips to
+  `accepted` and the request to `fulfilled` exactly once, never raced
+  into an inconsistent or double-executed state).
+- `group-plan-cross-proposal-exclusivity-concurrent.js` — Finding C3,
+  closed. `propose_group_plan()`'s own `for update of br` lock on the
+  shared invitee's `business_requests` row, plus the partial unique index
+  on `group_plan_participants(source_request_id)`, genuinely prevent the
+  same open request from landing as an active participant in two
+  different, concurrently-proposed group plans: the holder's proposal
+  succeeds; the racer — genuinely blocked until the holder commits — hits
+  the now-committed unique index, is silently skipped by the function's
+  own "world changed between fetch and submit" handler, and since that
+  was its only invitee, the whole racer proposal correctly rolls back.
 
 ## What's not covered
 
@@ -127,9 +147,4 @@ many sessions — this is a growing set matching the highest-value failure
 modes and races named across the 10/10 roadmap's Part 8 plan and the
 "Scorecard to 10" Phase 1 plan, not a full regression suite. Extend this
 directory the same way (one script per real, previously-manual
-verification) as more schema changes land. Real races still only proven
-sequentially, not yet re-proven via the concurrency harness: the
-cross-proposal exclusivity race (Finding C3) and `confirm_group_plan_offer`'s
-own quorum race (Finding C2) — both buildable with the same
-`runOverlapping()` primitive, just needing more setup (a real group plan
-proposal + roster) than was built out this pass.
+verification) as more schema changes land.

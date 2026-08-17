@@ -16,6 +16,8 @@ const SCRIPTS = [
   'business-request-duplicate-submission.js',
   'friend-discovery-swipe-race-concurrent.js',
   'is-blocked-hides-blocker-from-blocked-party.js',
+  'group-plan-confirm-offer-quorum-race-concurrent.js',
+  'group-plan-cross-proposal-exclusivity-concurrent.js',
 ];
 
 let anyFailed = false;
