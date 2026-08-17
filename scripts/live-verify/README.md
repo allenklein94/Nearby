@@ -139,6 +139,50 @@ CI-runnable as-is (just supply the token as a secret).
   the now-committed unique index, is silently skipped by the function's
   own "world changed between fetch and submit" handler, and since that
   was its only invitee, the whole racer proposal correctly rolls back.
+- `business-acquisition-funnel-e2e.js` — the Business Partner acquisition
+  funnel's own "still open" item (see CLAUDE.md's Milestone 6): a real
+  disposable test business run all the way through the complete funnel,
+  not just its individual event-firing pieces proven in isolation —
+  apply (4 client-fired events) → a real pending
+  `business_partner_requests` row → the real admin
+  `approve_business_partner_request()` RPC (fires `apply_approved` +
+  `published` atomically, creates the real `brand_partners` row, sets the
+  owner's `managed_partner_id`) → `dashboard_viewed` on mount →
+  `update_business_profile()` + `profile_completed` → a real first offer
+  + `first_offer_created` → a real consumer's first-ever profile view,
+  which fires `first_consumer_interaction` via the `business_profile_views`
+  AFTER INSERT trigger exactly once (and confirms a second view from a
+  different consumer does NOT re-fire it) → a real admin call to
+  `get_business_acquisition_funnel_stats()` confirming every one of those
+  steps' counts, and a real owner call to `get_business_discovery_stats()`
+  confirming the real view counts (plus that a non-owner gets zeroed, not
+  leaked, stats). Also documents a real, disclosed gap found along the
+  way: the funnel-stats RPC never rolls up `profile_completed`/
+  `dashboard_viewed` at all, even though both are real, valid event
+  values this run genuinely fired — confirmed directly, not fixed (out of
+  this script's own scope; a future pass extending that RPC should read
+  this script's own assertion for why it's known-missing, not assume it
+  was overlooked).
+- `business-acquisition-unauthorized-access.js` — the funnel's own third
+  adversarial review pass: a real attacker (an uninvolved profile)
+  attempting unauthorized apply/edit/publish access against another
+  real business's data (the real Coastal Coffee partner) -- spoofing
+  another `requester_id` on a new application, editing/publishing an
+  offer for a business they don't manage, self-approving or denying
+  their own pending application (admin-only), reading another
+  business's private CRM notes, spoofing another user's id on the
+  newest event-logging tables (`business_profile_views`/
+  `business_acquisition_events`), and pulling another business's real
+  discovery/funnel stats -- every one correctly rejected, and the real
+  owner's own equivalent legitimate action is proven to still work
+  (a fix that rejects everyone isn't a real fix). Captures and restores
+  every one of the real partner's editable fields before/after, not a
+  subset -- the first draft of this exact script found and fixed its
+  own real mistake here (see the script's own comment): a partial
+  before/after capture silently wiped the real Coastal Coffee's
+  `category` from `food_drink` to `null`, caught by this script's own
+  final "back to exact pre-test state" assertion and restored by hand
+  before the fix landed.
 
 ## What's not covered
 

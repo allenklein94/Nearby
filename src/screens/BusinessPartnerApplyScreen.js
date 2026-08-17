@@ -64,6 +64,14 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  // Business Partner acquisition experience, Milestone 7 (see CLAUDE.md): the real
+  // coordinates Google Places already returns for a confirmed search result -- previously
+  // captured nowhere, so every business approved through this flow landed invisible to the
+  // map layer and the whole Business Fulfillment marketplace until the owner manually
+  // re-entered their own address a second time post-approval. Null for the manual-entry
+  // path (no Places result to source a real coordinate from).
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
   const [requestedFeatures, setRequestedFeatures] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,6 +112,8 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     // via a real Place Details call, which Text Search results don't include.
     setBusinessName(place.name ?? '');
     setAddress(place.address ?? '');
+    setLatitude(place.latitude ?? null);
+    setLongitude(place.longitude ?? null);
     try {
       const details = await getPlaceDetails(place.placeId);
       if (details) {
@@ -147,6 +157,8 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         website: website.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
+        latitude,
+        longitude,
         requested_features: requestedFeatures.length ? requestedFeatures : null,
       });
 
@@ -323,7 +335,16 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             placeholder="Street, city, state"
             placeholderTextColor={colors.textTertiary}
             value={address}
-            onChangeText={setAddress}
+            onChangeText={(text) => {
+              // Editing the address away from what a real Places search returned means the
+              // stored coordinates no longer honestly describe this text -- clear them rather
+              // than silently submit a stale lat/lng attached to a different address.
+              setAddress(text);
+              if (latitude !== null || longitude !== null) {
+                setLatitude(null);
+                setLongitude(null);
+              }
+            }}
             accessibilityLabel="Address, optional"
           />
 

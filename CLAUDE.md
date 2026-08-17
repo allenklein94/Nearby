@@ -599,24 +599,185 @@ Phase 0 already found real vs. missing and to both locked decisions above:
    timestamp) — left untouched rather than deleted, and accounted for in every before/after
    comparison above rather than assumed away.
    
-   **Not yet done — this is the actual remaining Milestone 6 work**: the real single-test-
-   business run through the complete funnel end-to-end (search/autofill → apply → admin approve
-   → profile → first offer → a real consumer views it → dashboard shows the real resulting
-   stats, including a real call to `get_business_acquisition_funnel_stats()` confirming every
-   step's count) hasn't been run yet — only the individual event-firing pieces have been proven
-   in isolation. No from-scratch Docker migration replay was run for either of this pass's two
-   new migrations either (both are low-risk, purely additive — one `CREATE OR REPLACE FUNCTION`
-   touching an already-migration-replayed function, one new function + one new trigger, no new
-   table/column) — flagged as a real, if small, gap against this file's own migration-discipline
-   rule, same as several other time-constrained passes in this file's history.
-7. **Three adversarial review passes**, exactly as the brief specifies: a "hostile business
-   owner, 60 seconds, never heard of Nearby" comprehension pass; a consumer-side connectivity
-   trace (does the applied business's profile/offer/location genuinely show up correctly to a
-   real consumer); a security pass attempting unauthorized apply/edit/publish access against
-   another business's data.
+   **The remaining Milestone 6 work — the real single-test-business run through the complete
+   funnel end-to-end — is now DONE, Aug 17 2026, closed out as a real, permanent, re-runnable
+   script rather than a one-off manual session.** New
+   `scripts/live-verify/business-acquisition-funnel-e2e.js` (registered in `run-all.js`,
+   documented in the README's own "What's covered" list, matching this repo's established
+   "every fixed/verified thing gets a permanent script, not a one-off" convention) runs one real
+   disposable test business through every real step in order — the apply flow's 4 client-fired
+   events → a real pending `business_partner_requests` row → the real admin
+   `approve_business_partner_request()` RPC (fires `apply_approved` + `published` atomically,
+   creates the real `brand_partners` row, sets the owner's `managed_partner_id`) →
+   `dashboard_viewed` on mount → a real `update_business_profile()` save + `profile_completed`
+   → a real first offer + `first_offer_created` → a real consumer's first-ever profile view,
+   proving `first_consumer_interaction` fires exactly once from the real trigger (and that a
+   second view from a different consumer does **not** re-fire it) → a real admin call to
+   `get_business_acquisition_funnel_stats()` confirming every one of those steps' real counts →
+   a real owner call to `get_business_discovery_stats()` confirming the real view counts, and a
+   real non-owner call confirming it gets zeroed, not leaked, stats. **A real, disclosed gap in
+   the RPC itself was found and confirmed directly while writing this, not fixed (out of this
+   script's own scope, flagged for a future pass instead)**: `get_business_acquisition_funnel_stats()`
+   rolls up 12 of the 14 real CHECK-constraint event values but never reads `profile_completed`
+   or `dashboard_viewed` at all — confirmed by asserting the keys are genuinely absent from the
+   returned jsonb, not just falsy, so a future session extending that RPC knows this was found
+   and left, not overlooked. All test rows (the disposable business, its request, its one offer,
+   its two profile views, every acquisition event this run produced) deleted afterward — the
+   script's own final assertion confirms `business_acquisition_events` is back to its exact real
+   2-row pre-existing baseline (the genuine anonymous `landing_viewed`/`cta_clicked` traffic
+   noted above), not just that cleanup ran.
 
-**Status: plan locked, both decisions resolved directly by the user — executing below, milestone
-by milestone, each its own commit per this file's established restart-safety convention.**
+   **A real, previously-undiscovered, higher-severity bug was found and fixed while doing
+   Milestone 7's own consumer-connectivity review pass (see below), not this item** — but it's
+   the direct reason "does the applied business's location genuinely show up correctly" is now
+   actually true rather than just claimed; see Milestone 7 item 2's own writeup for the full
+   account.
+
+   **The from-scratch Docker migration replay was attempted and genuinely could not be completed
+   in this sandbox this session — disclosed honestly, not silently skipped.** Three separate
+   invocation attempts (the plain default, `--network host`, and an explicit
+   `-c listen_addresses=*` postgres flag) all failed identically: the `supabase/postgres:15.1.0.147`
+   image's own entrypoint runs its `migrate.sh` init script against a bootstrap-phase instance
+   that only ever binds a Unix domain socket in this specific environment (confirmed via the
+   container's own logs — `LOG: listening on Unix socket ...` with no matching TCP listen line
+   at any point before `migrate.sh` tries to connect over TCP and is refused), and the container
+   exits before reaching a state any of this file's own previously-documented workarounds
+   (waiting for `healthy` instead of `pg_isready`, patching `auth.users.phone`/
+   `storage.buckets.public`) could even apply to. This is a different failure mode than anything
+   this file's own extensive Docker-replay history has hit before — flagged as a real,
+   environment-specific gap for whichever future session has a working Docker network path, not
+   assumed to be the same timing race already solved elsewhere in this file. All schema changes
+   in Milestones 6-7 were still verified live against production with real disposable test data,
+   per this file's own baseline verification bar — only the from-scratch replay is the piece
+   left open.
+
+7. **Three adversarial review passes, exactly as the brief specifies — all three DONE, Aug 17
+   2026.**
+   - **A "hostile business owner, 60 seconds, never heard of Nearby" comprehension pass — one
+     real, concrete gap found and fixed.** Read `docs/business.html` top to bottom as a
+     first-time skeptical visitor. Most of the page holds up well under this lens: the hero's
+     value proposition is concrete and non-jargon, "How it works" states plainly that approval
+     is a real review (not a rubber stamp), the demo section's phone-frame mockup gives a real,
+     honest visual cue that this lives on a phone, and the FAQ answers the exact objections a
+     skeptic would actually raise (is this free, do I need an existing online presence, what
+     happens after I apply, can I edit later). **The one real gap**: the word "app" never
+     appeared anywhere in visible page copy — only inside the `cta-fallback` message, which
+     stays `hidden` unless the CTA's deep link fails to open. A skeptic reading only the hero
+     (the realistic "60 seconds" skim path) had no way to know upfront that tapping "Get Your
+     Business on Nearby" would attempt to launch a mobile app rather than open a signup form on
+     the page itself. Fixed with a single, minimal, surgical copy addition — the hero's lead
+     paragraph now opens with "Nearby is the app where people plan real things to do nearby."
+     before its existing sentence, stating the one fact a first-time reader most needs and
+     currently couldn't get from anywhere above the fold. Verified via a direct HTML
+     well-formedness parse (`html.parser`, zero unclosed/mismatched tags) and a `node --check`
+     syntax pass on the page's own inline script (unaffected by this edit, re-checked anyway) —
+     both clean.
+   - **A consumer-side connectivity trace — one real, significant, previously-undiscovered bug
+     found and fixed, not just traced.** Asked directly: does the applied business's profile,
+     offer, and *location* genuinely show up correctly to a real consumer, end to end, not just
+     "does the screen render." Tracing `BusinessProfileScreen.js`'s real data sources confirmed
+     profile/offers/reputation/discovery-stats all wire correctly to real data (already proven
+     live across Milestones 4-6). **Location did not.** Reading `BusinessPartnerApplyScreen.js`'s
+     real `confirmPlace()` handler against `searchPlacesByText()`'s actual return shape
+     (`services/places.js`) found that a real Google Places search result already carries real
+     `latitude`/`longitude` — but the apply screen never captured them into component state, and
+     `business_partner_requests` had no columns to store them even if it had. Worse: reading
+     `approve_business_partner_request()`'s live body (already pulled fresh for Milestone 6's own
+     work, re-checked here) confirmed it never copied even the real `address` **text** field —
+     which the request row *does* already have — onto the new `brand_partners` row; only
+     `name`/`description`/`category` ever crossed over. **Net effect: every business approved
+     through the real, built, "streamlined" apply flow landed completely unlocated** — no
+     address on their public profile, absent from the map layer
+     (`getNearbyBusinesses()` filters on real coordinates), and — the most serious consequence —
+     structurally invisible to the entire Business Fulfillment marketplace
+     (`_business_request_fanout()`/`_match_request_to_availability()` are both radius/distance-
+     based over `brand_partners.latitude`/`longitude`) until the owner manually re-entered their
+     own address a second time via the dashboard's Edit Profile flow — the one real, honest thing
+     they'd already just done moments earlier via a real Google Places search. This is exactly
+     the kind of gap the review's own "does location genuinely show up" question was written to
+     catch, not a hypothetical. **Fixed** (`20260817_business_partner_request_coordinates.sql`):
+     `business_partner_requests` gained nullable `latitude`/`longitude` columns;
+     `approve_business_partner_request()` was re-pointed (pulled fresh from its live body first,
+     confirmed byte-identical to the Milestone 6 commit before editing — every other line stayed
+     unchanged, only the `brand_partners` insert's column list/values gained `address`,
+     `latitude`, `longitude`) to actually carry the request's own real address and coordinates
+     across at approval time. `BusinessPartnerApplyScreen.js`'s `confirmPlace()` now captures the
+     real `place.latitude`/`place.longitude` Google already returned; `submit()` now sends them.
+     A real, disclosed follow-on case was also closed in the same pass: editing the address text
+     field after a real Places match already populated it now clears the stored coordinates
+     (rather than silently submitting a stale lat/lng attached to different text), matching
+     `updateBusinessAddress()`'s own established "address changed → re-derive the coordinate,
+     never keep a stale one" precedent elsewhere in this codebase. The manual-entry path (no
+     Places result at all) still submits `latitude`/`longitude` as `null`, honestly — no real
+     coordinate signal exists there without a second geocoding call this pass didn't add; that
+     business can still be located later the same way every business already could, by editing
+     its address post-approval. **Verified live against production**
+     (`enmosvippabmuqslzrox`), not just applied: confirmed `approve_business_partner_request`'s
+     grants survived the `CREATE OR REPLACE` (`authenticated`/`service_role`/`postgres`, no
+     `anon`); a real disposable request with a real address + coordinates (`123 Real St,
+     Testville`, `40.7128, -74.0060`) correctly landed on the new `brand_partners` row exactly as
+     submitted after a real approve call; a second real disposable request with no address at
+     all (the manual-entry path) correctly produced `address: null, latitude: null,
+     longitude: null` — honest, not an error, not a fabricated default. Both test rows and their
+     side effects (the new `brand_partners` rows, the owner's `managed_partner_id`) deleted/reset
+     afterward. Client-side verified via a full `npx expo export --platform ios` (clean, no
+     bundling errors — edit to one existing screen file only, no new client files).
+   - **A security pass attempting unauthorized apply/edit/publish access against another
+     business's data — every attempt correctly rejected; one real mistake made and caught
+     during the pass itself, not glossed over.** New, permanent
+     `scripts/live-verify/business-acquisition-unauthorized-access.js` — a real attacker
+     (an uninvolved real profile) attempting, against the real `Coastal Coffee` partner and a
+     real applicant's own pending request: spoofing another `requester_id` on a new
+     `business_partner_requests` INSERT (rejected by RLS); calling `update_business_profile()`
+     on a business they don't manage (rejected, real business name confirmed genuinely
+     untouched afterward); inserting a `brand_offers` row for someone else's business (rejected
+     by RLS); self-approving their own pending application via `approve_business_partner_request()`
+     (rejected — admin-only, not just requester-only); a *different* non-admin, non-applicant
+     also failing to approve it (rejected the same way); denying it via
+     `deny_business_partner_request()` (rejected — the request confirmed still genuinely
+     `pending` afterward, not silently resolved by any of the rejected attempts); reading
+     another business's private `business_customer_notes` directly (zero rows, RLS, not a
+     partial leak); spoofing another user's identity on both of the newest event-logging tables,
+     `business_profile_views.viewer_id` and `business_acquisition_events.user_id` (both rejected
+     by their real `WITH CHECK` clauses); and pulling another business's real discovery/funnel
+     stats via `get_business_discovery_stats()`/`get_business_acquisition_funnel_stats()` (the
+     former returns real zeroed stats for a non-owner, not the real `total_views`; the latter is
+     flatly rejected for a non-admin). The real owner's own equivalent legitimate
+     `update_business_profile()` call is proven to still succeed in the same run — a fix that
+     rejects everyone isn't a real fix, and this script proves the real path stayed open, not
+     just that the attack failed. **A real mistake was made and caught by this very script,
+     while writing it, not covered up**: the first draft captured only `name`/`description`
+     before running any attacks and restored only those two fields afterward — the "restore the
+     real business back to its exact pre-test state" step silently wiped the real Coastal
+     Coffee's own `category` from `food_drink` to `null` in the process, caught immediately by
+     the script's own final "back to exact pre-test state" assertion failing. Fixed by hand
+     (restored `category: 'food_drink'` via a real `update_business_profile()` call as the real
+     owner) and then fixed in the script itself — every editable field
+     (`name`/`description`/`address`/`latitude`/`longitude`/`logo_url`/`category`) is now
+     captured before and compared after, not a subset, so this exact mistake can't recur on a
+     future run. Re-run clean afterward: all checks pass, and the real Coastal Coffee row is
+     confirmed byte-for-byte back to its exact pre-test state.
+
+   Both new scripts are registered in `scripts/live-verify/run-all.js` and documented in the
+   README's own "What's covered" section, matching this repo's established convention that every
+   real, previously-manual verification becomes a permanent, re-runnable script, not a one-off.
+
+**Status: all 7 milestones of this plan are now DONE, build-wise, including the real end-to-end
+funnel run and all three adversarial review passes** — every schema change applied to production
+and verified live with real disposable test data; the one real bug the review passes exist to
+catch (business location silently discarded at approval) was found and fixed, not just flagged;
+every client change verified via a clean `npx expo export --platform ios`. **What's left, stated
+plainly rather than folded into "done"**: the from-scratch Docker migration replay for this
+session's own two new migrations (Milestone 6's remaining-work migration and Milestone 7's
+coordinate-carrying fix) could not be completed in this sandbox this session (see Milestone 6's
+own writeup above for the specific, real environment failure) — both were still verified live
+against production with real disposable test data, matching this file's baseline bar, just not
+the from-scratch-replay bar. **The standing gap repeated at the bottom of nearly every section in
+this whole file remains open here too**: no manual simulator/device run-through of any of the
+UI built across this whole Business Partner acquisition initiative (the apply flow, the deep
+link/QR surface, the discovery-analytics card, the dashboard's funnel-event wiring, or this
+pass's own hero-copy edit) — next session should still confirm all of it reads and behaves
+correctly on a real device, same as every other still-open device-pass item across this file.
 
 ## Aug 17 2026 — closing the last concurrency gap: C2/C3 group-plan races under true overlap
 
