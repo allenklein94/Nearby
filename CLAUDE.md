@@ -55,6 +55,72 @@ far:**
   restated here so a future session doesn't read "Phase 1-2 done" as "the app is meaningfully
   more validated," which it isn't.
 
+## Aug 17 2026 — closing the last concurrency gap: C2/C3 group-plan races under true overlap
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and this
+section's own status note for what's actually landed vs. still just this plan. Direct follow-up
+to the honest assessment above: asked directly whether backend security rigor is now a clean
+10/10, the answer was no — the two group-plan races (Findings C2/C3) are the one specific,
+named gap left in that ~9.5, still only proven via *sequential* replay, not the genuine
+Postgres-level overlap the concurrency harness (`scripts/live-verify/lib/concurrency.js`) already
+proved for the other 3 races. This closes that gap the same way those 3 were closed — reusing
+the same `runOverlapping()`/`asUser()` primitive, no new harness needed.
+
+**Read both RPCs' live bodies fresh via the Management API before writing either script** (not
+reconstructed from a migration file, matching this file's own "pull live, don't assume" rule) —
+confirmed the exact row each race's genuine concurrency needs to hinge on:
+
+- **Finding C2 (`confirm_group_plan_offer`'s quorum race)**: the function's very first lock is
+  `select * into v_offer from business_request_offers where id = offer_id_param for update` —
+  the natural hijack point. Plan: two accepted participants on a real confirmed group plan with
+  a real live offer both call `confirm_group_plan_offer` at genuinely the same instant. A
+  "holder" connection explicitly locks the same offer row, sleeps, then (reentrant, same
+  transaction) calls the real RPC as the first confirming participant; a "racer" connection
+  fires the second (quorum-completing) participant's confirm call partway through the holder's
+  sleep, genuinely blocking on the same row lock until the holder commits. Expected: the holder's
+  own call reports `allConfirmed: false` (only 1 of 2 required); the racer's call, resuming only
+  after the holder's confirmation row is already really committed, correctly sees the fresh count
+  and reports `allConfirmed: true` — plus a real, single side-effect check: `business_requests`
+  flips to `fulfilled` and the offer to `accepted` exactly once, not raced into an inconsistent
+  state or double-executed.
+- **Finding C3 (cross-proposal exclusivity)**: `propose_group_plan`'s own per-invitee loop does
+  `select br.* ... where br.id = v_invitee_id ... for update of br` before inserting into
+  `group_plan_participants` (guarded by the partial unique index on `(source_request_id) where
+  status in ('invited','accepted')`). Plan: two different initiators, each with their own real
+  open request, both try to invite the *same* shared, genuinely-connected third person's *same*
+  open request into two different, concurrently-proposed group plans. A "holder" connection locks
+  that shared invitee's `business_requests` row, sleeps, then calls `propose_group_plan` as
+  initiator A (reentrant); a "racer" connection calls `propose_group_plan` as initiator B
+  partway through, genuinely blocking on the same row lock. Expected: the holder's proposal
+  succeeds (2 real participants); once unblocked, the racer's own insert of the same invitee hits
+  the now-committed partial unique index, is silently skipped by the function's own exception
+  handler (matching its documented "world changed between fetch and submit" behavior), and since
+  that was the racer's only invitee, `propose_group_plan` itself correctly raises `'None of the
+  people you invited could be added...'` and the whole racer transaction rolls back — proving the
+  lock and the unique index together genuinely prevent the same request from landing as an active
+  participant in two different pending proposals, not just that the index exists in the schema.
+
+**Real, disposable test data needed for both** (created and deleted by each script itself,
+matching this directory's own established convention) — reusing the real existing connections
+already in production rather than fabricating new relationships: `Allen` is already a real
+accepted friend of `Claude` and a real match with `Google voice`, so `Allen` is the natural
+initiator for C2 (inviting both as participants) and the natural shared invitee for C3 (with
+`Claude` and `Google voice` as the two competing initiators).
+
+**Build plan**:
+1. `scripts/live-verify/group-plan-confirm-offer-quorum-race-concurrent.js` (Finding C2).
+2. `scripts/live-verify/group-plan-cross-proposal-exclusivity-concurrent.js` (Finding C3).
+3. Register both in `run-all.js`'s `SCRIPTS` list and document them in the README's "What's
+   covered" section, removing the two from "What's not covered."
+4. Run both against real production (`enmosvippabmuqslzrox`), confirm every assertion passes,
+   confirm cleanup leaves production at its exact pre-test baseline.
+5. Update this section's own status note, the honest-assessment paragraph above (Backend
+   architecture & security rigor), and Phase 1 item 2's own status text once both are proven —
+   not before.
+
+**Status: plan locked, nothing built yet as of this note. Building next, same session.**
+
 ### Phase 1 — Backend architecture & security rigor: 9 → 10 (fully code-closeable)
 
 **Why not 10 today**: every real security bug this file has ever found (admin self-escalation,
