@@ -290,11 +290,30 @@ after the bump. One real, disclosed residual gap named in the code itself: each 
 test row — happened once, live, during this exact session (3 disposable `business_requests`/
 `business_request_offers` rows survived a throttled run and had to be found and deleted by
 hand, confirmed via their own `live-verify:`-tagged text) — the longer delay reduces how often
-this can happen but doesn't make cleanup itself throttle-proof. **Not done this pass**: the
-from-scratch Docker migration replay for this specific migration — every other verification bar
-in the plan's own checkpoint was met live against production; this one gap is disclosed rather
-than silently skipped, matching this file's own standing convention, and should be closed before
-or alongside Phase 2's own checkpoint. Committed and pushed (`4b0b30c8`).
+this can happen but doesn't make cleanup itself throttle-proof. Committed and pushed
+(`4b0b30c8`).
+
+**The disclosed from-scratch Docker replay gap is now also closed, same session, follow-up
+pass — and it found a real, previously-undetected filename-ordering bug, not a clean pass on
+the first try.** Ran the full 61-file `supabase/migrations/` folder in order (`supabase/
+postgres:15.1.0.147`, health-check-gated, a truly empty `public` schema, the two known
+image-version columns patched onto the test container only) — the replay stopped partway
+through with `relation "public.business_profile_views" does not exist`:
+`20260817_business_acquisition_first_consumer_interaction.sql` (a Milestone 6 migration,
+creates a trigger on `business_profile_views`) sorts alphabetically *before*
+`20260817_business_discovery_analytics.sql` (the Milestone 4 migration that actually creates
+that table — "acquisition" < "discovery"), even though it was genuinely built and applied to
+production *after* it, per this file's own Milestone 6/7 history. Live production was never
+affected (its own migration history was applied in real build order, not filename order — this
+is purely a from-scratch-replay landmine, the same class of bug this file has hit and fixed
+several times before, e.g. the Aug 15 `business_availability_search`/`group_intent_and_
+aggregated_demand` renames). Fixed with the same established convention: `git mv`'d the file to
+`20260817_v2_business_acquisition_first_consumer_interaction.sql`, which sorts correctly after
+its dependency. Re-ran the full 61-file replay from a truly fresh container afterward — **exit
+0 on every file**, `business_reservations`/`business_payments`/`business_profile_views` and all
+four Phase-1 functions confirmed to exist in the freshly-rebuilt database. Container removed
+afterward. This closes Phase 1's own checkpoint completely — every bar (live production
+verification, plus now a real from-scratch replay) is met.
 
 **Phase 2 — Business fulfillment policies (unchanged from the original plan, closes Gap 2).**
 - New `business_fulfillment_policies` table, owner-scoped (one active policy per partner, or a
