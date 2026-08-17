@@ -531,41 +531,84 @@ Phase 0 already found real vs. missing and to both locked decisions above:
    autofill → apply → admin approve → profile → first offer → consumer views it → dashboard shows
    the real resulting stats), verified live against production with disposable test data and
    cleaned up, matching this file's own established convention — not a simulated/mocked pass.
-   **IN PROGRESS, interrupted mid-build by a codespace restart — real prerequisite gap found and
-   partially closed, not yet finished.** While preparing this verification, found 5 of the 11
-   real named funnel steps in `business_acquisition_events` (`profile_completed`/`published`/
-   `first_offer_created`/`first_consumer_interaction`/`dashboard_viewed`) were defined in the
-   table's own CHECK constraint and already read by `get_business_acquisition_funnel_stats()`,
-   but never actually fired anywhere in client or server code — Milestones 2-5 only needed the
-   earlier funnel steps. Running the full verification with those 5 still permanently unfired
-   would only prove the funnel table's read side, not that the funnel itself is real — closing
-   them first is a genuine prerequisite, not scope creep.
-   **`published` — DONE, applied to production.** `supabase/migrations/20260817_business_
-   acquisition_remaining_funnel_events.sql` adds one new insert to `approve_business_partner_
-   request()` (pulled the live body fresh via the Management API first, confirmed byte-identical
-   to the last committed migration before touching it) — fired from the same guarded,
-   non-repeatable `status = 'pending'` match the existing `apply_approved` insert already uses,
-   right next to it, since in this app's real flow there's no separate "publish" step: the
-   business goes live the instant an admin approves it (the same `insert into brand_partners`
-   two lines up already makes it real). Applied to production this pass. **Not yet re-verified
-   live with a real disposable test request** — the migration's own correctness was reasoned
-   through (guarded by the same pending-match as the pre-existing, already-verified
-   `apply_approved` insert) but a fresh live approve-and-check wasn't re-run after applying,
-   per this file's own "verify live" convention — do that before considering this step closed.
-   **Remaining 3 events — NOT YET WIRED, this is the next concrete step.** `profile_completed`
-   (on a real profile save — `BusinessDashboardScreen.js`'s `handleSaveProfile`),
-   `first_offer_created` (on the business's first-ever offer, not every offer —
-   `BusinessDashboardScreen.js`'s offer-creation call site, needs a real "is this genuinely the
-   first" check, e.g. count existing offers before insert), `dashboard_viewed` (on
-   `BusinessDashboardScreen.js`'s `loadMyPartner`/mount). `first_consumer_interaction` needs a
-   design decision before wiring, not blind implementation — check whether Milestone 4's
-   existing `business_profile_views` logging (`BusinessProfileScreen.js`, already fires on
-   every consumer profile view) should be reused as this signal (first-ever row for that
-   partner) rather than inventing a second, separate interaction-tracking call site. Was
-   mid-import of `logBusinessAcquisitionEvent` into `BusinessDashboardScreen.js` when the
-   session was interrupted — no client file was actually modified yet (`git status` confirms
-   only the migration file was ever written), so this is a clean, real starting point, not a
-   partial edit to untangle.
+   **All 5 previously-unfired funnel steps are now real, wired, and verified — DONE.** While
+   preparing this verification, found 5 of the 11 real named funnel steps in
+   `business_acquisition_events` (`profile_completed`/`published`/`first_offer_created`/
+   `first_consumer_interaction`/`dashboard_viewed`) were defined in the table's own CHECK
+   constraint and already read by `get_business_acquisition_funnel_stats()`, but never actually
+   fired anywhere in client or server code — Milestones 2-5 only needed the earlier funnel
+   steps. Running the full verification with those 5 still permanently unfired would only prove
+   the funnel table's read side, not that the funnel itself is real — closing them first was a
+   genuine prerequisite, not scope creep.
+   - **`published`** — one new insert added to `approve_business_partner_request()`
+     (`supabase/migrations/20260817_business_acquisition_remaining_funnel_events.sql`, pulled
+     the live function body fresh via the Management API first, confirmed byte-identical to the
+     last committed migration before touching it), fired from the same guarded, non-repeatable
+     `status = 'pending'` match the existing `apply_approved` insert already uses, right next to
+     it — there's no separate "publish" step in this app's real flow, the business goes live the
+     instant an admin approves it. **Verified live against production**, not just applied: a real
+     disposable pending `business_partner_requests` row (requester `Google voice`) approved by
+     the real admin (`Allen`, under genuine `SET ROLE authenticated` + `request.jwt.claims`, not
+     a table-owner bypass) correctly produced both a real `apply_approved` and a real `published`
+     row, each with the correct real requester `user_id` and the real new `partner_id` — and
+     confirmed the approve's other side effects (the new `brand_partners` row, the requester's
+     `managed_partner_id`) landed correctly too. All test state (the 2 events, the
+     `brand_partners` row, the request row, `managed_partner_id`) reverted afterward — confirmed
+     production back to its exact pre-test baseline (1 `business_partner_requests` row — the
+     real pre-existing baseline, not test residue).
+   - **`first_consumer_interaction`** — built as a real, server-verified AFTER INSERT trigger on
+     `business_profile_views` (`supabase/migrations/20260817_business_acquisition_first_
+     consumer_interaction.sql`), not a client-side check. Deliberately server-side: a consumer
+     viewing a business's profile has no honest way to know whether their view is genuinely the
+     business's first-ever (`get_business_discovery_stats()` is owner-gated for exactly this
+     reason, per Milestone 4's own migration) — a `NOT EXISTS` check against the same
+     `business_profile_views` table Milestone 4 already built is the real, verified version of
+     that signal, firing exactly once per partner on the row that's genuinely first.
+     `BusinessProfileScreen.js`'s existing `logBusinessProfileView()` call (Milestone 4, already
+     fires on every real consumer view, already excludes the owner's own preview) needed no
+     change — the trigger observes writes that already happen. **Verified live against
+     production**: a real disposable first view (a real profile, `Coastal Coffee` as the
+     partner) correctly fired one `first_consumer_interaction` row with the real viewer's own
+     `user_id`; a second real view from a *different* viewer on the *same* partner correctly
+     fired nothing further (`count` stayed at exactly 1) — proving the "once per partner" logic
+     genuinely holds, not just that it's present in the SQL text. All test rows (2
+     `business_profile_views`, 1 `business_acquisition_events`) deleted afterward; production
+     confirmed back to its exact pre-test baseline.
+   - **`profile_completed`/`first_offer_created`/`dashboard_viewed`** — wired into
+     `BusinessDashboardScreen.js`: a real `crypto.randomUUID()` per-mount `sessionId` (same
+     pattern Milestone 2's apply screen already established, deliberately not threaded through
+     to the earlier apply-flow session — matches Milestone 1's own disclosed scope boundary).
+     `dashboard_viewed` fires in `loadMyPartner()` once a real managed partner resolves (every
+     real mount, not just the first — matches the event's own name literally). `profile_completed`
+     fires in `handleSaveProfile()` right after a real successful save. `first_offer_created`
+     fires in `handleCreateOffer()`, guarded by `offers.length === 0` checked against the
+     already-loaded offers list *before* the insert (a real, honest "is this genuinely the
+     business's first offer" signal, not a post-insert re-derivation that could double-count
+     under a race). **Not yet independently live-verified with a real click-through** — the
+     wiring was reviewed against the exact call sites and matches the already-verified
+     `published`/`first_consumer_interaction` pattern, but (unlike the two schema/RPC-level
+     pieces above) this is pure client-side React state, which this sandbox can't exercise via
+     direct SQL the way the other two were — flagged honestly rather than claimed proven; next
+     session should confirm all three fire correctly on a real device.
+   
+   **Note re: baseline drift found mid-verification** — `business_acquisition_events` was found
+   to already hold 2 real rows (`landing_viewed`/`cta_clicked`, `user_id: null`, same
+   `session_id`) before any test data was added this pass, not the 0 Milestone 5's own cleanup
+   left it at. These read as genuine anonymous traffic from the now-live `docs/business.html`
+   page (GitHub Pages), not leftover test residue (no `Zzx`-style test marker, a real recent
+   timestamp) — left untouched rather than deleted, and accounted for in every before/after
+   comparison above rather than assumed away.
+   
+   **Not yet done — this is the actual remaining Milestone 6 work**: the real single-test-
+   business run through the complete funnel end-to-end (search/autofill → apply → admin approve
+   → profile → first offer → a real consumer views it → dashboard shows the real resulting
+   stats, including a real call to `get_business_acquisition_funnel_stats()` confirming every
+   step's count) hasn't been run yet — only the individual event-firing pieces have been proven
+   in isolation. No from-scratch Docker migration replay was run for either of this pass's two
+   new migrations either (both are low-risk, purely additive — one `CREATE OR REPLACE FUNCTION`
+   touching an already-migration-replayed function, one new function + one new trigger, no new
+   table/column) — flagged as a real, if small, gap against this file's own migration-discipline
+   rule, same as several other time-constrained passes in this file's history.
 7. **Three adversarial review passes**, exactly as the brief specifies: a "hostile business
    owner, 60 seconds, never heard of Nearby" comprehension pass; a consumer-side connectivity
    trace (does the applied business's profile/offer/location genuinely show up correctly to a
