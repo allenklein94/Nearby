@@ -14,6 +14,7 @@ import { initPurchases } from '../services/purchases';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getInboxUnreadCount } from '../services/homeDashboard';
+import { getMyManagedPartner } from '../services/brandOffers';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
@@ -106,6 +107,18 @@ export const navigationRef = createNavigationContainerRef();
 // dead gathering_invite push case). "nearby" is already the configured
 // scheme in app.json. Not a general deep-linking overhaul — no other
 // route is wired up here.
+// Business Partner acquisition experience, Milestone 3 (see CLAUDE.md): a shareable
+// nearby://business/:partnerId link (and a matching QR code on the dashboard) needs
+// the identical "works for someone not yet signed in" treatment the gathering link
+// above already got, but NOT a linking.config.screens entry of its own — unlike a
+// gathering link, which always resolves to the same one screen regardless of who
+// opens it, a business link's real destination genuinely branches (the business's
+// own owner should land on their own dashboard, not a stranger's-eye-view of their
+// own profile) and NavigationContainer's declarative path-to-route config can't
+// express that branch. So the business link is handled entirely by the same
+// stash-then-imperatively-navigate mechanism as the gathering link below, just with
+// its own real ownership check before deciding where to send the tap — never wired
+// into `linking.config.screens` at all.
 const linking = {
   prefixes: ['nearby://'],
   config: {
@@ -133,10 +146,26 @@ const linking = {
 // navigating to a screen you're already on with the same params is a
 // no-op, not a duplicate entry.
 const PENDING_GATHERING_LINK_KEY = 'pending_deep_link_gathering_id';
+const PENDING_BUSINESS_LINK_KEY = 'pending_deep_link_business_id';
 
 function gatheringIdFromUrl(url) {
   const match = /gathering\/([^/?#]+)/.exec(url ?? '');
   return match ? match[1] : null;
+}
+
+function businessIdFromUrl(url) {
+  const match = /business\/([^/?#]+)/.exec(url ?? '');
+  return match ? match[1] : null;
+}
+
+async function resolveAndNavigateToBusiness(partnerId) {
+  if (!navigationRef.isReady()) return;
+  const myPartner = await getMyManagedPartner();
+  if (myPartner?.id === partnerId) {
+    navigationRef.navigate('BusinessDashboard');
+  } else {
+    navigationRef.navigate('BusinessProfile', { partnerId });
+  }
 }
 
 const TAB_ICONS = {
@@ -268,6 +297,8 @@ export default function RootNavigator() {
     function stashIfGathering(url) {
       const gatheringId = gatheringIdFromUrl(url);
       if (gatheringId) AsyncStorage.setItem(PENDING_GATHERING_LINK_KEY, gatheringId);
+      const partnerId = businessIdFromUrl(url);
+      if (partnerId) AsyncStorage.setItem(PENDING_BUSINESS_LINK_KEY, partnerId);
     }
     Linking.getInitialURL().then(stashIfGathering);
     const subscription = Linking.addEventListener('url', ({ url }) => stashIfGathering(url));
@@ -284,6 +315,12 @@ export default function RootNavigator() {
               navigationRef.navigate('GatheringDetail', { gatheringId });
             }
           }, 300);
+        }
+      });
+      AsyncStorage.getItem(PENDING_BUSINESS_LINK_KEY).then((partnerId) => {
+        if (partnerId) {
+          AsyncStorage.removeItem(PENDING_BUSINESS_LINK_KEY);
+          setTimeout(() => resolveAndNavigateToBusiness(partnerId), 300);
         }
       });
       initPurchases(session.user.id);
@@ -311,6 +348,21 @@ export default function RootNavigator() {
       });
     }
   }, [session, profileComplete]);
+
+  // Handles a business link tapped while the app is already open and authenticated
+  // (BusinessDashboard/BusinessProfile already mounted, navigationRef already ready)
+  // — the always-on stash listener above only ever gets *consumed* on an
+  // auth-state transition, so a warm tap needs its own live listener, scoped to
+  // exactly the window where the authenticated stack actually exists.
+  useEffect(() => {
+    if (!(session && profileComplete)) return undefined;
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      const partnerId = businessIdFromUrl(url);
+      if (partnerId) resolveAndNavigateToBusiness(partnerId);
+    });
+    return () => subscription.remove();
+  }, [session, profileComplete]);
+
   if (loading || (session && profileLoading)) return null;
 
   return (

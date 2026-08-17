@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import QRCode from 'react-native-qrcode-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
@@ -65,6 +66,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
   const [section, setSection] = useState(route?.params?.initialSection ?? 'home');
   const [selectedPartner, setSelectedPartner] = useState(null);
+  const [qrModalVisible, setQrModalVisible] = useState(false);
   const [addressModalVisible, setAddressModalVisible] = useState(false);
   const [offerRedemptionCounts, setOfferRedemptionCounts] = useState({});
   const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null, includedUnits: 0, billableCount: 0 });
@@ -197,6 +199,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setSavingProfile(false);
+  }
+
+  // Business Partner acquisition experience, Milestone 3 (see CLAUDE.md): same
+  // Share.share + nearby:// deep link pattern GatheringConfirmationScreen.js's
+  // "Share Gathering" already established, reused verbatim rather than a second
+  // convention — this business's own real id, not a fabricated code.
+  async function handleShareBusinessLink() {
+    if (!selectedPartner) return;
+    try {
+      await Share.share({
+        message: `Check out ${selectedPartner.name} on Nearby — nearby://business/${selectedPartner.id}`,
+        url: `nearby://business/${selectedPartner.id}`,
+      });
+    } catch (e) {
+      // Share sheet cancellation isn't an error worth surfacing.
+    }
   }
 
   useFocusEffect(
@@ -857,6 +875,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       accessibilityRole="button"
                     >
                       <Text style={styles.viewProfileLink}>👀 View Public Profile →</Text>
+                    </TouchableOpacity>
+                  )}
+                  {selectedPartner && (
+                    <TouchableOpacity
+                      onPress={() => setQrModalVisible(true)}
+                      accessibilityLabel="Share your QR code"
+                      accessibilityRole="button"
+                      style={{ marginTop: spacing.sm }}
+                    >
+                      <Text style={styles.viewProfileLink}>📱 Share Your QR Code →</Text>
                     </TouchableOpacity>
                   )}
                 </>
@@ -1558,6 +1586,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={qrModalVisible} animationType="slide" transparent onRequestClose={() => setQrModalVisible(false)}>
+        <View style={styles.overlay}>
+          <View style={[styles.sheet, { alignItems: 'center' }]}>
+            <Text style={styles.sheetTitle}>Share Your QR Code</Text>
+            <Text style={[styles.emptyText, { marginBottom: spacing.md }]}>
+              Print it, post it at your counter, or share the link directly — either one opens
+              {selectedPartner ? ` ${selectedPartner.name}'s` : ' your'} page on Nearby.
+            </Text>
+            {selectedPartner && (
+              <View style={{ backgroundColor: '#fff', padding: spacing.md, borderRadius: radius.md }}>
+                <QRCode value={`nearby://business/${selectedPartner.id}`} size={200} />
+              </View>
+            )}
+            <TouchableOpacity
+              style={[styles.submitButton, { marginTop: spacing.lg, width: '100%' }]}
+              onPress={handleShareBusinessLink}
+              accessibilityLabel="Share business link"
+              accessibilityRole="button"
+            >
+              <Text style={styles.submitButtonText}>Share Link</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setQrModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Close" accessibilityRole="button">
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
       <Modal visible={updateModalVisible} animationType="slide" transparent onRequestClose={() => setUpdateModalVisible(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
