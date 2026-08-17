@@ -189,3 +189,11 @@ three land.
 
 **Not done**: no code changed to produce this audit, per the explicit instruction. Waiting on a
 go-ahead before building any of the 6 recommendations above.
+
+**Update, Aug 14 2026, same day**: recommendations #1 and #2 were explicitly approved and built
+that same day (see CLAUDE.md's own "Aug 15 2026 — Phase D..." section and the earlier Home
+hierarchy write-up for the exact diff).
+
+**Update, Aug 17 2026**: recommendations #3-6 were built as Phase 5 of the "Scorecard to 10"
+initiative — see CLAUDE.md's own Phase 5 section for the exact diff. All 6 of this audit's
+recommendations are now built.

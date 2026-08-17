@@ -553,13 +553,33 @@ on a real device with a real person. IA "coherence" at 10/10 means real users fo
 — not "reasoned through carefully," which is the ceiling of what a code-only session can ever
 produce.
 
-1. [ ] Execute the still-deferred Home hierarchy recommendations #3–6 from
+1. [x] Execute the still-deferred Home hierarchy recommendations #3–6 from
    `PRODUCT_AUDIT/HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md` (a heavier Your Plans header,
    dialing down Best Pick's visual weight, labeling the quick-stats card, fixing Your
-   Communities' undersized header) — approved in spirit, never built.
+   Communities' undersized header) — approved in spirit, never built. **DONE, Aug 17 2026, all 4
+   built exactly per the audit's own text**:
+   - **#3**: a new `primaryHeader` style (`typography.headline`, `colors.textPrimary`) applied
+     only to "Your Plans" — the one section the locked target model names "primary" — every
+     other section (Quick Picks, Happening Near You, Because You Like…, etc.) keeps the existing
+     uniform caption-style `sectionHeader`, per the recommendation's own explicit scope.
+   - **#4**: `bestPickCard` dialed down from the hero-matching `primaryMuted`/1.5px-primary-border
+     treatment to ordinary `trendingCard` chrome (`colors.surface`, 1px `colors.border`,
+     `spacing.md` padding) — content (the real ✓ reasons list) carries the recommendation signal
+     now, not chrome that previously outstyled both the hero intent box and Your Plans.
+   - **#5**: a real "Quick Stats" label added above the previously-unlabeled quick-stats card,
+     same `sectionHeader` caption style every other section already uses.
+   - **#6**: `continueCommunityLabel`'s font size corrected from an undersized 11px to the 13px
+     caption size used by its own tier sibling, Happening Near You — a one-line correction, not a
+     design call, exactly as the audit itself framed it.
+   Verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios`
+   (clean, no bundling errors — edit to one existing file only, no new files).
 2. **Honest ceiling without a device pass: ~8.** Nothing else genuinely closes this category from
    code alone — true 10 needs the single thing repeated in nearly every section of this file: a
    real phone in someone's hands.
+
+**Status: Phase 5 is now fully DONE, build-wise — the one code-closeable item (all 4 Home
+hierarchy tweaks) is built. The honest ~8 ceiling stands, per item 2's own text — no further
+code-only work closes the gap to a true 10 here.**
 
 ### Execution order (not the same as the phase numbering above — sequenced for shared work)
 

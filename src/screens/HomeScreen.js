@@ -731,7 +731,13 @@ export default function HomeScreen({ navigation }) {
 
         {(dashboard?.plansGoing?.length > 0 || dashboard?.plansHosting?.length > 0 || dashboard?.plansGroup?.length > 0) && (
           <>
-            <Text style={styles.sectionHeader}>Your Plans</Text>
+            {/* Home hierarchy audit recommendation #3 (PRODUCT_AUDIT/
+                HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md): a real, heavier
+                header distinct from the uniform caption-style sectionHeader
+                every other section uses -- makes the primary/context split
+                from the locked target model visually real, not just implied
+                by position below the intent box. */}
+            <Text style={styles.primaryHeader}>Your Plans</Text>
             <View style={styles.plansCard}>
               {dashboard.plansGoing.length > 0 && (
                 <>
@@ -1034,6 +1040,10 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
+        {/* Home hierarchy audit recommendation #5: a real, minimal label so
+            this card doesn't read as unexplained dense content -- same
+            caption style every other section already uses. */}
+        <Text style={styles.sectionHeader}>Quick Stats</Text>
         <View style={styles.card}>
           <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
             <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
@@ -1324,7 +1334,10 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.md,
   },
   continueCommunityLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  continueCommunityLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  // Home hierarchy audit recommendation #6: was 11px, an undersized outlier
+  // against its own tier siblings (Happening Near You's sectionHeader uses
+  // typography.caption's 13px) -- a one-line correction, not a design call.
+  continueCommunityLabel: { color: colors.textTertiary, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   continueCommunityName: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
   continueCommunityDetail: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
   perksBanner: {
@@ -1388,6 +1401,12 @@ const getStyles = (colors) => StyleSheet.create({
   cardChevron: { color: colors.textTertiary, fontSize: 18 },
   divider: { height: 1, backgroundColor: colors.border },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  // Home hierarchy audit recommendation #3: a real, heavier header, distinct
+  // from the uniform caption-style sectionHeader above -- used only by "Your
+  // Plans" (the one section the locked target model names "primary"), not
+  // applied to Quick Picks/Happening Near You/Because You Like… or any other
+  // section, per the recommendation's own explicit scope.
+  primaryHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   sectionHeaderText: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5 },
   quickPicksHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -1395,10 +1414,13 @@ const getStyles = (colors) => StyleSheet.create({
   subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
   subLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, marginTop: spacing.xs },
   subLabelText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
-  bestPickCard: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
-    padding: spacing.lg, marginBottom: spacing.lg,
-  },
+  // Home hierarchy audit recommendation #4: this card previously matched the
+  // hero intent box's own loud primaryMuted/1.5px-border treatment, making a
+  // "personalization"-tier element outstyle both the hero and the primary
+  // (Your Plans) section. Dialed down to match ordinary trendingCard chrome --
+  // its content (the real ✓ reasons list, the "Best Pick Tonight" sub-label)
+  // carries the recommendation signal now, not its chrome.
+  bestPickCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   bestPickTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
   bestPickReasons: { marginBottom: spacing.sm },
   bestPickReason: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
