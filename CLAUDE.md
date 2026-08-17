@@ -522,15 +522,28 @@ disclosed-partial funnel coverage, the same root cause as Phase 3 items 1-2 abov
 "repeat intent rate" north-star metric being computed but deliberately never surfaced as *the*
 headline metric on the Market Validation dashboard.
 
-1. [ ] Elevate "repeat intent rate" as the visually-called-out north-star metric on
+1. [x] Elevate "repeat intent rate" as the visually-called-out north-star metric on
    `MarketValidationScreen.js` — previously deferred "until real pilot data exists to justify
    it," which was a choice, not a hard blocker; building it now doesn't fabricate anything, the
-   underlying number is already real.
-2. [ ] Shares its fix with Phase 3 items 1-2 (submission-id linkage, propose-time logging) —
-   closes Group Plans' funnel gap for both categories at once, not built twice.
+   underlying number is already real. **DONE, Aug 17 2026.** A new hero card (`colors.primaryMuted`
+   background, 1.5px `colors.primary` border, `typography.title`-sized value — same "hero"
+   visual language Home's own intent box already established) now renders at the very top of the
+   scroll, above every other section, headlining `funnel.pct_repeat_submitters` (the real 30-day
+   same-category repeat-submission rate, already computed by `get_intent_funnel_stats()` — no new
+   query) with an explicit "why this is the one to watch" line. The number itself and the
+   existing "30-day repeat submitters" row inside the Intent Funnel card below are unchanged —
+   this is purely a visual-hierarchy addition, per the plan's own scope, not a new metric or a
+   rewrite of the existing sections.
+2. [x] Shares its fix with Phase 3 items 1-2 (submission-id linkage, propose-time logging) —
+   closes Group Plans' funnel gap for both categories at once, not built twice. **DONE, Aug 17
+   2026** — see Phase 3's own status notes above for the full detail (`business_requests.
+   submission_id` + the new `group_plan_proposed` `intent_outcomes` result type).
 3. **Cannot close from code**: a real production-monitoring dashboard (infra), and the deeper
    fact that every number on this dashboard reads honestly near-zero until real users generate
    real data — stated plainly, not something more building changes.
+
+**Status: Phase 4 is now fully DONE, build-wise — items 1-2 closed, item 3 correctly remains
+infra-blocked, not something a code-only session can close.**
 
 ### Phase 5 — Product coherence / IA: 7 → 10 (capped without a device pass — lowest priority)
 

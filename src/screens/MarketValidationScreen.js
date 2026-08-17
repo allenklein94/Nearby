@@ -108,6 +108,25 @@ export default function MarketValidationScreen() {
           not a bug.
         </Text>
 
+        {/* Phase 4 item 1 of the "Scorecard to 10" initiative (CLAUDE.md): elevate
+            "repeat intent rate" as the real, visually-called-out north-star metric --
+            previously computed twice (here and in Return Rate below) but never called
+            out above the others. The underlying number was already real; this is a
+            visual-hierarchy change to this one screen only, per the plan's own scope. */}
+        <View style={[styles.northStarCard, shadow.card]}>
+          <Text style={styles.northStarLabel} accessibilityRole="header">⭐ North Star: Repeat Intent Rate</Text>
+          <Text style={styles.northStarValue}>{formatPct(funnel?.pct_repeat_submitters)}</Text>
+          <Text style={styles.northStarSublabel}>
+            {formatCount(funnel?.repeat_submitters)} of {formatCount(funnel?.distinct_submitters)} people came back and
+            asked Nearby for something a second time within 30 days
+          </Text>
+          <Text style={styles.northStarWhy}>
+            This is the real signal for the product thesis: does "just ask Nearby" replace
+            "browse an app" for a real person, more than once? Every other number on this
+            screen is supporting detail — this is the one to watch.
+          </Text>
+        </View>
+
         <Text style={styles.groupHeader} accessibilityRole="header">Intent Funnel</Text>
         <View style={[styles.card, shadow.card]}>
           <StatRow label="Total submissions" value={formatCount(funnel?.total_submissions)} />
@@ -278,6 +297,14 @@ function getStyles(colors, shadow) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     subtitle: { ...typography.small, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 18 },
+    northStarCard: {
+      backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5,
+      borderColor: colors.primary, padding: spacing.lg, marginBottom: spacing.lg,
+    },
+    northStarLabel: { ...typography.caption, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: '700', marginBottom: spacing.xs },
+    northStarValue: { ...typography.title, color: colors.primary, fontWeight: '800', marginBottom: spacing.xs },
+    northStarSublabel: { ...typography.body, color: colors.textPrimary, marginBottom: spacing.sm },
+    northStarWhy: { ...typography.small, color: colors.textSecondary, lineHeight: 18 },
     groupHeader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, marginTop: spacing.lg, textTransform: 'uppercase', letterSpacing: 0.5 },
     card: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md },
     statRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
