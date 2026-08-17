@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
-import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole } from '../services/communities';
+import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
 import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -37,6 +38,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [offers, setOffers] = useState([]);
   const [redeemedOfferIds, setRedeemedOfferIds] = useState([]);
   const [redeemingOfferId, setRedeemingOfferId] = useState(null);
+  const [areaModalVisible, setAreaModalVisible] = useState(false);
+  const [areaCity, setAreaCity] = useState('');
+  const [areaRegion, setAreaRegion] = useState('');
+  const [areaLabel, setAreaLabel] = useState('');
+  const [areaPoint, setAreaPoint] = useState(null);
+  const [savingArea, setSavingArea] = useState(false);
+  const [locatingArea, setLocatingArea] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -120,6 +128,50 @@ export default function CommunityDetailScreen({ route, navigation }) {
     }, [load])
   );
 
+  const canEditArea = isCreator || members.some((m) => m.user_id === myId && m.role === 'leader');
+
+  function openAreaModal() {
+    setAreaCity(community.area_city ?? '');
+    setAreaRegion(community.area_region ?? '');
+    setAreaLabel(community.area_label ?? '');
+    setAreaPoint(community.area_lat != null && community.area_lng != null ? { lat: community.area_lat, lng: community.area_lng } : null);
+    setAreaModalVisible(true);
+  }
+
+  async function handleUseCurrentLocationForArea() {
+    setLocatingArea(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location permission needed', 'Enable location access to set a coarse map point for this Area.');
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setAreaPoint({ lat: location.coords.latitude, lng: location.coords.longitude });
+    } catch (e) {
+      Alert.alert('Error', 'Could not get your current location.');
+    }
+    setLocatingArea(false);
+  }
+
+  async function handleSaveArea() {
+    setSavingArea(true);
+    try {
+      await updateCommunityArea(communityId, {
+        city: areaCity,
+        region: areaRegion,
+        label: areaLabel,
+        lat: areaPoint?.lat ?? null,
+        lng: areaPoint?.lng ?? null,
+      });
+      setAreaModalVisible(false);
+      load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingArea(false);
+  }
+
   async function handleToggleFollowBusiness() {
     try {
       if (followingBusiness) {
@@ -188,7 +240,17 @@ export default function CommunityDetailScreen({ route, navigation }) {
         </View>
         <Text style={styles.title}>{community.name}</Text>
         <Text style={styles.meta}>{memberCount} member{memberCount === 1 ? '' : 's'} · {community.is_public ? 'Public' : 'Private'}</Text>
+        {(community.area_label || community.area_city) && (
+          <Text style={styles.areaText}>
+            📍 {community.area_label || [community.area_city, community.area_region].filter(Boolean).join(', ')}
+          </Text>
+        )}
         {community.description ? <Text style={styles.description}>{community.description}</Text> : null}
+        {canEditArea && (
+          <TouchableOpacity onPress={openAreaModal} accessibilityLabel="Edit Community Area" accessibilityRole="button" style={{ marginBottom: spacing.md }}>
+            <Text style={styles.editAreaLink}>{community.area_city || community.area_label ? 'Edit Community Area' : '+ Add a Community Area'}</Text>
+          </TouchableOpacity>
+        )}
 
         {!isCreator && (
           <TouchableOpacity
@@ -442,6 +504,57 @@ export default function CommunityDetailScreen({ route, navigation }) {
         targetId={communityId}
         targetTitle={community.name}
       />
+
+      <Modal visible={areaModalVisible} animationType="slide" transparent onRequestClose={() => setAreaModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Community Area</Text>
+            <Text style={styles.modalSubtitle}>
+              Optional and coarse — a city and general area, never a precise address. Helps people nearby find this community.
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="City (e.g. Princeton)"
+              placeholderTextColor={colors.textTertiary}
+              value={areaCity}
+              onChangeText={setAreaCity}
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="State / Region (e.g. NJ)"
+              placeholderTextColor={colors.textTertiary}
+              value={areaRegion}
+              onChangeText={setAreaRegion}
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Label, optional (e.g. Downtown)"
+              placeholderTextColor={colors.textTertiary}
+              value={areaLabel}
+              onChangeText={setAreaLabel}
+            />
+            <TouchableOpacity
+              onPress={handleUseCurrentLocationForArea}
+              disabled={locatingArea}
+              accessibilityLabel="Use my current location as this Area's coarse map point"
+              accessibilityRole="button"
+              style={styles.useLocationButton}
+            >
+              <Text style={styles.useLocationButtonText}>
+                {locatingArea ? 'Getting location...' : areaPoint ? '📍 Map point set — tap to update' : '📍 Use My Current Location (optional)'}
+              </Text>
+            </TouchableOpacity>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={styles.modalCancelButton} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={styles.modalSaveButton} accessibilityLabel="Save Community Area" accessibilityRole="button">
+                <Text style={styles.modalSaveButtonText}>{savingArea ? 'Saving...' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -498,4 +611,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   viewToggleButtonActive: { backgroundColor: colors.primary },
   viewToggleText: { color: colors.textTertiary, fontSize: 11, fontWeight: '700' },
   viewToggleTextActive: { color: '#fff' },
+  areaText: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.xs },
+  editAreaLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalSheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg },
+  modalTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
+  modalSubtitle: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.md, lineHeight: 17 },
+  modalInput: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: spacing.md, paddingVertical: 10, color: colors.textPrimary, fontSize: 14, marginBottom: spacing.sm,
+  },
+  useLocationButton: { paddingVertical: spacing.sm, marginBottom: spacing.md },
+  useLocationButtonText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md },
+  modalCancelButton: { paddingVertical: 10, paddingHorizontal: spacing.md },
+  modalCancelButtonText: { color: colors.textSecondary, fontWeight: '600' },
+  modalSaveButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, paddingHorizontal: spacing.lg, ...shadow.button },
+  modalSaveButtonText: { color: '#fff', fontWeight: '700' },
 });

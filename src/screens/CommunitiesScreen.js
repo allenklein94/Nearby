@@ -8,6 +8,10 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+function areaLine(c) {
+  return c.area_label || [c.area_city, c.area_region].filter(Boolean).join(', ') || null;
+}
+
 export default function CommunitiesScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -115,6 +119,7 @@ export default function CommunitiesScreen({ navigation }) {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.cardTitle}>{c.name}</Text>
                         <Text style={styles.cardMeta}>{memberCounts[c.id] ?? 0} members</Text>
+                        {areaLine(c) ? <Text style={styles.cardArea}>📍 {areaLine(c)}</Text> : null}
                       </View>
                       <Text style={styles.cardChevron}>›</Text>
                     </TouchableOpacity>
@@ -149,6 +154,7 @@ export default function CommunitiesScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{item.name}</Text>
                   <Text style={styles.cardMeta}>{memberCounts[item.id] ?? 0} members</Text>
+                  {areaLine(item) ? <Text style={styles.cardArea}>📍 {areaLine(item)}</Text> : null}
                   <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
                 </View>
               </TouchableOpacity>
@@ -186,6 +192,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardIcon: { fontSize: 24, marginRight: spacing.sm },
   cardTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   cardMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
+  cardArea: { color: colors.textTertiary, fontSize: 11, marginTop: 1 },
   cardChevron: { color: colors.textTertiary, fontSize: 20 },
   joinButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   joinButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },

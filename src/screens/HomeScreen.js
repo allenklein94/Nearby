@@ -597,6 +597,7 @@ export default function HomeScreen({ navigation }) {
       prefillPartySize: classifyResult.partySize ?? null,
       prefillBudgetMax: classifyResult.budgetMax ?? null,
       prefillDateWindow: classifyResult.dateWindow ?? null,
+      prefillSubmissionId: submissionId ?? null,
     });
   }
 

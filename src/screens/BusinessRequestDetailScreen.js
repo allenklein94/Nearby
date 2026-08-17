@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
 import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans';
+import { recordIntentSelection } from '../services/intentOutcomes';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -63,6 +64,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     prefillPartySize: route.params?.prefillPartySize ?? null,
     prefillBudgetMax: route.params?.prefillBudgetMax ?? null,
     prefillDateWindow: route.params?.prefillDateWindow ?? null,
+    prefillSubmissionId: route.params?.prefillSubmissionId ?? null,
     gatheringId: route.params?.gatheringId ?? null,
     gatheringTitle: route.params?.gatheringTitle ?? null,
     gatheringPartySize: route.params?.gatheringPartySize ?? null,
@@ -195,6 +197,20 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setProposingGroupPlan(true);
     try {
       const proposalId = await proposeGroupPlan(requestId, selectedCandidateIds);
+      // Phase 3 item 2 (CLAUDE.md): the propose-time group-plan moment,
+      // previously invisible to the funnel -- only confirm-time was
+      // logged (see GroupPlanScreen.js's handleConfirm/handleConfirmOffer).
+      // No submissionId here either, same honest reasoning as those two
+      // call sites: a group plan is formed from several participants'
+      // own separate asks, not one single originating submission.
+      recordIntentSelection({
+        rawText: null,
+        category: request?.category ?? null,
+        dateWindow: request?.date ?? null,
+        resultType: 'group_plan_proposed',
+        resultId: proposalId,
+        resultTitle: `Group plan proposed — ${request?.category ?? 'shared request'}`,
+      });
       navigation.replace('GroupPlan', { proposalId });
     } catch (e) {
       Alert.alert('Error', e.message);

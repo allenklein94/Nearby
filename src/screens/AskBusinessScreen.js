@@ -111,6 +111,14 @@ export default function AskBusinessScreen({ navigation, route }) {
   const normalizedPrefillDateWindow = rawPrefillDateWindow === 'tonight' || rawPrefillDateWindow === 'now' ? 'today' : rawPrefillDateWindow;
   const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow && normalizedPrefillDateWindow !== 'flexible' ? normalizedPrefillDateWindow : 'flexible');
   const [radiusMiles, setRadiusMiles] = useState(RADIUS_OPTIONS.includes(route.params?.prefillRadiusMiles) ? route.params.prefillRadiusMiles : 15);
+  // Phase 3 item 1 (CLAUDE.md): the real intent_submissions row behind
+  // this ask, when Home's own intent flow is what led here -- carried
+  // through to create_business_request so the funnel can trace a
+  // group-plan-originated request back to its real originating
+  // individual ask. Absent when this screen is reached any other way
+  // (a gathering's own "Ask Local Businesses" link, a direct nav) --
+  // stays honestly null there, never fabricated.
+  const submissionId = route.params?.prefillSubmissionId ?? null;
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
@@ -143,6 +151,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           budgetMax: safeBudgetMax,
           date: toDateParam(dateWindow),
           radiusMiles,
+          submissionId,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so
@@ -159,6 +168,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         prefillBudgetMax: safeBudgetMax,
         prefillDateWindow: dateWindow,
         prefillRadiusMiles: radiusMiles,
+        prefillSubmissionId: submissionId,
         gatheringId,
         gatheringTitle,
         gatheringPartySize,

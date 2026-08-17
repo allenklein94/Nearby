@@ -47,7 +47,38 @@ async function resolveGatherings(category, dateWindow, rawText) {
 // ask -- unlike gatherings (which still have date/distance/attendance to
 // rank by), an uncategorized "all your communities" result would be noise,
 // not a real match. Gated on a real category instead of surfaced broadly.
-async function resolveCommunities(category) {
+//
+// Phase 3's Community Area integration (CLAUDE.md): a community with a
+// real Community Area set gets a real, honest distance/locality signal
+// folded on top of its existing score -- reusing the same
+// SCORE_CLOSE_DISTANCE weight every other close-distance signal in this
+// resolver already uses, not a new invented scale. A community with no
+// Area set is treated exactly as before (no bonus, never a gate) -- it
+// still surfaces purely on category/membership. Prefers the coarse map
+// point when set (a real haversine check against the caller's own
+// location, same location object already resolved once in resolveIntent);
+// falls back to a plain city-name match against the caller's own
+// reverse-geocoded city when no map point exists. Never inferred from
+// free text -- both signals come from the caller's own real device
+// location, the same source every other location-aware branch here uses.
+function communityAreaBonus(c, location, myCity) {
+  if (location && c.area_lat != null && c.area_lng != null) {
+    const milesPerDegreeLat = 69;
+    const milesPerDegreeLng = 69 * Math.cos((location.latitude * Math.PI) / 180);
+    const dLat = (location.latitude - c.area_lat) * milesPerDegreeLat;
+    const dLng = (location.longitude - c.area_lng) * milesPerDegreeLng;
+    const distanceMiles = Math.sqrt(dLat * dLat + dLng * dLng);
+    // Coarser threshold than a gathering's precise-coordinate 2-mile
+    // check -- a Community Area is deliberately city-level, not a venue.
+    return distanceMiles < 25 ? SCORE_CLOSE_DISTANCE : 0;
+  }
+  if (myCity && c.area_city && myCity.toLowerCase() === c.area_city.toLowerCase()) {
+    return SCORE_CLOSE_DISTANCE;
+  }
+  return 0;
+}
+
+async function resolveCommunities(category, location, myCity) {
   if (!category) return [];
   const mine = await getMyCommunities();
   return mine
@@ -57,7 +88,7 @@ async function resolveCommunities(category) {
       id: c.id,
       title: c.name,
       subtitle: "You're already a member",
-      score: SCORE_OWN_NETWORK,
+      score: SCORE_OWN_NETWORK + communityAreaBonus(c, location, myCity),
     }));
 }
 
@@ -227,11 +258,24 @@ export async function resolveIntent({ category, dateWindow, rawText }) {
   // resolveGatherings' own internal call just re-reads the
   // now-already-decided status, no second dialog.
   let location = null;
+  let myCity = null;
   try {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status === 'granted') {
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       location = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+      // Best-effort only -- feeds the Community Area city-name fallback
+      // below when a candidate community has no coarse map point set.
+      // Never used to infer anything from free text; this is the
+      // caller's own real device location, reverse-geocoded, same
+      // "review before commit" honesty as every other location signal
+      // in this resolver.
+      try {
+        const [place] = await Location.reverseGeocodeAsync(location);
+        myCity = place?.city ?? null;
+      } catch (geoErr) {
+        myCity = null;
+      }
     }
   } catch (e) {
     console.error('resolveIntent location error', e);
@@ -239,7 +283,7 @@ export async function resolveIntent({ category, dateWindow, rawText }) {
 
   const branches = await Promise.allSettled([
     resolveGatherings(category, dateWindow, rawText),
-    resolveCommunities(category),
+    resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
     resolveBusinessAvailability(category, location),

@@ -24,6 +24,13 @@ export async function submitBusinessRequest({
   timeWindowStart = null,
   timeWindowEnd = null,
   radiusMiles = 15,
+  // Phase 3 item 1 of the "Scorecard to 10" initiative: the real
+  // intent_submissions row this ask came from, when one exists (the
+  // solo Home intent flow) -- persisted onto business_requests so a
+  // group-plan-originated request can attribute back to its real
+  // originating individual ask. Re-validated server-side against the
+  // caller's own submissions, never trusted blindly.
+  submissionId = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -43,6 +50,7 @@ export async function submitBusinessRequest({
     time_window_start_param: timeWindowStart,
     time_window_end_param: timeWindowEnd,
     radius_miles_param: radiusMiles,
+    submission_id_param: submissionId,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

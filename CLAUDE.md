@@ -316,13 +316,36 @@ individual asks back to the group plan they became part of; community demand-gen
 explicitly skipped because communities have no location field to source it from; one small coral
 judgment call is still open.
 
-1. [ ] Persist a `submission_id` onto `business_requests` at creation time so a group-plan-
-   originated request attributes back to its real originating individual ask.
-2. [ ] Log the propose-time group-plan moment to `intent_outcomes` (today only confirm-time is
-   logged).
+1. [x] Persist a `submission_id` onto `business_requests` at creation time so a group-plan-
+   originated request attributes back to its real originating individual ask. **DONE, Aug 17
+   2026** — `business_requests.submission_id` (nullable FK to `intent_submissions`,
+   `20260817_group_plan_funnel_linkage.sql`), set by `create_business_request()`'s own new
+   `submission_id_param`, re-validated server-side against the caller's own submissions (a
+   spoofed/stale id from another user is silently dropped, never linked — matching this schema's
+   established "never trust a client-supplied id blindly" convention). Threaded through
+   `submitBusinessRequest()` → `AskBusinessScreen.js` (reads `route.params.prefillSubmissionId`,
+   itself set by `HomeScreen.js`'s `handleAskBusiness()` from the same `submissionId` already in
+   scope from the intent flow) → `BusinessRequestDetailScreen.js`'s "Try a Wider Radius" retry
+   carries it forward too, so a widened-radius resubmission doesn't lose the linkage. The
+   gathering-sourced create path (`create_business_request_for_gathering`) is unchanged — it has
+   no originating `intent_submissions` row to link, and stays honestly null there, matching this
+   item's own scope. **Verified live against production**: a real disposable submission +
+   request pair round-tripped `submission_id` correctly for the owning caller; a second attempt
+   spoofing another real profile's submission id was confirmed silently dropped to `null`, not
+   linked. All test rows deleted afterward.
+2. [x] Log the propose-time group-plan moment to `intent_outcomes` (today only confirm-time is
+   logged). **DONE, Aug 17 2026** — a new, additive `intent_outcomes.result_type` value,
+   `'group_plan_proposed'` (same migration as item 1 — widened CHECK constraint, matching the
+   established "add a new valid value, don't repurpose an existing one" precedent
+   `business_requests.status`'s own `'merged'` value already set). `BusinessRequestDetailScreen.js`'s
+   `handleProposeGroupPlan()` now calls `recordIntentSelection()` right after a successful
+   `proposeGroupPlan()`, same `rawText: null` honesty as `GroupPlanScreen.js`'s own confirm-time
+   calls (a group plan has no single originating ask to attribute a submission to). **Verified
+   live**: a real insert with the new `result_type` succeeded; an invalid value is still
+   correctly rejected by the CHECK constraint. Test row deleted afterward.
 3. **RESOLVED — the user's own call, given directly, not a Claude judgment call: YES, add a real
-   geographic field to Communities. Locked design below — plan written, NOT YET BUILT, next
-   session should start here.**
+   geographic field to Communities. Locked design below — DONE, build-wise, Aug 17 2026, see this
+   item's own status note below the build plan.**
 
    **The user's own reasoning, restated so it isn't softened or re-litigated by a future
    session**: a community like "Princeton Runners" or "Downtown Pickleball" has a real geographic
@@ -415,10 +438,61 @@ judgment call is still open.
       --platform ios` after the client pieces land. Same standing limitation as everywhere else
       in this file: no manual simulator/device run-through.
 
-   **Status: plan locked and written here, per direct instruction — nothing built yet. Next
-   session picking this up should start at step 1 (schema) and work down the list in order,
-   committing/pushing after each step per this file's own restart-safety convention, not batching
-   the whole thing into one commit.**
+   **Status: DONE, build-wise — Aug 17 2026, steps 1-5 built exactly to the locked design above,
+   applied to production, and verified live with real disposable test data.**
+   - **Schema/RLS/RPC** (`supabase/migrations/20260817_community_area.sql`): `communities`
+     gained the 5 nullable columns exactly as spec'd (`area_city`/`area_region`/`area_label`/
+     `area_lat`/`area_lng`) — every existing row backfills to all-null, zero behavior change. No
+     new RLS policy needed, per the plan's own note — but the plan's assumption that a real
+     "creator/leader self-edit mechanism" already exists for name/description turned out to be
+     wrong on inspection: `CommunityDetailScreen.js` had **no edit surface of any kind** before
+     this pass (grepped for it directly — zero hits), so there was no existing pattern to reuse.
+     Built a new, narrowly-scoped `update_community_area()` SECURITY DEFINER RPC instead of
+     opening a broader raw-UPDATE surface — creator or leader only (matching
+     `set_community_member_role()`'s own creator-only precedent, extended to leaders since the
+     Area is exactly the kind of day-to-day metadata a leader should be able to manage), every
+     field independently settable to null. **Verified live against production**
+     (`enmosvippabmuqslzrox`), not just applied: a real disposable test community's creator
+     (`Allen`) set a real Area (Princeton/NJ/Downtown + a real lat/lng) and it round-tripped
+     exactly; a non-creator/non-leader (`Claude`) attempting the identical call was correctly
+     rejected (`Only the community creator or a leader can edit the Community Area`). Test
+     community deleted afterward.
+   - **Client — editor UI**: `services/communities.js` gained `updateCommunityArea()`. Built a
+     new inline modal on `CommunityDetailScreen.js` (city/region/label text fields, matching the
+     plan's own "two short fields, not a full address form" spec) rather than reusing a
+     nonexistent name/description edit surface — reuses the exact same `expo-location`
+     permission-request pattern `SelectGatheringLocationScreen.js` already established for an
+     optional "Use My Current Location" map-point button, not a bespoke picker. Shown as a small
+     "Edit Community Area" / "+ Add a Community Area" link, creator/leader only.
+   - **Display**: `CommunityDetailScreen.js` shows `area_label` (or, absent that, `area_city` +
+     `area_region`) as a small secondary line under the member-count/public-private line.
+     `CommunitiesScreen.js`'s two card lists (Your Communities, Discover) show the identical line
+     under their existing member-count text — both `getMyCommunities()`/`getPublicCommunities()`/
+     `searchPublicCommunities()` had their select lists extended to carry the 5 new columns.
+   - **Intent resolution integration**: `intentResolver.js`'s `resolveCommunities()` (the
+     `resolveIntent()` community branch) now folds a real `SCORE_CLOSE_DISTANCE` bonus onto a
+     candidate community's existing score when it has a real Community Area — prefers a real
+     haversine-style check against the caller's own already-resolved device location when the
+     community has a coarse map point set (a new, real distance computation — no client-side
+     haversine helper existed anywhere in this codebase to reuse, confirmed via grep, so this is
+     genuinely new math, not fabricated data); falls back to a plain city-name match against the
+     caller's own `Location.reverseGeocodeAsync()`-derived city when no map point exists (a real
+     capability of the `expo-location` package already imported in this file, not a new
+     dependency). A community with no Area set gets zero bonus either way — included by category/
+     membership signal only, exactly as before, never penalized for the field being absent.
+     **Demand-generation was correctly not attempted** — out of this item's own scope per the
+     plan's own text.
+   - **Verification**: live production checks above; a full `npx expo export --platform ios`
+     after all client pieces landed (clean, no bundling errors). **The from-scratch migration
+     replay is deferred to one consolidated run covering every migration built in this same
+     session** (see this section's own closing status note) rather than three separate replays —
+     still run before any of this session's work is considered fully done, per this file's own
+     migration-discipline rule.
+   - **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+     run-through — next session should confirm the Area editor modal renders/saves correctly on a
+     real device, that the "Use My Current Location" button round-trips a real device location,
+     and that a gathering-shaped or community-shaped intent ask genuinely ranks a nearby-Area
+     community above an equally-matching-but-farther one in the real running app.
 4. [ ] Close `DiscoveryScreen.js`'s one remaining open coral judgment call (the one-time callout
    tip's borderline "Got it" dismiss-action case, flagged not-decided in the Aug 16 coral audit).
 

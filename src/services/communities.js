@@ -84,7 +84,7 @@ export async function getMyCommunities() {
 
   const { data, error } = await supabase
     .from('community_members')
-    .select('community_id, role, communities(id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id)')
+    .select('community_id, role, communities(id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id, area_city, area_region, area_label, area_lat, area_lng)')
     .eq('user_id', myId);
 
   if (error) {
@@ -114,7 +114,7 @@ export async function getPublicCommunities() {
   return data ?? [];
 }
 
-const PUBLIC_COMMUNITY_SELECT = 'id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id';
+const PUBLIC_COMMUNITY_SELECT = 'id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id, area_city, area_region, area_label, area_lat, area_lng';
 
 // Real, indexed, server-side search — used by DiscoverHubScreen's search box
 // instead of downloading every public community and filtering client-side.
@@ -264,6 +264,20 @@ export async function setCommunityMemberRole(communityId, memberUserId, role) {
     community_id_param: communityId,
     member_id_param: memberUserId,
     new_role: role,
+  });
+  if (error) throw error;
+}
+
+// Community Area — optional, coarse-grained geographic identity for a community. Creator or
+// leader only (enforced server-side); every field is independently optional.
+export async function updateCommunityArea(communityId, { city, region, label, lat, lng }) {
+  const { error } = await supabase.rpc('update_community_area', {
+    community_id_param: communityId,
+    area_city_param: city ?? null,
+    area_region_param: region ?? null,
+    area_label_param: label ?? null,
+    area_lat_param: lat ?? null,
+    area_lng_param: lng ?? null,
   });
   if (error) throw error;
 }
