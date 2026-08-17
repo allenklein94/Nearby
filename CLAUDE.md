@@ -531,6 +531,41 @@ Phase 0 already found real vs. missing and to both locked decisions above:
    autofill → apply → admin approve → profile → first offer → consumer views it → dashboard shows
    the real resulting stats), verified live against production with disposable test data and
    cleaned up, matching this file's own established convention — not a simulated/mocked pass.
+   **IN PROGRESS, interrupted mid-build by a codespace restart — real prerequisite gap found and
+   partially closed, not yet finished.** While preparing this verification, found 5 of the 11
+   real named funnel steps in `business_acquisition_events` (`profile_completed`/`published`/
+   `first_offer_created`/`first_consumer_interaction`/`dashboard_viewed`) were defined in the
+   table's own CHECK constraint and already read by `get_business_acquisition_funnel_stats()`,
+   but never actually fired anywhere in client or server code — Milestones 2-5 only needed the
+   earlier funnel steps. Running the full verification with those 5 still permanently unfired
+   would only prove the funnel table's read side, not that the funnel itself is real — closing
+   them first is a genuine prerequisite, not scope creep.
+   **`published` — DONE, applied to production.** `supabase/migrations/20260817_business_
+   acquisition_remaining_funnel_events.sql` adds one new insert to `approve_business_partner_
+   request()` (pulled the live body fresh via the Management API first, confirmed byte-identical
+   to the last committed migration before touching it) — fired from the same guarded,
+   non-repeatable `status = 'pending'` match the existing `apply_approved` insert already uses,
+   right next to it, since in this app's real flow there's no separate "publish" step: the
+   business goes live the instant an admin approves it (the same `insert into brand_partners`
+   two lines up already makes it real). Applied to production this pass. **Not yet re-verified
+   live with a real disposable test request** — the migration's own correctness was reasoned
+   through (guarded by the same pending-match as the pre-existing, already-verified
+   `apply_approved` insert) but a fresh live approve-and-check wasn't re-run after applying,
+   per this file's own "verify live" convention — do that before considering this step closed.
+   **Remaining 3 events — NOT YET WIRED, this is the next concrete step.** `profile_completed`
+   (on a real profile save — `BusinessDashboardScreen.js`'s `handleSaveProfile`),
+   `first_offer_created` (on the business's first-ever offer, not every offer —
+   `BusinessDashboardScreen.js`'s offer-creation call site, needs a real "is this genuinely the
+   first" check, e.g. count existing offers before insert), `dashboard_viewed` (on
+   `BusinessDashboardScreen.js`'s `loadMyPartner`/mount). `first_consumer_interaction` needs a
+   design decision before wiring, not blind implementation — check whether Milestone 4's
+   existing `business_profile_views` logging (`BusinessProfileScreen.js`, already fires on
+   every consumer profile view) should be reused as this signal (first-ever row for that
+   partner) rather than inventing a second, separate interaction-tracking call site. Was
+   mid-import of `logBusinessAcquisitionEvent` into `BusinessDashboardScreen.js` when the
+   session was interrupted — no client file was actually modified yet (`git status` confirms
+   only the migration file was ever written), so this is a clean, real starting point, not a
+   partial edit to untangle.
 7. **Three adversarial review passes**, exactly as the brief specifies: a "hostile business
    owner, 60 seconds, never heard of Nearby" comprehension pass; a consumer-side connectivity
    trace (does the applied business's profile/offer/location genuinely show up correctly to a
