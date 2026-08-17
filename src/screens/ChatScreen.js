@@ -493,6 +493,15 @@ export default function ChatScreen({ route, navigation }) {
     { key: 'constitution', text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
     { key: 'courage', text: '🦁 Help Me Say It', onPress: showCourageMenu },
     { key: 'datenight', text: '🌆 Suggest a Date Night', onPress: suggestDateNight },
+    // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4):
+    // the real Match -> Proposal -> Dating Experience -> Business Request
+    // bridge -- a genuinely dating-context feature, gated on
+    // isRomanticMatch the same way "Ask them out"/"Say I'm interested"
+    // already are just above, not offered in a friend/gathering-sourced
+    // chat where it wouldn't make sense.
+    ...(isRomanticMatch
+      ? [{ key: 'plantogether', text: '💌 Plan Something Together', onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) }]
+      : []),
   ];
 
   async function suggestDateNight() {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitBusinessRequest, submitBusinessRequestForGathering } from '../services/businessFulfillment';
+import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -69,16 +70,24 @@ function toDateParam(dateWindow) {
   return null;
 }
 
-// Reached two ways: from Home's intent box once Tiers 1/3 (existing
+// Reached three ways: from Home's intent box once Tiers 1/3 (existing
 // gatherings/perks) genuinely found nothing -- Tier 4 of the resolver,
 // "ask a business to make it happen," framed as a real, first-class path,
 // never a fallback after "the real options" failed -- or, when
 // `route.params.gatheringId` is present, from a gathering's own host
-// banner (Phase 3, "a gathering becomes a demand generator"). In gathering
+// banner (Phase 3, "a gathering becomes a demand generator") -- or, when
+// `route.params.matchId` is present, from a match's own accepted date
+// proposal (Offer System Phase 5, see CLAUDE.md's own plan, Decision 4:
+// the "Dating Experience -> Business Request" bridge). In gathering
 // mode, party size/date/location are all real data sourced server-side
 // from the gathering itself, never re-asked here -- the "When" step is
 // skipped entirely since the gathering already has a real date, and party
-// size renders as a fact, not an editable field.
+// size renders as a fact, not an editable field. Match mode is similar
+// for party size (always the real 2 -- both match participants, never
+// user-typed) but keeps the "When" chips, since an accepted plan has no
+// fixed date the way a gathering does, and uses real device location
+// (like the solo path) since a match has no stored coordinates of its
+// own the way a gathering does.
 export default function AskBusinessScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -86,6 +95,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   const gatheringId = route.params?.gatheringId ?? null;
   const gatheringTitle = route.params?.gatheringTitle ?? null;
   const gatheringPartySize = route.params?.gatheringPartySize ?? null;
+  const matchId = route.params?.matchId ?? null;
+  const matchName = route.params?.matchName ?? null;
   // Set only when reached by tapping a live business_availability
   // candidate on Home's intent results (see intentResolver.js /
   // PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md) --
@@ -143,6 +154,15 @@ export default function AskBusinessScreen({ navigation, route }) {
           budgetMax: safeBudgetMax,
           radiusMiles,
         });
+      } else if (matchId) {
+        result = await createBusinessRequestForMatch({
+          matchId,
+          text: text.trim(),
+          category,
+          budgetMax: safeBudgetMax,
+          date: toDateParam(dateWindow),
+          radiusMiles,
+        });
       } else {
         result = await submitBusinessRequest({
           text: text.trim(),
@@ -172,6 +192,8 @@ export default function AskBusinessScreen({ navigation, route }) {
         gatheringId,
         gatheringTitle,
         gatheringPartySize,
+        matchId,
+        matchName,
       });
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
@@ -184,14 +206,20 @@ export default function AskBusinessScreen({ navigation, route }) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.heading}>
-            {gatheringId ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go` : 'Can Nearby make this happen?'}
+            {gatheringId
+              ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go`
+              : matchId
+                ? `Find something for you and ${matchName ?? 'your match'}`
+                : 'Can Nearby make this happen?'}
           </Text>
           <Text style={styles.subtitle}>
             {gatheringId
               ? `Asking on behalf of your ${gatheringPartySize ?? ''}-person gathering — real nearby businesses can respond with a real offer for the group.`
-              : matchedAvailability
-                ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
-                : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
+              : matchId
+                ? `You both agreed on a plan — real nearby businesses can respond with a real offer for the two of you.`
+                : matchedAvailability
+                  ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
+                  : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
           </Text>
 
           {matchedAvailability && (
@@ -253,7 +281,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
 
           <View style={styles.row}>
-            {!gatheringId && (
+            {!gatheringId && !matchId && (
               <View style={{ flex: 1, marginRight: spacing.sm }}>
                 <Text style={styles.label}>Party size (optional)</Text>
                 <TextInput

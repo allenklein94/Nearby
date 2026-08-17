@@ -81,6 +81,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     gatheringId: route.params?.gatheringId ?? null,
     gatheringTitle: route.params?.gatheringTitle ?? null,
     gatheringPartySize: route.params?.gatheringPartySize ?? null,
+    matchId: route.params?.matchId ?? null,
+    matchName: route.params?.matchName ?? null,
   };
   const priorRadiusMiles = route.params?.prefillRadiusMiles ?? 15;
   const widerRadiusMiles = priorRadiusMiles < 30 ? 30 : 50;

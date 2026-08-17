@@ -565,6 +565,95 @@ explicit Proposal step this plan's earlier draft was missing).**
   a non-participant's attempt to accept is rejected) + from-scratch replay + `npx expo export
   --platform ios`. Commit and push.
 
+**Status: Phase 5 is DONE, migration applied and verified live end-to-end (including real RLS),
+plus a real from-scratch replay — no disclosed gap remains except the deliberate scope
+boundaries named below.** Checked live first, per the plan's own instruction, before inventing
+anything: no existing table covered "one match member proposes a specific plan to the other" —
+`date_checkins` is the unrelated safety check-in feature, `group_plan_proposals` is Phase D's own
+multi-person mechanism. Built exactly per the plan's own minimal locked column list: new
+`date_proposals` table (`match_id`, `proposed_by`, `plan_text`, `status` — `proposed | accepted |
+declined | withdrawn`, `created_at`, `responded_at`), a partial unique index allowing only one
+genuinely undecided proposal per match at a time (same established convention as
+`business_partner_requests`' own one-pending-per-requester index). `business_requests` gained a
+nullable `match_id` FK, mirroring `gathering_id`'s own shape exactly — the real Request-object
+bridge, no schema change needed on `business_request_offers` itself. Three new SECURITY DEFINER
+RPCs: `propose_date()` (checks the caller is a genuine match participant, checks blocks, sends a
+real push to the other party), `respond_to_date_proposal()` — the actual `Match ≠ Date`
+enforcement: only the person who did **not** propose can accept/decline, rejecting the proposer's
+own attempt to respond to their own proposal with the same real error a stranger's attempt gets —
+and `withdraw_date_proposal()` (proposer-only, only while still genuinely pending, mirroring
+`withdraw_business_offer()`'s established shape). A new `is_match_participant()` helper
+(SECURITY DEFINER, internally guards `auth.uid() = user_id_param`, same defensive shape as
+`is_group_plan_participant()`/`is_blocked()`) backs two new additive SELECT policies on
+`business_requests`/`business_request_offers` so a match-sourced request is genuinely visible to
+**both** participants, not just whichever one submitted it — matching Phase D's own precedent for
+group-plan participants on these same two tables. `create_business_request_for_match()` is the
+real authorization gate this whole phase exists for: it looks up the most recent `date_proposals`
+row for the match and raises a real, honest error (`'A plan must be proposed and accepted by your
+match before asking businesses.'`) unless one is genuinely `status = 'accepted'` — a bare match,
+or a declined/withdrawn/still-pending proposal, can never reach the fan-out. `party_size` is
+hardcoded to the real `2` (both match participants, never user-typed, matching
+`create_business_request_for_gathering()`'s own "server-computed, not user-supplied"
+precedent) — `latitude`/`longitude` are caller-supplied like the solo path, since unlike a
+gathering a match has no stored location of its own to read server-side. A duplicate fan-out
+attempt on the same still-open match returns the existing real `requestId` with `duplicate:
+true`, same convention as every other `create_business_request*` variant.
+**Client**: new `src/services/dateProposals.js` (thin RPC wrappers, plus
+`createBusinessRequestForMatch()` fetching real device location internally, mirroring
+`submitBusinessRequest()`'s own shape). New `src/screens/DateProposalScreen.js` + `DateProposal`
+route — the one real screen for this whole shape, rendering whatever's currently true for the
+match right now (no proposal yet, or the last one was declined/withdrawn → a real propose form;
+a genuinely pending proposal → Accept/Decline for the recipient, Withdraw for the proposer;
+accepted → "Find Somewhere to Go →" into `AskBusinessScreen`, or "View Request →" once a real
+resulting `business_requests` row already exists) — reached via a new "💌 Plan Something
+Together" row in `ChatScreen.js`'s "Do Something Together" menu, gated on `isRomanticMatch` the
+same way "Ask them out"/"Say I'm interested" already are, since this is a genuinely dating-context
+feature, not offered in a friend/gathering-sourced chat. `AskBusinessScreen.js` gained a real
+third mode (alongside its existing solo/gathering modes) for `route.params.matchId` — hides the
+party-size field (always the real 2), keeps the "When?" chips (unlike gathering mode — an
+accepted plan has no fixed date the way a gathering does), and honest heading/subtitle copy
+naming the match. `BusinessRequestDetailScreen.js`'s "Try a Wider Radius" prefill-carry-forward
+now also threads `matchId`/`matchName` through, matching its existing `gatheringId`/
+`gatheringTitle` treatment.
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — new
+`scripts/live-verify/date-proposal-business-request.js` (registered in `run-all.js`, documented
+in the README) reuses the one real existing match already in production (Google voice ↔ Allen,
+same established "reuse real connections, don't fabricate new ones" convention as every other
+script in this suite) and proves every real transition: a non-participant (Claude) can neither
+propose nor respond, and sees zero rows under real RLS (`SET ROLE authenticated`); only one
+genuinely pending proposal can exist per match at a time; the real "Match ≠ Date" gate holds —
+the proposer (Google voice) cannot accept/decline their own proposal; `create_business_request_
+for_match()` is rejected with a real error before any proposal has been accepted, and stays
+rejected after a real decline; a fresh proposal can be made once the prior one is
+declined/withdrawn (the partial unique index only blocks `'proposed'`); only the real proposer can
+withdraw their own proposal, and a repeat withdraw is rejected; once genuinely accepted, the
+fan-out succeeds with a real `party_size: 2` and the resulting request is correctly
+`match_id`-attributed; a repeat fan-out call returns the same real id with `duplicate: true`, not
+a second row; and real RLS makes the resulting request visible to **both** match participants
+(including the one who did *not* submit it) and invisible to a genuine stranger. All 29
+assertions pass; all test rows deleted afterward, production confirmed back to its exact
+pre-test baseline (0 proposals, 0 match-sourced requests for this match).
+**Verified via a real from-scratch migration replay** (all 64 files in `supabase/migrations/`,
+`psql -v ON_ERROR_STOP=1`, exit 0 throughout, `pg_cron`/`pg_trgm` created cleanly this run with no
+workaround needed) — `date_proposals`, `business_requests.match_id`, and all five new/changed
+functions (`propose_date`, `respond_to_date_proposal`, `withdraw_date_proposal`,
+`create_business_request_for_match`, `is_match_participant`) all confirmed to exist in the
+freshly-rebuilt database. Container removed afterward. Client-side verified via a direct
+`@babel/core` parse of all seven touched/new files (clean) and a full `npx expo export --platform
+ios` (clean, 2189 modules — two more than Phase 4's 2187 baseline, the two new
+`dateProposals.js`/`DateProposalScreen.js`).
+**Deliberately not built, disclosed rather than silently skipped**: no auto-expiry cascade for a
+`date_proposals` row stuck in `'proposed'` forever — the plan's own locked status list
+(`proposed | accepted | declined | withdrawn`) has no `'expired'` value, and adding one would
+have widened a scope the plan deliberately kept minimal; the recipient can always explicitly
+decline a stale proposal, and the proposer can always withdraw one, so nothing here can hang
+silently forever without a real action already available to resolve it. **Not done, same standing
+gap as everywhere else in this file**: no manual simulator/device run-through — next session
+should confirm the "Plan Something Together" menu item only appears for a genuinely romantic
+match, the propose/accept/decline/withdraw flow reads and behaves correctly on a real device
+across both participants' sessions, and that "Find Somewhere to Go" correctly lands on
+`AskBusinessScreen` with the right pre-filled copy once a real plan has been accepted.
+
 **Phase 6 — the prove-the-loop checkpoint, per the user's own explicit closing instruction:
 "Are these primitives clean enough that Nearby can go from a user's intent → a business/person's
 Offer → commitment → reservation → eventual transaction → completed Experience without

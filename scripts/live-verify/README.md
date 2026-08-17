@@ -235,6 +235,25 @@ CI-runnable as-is (just supply the token as a secret).
   before the group plan proposal itself) — not a throttling flake,
   confirmed by getting the real `23503` FK-violation error instead of
   trusting a swallowed `.catch()`.
+- `date-proposal-business-request.js` — "The Offer System" Phase 5 (see
+  CLAUDE.md's own plan, Decision 4), the dating-match bridge into the
+  Request/Offer system. Proves the locked `Match → Proposal → Other
+  person accepts → Dating Experience → Business Request` shape holds for
+  real, through a real existing match: a non-participant can neither
+  propose nor respond, and sees zero rows under real RLS; only one
+  genuinely pending proposal can exist per match at a time; the real
+  "Match ≠ Date" gate — the proposer cannot accept/decline their own
+  proposal, only the other person can; `create_business_request_for_match()`
+  is rejected with no accepted proposal at all, and stays rejected after a
+  real decline — a bare match, or a declined proposal, never authorizes
+  the fan-out; withdrawing a still-pending proposal frees the match up
+  for a genuine new one; once truly accepted, the fan-out succeeds with a
+  real `party_size=2` (never user-typed) and the resulting request is
+  correctly `match_id`-attributed; a repeat fan-out call on the same
+  still-open request returns the same real id with `duplicate: true`, not
+  a second row; and real RLS (`SET ROLE authenticated`) makes the
+  resulting request visible to BOTH match participants, not just
+  whichever one submitted it, and invisible to a genuine stranger.
 
 ## What's not covered
 
