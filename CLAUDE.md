@@ -4,6 +4,381 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 17 2026 — "The Offer System": Request → Offer → Commitment as Nearby's core economic loop — PLAN ONLY, NOT YET BUILT
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **nothing in this section has been built.** The user pasted a long external
+strategic vision arguing that Nearby's real bridge between consumers and businesses should be a
+structured **Request → Offer → Commitment** loop, with the "Offer" as the central object — a
+business's specific, time-boxed proposal to fulfill a consumer's stated intent, distinct from
+both a generic listing and a generic coupon. The user asked for a plan only, phased with
+checkpoints, before any building — this section is that plan, checked against the real current
+schema/RPCs first (not accepted at face value), matching this file's own standing "audit first"
+convention. The user called this "the new vision of the app... so important to get right" — this
+plan is written to be picked up, corrected, and executed carefully, not rushed.
+
+### Headline finding, the single most important thing in this whole section
+
+**Most of what the vision doc describes is not a new idea — it is, largely, already built,**
+under the "Business Fulfillment" name (see the "Intent Layer + Business Fulfillment" plan further
+down this file, Phases 1-4, all DONE as of Aug 15 2026). Read the real live schema directly
+(`supabase/migrations/20260814_business_fulfillment.sql`,
+`20260814_business_fulfillment_availability.sql`, `20260815_v3_group_plans_phase_d.sql`,
+`20260815_v3_reliability_weighted_fanout.sql`) rather than assuming from memory or from the
+vision doc's own framing. The real object model, mapped against the vision doc's own vocabulary:
+
+| Vision doc term | What already exists, real and live | Where |
+|---|---|---|
+| **Request** ("I want dinner Friday for 4, ~7 PM, under $200") | `business_requests` — `raw_text`, `category`, `party_size`, `budget_min/max`, `date`, `time_window_start/end`, real `latitude/longitude`, `radius_miles`, `expires_at`, `status` (`open\|fulfilled\|expired\|cancelled\|merged`) | `create_business_request()` |
+| **Matching** ("Nearby finds businesses that can fulfill it") | `_business_request_fanout()` — real haversine radius filter over active `brand_partners`, capped at 10 eligible businesses, now **reliability-weighted** (established/high-completion-rate partners ordered first, nobody excluded) | `20260815_v3_reliability_weighted_fanout.sql` |
+| **Offer** ("here's what I can provide, under these terms") | `business_request_offers` — one row per `(request_id, partner_id)`, real `offer_type` (`standard\|discount\|perk\|upgrade\|alt_time` — never hard-coded to discount), `offer_price`, `offer_description`, `proposed_time`, full state machine | `submit_business_offer()` |
+| **Offer expiration / hold** | `business_request_offers.expires_at` + `business_requests.expires_at`, both swept hourly by a real `pg_cron` job | `expire_stale_business_requests()` |
+| **Acceptance** | `accept_business_offer()` — row-locked, server-enforced one-winner-per-request (a real partial unique index, `business_request_offers_one_winner_idx`), siblings auto-expired in the same transaction | proven under genuine Postgres-level concurrency, not just sequential replay (see "closing the last concurrency gap," this file) |
+| **Commitment / Reservation** | `business_request_offers.status = 'accepted'` | same row — **not a separate object today, see Gap 1 below** |
+| **Fulfillment / completion** | `complete_business_reservation()` | `business_request_offers.status = 'completed'`, `completed_at` |
+| **Level 1 — automatic business response** ("business has connected availability, Nearby auto-generates an Offer") | `business_availability` + `post_business_availability()` / `_match_request_to_availability()` — a business posts real time-boxed terms once, and every future matching request (or every existing open one, both directions) is immediately, automatically offered those terms with zero manual step | `20260814_business_fulfillment_availability.sql` |
+| **Level 2 — business approval per request** | `submit_business_offer()` — a business manually reviews and responds to one opportunity at a time | dashboard "Business Opportunities" inbox |
+| **Ranking of Offers, not highest-bidder-wins** | Reliability-weighted ordering exists for the *fan-out* (who gets notified first) and for the *consumer's own offer list* (`BusinessRequestDetailScreen.js`'s `displayOffers`, reordered by the same established/completion-rate signal when 2+ live offers exist) | `20260815_v3_reliability_weighted_fanout.sql` |
+| **Aggregated demand → business, privacy-boundary-respecting** ("qualified demand: party of 2, Friday evening, dinner — not 'Allen is lonely'") | `get_aggregated_demand_for_partner()` — real category/party-size/date/time-window rollups only, zero individual identity ever exposed to the business side | already matches the vision doc's own stated privacy requirement, not a gap |
+| **Gathering → business demand** ("8 of us are going out Saturday, find us somewhere") | `create_business_request_for_gathering()` — real party size (approved attendees + host), real date/coordinates pulled server-side from the gathering itself | Business Fulfillment Phase 3 |
+| **Multi-person social commitment before a business Offer is even sought** ("friends independently want the same thing, merge into one ask") | `group_plan_proposals` / `group_plan_participants` / `group_plan_offer_confirmations` — 14 locked consent rules, real quorum-gated offer acceptance (`confirm_group_plan_offer()`, requires every accepted participant to independently confirm before the group as a whole accepts) | Phase D, `20260815_v3_group_plans_phase_d.sql` |
+| **Business-side reliability signal, marketplace-wide** | `get_partner_avg_response_time()`, `get_partner_offer_reputation()`, `get_marketplace_reliability_rankings()` | 10/10 roadmap Part 5, Layer 7 |
+
+**What this means for scope**: the vision doc's numbered points 1–13, 17–22, and about half of
+30–34 are describing a system that is already real, live, and — per this file's own concurrency-
+harness work — proven correct under genuine database-level race conditions, not merely a design
+on paper. The actual net-new work in this vision is narrower than "build the Offer system" — it's
+the handful of pieces below that genuinely don't exist yet.
+
+### Real gaps — the actual net-new scope, each checked directly against the code, not assumed
+
+**Gap 1 — "Offer" and "Reservation" are conflated into one row; the vision doc explicitly wants
+them separate (§14).** Today, `business_request_offers.status = 'accepted'` *is* the reservation
+— there is no independent object representing "the actual inventory commitment," distinct from
+"what the business proposed." This is invisible today because Nearby itself is the only
+"reservation system" in play (no OpenTable/Resy/direct-restaurant integration exists — confirmed
+via a direct grep, zero references anywhere in `src/` or `supabase/` to any external reservation
+or transportation provider). The moment a *real* external reservation system enters the picture
+(§13, §15), this conflation becomes a real problem: an Offer can be genuinely `accepted` by the
+consumer while the actual table-hold with the restaurant's own system fails, or a ride-request
+Offer is accepted but the transportation provider can't actually dispatch a driver. Today's model
+has no way to represent "accepted-but-not-yet-confirmed-by-the-real-world."
+
+**Gap 2 — No business-side fulfillment-policy / auto-accept rule engine (§30).** The vision doc's
+own example — "party size 2–8, hours 5–10 PM, minimum spend $40/person, max discount 15%,
+auto-accept parties ≤4, deposit $50, cancellation 2 hours" — has no home in the current schema.
+`business_availability` gets partway there (a business declares terms once, matching requests are
+auto-offered those exact terms) but it's a single flat posting, not a standing, reusable *policy*
+that governs every future request without the owner re-posting availability each time. This is
+the real mechanism behind the vision doc's "the business isn't surrendering control to the
+marketplace" framing (§30) — without it, every business interaction is either fully manual
+(Level 2) or a single-shot availability post (Level 1-lite), never a durable, owner-configured
+autopilot.
+
+**Gap 3 — No consumer-facing ranked "Your Options" comparison view (§7, §10).** Offers arrive to
+the consumer one at a time, push-driven (`business_offer_received`), rendered on
+`BusinessRequestDetailScreen.js` as they come in — reordered by reliability once 2+ exist, but
+never presented as a deliberate "here are your N options, compare them" screen the way the vision
+doc's mockup shows (three restaurants, three price/time/terms rows, one Choose action). Building
+this is real UI work, not schema work — but per this file's own repeatedly-stated caution
+(Business Fulfillment's own Layer 4 note: "composing three empty tiers into 'three ways to make
+it happen' would be worse than today's honest single ranked list"), building an elaborate
+side-by-side comparison UI against today's real near-zero concurrent-offer volume risks the exact
+same "looks more complete than it is" trap already avoided once. **This needs a real evidence
+bar, not a build-it-now decision — see Phase 3's own gate below.**
+
+**Gap 4 — No "Social Offer" as a first-class primitive distinct from a "Commercial Offer" (§23,
+§24, §27).** Group Plans already do something adjacent — merging several people's own independent
+open requests into one shared ask — but that's about *demand-side* consolidation, not a friend or
+community member making a competing, non-monetary *fulfillment* offer against someone else's
+stated intent ("I'll drive," "I'll host," matching the vision doc's tennis/running-club examples).
+No such mechanism exists: nothing lets a friend or fellow community member respond to a
+`business_requests` row (or any Request-shaped object) with "I can provide this," the way a
+business does via `submit_business_offer()`. This is a real, structurally new primitive, not a
+copy of anything that exists.
+
+**Gap 5 — Dating matches have no path into the Request/Offer system at all (§25–26).** A gathering
+can already generate a real business demand (`create_business_request_for_gathering()`); a plain
+consumer ask can too (`create_business_request()`); a **dating match** cannot — there is no
+"propose an Experience to my match" mechanism, and therefore no way for a coffee shop's own Offer
+to attach to a date the way the vision doc describes ("a real dating user might express 'I'd like
+to meet someone for coffee'... a local coffee shop can provide an Offer around that confirmed
+date"). Building this needs a small, real design decision: what counts as "confirmed" (does a
+match alone qualify, or does it need an explicit two-sided "yes, let's meet" step first, matching
+this file's own repeated "never auto-act on someone else's behalf" rule)?
+
+**Gap 6 — No payment collection anywhere (§13 — "Then Stripe... collect $180").** Confirmed, zero
+Stripe code anywhere in `src/`/`supabase/` beyond `BillingScreen.js`'s own explanatory copy
+(which explicitly states no processor is connected). This is the same standing gap named
+repeatedly elsewhere in this file (see "Outstanding: Billing / Monetization" further down) —
+real money, a real external Stripe account, and a real decision about who holds funds pending
+fulfillment (the business? Nearby, as a marketplace facilitator, with a delayed payout? — a real
+product/legal decision, not a Claude judgment call) all need the user present, not something to
+set up autonomously.
+
+**Gap 7 — No real external reservation-system or transportation-provider integration (§13, §15).**
+Confirmed, zero references anywhere to OpenTable, Resy, a generic reservation-provider adapter
+interface, Uber, or any transportation API. This is real, paid, third-party vendor integration —
+needs real API credentials and a real account decision, same category as Stripe.
+
+### Decisions — all six now LOCKED, given directly by the user, not to be re-derived or re-litigated
+
+The user reviewed all five originally-flagged decisions plus a sixth this pass surfaced (the
+Offer lifecycle itself), and resolved every one directly. Restated here exactly as given, per
+this file's own standing convention for exactly this kind of locked call (see Business Partner
+Acquisition's Decisions 1-3, Friend Discovery's locked rules, Group Plans Phase D's 14-rule
+spec) — not a Claude judgment call, not to be silently reinterpreted by a future session.
+
+1. **Your Options comparison UI — build (b): the data path, not the full UI — and this decision
+   costs nothing new, because the data path already exists today.** Checked directly:
+   `business_request_offers`' unique constraint is `(request_id, partner_id)`, not
+   `(request_id)`, and the one-winner index (`business_request_offers_one_winner_idx`) only
+   restricts `accepted`/`completed` rows, never `offered` ones — **`Request → 0..N Offers` is
+   already the real, live model**, multiple partners can already each hold a live offer on the
+   same request simultaneously. What's missing is purely the UI treatment (Phase 3, unchanged).
+2. **Reservation seam — build now, this pass, per the user's own stated priority ("probably the
+   most important of the five").** Locked state shape, given directly: `Offer → Offer Accepted →
+   Reservation Requested → Reservation Confirmed → Experience Confirmed` — **`Accepted` on the
+   Offer must never mean `Confirmed` on the Reservation.** Nearby is itself the initial
+   reservation provider (`provider = 'nearby'`, auto-confirms immediately, zero behavior change
+   for any real user today) — a real external provider (Resy/OpenTable) plugs into the same seam
+   later without a second migration. "Experience Confirmed" is **not a new stored object** — a
+   derived/computed state (the request is `fulfilled` **and** its reservation is `confirmed`),
+   matching this schema's own established "collapse into a status enum, don't over-normalize"
+   preference rather than inventing a new table for every node in the vision doc's diagram.
+3. **Social Offer — a general primitive underneath, a narrow first surface on top.** The
+   underlying model genuinely supports any connected person (not just a business) proposing how
+   they'll fulfill part of a Request — built as a real general primitive, not a stub. But the
+   **first shipped UI/use case is deliberately scoped to Group Plans' own existing participant
+   mechanism**, not a new standalone "invite anyone to make you an offer" screen — the user's own
+   words: "the first UI/use case should stay scoped to connected people and existing Group
+   Plans." Eligibility is a hard rule, not a preference: a Social Offer can only ever originate
+   from someone already connected to the recipient (accepted friend, match, or fellow member of
+   a shared community/gathering) — never a stranger, matching Tier 2/Group Plan's existing
+   connected-set definition verbatim, explicitly to protect against Nearby "accidentally becoming
+   TaskRabbit/Fiverr/etc.," per the user's own words.
+4. **Dating match → business Request — requires an explicit mutual proposal-acceptance step, not
+   a bare match.** Locked state shape, given directly: `Match → Proposal → Other person accepts →
+   Dating Experience created → Business Request`. **Match ≠ Date** — a mutual match alone never
+   authorizes fanning a request out to businesses; one person proposes a real plan, the other
+   explicitly accepts it. Mirrors `Accepted ≠ Confirmed` from Decision 2 exactly — the user named
+   that parallel directly.
+5. **Stripe / Resy / OpenTable / Uber — confirmed out of scope for this whole pass, but build the
+   inert seams now since they're cheap.** Not just "don't build it" — build the *shape*: a
+   `Payment` seam (`status`, `amount`, `currency`, `payer_id`, `provider`,
+   `provider_transaction_id`) alongside the Reservation seam from Decision 2, both fully real
+   columns, both permanently inert until a real processor/provider is connected in a future,
+   explicitly separate pass. Per the user's own diagram: external providers sit *underneath*
+   Nearby's own concepts, never the other way around — Nearby's object model is the durable
+   thing; a provider is a swappable implementation detail of Reservation/Payment specifically,
+   not something the rest of the app ever needs to know about directly.
+6. **Offer lifecycle — locked now, the sixth decision this pass surfaced.** The user's proposed
+   shape: `Draft → Sent → Viewed → Accepted → Commitment pending → Fulfilled`, or terminal:
+   `Declined → Expired → Withdrawn → Failed → Cancelled`. Reconciled against what
+   `business_request_offers.status` already correctly does today (`pending → offered → accepted
+   → completed`, plus `declined/expired/cancelled`) rather than replacing a working state machine
+   wholesale:
+   - `pending` already *is* "opportunity received, business hasn't acted" — kept, unrenamed.
+   - `offered` already *is* "Sent" — kept, unrenamed, but gains a new **`viewed_at`** timestamp
+     (a real, honest read-receipt — set the first time the consumer's own session actually opens
+     that offer, not assumed from delivery) to close the "Viewed" gap.
+   - `accepted → completed` unchanged — and, per Decision 2, `accepted` explicitly stops meaning
+     "confirmed" the moment the Reservation seam lands; "Commitment pending" is the honest label
+     for the window between `accepted` and the linked `business_reservations` row reaching
+     `confirmed`, not a new Offer-level status.
+   - `declined` stays scoped to "the business chose not to offer at all" (unchanged).
+   - **New: `withdrawn`** — a business rescinding an offer it already sent (`offered`) *before*
+     the consumer accepted it. Distinct from `declined` (never offered) and `cancelled` (today's
+     existing post-hoc cancellation) — a real, previously-unrepresentable gap.
+   - `expired`/`cancelled` unchanged.
+   - **`Failed`** is deliberately **not** an Offer status — it belongs to the Reservation object
+     (Decision 2): a `failed` reservation against an already-`accepted` offer is exactly the
+     "accepted-but-not-confirmed" case the seam exists to represent honestly. Putting `Failed` on
+     the Offer itself would re-collapse the two objects Decision 2 just split apart.
+   - **`Draft`** is deliberately **not** a persisted status this pass — a business composing a
+     Level-3 custom offer stays client-side/local state until it taps Send, matching how every
+     other multi-field creation form in this codebase already works. Flagged as a real, small,
+     open sub-question rather than silently built or dropped: a "save an in-progress custom
+     offer" feature is a genuine future ask, not assumed needed now.
+
+### A new standing architectural rule, locked alongside the six decisions — governs every phase below
+
+Given directly by the user: **the business-side UI must never directly manipulate the consumer's
+Experience state, and vice versa.** Each actor only ever reports its own side's state — the
+business says "I accept this Request" (→ becomes an Offer); the consumer says "I accept the
+Offer" (→ becomes a Commitment); a reservation provider says "Reservation confirmed" (→ becomes a
+Confirmed Experience). **Nearby's own orchestration layer — the SECURITY DEFINER RPCs, never a
+client — computes the overall derived state.** This is already substantially how this schema
+works today (`submit_business_offer()`/`accept_business_offer()` are exactly this shape — no
+direct client UPDATE on either table, only RPC-mediated writes) — Decision 2's Reservation seam
+is what makes it fully honest end-to-end, since today's model has no downstream, provider-
+reported state to keep either side from stepping on.
+
+### Locked phase order — execute below as picked up; each phase gets its own checkpoint, its own
+### commit(s), and this section's own status note updated before moving to the next
+
+Matching this file's own established verification convention for every other schema-touching
+plan: every schema change gets applied to production and verified live with real disposable test
+data, plus a from-scratch migration replay, before being considered done; every client change
+gets a full `npx expo export --platform ios`; each phase is committed and pushed individually as
+it lands, not batched at the end, so a mid-session restart never loses more than one phase's
+worth of work.
+
+**Phase 1 — Reservation + Payment seams, and the Offer-lifecycle refinements (closes Decisions
+2, 5, and 6 together — one migration, not three, since all three touch the same two tables).**
+- `business_request_offers` gains `viewed_at timestamptz` (nullable, set once, idempotent on a
+  repeat view) and `'withdrawn'` as a new valid `status` value (additive to the existing CHECK
+  constraint, matching this schema's own "widen the CHECK, never repurpose an existing value"
+  precedent — e.g. `business_requests.status`'s own `'merged'` addition). New
+  `withdraw_business_offer()` RPC (owner-only, only valid from `offered`, mirrors
+  `decline_business_offer()`'s own shape).
+- New `business_reservations` table: `offer_id` (unique FK to `business_request_offers`),
+  `status` (`requested | confirmed | failed | cancelled` — matching the user's own "Reservation
+  Requested → Reservation Confirmed" naming), `provider` (text, `'nearby'` today), `provider_
+  reference` (nullable text), `confirmed_at`, `failed_at`/`failure_reason` (nullable — the real
+  seam for a future provider to report a genuine failure, e.g. "table no longer available").
+  `accept_business_offer()` extended (not rewritten) to also insert this row, `status =
+  'confirmed'`, `provider = 'nearby'`, immediately — zero behavior change for any real user today.
+- New `business_payments` table (Decision 5's seam): `reservation_id` (FK to
+  `business_reservations`), `status` (`not_required | pending | authorized | captured | failed |
+  refunded` — `not_required` is the real, only-used value until Stripe exists, an honest label
+  rather than a fabricated pending state), `amount`, `currency` (default `'usd'`), `payer_id`
+  (FK `profiles`), `provider` (text, `null` today), `provider_transaction_id` (nullable).
+  Nothing writes anything but `not_required` to this table this pass.
+- `complete_business_reservation()` re-pointed to check/update `business_reservations`, not just
+  `business_request_offers.status`.
+- **Checkpoint**: apply migration, verify live against production with real disposable test data
+  — an offer accepted produces a real `business_reservations` row (`confirmed`,
+  `provider='nearby'`) and a real `business_payments` row (`not_required`); withdrawing a live
+  offer transitions `offered → withdrawn` and is rejected from any other state; viewing an offer
+  sets `viewed_at` exactly once — plus a from-scratch migration replay, and re-confirm
+  `scripts/live-verify/business-offer-double-accept-concurrent.js` still passes unchanged (zero
+  regression in the proven-under-concurrency accept path). Commit and push before Phase 2.
+
+**Phase 2 — Business fulfillment policies (unchanged from the original plan, closes Gap 2).**
+- New `business_fulfillment_policies` table, owner-scoped (one active policy per partner, or a
+  small ordered set — resolve during build whether one policy or several make more sense given
+  real Business Dashboard UI constraints): `party_size_min/max`, `active_hours_start/end` (or a
+  day-of-week × time-window shape — check what's simplest against the existing
+  `business_availability.starts_at/ends_at` convention before inventing a new shape),
+  `min_spend_per_person`, `max_discount_pct`, `auto_accept_party_size_max` (a request at or under
+  this size skips manual review entirely, mirroring `business_availability`'s existing
+  auto-offer behavior but reusable across every future request, not a one-time posting),
+  `deposit_amount` (stored only — collection is Phase 1's inert Payment seam, no charge fires),
+  `cancellation_window_hours`.
+- `_business_request_fanout()`/`create_business_request()`'s matching pass extended: a request
+  that falls within an active policy's `auto_accept_*` bounds gets a real, immediate `offered`
+  row (same shape `_match_request_to_availability()` already produces), no manual business step —
+  this is what actually delivers the vision doc's "Level 1 — automatic" for every future request,
+  not just a single availability posting.
+- New Business Dashboard UI: a real policy editor (reuses the existing chip/toggle/stepper
+  conventions already established for offer-type/category pickers elsewhere in this file).
+- **Checkpoint**: apply migration, verify live (a policy with `auto_accept_party_size_max = 4`
+  genuinely auto-offers on a real disposable 4-person test request, and does *not* auto-offer on
+  a real 6-person one, which should still land as `pending` for manual review) + from-scratch
+  replay + `npx expo export --platform ios`. Commit and push before moving to Phase 3.
+
+**Phase 3 — "Your Options" comparison view (closes Gap 3) — per Decision 1, the underlying data
+path is already real and live; this phase is UI-only, no schema change.**
+- Client: `BusinessRequestDetailScreen.js` gains a real "Compare Your Options" header treatment
+  once 2+ live (`offered`) rows exist on the same request — reusing the existing `displayOffers`
+  reliability-ordered list, presented with a clearer per-offer terms summary (price / time /
+  offer type / reliability line / the new `viewed_at`-backed "you've seen this" state from Phase
+  1, all real fields already fetched) rather than a new query. Below the evidence bar (fewer
+  than 2 concurrent live offers, the common case for a long while), the screen renders exactly
+  as it does today — no visual change, no fabricated "comparison" of one thing against nothing.
+- **Checkpoint**: `npx expo export --platform ios`; confirm the existing offer list still
+  renders correctly with 0, 1, and 2+ real offers (reuse a variant of the existing disposable-
+  test-data pattern). Commit and push before moving to Phase 4.
+
+**Phase 4 — Social Offer: general primitive, Group-Plans-scoped first surface (per Decision 3).**
+- Schema: a real, general `social_offers` table — `request_id` (scoped to `business_requests`
+  for this pass, the only real Request object that exists today), `offerer_id` (a `profiles`
+  row, the key structural difference from `business_request_offers.partner_id`),
+  `offer_description`, `status` (mirrors Decision 6's refined lifecycle: `offered | accepted |
+  declined | withdrawn | expired | cancelled`), `created_at`, `responded_at`, `viewed_at` — the
+  same shape as the commercial offer's refined lifecycle, not a second invented one. Eligibility
+  re-validated server-side inside `submit_social_offer()` against the real connected-set check
+  (accepted friend, match, or shared community/gathering membership) — never trusted from the
+  client, same "never trust a stale client candidate list" convention `propose_group_plan()`
+  already established.
+- **First UI/use case, scoped narrowly per Decision 3**: rather than a new standalone "ask
+  someone to offer to help" screen reachable from anywhere, the initial surface lives *inside*
+  an already-open Group Plan — a confirmed participant can submit a Social Offer ("I'll drive,"
+  "I'll host") visible to the rest of that specific plan's own roster, reusing
+  `GroupPlanScreen.js`'s existing participant-list UI rather than building a new picker. A
+  general-purpose "offer to fulfill a friend's solo request" entry point outside any group plan
+  is **deliberately not built this pass** — the primitive supports it, but the first real
+  surface stays inside Group Plans specifically, per the user's own words.
+- **Checkpoint**: apply migration, verify live end-to-end with real disposable test data (a
+  genuine group-plan participant can submit/accept a social offer visible to the rest of the
+  real roster; a genuine non-participant/stranger's attempt is rejected server-side, proven
+  under real RLS) + from-scratch replay + `npx expo export --platform ios`. Commit and push
+  before Phase 5.
+
+**Phase 5 — Dating match → Proposal → business Request bridge (per Decision 4, includes the
+explicit Proposal step this plan's earlier draft was missing).**
+- New `date_proposals` table (check live first whether an existing table already covers "one
+  match member proposes a specific plan to the other" before inventing one; if none exists,
+  build minimally: `match_id`, `proposed_by`, `plan_text`, `status` (`proposed | accepted |
+  declined | withdrawn`), `created_at`, `responded_at`). Accepting a proposal is what actually
+  authorizes `create_business_request_for_match()`'s real fan-out — never a bare match alone,
+  matching the locked `Match → Proposal → Accept → Dating Experience → Business Request` shape
+  exactly.
+- Client: a real "Plan something together" entry point from `ChatScreen.js` (the 1:1 match
+  conversation), landing on the existing `AskBusinessScreen.js` flow once — and only once — the
+  other party has explicitly accepted.
+- **Checkpoint**: apply migration, verify live (propose → real pending state → other party
+  accepts → real fan-out fires only after acceptance, never before; a same-side double-accept or
+  a non-participant's attempt to accept is rejected) + from-scratch replay + `npx expo export
+  --platform ios`. Commit and push.
+
+**Phase 6 — the prove-the-loop checkpoint, per the user's own explicit closing instruction:
+"Are these primitives clean enough that Nearby can go from a user's intent → a business/person's
+Offer → commitment → reservation → eventual transaction → completed Experience without
+rewriting the architecture?"** Not a build phase — a real, disposable, fully-instrumented
+end-to-end run (same convention as every `scripts/live-verify/` script elsewhere in this file)
+walking one real test case through every object this whole initiative built: a request → a
+commercial offer *and* a social offer both live on it at once → the commercial offer accepted →
+a real `business_reservations` row confirms → a real (inert) `business_payments` row exists →
+`complete_business_reservation()` closes it out — confirming every state transition matches the
+locked lifecycle in Decisions 2 and 6 exactly, with no object skipping a state or being written
+by the wrong actor. **If this passes clean, per the user's own explicit instruction: stop
+expanding the conceptual architecture.** The next work after this whole initiative is hardening/
+polish on these primitives, not another new object or phase — restated here so a future session
+doesn't read "6 phases done" as an invitation to keep adding scope.
+
+**Not scheduled in this plan, confirmed by Decision 5, named here so neither is silently dropped
+nor silently picked up later without the user present**: actually connecting Stripe, and
+actually connecting a real external reservation/transportation provider (Resy/OpenTable/Uber) to
+the seams built in Phase 1. Both need the user present for a real external-vendor/account and
+legal/product decision.
+
+**One more real gap, found during a final pre-build check, deliberately left out of this pass's
+own scope rather than silently dropped**: the vision doc's own closing "Outcome" node (§16,
+§21 — "whether it worked") has no home anywhere in this plan. `complete_business_reservation()`
+closes the loop as `completed` with no rating/feedback capture — matching what the original
+Business Fulfillment Phase 2 build already flagged once ("the outcome/rating shape are not yet
+designed — flagged as part of Phase 2's own build, not this planning pass") and still hasn't
+built. A real fix would mirror `gathering_feedback`'s own shape (a short post-completion prompt,
+"did this go well? would you do this again?") — genuinely buildable, but adding a 7th phase for
+it wasn't asked for; flagged here so a future session finds it named rather than rediscovers it.
+
+### Verification convention for this whole initiative, matching every other section in this file
+
+Every schema change: applied to production and verified live with real disposable test data,
+cleaned up afterward, plus a from-scratch migration replay before being considered done. Every
+client change: a full `npx expo export --platform ios`. Each phase: its own commit(s), pushed
+individually as it lands — not batched at the end — so a mid-session restart never loses more
+than one phase's worth of work. Same standing limitation as everywhere else in this file: no
+manual simulator/device run-through has ever been possible in this sandbox — flagged per-phase
+above, not silently assumed clean.
+
+**Status: plan locked — all six decisions resolved directly by the user, restated above exactly
+as given, plus the new "each actor reports its own state" architectural rule. Not yet built.
+Nothing in this section should be treated as done until its own phase's status note says so.**
+
+
 ## Outstanding: "Scorecard to 10" initiative — PLAN LOCKED, executing phase by phase
 
 Written before implementation, same restart-safety convention as every other plan-first section
