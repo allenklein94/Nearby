@@ -210,6 +210,53 @@ export async function getMyBusinessAvailability(partnerId) {
   return data ?? [];
 }
 
+// "The Offer System" Phase 2 (see CLAUDE.md's own plan, Gap 2): a real,
+// standing, owner-configured fulfillment policy -- set once, governs
+// every future matching request automatically, unlike a one-time
+// business_availability posting. business_fulfillment_policies has
+// owner-only SELECT RLS (same shape as business_reservations/
+// business_payments), so a plain client select is enough for the read
+// side -- no getter RPC needed, matching that established convention.
+// Writes always go through upsert_business_fulfillment_policy().
+export async function getMyBusinessFulfillmentPolicy(partnerId) {
+  const { data, error } = await supabase
+    .from('business_fulfillment_policies')
+    .select('*')
+    .eq('partner_id', partnerId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function upsertBusinessFulfillmentPolicy(partnerId, {
+  partySizeMin = null,
+  partySizeMax = null,
+  activeHoursStart = null,
+  activeHoursEnd = null,
+  minSpendPerPerson = null,
+  maxDiscountPct = null,
+  autoAcceptPartySizeMax = null,
+  depositAmount = null,
+  cancellationWindowHours = null,
+  active = true,
+}) {
+  const { data, error } = await supabase.rpc('upsert_business_fulfillment_policy', {
+    partner_id_param: partnerId,
+    party_size_min_param: partySizeMin,
+    party_size_max_param: partySizeMax,
+    active_hours_start_param: activeHoursStart,
+    active_hours_end_param: activeHoursEnd,
+    min_spend_per_person_param: minSpendPerPerson,
+    max_discount_pct_param: maxDiscountPct,
+    auto_accept_party_size_max_param: autoAcceptPartySizeMax,
+    deposit_amount_param: depositAmount,
+    cancellation_window_hours_param: cancellationWindowHours,
+    active_param: active,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // ---- Intent Layer resolver integration fix (see
 // PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md) ----
 // Read-only search over already-posted standing availability, so the Home

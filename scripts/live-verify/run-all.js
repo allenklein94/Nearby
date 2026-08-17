@@ -21,6 +21,7 @@ const SCRIPTS = [
   'business-acquisition-funnel-e2e.js',
   'business-acquisition-unauthorized-access.js',
   'offer-reservation-payment-seam.js',
+  'business-fulfillment-policy-auto-accept.js',
 ];
 
 // A real, empirically-hit gotcha, not a guess: running the full suite back-to-back with no

@@ -204,6 +204,18 @@ CI-runnable as-is (just supply the token as a secret).
   own comment) — it had been locking the wrong row first, a latent
   deadlock risk that Phase 1's slightly longer transaction was enough to
   actually trigger.
+- `business-fulfillment-policy-auto-accept.js` — "The Offer System" Phase
+  2 (see CLAUDE.md's own plan, Gap 2). Proves `business_fulfillment_
+  policies` and the new `_match_request_to_policy()` matching pass wired
+  into `create_business_request()`: a real owner-set standing policy
+  (party size 2-8, 5-10 PM, auto-accept parties of 4 or fewer) genuinely
+  auto-offers a real 4-person request with no manual business step, a
+  real 6-person request (over the auto-accept bound but still within the
+  policy's own party-size range) correctly stays `pending` for manual
+  review, and a genuinely inactive (`active=false`) policy never
+  auto-accepts anything. Also proves the upsert RPC's own real ownership
+  check, its discount-percent bound, and that a repeat upsert for the
+  same partner updates the same row rather than creating a second one.
 
 ## What's not covered
 

@@ -8,7 +8,7 @@ import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusin
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
@@ -121,6 +121,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityDurationKey, setAvailabilityDurationKey] = useState('2h');
   const [postingAvailability, setPostingAvailability] = useState(false);
   const [cancelingAvailabilityId, setCancelingAvailabilityId] = useState(null);
+  // "The Offer System" Phase 2 (see CLAUDE.md's own plan, Gap 2): a real,
+  // standing fulfillment policy the owner sets once, instead of a
+  // one-time availability posting.
+  const [fulfillmentPolicy, setFulfillmentPolicy] = useState(null);
+  const [policyModalVisible, setPolicyModalVisible] = useState(false);
+  const [policyPartySizeMinInput, setPolicyPartySizeMinInput] = useState('');
+  const [policyPartySizeMaxInput, setPolicyPartySizeMaxInput] = useState('');
+  const [policyActiveHoursStartInput, setPolicyActiveHoursStartInput] = useState('');
+  const [policyActiveHoursEndInput, setPolicyActiveHoursEndInput] = useState('');
+  const [policyMinSpendInput, setPolicyMinSpendInput] = useState('');
+  const [policyMaxDiscountInput, setPolicyMaxDiscountInput] = useState('');
+  const [policyAutoAcceptMaxInput, setPolicyAutoAcceptMaxInput] = useState('');
+  const [policyDepositInput, setPolicyDepositInput] = useState('');
+  const [policyCancellationWindowInput, setPolicyCancellationWindowInput] = useState('');
+  const [policyActiveInput, setPolicyActiveInput] = useState(true);
+  const [savingPolicy, setSavingPolicy] = useState(false);
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
   const [offerPriceInput, setOfferPriceInput] = useState('');
@@ -251,6 +267,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadOpportunities(selectedPartner.id);
         loadAggregatedDemand(selectedPartner.id);
         loadMyAvailability(selectedPartner.id);
+        loadFulfillmentPolicy(selectedPartner.id);
       }
     }, [selectedPartner])
   );
@@ -346,6 +363,69 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
     }
+  }
+
+  async function loadFulfillmentPolicy(partnerId) {
+    try {
+      const result = await getMyBusinessFulfillmentPolicy(partnerId);
+      setFulfillmentPolicy(result);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  function openPolicyModal() {
+    setPolicyPartySizeMinInput(fulfillmentPolicy?.party_size_min != null ? String(fulfillmentPolicy.party_size_min) : '');
+    setPolicyPartySizeMaxInput(fulfillmentPolicy?.party_size_max != null ? String(fulfillmentPolicy.party_size_max) : '');
+    setPolicyActiveHoursStartInput(fulfillmentPolicy?.active_hours_start ? fulfillmentPolicy.active_hours_start.slice(0, 5) : '');
+    setPolicyActiveHoursEndInput(fulfillmentPolicy?.active_hours_end ? fulfillmentPolicy.active_hours_end.slice(0, 5) : '');
+    setPolicyMinSpendInput(fulfillmentPolicy?.min_spend_per_person != null ? String(fulfillmentPolicy.min_spend_per_person) : '');
+    setPolicyMaxDiscountInput(fulfillmentPolicy?.max_discount_pct != null ? String(fulfillmentPolicy.max_discount_pct) : '');
+    setPolicyAutoAcceptMaxInput(fulfillmentPolicy?.auto_accept_party_size_max != null ? String(fulfillmentPolicy.auto_accept_party_size_max) : '');
+    setPolicyDepositInput(fulfillmentPolicy?.deposit_amount != null ? String(fulfillmentPolicy.deposit_amount) : '');
+    setPolicyCancellationWindowInput(fulfillmentPolicy?.cancellation_window_hours != null ? String(fulfillmentPolicy.cancellation_window_hours) : '');
+    setPolicyActiveInput(fulfillmentPolicy?.active ?? true);
+    setPolicyModalVisible(true);
+  }
+
+  function parsePolicyInt(text) {
+    const n = parseInt(text.trim(), 10);
+    return Number.isFinite(n) ? n : null;
+  }
+  function parsePolicyNum(text) {
+    const n = parseFloat(text.trim());
+    return Number.isFinite(n) ? n : null;
+  }
+  function normalizeTimeInput(text) {
+    // Accepts "HH:MM" (24h) only -- kept deliberately simple, matching
+    // this pass's "check what's simplest" instruction rather than a
+    // full time picker for a single daily window.
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    return /^\d{1,2}:\d{2}$/.test(trimmed) ? trimmed : null;
+  }
+
+  async function handleSavePolicy() {
+    setSavingPolicy(true);
+    try {
+      await upsertBusinessFulfillmentPolicy(selectedPartner.id, {
+        partySizeMin: parsePolicyInt(policyPartySizeMinInput),
+        partySizeMax: parsePolicyInt(policyPartySizeMaxInput),
+        activeHoursStart: normalizeTimeInput(policyActiveHoursStartInput),
+        activeHoursEnd: normalizeTimeInput(policyActiveHoursEndInput),
+        minSpendPerPerson: parsePolicyNum(policyMinSpendInput),
+        maxDiscountPct: parsePolicyNum(policyMaxDiscountInput),
+        autoAcceptPartySizeMax: parsePolicyInt(policyAutoAcceptMaxInput),
+        depositAmount: parsePolicyNum(policyDepositInput),
+        cancellationWindowHours: parsePolicyInt(policyCancellationWindowInput),
+        active: policyActiveInput,
+      });
+      setPolicyModalVisible(false);
+      await loadFulfillmentPolicy(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingPolicy(false);
   }
 
   // "Nearby V3/V4" plan, Phase B: an optional prefill from a "Demand Near
@@ -1232,6 +1312,52 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   ))
                 )}
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
+                  <Text style={styles.sectionHeader}>Fulfillment Policy</Text>
+                  <TouchableOpacity
+                    style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                    onPress={openPolicyModal}
+                    accessibilityLabel={fulfillmentPolicy ? 'Edit fulfillment policy' : 'Set a fulfillment policy'}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.smallActionButtonText}>{fulfillmentPolicy ? 'Edit' : '+ Set a Policy'}</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.helperText}>
+                  A standing rule that governs EVERY future request, not just one posting -- set
+                  it once and requests within your own bounds get auto-accepted automatically.
+                </Text>
+                {!fulfillmentPolicy ? (
+                  <Text style={styles.emptyText}>No standing policy set yet.</Text>
+                ) : (
+                  <View style={styles.gatheringRow}>
+                    <Text style={styles.breakdownText}>
+                      {fulfillmentPolicy.active ? '🟢 Active' : '⚪️ Paused'}
+                      {fulfillmentPolicy.party_size_min != null || fulfillmentPolicy.party_size_max != null
+                        ? ` · Party size ${fulfillmentPolicy.party_size_min ?? '1'}-${fulfillmentPolicy.party_size_max ?? '∞'}`
+                        : ''}
+                      {fulfillmentPolicy.active_hours_start && fulfillmentPolicy.active_hours_end
+                        ? ` · ${fulfillmentPolicy.active_hours_start.slice(0, 5)}-${fulfillmentPolicy.active_hours_end.slice(0, 5)}`
+                        : ''}
+                    </Text>
+                    <Text style={styles.breakdownText}>
+                      {fulfillmentPolicy.auto_accept_party_size_max != null
+                        ? `Auto-accepts parties of ${fulfillmentPolicy.auto_accept_party_size_max} or fewer`
+                        : 'Auto-accept off -- every request needs your own manual review'}
+                    </Text>
+                    {(fulfillmentPolicy.min_spend_per_person != null || fulfillmentPolicy.max_discount_pct != null || fulfillmentPolicy.deposit_amount != null || fulfillmentPolicy.cancellation_window_hours != null) && (
+                      <Text style={styles.breakdownText}>
+                        {[
+                          fulfillmentPolicy.min_spend_per_person != null ? `$${Number(fulfillmentPolicy.min_spend_per_person).toFixed(2)}/person min` : null,
+                          fulfillmentPolicy.max_discount_pct != null ? `up to ${Number(fulfillmentPolicy.max_discount_pct)}% off` : null,
+                          fulfillmentPolicy.deposit_amount != null ? `$${Number(fulfillmentPolicy.deposit_amount).toFixed(2)} deposit` : null,
+                          fulfillmentPolicy.cancellation_window_hours != null ? `${fulfillmentPolicy.cancellation_window_hours}h cancellation window` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </>
             )}
 
@@ -1909,6 +2035,145 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={policyModalVisible} animationType="slide" transparent onRequestClose={() => setPolicyModalVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
+              <Text style={styles.sheetTitle}>Fulfillment Policy</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                A standing rule for every future request -- set it once, we'll match new
+                requests against it automatically without you having to review each one.
+              </Text>
+              <Text style={styles.sectionHeader}>Party size range</Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Min (optional)"
+                  placeholderTextColor={colors.textTertiary}
+                  value={policyPartySizeMinInput}
+                  onChangeText={(t) => setPolicyPartySizeMinInput(t.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  accessibilityLabel="Minimum party size"
+                />
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Max (optional)"
+                  placeholderTextColor={colors.textTertiary}
+                  value={policyPartySizeMaxInput}
+                  onChangeText={(t) => setPolicyPartySizeMaxInput(t.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  accessibilityLabel="Maximum party size"
+                />
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Active hours (24h, optional)</Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="17:00"
+                  placeholderTextColor={colors.textTertiary}
+                  value={policyActiveHoursStartInput}
+                  onChangeText={setPolicyActiveHoursStartInput}
+                  accessibilityLabel="Active hours start, 24-hour HH:MM"
+                />
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="22:00"
+                  placeholderTextColor={colors.textTertiary}
+                  value={policyActiveHoursEndInput}
+                  onChangeText={setPolicyActiveHoursEndInput}
+                  accessibilityLabel="Active hours end, 24-hour HH:MM"
+                />
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Auto-accept party size up to</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 4 -- leave blank to review every request yourself"
+                placeholderTextColor={colors.textTertiary}
+                value={policyAutoAcceptMaxInput}
+                onChangeText={(t) => setPolicyAutoAcceptMaxInput(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                accessibilityLabel="Auto-accept party size maximum"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Minimum spend per person (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="$"
+                placeholderTextColor={colors.textTertiary}
+                value={policyMinSpendInput}
+                onChangeText={setPolicyMinSpendInput}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Minimum spend per person"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Max discount % (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="0-100"
+                placeholderTextColor={colors.textTertiary}
+                value={policyMaxDiscountInput}
+                onChangeText={setPolicyMaxDiscountInput}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Maximum discount percent"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Deposit (optional, stored only -- not charged)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="$"
+                placeholderTextColor={colors.textTertiary}
+                value={policyDepositInput}
+                onChangeText={setPolicyDepositInput}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Deposit amount, stored only, not charged"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Cancellation window, hours (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 2"
+                placeholderTextColor={colors.textTertiary}
+                value={policyCancellationWindowInput}
+                onChangeText={(t) => setPolicyCancellationWindowInput(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                accessibilityLabel="Cancellation window in hours"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Status</Text>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, policyActiveInput && styles.chipSelected]}
+                  onPress={() => setPolicyActiveInput(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Active"
+                  accessibilityState={{ selected: policyActiveInput }}
+                >
+                  <Text style={[styles.chipText, policyActiveInput && styles.chipTextSelected]}>Active</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, !policyActiveInput && styles.chipSelected]}
+                  onPress={() => setPolicyActiveInput(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Paused"
+                  accessibilityState={{ selected: !policyActiveInput }}
+                >
+                  <Text style={[styles.chipText, !policyActiveInput && styles.chipTextSelected]}>Paused</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={[styles.submitButton, { marginTop: spacing.md }]}
+                onPress={handleSavePolicy}
+                disabled={savingPolicy}
+                accessibilityLabel={savingPolicy ? 'Saving' : 'Save policy'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{savingPolicy ? 'Saving...' : 'Save Policy'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPolicyModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

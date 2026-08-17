@@ -338,6 +338,60 @@ verification, plus now a real from-scratch replay) is met.
   a real 6-person one, which should still land as `pending` for manual review) + from-scratch
   replay + `npx expo export --platform ios`. Commit and push before moving to Phase 3.
 
+**Status: Phase 2 is DONE, migration applied and verified live, plus a real from-scratch
+replay — no disclosed gap remains.** Resolved the two "resolve during build" open questions
+directly, per the migration's own header comment: one policy row per partner (a real
+`unique(partner_id)`), not a small ordered set — matches this Business Dashboard's existing
+"one settings form, not a list manager" convention; and `active_hours_start/end` as a single
+daily time-of-day window (`time`, not a day-of-week matrix), matching
+`business_availability.starts_at/ends_at`'s own simplest-shape precedent. New
+`business_fulfillment_policies` table (owner-only SELECT RLS, no direct client INSERT/UPDATE —
+every write goes through `upsert_business_fulfillment_policy()`, same convention as
+`business_availability`/`business_reservations`) plus a new internal `_match_request_to_policy()`
+helper (locked down, zero grants, callable only via a nested SECURITY DEFINER call — same
+established pattern as `_business_request_fanout()`/`_match_request_to_availability()`), wired
+into both `create_business_request()` and `create_business_request_for_gathering()` right after
+their existing Phase 3/4 fan-out and availability-matching calls, additive only — every prior
+matching pass is byte-for-byte unchanged. `_match_request_to_policy()` reuses the same
+reliability-weighted candidate ordering (`established`/`completion_rate`) the fan-out and
+availability matching already established, and the same `INSERT ... ON CONFLICT (request_id,
+partner_id) DO UPDATE ... WHERE status = 'pending'` upgrade-path convention, so a policy-matched
+offer can never clobber an already-`offered` row from a different source. New Business Dashboard
+UI: a real "Fulfillment Policy" card on the Requests tab (status line, active-hours/party-size
+summary, auto-accept line, stored-only deposit/discount/spend/cancellation terms) with a
+full editor modal reusing this screen's own established chip/input conventions — no new visual
+pattern invented.
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — new
+`scripts/live-verify/business-fulfillment-policy-auto-accept.js` (registered in `run-all.js`,
+documented in the README) proves every real behavior against real disposable test data: a
+non-owner's `upsert_business_fulfillment_policy()` call is rejected; a `max_discount_pct` over
+100 is rejected; a real owner-set policy (party size 2-8, 5-10 PM, auto-accept ≤4, $50 deposit)
+is stored correctly and a repeat upsert updates the same row rather than creating a second one;
+a real 4-person request (at the `auto_accept_party_size_max` boundary) is genuinely
+auto-offered with no manual business step, honestly naming the policy in its own
+`offer_description`; a real 6-person request (over the auto-accept bound but still within the
+policy's own party-size range) correctly stays `pending` for manual review; and a genuinely
+inactive (`active = false`) policy never auto-accepts anything. **One real, disclosed baseline-
+drift gotcha hit and resolved during this verification, not silently worked around**: the
+script's own final "back to exact pre-test baseline" assertion initially failed — not because of
+a bug in this pass's own cleanup (every one of *its* rows had already been deleted correctly),
+but because of 2 leftover orphaned rows from an unrelated earlier script
+(`offer-reservation-payment-seam.js`'s own "offer withdraw test"/"offer viewed_at test" rows) —
+exactly the disclosed "a throttled run can still leave a real orphaned test row" gap this file's
+own Phase 1 status note already named. Deleted the 2 orphaned rows by hand, confirmed production
+back to 0 `business_requests`/`business_request_offers`/`business_fulfillment_policies`, then
+re-ran this script clean end-to-end — every assertion passes, baseline check included.
+**Verified via a real from-scratch migration replay** (all 62 files in `supabase/migrations/`,
+`psql -v ON_ERROR_STOP=1`, exit 0 throughout) — `business_fulfillment_policies`,
+`upsert_business_fulfillment_policy()`, and `_match_request_to_policy()` all confirmed to exist
+in the freshly-rebuilt database. Container removed afterward. Client-side verified via a full
+`npx expo export --platform ios` (clean, 2186 modules, unchanged from the Milestone-5 baseline —
+edits to two existing files only, no new client files this phase). **Not done, same standing
+gap as everywhere else in this file**: no manual simulator/device run-through — next session
+should confirm the Fulfillment Policy card and its editor modal render/save correctly on a real
+device, and that a genuinely auto-accepted request's push notification and resulting offer read
+correctly end-to-end in the running app, not just via direct RPC calls.
+
 **Phase 3 — "Your Options" comparison view (closes Gap 3) — per Decision 1, the underlying data
 path is already real and live; this phase is UI-only, no schema change.**
 - Client: `BusinessRequestDetailScreen.js` gains a real "Compare Your Options" header treatment
