@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import QRCode from 'react-native-qrcode-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -103,6 +103,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [tagsDraft, setTagsDraft] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [visitFrequency, setVisitFrequency] = useState(null);
+  const [discoveryStats, setDiscoveryStats] = useState(null);
   const [partnershipRequests, setPartnershipRequests] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
@@ -232,6 +233,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadConversations(selectedPartner.id).then((results) => loadNeedsAttention(selectedPartner.id, results));
         loadTopMembers(selectedPartner.id);
         loadVisitFrequency(selectedPartner.id);
+        loadDiscoveryStats(selectedPartner.id);
         loadPartnershipRequests(selectedPartner.id);
         loadOpportunities(selectedPartner.id);
         loadAggregatedDemand(selectedPartner.id);
@@ -619,6 +621,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
       console.error('loadInsights failed', e);
+    }
+  }
+
+  // Business Partner acquisition experience, Milestone 4 (see CLAUDE.md): the real, honest
+  // "how are people discovering you" signal -- deep-link/QR opens vs. everything else, backed
+  // by real business_profile_views rows, not a fabricated attribution.
+  async function loadDiscoveryStats(partnerId) {
+    try {
+      const result = await getBusinessDiscoveryStats(partnerId);
+      setDiscoveryStats(result);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadDiscoveryStats failed', e);
     }
   }
 
@@ -1201,6 +1216,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
             {section === 'insights' && (
               <>
+              <Text style={styles.sectionHeader}>How People Find You</Text>
+              {discoveryStats && discoveryStats.total_views > 0 ? (
+                <View style={[styles.insightsCard, { marginBottom: spacing.lg }]}>
+                  <Text style={styles.insightLine}>
+                    {discoveryStats.total_views} profile view{discoveryStats.total_views === 1 ? '' : 's'} total
+                    {discoveryStats.views_last_30_days > 0 ? ` (${discoveryStats.views_last_30_days} in the last 30 days)` : ''}
+                  </Text>
+                  <Text style={styles.insightLine}>
+                    🔗 {discoveryStats.deep_link_views} via your shared link or QR code ({discoveryStats.pct_via_deep_link ?? 0}%)
+                  </Text>
+                  <Text style={styles.insightLine}>
+                    🔎 {discoveryStats.in_app_views} browsing or searching inside Nearby
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.emptyText, { marginBottom: spacing.lg }]}>
+                  No profile views yet — share your QR code or link (Dashboard tab) to start seeing how people find you.
+                </Text>
+              )}
               {(insights && (insights.top_interests?.length > 0 || insights.best_hour_of_day !== null)) || visitFrequency !== null ? (
                 <View style={styles.insightsCard}>
                   {estimatedOwed.billingModel && estimatedOwed.billingModel !== 'custom' && (

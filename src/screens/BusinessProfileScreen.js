@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -11,6 +11,8 @@ import {
   unfollowBusiness,
   getRedemptionCounts,
   redeemOffer,
+  getMyManagedPartner,
+  logBusinessProfileView,
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
@@ -48,10 +50,16 @@ export default function BusinessProfileScreen({ route, navigation }) {
   // attend-again reputation, a different signal entirely).
   const [fulfillmentReputation, setFulfillmentReputation] = useState(null);
   const [fulfillmentResponseTime, setFulfillmentResponseTime] = useState(null);
+  // Business Partner acquisition experience, Milestone 4 (see CLAUDE.md): log at most one real
+  // view per screen visit (this ref is scoped to this one mounted instance -- a fresh push of
+  // this screen is a fresh instance, a re-focus of the same instance, e.g. returning from
+  // BusinessConversation, is not a second view), and never for the business's own owner
+  // previewing their own profile -- that's not real discovery signal.
+  const hasLoggedView = useRef(false);
 
   const load = useCallback(async () => {
     try {
-      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime] = await Promise.all([
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime, myPartner] = await Promise.all([
         getBusinessProfile(partnerId),
         getBusinessFollowerCount(partnerId),
         isFollowingBusiness(partnerId),
@@ -61,7 +69,13 @@ export default function BusinessProfileScreen({ route, navigation }) {
         getBusinessReputation(partnerId),
         getPartnerOfferReputation(partnerId),
         getPartnerAvgResponseTime(partnerId),
+        getMyManagedPartner(),
       ]);
+
+      if (!hasLoggedView.current && myPartner?.id !== partnerId) {
+        hasLoggedView.current = true;
+        logBusinessProfileView(partnerId, route.params?.source === 'deep_link' ? 'deep_link' : 'in_app');
+      }
 
       setPartner(profile);
       setFollowerCount(count);

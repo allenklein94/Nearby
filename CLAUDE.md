@@ -385,9 +385,68 @@ Phase 0 already found real vs. missing and to both locked decisions above:
    profile when scanned by someone else; and that the QR code itself actually scans correctly
    with a real camera (only verified here as "renders a `QRCode` component with the right
    `value` string," never scanned with a real device camera).
-4. **Dashboard/analytics polish** — audit what's already there (Phase 0 item 4) against the
-   brief's specific "know how people are discovering you" framing; likely small, targeted
-   additions rather than a rebuild, given how much already exists.
+4. [x] **Dashboard/analytics polish — DONE.** Re-audited what's already on the dashboard first,
+   per the plan's own instruction, rather than assuming the Phase 0 finding still held —
+   confirmed follower/redemption/growth/reliability/visit-frequency/top-interests are all still
+   real and already shown, and confirmed the one genuine gap: none of them say *how* a consumer
+   actually found this business's profile in the first place — the exact "know how people are
+   discovering you" framing this milestone targets. Built the smallest honest signal that
+   answers it, not a rebuild: Milestone 3's new `nearby://business/:id` deep link is the first
+   genuinely distinguishable "how did they get here" signal this app has ever had, so this
+   milestone instruments it. New `business_profile_views` table
+   (`20260817_business_discovery_analytics.sql`) — same plain-table, no-RPC-for-writes shape as
+   `business_acquisition_events`, `authenticated`-insert-only (no `anon` path — a business
+   profile view only ever happens from inside the already-authenticated app, unlike the
+   acquisition funnel's own pre-auth web-landing-page case), a `source` CHECK constrained to
+   exactly two real, honestly-distinguishable buckets: `deep_link` (opened via the QR code or a
+   shared link — both open the identical URL, so this deliberately can't and doesn't claim to
+   tell them apart) and `in_app` (everything else — browse, search, a linked gathering/offer/
+   community-update row). New owner-gated `get_business_discovery_stats(partner_id)` RPC, same
+   "return zeroed/null stats for a non-owner rather than raising" shape the Aug 7 business-RPC
+   ownership-check fix already established for this whole function family, rather than the
+   admin-funnel RPCs' own "raise" convention — this one matches its siblings, not the unrelated
+   admin case.
+   **Client**: new `logBusinessProfileView()`/`getBusinessDiscoveryStats()` in
+   `services/brandOffers.js`. `BusinessProfileScreen.js`'s `load()` now also fetches
+   `getMyManagedPartner()` and logs at most one real view per screen visit (a `useRef` scoped to
+   the mounted instance, not per-focus) — skipped entirely when the viewer manages the exact
+   business being viewed, so a business owner previewing their own profile via the existing
+   "View Public Profile" link never inflates their own discovery numbers; `source` is read off
+   `route.params.source`, which `RootNavigator.js`'s Milestone-3 `resolveAndNavigateToBusiness()`
+   already sets to `'deep_link'` for a real deep-link tap, defaulting to `'in_app'` for every
+   other real caller (`BrandOffersScreen`/`GatheringDetailScreen`/`BusinessHostBadge`/
+   `CommunityDetailScreen`/`ActivityScreen`, none of which pass a `source` param, correctly
+   falling into the honest catch-all bucket rather than a fabricated finer one). New "How People
+   Find You" card on `BusinessDashboardScreen.js`'s Insights tab, above the existing insights
+   card — total views (+ a real last-30-days count when non-zero), the real deep-link count and
+   percentage, the real in-app count — with an honest empty state pointing the owner at the
+   Dashboard tab's own "Share Your QR Code" link when there's nothing to show yet, matching this
+   dashboard's own established no-fabricated-numbers convention exactly.
+   **Verified live against production** (`enmosvippabmuqslzrox`), not just applied, under real
+   `SET ROLE authenticated` (not just a `request.jwt.claims` GUC against the Management API's
+   own table-owner connection, which bypasses RLS regardless — this file's own repeatedly-learned
+   "false-negative first pass" lesson): a real profile (`Claude`) inserting their own `deep_link`
+   view for the real `Coastal Coffee` partner succeeded; a different real profile (`Google
+   voice`) inserting their own `in_app` view succeeded; `Claude` attempting to insert a view
+   spoofing `Google voice`'s `viewer_id` was correctly rejected by RLS; a bogus `source` value
+   was correctly rejected by the CHECK constraint. The real owner (`Allen`) calling
+   `get_business_discovery_stats` got back hand-checked-exact numbers (`total_views: 2,
+   deep_link_views: 1, in_app_views: 1, pct_via_deep_link: 50, views_last_30_days: 2`) matching
+   exactly what was inserted; a genuine non-owner (`Claude`) calling the same RPC for the same
+   partner got back all zeros/null, not a leak. Both test rows deleted afterward — confirmed
+   production back to its exact pre-test baseline (0 rows). **Verified via a real from-scratch
+   migration replay** (all 57 `supabase/migrations/` files — the full baseline through this
+   milestone's own migration — `psql -v ON_ERROR_STOP=1`, exit 0 throughout, no `pg_cron`/
+   `pg_trgm` workaround needed this run) — the new table (with its real CHECK constraint, both
+   FKs, and its one real INSERT policy) and the new function both confirmed to exist in the
+   freshly-rebuilt database. Container removed afterward. Client-side verified via a full `npx
+   expo export --platform ios` (clean, no bundling errors — **2186 modules, unchanged** from the
+   Milestone-3 baseline, since this milestone added zero new client files, only edits).
+   **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+   run-through — next session should confirm a real deep-link open and a real in-app open both
+   log correctly on a real device, that the owner's own "View Public Profile" tap genuinely
+   doesn't inflate the count, and that the new Insights-tab card renders correctly both in its
+   honest empty state and once real view rows exist.
 5. **The web landing surface itself** — informational only, per Decision 1's hybrid: hero, value
    props, demo, pricing (free to start), how it works, FAQ. Reuses `BusinessProfileScreen.js`'s
    real section shapes for the "here's what your business looks like" mockup rather than a

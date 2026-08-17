@@ -637,6 +637,28 @@ export async function getMyManagedPartner() {
   return partner;
 }
 
+// Business Partner acquisition experience, Milestone 4 (see CLAUDE.md): a real, fire-and-forget
+// log of the one honestly-distinguishable "how did they get here" signal this app has --
+// deep_link (Milestone 3's nearby://business/:id link, QR or shared) vs in_app (anything else).
+// Matches logBusinessAcquisitionEvent's own established non-critical-write philosophy exactly --
+// a failed log call never blocks or surfaces an error on the profile screen it's attached to.
+export async function logBusinessProfileView(partnerId, source) {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (!myId) return;
+    await supabase.from('business_profile_views').insert({ partner_id: partnerId, viewer_id: myId, source });
+  } catch (e) {
+    console.log('logBusinessProfileView failed (non-fatal):', e.message);
+  }
+}
+
+export async function getBusinessDiscoveryStats(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_discovery_stats', { partner_id_param: partnerId });
+  if (error) throw error;
+  return data;
+}
+
 export async function getMyBusinessOffers(partnerId) {
   const { data, error } = await supabase
     .from('brand_offers')
