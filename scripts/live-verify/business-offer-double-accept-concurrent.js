@@ -45,9 +45,29 @@ async function main() {
     // self-block), then commits. Racer: calls the real RPC directly,
     // fired mid-sleep, so its own internal `for update` on the same row
     // is genuinely blocked by Postgres until the holder commits.
+    //
+    // Real, disclosed correction, found while verifying "The Offer
+    // System" Phase 1 (see CLAUDE.md): this script originally locked
+    // business_request_offers (the offer row) as its own hold point --
+    // but accept_business_offer()'s real first lock, pulled fresh from
+    // its live body, is on business_requests (the PARENT request row,
+    // `select ... from business_requests where id = v_offer.request_id
+    // for update`), not the offer row itself, which the function never
+    // explicitly locks at all until its own UPDATE statement touches it.
+    // Locking the wrong resource first produced a real Postgres deadlock
+    // (40P01) once Phase 1's changes lengthened the transaction slightly
+    // (two new INSERTs before commit) -- the racer would acquire the
+    // request lock first (since the holder was still asleep), then block
+    // on the offer-row UPDATE (held by the holder); the holder would then
+    // wake and block trying to acquire the now-racer-held request lock --
+    // a classic reversed-lock-order deadlock, the exact same shape
+    // already documented and fixed once for confirm_group_plan_offer in
+    // the "Aug 17 2026 -- closing the last concurrency gap" section of
+    // CLAUDE.md. Fixed the same way: lock the actual first row the
+    // function's own body locks, in the same order it acquires locks in.
     const holderQuery = asUser(requesterId, `
       begin;
-      select id from business_request_offers where id = '${offerId}' for update;
+      select id from business_requests where id = '${requestId}' for update;
       select pg_sleep(2);
       select accept_business_offer('${offerId}') as result;
       commit;

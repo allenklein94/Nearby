@@ -183,6 +183,27 @@ CI-runnable as-is (just supply the token as a secret).
   `category` from `food_drink` to `null`, caught by this script's own
   final "back to exact pre-test state" assertion and restored by hand
   before the fix landed.
+- `offer-reservation-payment-seam.js` — "The Offer System" Phase 1 (see
+  CLAUDE.md's own plan): the new Reservation + Payment seams and the
+  three Offer-lifecycle refinements. Proves `accept_business_offer()`
+  now creates a real, immediately-`confirmed` `business_reservations`
+  row (`provider = 'nearby'`) and a real, permanently-`not_required`
+  `business_payments` row alongside the offer's own `accepted` status —
+  the two objects are checked independently, not just the offer's own
+  status, so "Accepted" and "Confirmed" can never silently collapse
+  back into one fact. Proves `withdraw_business_offer()` is a real,
+  distinct state (only valid from `offered`, rejected from any other
+  status including `accepted`, rejected for a non-owner), that
+  `mark_business_offer_viewed()` is a real, idempotent, ownership-scoped
+  read-receipt (a stranger's call is a silent no-op, the real requester's
+  call sets it exactly once even across repeat calls), and that
+  `complete_business_reservation()` now genuinely requires a confirmed
+  Reservation to exist, not just an `accepted` Offer. Fixing this script
+  also surfaced and fixed a real, disclosed bug in
+  `business-offer-double-accept-concurrent.js` itself (see that script's
+  own comment) — it had been locking the wrong row first, a latent
+  deadlock risk that Phase 1's slightly longer transaction was enough to
+  actually trigger.
 
 ## What's not covered
 
