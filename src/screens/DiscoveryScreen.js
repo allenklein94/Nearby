@@ -899,8 +899,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
     marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
   },
-  calloutText: { flex: 1, color: colors.primary, fontSize: 12, fontWeight: '600', marginRight: spacing.sm, lineHeight: 16 },
-  calloutDismiss: { color: colors.primary, fontSize: 12, fontWeight: '800' },
+  // Phase 3 item 4 of the "Scorecard to 10" initiative (CLAUDE.md): the one coral
+  // judgment call left open by the Aug 16 2026 coral audit. "Got it" is a real dismiss
+  // action -- the locked rule names "Cancel, dismiss" explicitly as secondary actions
+  // that should read neutral, coral reserved for a surface's primary action. The body
+  // text next to it is purely informational, not itself interactive. Both now render
+  // neutral, matching this app's own established secondary-action convention
+  // (AdminVerificationScreen's rejectButtonText, CommunityDetailScreen's
+  // leaveButtonText) rather than the ambiguous "self-contained interactive unit"
+  // carve-out the audit flagged but left undecided.
+  calloutText: { flex: 1, color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginRight: spacing.sm, lineHeight: 16 },
+  calloutDismiss: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
   filterChip: {

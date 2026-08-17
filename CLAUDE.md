@@ -493,8 +493,25 @@ judgment call is still open.
      real device, that the "Use My Current Location" button round-trips a real device location,
      and that a gathering-shaped or community-shaped intent ask genuinely ranks a nearby-Area
      community above an equally-matching-but-farther one in the real running app.
-4. [ ] Close `DiscoveryScreen.js`'s one remaining open coral judgment call (the one-time callout
+4. [x] Close `DiscoveryScreen.js`'s one remaining open coral judgment call (the one-time callout
    tip's borderline "Got it" dismiss-action case, flagged not-decided in the Aug 16 coral audit).
+   **DONE, Aug 17 2026** — resolved by applying the already-locked coral rule literally rather
+   than inventing a new carve-out: "Got it" is a real dismiss action, and the locked rule names
+   "Cancel, dismiss" explicitly as secondary actions that read neutral, coral reserved for a
+   surface's primary action. Both `calloutText` and `calloutDismiss` moved from `colors.primary`
+   to `colors.textSecondary`, matching this app's own established neutral-secondary-action
+   convention (`AdminVerificationScreen`'s `rejectButtonText`, `CommunityDetailScreen`'s
+   `leaveButtonText`). The banner's container was already neutral (`colors.surface`/`border`),
+   untouched. Confirmed `DiscoveryScreen.js` already uses the theme-aware `useTheme()` hook, not
+   a static `colors` import, so this doesn't reintroduce the dark-mode bug caught once before.
+   **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+   run-through — next session should confirm the callout still reads clearly (not washed out)
+   against its neutral surface in both light and dark mode.
+
+**Status: Phase 3 is now fully DONE, build-wise — all 4 items closed.** Community
+demand-generation (the other half of the Community Area idea) remains correctly out of scope,
+per item 3's own text — a natural next step once Area exists, not silently folded into this
+phase.
 
 ### Phase 4 — Analytics / self-awareness: 7 → 10 (mostly code-closeable; the numbers stay
 ### honestly near-zero without real usage regardless of what gets built)
