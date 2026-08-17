@@ -10,6 +10,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
+import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -146,6 +147,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [conversationMessages, setConversationMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
 
+  // Business Partner acquisition experience, Milestone 6 (see CLAUDE.md): a
+  // real per-mount session id, same crypto.randomUUID() pattern
+  // BusinessPartnerApplyScreen.js already established -- groups this
+  // screen visit's own dashboard_viewed/profile_completed/first_offer_created
+  // events, deliberately not threaded through to the earlier apply-flow
+  // session (matches Milestone 1's own disclosed, honest scope boundary).
+  const [sessionId] = useState(() => crypto.randomUUID());
+
   useEffect(() => {
     loadMyPartner();
   }, []);
@@ -155,6 +164,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const partner = await getMyManagedPartner();
       setSelectedPartner(partner);
       setLoadError(false);
+      if (partner) {
+        logBusinessAcquisitionEvent(sessionId, 'dashboard_viewed', { partnerId: partner.id });
+      }
     } catch (e) {
       setLoadError(true);
     } finally {
@@ -196,6 +208,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       }));
       setEditProfileModalVisible(false);
       Alert.alert('Saved', 'Your business profile has been updated.');
+      logBusinessAcquisitionEvent(sessionId, 'profile_completed', { partnerId: selectedPartner.id });
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -692,6 +705,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSubmitting(true);
     try {
       const unlockScope = unlockEnabled ? (offerGatheringId ? 'gathering' : 'community') : null;
+      // Business Partner acquisition experience, Milestone 6 (see CLAUDE.md):
+      // "first" is checked against the already-loaded offers list before this
+      // insert, not re-derived from a post-insert count -- a real, honest
+      // signal of the business's actual first-ever offer, not every offer.
+      const isFirstOffer = offers.length === 0;
       await createBusinessOffer({
         partnerId: selectedPartner.id,
         title: newTitle.trim(),
@@ -705,6 +723,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         unlockCommunityId: unlockScope === 'community' ? unlockCommunityId : null,
         unlockMinMembers: unlockScope ? parseInt(newUnlockMinMembers.trim(), 10) : null,
       });
+      if (isFirstOffer) {
+        logBusinessAcquisitionEvent(sessionId, 'first_offer_created', { partnerId: selectedPartner.id });
+      }
       setCreateModalVisible(false);
       setNewTitle('');
       setNewDescription('');
