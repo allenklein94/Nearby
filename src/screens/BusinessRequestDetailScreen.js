@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed } from '../services/businessFulfillment';
 import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { supabase } from '../services/supabase';
@@ -25,6 +25,19 @@ const OFFER_STATUS_COPY = {
   expired: 'No longer available',
   cancelled: 'Cancelled',
   completed: 'Completed',
+};
+
+// Offer System Phase 3 (see CLAUDE.md's own plan, Gap 3): offer_type was
+// already real and stored (never hard-coded to a discount, per the
+// original locked decisions) but had never actually been rendered
+// anywhere on this screen -- part of Phase 3's "clearer per-offer terms
+// summary."
+const OFFER_TYPE_LABELS = {
+  standard: 'Standard offer',
+  discount: 'Discount',
+  perk: 'Perk',
+  upgrade: 'Upgrade',
+  alt_time: 'Alternate time',
 };
 
 // business_request_offers.proposed_time was previously collected nowhere
@@ -146,6 +159,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       setRequest(result.request);
       setOffers(result.offers);
       setLoadError(false);
+
+      // Phase 3: a real, honest read receipt -- the requester's own
+      // session is genuinely looking at every currently-offered row on
+      // this exact screen right now, so mark each one viewed. The RPC
+      // is idempotent (only ever sets viewed_at once) and internally
+      // scoped to the real requester, so this is safe to fire
+      // unconditionally regardless of who's viewing.
+      result.offers
+        .filter((o) => o.status === 'offered' && !o.viewed_at)
+        .forEach((o) => markBusinessOfferViewed(o.id));
 
       const partnerIds = [...new Set(result.offers.filter((o) => o.status === 'offered' || o.status === 'accepted').map((o) => o.partner_id))];
       if (partnerIds.length > 0) {
@@ -282,6 +305,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const hasWinner = offers.some((o) => o.status === 'accepted' || o.status === 'completed');
   const isGroupPlanRequest = !!request.group_plan_id;
   const isMergedIntoGroupPlan = request.status === 'merged' && !!request.superseded_by_group_plan_id;
+  // Offer System Phase 3 (see CLAUDE.md's own plan): the real evidence
+  // bar per Decision 1 -- Request -> 0..N Offers was already the live
+  // model, this just decides when it's genuinely worth a comparison
+  // treatment. Below 2 concurrent live offers (the common case for a
+  // long while), the screen renders exactly as it always has -- no
+  // fabricated "comparison" of one thing against nothing.
+  const offeredCount = offers.filter((o) => o.status === 'offered').length;
+  const showComparison = offeredCount >= 2;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -356,7 +387,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {offers.length === 0 ? (
           <Text style={styles.emptyText}>No businesses have responded yet.</Text>
         ) : (
-          displayOffers.map((o) => {
+          <>
+          {showComparison && (
+            <View style={styles.comparisonHeaderRow}>
+              <Text style={styles.comparisonHeaderText}>🔍 Compare Your Options</Text>
+              <Text style={styles.comparisonHeaderSubtext}>
+                {offeredCount} businesses want to make this happen — ranked by reliability
+              </Text>
+            </View>
+          )}
+          {displayOffers.map((o) => {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
             return (
@@ -368,9 +408,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <Text style={styles.offerStatus}>{OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
               {o.status === 'offered' && (
                 <>
+                  {showComparison && (
+                    <Text style={styles.offerTypeLabel}>{OFFER_TYPE_LABELS[o.offer_type] ?? o.offer_type}</Text>
+                  )}
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
+                  {showComparison && o.viewed_at ? (
+                    <Text style={styles.offerViewedIndicator}>👁 You've seen this</Text>
+                  ) : null}
                   {!hasWinner && isGroupPlanRequest && (
                     <TouchableOpacity
                       style={styles.acceptButton}
@@ -412,7 +458,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               )}
             </View>
             );
-          })
+          })}
+          </>
         )}
 
         {request.status === 'open' && groupPlanCandidates.length > 0 && (
@@ -465,6 +512,9 @@ const getStyles = (colors) => StyleSheet.create({
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   statusLine: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.lg },
   emptyText: { ...typography.body, color: colors.textSecondary },
+  comparisonHeaderRow: { marginBottom: spacing.md },
+  comparisonHeaderText: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
+  comparisonHeaderSubtext: { ...typography.caption, color: colors.textSecondary },
   offerCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
@@ -472,9 +522,11 @@ const getStyles = (colors) => StyleSheet.create({
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   offerReputationLine: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
+  offerTypeLabel: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
+  offerViewedIndicator: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   acceptButtonText: { color: '#fff', fontWeight: '700' },
   completeButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },

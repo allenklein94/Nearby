@@ -100,6 +100,18 @@ export async function acceptBusinessOffer(offerId) {
   return data;
 }
 
+// Offer System Phase 3 (see CLAUDE.md's own plan): a real, honest read
+// receipt -- fired the moment the requester's own session actually opens
+// this specific offer on BusinessRequestDetailScreen. The RPC itself is
+// already idempotent (only ever sets viewed_at once, internally scoped to
+// the real requester) and a no-op for anyone else, so this is safe to
+// call unconditionally, fire-and-forget, matching this codebase's
+// established non-critical-write philosophy (e.g. recordIntentSelection).
+export async function markBusinessOfferViewed(offerId) {
+  const { error } = await supabase.rpc('mark_business_offer_viewed', { offer_id_param: offerId });
+  if (error) console.error('markBusinessOfferViewed failed', error);
+}
+
 export async function cancelBusinessRequest(requestId) {
   const { data, error } = await supabase.rpc('cancel_business_request', { request_id_param: requestId });
   if (error) throw new Error(error.message);

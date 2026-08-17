@@ -405,6 +405,43 @@ path is already real and live; this phase is UI-only, no schema change.**
   renders correctly with 0, 1, and 2+ real offers (reuse a variant of the existing disposable-
   test-data pattern). Commit and push before moving to Phase 4.
 
+**Status: Phase 3 is DONE, UI-only, no schema change, exactly as planned.**
+`BusinessRequestDetailScreen.js` now computes a real `offeredCount`/`showComparison` (`offeredCount
+>= 2`) from the already-fetched `offers` array — no new query. When `showComparison` is true, a
+real "🔍 Compare Your Options" header renders above the existing `displayOffers`
+reliability-ordered list (unchanged sort logic, untouched), and each `offered` row additionally
+shows its real `offer_type` (a new `OFFER_TYPE_LABELS` map — `standard/discount/perk/upgrade/
+alt_time`, the value was already stored and fetched via `select('*')` but had never actually been
+rendered anywhere on this screen before) and, when present, a real "👁 You've seen this" line
+backed by `viewed_at`. Below the evidence bar (fewer than 2 concurrent `offered` rows), the screen
+renders exactly as it always has — the two new conditionals are both gated on `showComparison`,
+so nothing new appears, matching the plan's own explicit "no visual change" requirement. **One
+real, necessary piece of client wiring the plan's own text implied but didn't spell out
+explicitly**: Phase 1 built `mark_business_offer_viewed()` (a real, idempotent, requester-scoped
+read-receipt RPC) but nothing anywhere ever called it — the "you've seen this" state Phase 3 asks
+for would otherwise always read `null` and never actually appear. Closed with a new
+`markBusinessOfferViewed()` client wrapper (`services/businessFulfillment.js`), fired
+fire-and-forget for every currently-`offered` row the moment the requester's own session loads
+this screen (in `load()`, right after `setOffers`) — the RPC's own internal `br.requester_id =
+auth.uid()` guard makes this safe to call unconditionally regardless of who's viewing, and its
+`viewed_at is null` guard makes a repeat call a harmless no-op. **Verified live against
+production**, not just reasoned about: confirmed `business_request_offers`' `select('*')` shape
+genuinely returns real `offer_type`/`viewed_at` columns, and confirmed calling
+`mark_business_offer_viewed()` via the RPC exactly as the client now does (not a raw SQL update)
+against a real disposable request/offer pair genuinely sets a real `viewed_at`, with a repeat call
+correctly idempotent (no error, no overwrite). Test rows deleted afterward, production confirmed
+back to its exact pre-test baseline (0 requests, 0 offers). Verified via a direct `@babel/core`
+parse of both touched files (clean) and a full `npx expo export --platform ios` (clean, 2186
+modules, unchanged — edits to two existing files only, no new client files). No new live-verify
+script was added for this phase — no schema/RPC changed, and the one new RPC call this phase
+wires in was already exhaustively proven correct by Phase 1's own
+`offer-reservation-payment-seam.js`; this phase's own verification is the client-invocation
+sanity check above. **Not done, same standing gap as everywhere else in this file**: no manual
+simulator/device run-through — next session should confirm the "Compare Your Options" header and
+the offer-type/viewed-state lines render correctly once a real request genuinely has 2+ live
+offers (uncommon at today's real volume, worth constructing a real two-offer scenario to check),
+and that the screen looks completely unchanged with 0 or 1 offer.
+
 **Phase 4 — Social Offer: general primitive, Group-Plans-scoped first surface (per Decision 3).**
 - Schema: a real, general `social_offers` table — `request_id` (scoped to `business_requests`
   for this pass, the only real Request object that exists today), `offerer_id` (a `profiles`
