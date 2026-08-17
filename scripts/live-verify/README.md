@@ -216,6 +216,25 @@ CI-runnable as-is (just supply the token as a secret).
   auto-accepts anything. Also proves the upsert RPC's own real ownership
   check, its discount-percent bound, and that a repeat upsert for the
   same partner updates the same row rather than creating a second one.
+- `social-offer-group-plan.js` — "The Offer System" Phase 4 (see
+  CLAUDE.md's own plan, Decision 3). Proves the real, general
+  `social_offers` primitive end-to-end through a real confirmed group
+  plan, the plan's own first shipped surface: eligibility is genuinely
+  re-validated server-side (a real stranger is rejected submitting an
+  offer; the request's own requester can't offer on their own request; a
+  repeat submit while still `offered` is rejected); real RLS (`SET ROLE
+  authenticated`, not just a JWT claim) genuinely scopes visibility to the
+  offerer, the request's requester, and the rest of the confirmed
+  group-plan roster — a stranger sees nothing; only the request's own
+  requester can accept/decline, not just any confirmed participant; and
+  `mark_social_offer_viewed()` is a genuine, requester-scoped, idempotent
+  read receipt. Found and fixed two real cleanup-ordering bugs while
+  verifying (`group_plan_participants.source_request_id` and
+  `confirm_group_plan()`'s own `superseded_by_group_plan_id` stamp both
+  reference the original per-participant requests, which must be deleted
+  before the group plan proposal itself) — not a throttling flake,
+  confirmed by getting the real `23503` FK-violation error instead of
+  trusting a swallowed `.catch()`.
 
 ## What's not covered
 

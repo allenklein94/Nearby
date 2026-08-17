@@ -11,6 +11,7 @@ import {
   leaveGroupPlan,
   confirmGroupPlanOffer,
 } from '../services/groupPlans';
+import { submitSocialOffer, respondToSocialOffer, markSocialOfferViewed } from '../services/socialOffers';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -33,6 +34,18 @@ const OFFER_STATUS_COPY = {
   completed: 'Completed',
 };
 
+// "The Offer System" Phase 4 (see CLAUDE.md's own plan, Decision 3):
+// mirrors the commercial-offer lifecycle's own refined shape (Decision
+// 6), not a second invented one.
+const SOCIAL_OFFER_STATUS_COPY = {
+  offered: 'Offered',
+  accepted: 'Accepted',
+  declined: "Didn't work out",
+  withdrawn: 'Withdrawn',
+  expired: 'No longer available',
+  cancelled: 'Cancelled',
+};
+
 // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- a real "group plan" is
 // group-owned, not initiator-owned: every accepted participant sees this
 // same screen and the same real state, not a filtered view of it. User-
@@ -51,6 +64,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   const [acting, setActing] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [excludeIds, setExcludeIds] = useState([]);
+  const [socialOfferInput, setSocialOfferInput] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,6 +79,16 @@ export default function GroupPlanScreen({ navigation, route }) {
         setBudgetInput(String(result.proposal.agreed_budget_max));
       }
       setLoadError(false);
+
+      // Phase 4: a real, honest read receipt -- only the request's own
+      // requester (the group plan's initiator) is who this column
+      // actually tracks, same authority model as respond_to_social_
+      // offer() itself.
+      if (result.proposal.initiator_id === uid) {
+        result.socialOffers
+          .filter((o) => o.status === 'offered' && !o.viewed_at)
+          .forEach((o) => markSocialOfferViewed(o.id));
+      }
     } catch (e) {
       setLoadError(true);
     }
@@ -210,6 +234,27 @@ export default function GroupPlanScreen({ navigation, route }) {
     ]);
   }
 
+  // "The Offer System" Phase 4 (see CLAUDE.md's own plan, Decision 3):
+  // the general primitive re-validates eligibility server-side on every
+  // call regardless of what the client shows, but the client still only
+  // ever offers the action to a confirmed, non-initiator participant --
+  // never a stranger, and never the initiator on their own request.
+  function handleSubmitSocialOffer() {
+    const trimmed = socialOfferInput.trim();
+    if (!trimmed) {
+      Alert.alert('Say what you can offer', 'e.g. "I can drive" or "I can host at my place."');
+      return;
+    }
+    runAction(
+      () => submitSocialOffer(proposal.resulting_request_id, trimmed),
+      () => setSocialOfferInput('')
+    );
+  }
+
+  function handleRespondSocialOffer(offerId, accept) {
+    runAction(() => respondToSocialOffer(offerId, accept));
+  }
+
   if (loading && !detail) {
     return (
       <SafeAreaView style={styles.container}>
@@ -228,7 +273,7 @@ export default function GroupPlanScreen({ navigation, route }) {
 
   if (!detail) return null;
 
-  const { proposal, participants, offers, confirmations } = detail;
+  const { proposal, participants, offers, confirmations, socialOffers } = detail;
   const isInitiator = proposal.initiator_id === myId;
   const myParticipant = participants.find((p) => p.user_id === myId);
   const acceptedParticipants = participants.filter((p) => p.status === 'accepted');
@@ -368,6 +413,65 @@ export default function GroupPlanScreen({ navigation, route }) {
                 );
               })
             )}
+
+            <Text style={styles.sectionHeader}>Social Offers</Text>
+            <Text style={styles.helperText}>Anyone in the group can offer to help make this happen — "I'll drive," "I'll host."</Text>
+            {socialOffers.length === 0 ? (
+              <Text style={styles.helperText}>No one has offered to help yet.</Text>
+            ) : (
+              socialOffers.map((o) => (
+                <View key={o.id} style={styles.offerCard}>
+                  <Text style={styles.offerPartnerName}>{o.profiles?.display_name ?? 'Someone'}</Text>
+                  <Text style={styles.offerStatus}>{SOCIAL_OFFER_STATUS_COPY[o.status] ?? o.status}</Text>
+                  <Text style={styles.offerDescription}>{o.offer_description}</Text>
+                  {isInitiator && o.status === 'offered' && (
+                    <View style={styles.socialOfferActionRow}>
+                      <TouchableOpacity
+                        style={[styles.acceptButton, { flex: 1 }]}
+                        onPress={() => handleRespondSocialOffer(o.id, true)}
+                        disabled={acting}
+                        accessibilityLabel={`Accept ${o.profiles?.display_name ?? 'this'}'s offer`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.acceptButtonText}>Accept</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleRespondSocialOffer(o.id, false)}
+                        disabled={acting}
+                        accessibilityLabel={`Decline ${o.profiles?.display_name ?? 'this'}'s offer`}
+                        accessibilityRole="button"
+                        style={styles.socialOfferDeclineButton}
+                      >
+                        <Text style={styles.declineButtonText}>Decline</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
+            {myParticipant?.status === 'accepted' && !isInitiator && !socialOffers.some((o) => o.offerer_id === myId) && (
+              <View style={styles.socialOfferForm}>
+                <TextInput
+                  style={styles.socialOfferInput}
+                  value={socialOfferInput}
+                  onChangeText={setSocialOfferInput}
+                  placeholder='e.g. "I can drive everyone there"'
+                  placeholderTextColor={colors.textTertiary}
+                  multiline
+                  accessibilityLabel="What can you offer?"
+                />
+                <TouchableOpacity
+                  style={styles.socialOfferSubmitButton}
+                  onPress={handleSubmitSocialOffer}
+                  disabled={acting}
+                  accessibilityLabel="Submit social offer"
+                  accessibilityRole="button"
+                >
+                  {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Offer to Help</Text>}
+                </TouchableOpacity>
+              </View>
+            )}
+
             {myParticipant?.status === 'accepted' && !isInitiator && (
               <TouchableOpacity onPress={handleLeave} disabled={acting} accessibilityLabel="Leave this group plan" accessibilityRole="button">
                 <Text style={styles.declineLink}>Leave Group Plan</Text>
@@ -424,4 +528,13 @@ const getStyles = (colors) => StyleSheet.create({
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   acceptButtonDisabled: { opacity: 0.5 },
   acceptButtonText: { color: '#fff', fontWeight: '700' },
+  socialOfferActionRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  socialOfferDeclineButton: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, alignItems: 'center', justifyContent: 'center' },
+  declineButtonText: { color: colors.textSecondary, fontWeight: '700' },
+  socialOfferForm: { marginTop: spacing.sm, marginBottom: spacing.md },
+  socialOfferInput: {
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md,
+    padding: spacing.sm, color: colors.textPrimary, minHeight: 60, textAlignVertical: 'top', marginBottom: spacing.sm,
+  },
+  socialOfferSubmitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },
 });

@@ -467,6 +467,87 @@ and that the screen looks completely unchanged with 0 or 1 offer.
   under real RLS) + from-scratch replay + `npx expo export --platform ios`. Commit and push
   before Phase 5.
 
+**Status: Phase 4 is DONE, migration applied and verified live end-to-end (including real RLS,
+not just an RPC's own internal check), plus a real from-scratch replay — no disclosed gap
+remains except one deliberate scope boundary named below.** Built exactly per the locked design:
+new `social_offers` table (`request_id` scoped to `business_requests`, `offerer_id`, `offer_
+description`, `status` mirroring Decision 6's refined commercial-offer lifecycle verbatim —
+`offered|accepted|declined|withdrawn|expired|cancelled` — `viewed_at`, `unique(request_id,
+offerer_id)`), owner/requester/group-plan-participant-only SELECT RLS (three additive policies,
+the third reusing the exact same `is_group_plan_participant()` SECURITY-DEFINER-bypasses-RLS
+helper Phase D already built for `business_requests`/`business_request_offers`), no direct
+client write. Two new SECURITY DEFINER RPCs: `submit_social_offer()` — a real, general primitive
+(works on any `business_requests` row, not hardcoded to group plans) that re-validates
+eligibility server-side on every call, never trusted from the client, against the *exact* set
+Decision 3 names verbatim: accepted friendship, match, shared community membership, **or**
+shared gathering membership (either as host or a real approved attendee) — a strictly wider
+connected-set than Tier 2/Group Plan's own friend-or-match-only definition, per the user's own
+explicit broadening in Decision 3's text, not a re-derivation of the narrower Phase D rule 14 —
+and `respond_to_social_offer()`, scoped to the request's own requester only (the same authority
+model `accept_business_offer()`'s *original* pre-group-plan-guard shape used), deliberately
+**not** extended with commercial offers' own full-consensus group-plan guard, since a Social
+Offer never competes for one winning slot the way a commercial reservation does (multiple social
+offers — "I'll drive" and "I'll host" — can both be accepted independently, a genuinely
+different scarcity model, not an oversight). A third RPC, `mark_social_offer_viewed()`, was
+added proactively (not explicitly named in the plan's own text) mirroring Phase 3's
+`mark_business_offer_viewed()` exactly — built so `viewed_at` is never a permanently-null,
+unreachable column, same reasoning that motivated Phase 3's own equivalent wiring.
+**Client**: new `src/services/socialOffers.js` (thin RPC wrappers); `getGroupPlanDetail()`
+(`services/groupPlans.js`) now also fetches `social_offers` for the plan's own resulting request,
+joined to `profiles` for the offerer's name/photo. `GroupPlanScreen.js` gained a real "Social
+Offers" section inside the existing confirmed-plan view — every confirmed participant sees the
+full list (offerer name, description, status); a confirmed non-initiator participant with no
+existing offer of their own gets a real submit form; the initiator (the request's own requester)
+gets real Accept/Decline actions on any `offered` row. `mark_social_offer_viewed()` fires
+fire-and-forget from `load()` for the initiator's own session only, matching the RPC's own
+requester-scoped semantics — no "seen" badge was rendered in the UI this pass (unlike Phase 3's
+explicit request for commercial offers), keeping this phase's own scope tight to what Decision 3
+and the checkpoint text actually asked for.
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — new
+`scripts/live-verify/social-offer-group-plan.js` (registered in `run-all.js`, documented in the
+README) builds a real confirmed group plan from scratch (Allen as initiator, using his real
+existing accepted friendship with Claude and real match with Google voice — the same pattern the
+C2/C3 concurrency scripts already established) and proves every real behavior against it: a
+genuine stranger (Allen Klein, no relationship to anyone) is rejected both submitting an offer
+and responding to one; the request's own requester can't offer on their own request; a
+genuinely connected, confirmed participant (Claude) can submit a real offer; a repeat submit
+while still `offered` is rejected; **real RLS** (`SET ROLE authenticated`, not just a JWT claim)
+genuinely restricts visibility to the offerer, the requester, and — critically, proving the
+plan's own "visible to the rest of that specific plan's own roster" text — a third confirmed
+participant (Google voice) who is neither the offerer nor the requester; that same non-requester
+participant is correctly rejected trying to accept/decline someone else's offer; `mark_social_
+offer_viewed()` is a genuine no-op for the offerer's own call and genuinely idempotent for the
+real requester; and accepting is the real happy path, rejecting a second response to an
+already-`accepted` offer. **Two real, disclosed cleanup-ordering bugs found and fixed while
+verifying, not throttling flakes — confirmed by getting the real `23503` FK-violation error
+instead of trusting a swallowed `.catch()`**: `group_plan_participants.source_request_id`
+references each of the 3 original per-participant requests, and `confirm_group_plan()`'s own
+`superseded_by_group_plan_id` stamp on those same 3 rows points at the proposal — so
+`group_plan_participants` must be deleted before the 3 original requests, which must in turn be
+deleted before the proposal itself, on top of the already-known `group_plan_id`/`resulting_
+request_id` FK cycle. Fixed and re-run clean, twice, confirming stability. **Verified via a real
+from-scratch migration replay** (all 63 files in `supabase/migrations/`, `psql -v
+ON_ERROR_STOP=1`, exit 0 throughout) — `social_offers`, `submit_social_offer()`, `respond_to_
+social_offer()`, and `mark_social_offer_viewed()` all confirmed to exist in the freshly-rebuilt
+database. Container removed afterward. Client-side verified via a direct `@babel/core` parse of
+all three touched/new files (clean) and a full `npx expo export --platform ios` (clean, 2187
+modules — one more than Phase 3's 2186 baseline, the one new `socialOffers.js`).
+**One real, disclosed hygiene finding, not fixed this pass, matching the established pattern**:
+`social_offers` carries the same standing `anon`/`authenticated` default-table-grant artifact
+this file's own "Known conventions" section already flags — full raw table privileges granted
+to `anon` by this project's own default-privileges setup, confirmed present identically on
+every sibling table from Phases 1-2 of this same initiative (`business_request_offers`/
+`business_availability`/`business_reservations`/`business_payments`/`business_fulfillment_
+policies`). Not a new regression and not independently exploitable (RLS is deny-by-default with
+zero matching write policies, and the only SELECT policies all require a real `auth.uid()`
+match, which `anon` never has) — flagged rather than silently fixed, since tightening it would
+mean either a broader, out-of-scope hardening pass across many pre-existing tables, or a new
+inconsistency between this table and every sibling table in the same phase family. **Not done,
+same standing gap as everywhere else in this file**: no manual simulator/device run-through —
+next session should confirm the Social Offers section (list, submit form, Accept/Decline)
+renders and behaves correctly on a real device across all three roles (initiator, an offering
+participant, a non-offering participant).
+
 **Phase 5 — Dating match → Proposal → business Request bridge (per Decision 4, includes the
 explicit Proposal step this plan's earlier draft was missing).**
 - New `date_proposals` table (check live first whether an existing table already covers "one

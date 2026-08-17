@@ -168,6 +168,12 @@ export async function getGroupPlanDetail(proposalId) {
 
   let offers = [];
   let confirmations = [];
+  // "The Offer System" Phase 4 (see CLAUDE.md's own plan, Decision 3):
+  // the first shipped Social Offer surface -- a confirmed participant's
+  // real offer on this exact group plan's own shared request, visible to
+  // the whole roster via social_offers' own additive group-plan RLS
+  // policy.
+  let socialOffers = [];
   if (proposal.resulting_request_id) {
     const { data: offerRows, error: offersError } = await supabase
       .from('business_request_offers')
@@ -183,7 +189,15 @@ export async function getGroupPlanDetail(proposalId) {
       .eq('proposal_id', proposalId);
     if (confirmError) throw new Error(confirmError.message);
     confirmations = confirmRows ?? [];
+
+    const { data: socialOfferRows, error: socialOffersError } = await supabase
+      .from('social_offers')
+      .select('*, profiles(display_name, photo_url)')
+      .eq('request_id', proposal.resulting_request_id)
+      .order('created_at', { ascending: true });
+    if (socialOffersError) throw new Error(socialOffersError.message);
+    socialOffers = socialOfferRows ?? [];
   }
 
-  return { proposal, participants: participants ?? [], offers, confirmations };
+  return { proposal, participants: participants ?? [], offers, confirmations, socialOffers };
 }
