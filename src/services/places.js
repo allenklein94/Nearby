@@ -73,3 +73,78 @@ export function getPlacePhotoUrl(photoRef, maxWidth = 400) {
   if (!photoRef) return null;
   return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
 }
+
+// Business Partner acquisition experience, Milestone 2 (see CLAUDE.md): "Find your
+// business" needs a name-based lookup, not the category/radius Nearby Search above
+// already covers — Google's Text Search endpoint is the right tool for "search by
+// what someone typed," not a repurposed nearbysearch keyword param. `latitude`/
+// `longitude` are an optional bias only (Google's own semantics — narrows relevance,
+// never filters results out), so this still works for a business owner who hasn't
+// granted location permission.
+export async function searchPlacesByText(query, latitude = null, longitude = null) {
+  if (!query || !query.trim()) return [];
+  const locationBias = latitude && longitude ? `&location=${latitude},${longitude}&radius=50000` : '';
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query.trim())}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+    console.error('searchPlacesByText error', data.status, data.error_message);
+    return [];
+  }
+
+  return (data.results ?? []).slice(0, 10).map((p) => ({
+    placeId: p.place_id,
+    name: p.name,
+    address: p.formatted_address ?? p.vicinity ?? null,
+    latitude: p.geometry?.location?.lat ?? null,
+    longitude: p.geometry?.location?.lng ?? null,
+    types: p.types ?? [],
+  }));
+}
+
+// A small, honest heuristic — never a forced guess. Google's own `types` array maps
+// cleanly onto a handful of this app's real BUSINESS_CATEGORIES; anything not
+// confidently covered returns null, and the applicant picks manually rather than
+// getting handed a wrong category. Matches this codebase's own established
+// "don't fabricate a signal the data doesn't clearly support" convention.
+const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {
+  restaurant: 'food_drink', cafe: 'food_drink', bar: 'food_drink', bakery: 'food_drink', food: 'food_drink',
+  gym: 'fitness_wellness', spa: 'fitness_wellness', yoga_studio: 'fitness_wellness',
+  clothing_store: 'retail_shopping', store: 'retail_shopping', shopping_mall: 'retail_shopping', shoe_store: 'retail_shopping',
+  art_gallery: 'arts_entertainment', movie_theater: 'arts_entertainment', night_club: 'arts_entertainment', museum: 'arts_entertainment',
+  lawyer: 'professional_services', accounting: 'professional_services', real_estate_agency: 'professional_services', insurance_agency: 'professional_services',
+};
+
+function guessCategoryFromTypes(types = []) {
+  for (const t of types) {
+    if (GOOGLE_TYPE_TO_BUSINESS_CATEGORY[t]) return GOOGLE_TYPE_TO_BUSINESS_CATEGORY[t];
+  }
+  return null;
+}
+
+// Text Search results don't include phone/website — a real, separate Place Details
+// call is needed for those, same API key, same real Google data. Returns whatever
+// fields Google actually has; never fabricates a missing one.
+export async function getPlaceDetails(placeId) {
+  const fields = 'formatted_phone_number,website,formatted_address,name,types';
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (data.status !== 'OK') {
+    console.error('getPlaceDetails error', data.status, data.error_message);
+    return null;
+  }
+
+  const r = data.result ?? {};
+  return {
+    name: r.name ?? null,
+    address: r.formatted_address ?? null,
+    phone: r.formatted_phone_number ?? null,
+    website: r.website ?? null,
+    category: guessCategoryFromTypes(r.types),
+  };
+}

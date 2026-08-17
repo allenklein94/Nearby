@@ -278,13 +278,59 @@ Phase 0 already found real vs. missing and to both locked decisions above:
    rows. **Verified via a real from-scratch migration replay** (all 55 `supabase/migrations/`
    files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) — the new table's CHECK constraint and
    the new function both confirmed to exist in the freshly-rebuilt database. Container removed.
-2. **Streamlined apply flow** — a real "Find your business" step (Google Places search, reused
-   as its own composable piece per Decision 2's architecture note above) inserted ahead of
-   `BusinessPartnerApplyScreen.js`'s existing form, auto-filling whatever Places returns; the
-   screen's own copy reframed to "Get Your Business on Nearby" / "Confirm your business" /
-   "Complete your profile" / "Get started in about 30 seconds" / the post-submit "reviewed before
-   going live" line — never "claim," never a false live-instantly promise. Funnel events (item 1)
-   logged at each real step.
+2. [x] **Streamlined apply flow — DONE.** A real "Find your business" step (Google Places Text
+   Search, new `searchPlacesByText()`/`getPlaceDetails()` in `services/places.js` — a genuinely
+   separate endpoint from the existing Nearby Search used elsewhere, since "search by what
+   someone typed" needs Text Search, not a repurposed nearby-search keyword param; a small,
+   honest Google-`types`-to-`BUSINESS_CATEGORIES` heuristic guesses a category only when
+   confidently mapped, `null` otherwise — never a forced wrong guess) inserted ahead of
+   `BusinessPartnerApplyScreen.js`'s existing form as a real `'search' | 'form'` step state.
+   Selecting a real result auto-fills name/address from the search hit, then enriches with
+   phone/website/category via a real Place Details call (Text Search doesn't return those) —
+   every field stays fully editable afterward, matching Decision 2's own "never auto-submit,
+   review before commit" convention used everywhere else in this codebase. The screen's own copy
+   reframed exactly per Decision 2: "Get Your Business on Nearby" heading, "Get started in about
+   30 seconds" subheading, a "Confirm your business" banner ("We found 'X' — we've filled in what
+   we can below") shown only when arriving via a real search match — never shown for the manual-
+   entry path, which instead reads "Complete your profile" — and a post-submit "Once submitted,
+   your business is reviewed before going live" line, both on the in-app confirmation Alert and
+   as a persistent caption under the Submit button. Never says "claim" anywhere. New
+   `src/services/businessAcquisitionEvents.js` (`logBusinessAcquisitionEvent()`, fire-and-forget,
+   matching `recordIntentSelection()`/`recordNudgeEvent()`'s established non-critical-write
+   philosophy) fires 4 real funnel steps at their real moments: `apply_started` (screen mount),
+   `search_started` (first real search, deduped via a ref so retyping doesn't refire it),
+   `business_found` (a real result tapped), `apply_submitted` (successful insert) — all under one
+   client-generated `session_id` per screen visit, matching `business_acquisition_events`' own
+   established shape from item 1. The two review-outcome steps (`apply_approved`/`apply_denied`)
+   are logged server-side, not client-side, since an applicant never calls the admin review RPCs
+   themselves — added via `20260817_business_acquisition_review_events.sql`, one new insert
+   folded into each of `approve_business_partner_request()`/`deny_business_partner_request()`
+   right after the write it already depends on (the new `brand_partners` row id for approve; the
+   request's own `requester_id` for deny), pulling both functions' **live** bodies fresh via the
+   Management API first so every other line stayed byte-for-byte unchanged, not reconstructed
+   from a possibly-stale local copy. **Verified live against production**
+   (`enmosvippabmuqslzrox`), not just applied — this migration and the client work were both
+   already fully written before a codespace restart interrupted the session, confirmed still
+   correct on resume rather than re-built blind: `pg_get_functiondef` confirmed both RPCs already
+   contain the new insert and the table's grants/CHECK survived unchanged. Ran both real
+   branches end-to-end with disposable test data: a real pending request approved by the real
+   admin (`Allen`) correctly produced an `apply_approved` row with the real requester's `user_id`
+   and the real newly-created `partner_id`; a second real pending request denied by the same
+   admin correctly produced an `apply_denied` row with the real requester's `user_id` and a null
+   `partner_id`. All test rows (2 `business_partner_requests`, 1 `brand_partners`, both
+   `business_acquisition_events` rows, the reverted `profiles.managed_partner_id`) cleaned up
+   afterward — confirmed production back to its exact pre-test baseline (0
+   `business_acquisition_events` rows). Client-side verified via a full `npx expo export
+   --platform ios` (clean, no bundling errors — edits to `BusinessPartnerApplyScreen.js`/
+   `places.js`, plus the one new `businessAcquisitionEvents.js`).
+   **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+   run-through — next session should confirm the search→confirm→form flow reads and scrolls
+   correctly on a real device, that the location-bias permission check never actually prompts
+   (it's read-only against already-granted permission, per its own doc comment), and that a
+   genuinely no-network Places API failure degrades to the "no matches found... enter manually"
+   state rather than a stuck spinner. `profile_completed`/`published`/`first_offer_created`/
+   `first_consumer_interaction`/`dashboard_viewed` remain deliberately unfired — those funnel
+   steps belong to Milestones 3-6 below, not this one.
 3. **Business deep link + QR** — `nearby://business/:id` added to `RootNavigator.js`'s
    `linking.config`, landing on the real `BusinessProfileScreen` (consumer view) or the apply
    flow depending on whether the caller already manages that business; a QR-generation library
