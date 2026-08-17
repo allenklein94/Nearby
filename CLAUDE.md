@@ -176,112 +176,107 @@ Read the actual current code rather than assuming either doc's claims. Full find
     `useTheme()`), already imported by 80+ screens — the one universally consistent convention in
     this codebase, reusable directly.
 
-### Real decisions that need the user's own call, not a guess — flagged, not silently picked
+### Decisions — both resolved directly by the user, restated exactly as given so a future
+### session never re-derives or re-litigates them
 
-**Decision 1 — where does the landing page actually live?** No web target exists today. Three
-real options, each a genuinely different build:
-- **(a) A real, separate web landing page** (a new, small static/lightweight web build — this
-  repo's `docs/` folder already hosts plain static HTML on some existing domain/path per the
-  privacy/terms pages, so there's *a* hosting precedent, just not a shared-design-system one) —
-  matches the brief's own "hand a business owner a URL and QR code" framing literally, reachable
-  with zero app install. The "Claim My Business" CTA would need to either deep-link into the app
-  (if installed) or fall back to an app-store install link, with the actual claim/search/
-  verification steps happening once the business owner is in the mobile app (not on the web page
-  itself) — since this app's whole data model, auth, and every screen the brief wants to reuse
-  (dashboard, offers, analytics) is mobile-only today.
-- **(b) A new in-app screen/flow only**, reachable via `CreateHubScreen`'s existing "Partner with
-  a Business" entry point (already gated to organizers, per the earlier "Settings Business Mode"
-  section — would need reconsidering for a cold, non-user business owner) plus a new deep link —
-  no web surface at all. Doesn't satisfy "hand a URL to someone who's never heard of Nearby and
-  doesn't have the app," which was the brief's own explicit bar.
-- **(c) Hybrid**: a real, separate, lightweight web landing page (informational only — hero, value
-  props, demo, pricing, "how it works," FAQ) that does NOT attempt to replicate the claim/search/
-  verification/dashboard flow in the browser — every one of those steps happens after the
-  business owner taps "Claim My Business" and either opens the already-installed app via deep
-  link or is sent to install it first. This keeps the actual claim logic living in exactly one
-  place (the mobile app, where 90% of the backing functionality already exists) instead of
-  building and maintaining two parallel implementations of the same funnel.
+**Decision 1 — LOCKED: (c), the hybrid.** A real, separate, lightweight web landing page
+(informational only — hero, value props, demo, pricing, how it works, FAQ) that never attempts
+to replicate the search/apply/verification/dashboard flow in the browser. Every actual step
+happens after the business owner taps the primary CTA and either opens the already-installed app
+via deep link or is sent to install it first — the claim/apply logic lives in exactly one place
+(the mobile app), not duplicated into a second web-only implementation.
 
-  **Recommendation, not yet decided**: (c). It matches the brief's own literal ask (a URL + QR
-  code a business owner can open cold) without duplicating the claim/verification/dashboard logic
-  in a second, web-only codebase — the actual "product" stays the one place it already
-  substantially exists.
-
-**Decision 2 — what does "claim your business" actually mean, given there's no unclaimed-business
-data to search?** Two real options:
-- **(a) Streamline the existing from-scratch apply flow and market it as "claiming."**
-  `BusinessPartnerApplyScreen.js` already exists; the honest fix is reducing its friction, not
-  inventing a new claim mechanism. Concretely: when the business owner types their business name,
-  run it through the **exact same live Google Places search this app already uses elsewhere**
-  (`PlacesScreen.js`/Discover) — a business owner picks their real place from real Google Places
-  results, and the form pre-fills name/address/category/phone/website from that real place data
-  (matching the brief's own "minimize typing... pre-populate from existing data" instruction,
-  using data this app already has a live, working integration for). Verification of ownership
-  stays exactly what it is today — an admin manually reviewing the application (per the standing
-  "business partner onboarding stays admin-approval-gated... a deliberate, previously-restated
-  decision, not an oversight" line elsewhere in this file) — this pass would not add real
-  automated ownership verification (e.g. a mailed postcard code, a phone-call verification, a
-  business-email-domain check), which the brief's "Verify ownership" step implies but doesn't
-  specify a mechanism for either.
-- **(b) Build a genuinely new claimable-business directory**, seeded from real Google Places data
-  for a chosen market (matching the vision doc's own "pick one geographic market" recommendation)
-  — a new `unclaimed_business_candidates`-shaped table, populated via a one-time or periodic
-  import job, searchable, with a real "claim" RPC that creates the `brand_partners` row *from*
-  the candidate row instead of from scratch, and a real ownership-verification step before the
-  claim is trusted (this genuinely needs its own design — a phone/email verification code tied
-  to the business's own published contact info is the standard approach, not something to invent
-  unilaterally here). This is a materially larger, riskier build — new data source, new anti-
-  fraud surface (anyone could otherwise "claim" a real business they don't own), and ongoing
-  data-freshness burden (Google Places data drifts).
-
-  **Recommendation, not yet decided**: (a) for a first pass — it's honestly buildable now, with
-  real UX friction reduction, and doesn't introduce a new fraud/data-freshness surface. (b) is a
-  real, larger idea worth keeping named for later (matches the vision doc's own "pick one market,
-  prove density" framing) once (a) is proven or the user wants the bigger bet made directly.
+**Decision 2 — LOCKED: streamline the existing apply flow (option (a)), with real, specific
+corrections to both copy and architecture, given directly by the user — not the original
+recommendation's own wording, refined further:**
+- **Never call it "claim" as the primary framing** — there is no pre-existing unclaimed-business
+  directory today, and using "claim" as if there were would be dishonest. Primary CTA copy:
+  **"Get Your Business on Nearby"**, not "Claim Your Business." The word "confirm"/"is this your
+  business" is fine, and reads naturally, at exactly one specific moment: right after a real
+  Google Places search returns a real match the owner selects — that's a genuine confirm-a-match
+  moment, not a fabricated "we already have your listing" claim.
+- **The real flow, as specified**: landing page → "Get Started" → **"Find your business"**
+  (search by name via the existing live Google Places integration) → owner selects their real
+  place from real results → Nearby auto-fills whatever Google Places actually returned (name/
+  address/category/phone/website) → **"Confirm your business"** step ("Yes, this is my
+  business") → **"Complete your profile"** (owner fills in whatever Places didn't have) →
+  **"Submit"** → admin reviews (existing, unchanged manual approval) → business account/profile
+  becomes active → owner manages it from the existing dashboard.
+- **Timing honesty, given directly, not softened**: never say "you're live in 30 seconds" —
+  that's not true, this flow keeps manual admin review. Say **"Get started in about 30
+  seconds"** (accurate — the *application* takes ~30 seconds) and explicitly state, right after
+  submit, **"Once submitted, your business is reviewed before going live"** — stated as a
+  credibility signal, not an apology, per the user's own reasoning ("this actually increases
+  credibility because you're telling the business owner there's some verification rather than
+  pretending anyone can instantly create a business listing").
+- **Real architectural instruction for whoever builds Milestone 2, given directly, not to be
+  silently reinterpreted**: *do not* create an "unclaimed business" table or any fake claim
+  system in this pass — there is no such data, and building a placeholder for it would be
+  exactly the kind of fabrication this file's own conventions already reject elsewhere. But
+  architect the `Business`/`brand_partners` entity and its ownership model (the existing
+  `managed_partner_id` shape) cleanly enough that a **future** genuine candidate-business/claim
+  workflow (Decision 2's original option (b), explicitly not built now) could be layered on top
+  later *without* replacing the current model — i.e., don't hardcode any assumption that "a
+  business always starts with zero prior data" so deep into this pass's own code that a future
+  session can't later insert "sometimes a business starts from a real candidate record" above
+  it. Concretely: keep the Google Places search/select/autofill step as its own composable piece
+  (a real "search candidates, pick one, prefill a form" component/flow) rather than baking Places
+  lookup inextricably into the application-submission RPC itself — the future version would swap
+  "ephemeral Places search result" for "a real persisted candidate row" at that exact seam, not
+  rewrite the whole flow.
+- **The original option (b) — a real claimable-business directory with imported Google Places
+  candidate data and genuine phone/email ownership verification — remains explicitly not built,
+  named here so it isn't silently lost.** Revisit once real consumer/business density in a real
+  market justifies the added infrastructure (data ingestion, dedup, freshness, fraud
+  prevention) — matches the vision doc's own "prove the loop in one market first" framing.
 
 **Decision 3 — this overrides the standing Feature Freeze for this scope, not a silent reopening
 of it.** Per the Freeze's own rule ("this freeze constrains autonomous scope-expansion... if the
 user asks for one anyway, that's their call to make"), a direct, explicit request for a new
 product surface is exactly the kind of thing the freeze doesn't block — stated here so a future
 session doesn't read this section as a freeze violation, matching this file's own precedent for
-the Aug 15 Nearby 2.0/Group Plans Phase D builds. Not asked as a question — already implicit in
-the user's own direct request.
+the Aug 15 Nearby 2.0/Group Plans Phase D builds.
 
-### Proposed milestone order, once Decisions 1-2 are answered — not started
+### Locked milestone order, executing below — status per milestone tracked inline as each lands
 
 Reusing the brief's own audit-first, stop-and-verify-per-milestone discipline, adapted to what
-Phase 0 above already found real vs. missing:
+Phase 0 already found real vs. missing and to both locked decisions above:
 
 1. **Business-acquisition funnel event table** (`business_acquisition_events` or similar — same
    plain owner/session-scoped, no-RPC-for-writes shape as `intent_submissions`), so every later
    milestone has somewhere real to log into from the start, not bolted on at the end.
-2. **Streamlined claim/apply flow** (per Decision 2(a), if chosen) — Google Places-backed
-   autofill search inside `BusinessPartnerApplyScreen.js`, reframed copy ("Claim Your Business"
-   throughout, matching the brief's language), funnel events logged at each step.
+2. **Streamlined apply flow** — a real "Find your business" step (Google Places search, reused
+   as its own composable piece per Decision 2's architecture note above) inserted ahead of
+   `BusinessPartnerApplyScreen.js`'s existing form, auto-filling whatever Places returns; the
+   screen's own copy reframed to "Get Your Business on Nearby" / "Confirm your business" /
+   "Complete your profile" / "Get started in about 30 seconds" / the post-submit "reviewed before
+   going live" line — never "claim," never a false live-instantly promise. Funnel events (item 1)
+   logged at each real step.
 3. **Business deep link + QR** — `nearby://business/:id` added to `RootNavigator.js`'s
-   `linking.config`, landing on the real `BusinessProfileScreen` (consumer view) or the claim
+   `linking.config`, landing on the real `BusinessProfileScreen` (consumer view) or the apply
    flow depending on whether the caller already manages that business; a QR-generation library
    added and a "Share your QR code" surface on the dashboard.
-4. **Dashboard/analytics polish** — audit what's already there (item 4 above) against the brief's
-   specific "know how people are discovering you" framing; likely small, targeted additions
-   rather than a rebuild, given how much already exists.
-5. **The landing surface itself**, built per whatever Decision 1 resolves to — informational-only
-   if (c), reusing `BusinessProfileScreen.js`'s real section shapes for the "here's what your
-   business looks like" mockup rather than a fabricated design, `theme.js` tokens throughout
-   (even on a web build, translated to CSS custom properties matching the same values, so the
-   landing page genuinely visually matches the app rather than looking like a separate product).
+4. **Dashboard/analytics polish** — audit what's already there (Phase 0 item 4) against the
+   brief's specific "know how people are discovering you" framing; likely small, targeted
+   additions rather than a rebuild, given how much already exists.
+5. **The web landing surface itself** — informational only, per Decision 1's hybrid: hero, value
+   props, demo, pricing (free to start), how it works, FAQ. Reuses `BusinessProfileScreen.js`'s
+   real section shapes for the "here's what your business looks like" mockup rather than a
+   fabricated design, `theme.js` token values translated to matching CSS custom properties so the
+   page genuinely visually matches the app. Primary CTA ("Get Your Business on Nearby") deep-
+   links into the mobile app's new Milestone 2 flow, falling back to an install link.
 6. **End-to-end verification**: a real test business run through the complete funnel (search/
    autofill → apply → admin approve → profile → first offer → consumer views it → dashboard shows
    the real resulting stats), verified live against production with disposable test data and
    cleaned up, matching this file's own established convention — not a simulated/mocked pass.
 7. **Three adversarial review passes**, exactly as the brief specifies: a "hostile business
    owner, 60 seconds, never heard of Nearby" comprehension pass; a consumer-side connectivity
-   trace (does the claimed business's profile/offer/location genuinely show up correctly to a
-   real consumer); a security pass attempting unauthorized claim/edit/publish access against
+   trace (does the applied business's profile/offer/location genuinely show up correctly to a
+   real consumer); a security pass attempting unauthorized apply/edit/publish access against
    another business's data.
 
-**Status: plan only, per direct instruction — nothing above is built. Decisions 1 and 2 need a
-real answer before Milestone 1 starts.**
+**Status: plan locked, both decisions resolved directly by the user — executing below, milestone
+by milestone, each its own commit per this file's established restart-safety convention.**
 
 ## Aug 17 2026 — closing the last concurrency gap: C2/C3 group-plan races under true overlap
 
