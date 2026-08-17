@@ -119,11 +119,18 @@ export const navigationRef = createNavigationContainerRef();
 // stash-then-imperatively-navigate mechanism as the gathering link below, just with
 // its own real ownership check before deciding where to send the tap — never wired
 // into `linking.config.screens` at all.
+// Business Partner acquisition experience, Milestone 5 (see CLAUDE.md): the new web landing
+// page's primary CTA needs a real deep link into the mobile app's Milestone 2 apply flow, not a
+// second, web-only reimplementation of it (Decision 1's own locked "claim/apply logic lives in
+// exactly one place" rule). Unlike the business-profile link above, BusinessPartnerApply always
+// resolves to the exact same screen regardless of who opens it — no ownership branch needed —
+// so this one genuinely fits linking.config.screens directly, same shape as GatheringDetail.
 const linking = {
   prefixes: ['nearby://'],
   config: {
     screens: {
       GatheringDetail: 'gathering/:gatheringId',
+      BusinessPartnerApply: 'business-apply',
     },
   },
 };
@@ -147,6 +154,7 @@ const linking = {
 // no-op, not a duplicate entry.
 const PENDING_GATHERING_LINK_KEY = 'pending_deep_link_gathering_id';
 const PENDING_BUSINESS_LINK_KEY = 'pending_deep_link_business_id';
+const PENDING_BUSINESS_APPLY_LINK_KEY = 'pending_deep_link_business_apply';
 
 function gatheringIdFromUrl(url) {
   const match = /gathering\/([^/?#]+)/.exec(url ?? '');
@@ -156,6 +164,10 @@ function gatheringIdFromUrl(url) {
 function businessIdFromUrl(url) {
   const match = /business\/([^/?#]+)/.exec(url ?? '');
   return match ? match[1] : null;
+}
+
+function isBusinessApplyUrl(url) {
+  return /business-apply/.test(url ?? '');
 }
 
 async function resolveAndNavigateToBusiness(partnerId) {
@@ -299,6 +311,7 @@ export default function RootNavigator() {
       if (gatheringId) AsyncStorage.setItem(PENDING_GATHERING_LINK_KEY, gatheringId);
       const partnerId = businessIdFromUrl(url);
       if (partnerId) AsyncStorage.setItem(PENDING_BUSINESS_LINK_KEY, partnerId);
+      if (isBusinessApplyUrl(url)) AsyncStorage.setItem(PENDING_BUSINESS_APPLY_LINK_KEY, 'true');
     }
     Linking.getInitialURL().then(stashIfGathering);
     const subscription = Linking.addEventListener('url', ({ url }) => stashIfGathering(url));
@@ -321,6 +334,19 @@ export default function RootNavigator() {
         if (partnerId) {
           AsyncStorage.removeItem(PENDING_BUSINESS_LINK_KEY);
           setTimeout(() => resolveAndNavigateToBusiness(partnerId), 300);
+        }
+      });
+      // BusinessPartnerApply always resolves to the same screen for everyone, so a warm tap
+      // is already covered for free by linking.config.screens above (same as GatheringDetail)
+      // — this consume-once is only for the cold-start case, mirroring PENDING_GATHERING_LINK_KEY.
+      AsyncStorage.getItem(PENDING_BUSINESS_APPLY_LINK_KEY).then((flag) => {
+        if (flag === 'true') {
+          AsyncStorage.removeItem(PENDING_BUSINESS_APPLY_LINK_KEY);
+          setTimeout(() => {
+            if (navigationRef.isReady()) {
+              navigationRef.navigate('BusinessPartnerApply');
+            }
+          }, 300);
         }
       });
       initPurchases(session.user.id);
@@ -457,7 +483,7 @@ export default function RootNavigator() {
               })}
             />
             <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'List Your Business', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'Get Your Business on Nearby', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MyBusinessApplication" component={MyBusinessApplicationScreen} options={{ headerShown: true, title: 'My Application', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RequestBusinessPartner" component={RequestBusinessPartnerScreen} options={{ headerShown: true, title: 'Request a Business Partner', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AskBusiness" component={AskBusinessScreen} options={{ headerShown: true, title: 'Ask a Business', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />

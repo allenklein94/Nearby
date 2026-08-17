@@ -447,12 +447,86 @@ Phase 0 already found real vs. missing and to both locked decisions above:
    log correctly on a real device, that the owner's own "View Public Profile" tap genuinely
    doesn't inflate the count, and that the new Insights-tab card renders correctly both in its
    honest empty state and once real view rows exist.
-5. **The web landing surface itself** — informational only, per Decision 1's hybrid: hero, value
-   props, demo, pricing (free to start), how it works, FAQ. Reuses `BusinessProfileScreen.js`'s
-   real section shapes for the "here's what your business looks like" mockup rather than a
-   fabricated design, `theme.js` token values translated to matching CSS custom properties so the
-   page genuinely visually matches the app. Primary CTA ("Get Your Business on Nearby") deep-
-   links into the mobile app's new Milestone 2 flow, falling back to an install link.
+5. [x] **The web landing surface itself — DONE.** New `docs/business.html` — real, static,
+   dependency-free HTML/CSS/JS, matching the exact convention `docs/privacy.html`/`terms.html`
+   already established for this repo's one existing static surface (not Expo, no build step).
+   Confirmed the real hosting location before assuming `docs/` was actually deployed anywhere —
+   `LegalScreen.js`/`CompleteProfileScreen.js`/`liveTracking.js` already hardcode
+   `https://allenklein94.github.io/Nearby/...` URLs pointing at this exact folder, confirming
+   GitHub Pages already serves it live; this new page lands at
+   `https://allenklein94.github.io/Nearby/business.html` once merged, not a guessed location.
+   Linked from `docs/index.html`'s existing legal-links row ("For Businesses"), same plain button
+   style as the two existing links there.
+   All six sections per Decision 1's own list: **hero** ("Get Your Business on Nearby," the real
+   "Get started in about 30 seconds. Free to start." line, matching Milestone 2's own copy
+   verbatim, not a second invented tagline); **value props** (4 cards — host gatherings/
+   communities, real redeemable offers, Milestone 4's own new discovery analytics, direct
+   messaging — every claim traceable to something this app actually does today, nothing
+   aspirational); **demo** (a real phone-frame mockup reusing `BusinessProfileScreen.js`'s own
+   real section shapes verbatim — header/logo/follower line, action row, "What People Say,"
+   Perks card with a scarcity line and Redeem button, Upcoming Gatherings row — filled with
+   deliberately generic, clearly-labeled placeholder text ("Your Business Name," "Spots left of
+   your choosing") rather than fabricated numbers presented as if real, with an explicit caption
+   stating this is a preview of the real screen, not an invented mockup); **pricing** ("Free to
+   start," itemized real capabilities, an honest note that a future tailored-partnership
+   conversation may happen but nothing is ever auto-charged — matches the real state of
+   `partner_contracts`/billing, which requires a contract created by hand, never self-serve);
+   **how it works** (4 steps, matching Milestone 2's real flow exactly — find → confirm & complete
+   → submit for review → go live, including the same "reviewed before going live" honesty line);
+   **FAQ** (5 real questions, answers matching what this app's code actually does, not aspirational
+   claims). `theme.js`'s real `lightColors`/`darkColors`/`typography`/`spacing`/`radius` values
+   were translated directly into CSS custom properties (not approximated) — including a real
+   `prefers-color-scheme: dark` block using the app's own real dark palette, so the page matches
+   the app in both themes, not just light mode.
+   **CTA deep link, a real, working mechanism, not a placeholder href**: `nearby://business-apply`
+   — a genuinely new deep link added to `RootNavigator.js` alongside Milestone 3's two — since
+   `BusinessPartnerApply` always resolves to the same screen for everyone (no ownership branch
+   needed, unlike the business-profile link), it fits directly into `linking.config.screens`
+   (`BusinessPartnerApply: 'business-apply'`), so a warm tap is handled by NavigationContainer's
+   own subscription for free, the same way `GatheringDetail` already is — only the cold-start
+   (not-yet-authenticated) case needed the explicit stash-then-consume treatment, mirroring
+   `PENDING_GATHERING_LINK_KEY` exactly via a new `PENDING_BUSINESS_APPLY_LINK_KEY`. Verified by
+   calling React Navigation's own `getStateFromPath()` directly against the real
+   `linking.config` object (same verification method Create 2.0's own deep link used) —
+   `business-apply` correctly resolves to `{name: 'BusinessPartnerApply'}`. Found and fixed a
+   small, real, pre-existing staleness while in this file: the route's own native header title
+   still read "List Your Business" (predating Milestone 2's copy rename) — updated to "Get Your
+   Business on Nearby" to match the screen's own in-body heading.
+   **Real funnel logging from the page itself**: the same `business_acquisition_events` table
+   Milestone 1 built (`anon` INSERT-only, no Supabase Auth session needed — this page has no
+   Expo/React involvement at all, so it posts directly to the PostgREST endpoint using the same
+   public/publishable key already compiled into the mobile app bundle, not a new exposure) —
+   `landing_viewed` fires on load, `demo_opened` fires the first time the demo section is
+   interacted with, `cta_clicked` fires on either CTA button. **Verified live against
+   production** (`enmosvippabmuqslzrox`), via the actual REST endpoint with the actual page's own
+   payload shape, not a SQL-level simulation: a real `landing_viewed` POST with the real anon key
+   succeeded (201); a bogus event value was correctly rejected by the CHECK constraint (400); a
+   `SELECT` attempt with the same anon key was correctly denied (401, `permission denied` — no
+   read grant, matching the migration's own deny-by-default posture). Test row deleted
+   afterward; confirmed production back to 0 rows.
+   **One real, disclosed gap in the CTA's own fallback, not silently smoothed over**: Decision
+   1's own text says the CTA should fall "back to an install link" when the app isn't installed —
+   this app has never been published to the App Store or Google Play (confirmed against this
+   whole file's own repeated "no session has ever run this app on a simulator or a real device"
+   history), so there is no real store URL to link to, and inventing one would be exactly the
+   kind of fabricated external link this session's own standing rules prohibit. Built the
+   honest version instead: a `visibilitychange`-based heuristic (attempt the deep link, and if
+   the page is still visible ~1.5s later — meaning no app handled the URL scheme — show a plain
+   instructional fallback message telling the visitor to install Nearby and try again) with no
+   real link embedded. Revisit once a real store listing exists.
+   Verified via a direct HTML-well-formedness parse (`html.parser`, zero unclosed/mismatched
+   tags) and a `node --check` syntax pass on the page's own inline script (both clean) — this
+   page isn't part of the Expo bundle, so `npx expo export` doesn't cover it; it was checked on
+   its own terms instead. The mobile-app side of this milestone (`RootNavigator.js`'s new deep
+   link + route-title fix) was verified via a full `npx expo export --platform ios` (clean,
+   **2186 modules, unchanged** — edits only, no new client files).
+   **Not done, same standing gap as everywhere else in this file**: no manual browser/device
+   run-through — next session should confirm the page actually renders correctly once GitHub
+   Pages redeploys (a static-file push, not something this sandbox can trigger or preview live),
+   that the deep-link CTA genuinely opens the app on a real device with Nearby installed, that
+   the fallback message genuinely appears when it isn't, and that the funnel events actually land
+   correctly from a real browser (verified here via direct `curl` against the same endpoint with
+   the same key/payload shape, not an actual browser page load).
 6. **End-to-end verification**: a real test business run through the complete funnel (search/
    autofill → apply → admin approve → profile → first offer → consumer views it → dashboard shows
    the real resulting stats), verified live against production with disposable test data and
