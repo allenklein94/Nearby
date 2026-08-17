@@ -483,11 +483,11 @@ judgment call is still open.
      **Demand-generation was correctly not attempted** — out of this item's own scope per the
      plan's own text.
    - **Verification**: live production checks above; a full `npx expo export --platform ios`
-     after all client pieces landed (clean, no bundling errors). **The from-scratch migration
-     replay is deferred to one consolidated run covering every migration built in this same
-     session** (see this section's own closing status note) rather than three separate replays —
-     still run before any of this session's work is considered fully done, per this file's own
-     migration-discipline rule.
+     after all client pieces landed (clean, no bundling errors). **Verified via a real
+     from-scratch migration replay** (all 53 files in `supabase/migrations/`, `psql -v
+     ON_ERROR_STOP=1`, exit 0 throughout, `pg_cron`/`pg_trgm` created cleanly this run with no
+     workaround needed) — all 5 new `area_*` columns and `update_community_area()` confirmed to
+     exist in the freshly-rebuilt database. Container removed afterward.
    - **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
      run-through — next session should confirm the Area editor modal renders/saves correctly on a
      real device, that the "Use My Current Location" button round-trips a real device location,
@@ -601,28 +601,36 @@ restart never loses more than one piece.
 
 **Status: plan locked, phases execute below as they land — check each phase's own status line.**
 
-**Where to pick this up next session — Phases 1-2 are fully DONE (see their own status lines
-above). Phase 3 is next, in this exact order, not batched:**
-1. **Start with the Community Area plan above (Phase 3 item 3)** — it's the biggest, most
-   schema-adjacent piece and now has a full locked design + build plan written, just not built.
-   Work steps 1-6 in order, committing after each.
-2. Then Phase 3 items 1-2 (the `submission_id` linkage on `business_requests` + propose-time
-   `intent_outcomes` logging for Group Plans) — small, mechanical, no open decision. **These are
-   also Phase 4 item 2's own fix** (shared, not built twice) — worth doing right before Phase 4
-   so the two phases' status notes can both point at the same commit.
-3. Then Phase 3 item 4 (the `DiscoveryScreen.js` coral judgment call) — smallest item in the
-   whole plan, a single copy-adjacent decision (the one-time callout tip's "Got it" dismiss
-   action), not schema-touching.
-4. **Then Phase 4**: item 1 (elevate "repeat intent rate" as the real headline metric on
-   `MarketValidationScreen.js` — the number is already computed, this is a visual-hierarchy
-   change to that one screen only) rides naturally right after item 2 lands (step 2 above), since
-   both touch the same Group Plans funnel story.
-5. **Then Phase 5 last**, per the plan's own execution order (its ceiling is capped at ~8 without
-   a real device pass regardless of what's built) — the 4 named, already-approved-in-spirit Home
-   hierarchy tweaks from `PRODUCT_AUDIT/HOME_VISUAL_HIERARCHY_AUDIT_2026-08-14.md` recommendations
-   #3-6 (heavier Your Plans header, dial down Best Pick's visual weight, label the quick-stats
-   card, fix Your Communities' undersized header) — read that file's own text for the exact
-   styling deltas before touching `HomeScreen.js`, don't re-derive them from scratch.
+**Status, Aug 17 2026 — all 5 phases of this whole "Scorecard to 10" initiative are now DONE,
+build-wise.** Phases 1-2 landed earlier (see their own status lines above); Phases 3-5 all landed
+in one continuous session, each committed and pushed individually as it closed, per this file's
+own restart-safety convention:
+- **Phase 3** (Community Area — schema/RLS/RPC/editor UI/display/intent-resolution integration;
+  `submission_id` funnel linkage; propose-time `intent_outcomes` logging; the `DiscoveryScreen.js`
+  coral judgment call) — all 4 items closed, see Phase 3's own status notes above for the full
+  build/verification detail on each.
+- **Phase 4** (elevate "repeat intent rate" as `MarketValidationScreen.js`'s real headline
+  metric; the shared Group Plans funnel fix) — both code-closeable items done; item 3 (a real
+  production-monitoring dashboard, and the deeper fact every number here reads near-zero without
+  real usage) correctly remains infra-blocked, not something more code closes.
+- **Phase 5** (the 4 Home hierarchy tweaks from `PRODUCT_AUDIT/HOME_VISUAL_HIERARCHY_AUDIT_
+  2026-08-14.md` recommendations #3-6) — done; the honest ~8 ceiling without a real device pass
+  stands, per that phase's own text.
+
+**Verified via a real from-scratch migration replay covering every migration built across this
+whole Phase 3-5 pass** (all 53 files in `supabase/migrations/`, `psql -v ON_ERROR_STOP=1`, exit 0
+throughout, `pg_cron`/`pg_trgm` created cleanly with no workaround needed) — both new migrations'
+objects (`communities.area_*`/`update_community_area()`, `business_requests.submission_id`/
+`create_business_request()`'s new param, the widened `intent_outcomes` result_type check)
+confirmed to exist in the freshly-rebuilt database, not just live production.
+
+**What's left, per this whole initiative's own opening caveats, restated so a future session
+doesn't read "all 5 phases done" as "the app is fully validated"**: the two honest ceilings
+named at the very top of this initiative are unchanged by any of Phases 3-5's work — Product
+Coherence and parts of Analytics still genuinely depend on a real device pass and real usage
+data, which this file has repeatedly, plainly stated has never happened. Real-World Validation
+(1/10 in the original Aug 16 scorecard) remains completely untouched by this whole initiative —
+still the single biggest real risk regardless of how far every code-closeable category climbed.
 
 ## Aug 16 2026 — the other 3 progress bars reverted to coral too, closing the one open question
 ## the coral-usage rule left standing — DONE
