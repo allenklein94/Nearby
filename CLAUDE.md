@@ -669,6 +669,35 @@ expanding the conceptual architecture.** The next work after this whole initiati
 polish on these primitives, not another new object or phase — restated here so a future session
 doesn't read "6 phases done" as an invitation to keep adding scope.
 
+**Status: Phase 6 is DONE — the checkpoint passed clean.** New
+`scripts/live-verify/offer-system-prove-the-loop.js` (registered in `run-all.js`, documented in
+the README) built and run live against production (`enmosvippabmuqslzrox`) exactly per this
+phase's own text: one real disposable `business_requests` row, a real commercial offer AND a
+real social offer submitted onto it simultaneously (the real business owner, Allen, plays two
+distinct, independently-checked roles here — the business submitting the commercial offer, and,
+separately, a real accepted friend of the requester submitting the social offer, the one real
+connected pairing this sparse production dataset actually supports — noted honestly in the
+script's own header rather than silently glossed over), both sitting at real `offered` status at
+once with neither affecting the other. The commercial offer accepted by the real requester
+(Claude) — a real `business_reservations` row confirms (`status: confirmed`, `provider: nearby`,
+a real `confirmed_at`), a real `business_payments` row exists (`status: not_required`, a real
+`$12.50` amount correctly attributed to the real payer, honestly inert per Decision 5) — and the
+**real social offer is confirmed still sitting at `offered`, completely untouched**, proving
+directly (not just by reading the SQL) that `accept_business_offer()`'s own one-winner
+exclusivity sweep only ever reaches `business_request_offers`, never `social_offers` — the two
+primitives genuinely coexist on one request, a real different scarcity model, not an oversight.
+`complete_business_reservation()` then closes it out — rejected for a genuine stranger, succeeds
+for the real requester, the offer reaches its real terminal `completed` state with a real
+`completed_at`, the Reservation object itself correctly stays `confirmed` (completion is tracked
+on the Offer, not by inventing a second terminal state on the Reservation), and a repeat
+completion attempt is rejected, not silently re-processed. All 26 assertions pass; all test rows
+deleted afterward, production confirmed back to its exact pre-test baseline. No schema change
+this phase — it's pure verification over already-existing objects, so no from-scratch migration
+replay was needed; client side is unaffected (no `npx expo export` needed either). **Per the
+user's own explicit instruction, since this passed clean: this whole initiative's conceptual
+architecture stops expanding here — the only work that follows on these primitives is
+hardening/polish, not another new object or phase.**
+
 **Not scheduled in this plan, confirmed by Decision 5, named here so neither is silently dropped
 nor silently picked up later without the user present**: actually connecting Stripe, and
 actually connecting a real external reservation/transportation provider (Resy/OpenTable/Uber) to
@@ -695,9 +724,20 @@ than one phase's worth of work. Same standing limitation as everywhere else in t
 manual simulator/device run-through has ever been possible in this sandbox — flagged per-phase
 above, not silently assumed clean.
 
-**Status: plan locked — all six decisions resolved directly by the user, restated above exactly
-as given, plus the new "each actor reports its own state" architectural rule. Not yet built.
-Nothing in this section should be treated as done until its own phase's status note says so.**
+**Status: all six decisions resolved directly by the user, restated above exactly as given, plus
+the new "each actor reports its own state" architectural rule — and all 6 phases are now DONE,
+build-wise, each verified live against production (plus a from-scratch migration replay for
+every phase that touched schema) before being marked done. Check each phase's own status note
+above for its full detail, not this summary line.** Per Decision 5, Stripe and any real external
+reservation/transportation provider integration remain explicitly out of scope, needing the user
+present for that decision — not silently picked up. Per Phase 6's own explicit closing
+instruction, this whole initiative's conceptual architecture stops expanding here — what follows
+on these primitives is hardening/polish, not another new object or phase. The one standing gap
+repeated at the bottom of nearly every phase above remains open across all 6: no manual
+simulator/device run-through of any of the UI this whole initiative built (the Reservation/
+Payment seams' own dashboard surfaces, the Fulfillment Policy card, the "Compare Your Options"
+comparison view, the Social Offers section, and this final Phase 5's "Plan Something Together"
+flow) — next session should still confirm all of it reads and behaves correctly on a real device.
 
 
 ## Outstanding: "Scorecard to 10" initiative — PLAN LOCKED, executing phase by phase

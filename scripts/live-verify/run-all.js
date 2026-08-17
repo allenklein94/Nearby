@@ -24,6 +24,7 @@ const SCRIPTS = [
   'business-fulfillment-policy-auto-accept.js',
   'social-offer-group-plan.js',
   'date-proposal-business-request.js',
+  'offer-system-prove-the-loop.js',
 ];
 
 // A real, empirically-hit gotcha, not a guess: running the full suite back-to-back with no

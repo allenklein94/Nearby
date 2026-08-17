@@ -254,6 +254,27 @@ CI-runnable as-is (just supply the token as a secret).
   a second row; and real RLS (`SET ROLE authenticated`) makes the
   resulting request visible to BOTH match participants, not just
   whichever one submitted it, and invisible to a genuine stranger.
+- `offer-system-prove-the-loop.js` — "The Offer System" Phase 6 (see
+  CLAUDE.md's own plan), the whole initiative's own prove-the-loop
+  checkpoint: one real disposable request walked through Request →
+  Offer → Commitment → Reservation → Payment → completed Experience,
+  with a real commercial offer AND a real social offer coexisting on the
+  SAME request the entire time. Proves `accept_business_offer()`'s own
+  one-winner exclusivity sweep only ever touches `business_request_
+  offers`, never `social_offers` — the two primitives genuinely coexist,
+  neither corrupting the other, a real different scarcity model rather
+  than an oversight; that `business_reservations` is genuinely
+  `confirmed`, distinct from the Offer's own `accepted` status, not
+  conflated by coincidence; that `business_payments` is honestly
+  `not_required` with a real, correctly-attributed amount/payer,
+  permanently inert per Decision 5; that `complete_business_reservation()`
+  is rejected for a genuine stranger and rejected a second time once
+  already completed; and that the social offer is still sitting exactly
+  where it started — `offered`, untouched — after the entire commercial
+  loop closed out end-to-end. This is the clean pass the user's own
+  explicit instruction was gated on: once it holds, the initiative's own
+  conceptual architecture stops expanding — hardening/polish on these
+  primitives is the only work that follows, not another new object.
 
 ## What's not covered
 
