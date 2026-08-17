@@ -242,9 +242,42 @@ the Aug 15 Nearby 2.0/Group Plans Phase D builds.
 Reusing the brief's own audit-first, stop-and-verify-per-milestone discipline, adapted to what
 Phase 0 already found real vs. missing and to both locked decisions above:
 
-1. **Business-acquisition funnel event table** (`business_acquisition_events` or similar — same
-   plain owner/session-scoped, no-RPC-for-writes shape as `intent_submissions`), so every later
-   milestone has somewhere real to log into from the start, not bolted on at the end.
+1. [x] **Business-acquisition funnel event table — DONE.** `business_acquisition_events`
+   (`20260817_business_acquisition_events.sql`) — same plain, no-RPC-for-writes shape as
+   `intent_submissions`/`home_nudge_events`, with one real, disclosed difference: the first 3
+   steps (`landing_viewed`/`demo_opened`/`cta_clicked`) happen on the future web landing page
+   (Milestone 5), which has no Supabase Auth session at all — confirmed the whole app is gated
+   behind `session && profileComplete` in `RootNavigator.js`, so there's no unauthenticated
+   in-app state either, meaning every later funnel step genuinely only ever happens once the
+   business owner is a real signed-in user. `user_id` is nullable (populated only once real), a
+   plain client-generated `session_id` groups one visitor's own pre-auth web events (deliberately
+   **not** threaded through app install/sign-up to correlate a specific landing-page visit to the
+   specific application it produces — named honestly as a real future enhancement, not faked).
+   `anon` and `authenticated` can both `INSERT` only (no `SELECT` granted to either — deny by
+   default, matching `group_plan_offer_confirmations`'s own precedent), gated by a real `WITH
+   CHECK` (`(auth.uid() is null and user_id is null) or auth.uid() = user_id`) and a real `event`
+   CHECK constraint against the 13 named funnel steps. New admin-only
+   `get_business_acquisition_funnel_stats()` RPC, same `check_is_admin(auth.uid())` gate and
+   `nullif(...,0)`-guarded percentages as `get_intent_funnel_stats()`/`get_home_nudge_stats()`.
+   **Verified live against production** (`enmosvippabmuqslzrox`), not just applied — and a real
+   mistake caught mid-verification, not glossed over: the first pass tested the authenticated-
+   role cases via `asUser()` (session-scoped JWT claim only, no `SET ROLE`), which runs as the
+   Management API's own table-owner connection and silently bypasses RLS entirely — the exact
+   "false-negative first pass" gotcha this file's own history has already hit and documented
+   more than once. Caught when a deliberate cross-user spoof attempt (Claude inserting an event
+   claiming Allen's `user_id`) *succeeded* when it should have been rejected. Cleaned up the
+   resulting bogus rows and re-ran every authenticated-side check via `runSqlAsRls()` (genuine
+   `SET ROLE authenticated`) instead: `anon` can insert a real `landing_viewed` row with no
+   `user_id`; `anon` spoofing a `user_id` is rejected by RLS; `anon` submitting a bogus `event`
+   value is rejected by the CHECK constraint; a real authenticated user (Allen) inserting 3 real
+   events under his own `user_id` succeeds; a different real authenticated user (Claude)
+   attempting to insert an event claiming Allen's `user_id` is genuinely rejected by RLS (proven
+   under real `SET ROLE authenticated`, not just table-owner bypass); a non-admin's rollup call
+   is rejected; the real admin's rollup call succeeds with real, hand-checked counts matching
+   exactly what was inserted. All test rows deleted afterward; production confirmed back to 0
+   rows. **Verified via a real from-scratch migration replay** (all 55 `supabase/migrations/`
+   files, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) — the new table's CHECK constraint and
+   the new function both confirmed to exist in the freshly-rebuilt database. Container removed.
 2. **Streamlined apply flow** — a real "Find your business" step (Google Places search, reused
    as its own composable piece per Decision 2's architecture note above) inserted ahead of
    `BusinessPartnerApplyScreen.js`'s existing form, auto-filling whatever Places returns; the
