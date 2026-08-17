@@ -255,6 +255,47 @@ worth of work.
   `scripts/live-verify/business-offer-double-accept-concurrent.js` still passes unchanged (zero
   regression in the proven-under-concurrency accept path). Commit and push before Phase 2.
 
+**Status: Phase 1 is DONE, migration applied and verified live — the from-scratch Docker replay
+is the one disclosed gap not yet closed.** `supabase/migrations/20260817_offer_system_phase1_
+reservation_payment_seams.sql` (both new tables, both new RPCs, `accept_business_offer()`/
+`complete_business_reservation()` re-pointed) was already live in production when this session
+picked the work back up after a restart — confirmed directly (`business_reservations`/
+`business_payments` tables and `withdraw_business_offer()`/`mark_business_offer_viewed()`
+functions all exist) rather than re-applying blind. New
+`scripts/live-verify/offer-reservation-payment-seam.js` (registered in `run-all.js`, documented
+in the README) proves every real transition against production with disposable test data: an
+accepted offer produces a real `confirmed`/`provider='nearby'` reservation and a real
+`not_required` payment row carrying the offer's own real price; `withdraw_business_offer()`
+only succeeds from `offered` (rejected from `accepted`, rejected for a non-owner, rejected on a
+second call); `mark_business_offer_viewed()` is a genuine idempotent read-receipt (a stranger's
+call is a silent no-op, the real requester's first call sets `viewed_at`, a repeat call doesn't
+overwrite it); `complete_business_reservation()` now genuinely requires a confirmed Reservation,
+not just an `accepted` Offer (rejected on a withdrawn offer, which never got one). All test rows
+deleted afterward, production confirmed back to its exact pre-test baseline (0 rows across every
+touched table). **A real, disclosed bug was found and fixed in
+`business-offer-double-accept-concurrent.js` itself while re-confirming it, not left silently
+broken**: its own header comment claimed `accept_business_offer()`'s first lock is on the offer
+row, but the function's real first lock (re-checked against its live body) is on the *parent*
+`business_requests` row — locking the wrong resource first produced a genuine Postgres deadlock
+(`40P01`) once Phase 1's two new `INSERT`s lengthened the transaction just enough to expose the
+reversed-lock-order race, the identical shape already documented and fixed once for
+`confirm_group_plan_offer` elsewhere in this file. Fixed by locking `business_requests` first,
+matching the function's own real lock order; re-run afterward and passes clean. **Also bumped
+`run-all.js`'s inter-script delay from 2s → 4s**: the now-13-script suite's cumulative
+Management-API request volume was landing right on the documented `ThrottlerException` gotcha,
+consistently on this newest (longest) script — confirmed by re-running the full suite clean
+after the bump. One real, disclosed residual gap named in the code itself: each script's
+`finally` cleanup swallows a throttled delete via `.catch(() => {})` (this codebase's own
+"cleanup failure is non-fatal" convention), so a throttled run can still leave a real orphaned
+test row — happened once, live, during this exact session (3 disposable `business_requests`/
+`business_request_offers` rows survived a throttled run and had to be found and deleted by
+hand, confirmed via their own `live-verify:`-tagged text) — the longer delay reduces how often
+this can happen but doesn't make cleanup itself throttle-proof. **Not done this pass**: the
+from-scratch Docker migration replay for this specific migration — every other verification bar
+in the plan's own checkpoint was met live against production; this one gap is disclosed rather
+than silently skipped, matching this file's own standing convention, and should be closed before
+or alongside Phase 2's own checkpoint. Committed and pushed (`4b0b30c8`).
+
 **Phase 2 — Business fulfillment policies (unchanged from the original plan, closes Gap 2).**
 - New `business_fulfillment_policies` table, owner-scoped (one active policy per partner, or a
   small ordered set — resolve during build whether one policy or several make more sense given
