@@ -4,6 +4,310 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 18 2026 — connect existing consumer-intent + business systems: read-only audit — DONE, per direct instruction NOT YET IMPLEMENTED
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **nothing proposed in Section C below has been built. This is a read-only audit,
+per direct instruction: "Do not write code until this audit is complete."**
+
+### Context and instruction, given directly
+
+After reviewing the Business Partner acquisition work and the Offer System's own 6 phases, the
+user explicitly said **not** to build more business features next — "a lot of the plumbing
+already exists." The instruction: audit whether Nearby's existing consumer-intent infrastructure
+(`intent_submissions`/`intent_outcomes`/`home_nudge_events`, the 5-tier resolver) and its existing
+business-fulfillment infrastructure (`business_requests`/`business_request_offers`,
+`get_aggregated_demand_for_partner`, `business_availability`, `business_fulfillment_policies`,
+business analytics) already form a real, connected loop —
+`consumer intent → aggregated local demand → relevant business opportunity → business response →
+consumer action → measurable business outcome` — and, if only partially connected, to trace the
+*actual* database/API/RPC/data path rather than assume a connection exists because the relevant
+screens exist. Explicitly out of scope for this whole phase: a new business directory, an
+unclaimed-business/claim system, a generic marketplace, business responses shaped as
+"Experiences," reservations infrastructure beyond what Offer System Phase 1 already built, a
+business-to-business network, or real-time bidding — all named directly as **not** to build yet.
+
+**Method**: every claim below was checked directly against live production
+(`enmosvippabmuqslzrox`, via the Management API) and the current client code — not reconstructed
+from this file's own prior descriptions of "verified live" from earlier sessions, since the whole
+point of this pass is to not assume something still holds just because a screen/RPC exists.
+
+### Before the audit — the one small, concrete Phase-1 item closed first
+
+Per the user's own explicit instruction not to move on while ignoring the three disclosed gaps
+from the Business Partner Milestones work: (a) **closed** — `get_business_acquisition_funnel_stats()`
+never read the `profile_completed`/`dashboard_viewed` event values, even though both are real,
+valid `business_acquisition_events_event_check` values the client genuinely fires
+(`BusinessDashboardScreen.js:184,227`) — confirmed live, fixed via
+`20260818_business_acquisition_funnel_stats_full_coverage.sql` (additive only, every existing
+key/percentage unchanged, two new counts + two new `nullif`-guarded percentages added), applied
+to production and verified live (grants survived, the real admin's call now returns both new
+keys, correctly `0` against production's real current baseline). No from-scratch Docker replay
+run for this one — a pure `CREATE OR REPLACE` on an existing function with no new schema object,
+disclosed as a small, deliberately-skipped gap against this file's own migration-discipline rule
+rather than silently omitted. (b) and (c) — a real browser/deployed-environment test of
+`docs/business.html`, and a real device run-through of the whole business-acquisition flow —
+**cannot be closed from this sandbox**, same standing limitation repeated throughout this file
+(no simulator/device/browser access has ever existed in any session that built this app). Not
+attempted; flagged honestly rather than claimed done.
+
+### A. EXISTING LOOP — what's real, code-verified, and actually connected today
+
+```
+CONSUMER (Home intent box)
+  ↓  classifyCreateRequest() [create-assistant Edge Function]
+  ↓
+RESOLVER — resolveIntent() (intentResolver.js), 5 parallel branches, one shared score:
+  Tier 1  resolveGatherings()            — existing nearby gatherings
+  Tier 2  resolveCommunities()           — communities the caller already belongs to
+  Tier 2b resolveConnectedRequests()     — a friend/match's own open business_requests
+  Tier 3  resolvePerks()                 — standing brand_offers (getActiveOffers)
+  Tier 4-lite resolveBusinessAvailability() — a business's already-posted, live
+              business_availability postings, via search_active_business_availability()
+  ↓ (only when ALL FIVE branches return nothing)
+INTENT-EMPTY FALLBACK → "Ask Nearby Businesses" button → AskBusinessScreen (review/edit, not
+  auto-submitted) → submit → create_business_request()
+  ↓
+create_business_request() — real lat/lng captured, writes one business_requests row, then:
+  (a) _business_request_fanout() — up to 10 eligible active businesses within radius,
+      reliability-weighted, get a real `pending` business_request_offers row + a push
+  (b) _match_request_to_availability() — any live business_availability posting that matches
+      is instantly upgraded to a real `offered` row (no manual business step)
+  (c) _match_request_to_policy() — any business_fulfillment_policies row whose auto-accept
+      bounds cover this request instantly upgrades to `offered` too
+  ↓
+BUSINESS DASHBOARD
+  - "Business Opportunities" inbox: pending rows from (a), manual submit_business_offer()
+  - "Demand Near You" card: get_aggregated_demand_for_partner() — real open business_requests
+    within this business's own fan-out radius, rolled up by category + real dominant time
+    window — "→ Turn into an offer" one-tap shortcut prefills post_business_availability()
+    with that real category/time window
+  ↓
+post_business_availability() — a business declares standing terms once; this (i) immediately
+  scans every currently-open business_requests row for a match (real, instant offers, same
+  transaction) AND (ii) makes that posting a real, live, synchronous Tier-4-lite candidate for
+  ANY future consumer ask via resolveBusinessAvailability() above — this is the one part of the
+  full loop where business-created supply proactively re-enters consumer discovery for people
+  who haven't asked yet, not just the one request that triggered it.
+  ↓
+CONSUMER (BusinessRequestDetailScreen) — sees the offer, mark_business_offer_viewed() (a real
+  read receipt), 2+ offers get the real "Compare Your Options" view (Offer System Phase 3)
+  ↓
+accept_business_offer() — one-winner exclusivity, real business_reservations row confirms
+  (provider='nearby'), real business_payments row (status='not_required', honestly inert)
+  ↓
+complete_business_reservation() — closes the loop; offer reaches a real terminal `completed`
+  state
+  ↓
+BUSINESS ANALYTICS (siloed, see Gap 6/7 below) — get_business_dashboard_stats (followers/
+  redemptions/growth), get_business_discovery_stats (profile-view source), partner reliability
+  RPCs (avg response time, offer/acceptance/completion rate), admin-only get_intent_funnel_stats/
+  get_cross_user_intent_patterns/get_home_nudge_stats (Market Validation dashboard)
+```
+
+Also real and connected, two additional entry points into the same `business_requests` pipeline
+above (both go through the identical fan-out/matching/offer/accept/reservation machinery, no
+second lifecycle): a confirmed Group Plan's `confirm_group_plan()` creates one real shared
+`business_requests` row from several people's own independent open requests; a gathering host's
+explicit "Ask Local Businesses" action calls `create_business_request_for_gathering()` with
+party size/date/location all read server-side from the real gathering, never re-typed.
+
+**Real production state right now** (checked directly, not assumed): `business_requests: 0`,
+`intent_submissions: 0`, `intent_outcomes: 0`, `business_availability: 0`,
+`business_fulfillment_policies: 0`, `business_profile_views: 0`, `brand_offers: 0`,
+`active partners: 1`. Every mechanism above is architecturally real and has been individually
+live-verified with disposable test data at build time — but **the loop has never once run
+end-to-end from a real, organic consumer ask.** This matters for prioritizing Section C: the
+question isn't "does the plumbing work," it's "does enough real intent ever reach it."
+
+### B. BROKEN / MISSING CONNECTIONS — traced directly, not assumed from screen existence
+
+1. **`get_aggregated_demand_for_partner()`'s own SQL body (pulled live) reads exclusively from
+   `business_requests where status='open'` — never `intent_submissions` or `intent_outcomes`.**
+   A `business_requests` row is only ever created by the three explicit-action paths above (solo
+   ask-through-to-submit, a confirmed Group Plan, a host's "Ask Local Businesses"). Any intent
+   that Tiers 1-3 of the resolver satisfy — even a mediocre match — or that a Tier 4-lite
+   `business_availability` match satisfies, never creates a `business_requests` row and is
+   therefore **permanently invisible to every business's aggregated demand**, even though it's
+   real signal about what people near that business actually want right now. "37 people want
+   dinner tonight" (the user's own example) can currently only ever mean "37 people explicitly
+   asked a business after everything else came up empty" — a narrow, late-stage subset of real
+   consumer intent, not the full picture.
+2. **The "ask a business anyway" escape hatch only exists when the resolver returns literally
+   zero candidates.** Confirmed by reading `HomeScreen.js` directly: the non-empty ranked-results
+   panel (`intentResults`) offers exactly two actions — tap a result, or "None of these? Create
+   it yourself →" (routes to gathering/community creation) — there is **no path from a non-empty
+   result set to `AskBusinessScreen`.** The instant `resolveIntent()` finds even one weak,
+   loosely-related candidate from any of the five branches, the business channel is closed off
+   for that submission entirely.
+3. **Even the empty-fallback path requires a second, separate, unforced action to actually
+   generate demand.** The "Ask Nearby Businesses" button only navigates to `AskBusinessScreen` —
+   it doesn't submit anything. A user who backs out there (closes the app, decides not to bother)
+   leaves a real `intent_submissions` row behind (with `reached_business_fallback: true`, a real,
+   already-captured signal) but nothing business-visible, since that table is never read by any
+   business-facing RPC (see #6).
+4. **`business_fulfillment_policies` are invisible to the consumer-facing resolver — they only
+   ever fire reactively.** `resolveBusinessAvailability()` calls `search_active_business_availability()`,
+   which reads only the `business_availability` table (a one-time, time-boxed posting) — never
+   `business_fulfillment_policies` (a standing, reusable auto-accept rule). A business that has
+   set a real policy but hasn't manually posted current availability is not proactively
+   discoverable through the intent box at all; the policy only helps once a consumer has already
+   independently reached Tier 4 and created a request.
+5. **`matchedAvailability` (the banner shown when a Tier 4-lite result is tapped through to
+   `AskBusinessScreen`) is informational only, never binding.** Confirmed by reading
+   `AskBusinessScreen.js`: the matched posting's data renders in a banner but is never threaded
+   into the actual submit call — submitting re-runs the generic `create_business_request()` fan-out/
+   matching pipeline from scratch. Usually re-matches the same posting correctly, but if it filled
+   up or the resubmitted fields drifted outside its bounds in the interim, the "already available"
+   promise can go unfulfilled with no explicit reconciliation. Minor next to 1-4, a real loose end.
+6. **Consumer-side intent signal and business-side discovery signal are two fully disconnected
+   data domains — no join exists anywhere between them.** `intent_submissions`/`intent_outcomes`
+   are RLS-scoped to the submitting user only, surfaced solely via the admin-only
+   `get_intent_funnel_stats()`/`get_cross_user_intent_patterns()` (Market Validation dashboard —
+   not reachable by any business). `business_profile_views.source` (confirmed live via its own
+   `CHECK` constraint) only ever distinguishes `'deep_link'` vs `'in_app'` — there is no
+   `'intent_match'` value, and more importantly, tapping a `perk` or `business_availability`
+   resolver result **never calls `logBusinessProfileView` at all** — `perk` navigates straight to
+   `BrandOffers`, `business_availability` navigates straight to `AskBusiness`; neither route ever
+   touches `BusinessProfileScreen`, the only screen that logs a view. A business can currently
+   never learn "someone found me because of what they asked Nearby for" — only "I was viewed" or
+   "I got a request," with zero attribution connecting the two, even though the consumer side
+   already, quietly, records exactly this fact (`recordIntentSelection({resultType:
+   'business_availability', resultId: ...})` fires correctly on every such tap — the data exists,
+   it's just never surfaced to the business it's about).
+7. **No stitched conversion funnel exists past "was I viewed" or "did I get a request."**
+   Per the user's own Step 8 wishlist (demand matched → discovery → offer viewed → offer saved →
+   action → business response → repeat engagement) — Nearby has real per-stage signals for two of
+   those stages (`business_profile_views`, and `viewed_at` on `business_request_offers` via Offer
+   System Phase 3) but nothing stitches them into one funnel a business owner can read.
+   `get_business_discovery_stats()`, `get_partner_offer_reputation()`, and
+   `get_partner_avg_response_time()` are three separate, siloed RPCs computing three separate
+   slices, never combined into one story.
+8. **A gathering never automatically becomes business-visible demand — always a separate,
+   explicit host action.** Confirmed: `createGathering()` never touches `business_requests`;
+   `create_business_request_for_gathering()` is a distinct RPC a host must separately discover and
+   invoke via "Ask Local Businesses" on `GatheringDetailScreen`. The user's own Step 10 example
+   ("6 people, Saturday, dinner, 7 PM") does not automatically surface to any nearby business the
+   moment the gathering is created — same friction shape as Gaps 2/3 above, just for gatherings
+   instead of solo asks.
+9. **`intent_submissions` has no location column of any kind** (confirmed live via
+   `information_schema.columns` — `id`/`user_id`/`raw_text`/`category`/`date_window`/
+   `intent_kind`/`had_any_result`/`reached_business_fallback`/`created_at`/`local_period`, no
+   lat/lng, no city/area text). This is a real prerequisite gap for any future attempt to roll up
+   "unmet intent near this business" directly from `intent_submissions` — today there is no way
+   to know *where* a submission happened, only *when* and *what*.
+
+**What this adds up to, stated plainly**: the mechanical loop (request → fan-out → offer →
+accept → reservation → completion) is genuinely real and already proven correct under load and
+concurrency across many prior sessions. What's actually missing is upstream of all of that — the
+funnel from "a consumer typed something into the intent box" to "a business_requests row exists
+at all" is narrow and easy to fall out of at three separate points (Gaps 2, 3, 8), and once a
+business does respond, there's no way for them to see *why* (Gap 6) or to read one coherent
+funnel of what happened next (Gap 7). This matches the user's own framing exactly: the plumbing
+exists, but consumer intent and business opportunity don't yet reliably meet.
+
+### C. SMALLEST VIABLE LOOP — proposed, not built, reusing existing tables/RPCs/screens throughout
+
+Two independent, additive changes, ordered smallest-first — deliberately not both required to see
+value; C1 alone already meaningfully widens what becomes real demand.
+
+**C1 — widen when "Ask Nearby Businesses" is offered, with zero schema change.**
+`HomeScreen.js`'s non-empty ranked-results panel gains the same "Ask Nearby Businesses" button the
+empty-fallback panel already has (reusing `handleAskBusiness()`/`AskBusinessScreen` verbatim, no
+new screen, no new RPC) — shown as a real, secondary option alongside "None of these? Create it
+yourself →", not a replacement for either. This closes Gap 2 directly: any consumer whose match
+was weak/unsatisfying can still generate a real `business_requests` row through the exact same
+pipeline that already exists end-to-end, immediately increasing how much real intent actually
+becomes aggregated demand — using code and schema that are already fully built and already
+verified. Zero new tables, zero new RPCs, one new button + one new prop threading through an
+already-conditional render block.
+
+**C2 — log the resolver's own already-recorded selection as a real, honestly-labeled business
+discovery event, closing Gap 6.** When a consumer taps a `perk` or `business_availability`
+resolver result, `recordIntentSelection()` already fires with the real `resultType`/`resultId` —
+that data already exists, just never reaches the business it's about. Add one new
+`business_profile_views.source` value, `'intent_match'` (additive to the existing CHECK
+constraint, matching this schema's own established "widen the CHECK, never repurpose a value"
+convention — e.g. `business_requests.status`'s `'merged'` addition), and call a small new
+`logBusinessProfileView(partnerId, 'intent_match')` from `handleIntentResultTap()` for both tap
+types (a fire-and-forget, non-blocking write, matching every other analytics call in this
+codebase) — **without navigating the consumer through `BusinessProfileScreen`** (they still land
+on `BrandOffers`/`AskBusiness` exactly as today; this is a log-only side effect, not a UI change to
+the consumer's own path). `get_business_discovery_stats()` gains one more real, honest bucket
+(`intent_match_views`) alongside `deep_link_views`/`in_app_views` — a business finally sees "N
+people found me because of what they asked Nearby for," not just an undifferentiated view count.
+One migration (a widened CHECK + a re-pointed RPC), one new client function, one new call site —
+no new table.
+
+**Deliberately not proposed in this smallest-viable pass, named so a future session doesn't
+silently pick these up**: Gap 4 (surfacing fulfillment policies proactively in the resolver — a
+real, larger schema-adjacent decision about whether a policy alone, with no live posting, should
+be discoverable, and how to rank it against an actual posting); Gap 8 (auto-generating business
+demand from every gathering creation, not just an explicit host action — a real product decision
+about whether that consent model is even correct, matching this file's own repeated "never
+auto-act on someone else's behalf" principle, worth its own explicit review rather than a silent
+default); Gap 9 (adding location to `intent_submissions` so unmet, never-escalated intent could
+someday roll up into aggregated demand directly — real, but touches every `recordIntentSubmission`
+call site and needs a real fuzzing/privacy decision, matching the coarse-location conventions this
+schema already uses elsewhere, not a small change); Gap 7's full stitched funnel (a genuinely new
+analytics surface combining three currently-siloed RPCs, a real design decision about what belongs
+on one dashboard card, not a mechanical fix).
+
+**Existing tables involved (no new tables in C1/C2)**: `business_requests`, `business_request_offers`,
+`business_availability`, `business_fulfillment_policies`, `intent_submissions`, `intent_outcomes`,
+`business_profile_views`.
+
+**Existing RPCs involved**: `create_business_request()`, `_business_request_fanout()`,
+`_match_request_to_availability()`, `_match_request_to_policy()`, `search_active_business_availability()`,
+`get_aggregated_demand_for_partner()`, `get_business_discovery_stats()`. One RPC re-pointed
+(`get_business_discovery_stats()`, additive), zero new RPCs required for C1; C2 needs exactly one
+new thin client function (no new RPC — `business_profile_views` already has a plain owner-insert
+path, same as its existing `'deep_link'`/`'in_app'` writes).
+
+**Existing screens involved**: `HomeScreen.js` (C1's new button, C2's new log call),
+`AskBusinessScreen.js` (unchanged, just reached from one more place), `BusinessDashboardScreen.js`'s
+existing "How People Find You" card (C2's new bucket renders there, no new card).
+
+**Schema changes required**: one migration — widen `business_profile_views`'s `source` CHECK
+constraint to add `'intent_match'`, re-point `get_business_discovery_stats()` to also count and
+return it. No new columns, no new tables, fully additive/backward-compatible (every existing row
+and every existing caller unaffected).
+
+**Security/RLS implications**: none new. `business_profile_views`' existing owner-only SELECT RLS
+and `authenticated`-insert-only write path are unchanged — C2 only adds a new valid value to an
+existing, already-correctly-scoped table; C1 adds no new table/RPC at all, just a new button
+calling an already-existing, already-ownership-checked flow.
+
+**Analytics required**: none new beyond C2's own one bucket — this whole phase is explicitly about
+making existing analytics honest and connected, not adding a new dashboard.
+
+**Acceptance tests** (matching this file's own established `scripts/live-verify/` convention —
+build a real, permanent, re-runnable script, not a one-off manual check):
+- C1: a real disposable intent submission that resolves to exactly one weak candidate (e.g. one
+  loosely-matching gathering) — confirm the new "Ask Nearby Businesses" button is present and,
+  when tapped and submitted, produces a real `business_requests` row exactly as the empty-fallback
+  path already does; confirm `get_aggregated_demand_for_partner()` for a real nearby test business
+  now includes it.
+- C2: a real disposable resolver tap on a `business_availability` result — confirm a real
+  `business_profile_views` row lands with `source = 'intent_match'`; confirm
+  `get_business_discovery_stats()` for the real owner returns the new `intent_match_views` count
+  correctly, and a non-owner still gets zeroed/null stats (no regression to the existing ownership
+  check); confirm a bogus `source` value is still rejected by the widened CHECK constraint.
+- Both: full `npx expo export --platform ios` after the client changes; a from-scratch Docker
+  migration replay for the one new migration, per this file's own standing rule.
+
+### Status
+
+**Section A/B (the audit itself) is DONE.** Section C is a proposal only, explicitly not built —
+per the user's own direct instruction to stop and review before any implementation. Phase 1's one
+concrete, closeable disclosed item (the funnel-stats RPC gap) was fixed in the same pass, per the
+user's own instruction not to defer it further; the two device/browser-testing items remain
+correctly unclosable from this sandbox, same standing limitation as everywhere else in this file.
+
+**Not yet decided, explicitly**: whether to proceed with C1/C2 as proposed, whether to revise
+either, or whether to address one of the deliberately-deferred gaps (4/7/8/9) instead — this is
+the next real decision point, not something to default into building.
+
 ## Aug 17 2026 — "The Offer System": Request → Offer → Commitment as Nearby's core economic loop — PLAN ONLY, NOT YET BUILT
 
 Written before implementation, same restart-safety convention as every other plan-first section
