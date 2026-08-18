@@ -296,15 +296,132 @@ build a real, permanent, re-runnable script, not a one-off manual check):
 - Both: full `npx expo export --platform ios` after the client changes; a from-scratch Docker
   migration replay for the one new migration, per this file's own standing rule.
 
+### D. C1/C2 — APPROVED, locked implementation plan, restated in exact concrete terms
+
+The user reviewed Section C directly and approved it as-is, with an explicit constraint restated
+here so it isn't softened: **use the existing machinery, don't redesign or replace the existing
+business-request/fan-out/offer/reservation architecture.** The objective is narrower than it might
+sound — make existing consumer intent capable of entering the existing business-response
+machinery, nothing more. Written before implementation, same restart-safety convention as every
+other plan-first section in this file — if a restart hits mid-build, check `git status`/`git log`
+against the exact line-level detail below for what's actually landed.
+
+**C1 — exact change, zero schema, one file.**
+- File: `src/screens/HomeScreen.js`.
+- Today: `handleAskBusiness()` (lines 581-602) reads its source data (`classifyResult`,
+  `typedText`, `submissionId`) directly off the `intentEmptyFallback` state var, clears that state
+  var, calls `recordIntentSelection({..., resultType: 'created_new', resultId: null, resultTitle:
+  typedText, submissionId})`, and navigates to `AskBusiness` with the prefill params. This is only
+  ever reachable from the `intentEmptyFallback` render branch (~line 704), which only ever gets
+  set when `resolveIntent()` returns **zero** candidates (line 396).
+- Change: extract the record+navigate body (everything currently inside `handleAskBusiness()`
+  after the two `set...(null/'')` calls) into a small shared helper,
+  `goAskBusiness({ classifyResult, typedText, submissionId })`, taking no state-clearing
+  responsibility itself. `handleAskBusiness()` becomes a thin wrapper: reads `intentEmptyFallback`,
+  clears it + `intentText`, calls `goAskBusiness(...)` — behavior byte-for-byte unchanged for the
+  existing empty-fallback path. A new `handleAskBusinessFromResults()` does the same shape reading
+  from `intentResults` (`classifyResult`, `typedText`, `submissionId` — already present on that
+  state object, confirmed at line ~406) instead, clears `intentResults` + `intentText`, calls the
+  same `goAskBusiness(...)`.
+- The non-empty results panel (~line 660-701, the `intentResults &&` block) gains one new button,
+  rendered alongside the existing "None of these? Create it yourself →" and "Try something else"
+  — **not replacing either** — reusing the exact same `askBusinessButton`/`askBusinessButtonText`
+  style and `storefront-outline` icon the empty-fallback panel already uses (line 713-716), so it
+  reads as the same real action in both places: `<TouchableOpacity ... onPress={handleAskBusinessFromResults}>Ask Nearby Businesses</TouchableOpacity>`.
+- `resultType` stays `'created_new'` for this new call site too — already a valid
+  `intent_outcomes.result_type` CHECK value (confirmed live: `gathering|community|friend_request|
+  perk|business_availability|business_offer|created_new|group_plan_proposed`), matching the
+  existing empty-fallback path's own semantics exactly. No schema change needed for C1 at all.
+- Net effect, precisely: any consumer whose ask resolves to 1+ candidates from any of the 5 tiers
+  can now also reach `AskBusinessScreen` without dismissing the results first — closing Gap 2 —
+  and, as a direct side effect (not a separate change), **more real `business_requests` rows get
+  created**, which is the only input `get_aggregated_demand_for_partner()` reads from — so C1
+  substantially narrows Gap 1's practical impact too, without touching that RPC's own SQL at all.
+
+**C2 — exact change, one migration, zero new client functions.**
+- Schema: one new migration, `supabase/migrations/20260818_business_profile_views_intent_match_source.sql`
+  — `ALTER TABLE business_profile_views DROP CONSTRAINT business_profile_views_source_check;
+  ALTER TABLE business_profile_views ADD CONSTRAINT business_profile_views_source_check CHECK
+  (source = ANY (ARRAY['deep_link','in_app','intent_match']))` — additive, matching this schema's
+  own "widen the CHECK, never repurpose a value" convention. No new column, no new table.
+- RPC: `get_business_discovery_stats(partner_id_param uuid)` — re-pointed (`CREATE OR REPLACE`,
+  same signature) to also compute `v_intent_match integer` (`count(*) ... and source =
+  'intent_match'`) and return it as a new `intent_match_views` key, alongside the existing
+  `total_views`/`deep_link_views`/`in_app_views`/`views_last_30_days`/`pct_via_deep_link` — every
+  existing key unchanged. The non-owner branch's zeroed/null return gains
+  `'intent_match_views': 0` too, matching its existing all-zero shape.
+- Client: **no new function** — `logBusinessProfileView(partnerId, source)`
+  (`src/services/brandOffers.js:645`) already takes an arbitrary `source` string and already does
+  exactly the fire-and-forget, non-blocking, ownership-scoped insert this needs. Two new call
+  sites only, both in `handleIntentResultTap()` (`HomeScreen.js`, ~line 405-443):
+  - `perk` branch: call `logBusinessProfileView(item.partnerId, 'intent_match')` before/alongside
+    the existing `navigation.navigate('BrandOffers', ...)` call. **Requires one small addition to
+    `resolvePerks()` in `src/services/intentResolver.js` (~line 171-186)**: the mapped result
+    object currently has no `partnerId` field — add `partnerId: offer.partner_id` (confirmed live:
+    `getActiveOffers()`'s `select('*', ...)` already returns the raw `brand_offers.partner_id`
+    column on every offer object, so this is just carrying an already-fetched field through, not a
+    new query).
+  - `business_availability` branch: call `logBusinessProfileView(item.partnerId, 'intent_match')`
+    — `item.partnerId` already exists on this result type (`resolveBusinessAvailability()` already
+    sets it, confirmed live at `intentResolver.js:215`), no source change needed there.
+  - Both calls are fire-and-forget (the function already swallows its own errors, matching
+    `logBusinessAcquisitionEvent`'s established non-critical-write philosophy) and do **not**
+    navigate the consumer through `BusinessProfileScreen` — the consumer's own path
+    (`BrandOffers`/`AskBusiness`) is completely unchanged; this is a log-only side effect.
+- `BusinessDashboardScreen.js`'s existing "How People Find You" card renders the new
+  `intent_match_views` bucket alongside the existing two — no new card, no new screen.
+
+**The user's own required post-implementation verification, restated as the literal acceptance
+bar for this pass — not paraphrased, not softened:**
+1. A genuine `intent_submission` can produce a business-relevant demand signal.
+2. The business-side demand aggregation can see the appropriate consumer-intent signal.
+3. A weak/non-satisfying match does not suppress the "ask a business" path.
+4. The existing request → fan-out → offer → accept → reservation → completion flow remains
+   unchanged.
+5. No individual consumer identity is unnecessarily exposed to businesses; business-facing demand
+   remains appropriately aggregated.
+6. Existing business requests continue working exactly as before.
+7. Existing offers and reservations continue working exactly as before.
+
+**Verification convention for this pass, matching every other schema change in this file**: apply
+the one new migration to production and verify live with real disposable test data (a real weak-
+match resolver result → tap "Ask Nearby Businesses" → real `business_requests` row created and
+correctly picked up by `get_aggregated_demand_for_partner()` for a real nearby test business; a
+real `perk`/`business_availability` tap → real `business_profile_views` row with
+`source='intent_match'` → `get_business_discovery_stats()` returns the new count correctly for the
+real owner and stays zeroed for a non-owner; a bogus `source` value still rejected by the widened
+CHECK) — clean up all test data afterward, confirm production back to its exact pre-test baseline.
+A from-scratch Docker migration replay for the one new migration. A full `npx expo export
+--platform ios` after the client changes. Then a real, disposable, end-to-end
+production-data-path run of the full chain (consumer intent → demand aggregation → business
+opportunity → business response → offer → consumer action → completion), reported as PASS/FAIL
+against the actual database/RPC state at each step — never declared done merely because the UI
+would render correctly.
+
+### E. Full findings ledger — every gap/bug found in this whole audit, what's being fixed now,
+### what's deliberately deferred, so nothing found in this pass is silently lost
+
+| # | Finding | Status this pass |
+|---|---|---|
+| Acquisition funnel gap | `get_business_acquisition_funnel_stats()` never read `profile_completed`/`dashboard_viewed`, two real client-fired events | **FIXED** — `20260818_business_acquisition_funnel_stats_full_coverage.sql`, applied + verified live |
+| Gap 1 | Aggregated demand (`get_aggregated_demand_for_partner`) reads *only* `business_requests` — never `intent_submissions` — so it only ever reflects the narrow, late-stage subset of intent that reached an explicit ask | **Practical impact narrowed by C1** (more submissions reach `business_requests` in the first place); the RPC's own SQL is not changed this pass — see Gap 9 for the real fix (needs location on `intent_submissions`), deliberately deferred |
+| Gap 2 | The "ask a business anyway" path only exists when the resolver finds zero matches — one weak match closes it off entirely | **FIXED by C1** |
+| Gap 3 | Empty-fallback's "Ask Nearby Businesses" only navigates, doesn't submit — a user who backs out leaves a real `intent_submissions` row (`reached_business_fallback: true`) but nothing business-visible | **Not addressed this pass** — deliberately not chased, per the user's own "don't chase deferred gaps yet" instruction |
+| Gap 4 | `business_fulfillment_policies` are invisible to the consumer resolver — only fire reactively once a request already exists, never proactively discoverable the way a manual `business_availability` posting is | **Deliberately deferred** — real product decision about ranking a policy-only business against an actual posting |
+| Gap 5 | `matchedAvailability` banner on `AskBusinessScreen` is informational only, never threaded into the actual submit call — usually re-matches correctly but not guaranteed if the posting changed in the interim | **Deliberately deferred** — minor, disclosed, not chased |
+| Gap 6 | Consumer intent signal and business discovery signal are two disconnected data domains — a business never learns *why* it was found | **Half-closed by C2** (the `intent_match` source bucket) — the *admin-only* funnel side (`get_intent_funnel_stats`) remains business-invisible, unchanged |
+| Gap 7 | No stitched conversion funnel — `get_business_discovery_stats`/`get_partner_offer_reputation`/`get_partner_avg_response_time` are three siloed RPCs, never combined into one story | **Deliberately deferred** — a real new analytics-surface design decision, not a mechanical fix |
+| Gap 8 | A gathering never automatically becomes business-visible demand — always requires an explicit, separate "Ask Local Businesses" host action | **Deliberately deferred** — real product/consent decision (this file's own "never auto-act on someone else's behalf" principle), needs its own explicit review |
+| Gap 9 | `intent_submissions` has no location column at all — no lat/lng, no city/area text — so unmet, never-escalated intent can never be rolled up "near a business" even if a future session wanted to fix Gap 1 at the root | **Deliberately deferred** — real schema change touching every `recordIntentSubmission` call site, needs a real fuzzing/privacy decision matching this schema's existing coarse-location conventions |
+| Real production volume | Every table in this whole loop (`business_requests`, `intent_submissions`, `intent_outcomes`, `business_availability`, `business_fulfillment_policies`, `business_profile_views`, `brand_offers`) is genuinely empty in production today; only 1 active business partner exists | **Not a bug** — stated plainly so a future session doesn't mistake C1/C2's own verification (necessarily built on disposable test data) for evidence of real organic usage |
+| Browser/device testing | `docs/business.html` never tested in a real browser; the whole business-acquisition flow never run on a real device | **Cannot close from this sandbox** — standing limitation repeated throughout this file |
+
 ### Status
 
-**Section A/B (the audit itself) is DONE.** Section C is a proposal only, explicitly not built —
-per the user's own direct instruction to stop and review before any implementation. Phase 1's one
-concrete, closeable disclosed item (the funnel-stats RPC gap) was fixed in the same pass, per the
-user's own instruction not to defer it further; the two device/browser-testing items remain
-correctly unclosable from this sandbox, same standing limitation as everywhere else in this file.
-
-**Not yet decided, explicitly**: whether to proceed with C1/C2 as proposed, whether to revise
+**Section A/B (the audit) is DONE. Section D (C1/C2, locked plan) is APPROVED by the user, written
+before implementation — nothing in Section D has been built yet as of this commit.** The next
+step is implementation exactly as specified above, followed by the real production-data-path
+PASS/FAIL audit the user explicitly required — not a UI-renders-correctly claim.
 either, or whether to address one of the deliberately-deferred gaps (4/7/8/9) instead — this is
 the next real decision point, not something to default into building.
 
