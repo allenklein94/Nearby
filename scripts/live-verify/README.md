@@ -297,6 +297,15 @@ CI-runnable as-is (just supply the token as a secret).
   limit, and — the actual point of putting the counter behind
   `prevent_self_premium_edit()`'s guard — that a direct client-side attempt
   to reset the counter is silently reverted, not honored.
+- **`group-plan-remove-participant.js`** — `remove_group_plan_participant()`,
+  closing the disclosed "no kick action before confirm time" gap named
+  repeatedly in CLAUDE.md's Group Plans (Phase D) sections. Proves a
+  genuine stranger and a genuine non-initiator participant are both
+  rejected trying to remove anyone, the initiator can't remove themselves,
+  the initiator genuinely can remove a still-invited or an already-
+  accepted participant right now without the proposal itself leaving
+  `pending`, a repeat removal of an already-left participant is rejected,
+  and removal is rejected once the proposal is no longer pending.
 
 ## What's not covered
 

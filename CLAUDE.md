@@ -184,12 +184,71 @@ were touched this pass** — restated here, not re-decided:
   Offer System Phase 5/Group Plans sections' own text); no "kick" action for the initiator to
   remove an already-accepted participant before confirm time outside the exclude-picker built
   into `confirm_group_plan()` itself. Both are real, both are named product decisions in their
-  own sections further down this file, not silently rediscovered or auto-fixed here.
+  own sections further down this file, not silently rediscovered or auto-fixed here. **The
+  "kick" action half is now FIXED, Aug 23 2026 — see the section immediately below.** The
+  capacity/price re-quote half is genuinely still open — it needs the business side to have a
+  live re-pricing capability that doesn't exist anywhere in this schema (no mechanism lets a
+  business actively revise an already-submitted offer's terms), not something a single RPC can
+  bridge — left exactly as disclosed.
 
 **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
 run-through of `FriendsScreen.js`'s contact-import flow now throwing a real rate-limit error, or
 of `RewardsScreen.js`'s corrected progress bar — next session should confirm both render
 correctly against real data on a real device.
+
+## Aug 23 2026 — Group Plans: a real "kick" action before confirm time — DONE
+
+Direct follow-up to the Aug 22 2026 section immediately above — the one remaining concretely
+fixable item on the smaller-disclosed-bugs list, per direct instruction to keep working through
+it. The gap, restated exactly as this file already described it: the existing exclude-picker
+on `GroupPlanScreen` (`toggleExclude`/`confirmGroupPlan`'s own `exclude_user_ids_param`) only
+ever takes effect at the moment of confirming — an initiator who's decided to drop someone but
+isn't ready to confirm yet (still waiting on other invitees to respond) had no way to actually
+remove them; the toggle is purely staged local state until Confirm is pressed.
+
+**Fixed**: a new `remove_group_plan_participant(proposal_id, target_user_id)` SECURITY DEFINER
+RPC (`supabase/migrations/20260823_group_plan_remove_participant.sql`), mirroring
+`leave_group_plan()`'s own shape — same terminal `'left'` status (no new status value invented,
+matching this schema's own established "collapse into a status enum, don't over-normalize"
+convention), same real push-notification convention every other group-plan transition already
+uses (`group_plan_removed`, added to `routeNotificationTap()`'s existing group-plan case list —
+lands on the same `GroupPlanScreen`, which already renders a `'left'` participant's own row
+correctly with no further change needed). Scoped tightly: initiator-only, rejects removing
+oneself (`cancel_group_plan()` is the real path for that), rejects an already-`'left'` target,
+and only works while the proposal is genuinely `status = 'pending'` —
+`confirm_group_plan()`'s own `exclude_user_ids_param` still owns removal *at* confirm time,
+this only covers removal *before* it.
+
+**Client**: new `removeGroupPlanParticipant()` in `services/groupPlans.js`.
+`GroupPlanScreen.js` gained a real "Remove" link on any still-invited or already-accepted
+participant row (initiator view only, while the proposal is pending) alongside — not replacing
+— the existing "Continue without" exclude-picker toggle, with a confirming `Alert` before
+calling the RPC. The two actions now read as genuinely distinct: "Continue without" stages an
+exclusion for the *next* Confirm tap; "Remove" acts immediately, without forcing a confirm.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — new
+`scripts/live-verify/group-plan-remove-participant.js` (registered in `run-all.js`, documented
+in the README) builds a real pending group plan (Allen as initiator, using his real accepted
+friendship with Claude and real match with Google voice, same established pattern as the other
+group-plan scripts) and proves every real transition: a genuine stranger and a genuine
+non-initiator confirmed participant are both rejected trying to remove anyone; the initiator
+can't remove themselves; the initiator genuinely can remove a still-`'invited'` participant
+*and* an already-`'accepted'` one, right now, with the proposal itself staying `'pending'`
+throughout (not forced into a confirm); a repeat removal of an already-`'left'` participant is
+rejected, not silently re-processed; and removal is rejected once the proposal is no longer
+pending (tested against a cancelled one). All 8 assertions pass; all test rows deleted
+afterward, production confirmed back to its exact pre-test baseline (0 rows across every
+touched table). **Verified via a real from-scratch migration replay** (all 69 files in
+`supabase/migrations/`, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) — the new function
+confirmed to exist in the freshly-rebuilt database. Container removed afterward. Client-side
+verified via a clean `npx expo export --platform ios` (no bundling errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "Remove" link renders correctly alongside
+"Continue without" on a real device, that tapping it and confirming actually removes the person
+without requiring a Confirm tap, and that the removed person's own session sees their status
+update to "Left the group" (via the screen's existing realtime channel) without a manual
+refresh.
 
 ## Aug 18 2026 — connect existing consumer-intent + business systems: read-only audit — DONE, per direct instruction NOT YET IMPLEMENTED
 

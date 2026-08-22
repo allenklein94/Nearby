@@ -9,6 +9,7 @@ import {
   confirmGroupPlan,
   cancelGroupPlan,
   leaveGroupPlan,
+  removeGroupPlanParticipant,
   confirmGroupPlanOffer,
 } from '../services/groupPlans';
 import { submitSocialOffer, respondToSocialOffer, markSocialOfferViewed } from '../services/socialOffers';
@@ -159,6 +160,25 @@ export default function GroupPlanScreen({ navigation, route }) {
 
   function toggleExclude(userId) {
     setExcludeIds((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+  }
+
+  // Closes the disclosed gap named in CLAUDE.md's Group Plans sections:
+  // "Continue without" only stages an exclusion for the next Confirm tap
+  // -- this removes someone right now, without forcing the initiator to
+  // confirm before they're ready to.
+  function handleRemove(userId, name) {
+    Alert.alert(
+      `Remove ${name ?? 'this person'}?`,
+      "They'll be told they're no longer part of this group plan. You can keep waiting on everyone else.",
+      [
+        { text: 'Never mind', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => runAction(() => removeGroupPlanParticipant(proposalId, userId)),
+        },
+      ]
+    );
   }
 
   function handleConfirm() {
@@ -323,6 +343,15 @@ export default function GroupPlanScreen({ navigation, route }) {
                 <Text style={excludeIds.includes(p.user_id) ? styles.excludedTag : styles.excludeLink}>
                   {excludeIds.includes(p.user_id) ? 'Excluded — tap to undo' : 'Continue without'}
                 </Text>
+              </TouchableOpacity>
+            )}
+            {isInitiator && proposal.status === 'pending' && (p.status === 'accepted' || p.status === 'invited') && p.user_id !== myId && (
+              <TouchableOpacity
+                onPress={() => handleRemove(p.user_id, p.profiles?.display_name)}
+                accessibilityLabel={`Remove ${p.profiles?.display_name ?? 'this person'} from the group plan now`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.removeLink}>Remove</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -501,6 +530,7 @@ const getStyles = (colors) => StyleSheet.create({
   participantName: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
   participantStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 1 },
   excludeLink: { ...typography.caption, color: colors.textTertiary, textDecorationLine: 'underline' },
+  removeLink: { ...typography.caption, color: colors.danger, textDecorationLine: 'underline', marginTop: 4 },
   excludedTag: { ...typography.caption, color: colors.primary, fontWeight: '700' },
   actionRow: { marginTop: spacing.lg },
   primaryButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },

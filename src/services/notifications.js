@@ -217,6 +217,7 @@ export function routeNotificationTap(data) {
     case 'group_plan_confirmed':
     case 'group_plan_offer_pending':
     case 'group_plan_reservation_confirmed':
+    case 'group_plan_removed':
       if (data.proposal_id) {
         navigationRef.navigate('GroupPlan', { proposalId: data.proposal_id });
       }

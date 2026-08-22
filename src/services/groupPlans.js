@@ -134,6 +134,20 @@ export async function leaveGroupPlan(proposalId) {
   return data;
 }
 
+// Closes the disclosed gap named in CLAUDE.md's Group Plans sections: the
+// existing exclude-picker (confirmGroupPlan's own excludeUserIds) only ever
+// takes effect at the moment of confirming -- this removes someone right
+// now, while the proposal is still pending and the initiator isn't ready
+// to confirm yet. Initiator-only, pending-proposals-only, server-enforced.
+export async function removeGroupPlanParticipant(proposalId, targetUserId) {
+  const { data, error } = await supabase.rpc('remove_group_plan_participant', {
+    proposal_id_param: proposalId,
+    target_user_id_param: targetUserId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // One confirmation per (offer, participant). Returns allConfirmed=false
 // with the running count until every currently-accepted participant has
 // confirmed -- the real accept only fires on the last one.
