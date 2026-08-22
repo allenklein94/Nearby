@@ -4,6 +4,269 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 22 2026 — "Build everything" — the 6 large/architectural items from the UX/IA critique,
+## Feature Freeze explicitly overridden for this scope, PLAN LOCKED, not yet built
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **nothing in this section has been built yet.** Direct follow-up to the critique
+triage two sections below: the user reviewed the "large/architectural — needs an explicit
+decision" list from that triage and said directly: *"i want everything built that you listed
+above in the what did i not build section — so remove the freeze and write a plan for all
+those."* This is exactly the kind of direct, explicit request the standing Feature Freeze's own
+text already carves out ("this freeze constrains autonomous scope-expansion, not a direct
+explicit request... if the user asks for one anyway, that's their call to make") — **the freeze
+is explicitly overridden for this scope, by direct instruction, not silently reopened.** The
+freeze declaration itself (further down this file) is left untouched — it still governs
+everything *outside* this explicit scope.
+
+**The six items, restated from the triage, now locked as real phases**: (1) a unified
+cross-signal recommendation engine, (2) card standardization into a small set of canonical types,
+(3) progressive/contextual settings, (4) a one-tap "make a plan" orchestrated flow, (5) bottom-nav
+restructuring to Home/People/Create/Activity with Inbox moved off the bottom bar, (6) smaller
+polish — a real first-run "why Nearby" moment, Activity as full ecosystem memory, and the
+business loop staying invisible-but-present. **Locked phase order, reasoning below**: 1 → 2 → 3 →
+4 → 5 → 6. Phases 1-2 come first because 3, 4, and 6 all lean on them (a recommendation needs
+somewhere real to render, and that's the canonical Plan/Person/Place cards from Phase 2). Phase 5
+(nav restructuring) is deliberately last — it's the single most disruptive, highest-blast-radius
+change (every registered deep link, every `navigation.navigate()` call site naming a bottom tab),
+and per the reconciliation below, the pasted critique's own waves don't fully agree with each
+other on the target shape — better to have Phases 1-4 already proven out and stable before
+touching navigation itself.
+
+**Verification convention for this whole initiative, matching every other plan-first section in
+this file**: every phase gets its own commit(s), pushed individually as it lands — not batched at
+the end, so a mid-session restart never loses more than one phase's worth of work; every client
+change gets a direct `@babel/core` parse of every touched file plus a full `npx expo export
+--platform ios`; the Jest suite runs after every phase; any schema/RPC change gets applied to
+production and verified live with real disposable test data, plus a from-scratch migration
+replay, before being considered done — the same bar this file has held every other schema change
+to. This file's own repeated standing gap — no manual simulator/device run-through has ever been
+possible in this sandbox — applies here too and will be flagged per phase, not silently assumed
+clean.
+
+### Phase 1 — Unified Home recommendation engine ("what makes sense right now")
+
+**What already exists to build on, not from scratch**: `intentResolverScoring.js`'s shared,
+already-proven scoring axis (`SCORE_INTEREST_MATCH = 5`, `SCORE_CLOSE_DISTANCE = 3`,
+`SCORE_HAPPENING_NOW = 2`, `SCORE_OWN_NETWORK = 6`) already scores five genuinely different
+candidate types (gatherings, communities, connected friend/match requests, perks, business
+availability) onto one comparable axis for the intent resolver — real, tested infrastructure,
+not a name to reuse loosely. `getGatheringFitReasons()` already produces real, itemized "why"
+reasons (interest match / close distance / happening today / beginner-friendly), the exact
+pattern this file's own standing rule requires for any fit/recommendation signal ("ranking stays
+simple/explainable... no premature universal/AI-driven matching algorithm"). The weather signals
+engine (two sections below) now provides real forecast-derived context.
+`getHomeDashboard()` already independently fetches and computes `nearbyGatherings`,
+`trendingGatherings`, `happeningNow`, `bestPick`, `becauseYouLike`, `indoorGatheringsToday`/
+`outdoorGatheringsToday`, `socialForecast` — this phase does not add new data sources, it unifies
+scoring across the ones Home already has.
+
+**Locked design**: a new pure module, `src/services/homeRecommendations.js`, exporting
+`buildHomeRecommendations(context)` — takes the real, already-fetched Home context (nearby
+gatherings, active perks/business availability the caller can already see, the caller's own
+recent-activity-derived party-size hint from `getMyTopGatheringCategories()`/recent group plans,
+the real weather signal, time-of-day) and produces a small, capped (4-6), ranked list of
+`{type, id, title, reasons: [...], score}` items — reusing `SCORE_*` constants for every
+candidate type, exactly as the resolver already does, **not a new invented scale**. New signal
+this phase actually adds, since nothing scores it today: a real weather-context bonus/penalty —
+`outdoor_favorable === true` adds a flat bonus (same `SCORE_HAPPENING_NOW` weight, matching this
+file's own "reuse an existing weight, don't invent a new number" convention) to an
+outdoor-category candidate; genuine forecast risk (`rain_risk === 'high' || heat_risk ||
+cold_risk`) does the same for an indoor-category candidate — this is the direct mechanical
+version of "weather behind the scenes," extended from the single weather card built earlier this
+session into the real ranking itself, not just a suggestion list attached to one card.
+
+**New Home section**: "🎯 Nearby Right Now" (or similar — exact copy to be finalized during
+build, not guessed here), rendered near the top of Home below the hero/Your Plans block, each row
+showing the real title + its own real reason line (reusing the shared reason-formatting already
+established by `getGatheringFitReasons()`'s output shape) and tapping through to the same real
+detail screens every other Home section already links to (`GatheringDetail`/`BrandOffers`/
+`BusinessProfile`). **Deliberately not a replacement for the existing Best Pick/Trending/Because-
+You-Like sections** — this is genuinely one more section, reusing their same underlying data, not
+a rewrite; whether those older sections should eventually collapse into this one is a real,
+separate design call flagged for a later pass once this new section has been live long enough to
+judge, not decided here.
+
+**Explicitly out of scope for Phase 1, stated so a future pass doesn't quietly expand it**: no
+new machine-learned/opaque weighting — every score stays a real, inspectable sum of named
+constants, matching this file's oldest and most consistently-enforced rule; no cross-user
+learning yet (per-user category history already exists via `getMyTopGatheringCategories()`, and
+is reused, but nothing new is trained). No party-size inference beyond what's already real
+(recent group-plan/gathering-attendance history) — never a guessed number presented as fact.
+
+### Phase 2 — Card standardization into 3 canonical types
+
+**Confirmed before locking this phase**: no `PersonCard`/`PlaceCard`/`PlanCard` shared component
+exists anywhere in `src/components/` today (checked directly) — every screen that renders a
+person, a business/place, or a plan/gathering currently builds its own card JSX independently
+(`GatheringsScreen.js`'s three different card layouts per tab, `DiscoverHubScreen.js`'s business/
+place rows, `MatchesScreen.js`'s match rows, `BusinessProfileScreen.js`'s perk cards, etc.) — this
+is a real, confirmed gap, not already covered by any of this file's prior UI-polish passes (those
+tightened individual screens' own hierarchy, never converged card *shape* across screens).
+
+**Locked shape, 3 new shared components in `src/components/`**:
+- **`PersonCard.js`** — photo, name, distance (when known), up to 2 real shared-interest/
+  connection-context chips (reusing the same real "shared interest"/"mutual friend" signals
+  `ChatScreen.js`/`ViewProfileScreen.js` already compute elsewhere — never fabricated), one
+  primary action button (Message/Connect/View Profile, contextual per caller) styled per the
+  already-locked coral-as-action rule.
+- **`PlaceCard.js`** — photo, business/place name, distance, one real "why now" reason line
+  (open-now status, a real active offer, or a real matched-category signal — reusing whatever
+  the calling screen already computed, never inventing a new one), one primary action (View/
+  Get Offer/Navigate).
+- **`PlanCard.js`** — the gathering/date/reservation object, title, real formatted date/time
+  (`formatHeroDateTime()`, already shared), real people count, real linked business/venue name
+  when one exists (direct implementation of the critique's "make relationships visible" ask —
+  "Saturday Gathering · 6 people · The Grove · 7:00 PM" in one subtitle line), a real status
+  badge using Phase 3's controlled vocabulary (see below — this phase and the status-vocabulary
+  cleanup land together, since a `PlanCard` needs a real status enum to render).
+
+**Migration order, one screen at a time, each its own commit, verified after each**: `PlanCard`
+first into `HomeScreen.js`'s "Your Plans"/"Also Coming Up" rows and the dedicated `PlansScreen.js`
+(the screens with the most duplicated near-identical row JSX today); then `GatheringsScreen.js`'s
+three tabs (the largest, riskiest migration — done last among the Plan-card rollout, and only
+after the pattern's proven correct on the lower-traffic screens above); `PersonCard` into
+`MatchesScreen.js`/`FriendsScreen.js`/`ViewProfileScreen.js`'s "mutual friends" rows;
+`PlaceCard` into `DiscoverHubScreen.js`'s business/place sections and `BusinessProfileScreen.js`.
+**Not migrated this phase, flagged rather than silently forced into one of the 3 types**: swipe-
+deck cards (`SwipeableDiscoveryCards.js`, `FriendDiscoverySwipeCards.js`) — a full-screen swipe
+gesture card is a genuinely different interaction pattern, not a list row, and forcing it into
+`PersonCard`'s shape would be a worse fit than leaving it as its own established component.
+
+### Phase 3 — Progressive/contextual settings
+
+**Real mapping, checked against the actual current Settings groups (`SettingsScreen.js`) before
+locking this**: "Looking For," "Discovery Preferences," and "Friend Discovery" already sit inside
+the always-visible "Preferences" group, asked of every user regardless of whether they've ever
+opened Dating or turned on Friend Discovery. Locked moves:
+- **"Looking For" + "Discovery Preferences"** (dating intent, show-me/age/distance) — moves from
+  a Settings-only surface to a **first-open prompt inside `DiscoveryScreen.js`** (Dating), shown
+  once, the first time that screen is ever opened with no existing dating preferences set — real
+  gate: `profiles`' own existing dating-preference columns being null/unset, not a new flag.
+  Still fully editable from Settings afterward — this doesn't remove the Settings row, it adds an
+  earlier, contextual first ask so a user who never opens Dating is never asked at all.
+- **"Friend Discovery"** — moves from always-visible Settings to a **first-toggle-on prompt
+  inside `FriendDiscoveryScreen.js`**, shown the moment `open_to_friend_discovery` is first
+  switched on (already a real, existing column and screen — this reuses the already-built toggle,
+  just relocates when its adjacent preferences are asked).
+- **Gathering-creation preferences** (women-only, recurrence, etc. — already collapsed into
+  `CreateGatheringScreen.js`'s own "More options" section per Create 2.0) are **already
+  contextual, not a gap** — confirmed via direct read, nothing to move here.
+- **Left alone, deliberately**: Notifications, Privacy & Safety, Account, Business (Admin),
+  Connect, Support, Appearance, Language — none of these are "preferences the user hasn't
+  demonstrated they need" in the critique's own sense (they're account/app-behavior controls a
+  user reasonably expects to find in one place, matching this file's own IA-restructure-round-3
+  reasoning for why Settings was organized as a real control center in the first place). Not
+  touched.
+
+### Phase 4 — One-tap "make a plan" orchestrated flow
+
+**Builds directly on Phase 1's ranked recommendation list and existing, already-proven
+primitives** — this is new orchestration over real, individually-working mechanisms
+(`createGathering()`, `sendInvite()`, `submitBusinessRequest()`/business-availability matching,
+push notifications), not a new payment/reservation system. Locked shape: tapping "Make a plan" on
+a Phase 1 recommendation opens a real, single confirm screen — pre-filled title/category/time
+from the recommendation itself, a real friends-to-invite picker (reusing `filterToMyFriends()`/
+`sendInvite('gathering', ...)`, the same mechanism the "Start a Community from This Gathering"
+feature already established), and, when the recommendation is business-linked, a real
+`submitBusinessRequest()`/availability-match call — **one Confirm tap creates the real gathering,
+sends the real invites, and fires the real business request, in that order, with a single honest
+success screen reusing `GatheringConfirmationScreen.js`'s existing shape** rather than a new one.
+**Explicitly not built as a single new atomic transaction/RPC** — each sub-action stays its own
+already-proven, independently-verified call; a partial failure (e.g. the gathering creates but
+one invite fails) surfaces honestly rather than being hidden behind a fake all-or-nothing
+guarantee this schema doesn't actually provide anywhere else. **Real open question, flagged
+rather than guessed**: whether "Make a plan" should be reachable from *every* Phase 1
+recommendation type or only gathering-shaped ones (a perk/business-availability recommendation
+doesn't obviously need a new gathering created around it) — resolve this by reading Phase 1's
+real candidate-type mix once it's live, not decided here in the abstract.
+
+### Phase 5 — Bottom-nav restructuring: Home / People / Create / Activity, Inbox off the bottom
+### bar — real reconciliation needed first, real open question flagged, not guessed silently
+
+**The pasted critique's own waves don't fully agree with each other here — reconciled below,
+flagged explicitly rather than silently picked.** Wave 1 keeps the current 5-tab shape
+(Home/Discover/Create/Inbox/You) and only asks to simplify *Discover's own content* (Places +
+People). Wave 3 talks about where *content* conceptually belongs (Stories→People, Messages→Inbox,
+Activity→"what happened") without necessarily proposing a tab-count change. **Wave 4 is the one
+that explicitly proposes new tabs**: "Home / People / Create / Activity, then Inbox accessible
+from the top-right rather than competing for a bottom-nav slot" — 4 tabs, Inbox moved to a header
+icon. None of the waves say what happens to **Profile/"You"** in a 4-tab model, and none fully
+resolve where Discover's non-People content (Gatherings/Communities/Places/Perks browsing) lives
+if "Discover" stops being a tab at all.
+
+**Reconciled target model, my own best-effort synthesis, called out explicitly as a judgment
+call rather than a settled fact**:
+- 🏠 **Home** — unchanged tab, becomes the Phase 1 decision-engine surface.
+- 👥 **People** — new tab, absorbing Discover's "People Nearby" module (Dating/Friends rows,
+  now already-collapsed) and the Stories carousel (already moved there this session).
+- ➕ **Create** — unchanged tab and position; absorbs Discover's Gatherings/Communities/Places/
+  Perks *browsing* content by leaning further into Create 2.0's already-existing discover-first
+  behavior (Quick Picks already browse before offering to create — this phase would extend that
+  same pattern to cover what Discover's other sections show today), rather than inventing a
+  second browse surface.
+- 🔔 **Activity** — renamed from "Inbox," keeps exactly the content the current Inbox → Activity
+  tab already shows (connection requests, invitations, reminders, notices/business updates) —
+  a relabel of an already-real, already-correct section, not new content.
+- 💬 **Messages** — moves off the bottom bar to a persistent header icon (top-right, matching the
+  critique's own ask), reachable from every screen, showing the current Inbox → Messages tab's
+  content (1:1 matches + group chats) — this is the one genuinely new navigation mechanism this
+  phase needs to build (no existing "persistent header icon reachable from every screen" pattern
+  exists in this app today; closest precedent is `ActivityBell.js`, worth reusing its shape
+  rather than inventing a new one).
+- 👤 **Profile/"You"** — **real, unresolved gap, flagged rather than guessed**: none of the
+  critique's waves address this. My own proposal, not yet locked: fold it into the same
+  persistent-header-icon pattern as Messages (an avatar tap in the header, opposite corner from
+  the Messages icon) — but this is exactly the kind of call this file's own conventions say to
+  flag rather than silently build. **Confirm this specific piece before Phase 5 actually touches
+  navigation** — everything else in this phase can proceed on the reconciled model above, but
+  Profile's placement should get an explicit yes/no first, since it's the one piece with no
+  critique-text backing either way.
+
+**Migration plan, once the open question above is resolved**: new route registrations in
+`RootNavigator.js` for the 4-tab `Tab.Navigator` plus the two header icons; every existing
+`navigation.navigate('Discover', ...)`/`navigation.navigate('Matches', ...)`/
+`navigation.navigate('Profile', ...)` call site across the app needs updating to the new target
+(a real, mechanical but wide-reaching find-and-fix pass — grep-driven, not guessed); every
+existing deep link (`nearby://gathering/:id`, `nearby://business/:id`, `nearby://business-apply`)
+re-verified against the new navigator shape via React Navigation's own `getStateFromPath()`
+(same direct-verification method already used and proven in this file's Create 2.0 deep-linking
+work) before considered done. **This phase is the one most likely to need its own dedicated,
+uninterrupted pass** given its blast radius — sequenced last on purpose.
+
+### Phase 6 — Smaller polish: a real "why Nearby" first-run moment, Activity as full ecosystem
+### memory, business loop stays invisible-but-present
+
+- **A real first-run demonstration moment**, per the critique's own example shape ("You have two
+  friends nearby tonight. There's a gathering 0.4 miles away, and this restaurant has an offer
+  for groups of four") — built as a real, one-time card shown on a brand-new account's *first*
+  Home load once Phase 1's recommendation list has real content to show (never fabricated for an
+  account with nothing real yet — an honest "explore and we'll get smarter" state instead, same
+  "no invented data" convention as everywhere else in this file), not a slide deck.
+- **Activity as ecosystem memory** — checked against the current Activity tab's real content
+  (Needs Your Attention / Today / Earlier clusters, already built across the IA-restructure-round-
+  3 work) — already substantially there. The one real, checkable gap: business-side events
+  (an accepted offer, a confirmed reservation, a business's own reply) aren't currently
+  represented as Activity rows the way social events are — extend Activity's existing notice-feed
+  query to include the real business-request/offer status-change events this schema already
+  tracks (`business_request_offers.status`/`responded_at`), reusing the same real data Business
+  Fulfillment's own dashboard already reads, not a new signal.
+- **Business loop stays invisible-but-present** — an explicit design constraint carried into every
+  other phase above, not a separate build item: Phase 1's recommendation reasons and Phase 4's
+  one-tap plan flow both surface a business/venue as *part of the answer to "what should I do,"*
+  never as its own competing "here's an ad" surface — matches this file's own long-standing
+  Business Fulfillment framing ("can Nearby make this happen," never a fallback) exactly.
+
+**Not scheduled as its own phase, folded into Phase 2 instead**: the controlled status vocabulary
+(Pending/Accepted/Confirmed/Declined/Cancelled/Completed) the critique asks for — `PlanCard`
+already needs a real, shared status-label function to render its badge, so this is built as part
+of Phase 2's `PlanCard`, not a seventh phase.
+
+**Status: plan locked, per direct instruction to build everything and remove the freeze for this
+scope. Nothing in Phases 1-6 has been built yet — execution starts with Phase 1 next, each
+phase's own status updated here and committed/pushed individually as it lands, matching every
+other multi-phase plan in this file's history.**
+
 ## Aug 22 2026 — real user report on build 73: Stories were genuinely still showing in Inbox —
 ## found, fixed, and a correction to this file's own prior claim
 
