@@ -23,6 +23,19 @@ const TYPE_FILTERS = [
   { key: 'perks', label: 'Perks' },
 ];
 
+// Dating and Friends stay two genuinely separate matching systems under
+// the hood (separate opt-in flags, separate swipe tables, separate
+// exclusion/safety rules) -- this is a navigation-only merge, not a
+// combined candidate pool. "Everyone" was deliberately left off: there's
+// no real merged pool to show under that label, and inventing one would
+// mean building a new combined feed across two independently
+// safety-gated systems, a real architecture decision on its own, not a
+// filter relabel. See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
+const PEOPLE_FILTERS = [
+  { key: 'dating', label: 'Dating' },
+  { key: 'friends', label: 'Friends' },
+];
+
 const PLACE_CATEGORIES = [
   { key: 'coffee', icon: '☕', label: 'Coffee' },
   { key: 'restaurants', icon: '🍽️', label: 'Restaurants' },
@@ -47,6 +60,16 @@ const PREVIEW_COUNT = 3;
 // section (getGatheringFitReasons, the same pure scorer already used
 // by Home's bestPick and GatheringDetailScreen) rather than a new LLM
 // call, matching this codebase's existing no-new-API-cost convention.
+//
+// People entry point (Aug 22 2026): what used to be two separate cards
+// here -- "Dating Nearby" and "Meet New Friends" -- are now one "People
+// Nearby" card with an inline Dating/Friends filter (PEOPLE_FILTERS,
+// above). The filter is a preference set on this screen, not a second
+// destination to already know about -- picking it and tapping the card
+// still opens the same two existing, unmodified screens underneath
+// (Nearby for dating, FriendDiscovery for friends), since those two
+// screens' own matching engines/safety rules were deliberately left
+// untouched. See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
 export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -59,6 +82,7 @@ export default function DiscoverHubScreen({ navigation }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [peopleFilter, setPeopleFilter] = useState('dating');
   const [viewStyle, setViewStyle] = useState('list');
   const [placesCategory, setPlacesCategory] = useState('coffee');
   const [userLocation, setUserLocation] = useState(null);
@@ -362,37 +386,48 @@ export default function DiscoverHubScreen({ navigation }) {
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {isAll && (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => navigation.navigate('Nearby')}
-              activeOpacity={0.85}
-              accessibilityLabel="Dating Nearby, find people nearby"
-              accessibilityRole="button"
-            >
-              <Text style={styles.cardIcon}>💘</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Dating Nearby</Text>
-                <Text style={styles.cardSubtitle}>Find people nearby</Text>
+            <View style={styles.peopleCard}>
+              <TouchableOpacity
+                style={styles.peopleCardMain}
+                onPress={() => navigation.navigate(peopleFilter === 'friends' ? 'FriendDiscovery' : 'Nearby')}
+                activeOpacity={0.85}
+                accessibilityLabel={
+                  peopleFilter === 'friends'
+                    ? 'People Nearby, Friends filter selected, swipe to make new friends, separate from dating'
+                    : 'People Nearby, Dating filter selected, find people nearby to date'
+                }
+                accessibilityRole="button"
+              >
+                <Text style={styles.cardIcon}>{peopleFilter === 'friends' ? '🤝' : '💘'}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>People Nearby</Text>
+                  <Text style={styles.cardSubtitle}>
+                    {peopleFilter === 'friends'
+                      ? 'Swipe to make new friends, separate from dating'
+                      : 'Find people nearby to date'}
+                  </Text>
+                </View>
+                <Text style={styles.cardChevron}>›</Text>
+              </TouchableOpacity>
+              <View style={styles.peopleFilterRow}>
+                <Text style={styles.peopleFilterLabel}>Looking for</Text>
+                {PEOPLE_FILTERS.map((f) => {
+                  const active = peopleFilter === f.key;
+                  return (
+                    <TouchableOpacity
+                      key={f.key}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                      onPress={() => setPeopleFilter(f.key)}
+                      accessibilityLabel={f.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-              <Text style={styles.cardChevron}>›</Text>
-            </TouchableOpacity>
-          )}
-
-          {isAll && (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => navigation.navigate('FriendDiscovery')}
-              activeOpacity={0.85}
-              accessibilityLabel="Meet New Friends, an explicit opt-in friend discovery deck"
-              accessibilityRole="button"
-            >
-              <Text style={styles.cardIcon}>🤝</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Meet New Friends</Text>
-                <Text style={styles.cardSubtitle}>Swipe to make new friends, separate from dating</Text>
-              </View>
-              <Text style={styles.cardChevron}>›</Text>
-            </TouchableOpacity>
+            </View>
           )}
 
           {isAll && (
@@ -799,6 +834,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
   },
+  peopleCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, marginBottom: spacing.md, ...shadow.card, overflow: 'hidden',
+  },
+  peopleCardMain: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
+  peopleFilterRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
+  },
+  peopleFilterLabel: { ...typography.caption, color: colors.textTertiary, marginRight: 2 },
   cardImage: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
   cardIcon: { fontSize: 32, marginRight: spacing.md },
   cardTitle: { ...typography.headline, color: colors.textPrimary },

@@ -4,6 +4,136 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 22 2026 — collapse "Meet New Friends" into a Discover People filter + a Sign Out
+## safety valve on the required profile-setup screen — DONE
+
+Two decisions forwarded directly by the user from an external design conversation, both acted
+on the same session. Written as one combined plan-and-status entry (the plan was small enough,
+and concrete enough once checked against the real code, to build in the same pass rather than
+locking a plan first and building later — matches this file's own precedent for a same-session
+plan+build when the scope is genuinely this contained).
+
+### Decision 1 — Discover People: a filter, not a second destination
+
+**The critique, as given**: Discover's "Meet New Friends" read as a separate, unrelated
+destination sitting next to "Dating Nearby" — two cards for what's fundamentally one action
+("discover people nearby"), forcing a user to already know two different screens exist rather
+than just telling Discover who they're looking for. The proposed fix: fold friend-discovery
+into a lightweight **Everyone / Friends / Dating** filter on a single People surface, not a
+separate mode/screen — "the key is that 'Meet New Friends' becomes an intent/filter, not a
+destination."
+
+**Checked against the real architecture before building anything** (same standing rule as
+every other section in this file — a pasted design doc is a lead, not ground truth). Dating
+(`DiscoveryScreen.js`, ~1000 lines: Crossed Paths/Browse modes, premium gating, superlike, a
+map) and Friend Discovery (`FriendDiscoveryScreen.js` + `FriendDiscoverySwipeCards.js` +
+`services/friendDiscovery.js`) are two **genuinely separate matching systems** by deliberate,
+already-locked design (see this file's own Aug 16 2026 Friend Discovery section) — separate
+opt-in flags (`open_to_friend_discovery` vs. no dating opt-in), separate swipe tables
+(`friend_discovery_swipes` vs. dating's own notice/match flow), separate exclusion rules, and a
+real product decision that friend-discovery stay "a completely separate, explicitly opt-in
+surface, not folded into the... resolver." There is no merged candidate pool anywhere in this
+schema that an "Everyone" filter could honestly draw from — building one would mean designing a
+new combined feed across two independently safety-gated systems, a real architecture decision
+on its own, not a relabel.
+
+**Built the honest version of the ask, scoped to what's actually true**: a **navigation-only**
+merge, not a matching-engine merge. `DiscoverHubScreen.js`'s two separate cards ("💘 Dating
+Nearby" / "🤝 Meet New Friends") are now one **"People Nearby"** card with an inline
+**Dating | Friends** filter row (new `PEOPLE_FILTERS` chip row, reusing the screen's own
+existing `filterChip`/`filterChipActive` styles — no new chip style invented). The card's own
+icon/subtitle/`accessibilityLabel` swap to match whichever filter is selected (💘 "Find people
+nearby to date" / 🤝 "Swipe to make new friends, separate from dating"), and tapping the card
+body navigates to the same two existing, completely untouched screens as before —
+`navigation.navigate('Nearby')` for Dating, `navigation.navigate('FriendDiscovery')` for
+Friends — via `peopleFilter` state (`useState('dating')`, defaulting to the previously-primary
+surface). Nested `TouchableOpacity`s (the two filter chips inside the outer card touchable)
+reuse the exact same "the inner one still claims its own tap" pattern already established
+elsewhere in this codebase (e.g. `BusinessDashboardScreen.js`'s "+ Attach Reward" row), so
+tapping a chip only changes the filter and never also fires the outer card's navigation.
+
+**"Everyone" was deliberately not built as a third option** — flagged explicitly in a new code
+comment above `PEOPLE_FILTERS` rather than silently dropped, per this file's own "flag, don't
+silently build partial" convention. There's no real merged pool to show under that label with
+today's schema; inventing one is out of scope for a navigation-IA fix and would need its own
+explicit review (does a merged feed respect both systems' separate opt-in/exclusion rules
+correctly, does dating's premium gating apply to a friend-discovery card shown in the same
+feed, etc.) — a real, larger decision, not something to guess at here.
+
+**Also deliberately not built**: a top-level "Explore | People" segmented tab replacing
+Discover's current type-filter row (All/Gatherings/Communities/Places/Perks). People has no
+list/search/map content to participate in that filter system at all — on this screen it's
+always been a launch card, never a browsable list — so a bigger tab restructure wasn't needed
+to fix the actual complaint (two competing, confusingly-named entry points reading as separate
+destinations). One merged card with a filter fully resolves that without the added risk of
+restructuring Discover's existing filter/search/map machinery for a section that was never
+part of it.
+
+**Inbox → "Connections" was checked and deliberately not renamed.** The forwarded design doc
+also proposed collapsing Inbox into `Messages | Connections`. Checked directly against
+`InboxScreen.js`/`ActivityScreen.js`: this file's own Aug 2026 Phase 2 restructure (see "IA
+restructure round 3," Phase 2, further down this file) already reorganized Activity into real
+named clusters — 🎯 Needs Your Attention (connection requests + invitations), 📅 Today, and
+🕰️ Earlier — which already gives Inbox a working "what needs my attention / what happened"
+answer close to the doc's own intent. A literal rename to "Connections" would be inaccurate,
+though: Earlier also carries business-update notices, crossed-paths notices, and waves — real
+signal that isn't a "connection" in the friend-request sense the rename implies. Renaming the
+tab without narrowing what it actually shows would create a new mismatch between label and
+content, the same class of problem this whole change exists to fix on the Discover side — so
+this half of the doc's ask was left alone, not silently reinterpreted.
+
+**Preserved untouched, on purpose**: `FriendDiscoveryScreen.js`'s own internal copy/header
+("Meet New Friends") and Settings' "Meet New Friends" toggle (`open_to_friend_discovery`) — 
+both are the destination's/preference's own identity once you're already there, not the
+entry-point label this pass was about. `DiscoveryScreen.js` and `FriendDiscoveryScreen.js`
+themselves — including their swipe decks, matching RPCs, and safety checks — were not opened
+or modified at all.
+
+Verified via a direct `@babel/core` parse of the one touched file (clean) and a full
+`npx expo export --platform ios` — clean, no bundling errors, **2240 modules, unchanged** from
+the pre-existing baseline (an edit to one existing file only, no new files this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the merged People card renders correctly in both
+filter states (icon/subtitle/chip-active-state all swap correctly), that tapping a filter chip
+never also triggers the card's own navigation, and that tapping the card body in each state
+still lands on the correct, unmodified destination screen.
+
+### Decision 2 — Sign Out safety valve on the required profile-setup screen
+
+Direct follow-up to this file's own standing flagged-not-fixed item: `CompleteProfileScreen`
+(the required profile-setup gate between signup and the main app) had no way to leave if
+someone got stuck there — no `navigation` prop, no sign-out link — explicitly left as a real
+product decision rather than unilaterally added, since (unlike every other "no way back" fix
+in this file) this screen is a *required gate by design*, not a screen someone merely wandered
+into.
+
+**Decision, given directly**: add the safety valve — a required gate should never mean an
+unrecoverable dead end. Locked shape, restated so it isn't softened by a future session: the
+required-setup behavior itself is completely unchanged (no way to skip or bypass profile
+completion, no back button added), Sign Out is visually secondary/de-emphasized (not a second
+primary CTA competing with Continue), a confirmation step is required before it actually signs
+out, and the action must never mark onboarding complete or write a partially-configured profile
+— it's purely `Authenticated + Profile Setup Required` → `Signed Out`, nothing else touched.
+
+**Built exactly to that shape**: a small, muted "Sign Out" link added below the existing
+"Continue" button (`signOutLink`/`signOutLinkText` styles — same understated
+`textTertiary`/13px treatment `SettingsScreen.js`'s own Sign Out row already uses, not a new
+visual language). Tapping it shows a real confirmation (`Alert.alert('Sign Out?', "You can
+come back and finish setting up your profile anytime.", [Cancel, Sign Out])`) before calling
+the same plain `supabase.auth.signOut()` every other sign-out path in this app already uses —
+no `trusted_update` needed, since this never touches the `profiles` table at all, just the
+auth session. No change to `submit()`, no change to what's required to complete setup.
+
+Verified via a direct `@babel/core` parse (clean) and the same `npx expo export --platform
+ios` run above — clean, 2240 modules, unchanged (edit to one existing file, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the confirmation alert renders correctly, that
+Cancel genuinely leaves the in-progress form untouched, and that Sign Out correctly returns to
+the login/welcome screen with the account's profile-setup state exactly as it was (still
+required, nothing partially saved) the next time that account signs back in.
+
 ## Aug 27 2026 — full sweep of every registered route for the same "no way back" gap — DONE
 
 Direct follow-up to the Meet New Friends/Places/Timeline fix immediately below — that section's

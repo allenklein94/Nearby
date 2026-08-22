@@ -63,6 +63,23 @@ export default function CompleteProfileScreen() {
     }
   }
 
+  // Required-gate safety valve: this screen must stay required (no way to
+  // skip profile setup), but that's not the same as trapping someone here.
+  // Signing out never marks onboarding complete and never touches the
+  // profile row — it's purely Authenticated+Setup-Required ->
+  // Signed-Out, so nothing is lost and setup picks up again on the
+  // account's next real sign-in.
+  function handleSignOut() {
+    Alert.alert(
+      'Sign Out?',
+      'You can come back and finish setting up your profile anytime.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: () => { supabase.auth.signOut(); } },
+      ]
+    );
+  }
+
   async function submit() {
     if (!displayName.trim()) {
       return Alert.alert('Name required', 'Enter a display name.');
@@ -257,6 +274,15 @@ export default function CompleteProfileScreen() {
         >
           <Text style={styles.buttonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.signOutLink}
+          onPress={handleSignOut}
+          accessibilityLabel="Sign out"
+          accessibilityRole="button"
+        >
+          <Text style={styles.signOutLinkText}>Sign Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -307,4 +333,6 @@ const getStyles = (colors) => StyleSheet.create({
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.xl },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  signOutLink: { paddingVertical: spacing.sm, alignItems: 'center', marginBottom: spacing.lg },
+  signOutLinkText: { color: colors.textTertiary, fontSize: 13 },
 });
