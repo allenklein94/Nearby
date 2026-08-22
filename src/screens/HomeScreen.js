@@ -285,9 +285,16 @@ export default function HomeScreen({ navigation }) {
     // GatheringsScreen's own filtered-empty-state carries the "+ Start a
     // {category} Gathering" fallback, so the creation path isn't lost,
     // just reordered to after browsing turns up nothing.
+    //
+    // Category alone is a broad, ~25-tag bucket (e.g. "Sports") — a chip
+    // whose label is more specific than that (e.g. "Beach Volleyball")
+    // also carries a real `searchTerm`, layered on as a real indexed text
+    // search alongside the category filter so the result is an actual
+    // narrower match, not just every gathering in the broad category.
     navigation.navigate('Gatherings', {
       initialCategoryFilter: item.category,
       initialDateFilter: PERIOD_DATE_FILTER[period],
+      initialSearchQuery: item.searchTerm,
     });
   }
 

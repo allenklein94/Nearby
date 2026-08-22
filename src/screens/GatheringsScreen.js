@@ -122,7 +122,7 @@ export default function GatheringsScreen({ navigation, route }) {
   const [viewStyle, setViewStyle] = useState('list');
   const [myFriendIds, setMyFriendIds] = useState(new Set());
   const [inviteModalGathering, setInviteModalGathering] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(route?.params?.initialSearchQuery ?? '');
   // Real server-side, indexed search results (searchGatherings(), the same
   // trigram-indexed function DiscoverHubScreen uses) instead of filtering
   // the already-fetched `nearby` array client-side — see the debounced
@@ -815,14 +815,17 @@ export default function GatheringsScreen({ navigation, route }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🎉</Text>
               <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
-              {!isSearchingGatherings && !forYouActive && interestFilter && (
+              {!forYouActive && (isSearchingGatherings ? searchQuery.trim() : interestFilter) && (
                 <TouchableOpacity
                   style={styles.emptyStateCreateButton}
-                  onPress={() => navigation.navigate('CreateGathering', { quickStartCategory: interestFilter })}
+                  onPress={() => navigation.navigate('CreateGathering', {
+                    quickStartCategory: interestFilter || undefined,
+                    quickStartTitle: isSearchingGatherings ? searchQuery.trim() : undefined,
+                  })}
                   accessibilityRole="button"
-                  accessibilityLabel={`Start a ${interestFilter} gathering`}
+                  accessibilityLabel={`Start a ${isSearchingGatherings ? searchQuery.trim() : interestFilter} gathering`}
                 >
-                  <Text style={styles.emptyStateCreateButtonText}>+ Start a {interestFilter} Gathering</Text>
+                  <Text style={styles.emptyStateCreateButtonText}>+ Start a {isSearchingGatherings ? searchQuery.trim() : interestFilter} Gathering</Text>
                 </TouchableOpacity>
               )}
             </View>

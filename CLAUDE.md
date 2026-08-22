@@ -4,6 +4,69 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — Quick Pick chip taps no longer widen to the whole category — DONE
+
+Real, user-reported bug, not an audit finding: tapping the "Beach Volleyball" Quick Pick chip
+on Home this afternoon landed on `GatheringsScreen` filtered to `Sports Near You` — every
+Sports gathering happening this afternoon, not specifically volleyball ones. Traced directly:
+`HomeScreen.js`'s `handleQuickAction()` has only ever passed the chip's real, broad `category`
+(one of the ~25 canonical interest tags, e.g. `"Sports"`) through to `GatheringsScreen` as
+`initialCategoryFilter` — a chip's own `label` (e.g. "Beach Volleyball", "Morning Run", "Beach
+Cleanup") is a time-flavored *display string* for a broad category, not a real sub-category the
+schema has any concept of, so there was never a narrower filter available to apply even though
+the label itself reads as specific.
+
+**Fixed by layering a real, already-existing mechanism on top, not inventing a new filter
+axis.** Every `QUICK_PROMPTS_BY_PERIOD` entry (`utils/timeContext.js`) whose label is more
+specific than its broad category (`Beach Volleyball`/Sports, `Morning Run`/Fitness, `Breakfast`/
+Foodie, `Lunch`/Foodie, `Dinner`/Foodie, `Walk`/Outdoors, `Beach Cleanup`/Outdoors, `Wine
+Tasting`/Wine) gained a real `searchTerm` (a single lowercase word — `volleyball`, `run`,
+`breakfast`, `lunch`, `dinner`, `walk`, `cleanup`, `tasting`) — deliberately omitted wherever the
+label and category already mean the same thing (`Coffee`/Coffee, `Volunteering`/Volunteering,
+`Concert`/Concerts, `Reading`/Reading), since searching there would only risk a false-negative
+empty result (a real gathering titled "Coffee & Code" not containing the literal word "coffee"
+in a way ILIKE would still catch fine, but no actual narrowing benefit either way) for zero
+narrowing benefit. `getPersonalizedQuickPicks()`/`getPinnedQuickPicks()` (the two functions that
+flavor a real top-attended category into a period-specific chip) both carry `searchTerm` through
+onto their returned picks unchanged.
+
+`HomeScreen.js`'s `handleQuickAction()` now also passes `initialSearchQuery: item.searchTerm`
+alongside the existing `initialCategoryFilter`/`initialDateFilter`. `GatheringsScreen.js` reads
+`route?.params?.initialSearchQuery` as its search box's own initial state (previously always
+`''`) — landing pre-filled and, since the screen's existing debounced search effect depends on
+`searchQuery` and fires on mount, immediately running the same real indexed `searchGatherings()`
+call the search box already uses for a manually-typed query (title/description, trigram-indexed,
+the exact mechanism the Aug 9 2026 indexed-search work already built and verified live) — not a
+new search code path. Category, trending, and date filters all still apply **on top of** the
+search results exactly as they already did on top of the unfiltered `nearby` list (confirmed by
+reading the existing `filteredNearby` chain — search only ever replaces which base list gets
+filtered, never bypasses the other filters), so "Beach Volleyball this afternoon" now correctly
+means Sports gatherings, scheduled this afternoon, whose title/description actually mentions
+volleyball — not every Sports gathering this afternoon. The header still reads "Sports Near
+You" (category-level, unchanged) since that's still an accurate, honest description of the
+broader filter also in effect; the search box itself visibly shows "volleyball" pre-filled, so
+the user can see and clear the narrowing if they want the full category back.
+
+The empty-state fallback (`GatheringsScreen.js`'s "+ Start a ... Gathering" button) was widened
+to also fire while actively searching with no category set (previously gated on
+`!isSearchingGatherings && interestFilter`, so a search-only empty result showed no create
+button at all) — now offers "+ Start a {searchTerm} Gathering" prefilling
+`CreateGathering`'s `quickStartTitle` from the real search text when there's no category, or
+the category label when there is, matching whichever signal is actually present.
+
+**Verified**: the full 43-test Jest suite passes (4 suites, including a new
+`timeContext.test.js` case asserting `searchTerm` is present and correct for a flavored label
+and absent where label/category already match), and a full `npx expo export --platform ios`
+built clean with no bundling errors — edits to three existing files
+(`HomeScreen.js`/`GatheringsScreen.js`/`timeContext.js`), no new files this pass.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm tapping "Beach Volleyball" (or any other flavored
+chip) on a real device lands on `GatheringsScreen` with the search box genuinely pre-filled and
+the result list genuinely narrowed, not just category-filtered, and that a chip whose label
+equals its category (e.g. "Coffee") still behaves exactly as before this pass (no search term,
+category-only filter).
+
 ## Aug 27 2026 — "Get an Uber there": a real destination deep link, not a ride-booking
 ## integration — DONE
 

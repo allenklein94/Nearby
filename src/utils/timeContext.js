@@ -28,26 +28,38 @@ export function getTimePeriod(date = new Date()) {
   return 'evening';
 }
 
+// Every entry's `category` is one of the ~25 canonical interest tags —
+// the only real category data a gathering has (see INTEREST_OPTIONS in
+// QuickPicksEditModal.js). A label like "Beach Volleyball" is a
+// time-flavored *suggestion*, not a real sub-category the schema knows
+// about — browsing by category alone would show every "Sports" gathering,
+// not just volleyball ones. `searchTerm`, where present, is a single real
+// word narrow enough to be worth combining with the category filter as an
+// actual text search (via the same indexed searchGatherings() every
+// screen's search box already uses) — omitted wherever the label and
+// category already mean the same thing (Coffee/Coffee, Volunteering/
+// Volunteering, Concert/Concerts), since searching there would only add a
+// chance of a false-negative empty result with no real narrowing benefit.
 const QUICK_PROMPTS_BY_PERIOD = {
   morning: [
     { icon: '☕', label: 'Coffee', category: 'Coffee' },
-    { icon: '🏃', label: 'Morning Run', category: 'Fitness' },
-    { icon: '🍳', label: 'Breakfast', category: 'Foodie' },
+    { icon: '🏃', label: 'Morning Run', category: 'Fitness', searchTerm: 'run' },
+    { icon: '🍳', label: 'Breakfast', category: 'Foodie', searchTerm: 'breakfast' },
   ],
   afternoon: [
-    { icon: '🥪', label: 'Lunch', category: 'Foodie' },
+    { icon: '🥪', label: 'Lunch', category: 'Foodie', searchTerm: 'lunch' },
     { icon: '🤝', label: 'Volunteering', category: 'Volunteering' },
     { icon: '📚', label: 'Reading', category: 'Reading' },
   ],
   evening: [
-    { icon: '🍽️', label: 'Dinner', category: 'Foodie' },
+    { icon: '🍽️', label: 'Dinner', category: 'Foodie', searchTerm: 'dinner' },
     { icon: '🎤', label: 'Concert', category: 'Concerts' },
-    { icon: '🚶', label: 'Walk', category: 'Outdoors' },
+    { icon: '🚶', label: 'Walk', category: 'Outdoors', searchTerm: 'walk' },
   ],
   weekend: [
-    { icon: '🏐', label: 'Beach Volleyball', category: 'Sports' },
-    { icon: '🌱', label: 'Beach Cleanup', category: 'Outdoors' },
-    { icon: '🍷', label: 'Wine Tasting', category: 'Wine' },
+    { icon: '🏐', label: 'Beach Volleyball', category: 'Sports', searchTerm: 'volleyball' },
+    { icon: '🌱', label: 'Beach Cleanup', category: 'Outdoors', searchTerm: 'cleanup' },
+    { icon: '🍷', label: 'Wine Tasting', category: 'Wine', searchTerm: 'tasting' },
   ],
 };
 
@@ -64,7 +76,7 @@ const PERIOD_LABEL_BY_CATEGORY = {};
 for (const [period, items] of Object.entries(QUICK_PROMPTS_BY_PERIOD)) {
   for (const item of items) {
     PERIOD_LABEL_BY_CATEGORY[item.category] = PERIOD_LABEL_BY_CATEGORY[item.category] ?? {};
-    PERIOD_LABEL_BY_CATEGORY[item.category][period] = { icon: item.icon, label: item.label };
+    PERIOD_LABEL_BY_CATEGORY[item.category][period] = { icon: item.icon, label: item.label, searchTerm: item.searchTerm };
   }
 }
 
@@ -91,7 +103,7 @@ export function getPersonalizedQuickPicks(period, topCategories, styleForCategor
     seen.add(tag);
     const flavor = PERIOD_LABEL_BY_CATEGORY[tag]?.[period];
     if (flavor) {
-      picks.push({ icon: flavor.icon, label: flavor.label, category: tag });
+      picks.push({ icon: flavor.icon, label: flavor.label, category: tag, searchTerm: flavor.searchTerm });
     } else {
       const style = styleForCategory(tag);
       picks.push({ icon: style.icon, label: tag, category: tag });
@@ -117,7 +129,7 @@ export function getPersonalizedQuickPicks(period, topCategories, styleForCategor
 export function getPinnedQuickPicks(pinnedCategories, period, styleForCategory) {
   return pinnedCategories.map((tag) => {
     const flavor = PERIOD_LABEL_BY_CATEGORY[tag]?.[period];
-    if (flavor) return { icon: flavor.icon, label: flavor.label, category: tag };
+    if (flavor) return { icon: flavor.icon, label: flavor.label, category: tag, searchTerm: flavor.searchTerm };
     const style = styleForCategory(tag);
     return { icon: style.icon, label: tag, category: tag };
   });

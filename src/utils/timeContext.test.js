@@ -61,6 +61,13 @@ describe('getQuickPrompts', () => {
   it('falls back to evening for an unknown period', () => {
     expect(getQuickPrompts('bogus')).toEqual(getQuickPrompts('evening'));
   });
+
+  it('carries a real narrowing searchTerm for a label more specific than its broad category, omitted where label and category already mean the same thing', () => {
+    const weekend = getQuickPrompts('weekend');
+    expect(weekend.find((p) => p.label === 'Beach Volleyball')).toEqual({ icon: '🏐', label: 'Beach Volleyball', category: 'Sports', searchTerm: 'volleyball' });
+    const morning = getQuickPrompts('morning');
+    expect(morning.find((p) => p.label === 'Coffee').searchTerm).toBeUndefined();
+  });
 });
 
 const styleForCategory = (tag) => ({ icon: '🏷️' });
@@ -73,7 +80,7 @@ describe('getPersonalizedQuickPicks', () => {
 
   it('flavors a real top category that has an established period label', () => {
     const picks = getPersonalizedQuickPicks('evening', ['Foodie'], styleForCategory);
-    expect(picks[0]).toEqual({ icon: '🍽️', label: 'Dinner', category: 'Foodie' });
+    expect(picks[0]).toEqual({ icon: '🍽️', label: 'Dinner', category: 'Foodie', searchTerm: 'dinner' });
   });
 
   it('falls back to a generic icon/tag-name for a category with no period flavor', () => {
@@ -97,7 +104,7 @@ describe('getPinnedQuickPicks', () => {
 
   it('uses the period flavor when one exists, otherwise a generic fallback', () => {
     const picks = getPinnedQuickPicks(['Foodie', 'Hiking'], 'evening', styleForCategory);
-    expect(picks[0]).toEqual({ icon: '🍽️', label: 'Dinner', category: 'Foodie' });
+    expect(picks[0]).toEqual({ icon: '🍽️', label: 'Dinner', category: 'Foodie', searchTerm: 'dinner' });
     expect(picks[1]).toEqual({ icon: '🏷️', label: 'Hiking', category: 'Hiking' });
   });
 });
