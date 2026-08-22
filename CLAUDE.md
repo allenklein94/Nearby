@@ -4,6 +4,41 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — a host had no way to edit their own gathering from GatheringDetailScreen — DONE
+
+Real, user-reported gap: the host of a real gathering could see "Why this fits you" (the same
+computed reasons list — interest match, close distance, happening today, beginner-friendly —
+`getGatheringFitReasons()` already renders for anyone viewing the gathering, host included) but
+had no way to edit the gathering at all from `GatheringDetailScreen.js` — no Edit link anywhere
+on the host banner. **"Why this fits you" is correctly non-interactive** — it's read-only,
+derived reasoning (the same signal Home's own Best Pick card uses), not editable content, so
+that part was working as designed; the real gap was the missing Edit path.
+
+Confirmed `EditGatheringScreen`/`EditGathering` route already existed and was fully functional
+(title/description/date/vibe sliders/beginner-friendly/timeline/cover photo, via
+`updateGathering()`) — it was just only ever reachable from `GatheringsScreen.js`'s Hosting tab
+list rows (a ✏️ icon next to Cancel), never from the detail screen itself. Added a real
+"✏️ Edit Gathering →" link to `GatheringDetailScreen.js`'s host banner, right after "Manage
+attendees", gated on the gathering still being upcoming (matches the Hosting tab's own
+`!isPast` gate — editing a gathering that already happened doesn't make sense, same reasoning
+`EditGatheringScreen`'s own subheader gives for location/visibility/recurrence being uneditable
+at all: "cancel and recreate if those need to change"). Passes the already-loaded `gathering`
+object straight through — its fields (`id`/`title`/`description`/`scheduled_at`/`energy_level`/
+`conversation_level`/`group_size_feel`/`beginner_friendly`/`timeline_steps`/`cover_photo_path`)
+already match exactly what `EditGatheringScreen` reads, since both this screen's `getGatheringById()`
+and the Hosting tab's list query select the same `SAFE_GATHERING_FIELDS` set — no reshaping
+needed. `GatheringDetailScreen` already re-fetches on focus (`useFocusEffect`), so returning
+from a save shows the edited gathering immediately, no extra wiring needed.
+
+**Verified**: the full 43-test Jest suite still passes, a direct `@babel/core` parse of the
+touched file is clean, and a full `npx expo export --platform ios` built clean with no
+bundling errors — edit to one existing file only, no new files.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new link renders only for an upcoming gathering's
+own host, opens `EditGatheringScreen` with every field correctly pre-filled, and that saving a
+change is reflected immediately back on `GatheringDetailScreen`.
+
 ## Aug 27 2026 — Quick Pick chip taps no longer widen to the whole category — DONE
 
 Real, user-reported bug, not an audit finding: tapping the "Beach Volleyball" Quick Pick chip

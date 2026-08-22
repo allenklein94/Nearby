@@ -570,6 +570,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>Manage attendees →</Text>
               </TouchableOpacity>
+              {new Date(gathering.scheduled_at) >= new Date() && (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('EditGathering', { gathering })}
+                  style={{ marginTop: spacing.xs }}
+                  accessibilityLabel="Edit gathering"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.hostBannerLink}>✏️ Edit Gathering →</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
                 style={{ marginTop: spacing.xs }}
