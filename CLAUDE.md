@@ -139,6 +139,16 @@ correct destination screen with no cross-talk between them, and a VoiceOver/Talk
 the two-row layout specifically (a plain list of two rows, no nested touchables this time, so
 the earlier "does the inner tap get stolen by the outer" risk no longer applies).
 
+**Second revision, same session — icon consistency.** The two-row module's Friends row briefly
+used a new icon (👋) invented just for this entry point — flagged directly rather than left as
+is: `FriendDiscoveryScreen.js`'s own explainer screen and `SettingsScreen.js`'s "🤝 Friends" row
+both already use 🤝 for the identical concept. Fixed to reuse 🤝 on the Discover row too, so the
+row now visually teaches "this is the same Friends feature you're about to open" instead of
+introducing a fourth icon for one feature. `PEOPLE_MODES`'s own source comment now states this
+rule directly, so a future addition doesn't silently reintroduce a mismatched icon. Verified via
+the same `@babel/core` parse + `npx expo export --platform ios` pass covering the wizard rebuild
+below (one combined verification run for both changes).
+
 ### Decision 2 — Sign Out safety valve on the required profile-setup screen
 
 Direct follow-up to this file's own standing flagged-not-fixed item: `CompleteProfileScreen`
@@ -173,6 +183,53 @@ run-through — next session should confirm the confirmation alert renders corre
 Cancel genuinely leaves the in-progress form untouched, and that Sign Out correctly returns to
 the login/welcome screen with the account's profile-setup state exactly as it was (still
 required, nothing partially saved) the next time that account signs back in.
+
+### Decision 3 — `CompleteProfileScreen` rebuilt as a 3-step wizard, same session
+
+Direct follow-up given right after Decisions 1/2 landed, prioritized as "the biggest item" by
+the user: `CompleteProfileScreen` crammed name + birthdate + a required photo + 24 interest
+chips + terms consent onto one long scroll before a first-time user has seen anything of the
+app — the exact "one giant form" shape this codebase already moved away from once, for
+gathering creation (see "Outstanding: Frictionless Gathering Creation Redesign ('Create 2.0')"
+further down this file — the whole reason that rebuild replaced a single crammed form with a
+real step-by-step wizard).
+
+**Decision, given directly**: apply the same philosophy here, not by making anything optional —
+`required information ≠ one giant form` was the explicit instruction — every field that was
+required before (name, birthdate, 18+, photo, terms) is still required, gated per-step exactly
+the same way Create 2.0's own `goNext()` gates each of its steps. Locked shape: **About You**
+(name + birthdate) → **Photo** (the required photo picker) → **Interests** (the optional chips,
+with terms consent folded into this same final step rather than given its own screen, per
+direct instruction — "a short checkbox, not a decision that needs its own screen").
+
+**Built exactly to that shape, reusing `CreateGatheringScreen.js`'s own already-proven wizard
+pattern verbatim rather than inventing a new one** — same `STEP_DEFS`/`step`/`stepKey` shape,
+same `progressRow`/`progressDot`/`progressDotActive`/`progressLabel` dot-and-label progress
+indicator, same `goNext()`-gates-required-fields-per-step / `goBack()` structure, same
+Back-button-hidden-on-step-0 treatment (this screen has no `navigation` prop and never has
+anywhere to actually go back *to* — Sign Out, not Back, is this screen's own real "leave"
+affordance, and it stays visible on every step, unconditionally, not gated by step, matching
+Decision 2's own "regardless of where you got stuck" intent). `goNext()` validates
+name/birthdate/age on the About step and the required photo on the Photo step (synchronous
+checks only, matching Create 2.0's own convention of deferring the one async check —
+`checkTextModeration`, a network call — to final submit rather than every `Next` tap); `submit()`
+now only re-checks `agreedToTerms` (paired with the Continue button's own `disabled={!agreedToTerms}`,
+belt-and-suspenders, same posture as before) and the display-name moderation check, then does
+the exact same profile upsert/photo upload/`just_completed_signup` flag logic as before —
+completely unchanged. No field became skippable; the wizard only changed how many decisions are
+visible on screen at once.
+
+Verified via a direct `@babel/core` parse of the file (clean) and a full `npx expo export
+--platform ios` — clean, no bundling errors, 2240 modules, unchanged (this was a full-file
+rewrite of one existing screen, same import list, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm all three steps render and validate correctly (each
+step's own required-field rejection alert fires at the right moment, Back correctly returns to
+the prior step with previously-entered values intact, the progress row's active-dot/label state
+tracks the current step), that Sign Out is genuinely reachable and behaves identically from all
+three steps, and that a full real submission (all three steps, then Continue) still produces the
+exact same `profiles` row and photo upload it did before this rebuild.
 
 ## Aug 27 2026 — full sweep of every registered route for the same "no way back" gap — DONE
 

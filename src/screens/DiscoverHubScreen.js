@@ -36,9 +36,13 @@ const TYPE_FILTERS = [
 // feed across two independently safety-gated systems, a real
 // architecture decision on its own, not a relabel. See CLAUDE.md's
 // Aug 22 2026 entry for the full reasoning.
+// The Friends row's icon (🤝) intentionally matches FriendDiscoveryScreen's
+// own explainer and Settings' "Friends" row exactly, rather than a new
+// icon invented just for this entry point -- the row should visually
+// teach "this is the same Friends feature you're about to open."
 const PEOPLE_MODES = [
   { key: 'dating', route: 'Nearby', icon: '💗', title: 'Dating', subtitle: 'Meet people nearby who are open to dating' },
-  { key: 'friends', route: 'FriendDiscovery', icon: '👋', title: 'Friends', subtitle: 'Meet new people nearby and make friends' },
+  { key: 'friends', route: 'FriendDiscovery', icon: '🤝', title: 'Friends', subtitle: 'Meet new people nearby and make friends' },
 ];
 
 const PLACE_CATEGORIES = [

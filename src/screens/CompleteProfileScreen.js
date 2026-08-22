@@ -22,6 +22,20 @@ const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running',
 ];
 
+// One decision per screen, matching the same "required fields, split
+// across deliberate steps" philosophy Create 2.0 already proved out for
+// gathering creation -- required-ness is unchanged (every step still
+// gates Next, nothing here became skippable), only the "one giant form"
+// shape changed. Terms consent deliberately lives on the last step
+// alongside Interests rather than getting its own step, per direct
+// instruction -- it's a short checkbox, not a decision that needs its
+// own screen. See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
+const STEP_DEFS = [
+  { key: 'about', label: 'About You' },
+  { key: 'photo', label: 'Photo' },
+  { key: 'interests', label: 'Interests' },
+];
+
 function calculateAge(birthdate) {
   const today = new Date();
   let age = today.getFullYear() - birthdate.getFullYear();
@@ -37,6 +51,7 @@ export default function CompleteProfileScreen() {
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors);
+  const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [birthdate, setBirthdate] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
@@ -45,6 +60,7 @@ export default function CompleteProfileScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
+  const stepKey = STEP_DEFS[step].key;
   const maxSelectableDate = new Date();
   maxSelectableDate.setFullYear(maxSelectableDate.getFullYear() - MIN_AGE);
 
@@ -59,7 +75,7 @@ export default function CompleteProfileScreen() {
       const asset = await pickProfilePhoto();
       if (asset) setPhotoAsset(asset);
     } catch (e) {
-      Alert.alert('Couldn\u2019t access photos', e.message);
+      Alert.alert('Couldn’t access photos', e.message);
     }
   }
 
@@ -68,7 +84,7 @@ export default function CompleteProfileScreen() {
   // Signing out never marks onboarding complete and never touches the
   // profile row — it's purely Authenticated+Setup-Required ->
   // Signed-Out, so nothing is lost and setup picks up again on the
-  // account's next real sign-in.
+  // account's next real sign-in. Always reachable, regardless of step.
   function handleSignOut() {
     Alert.alert(
       'Sign Out?',
@@ -80,20 +96,30 @@ export default function CompleteProfileScreen() {
     );
   }
 
+  function goNext() {
+    if (stepKey === 'about') {
+      if (!displayName.trim()) {
+        return Alert.alert('Name required', 'Enter a display name.');
+      }
+      if (!birthdate) {
+        return Alert.alert('Birthdate required', 'This app is 18+ only — enter your date of birth.');
+      }
+      const age = calculateAge(birthdate);
+      if (age < MIN_AGE) {
+        return Alert.alert('Age requirement not met', 'You must be 18 or older to use this app.');
+      }
+    }
+    if (stepKey === 'photo' && !photoAsset) {
+      return Alert.alert('Photo required', 'Add a profile photo to continue. It’ll be reviewed before it’s visible to others.');
+    }
+    setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
+  }
+
+  function goBack() {
+    setStep((s) => Math.max(s - 1, 0));
+  }
+
   async function submit() {
-    if (!displayName.trim()) {
-      return Alert.alert('Name required', 'Enter a display name.');
-    }
-    if (!birthdate) {
-      return Alert.alert('Birthdate required', 'This app is 18+ only — enter your date of birth.');
-    }
-    const age = calculateAge(birthdate);
-    if (age < MIN_AGE) {
-      return Alert.alert('Age requirement not met', 'You must be 18 or older to use this app.');
-    }
-    if (!photoAsset) {
-      return Alert.alert('Photo required', 'Add a profile photo to continue. It\u2019ll be reviewed before it\u2019s visible to others.');
-    }
     if (!agreedToTerms) {
       return Alert.alert('Agreement required', 'You must agree to the Terms of Service and Privacy Policy to use Nearby.');
     }
@@ -169,111 +195,159 @@ export default function CompleteProfileScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl }}>
         <Text style={styles.header} accessibilityRole="header">{t('completeProfile.header')}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>18+ ONLY</Text>
+        <Text style={styles.subheader}>{t('completeProfile.subheader')}</Text>
+
+        <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEP_DEFS.length}: ${STEP_DEFS[step].label}`}>
+          {STEP_DEFS.map((s, i) => (
+            <View key={s.key} style={styles.progressStep}>
+              <View style={[styles.progressDot, i <= step && styles.progressDotActive]} />
+              <Text style={[styles.progressLabel, i === step && styles.progressLabelActive]}>{s.label}</Text>
+            </View>
+          ))}
         </View>
 
-        <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
-        <TextInput
-          style={styles.input}
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder={t('completeProfile.displayNamePlaceholder')}
-          placeholderTextColor={colors.textTertiary}
-          accessibilityLabel="Display name"
-        />
+        {stepKey === 'about' && (
+          <>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>18+ ONLY</Text>
+            </View>
 
-        <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
-        <TouchableOpacity
-          style={styles.input}
-          onPress={() => setShowPicker(true)}
-          accessibilityLabel={birthdate ? `Date of birth, ${birthdate.toLocaleDateString()}` : 'Date of birth, not set'}
-          accessibilityRole="button"
-        >
-          <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
-            {birthdate ? birthdate.toLocaleDateString() : t('completeProfile.tapToSelect')}
-          </Text>
-        </TouchableOpacity>
-        {showPicker && (
-          <DateTimePicker
-            value={birthdate || maxSelectableDate}
-            mode="date"
-            maximumDate={maxSelectableDate}
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            themeVariant={isDark ? 'dark' : 'light'}
-            onChange={(event, selectedDate) => {
-              setShowPicker(Platform.OS === 'ios');
-              if (selectedDate) setBirthdate(selectedDate);
-            }}
-          />
+            <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
+            <TextInput
+              style={styles.input}
+              value={displayName}
+              onChangeText={setDisplayName}
+              placeholder={t('completeProfile.displayNamePlaceholder')}
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Display name"
+            />
+
+            <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
+            <TouchableOpacity
+              style={styles.input}
+              onPress={() => setShowPicker(true)}
+              accessibilityLabel={birthdate ? `Date of birth, ${birthdate.toLocaleDateString()}` : 'Date of birth, not set'}
+              accessibilityRole="button"
+            >
+              <Text style={{ color: birthdate ? colors.textPrimary : colors.textTertiary }}>
+                {birthdate ? birthdate.toLocaleDateString() : t('completeProfile.tapToSelect')}
+              </Text>
+            </TouchableOpacity>
+            {showPicker && (
+              <DateTimePicker
+                value={birthdate || maxSelectableDate}
+                mode="date"
+                maximumDate={maxSelectableDate}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                themeVariant={isDark ? 'dark' : 'light'}
+                onChange={(event, selectedDate) => {
+                  setShowPicker(Platform.OS === 'ios');
+                  if (selectedDate) setBirthdate(selectedDate);
+                }}
+              />
+            )}
+          </>
         )}
 
-        <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
-        <TouchableOpacity
-          style={styles.photoPicker}
-          onPress={choosePhoto}
-          activeOpacity={0.85}
-          accessibilityLabel={photoAsset ? 'Change your profile photo' : 'Choose a profile photo, required'}
-          accessibilityRole="button"
-        >
-          {photoAsset ? (
-            <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
-          ) : (
-            <Text style={styles.photoPickerText}>📷{'\n'}Tap to choose a photo</Text>
+        {stepKey === 'photo' && (
+          <>
+            <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
+            <TouchableOpacity
+              style={styles.photoPicker}
+              onPress={choosePhoto}
+              activeOpacity={0.85}
+              accessibilityLabel={photoAsset ? 'Change your profile photo' : 'Choose a profile photo, required'}
+              accessibilityRole="button"
+            >
+              {photoAsset ? (
+                <Image source={{ uri: photoAsset.uri }} style={styles.photoPreview} />
+              ) : (
+                <Text style={styles.photoPickerText}>📷{'\n'}Tap to choose a photo</Text>
+              )}
+            </TouchableOpacity>
+            <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
+          </>
+        )}
+
+        {stepKey === 'interests' && (
+          <>
+            <Text style={styles.label}>Interests (Optional)</Text>
+            <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with.</Text>
+            <View style={styles.chipsWrap}>
+              {INTEREST_OPTIONS.map((interest) => {
+                const selected = interests.includes(interest);
+                return (
+                  <TouchableOpacity
+                    key={interest}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => toggleInterest(interest)}
+                    activeOpacity={0.8}
+                    accessibilityLabel={interest}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={styles.consentRow}
+              onPress={() => setAgreedToTerms(!agreedToTerms)}
+              activeOpacity={0.7}
+              accessibilityLabel="Agree to Terms of Service and Privacy Policy"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: agreedToTerms }}
+            >
+              <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.consentText}>
+                {t('completeProfile.agreeText')}{' '}
+                <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>{t('completeProfile.termsOfService')}</Text>
+                {' '}{t('completeProfile.andText')}{' '}
+                <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>{t('completeProfile.privacyPolicy')}</Text>
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        <View style={styles.navRow}>
+          {step > 0 && (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={goBack}
+              activeOpacity={0.85}
+              accessibilityLabel="Back"
+              accessibilityRole="button"
+            >
+              <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
-        <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
-
-        <Text style={styles.label}>Interests (Optional)</Text>
-        <Text style={styles.interestsHelper}>Helps us show you gatherings and people you'll actually click with.</Text>
-        <View style={styles.chipsWrap}>
-          {INTEREST_OPTIONS.map((interest) => {
-            const selected = interests.includes(interest);
-            return (
-              <TouchableOpacity
-                key={interest}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => toggleInterest(interest)}
-                activeOpacity={0.8}
-                accessibilityLabel={interest}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{interest}</Text>
-              </TouchableOpacity>
-            );
-          })}
+          {step < STEP_DEFS.length - 1 ? (
+            <TouchableOpacity
+              style={styles.nextButton}
+              onPress={goNext}
+              activeOpacity={0.85}
+              accessibilityLabel="Next"
+              accessibilityRole="button"
+            >
+              <Text style={styles.nextButtonText}>Next</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.nextButton, !agreedToTerms && styles.nextButtonDisabled]}
+              onPress={submit}
+              disabled={submitting || !agreedToTerms}
+              activeOpacity={0.85}
+              accessibilityLabel={submitting ? t('completeProfile.saving') : t('completeProfile.continue')}
+              accessibilityRole="button"
+            >
+              <Text style={styles.nextButtonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
-
-        <TouchableOpacity
-          style={styles.consentRow}
-          onPress={() => setAgreedToTerms(!agreedToTerms)}
-          activeOpacity={0.7}
-          accessibilityLabel="Agree to Terms of Service and Privacy Policy"
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: agreedToTerms }}
-        >
-          <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
-            {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
-          </View>
-          <Text style={styles.consentText}>
-            {t('completeProfile.agreeText')}{' '}
-            <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>{t('completeProfile.termsOfService')}</Text>
-            {' '}{t('completeProfile.andText')}{' '}
-            <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>{t('completeProfile.privacyPolicy')}</Text>
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, !agreedToTerms && styles.buttonDisabled]}
-          onPress={submit}
-          disabled={submitting || !agreedToTerms}
-          activeOpacity={0.85}
-          accessibilityLabel={submitting ? t('completeProfile.saving') : t('completeProfile.continue')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>{submitting ? t('completeProfile.saving') : t('completeProfile.continue')}</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.signOutLink}
@@ -290,14 +364,20 @@ export default function CompleteProfileScreen() {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { ...typography.title, color: colors.textPrimary },
+  header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
+  subheader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
+  progressRow: { flexDirection: 'row', marginBottom: spacing.xl },
+  progressStep: { flex: 1, alignItems: 'center' },
+  progressDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginBottom: 6 },
+  progressDotActive: { backgroundColor: colors.primary },
+  progressLabel: { fontSize: 10, color: colors.textTertiary, fontWeight: '600' },
+  progressLabelActive: { color: colors.primary },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: colors.primaryMuted,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.full,
-    marginTop: spacing.xs,
     marginBottom: spacing.md,
   },
   badgeText: { color: colors.primary, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
@@ -330,9 +410,15 @@ const getStyles = (colors) => StyleSheet.create({
   checkmark: { color: '#fff', fontSize: 14, fontWeight: '700' },
   consentText: { ...typography.caption, color: colors.textSecondary, flex: 1, lineHeight: 19 },
   link: { color: colors.primary, textDecorationLine: 'underline' },
-  button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.xl },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  signOutLink: { paddingVertical: spacing.sm, alignItems: 'center', marginBottom: spacing.lg },
+  navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
+  backButton: {
+    paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
+  },
+  backButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
+  nextButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center' },
+  nextButtonDisabled: { opacity: 0.5 },
+  nextButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  signOutLink: { paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.lg },
   signOutLinkText: { color: colors.textTertiary, fontSize: 13 },
 });
