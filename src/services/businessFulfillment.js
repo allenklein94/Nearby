@@ -219,10 +219,18 @@ export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRep
 // partner, so no explicit partnerId filter is strictly required for
 // security -- passed anyway for query clarity, matching this codebase's
 // existing business-query convention elsewhere.
+// Gap 3 of the merged gathering/date <-> business UX (see CLAUDE.md's own
+// plan): gathering_id/match_id, plus a nested gatherings(title,
+// scheduled_at) embed, so a real accepted offer can be named by the
+// actual real-world thing it's tied to -- gatherings' own SELECT RLS is
+// world-readable ("Anyone can view gatherings"), so this embed needs no
+// new policy. Used to build BusinessDashboardScreen's "Upcoming Nearby
+// Visits" card -- naming the specific gathering/date, not a generic
+// accepted-offer row.
 export async function getBusinessOpportunities(partnerId) {
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at)')
+    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at, gathering_id, match_id, gatherings(title, scheduled_at))')
     .eq('partner_id', partnerId)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);

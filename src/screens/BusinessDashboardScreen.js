@@ -8,7 +8,7 @@ import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusin
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
@@ -744,6 +744,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
+  // Gap 3 of the merged gathering/date <-> business UX (see CLAUDE.md's
+  // own plan): names the real, specific thing an accepted offer is
+  // actually tied to -- a real gathering (its own real title/date, via
+  // getBusinessOpportunities()'s new gatherings() embed), a real date
+  // (Offer System Phase 5's match_id-sourced requests, which have no
+  // fixed date of their own -- the offer's own proposed_time is the real
+  // meeting time), or a plain solo ask -- instead of the generic
+  // "accepted offer" label the Business Opportunities list below already
+  // shows for the identical row.
+  function describeVisit(o) {
+    const br = o.business_requests;
+    const soloWhen = o.proposed_time
+      ? formatDate(o.proposed_time)
+      : br?.date
+      ? new Date(`${br.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      : null;
+    if (br?.gathering_id && br?.gatherings) {
+      return { kicker: '🎉 A Gathering', title: br.gatherings.title, when: br.gatherings.scheduled_at ? formatDate(br.gatherings.scheduled_at) : soloWhen };
+    }
+    if (br?.match_id) {
+      return { kicker: '❤️ A Date', title: 'Two people planning to visit', when: soloWhen };
+    }
+    return { kicker: '🙋 A Request', title: br?.raw_text ?? 'A visit', when: soloWhen };
+  }
+
   async function handlePostUpdate() {
     if (!updateTitle.trim()) {
       return Alert.alert('Title required', 'Give your update a short title.');
@@ -1179,6 +1204,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
             {section === 'requests' && (
               <>
+                {opportunities.filter((o) => o.status === 'accepted').length > 0 && (
+                  <View style={{ marginBottom: spacing.lg }}>
+                    <Text style={styles.sectionHeader}>📅 Upcoming Nearby Visits</Text>
+                    <Text style={styles.helperText}>
+                      Real, confirmed visits headed your way -- accepted, not yet marked
+                      complete.
+                    </Text>
+                    {opportunities.filter((o) => o.status === 'accepted').map((o) => {
+                      const visit = describeVisit(o);
+                      return (
+                        <View key={o.id} style={styles.gatheringRow}>
+                          <Text style={styles.breakdownText}>{visit.kicker}</Text>
+                          <Text style={styles.offerTitle}>{visit.title}</Text>
+                          <Text style={styles.breakdownText}>
+                            {[
+                              visit.when,
+                              o.business_requests?.party_size ? `${o.business_requests.party_size} ${o.business_requests.party_size === 1 ? 'person' : 'people'}` : null,
+                              formatOfferSummary(o),
+                            ].filter(Boolean).join(' · ')}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
                 <Text style={styles.sectionHeader}>📊 Demand Near You</Text>
                 <Text style={styles.helperText}>
                   Real open requests within reach of your business right now, grouped by

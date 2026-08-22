@@ -4,6 +4,98 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 26 2026 — Gap 3: a real "Upcoming Nearby Visits" card on the Business Dashboard — DONE
+
+Direct follow-up to the section immediately below this one — the one gap deliberately scoped out
+of that pass ("ranked third, after the consumer-side loop... a natural next piece once picked
+up"), built now per direct instruction to close it. Closes the last of the three gaps from the
+"vision doc describes a fully merged gathering/date <-> business UX" prioritization — Gaps 1 and
+2 (the consumer-side gathering/date screens) were both closed in the prior pass; this is the
+business-side third leg.
+
+### What was missing
+
+`BusinessDashboardScreen.js`'s existing "Business Opportunities" list (the Requests tab) already
+rendered every offer a business had ever made — pending, offered, declined, expired, accepted,
+completed — as one flat chronological list. Once an offer reached `accepted`, the row's only
+distinguishing text was the generic status label `"They accepted your offer!"`, with no mention
+of *what* was actually accepted — not the gathering it came from, not its real date, not who it
+was for. A business with several real accepted offers had no way to tell, at a glance, "here's
+what's actually coming up" without opening each row's underlying request text and trying to
+infer the rest.
+
+### What was built
+
+**Client only, no schema/RPC change** — this closes the same "presentation/integration over the
+already-existing, already-proven accepted-offer relationship" pattern Gaps 1/2 already
+established, not a new lifecycle. `getBusinessOpportunities()` (`services/businessFulfillment.js`)
+gained `gathering_id`/`match_id` plus a nested `gatherings(title, scheduled_at)` embed onto its
+existing `business_requests` select — safe with zero new RLS, since `gatherings`' own SELECT
+policy is already world-readable (`"Anyone can view gatherings" using (true)`, re-confirmed live
+before relying on this) and the outer `business_request_offers` row is already scoped to the
+real business owner by its own existing "Business owners can view their own offer rows" policy.
+
+`BusinessDashboardScreen.js` gained a new `describeVisit(o)` helper and a real "📅 Upcoming
+Nearby Visits" card, rendered above "📊 Demand Near You" on the Requests tab, shown only when at
+least one real offer is genuinely `accepted` (not yet marked complete — matches this section's
+own "upcoming," not history). Names the real, specific thing each accepted offer is actually tied
+to, in priority order matching how a request can genuinely originate in this schema:
+- **A gathering** (`business_requests.gathering_id` set, from `create_business_request_for_gathering()`)
+  → "🎉 A Gathering," the gathering's own real, live `title`/`scheduled_at` (read fresh via the
+  new embed, not the possibly-stale `raw_text` snapshot the request itself carries — if a host
+  later renamed the gathering, this always reflects the current name).
+- **A date** (`business_requests.match_id` set, Offer System Phase 5) → "❤️ A Date" — a date has
+  no fixed `date` field of its own the way a gathering does, so the real meeting time is the
+  offer's own `proposed_time` (falling back to the request's plain `date` when no `proposed_time`
+  was set) — same reasoning `DateProposalScreen`'s own Gap 2 merged view already uses.
+- **A solo request** (neither) → "🙋 A Request," the request's own real `raw_text`.
+
+Each row also shows the real confirmed party size (`business_requests.party_size` — the exact
+field the prior pass's own bug fix made honest) and a real "what was offered" summary line,
+reusing the same shared `formatOfferSummary()` helper Gaps 1/2 already built — so all three
+surfaces (Gathering detail, Date proposal, Business dashboard) render the identical offer-type/
+price summary, never three independently-drifting versions of the same fields.
+
+**Deliberately left untouched**: the existing "Business Opportunities" list still shows every
+offer, accepted ones included, with its own generic status label — the new card is an additive
+summary sitting above it, not a replacement; nothing was removed or hidden. No "mark as complete"
+action was added to the new card (the existing `complete_business_reservation()` RPC already
+supports either party calling it, but nothing in this pass's own scope asked for a business-side
+completion action) — flagged here rather than silently added, matching Gaps 1/2's own "no new
+lifecycle" discipline.
+
+### Verification
+
+**Live against production** (`enmosvippabmuqslzrox`), real disposable test data, not just
+applied: built a real test gathering (host `Allen`, `ask_local_businesses: true`), ran it through
+the real `create_business_request_for_gathering()` → `submit_business_offer()` →
+`accept_business_offer()` lifecycle (temporarily gave the real `Coastal Coffee` partner
+coordinates, same established convention, reverted after) — confirmed the exact join
+`getBusinessOpportunities()`'s new embed performs (`business_request_offers` ⋈ `business_requests`
+⋈ `gatherings`) returns the real gathering's `title`/`scheduled_at` correctly, scoped to the real
+offer id, matching precisely what `describeVisit()` now renders. All test rows (the gathering,
+its request, its offer, its reservation) deleted afterward and `Coastal Coffee`'s coordinates
+reverted to `null` — confirmed production back to its exact pre-test baseline.
+
+No schema/RPC changed this pass (a pure client-side select/UI addition over already-existing,
+already-verified relationships), so no migration and no from-scratch Docker replay were needed —
+matching this file's own migration-discipline rule, which only requires a replay when a real
+schema change ships.
+
+**Client-side verified** via a direct `@babel/core` parse of both touched files (clean) and a
+full `npx expo export --platform ios` (clean, no bundling errors — 2190 modules, unchanged from
+baseline, edits only, no new client files).
+
+**All three gaps of the "merged gathering/date <-> business UX" prioritization are now closed** —
+Gap 1 (`GatheringDetailScreen`), Gap 2 (`DateProposalScreen`), and now Gap 3
+(`BusinessDashboardScreen`). Nothing further from that prioritization is queued.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "Upcoming Nearby Visits" card renders correctly
+on a real device once a real offer is accepted, correctly distinguishes a gathering-sourced,
+date-sourced, and solo-sourced visit, and correctly disappears once nothing is genuinely
+`accepted` (the common case at today's real, near-zero production volume).
+
 ## Aug 25 2026 — real party-size bug fixed (defer the gathering business ask) + Gap 1/2 of the
 ## merged gathering/date <-> business UX (linked offer inline on both surfaces) — DONE
 
@@ -146,7 +238,9 @@ baseline, since every touched file this pass was an edit, no new client files).
 `BusinessDashboardScreen.js` naming the specific gathering/date an accepted offer is tied to) —
 per the user's own explicit prioritization, this is real and useful but was ranked third, after
 the consumer-side loop (Gaps 1/2, now both closed). Not started this pass; a natural next piece
-once picked up. The merged card in `GatheringDetailScreen.js` is deliberately **host-only** —
+once picked up. **Built, Aug 26 2026** — see "Aug 26 2026 — Gap 3: a real 'Upcoming Nearby
+Visits' card on the Business Dashboard" further up this file. The merged card in
+`GatheringDetailScreen.js` is deliberately **host-only** —
 matches what `business_requests`' own RLS already allows (only the real requester can see the
 row at all), not a broadened read policy; a non-host attendee seeing "we're going to X business"
 inline would need a real, separate RLS/schema decision (either widening `business_requests`'
