@@ -418,12 +418,94 @@ would render correctly.
 
 ### Status
 
-**Section A/B (the audit) is DONE. Section D (C1/C2, locked plan) is APPROVED by the user, written
-before implementation — nothing in Section D has been built yet as of this commit.** The next
-step is implementation exactly as specified above, followed by the real production-data-path
-PASS/FAIL audit the user explicitly required — not a UI-renders-correctly claim.
-either, or whether to address one of the deliberately-deferred gaps (4/7/8/9) instead — this is
-the next real decision point, not something to default into building.
+**Section A/B (the audit) is DONE. Section D (C1/C2) is now DONE, build-wise — implemented exactly
+per the locked plan above, applied to production, and verified live against real disposable test
+data, closing the literal acceptance bar this section's own text required (not a UI-renders-
+correctly claim).**
+
+**C1 — built exactly as specified.** `HomeScreen.js`'s `handleAskBusiness()` body was extracted
+into a shared `goAskBusiness({classifyResult, typedText, submissionId})` helper (no state-clearing
+of its own); the existing empty-fallback path now calls it via the unchanged `handleAskBusiness()`
+wrapper, and a new `handleAskBusinessFromResults()` reads from `intentResults` the same way and
+calls the same helper. The non-empty ranked-results panel gained a real "Ask Nearby Businesses"
+button (reusing the exact `askBusinessButton`/`askBusinessButtonText` style and
+`storefront-outline` icon the empty-fallback panel already used), rendered alongside — not instead
+of — the existing "None of these? Create it yourself →" link. `resultType` stays `'created_new'`,
+already a valid `intent_outcomes.result_type` value.
+
+**C2 — built exactly as specified.** `supabase/migrations/20260818_business_profile_views_intent_match_source.sql`
+widens `business_profile_views_source_check` to add `'intent_match'` (additive, every existing row
+unaffected) and re-points `get_business_discovery_stats()` to also compute and return
+`intent_match_views` (every existing key unchanged; the non-owner branch's zeroed return also
+gained the new key at `0`). `intentResolver.js`'s `resolvePerks()` now carries `partnerId:
+offer.partner_id` through onto every mapped perk result (already-fetched via `getActiveOffers()`'s
+own `select('*', ...)`, no new query). `HomeScreen.js`'s `handleIntentResultTap()` now calls
+`logBusinessProfileView(item.partnerId, 'intent_match')` (the existing, already-fire-and-forget
+function, no new client function needed) for both the `perk` and `business_availability` branches,
+right before navigating — the consumer's own path (`BrandOffers`/`AskBusiness`) is completely
+unchanged, this is a log-only side effect. `BusinessDashboardScreen.js`'s existing "How People Find
+You" card now also renders the new bucket ("💡 N found you because of what they asked Nearby for"),
+shown only when `intent_match_views > 0`, alongside the existing deep-link/in-app lines — no new
+card.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — the full chain
+proven end-to-end with real disposable test data, not a one-off manual check treated as sufficient
+on its own:
+- Confirmed the widened CHECK constraint and the re-pointed `get_business_discovery_stats()` (with
+  `intent_match_views` in its body) both live in production before testing anything against them.
+- **C1's own real chain**: temporarily set `Coastal Coffee`'s coordinates so it could be a real
+  eligible fan-out target, submitted a real disposable `business_requests` row via the same
+  `create_business_request()` path `goAskBusiness()`'s downstream `AskBusinessScreen` submit call
+  uses, and confirmed `get_aggregated_demand_for_partner()` correctly picked it up for that real
+  nearby test business — proving a weak/non-empty resolver result reaching "Ask Nearby Businesses"
+  really does produce a `business_requests` row and really does become visible aggregated demand,
+  not just that the button renders.
+- **C2's own real chain**: inserted a real disposable `business_profile_views` row with
+  `source = 'intent_match'` for that same test partner and confirmed `get_business_discovery_stats()`
+  returns the new count correctly for the real owner, and confirmed a genuine non-owner still gets
+  zeroed/null stats (no regression to the existing ownership check) — a bogus `source` value was
+  also confirmed still rejected by the widened CHECK.
+- **The existing request → fan-out → offer → accept → reservation → completion machinery was
+  proven untouched**, not just assumed unaffected by an additive schema change: continued the same
+  disposable test request through a real offer, a real accept, a real reservation, and a real
+  completion, confirming every step still behaves exactly as Offer System Phases 1-6 already
+  established — closing acceptance points #4/#6/#7 with real data, not by inspection of the diff
+  alone.
+- **Every table touched by this test was confirmed back to its exact pre-test baseline afterward**:
+  `business_requests`, `business_profile_views`, `intent_submissions`, and `intent_outcomes` all
+  independently re-queried and confirmed at `0` rows; `Coastal Coffee`'s `latitude`/`longitude`
+  confirmed reverted to `null`.
+- Acceptance point #5 (no individual consumer identity unnecessarily exposed; business-facing
+  demand stays aggregated) holds structurally, unchanged by this pass — `get_business_discovery_
+  stats()` only ever returns counts, never row-level identity, and `get_aggregated_demand_for_
+  partner()`'s own SQL (untouched by C1/C2) was already category/party-size/date-window rollups
+  only.
+
+**Verified via a real from-scratch migration replay**, per this file's own migration-discipline
+rule: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated
+a truly empty `public` schema, patched the two known image-version gaps onto the test container
+only (`auth.users.phone`, `storage.buckets.public`), then ran the full 66-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**,
+including this pass's own migration, with no `pg_cron`/`pg_trgm` workaround needed this run. The
+widened CHECK constraint and the re-pointed `get_business_discovery_stats()` (confirmed containing
+`intent_match_views` in its body) both exist in the freshly-rebuilt database. Container removed
+afterward.
+
+**Client-side verified via a full `npx expo export --platform ios`**: clean, no bundling errors,
+2189 modules — unchanged from the pre-existing baseline, since every file this pass touched
+(`HomeScreen.js`, `intentResolver.js`, `BusinessDashboardScreen.js`) was an edit, no new client
+files.
+
+**Not done, disclosed rather than silently skipped**: no permanent `scripts/live-verify/` script
+was built for this pass's own acceptance chain — the verification above was run directly against
+production via ad hoc queries (matching how it was actually carried out this session), not
+committed as a re-runnable script the way most other schema-touching passes in this file's history
+are. A future session extending this loop further should build one rather than re-deriving the
+same manual steps a third time. Same standing limitation as everywhere else in this file: no
+manual simulator/device run-through — next session should confirm, on a real device, that the new
+"Ask Nearby Businesses" button on the non-empty results panel renders and submits correctly, and
+that the "How People Find You" card's new line renders correctly for a real owner account once
+real `intent_match` views exist.
 
 ## Aug 17 2026 — "The Offer System": Request → Offer → Commitment as Nearby's core economic loop — PLAN ONLY, NOT YET BUILT
 

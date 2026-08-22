@@ -8,6 +8,7 @@ import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals } from '../services/businessFulfillment';
+import { logBusinessProfileView } from '../services/brandOffers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
@@ -417,6 +418,11 @@ export default function HomeScreen({ navigation }) {
     if (item.type === 'gathering') {
       navigation.navigate('GatheringDetail', { gatheringId: item.id });
     } else if (item.type === 'perk') {
+      // C2: a real, honest "found because of what they asked for" signal
+      // for the business -- fire-and-forget, never blocks navigation, and
+      // never routes the consumer through BusinessProfileScreen (they
+      // still land on BrandOffers exactly as before this change).
+      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
       navigation.navigate('BrandOffers', { highlightOfferId: item.id });
     } else if (item.type === 'friend_request') {
       navigation.navigate('ViewProfile', { userId: item.userId });
@@ -431,6 +437,8 @@ export default function HomeScreen({ navigation }) {
       // both the original intent and the specific posting matched, so
       // submitting there is very likely to land as an immediate real
       // offer rather than a cold ask.
+      // C2: same real discovery signal as the perk branch above.
+      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
       navigation.navigate('AskBusiness', {
         prefillText: typedText ?? '',
         prefillCategory: classifyResult?.category ?? null,
@@ -578,10 +586,11 @@ export default function HomeScreen({ navigation }) {
     recordNudgeEvent('group_intent', 'dismissed', category);
   }
 
-  function handleAskBusiness() {
-    const { classifyResult, typedText, submissionId } = intentEmptyFallback;
-    setIntentEmptyFallback(null);
-    setIntentText('');
+  // Shared by both "Ask Nearby Businesses" entry points (the empty-fallback
+  // panel, and -- per CLAUDE.md's C1 -- the non-empty ranked-results panel
+  // too) -- record+navigate only, no state-clearing responsibility of its
+  // own, since the two callers clear two different state vars.
+  function goAskBusiness({ classifyResult, typedText, submissionId }) {
     recordIntentSelection({
       rawText: typedText,
       category: classifyResult.category ?? null,
@@ -599,6 +608,25 @@ export default function HomeScreen({ navigation }) {
       prefillDateWindow: classifyResult.dateWindow ?? null,
       prefillSubmissionId: submissionId ?? null,
     });
+  }
+
+  function handleAskBusiness() {
+    const { classifyResult, typedText, submissionId } = intentEmptyFallback;
+    setIntentEmptyFallback(null);
+    setIntentText('');
+    goAskBusiness({ classifyResult, typedText, submissionId });
+  }
+
+  // C1 (CLAUDE.md's "connect existing consumer-intent + business systems"
+  // plan): closes the gap where the resolver finding even one weak,
+  // unsatisfying match silently closed off the business channel entirely.
+  // Reachable from the non-empty ranked-results panel now too, alongside
+  // (not instead of) "None of these? Create it yourself".
+  function handleAskBusinessFromResults() {
+    const { classifyResult, typedText, submissionId } = intentResults ?? {};
+    setIntentResults(null);
+    setIntentText('');
+    goAskBusiness({ classifyResult, typedText, submissionId });
   }
 
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
@@ -692,6 +720,10 @@ export default function HomeScreen({ navigation }) {
                   </>
                 );
               })()}
+              <TouchableOpacity style={styles.askBusinessButton} onPress={handleAskBusinessFromResults}>
+                <Ionicons name="storefront-outline" size={18} color="#fff" style={styles.intentResultIcon} />
+                <Text style={styles.askBusinessButtonText}>Ask Nearby Businesses</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId)}>
                 <Text style={styles.intentResultsCreateNew}>None of these? Create it yourself →</Text>
               </TouchableOpacity>

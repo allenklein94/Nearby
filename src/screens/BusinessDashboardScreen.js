@@ -1376,6 +1376,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={styles.insightLine}>
                     🔎 {discoveryStats.in_app_views} browsing or searching inside Nearby
                   </Text>
+                  {discoveryStats.intent_match_views > 0 && (
+                    <Text style={styles.insightLine}>
+                      💡 {discoveryStats.intent_match_views} found you because of what they asked Nearby for
+                    </Text>
+                  )}
                 </View>
               ) : (
                 <Text style={[styles.emptyText, { marginBottom: spacing.lg }]}>

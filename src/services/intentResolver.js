@@ -175,6 +175,13 @@ async function resolvePerks(category, location) {
   return relevant.map((offer) => ({
     type: 'perk',
     id: offer.id,
+    // C2 (CLAUDE.md's "connect existing consumer-intent + business systems"
+    // plan): already fetched on every raw offer row (getActiveOffers()'s
+    // own select('*', ...) includes it) -- just wasn't carried through
+    // onto this mapped result before. Lets HomeScreen log a real
+    // 'intent_match' business_profile_views row when this result is
+    // tapped, without a second query.
+    partnerId: offer.partner_id,
     title: offer.title,
     subtitle: offer.brand_partners?.name ?? null,
     // A perk with no target_interest_tag is visible to everyone (no real
