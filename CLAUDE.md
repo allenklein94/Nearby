@@ -166,9 +166,12 @@ were touched this pass** — restated here, not re-decided:
   needs an explicit, separate "Ask Local Businesses" host action. Real product/consent decision
   (this file's own "never auto-act on someone else's behalf" principle) — needs its own explicit
   review, unchanged.
-- **Gap 9** — `intent_submissions` still has no location column at all (no lat/lng, no city
-  text), so unmet intent can never be rolled up "near a business." Real schema change touching
-  every `recordIntentSubmission` call site, needs a real fuzzing/privacy decision — unchanged.
+- **Gap 9 — FIXED, Aug 23 2026**, see the section below this one: `intent_submissions` now has a
+  real coarse `wide_area` column, reusing the exact bucketing convention already established for
+  `profiles.wide_area`/`gatherings.wide_area` rather than a new privacy tradeoff. Gap 1's own RPC
+  still doesn't read it yet — that's a separate, still-open design decision (how "near" should be
+  defined against a coarse bucket, and how to present it without blending with the existing
+  real-request-based signal), not silently folded into this fix.
 
 **Real product decisions deliberately deferred, need the user present**:
 - No Stripe integration anywhere — `business_invoices` still accumulate in `draft` forever.
@@ -195,6 +198,54 @@ were touched this pass** — restated here, not re-decided:
 run-through of `FriendsScreen.js`'s contact-import flow now throwing a real rate-limit error, or
 of `RewardsScreen.js`'s corrected progress bar — next session should confirm both render
 correctly against real data on a real device.
+
+## Aug 23 2026 — Gap 9: a real coarse location on `intent_submissions` — DONE
+
+Direct follow-up to the two sections above, same "keep working through the disclosed list"
+instruction. Gap 9 from Section D's own findings ledger: "`intent_submissions` has no location
+column of any kind ... no lat/lng, no city/area text. This is a real prerequisite gap for any
+future attempt to roll up 'unmet intent near this business' directly from `intent_submissions`."
+
+**Fixed** (`supabase/migrations/20260823_intent_submissions_wide_area.sql`): a nullable
+`wide_area` text column, plus a supporting index — deliberately reusing the exact coarse-
+bucketing convention already decided and already live elsewhere in this schema
+(`profiles.wide_area`, `gatherings.wide_area` — a plain `"lat,lng"` text bucket rounded to one
+decimal place, a ~6-7 mile grid, never a precise coordinate), rather than inventing a new
+precision/privacy tradeoff for this table. This is a straightforward extension of an
+already-made decision, not a new one — the "real fuzzing/privacy decision" this file's own text
+flagged turns out to already have an answer once you look at how every other coarse-location
+column in this schema already handles it.
+
+**Client**: `intentOutcomes.js`'s `recordIntentSubmission()` now computes and stores it via a new
+`bestEffortWideArea()` helper — reads only an already-granted permission's cached last-known
+position (`Location.getForegroundPermissionsAsync()` + `getLastKnownPositionAsync()`), never
+prompts, never forces a fresh GPS read (the gathering/community/unclear branches already ran
+`resolveIntent()` moments earlier, which almost certainly already resolved and cached a fresh
+position for this exact submission — a second GPS read here would only add latency). A user with
+no granted permission, or no cached position yet, correctly gets `null` — honest "unknown," same
+convention as every other nullable field on this table.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed the
+column and index exist; a real disposable insert as a real profile (`Claude`) with a real
+`wide_area` value round-tripped correctly; test row deleted afterward, confirmed `intent_
+submissions` back to its exact pre-test baseline. **Verified via a real from-scratch migration
+replay** (all 70 files in `supabase/migrations/`, `psql -v ON_ERROR_STOP=1`, exit 0 throughout) —
+the new column confirmed to exist in the freshly-rebuilt database. Container removed afterward.
+Client-side verified via a clean `npx expo export --platform ios` (no bundling errors).
+
+**Deliberately not done this pass, a real, separate decision — not silently folded in**: Gap 1
+(`get_aggregated_demand_for_partner()` actually reading this new column to roll unmet intent
+into a business's own demand view) is **not** built yet. This column is the real prerequisite
+Gap 1 was blocked on, now closed — but actually wiring it into the aggregated-demand RPC is its
+own design decision (how "near this business" should be defined against a coarse bucket rather
+than a real radius, and whether/how to present it as a distinct, honestly-labeled softer signal
+alongside the existing real-request-based rollup, never blended with it) — flagged for the next
+pass rather than guessed at here.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm a real submission on a real device with location
+permission granted actually records a real `wide_area` value, and that one made without
+permission (or before it's been decided) correctly records `null`.
 
 ## Aug 23 2026 — Group Plans: a real "kick" action before confirm time — DONE
 
@@ -658,7 +709,7 @@ would render correctly.
 | Gap 6 | Consumer intent signal and business discovery signal are two disconnected data domains — a business never learns *why* it was found | **Half-closed by C2** (the `intent_match` source bucket) — the *admin-only* funnel side (`get_intent_funnel_stats`) remains business-invisible, unchanged |
 | Gap 7 | No stitched conversion funnel — `get_business_discovery_stats`/`get_partner_offer_reputation`/`get_partner_avg_response_time` are three siloed RPCs, never combined into one story | **Deliberately deferred** — a real new analytics-surface design decision, not a mechanical fix |
 | Gap 8 | A gathering never automatically becomes business-visible demand — always requires an explicit, separate "Ask Local Businesses" host action | **Deliberately deferred** — real product/consent decision (this file's own "never auto-act on someone else's behalf" principle), needs its own explicit review |
-| Gap 9 | `intent_submissions` has no location column at all — no lat/lng, no city/area text — so unmet, never-escalated intent can never be rolled up "near a business" even if a future session wanted to fix Gap 1 at the root | **Deliberately deferred** — real schema change touching every `recordIntentSubmission` call site, needs a real fuzzing/privacy decision matching this schema's existing coarse-location conventions |
+| Gap 9 | `intent_submissions` has no location column at all — no lat/lng, no city/area text — so unmet, never-escalated intent can never be rolled up "near a business" even if a future session wanted to fix Gap 1 at the root | **FIXED, Aug 23 2026** — a real `wide_area` column, reusing the exact coarse-bucketing convention already established for `profiles.wide_area`/`gatherings.wide_area`. See "Aug 23 2026 — Gap 9: a real coarse location on `intent_submissions`" below. Gap 1's own RPC still doesn't read it yet — a separate, still-open decision |
 | Real production volume | Every table in this whole loop (`business_requests`, `intent_submissions`, `intent_outcomes`, `business_availability`, `business_fulfillment_policies`, `business_profile_views`, `brand_offers`) is genuinely empty in production today; only 1 active business partner exists | **Not a bug** — stated plainly so a future session doesn't mistake C1/C2's own verification (necessarily built on disposable test data) for evidence of real organic usage |
 | Browser/device testing | `docs/business.html` never tested in a real browser; the whole business-acquisition flow never run on a real device | **Cannot close from this sandbox** — standing limitation repeated throughout this file |
 

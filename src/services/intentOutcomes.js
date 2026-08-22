@@ -3,8 +3,41 @@
 // later, honestly, whether it went well -- no fabricated numbers, a null
 // outcome always means "unknown," never a default negative.
 import { supabase } from './supabase';
+import * as Location from 'expo-location';
 import { findRecurringIntentPattern, formatSmartPlaceholder } from '../utils/intentPatterns';
 import { getTimePeriod } from '../utils/timeContext';
+
+// Same coarse-bucketing convention already established for profiles.wide_area
+// and gatherings.wide_area (see the 20260823_intent_submissions_wide_area.sql
+// migration comment for the reasoning) -- ~6-7 mile grid, never a precise
+// coordinate.
+function wideArea(latitude, longitude) {
+  const bucketLat = Math.round(latitude * 10) / 10;
+  const bucketLng = Math.round(longitude * 10) / 10;
+  return `${bucketLat},${bucketLng}`;
+}
+
+// Never prompts -- reads only an already-granted permission's cached last
+// known position, best-effort. Deliberately not a fresh
+// getCurrentPositionAsync() call: this runs from inside a fire-and-forget
+// analytics write, and resolveIntent() (called moments earlier for the
+// gathering/unclear/community branches) has almost certainly already
+// resolved and cached a fresh position for this exact submission -- forcing
+// a second GPS read here would only add latency with no real benefit. A
+// user who hasn't granted location permission, or has none cached yet,
+// correctly gets null -- honest "unknown," matching this file's own
+// "null always means unknown, never fabricated" convention.
+async function bestEffortWideArea() {
+  try {
+    const { status } = await Location.getForegroundPermissionsAsync();
+    if (status !== 'granted') return null;
+    const position = await Location.getLastKnownPositionAsync();
+    if (!position) return null;
+    return wideArea(position.coords.latitude, position.coords.longitude);
+  } catch (e) {
+    return null;
+  }
+}
 
 // Fire-and-forget by design -- this is telemetry-shaped, not a blocking
 // step in the user's own flow. Matches this codebase's established
@@ -49,6 +82,7 @@ export async function recordIntentSubmission({ rawText, category, dateWindow, in
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
+    const wideAreaValue = await bestEffortWideArea();
     const { data, error } = await supabase
       .from('intent_submissions')
       .insert({
@@ -60,6 +94,7 @@ export async function recordIntentSubmission({ rawText, category, dateWindow, in
         had_any_result: !!hadAnyResult,
         reached_business_fallback: !!reachedBusinessFallback,
         local_period: getTimePeriod(),
+        wide_area: wideAreaValue,
       })
       .select('id')
       .single();
