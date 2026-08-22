@@ -16,7 +16,7 @@ import { typography, spacing, radius } from '../theme';
 
 // The one real entry point into Friend Discovery -- a completely
 // separate product surface from dating discovery, its own screen chrome,
-// its own copy throughout. Reached from Discover's "Meet New People" card.
+// its own copy throughout. Reached from Discover's "Meet New Friends" card.
 export default function FriendDiscoveryScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);

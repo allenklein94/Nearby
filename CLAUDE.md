@@ -4,6 +4,39 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — Discover Hub's "Meet People" vs "Meet New People" cards read as near-duplicates — DONE
+
+User-reported: the two top cards on Discover ("Meet People" → the dating discovery screen,
+`Nearby`/`DiscoveryScreen.js`'s Crossed Paths/Browse; "Meet New People" → `FriendDiscovery`,
+the explicit opt-in friend-discovery swipe deck built Aug 16 2026) had titles one word apart —
+the subtitles ("Find people nearby" / "Swipe to make new friends, separate from dating") already
+did the real work of explaining the difference, but a reader skimming just the titles couldn't
+tell them apart. Titles only, per direct instruction — subtitles were already good and left
+untouched.
+
+**Fixed**: the dating card is now **"Dating Nearby"** (icon swapped 👥 → 💘, reinforcing the
+distinction visually too, not just in text) — makes explicit what "Find people nearby" was
+already alluding to without saying so. The friend-discovery card is now **"Meet New Friends"**
+— not a new label invented for this pass, but the exact title `FriendDiscoveryScreen.js` and
+its Settings toggle already use for this same feature (`SettingsScreen.js`'s "Meet New Friends"
+row, the destination screen's own header/explainer/opt-in button) — matching the already-
+established name rather than coining a third variant ("Make New Friends" was tried first, then
+corrected once the destination screen's own existing title was checked). Now "Dating Nearby" vs.
+"Meet New Friends" (subtitle: "...separate from dating") reads as two clearly distinct
+surfaces, the second's subtitle now genuinely contrasting against the first's explicit title
+instead of a title one word away from it. One stale code comment
+(`FriendDiscoveryScreen.js`'s own header comment, "Reached from Discover's 'Meet New People'
+card") updated to match.
+
+**Verified**: the full 43-test Jest suite still passes, a direct `@babel/core` parse of both
+touched files is clean, and a full `npx expo export --platform ios` built clean with no
+bundling errors — edits to two existing files only, no new files.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm both cards render correctly with the new titles/icon
+and that the destination screens (`Nearby`, `FriendDiscovery`) are unaffected (this pass only
+touched the two Discover Hub card labels and one comment, no navigation/behavior change).
+
 ## Aug 27 2026 — a host had no way to edit their own gathering from GatheringDetailScreen — DONE
 
 Real, user-reported gap: the host of a real gathering could see "Why this fits you" (the same

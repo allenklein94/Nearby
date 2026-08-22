@@ -366,12 +366,12 @@ export default function DiscoverHubScreen({ navigation }) {
               style={styles.card}
               onPress={() => navigation.navigate('Nearby')}
               activeOpacity={0.85}
-              accessibilityLabel="Meet People, find people nearby"
+              accessibilityLabel="Dating Nearby, find people nearby"
               accessibilityRole="button"
             >
-              <Text style={styles.cardIcon}>👥</Text>
+              <Text style={styles.cardIcon}>💘</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Meet People</Text>
+                <Text style={styles.cardTitle}>Dating Nearby</Text>
                 <Text style={styles.cardSubtitle}>Find people nearby</Text>
               </View>
               <Text style={styles.cardChevron}>›</Text>
@@ -383,12 +383,12 @@ export default function DiscoverHubScreen({ navigation }) {
               style={styles.card}
               onPress={() => navigation.navigate('FriendDiscovery')}
               activeOpacity={0.85}
-              accessibilityLabel="Meet New People, an explicit opt-in friend discovery deck"
+              accessibilityLabel="Meet New Friends, an explicit opt-in friend discovery deck"
               accessibilityRole="button"
             >
               <Text style={styles.cardIcon}>🤝</Text>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>Meet New People</Text>
+                <Text style={styles.cardTitle}>Meet New Friends</Text>
                 <Text style={styles.cardSubtitle}>Swipe to make new friends, separate from dating</Text>
               </View>
               <Text style={styles.cardChevron}>›</Text>
