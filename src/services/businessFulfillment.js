@@ -80,6 +80,69 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
 }
 
+// Whichever real business_requests row is currently active for this
+// gathering, if any -- lets GatheringDetailScreen tell "never asked yet"
+// apart from "already asked, waiting/confirmed" without re-deriving it
+// from gatherings.ask_local_businesses alone (that flag is only ever the
+// host's stored *intent*, see createGathering()'s own comment; the actual
+// request may or may not exist yet, and may have been created via the
+// plain manual "Ask Local Businesses" link instead of the deferred
+// checkbox flow). RLS already scopes business_requests to its own
+// requester (the gathering's host, since only the host can call
+// create_business_request_for_gathering), matching getMatchBusinessRequest's
+// identical shape/reasoning in dateProposals.js.
+export async function getBusinessRequestForGathering(gatheringId) {
+  const { data, error } = await supabase
+    .from('business_requests')
+    .select('id, status, party_size')
+    .eq('gathering_id', gatheringId)
+    .in('status', ['open', 'fulfilled'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// The real winning offer on a request, if one has been accepted (or
+// already completed) -- shared by GatheringDetailScreen and
+// DateProposalScreen's own merged "linked business offer" views, so the
+// two surfaces render the same real fields instead of drifting onto two
+// different summaries. RLS already lets the requester see every offer on
+// their own request, regardless of which business submitted it.
+export async function getAcceptedOfferForRequest(requestId) {
+  if (!requestId) return null;
+  const { data, error } = await supabase
+    .from('business_request_offers')
+    .select('id, offer_type, offer_price, offer_description, proposed_time, status, partner_id, brand_partners(name, logo_url)')
+    .eq('request_id', requestId)
+    .in('status', ['accepted', 'completed'])
+    .maybeSingle();
+  if (error) {
+    console.error('getAcceptedOfferForRequest error', error);
+    return null;
+  }
+  return data;
+}
+
+const OFFER_TYPE_LABELS = {
+  standard: 'Standard offer',
+  discount: 'Discount',
+  perk: 'Perk',
+  upgrade: 'Upgrade',
+  alt_time: 'Alternate time',
+};
+
+// One honest "what they offered" line (offer type + price, when present)
+// -- same shared-rendering reasoning as getAcceptedOfferForRequest above.
+export function formatOfferSummary(offer) {
+  if (!offer) return null;
+  const parts = [];
+  if (offer.offer_type && OFFER_TYPE_LABELS[offer.offer_type]) parts.push(OFFER_TYPE_LABELS[offer.offer_type]);
+  if (offer.offer_price != null) parts.push(`$${Number(offer.offer_price).toFixed(2)}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
 // The requester's own view of one request plus every offer on it (RLS
 // already scopes both selects to rows the caller can legitimately see --
 // their own request, and offers on it from any business, regardless of

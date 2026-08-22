@@ -19,9 +19,21 @@ function wideArea(latitude, longitude) {
 
 const WIDE_TIER_MAX_MILES = 15;
 
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses';
 
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null }) {
+// ask_local_businesses only ever stores the host's real consent/intent at
+// creation time -- it does NOT itself create a business_requests row. A
+// real, previously-confirmed party-size bug (see CLAUDE.md, "Should the
+// gathering-checkbox party-size bug be fixed?") existed because the old
+// code fired create_business_request_for_gathering() synchronously right
+// here, at creation, when zero real attendees exist yet -- party_size
+// always computed as 1, and the RPC's own duplicate guard then
+// permanently locked the gathering to that fabricated size. The real
+// request is now created later, once real gathering state actually
+// exists, from GatheringDetailScreen's own "Ready to see what's
+// available?" banner (or the existing manual "Ask Local Businesses" link)
+// -- see submitBusinessRequestForGathering() in businessFulfillment.js.
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -59,6 +71,7 @@ export async function createGathering({ title, description, interestTag, schedul
       visibility,
       community_id: visibility === 'community' ? communityId : null,
       capacity,
+      ask_local_businesses: askLocalBusinesses,
     })
     .select()
     .single();

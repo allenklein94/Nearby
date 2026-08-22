@@ -20,6 +20,12 @@ import {
 import { getSignedPhotoUrl } from '../services/photos';
 import { getGatheringOffer } from '../services/brandOffers';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
+import {
+  getBusinessRequestForGathering,
+  getAcceptedOfferForRequest,
+  submitBusinessRequestForGathering,
+  formatOfferSummary,
+} from '../services/businessFulfillment';
 import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -63,6 +69,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [countdownStats, setCountdownStats] = useState(null);
+  const [businessRequest, setBusinessRequest] = useState(null);
+  const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
+  const [firingBusinessRequest, setFiringBusinessRequest] = useState(false);
 
   const load = useCallback(async () => {
     let g;
@@ -110,8 +119,26 @@ export default function GatheringDetailScreen({ route, navigation }) {
           getGatheringMessageCount(gatheringId),
         ]);
         setCountdownStats({ going, interested, messages, waitlisted: g.waitlistCount });
+
+        // Gap #1 (CLAUDE.md, "vision doc describes a fully merged
+        // gathering/date <-> business UX"): the gathering's own linked
+        // business request/offer, surfaced inline instead of only ever
+        // living on a separate BusinessRequestDetailScreen. Host-only --
+        // business_requests' own RLS only ever lets the real requester
+        // (the host, since only the host can call
+        // create_business_request_for_gathering) see the row at all.
+        const request = await getBusinessRequestForGathering(gatheringId);
+        setBusinessRequest(request);
+        if (request) {
+          const accepted = await getAcceptedOfferForRequest(request.id);
+          setAcceptedBusinessOffer(accepted);
+        } else {
+          setAcceptedBusinessOffer(null);
+        }
       } else {
         setCountdownStats(null);
+        setBusinessRequest(null);
+        setAcceptedBusinessOffer(null);
       }
 
       if (g.approvedAttendees?.length > 0) {
@@ -185,6 +212,28 @@ export default function GatheringDetailScreen({ route, navigation }) {
       Alert.alert('Error', e.message);
     }
     setJoining(false);
+  }
+
+  // The deferred half of the party-size bug fix: fires the exact same
+  // create_business_request_for_gathering() RPC the manual "Ask Local
+  // Businesses" link already uses, but only now -- whatever moment the
+  // host actually taps this -- so party_size reflects real
+  // gathering_interest rows instead of the zero-attendee moment right
+  // after creation.
+  async function handleAskBusinessesNow() {
+    setFiringBusinessRequest(true);
+    try {
+      await submitBusinessRequestForGathering({
+        gatheringId,
+        text: gathering.title,
+        category: gathering.interest_tag ?? null,
+      });
+      posthog.capture('gathering_business_help_fired', { gatheringId });
+      await load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setFiringBusinessRequest(false);
   }
 
   function confirmLeave() {
@@ -537,19 +586,79 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 <Text style={styles.hostBannerLink}>🤝 Request a Business Partner →</Text>
               </TouchableOpacity>
               {new Date(gathering.scheduled_at) >= new Date() && (
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('AskBusiness', {
-                    gatheringId,
-                    gatheringTitle: gathering.title,
-                    gatheringPartySize: (gathering.approvedAttendees?.length ?? 0) + 1,
-                    prefillCategory: gathering.interest_tag ?? null,
-                  })}
-                  style={{ marginTop: spacing.xs }}
-                  accessibilityLabel="Ask local businesses on behalf of this gathering"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.hostBannerLink}>🍽️ Ask Local Businesses →</Text>
-                </TouchableOpacity>
+                acceptedBusinessOffer ? (
+                  // Gap #1: the accepted business offer, shown inline
+                  // instead of only ever living on a separate
+                  // BusinessRequestDetailScreen.
+                  <View style={[styles.businessOfferCard, { marginTop: spacing.xs }]}>
+                    <Text style={styles.businessOfferKicker}>🍽️ Local Business Confirmed</Text>
+                    <Text style={styles.businessOfferTitle}>{acceptedBusinessOffer.brand_partners?.name ?? 'A local business'}</Text>
+                    {acceptedBusinessOffer.proposed_time && (
+                      <Text style={styles.businessOfferSub}>{formatDate(acceptedBusinessOffer.proposed_time)}</Text>
+                    )}
+                    <Text style={styles.businessOfferSub}>
+                      Confirmed for {businessRequest?.party_size ?? '—'} {businessRequest?.party_size === 1 ? 'person' : 'people'}
+                    </Text>
+                    {formatOfferSummary(acceptedBusinessOffer) && (
+                      <Text style={styles.businessOfferSub}>{formatOfferSummary(acceptedBusinessOffer)}</Text>
+                    )}
+                    {acceptedBusinessOffer.offer_description ? (
+                      <Text style={styles.perkDesc}>{acceptedBusinessOffer.offer_description}</Text>
+                    ) : null}
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+                      style={{ marginTop: spacing.xs }}
+                      accessibilityLabel="View your business request"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.businessOfferLink}>View request →</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : businessRequest ? (
+                  <View style={{ marginTop: spacing.xs }}>
+                    <Text style={styles.hostBannerLink}>🍽️ Waiting to hear back from local businesses.</Text>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+                      accessibilityLabel="View your business request"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.hostBannerLink}>View request →</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : gathering.ask_local_businesses ? (
+                  // The deferred half of the party-size bug fix: the
+                  // checkbox at creation only stored real intent
+                  // (gathering.ask_local_businesses) -- nothing was fired
+                  // yet, so real attendee state exists to make an honest
+                  // ask from right now, whenever the host actually taps
+                  // this.
+                  <View style={styles.businessReadyBanner}>
+                    <Text style={styles.businessReadyText}>You asked us to look for local business options. Ready to see what's available?</Text>
+                    <TouchableOpacity
+                      style={styles.businessReadyButton}
+                      onPress={handleAskBusinessesNow}
+                      disabled={firingBusinessRequest}
+                      accessibilityLabel="Look for local business options now"
+                      accessibilityRole="button"
+                    >
+                      {firingBusinessRequest ? <ActivityIndicator color="#fff" /> : <Text style={styles.businessReadyButtonText}>Yes, look now →</Text>}
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('AskBusiness', {
+                      gatheringId,
+                      gatheringTitle: gathering.title,
+                      gatheringPartySize: (gathering.approvedAttendees?.length ?? 0) + 1,
+                      prefillCategory: gathering.interest_tag ?? null,
+                    })}
+                    style={{ marginTop: spacing.xs }}
+                    accessibilityLabel="Ask local businesses on behalf of this gathering"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.hostBannerLink}>🍽️ Ask Local Businesses →</Text>
+                  </TouchableOpacity>
+                )
               )}
               {!gathering.community_id && new Date(gathering.scheduled_at) < new Date() && (
                 <TouchableOpacity
@@ -744,6 +853,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   perkSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   perkSubLink: { color: colors.primary, fontWeight: '600' },
   perkDesc: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
+  businessOfferCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md,
+  },
+  businessOfferKicker: { color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 2 },
+  businessOfferTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  businessOfferSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  businessOfferLink: { color: colors.primary, fontWeight: '700', fontSize: 14 },
+  businessReadyBanner: {
+    marginTop: spacing.xs, backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
+    padding: spacing.md,
+  },
+  businessReadyText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
+  businessReadyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },
+  businessReadyButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   communityCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md,

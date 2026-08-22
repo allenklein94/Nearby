@@ -9,6 +9,7 @@ import {
   respondToDateProposal,
   withdrawDateProposal,
 } from '../services/dateProposals';
+import { getAcceptedOfferForRequest, formatOfferSummary } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -17,6 +18,11 @@ const TERMINAL_STATUS_COPY = {
   declined: "Didn't work out that time",
   withdrawn: 'Withdrawn',
 };
+
+function formatOfferTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
 
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4). The
 // one real screen for the locked Match -> Proposal -> Other person
@@ -35,6 +41,7 @@ export default function DateProposalScreen({ navigation, route }) {
   const [myId, setMyId] = useState(null);
   const [proposal, setProposal] = useState(null);
   const [businessRequest, setBusinessRequest] = useState(null);
+  const [acceptedOffer, setAcceptedOffer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [planText, setPlanText] = useState('');
@@ -53,8 +60,19 @@ export default function DateProposalScreen({ navigation, route }) {
       if (latest?.status === 'accepted') {
         const request = await getMatchBusinessRequest(matchId);
         setBusinessRequest(request);
+        // Gap #2 (CLAUDE.md, "vision doc describes a fully merged
+        // gathering/date <-> business UX"): render an accepted offer's
+        // own details inline -- business, time, what they offered --
+        // instead of just a "View Request" button off to the side.
+        if (request) {
+          const offer = await getAcceptedOfferForRequest(request.id);
+          setAcceptedOffer(offer);
+        } else {
+          setAcceptedOffer(null);
+        }
       } else {
         setBusinessRequest(null);
+        setAcceptedOffer(null);
       }
     } catch (e) {
       console.error('DateProposalScreen load failed', e);
@@ -192,7 +210,32 @@ export default function DateProposalScreen({ navigation, route }) {
             <View style={styles.acceptedCard}>
               <Text style={styles.acceptedTitle}>🎉 It's a plan!</Text>
               <Text style={styles.planCardText}>"{proposal.plan_text}"</Text>
-              {businessRequest ? (
+              {businessRequest && acceptedOffer ? (
+                // Gap #2: the merged "your date is set" view -- the real
+                // accepted offer's own venue/time/what-they-offered,
+                // inline, not just a link off to BusinessRequestDetail.
+                <View style={styles.confirmedOfferBlock}>
+                  <Text style={styles.confirmedOfferKicker}>❤️ Your date is set</Text>
+                  <Text style={styles.confirmedOfferVenue}>{acceptedOffer.brand_partners?.name ?? 'A local business'}</Text>
+                  {acceptedOffer.proposed_time && (
+                    <Text style={styles.confirmedOfferSub}>{formatOfferTime(acceptedOffer.proposed_time)}</Text>
+                  )}
+                  {formatOfferSummary(acceptedOffer) && (
+                    <Text style={styles.confirmedOfferSub}>{formatOfferSummary(acceptedOffer)}</Text>
+                  )}
+                  {acceptedOffer.offer_description ? (
+                    <Text style={styles.confirmedOfferDesc}>{acceptedOffer.offer_description}</Text>
+                  ) : null}
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+                    style={{ marginTop: spacing.sm }}
+                    accessibilityLabel="View full business request"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.confirmedOfferLink}>View full request →</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : businessRequest ? (
                 <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
@@ -279,6 +322,12 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.lg,
   },
   acceptedTitle: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
+  confirmedOfferBlock: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  confirmedOfferKicker: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: 2 },
+  confirmedOfferVenue: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  confirmedOfferSub: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  confirmedOfferDesc: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
+  confirmedOfferLink: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   primaryButton: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
     alignItems: 'center', marginTop: spacing.md,

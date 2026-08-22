@@ -128,7 +128,7 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
         </View>
 
         {businessesAsked && (
-          <Text style={styles.businessAskedNote}>🍽️ We've also let nearby businesses know about this gathering.</Text>
+          <Text style={styles.businessAskedNote}>🍽️ We'll look for local business options once real people have joined — check back on your gathering to see.</Text>
         )}
 
         {!showInvite ? (

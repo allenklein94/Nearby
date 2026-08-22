@@ -4,7 +4,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
-import { submitBusinessRequestForGathering } from '../services/businessFulfillment';
 import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
@@ -316,28 +315,19 @@ export default function CreateGatheringScreen({ navigation, route }) {
         visibility,
         communityId: visibility === 'community' ? communityId : null,
         capacity: capacityValue,
+        askLocalBusinesses,
       });
 
-      // Consent given at creation, not a forced part of publishing --
-      // a real failure here never blocks the gathering itself, which
-      // already exists; matches this codebase's established "secondary,
-      // non-fatal write" convention for the same reasoning as
-      // logBusinessProfileView/recordIntentSelection elsewhere.
-      let businessesAsked = false;
-      if (askLocalBusinesses) {
-        try {
-          await submitBusinessRequestForGathering({
-            gatheringId: created.id,
-            text: title.trim(),
-            category: interestTag,
-          });
-          businessesAsked = true;
-        } catch (e) {
-          console.error('submitBusinessRequestForGathering failed', e);
-        }
-      }
-
-      navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName, businessesAsked });
+      // Checking the box only stores real consent/intent on the
+      // gathering itself (ask_local_businesses) -- it deliberately does
+      // NOT fire a business request here. There are zero real attendees
+      // at this exact moment, so any request created now would carry a
+      // fabricated party_size of 1 and permanently lock the gathering to
+      // it (the RPC's own duplicate guard). The real request is created
+      // later, once real gathering state exists, from
+      // GatheringDetailScreen's own "Ready to see what's available?"
+      // banner. See createGathering()'s own comment in gatherings.js.
+      navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName, businessesAsked: askLocalBusinesses });
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -772,7 +762,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             {askLocalBusinesses && (
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🍽️</Text>
-                <Text style={styles.previewRowText}>Local businesses will be told about this gathering</Text>
+                <Text style={styles.previewRowText}>We'll look for local business options once your gathering has real attendees</Text>
               </View>
             )}
           </View>

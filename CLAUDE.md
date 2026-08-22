@@ -4,6 +4,162 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 25 2026 — real party-size bug fixed (defer the gathering business ask) + Gap 1/2 of the
+## merged gathering/date <-> business UX (linked offer inline on both surfaces) — DONE
+
+Direct follow-up to the Aug 24 2026 gathering-creation opt-in checkbox section immediately below
+this one. The user was shown a screenshot of a real, confirmed data-integrity bug in that
+checkbox's own implementation, given a locked decision on how to fix it, and then — same
+session — asked which gap(s) of the vision doc's "fully merged gathering/date business UX" to
+build next; chose Gap 1 (Gathering shows its linked business offer) as the highest-priority
+piece, with Gap 2 (DateProposal's own merged view) immediately after it. Both are now built.
+
+### The bug, and why the "Defer the ask" fix (not the party-size patch) was the right call
+
+`CreateGatheringScreen.js`'s `submit()` used to call `submitBusinessRequestForGathering()`
+**synchronously, right after `createGathering()` succeeded** — at that exact moment zero real
+attendees exist yet (the host themself hasn't even landed on the confirmation screen). Since
+`create_business_request_for_gathering()`'s own `party_size` computation is
+`count(gathering_interest where status='approved') + 1`, this always produced a real, silently
+wrong `party_size: 1` — and because the RPC's own duplicate guard is "one open `business_requests`
+row per `gathering_id`, ever," calling it again later — once real attendees actually existed —
+would only ever return the *same, already-fabricated* row (`duplicate: true`), never correcting
+the size. The gathering's real business ask was permanently poisoned the instant the checkbox
+was ticked.
+
+Two fix shapes were on the table: patch the *symptom* downstream (null out party_size in the
+policy auto-accept check, label the aggregated-demand signal as unconfirmed) or fix the
+*lifecycle* itself so the request is never created dishonestly in the first place. **Locked
+decision, given directly: fix the lifecycle — defer the request, not the host's consent.**
+Checking the box now only ever means "make this gathering eligible for business matching" (the
+same framing this file's own Aug 24 2026 section already established for the checkbox) —
+storing real intent on the gathering itself, `gatherings.ask_local_businesses` — never "contact
+businesses immediately," and never a synchronous side effect of publishing. The actual
+`business_requests` row is created later, once real gathering state exists to make an honest ask
+from, the first time the host opens the gathering's own detail screen and explicitly confirms.
+
+**Schema** (`20260825_gathering_business_help_deferred.sql`): one new column,
+`gatherings.ask_local_businesses boolean not null default false` — every existing row backfills
+to `false` (matches today's real behavior for every gathering that predates this checkbox
+existing at all), fully additive. Nothing else changed — `create_business_request_for_gathering()`
+itself is byte-for-byte untouched; it already computed `party_size` correctly from real
+`gathering_interest` rows at whatever moment it's actually called, so the bug was entirely about
+*when* the client called it, never about the RPC's own math.
+
+**Client**: `createGathering()` (`services/gatherings.js`) gained an `askLocalBusinesses` param,
+stored as `ask_local_businesses` on the insert — `SAFE_GATHERING_FIELDS` now includes it so
+`getGatheringById()` reads it back. `CreateGatheringScreen.js`'s `submit()` no longer imports or
+calls `submitBusinessRequestForGathering()` at all — the checkbox's value is simply passed
+through to `createGathering()`, and the confirmation-screen `businessesAsked` param now reflects
+the real stored *intent* (the flag itself), not a fired RPC's success. The Publish-step preview
+row and `GatheringConfirmationScreen.js`'s post-publish note were both reworded from past-tense
+("Local businesses will be told about this gathering" / "We've also let nearby businesses know")
+to honestly future/deferred phrasing ("We'll look for local business options once your gathering
+has real attendees").
+
+**`GatheringDetailScreen.js`'s host banner is where the deferred request actually gets created**
+— a new four-state render replacing the old unconditional "🍽️ Ask Local Businesses →" link,
+computed from two new fetches (host-only, both gated on `gathering.isHost` since
+`business_requests`' own RLS only ever lets the real requester see the row — verified live, see
+below): `getBusinessRequestForGathering(gatheringId)` (the currently-active `open`/`fulfilled`
+request for this gathering, if any) and, when one exists, `getAcceptedOfferForRequest(requestId)`
+(the real winning `accepted`/`completed` offer, if the request has one). In priority order:
+1. **An accepted offer exists** → Gap 1's own merged card (see below) — the whole point of this
+   pass, not just the bug fix.
+2. **A request exists but nothing's been accepted yet** → a plain "🍽️ Waiting to hear back from
+   local businesses." line + a real "View request →" link into `BusinessRequestDetail`.
+3. **No request yet, but `gathering.ask_local_businesses` is true** (the deferred checkbox
+   flow) → a real banner, using the user's own literal wording: *"You asked us to look for local
+   business options. Ready to see what's available?"* with a "Yes, look now →" button. Tapping it
+   calls the exact same `submitBusinessRequestForGathering()` the manual link already used —
+   only now, at whatever real moment the host actually taps it, so `party_size` reflects
+   whatever real `gathering_interest` rows genuinely exist right then, not the zero-attendee
+   moment right after creation.
+4. **Neither** (the checkbox was never ticked) → the original, unchanged plain "🍽️ Ask Local
+   Businesses →" manual link into `AskBusinessScreen`, exact same behavior as before this pass.
+
+### Gap 1 — Gathering shows its linked business offer (built)
+
+The merged card rendered by state 1 above — "🍽️ Local Business Confirmed," the real business
+name (`brand_partners.name`), the real proposed time (`formatDate(offer.proposed_time)`), the
+real confirmed headcount ("Confirmed for N people," sourced from `business_requests.party_size`
+— the exact field this whole pass exists to make honest), a real "what they offered" summary
+line (a new shared `formatOfferSummary(offer)` in `businessFulfillment.js` — offer type label +
+price, e.g. "Discount · $15.00" — so this and Gap 2 can never render two different summaries of
+the same fields), the offer's own free-text description when present, and a "View request →"
+link into the existing `BusinessRequestDetailScreen` for the full picture. This is presentation/
+integration over the already-existing, already-proven accepted-offer relationship — no new
+lifecycle, no new RPC, matching the user's own explicit "don't redesign the underlying
+business-request architecture" instruction.
+
+### Gap 2 — DateProposal shows the merged "your date is set" view (built)
+
+`DateProposalScreen.js`'s accepted-plan card previously showed a real accepted business request
+only as a bare "View Request →" button once `getMatchBusinessRequest(matchId)` found one — no
+detail at all about what was actually agreed on. Now, when a real accepted/completed offer
+exists on that request (via the same new shared `getAcceptedOfferForRequest()`), the card renders
+a real inline "❤️ Your date is set" block — the business name, the offer's own proposed time
+(`formatOfferTime`, a small local helper matching `GatheringDetailScreen`'s own `formatDate`
+shape), the same shared `formatOfferSummary()` line, the free-text description, and a "View full
+request →" link — instead of the old bare button. The existing "View Request →" (request exists,
+nothing accepted yet) and "Find Somewhere to Go →" (no request yet) branches are unchanged.
+
+### Verification
+
+**Live against production** (`enmosvippabmuqslzrox`), real disposable test data, not just
+applied: confirmed the new column exists (`NOT NULL default false`) and every real query shape
+the client now runs, end to end — created a real test gathering (`ee74f1a9…`, "Allen," as host)
+with `ask_local_businesses: true`, confirmed **zero** `business_requests` rows exist for it
+immediately after creation (the actual deferral, proven, not just asserted); added a real
+approved attendee (`Claude`); called `create_business_request_for_gathering()` as the host at
+that later point — `partySize: 2`, not the old buggy `1`; called it a second time — correctly
+hit the duplicate guard, returned the identical `requestId` (never a second fabricated row).
+Separately, ran the full real lifecycle through to an accepted offer (temporarily gave the real
+`Coastal Coffee` partner coordinates, same established convention every prior pass touching this
+partner already used, reverted after): `submit_business_offer()` → `accept_business_offer()` →
+confirmed `business_requests.status` flipped to `fulfilled` with `party_size: 2` intact, and
+confirmed the exact `getAcceptedOfferForRequest()` query shape (the `business_request_offers` ⋈
+`brand_partners` join, scoped to `accepted`/`completed`) returns the real offer with
+`partner_name: "Coastal Coffee"` — exactly what both screens now render. **RLS re-confirmed under
+genuine `SET ROLE authenticated`** (not just the Management API's own table-owner bypass, this
+file's own repeatedly-learned "false-negative first pass" lesson): the real host sees the request
+row (count 1), a genuine non-host attendee (`Claude`) sees **zero** rows for the same gathering —
+confirming the merged card's host-only gating in `GatheringDetailScreen.js` matches what RLS
+actually allows, not more. All test rows (the gathering, its interest row, the request, the
+offer, the reservation) deleted afterward and `Coastal Coffee`'s coordinates reverted to `null` —
+confirmed production back to its exact pre-test baseline.
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public` schema,
+patched the two known image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the
+test container only, then ran the full 73-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, including this pass's own migration, no
+`pg_cron`/`pg_trgm` workaround needed this run. `gatherings.ask_local_businesses` confirmed to
+exist (`boolean, NOT NULL, default false`) in the freshly-rebuilt database. Container removed
+afterward.
+
+**Client-side verified** via a direct `@babel/core` parse of all six touched files (clean) and a
+full `npx expo export --platform ios` (clean, no bundling errors — 2190 modules, unchanged from
+baseline, since every touched file this pass was an edit, no new client files).
+
+**Deliberately scoped out, not silently built**: Gap 3 (a real "Upcoming Nearby Visit" card on
+`BusinessDashboardScreen.js` naming the specific gathering/date an accepted offer is tied to) —
+per the user's own explicit prioritization, this is real and useful but was ranked third, after
+the consumer-side loop (Gaps 1/2, now both closed). Not started this pass; a natural next piece
+once picked up. The merged card in `GatheringDetailScreen.js` is deliberately **host-only** —
+matches what `business_requests`' own RLS already allows (only the real requester can see the
+row at all), not a broadened read policy; a non-host attendee seeing "we're going to X business"
+inline would need a real, separate RLS/schema decision (either widening `business_requests`'
+SELECT policy to gathering attendees, or denormalizing the accepted offer's summary onto the
+gathering row itself) — flagged here rather than silently expanded into.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the "Ready to see what's available?"
+banner renders and fires correctly once a real host has real attendees, that the merged "Local
+Business Confirmed" card and DateProposal's "Your date is set" block both render correctly once a
+real offer is accepted, and that the plain manual "Ask Local Businesses" link still behaves
+exactly as before for a gathering whose host never ticked the checkbox.
+
 ## Aug 24 2026 — policy-only business ranking + gathering-creation opt-in checkbox — DONE
 
 Direct follow-up to the section immediately below this one — the two locked decisions that
