@@ -99,6 +99,46 @@ filter states (icon/subtitle/chip-active-state all swap correctly), that tapping
 never also triggers the card's own navigation, and that tapping the card body in each state
 still lands on the correct, unmodified destination screen.
 
+**Revision, same session, per direct follow-up review — the single-card-with-filter-chips
+design above was replaced before ever shipping to a real user.** Asked directly whether the
+first build was actually right, and it wasn't: the filter-chip version fixed the IA-clarity
+complaint but introduced a real regression — reaching Friends went from one tap ("Meet New
+Friends" card, tap, done) to two (select the Friends chip, then tap the card), and the whole
+premise of a *filter* only makes sense over a live, in-place feed; this card was never a feed,
+it only ever launched one of two other screens either way. A filter over a launcher just adds a
+decision step for no benefit.
+
+**Rebuilt as the two-row module instead — no filter state at all, matching the actual
+recommendation**: a "People Nearby" section header (reusing this screen's own existing
+`sectionHeader` style, no new header style) over one bordered module
+(`peopleModule`/`peopleModuleRow`/`peopleModuleDivider`, replacing the earlier `peopleCard`/
+`peopleCardMain`/`peopleFilterRow`/`peopleFilterLabel` styles outright) containing two
+always-visible, independently tappable rows — 💗 **Dating** ("Meet people nearby who are open
+to dating") and 👋 **Friends** ("Meet new people nearby and make friends") — each navigating
+straight to its own existing, still-untouched destination (`Nearby` / `FriendDiscovery`), same
+as before. One concept (discovering people), two clearly differentiated intentions, zero added
+taps on either path, and the earlier "what should the default filter be" question disappears
+entirely — there's no filter to default. `PEOPLE_FILTERS` (the chip list) is gone; replaced by
+a plain `PEOPLE_MODES` array (`key`/`route`/`icon`/`title`/`subtitle` per row) with the "why
+not a filter chip row" and "why not 'Everyone'" reasoning now documented directly above it in
+the source, not just here. Every other part of this decision — the real-architecture check
+against `DiscoveryScreen.js`/`FriendDiscoveryScreen.js`, not merging the two matching engines,
+skipping "Everyone," skipping a top-level "Explore | People" tab split, leaving Inbox/
+`ActivityScreen.js` untouched, and leaving both destination screens' own internal copy
+(including Settings' "Meet New Friends" toggle) alone — is unchanged from the paragraphs above;
+only the entry-point widget itself was rebuilt.
+
+Verified via a direct `@babel/core` parse of the file (clean) and a full `npx expo export
+--platform ios` (clean, no bundling errors — the section shrank by a few lines, no new files,
+no new imports).
+
+**Not done, same standing gap, now scoped to the actual shipped design**: no manual simulator/
+device run-through — next session should confirm both rows render correctly (icon/title/
+subtitle, the divider between them, correct chevron), that each row's tap lands on its own
+correct destination screen with no cross-talk between them, and a VoiceOver/TalkBack pass over
+the two-row layout specifically (a plain list of two rows, no nested touchables this time, so
+the earlier "does the inner tap get stolen by the outer" risk no longer applies).
+
 ### Decision 2 — Sign Out safety valve on the required profile-setup screen
 
 Direct follow-up to this file's own standing flagged-not-fixed item: `CompleteProfileScreen`

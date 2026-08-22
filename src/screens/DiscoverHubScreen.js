@@ -25,15 +25,20 @@ const TYPE_FILTERS = [
 
 // Dating and Friends stay two genuinely separate matching systems under
 // the hood (separate opt-in flags, separate swipe tables, separate
-// exclusion/safety rules) -- this is a navigation-only merge, not a
-// combined candidate pool. "Everyone" was deliberately left off: there's
-// no real merged pool to show under that label, and inventing one would
-// mean building a new combined feed across two independently
-// safety-gated systems, a real architecture decision on its own, not a
-// filter relabel. See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
-const PEOPLE_FILTERS = [
-  { key: 'dating', label: 'Dating' },
-  { key: 'friends', label: 'Friends' },
+// exclusion/safety rules) -- this is a navigation-only grouping, not a
+// combined candidate pool or a filter over one feed. Deliberately two
+// always-visible rows, not a filter-gated single card: a filter would
+// cost an extra tap on whichever path isn't the default, for a launcher
+// that only ever opens one of two other screens anyway -- there's no
+// live feed here for a filter to actually filter. "Everyone" was
+// deliberately left off both rows: there's no real merged pool to show
+// under that label, and inventing one would mean building a new combined
+// feed across two independently safety-gated systems, a real
+// architecture decision on its own, not a relabel. See CLAUDE.md's
+// Aug 22 2026 entry for the full reasoning.
+const PEOPLE_MODES = [
+  { key: 'dating', route: 'Nearby', icon: '💗', title: 'Dating', subtitle: 'Meet people nearby who are open to dating' },
+  { key: 'friends', route: 'FriendDiscovery', icon: '👋', title: 'Friends', subtitle: 'Meet new people nearby and make friends' },
 ];
 
 const PLACE_CATEGORIES = [
@@ -61,15 +66,15 @@ const PREVIEW_COUNT = 3;
 // by Home's bestPick and GatheringDetailScreen) rather than a new LLM
 // call, matching this codebase's existing no-new-API-cost convention.
 //
-// People entry point (Aug 22 2026): what used to be two separate cards
-// here -- "Dating Nearby" and "Meet New Friends" -- are now one "People
-// Nearby" card with an inline Dating/Friends filter (PEOPLE_FILTERS,
-// above). The filter is a preference set on this screen, not a second
-// destination to already know about -- picking it and tapping the card
-// still opens the same two existing, unmodified screens underneath
-// (Nearby for dating, FriendDiscovery for friends), since those two
-// screens' own matching engines/safety rules were deliberately left
-// untouched. See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
+// People entry point (Aug 22 2026): what used to be two separate,
+// disconnected-looking cards here -- "Dating Nearby" and "Meet New
+// Friends" -- are now one "People Nearby" module (PEOPLE_MODES, above)
+// with two always-visible rows. One concept (discovering people), two
+// clearly differentiated intentions (Dating / Friends) -- each row still
+// opens the same two existing, unmodified screens underneath (Nearby
+// for dating, FriendDiscovery for friends), since those two screens'
+// own matching engines/safety rules were deliberately left untouched.
+// See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
 export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -82,7 +87,6 @@ export default function DiscoverHubScreen({ navigation }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [peopleFilter, setPeopleFilter] = useState('dating');
   const [viewStyle, setViewStyle] = useState('list');
   const [placesCategory, setPlacesCategory] = useState('coffee');
   const [userLocation, setUserLocation] = useState(null);
@@ -386,48 +390,30 @@ export default function DiscoverHubScreen({ navigation }) {
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {isAll && (
-            <View style={styles.peopleCard}>
-              <TouchableOpacity
-                style={styles.peopleCardMain}
-                onPress={() => navigation.navigate(peopleFilter === 'friends' ? 'FriendDiscovery' : 'Nearby')}
-                activeOpacity={0.85}
-                accessibilityLabel={
-                  peopleFilter === 'friends'
-                    ? 'People Nearby, Friends filter selected, swipe to make new friends, separate from dating'
-                    : 'People Nearby, Dating filter selected, find people nearby to date'
-                }
-                accessibilityRole="button"
-              >
-                <Text style={styles.cardIcon}>{peopleFilter === 'friends' ? '🤝' : '💘'}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>People Nearby</Text>
-                  <Text style={styles.cardSubtitle}>
-                    {peopleFilter === 'friends'
-                      ? 'Swipe to make new friends, separate from dating'
-                      : 'Find people nearby to date'}
-                  </Text>
-                </View>
-                <Text style={styles.cardChevron}>›</Text>
-              </TouchableOpacity>
-              <View style={styles.peopleFilterRow}>
-                <Text style={styles.peopleFilterLabel}>Looking for</Text>
-                {PEOPLE_FILTERS.map((f) => {
-                  const active = peopleFilter === f.key;
-                  return (
+            <>
+              <Text style={styles.sectionHeader}>People Nearby</Text>
+              <View style={styles.peopleModule}>
+                {PEOPLE_MODES.map((mode, index) => (
+                  <React.Fragment key={mode.key}>
+                    {index > 0 && <View style={styles.peopleModuleDivider} />}
                     <TouchableOpacity
-                      key={f.key}
-                      style={[styles.filterChip, active && styles.filterChipActive]}
-                      onPress={() => setPeopleFilter(f.key)}
-                      accessibilityLabel={f.label}
+                      style={styles.peopleModuleRow}
+                      onPress={() => navigation.navigate(mode.route)}
+                      activeOpacity={0.7}
+                      accessibilityLabel={`${mode.title}, ${mode.subtitle}`}
                       accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.label}</Text>
+                      <Text style={styles.cardIcon}>{mode.icon}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardTitle}>{mode.title}</Text>
+                        <Text style={styles.cardSubtitle}>{mode.subtitle}</Text>
+                      </View>
+                      <Text style={styles.cardChevron}>›</Text>
                     </TouchableOpacity>
-                  );
-                })}
+                  </React.Fragment>
+                ))}
               </View>
-            </View>
+            </>
           )}
 
           {isAll && (
@@ -834,16 +820,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
   },
-  peopleCard: {
+  peopleModule: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.border, marginBottom: spacing.md, ...shadow.card, overflow: 'hidden',
   },
-  peopleCardMain: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
-  peopleFilterRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.md,
-  },
-  peopleFilterLabel: { ...typography.caption, color: colors.textTertiary, marginRight: 2 },
+  peopleModuleRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
+  peopleModuleDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginHorizontal: spacing.lg },
   cardImage: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
   cardIcon: { fontSize: 32, marginRight: spacing.md },
   cardTitle: { ...typography.headline, color: colors.textPrimary },
