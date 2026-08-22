@@ -8,7 +8,8 @@ import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals } from '../services/businessFulfillment';
-import { logBusinessProfileView } from '../services/brandOffers';
+import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
+import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
@@ -143,6 +144,12 @@ export default function HomeScreen({ navigation }) {
   // "not today," and a fresh day naturally re-evaluates the real pattern.
   const [predictivePattern, setPredictivePattern] = useState(null);
   const [groupIntentSignal, setGroupIntentSignal] = useState(null);
+  // Phase 1 of the "Build everything" plan (CLAUDE.md) -- the unified
+  // recommendation engine's ranked output. A small, capped, additive
+  // section (never a replacement for Best Pick/Trending/Because You Like),
+  // reusing the same already-fetched nearby gatherings + a single new
+  // getActiveOffers() call, scored on the shared intent-resolver axis.
+  const [homeRecommendations, setHomeRecommendations] = useState([]);
   const period = getTimePeriod();
   // Impression analytics dedupe: this screen's own useFocusEffect re-runs the
   // "should I show a nudge" check on every focus, so a plain "log shown here"
@@ -236,12 +243,14 @@ export default function HomeScreen({ navigation }) {
         console.error('Continue Community / Perks / Feedback fetch failed', e);
       }
 
+      let forecast = null;
+      let myLocation = null;
       try {
         const { status } = await Location.getForegroundPermissionsAsync();
         if (status === 'granted') {
-          const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-          if (location) {
-            const forecast = await getSocialForecast(location.coords.latitude, location.coords.longitude);
+          myLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+          if (myLocation) {
+            forecast = await getSocialForecast(myLocation.coords.latitude, myLocation.coords.longitude);
             setSocialForecast(forecast);
           }
         }
@@ -250,6 +259,29 @@ export default function HomeScreen({ navigation }) {
         // extra, not core content; a failure here shouldn't flip the
         // whole screen into an error state once the dashboard is up.
         console.error('Social forecast fetch failed', e);
+      }
+
+      // Phase 1 of the "Build everything" plan -- the unified Home
+      // recommendation engine. Reuses the already-fetched nearby
+      // gatherings from result.nearbyGatherings (no second query) plus one
+      // new getActiveOffers() call (the same real function BrandOffers/
+      // Discover already use, same location it already scopes to) -- no
+      // new data source beyond that. Excludes anything already committed
+      // to (Your Plans) so nothing is suggested twice. Supplementary,
+      // non-fatal — a failure here shouldn't affect anything else on the
+      // screen.
+      try {
+        const offers = await getActiveOffers(myLocation?.coords?.latitude ?? null, myLocation?.coords?.longitude ?? null).catch(() => []);
+        setHomeRecommendations(
+          buildHomeRecommendations({
+            gatherings: result?.nearbyGatherings ?? [],
+            offers,
+            weather: forecast,
+            excludeIds: new Set(result?.upcomingPlanIds ?? []),
+          })
+        );
+      } catch (e) {
+        console.error('buildHomeRecommendations failed', e);
       }
     } catch (e) {
       setLoadError(true);
@@ -296,6 +328,17 @@ export default function HomeScreen({ navigation }) {
       initialDateFilter: PERIOD_DATE_FILTER[period],
       initialSearchQuery: item.searchTerm,
     });
+  }
+
+  // Phase 1 of the "Build everything" plan -- taps through to the same
+  // real detail screens every other Home section already links to, per
+  // the locked design (no new destination screens for this section).
+  function handleRecommendationTap(item) {
+    if (item.type === 'gathering') {
+      navigation.navigate('GatheringDetail', { gatheringId: item.id });
+    } else if (item.type === 'perk') {
+      navigation.navigate('BrandOffers', { highlightOfferId: item.id });
+    }
   }
 
   async function saveQuickPicks(categories) {
@@ -883,6 +926,42 @@ export default function HomeScreen({ navigation }) {
             >
               <Text style={styles.seeAllPlansText}>See All Plans →</Text>
             </TouchableOpacity>
+          </>
+        )}
+
+        {/* Phase 1 of the "Build everything" plan (CLAUDE.md) -- a new,
+            genuinely additive section reusing the shared intent-resolver
+            scoring axis across gatherings/perks (business availability not
+            wired into this section yet, flagged rather than faked --
+            Home's existing gathering/perk data was already fetched, a
+            business-availability fetch is a real new query this pass
+            didn't add). Deliberately not a replacement for Best Pick/
+            Trending/Because You Like -- one more section, same data. */}
+        {homeRecommendations.length > 0 && (
+          <>
+            <View style={styles.sectionHeaderRow}>
+              <Ionicons name="flash-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+              <Text style={styles.sectionHeaderText}>Nearby Right Now</Text>
+            </View>
+            <View style={[styles.plansCard, { marginBottom: spacing.lg }]}>
+              {homeRecommendations.map((item) => (
+                <TouchableOpacity
+                  key={`${item.type}-${item.id}`}
+                  style={styles.planRow}
+                  onPress={() => handleRecommendationTap(item)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${item.title}, ${item.reasons.join(', ')}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.planIcon}>{item.type === 'perk' ? '🎁' : categoryStyleFor(item.data?.interest_tag).icon}</Text>
+                  <View style={styles.planInfo}>
+                    <Text style={styles.planTitle}>{item.title}</Text>
+                    <Text style={styles.planMeta}>{item.reasons.join(' · ')}</Text>
+                  </View>
+                  <Text style={styles.planChevron}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </>
         )}
 

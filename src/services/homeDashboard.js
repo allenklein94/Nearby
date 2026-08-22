@@ -576,6 +576,17 @@ export async function getHomeDashboard() {
     friendsCount: friendsCount ?? 0,
     mostRecentSighting,
     unreadCount,
+    // Exposed for Phase 1 of the "Build everything" plan's unified Home
+    // recommendation engine (see CLAUDE.md) -- the exact same
+    // already-fetched list every other derived section above already
+    // reads (trendingGatherings/happeningNow/bestPick/becauseYouLike),
+    // just also handed back whole so buildHomeRecommendations() can score
+    // it without a second query. upcomingPlanIds is the same real
+    // already-committed-to set becauseYouLike excludes itself against --
+    // reused here so the new section never recommends something the
+    // caller is already going to/hosting.
+    nearbyGatherings,
+    upcomingPlanIds: Array.from(upcomingPlanIds),
     trendingGatherings,
     happeningNow,
     bestPick,

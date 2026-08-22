@@ -94,6 +94,77 @@ learning yet (per-user category history already exists via `getMyTopGatheringCat
 is reused, but nothing new is trained). No party-size inference beyond what's already real
 (recent group-plan/gathering-attendance history) — never a guessed number presented as fact.
 
+**Status: Phase 1 is DONE for its core scope — the pure scoring module, the new Home section, and
+real unit test coverage all built and verified; business-availability as a third candidate type
+and the party-size hint were deliberately not wired in this pass, disclosed below rather than
+silently dropped.** Picked up after a codespace restart — `src/services/homeRecommendations.js`
+already existed on disk, untracked and unwired (a prior pass's work-in-progress), read in full
+and confirmed to already match the locked design exactly (a pure, dependency-free
+`buildHomeRecommendations(context)` scoring gatherings and perks on the exact shared
+`SCORE_INTEREST_MATCH`/`SCORE_CLOSE_DISTANCE`/`SCORE_HAPPENING_NOW` axis
+`intentResolverScoring.js` already established, plus the real weather bonus/penalty this phase
+adds, gated on `constants/gatheringIndoorOutdoor.js`'s own conservative indoor/outdoor map) —
+kept as-is rather than rewritten, then wired end-to-end and covered with real tests:
+
+- **`getHomeDashboard()`** (`services/homeDashboard.js`) now also returns `nearbyGatherings`
+  (the exact same already-fetched list every other derived section — trending/happeningNow/
+  bestPick/becauseYouLike — already reads, zero new query) and `upcomingPlanIds` (the same
+  real already-committed-to set `becauseYouLike` already excludes itself against, exposed as a
+  plain array) — both purely additive fields on an already-returned object, no existing caller
+  affected.
+- **`HomeScreen.js`** now calls `buildHomeRecommendations({ gatherings: result.nearbyGatherings,
+  offers, weather: forecast, excludeIds: new Set(result.upcomingPlanIds) })` inside `load()`,
+  right after the existing weather-forecast fetch (restructured to capture `forecast`/
+  `myLocation` in local variables instead of only `useState`, so this call sees the real value
+  in the same pass rather than a stale one) — `offers` comes from one new `getActiveOffers()`
+  call (the same real function `BrandOffers`/Discover already use, passed the same location
+  when available), not a fabricated list. The whole block is wrapped in its own try/catch,
+  matching this screen's established "supplementary card, never blocks core content" convention
+  for every other non-essential fetch in `load()`.
+- **New "🎯 Nearby Right Now" section** (rendered as "Nearby Right Now" with a small
+  `flash-outline` icon, matching the exact `sectionHeaderRow`/`sectionHeaderText` pattern
+  "Happening Near You"/"Because You Like…" already use) — placed directly after the "Your Plans"
+  block and before the banner cluster, exactly per the locked placement. Each row reuses the
+  existing `plansCard`/`planRow`/`planIcon`/`planTitle`/`planMeta`/`planChevron` styles (no new
+  style names invented) — gathering rows show the real `categoryStyleFor().icon`, perk rows a
+  plain 🎁, both joined with their own real `reasons` array via `' · '`. Tapping a gathering row
+  navigates to `GatheringDetail`; tapping a perk row navigates to `BrandOffers` with the same
+  `highlightOfferId` scroll-and-highlight param `DiscoverHubScreen.js`/this same screen's own
+  intent-result tap handler already use — no new destination screens. Genuinely additive, not a
+  replacement — Best Pick/Trending/Because You Like are all completely untouched.
+- **10 new real unit tests** (`src/services/homeRecommendations.test.js`, same "run anywhere, no
+  device/network" convention as `intentResolverScoring.test.js`) — covers the empty-context case,
+  that a gathering with zero real signal is correctly excluded (never a fabricated reason to
+  include it), the `excludeIds` exclusion, real ranking (a closer/matching/happening-today
+  gathering outranks a plain one), both weather branches (a real bonus only for a category this
+  app can honestly classify as indoor/outdoor — confirmed a genuinely ambiguous category like
+  Sports gets no bonus either way even with the identical weather signal), both offer-scoring
+  branches (targeted vs. untargeted), and the `MAX_HOME_RECOMMENDATIONS` cap. Full suite:
+  **58/58 passing** (48 pre-existing + these 10, no regressions).
+
+**Deliberately not built this pass, disclosed rather than silently dropped**: **business
+availability** as a third candidate type — the plan's own text lists it as part of the real,
+already-fetched Home context, but nothing in `getHomeDashboard()` fetches it today (it needs a
+real new call, `search_active_business_availability()`, that Home doesn't already make) — adding
+it here would have been a genuine new data source mid-pass rather than "unifying scoring across
+what Home already has." Flagged for a follow-up within this same phase, not silently skipped.
+**The party-size hint** (`getMyTopGatheringCategories()`/recent group plans) was also not wired
+into scoring — the locked design lists it as context the function *takes*, but never describes
+an actual scoring rule that uses it (the only concrete new signal this phase's own text names is
+the weather bonus), and the phase's own "explicitly out of scope" list already forbids inventing
+one — so it's correctly absent, not a gap.
+
+**Verified**: a direct `@babel/core` parse of all four touched/new files (clean); the full Jest
+suite (58/58, 5 suites); a full `npx expo export --platform ios` (clean, no bundling errors,
+2241 modules — one more than the 2240 baseline, the one file that newly entered the bundle graph
+this pass, `homeRecommendations.js` — every other touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new section renders correctly against real nearby
+gatherings/perks data, that tapping a row lands cleanly on the right detail screen, and that the
+weather-bonus reason line reads sensibly next to the existing weather card lower on the same
+screen.
+
 ### Phase 2 — Card standardization into 3 canonical types
 
 **Confirmed before locking this phase**: no `PersonCard`/`PlaceCard`/`PlanCard` shared component
