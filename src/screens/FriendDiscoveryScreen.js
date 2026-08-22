@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   isOpenToFriendDiscovery,
@@ -119,9 +120,29 @@ export default function FriendDiscoveryScreen({ navigation }) {
     }
   }
 
+  // This screen is reached as a top-level stack push (not a bottom tab),
+  // headerShown: false in RootNavigator -- with no visible way back, it
+  // was a real dead end (a real user-reported bug: the only way out was
+  // an undiscoverable OS-level swipe/back-button gesture). Every render
+  // branch below gets its own explicit back button, not just the deck.
+  const BackButton = () => (
+    <TouchableOpacity
+      onPress={() => navigation.goBack()}
+      style={styles.backButton}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityLabel="Go back"
+      accessibilityRole="button"
+    >
+      <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.topBar}>
+          <BackButton />
+        </View>
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -132,6 +153,9 @@ export default function FriendDiscoveryScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.topBar}>
+          <BackButton />
+        </View>
         <View style={styles.centered}>
           <LoadErrorState message="Couldn't load Meet New Friends." onRetry={load} />
         </View>
@@ -142,6 +166,9 @@ export default function FriendDiscoveryScreen({ navigation }) {
   if (!enabled) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.topBar}>
+          <BackButton />
+        </View>
         <View style={styles.explainer}>
           <Text style={styles.explainerEmoji}>🤝</Text>
           <Text style={styles.explainerTitle}>Meet New Friends</Text>
@@ -169,7 +196,10 @@ export default function FriendDiscoveryScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Meet New Friends</Text>
+        <View style={styles.headerLeft}>
+          <BackButton />
+          <Text style={styles.headerTitle}>Meet New Friends</Text>
+        </View>
         <View style={styles.headerToggleRow}>
           <Text style={styles.headerToggleLabel}>On</Text>
           <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} />
@@ -196,10 +226,13 @@ export default function FriendDiscoveryScreen({ navigation }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  topBar: { paddingHorizontal: spacing.sm, paddingTop: spacing.xs },
+  backButton: { padding: spacing.xs, alignSelf: 'flex-start' },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
   },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerTitle: { ...typography.headline, color: colors.textPrimary },
   headerToggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },

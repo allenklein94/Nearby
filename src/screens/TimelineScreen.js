@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getMyTimeline } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
-export default function TimelineScreen() {
+// This screen is reached as a top-level stack push (not a bottom tab),
+// headerShown: false in RootNavigator -- the same "reachable, but no
+// visible way back" shape found and fixed on FriendDiscoveryScreen for a
+// real user-reported dead end. Closed here for the identical reason,
+// not something a screen with no navigation prop can leave otherwise.
+export default function TimelineScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [items, setItems] = useState([]);
@@ -36,6 +42,15 @@ export default function TimelineScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+      >
+        <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+      </TouchableOpacity>
       <Text style={styles.title} accessibilityRole="header">Your Timeline</Text>
       <Text style={styles.subtitle}>How your social life has grown</Text>
 
@@ -74,6 +89,7 @@ export default function TimelineScreen() {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: spacing.sm },
+  backButton: { padding: spacing.xs, marginLeft: spacing.sm, marginBottom: spacing.xs, alignSelf: 'flex-start' },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2, paddingHorizontal: spacing.lg },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md, paddingHorizontal: spacing.lg },
   row: {

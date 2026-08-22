@@ -4,6 +4,55 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — Meet New Friends (and two related screens) were real dead ends — no way back — DONE
+
+Real, user-reported bug: tapping into "Meet New Friends" from Discover, and again after
+toggling the mode off (which lands back on the same screen's own explainer state), left no
+visible way to leave the screen at all — no back button, no close button, nothing. Confirmed
+directly: `FriendDiscovery` (`RootNavigator.js`) is registered `headerShown: false` as a
+top-level stack push (a sibling of `MainTabs`, not nested inside the bottom-tab navigator), so
+there's no native back chevron and the bottom tab bar itself is hidden while it's open. Every
+one of the screen's four render branches (loading / load-error / not-yet-enabled explainer /
+the enabled swipe deck) built its own chrome from scratch and none of them included any way to
+navigate back — the only theoretical exit was an OS-level gesture (iOS edge-swipe, Android
+back button) with zero on-screen affordance telling anyone it existed, which is exactly why it
+read as a genuine dead end.
+
+**Fixed**: added a real, visible back button (`Ionicons name="chevron-back"`, calling
+`navigation.goBack()`) to all four of `FriendDiscoveryScreen.js`'s render branches — not just
+the deck, so a load error or the "turn this on?" explainer state can't strand anyone either.
+The enabled/deck state's existing header row (title + On/Off toggle) now has the back button
+grouped with the title on the left.
+
+**While fixing this, found the identical bug shape on two more screens** — checked because both
+are registered with the exact same `headerShown: false` top-level-stack-push pattern:
+`PlacesScreen.js` (Discover → "See all places") and `TimelineScreen.js` (Profile → "View Your
+Timeline"). Neither even took a `navigation` prop in its function signature, confirming neither
+had ever had any way to programmatically go back. Both fixed the same way — `navigation` prop
+added, a `chevron-back` button added above their existing title/subtitle. Confirmed both have
+exactly one real entry point each (`DiscoverHubScreen.js`/`ProfileScreen.js` respectively),
+always reached via a normal push, so `goBack()` always has somewhere real to land.
+
+**Deliberately not done — a real, disclosed scope boundary, not an oversight**: this pass did
+**not** audit every other screen in the app for the same shape of gap. `headerShown: false` is
+this whole stack's own *default* (set once on the `Stack.Navigator` itself,
+`RootNavigator.js`'s `screenOptions`), so any screen that doesn't explicitly opt into
+`headerShown: true` (or isn't reached through the bottom-tab bar, or isn't a modal with its own
+explicit dismiss action) could in principle have the same gap — a full sweep of every such
+screen was not attempted this pass, only the one reported plus the two found while directly
+comparing against it. Flagged here so a future session doesn't assume this is now exhaustively
+covered.
+
+**Verified**: the full 43-test Jest suite still passes, a direct `@babel/core` parse of all
+three touched files is clean, and a full `npx expo export --platform ios` built clean with no
+bundling errors — edits to three existing files only, no new files.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the back button renders and actually pops back to the
+right previous screen on all three, in every render state of `FriendDiscoveryScreen` (loading,
+error, not-enabled, enabled), and specifically that it lands back on `DiscoverHubScreen`/
+`ProfileScreen` respectively for the other two, not somewhere unexpected.
+
 ## Aug 27 2026 — Discover Hub's "Meet People" vs "Meet New People" cards read as near-duplicates — DONE
 
 User-reported: the two top cards on Discover ("Meet People" → the dating discovery screen,

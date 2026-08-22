@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { useTheme } from '../context/ThemeContext';
@@ -12,7 +13,12 @@ const CATEGORIES = [
   { key: 'hubs', icon: '🏛️', label: 'Community Hubs' },
 ];
 
-export default function PlacesScreen() {
+// This screen is reached as a top-level stack push (not a bottom tab),
+// headerShown: false in RootNavigator -- the same "reachable, but no
+// visible way back" shape found and fixed on FriendDiscoveryScreen for a
+// real user-reported dead end. Closed here for the identical reason,
+// not something a screen with no navigation prop can leave otherwise.
+export default function PlacesScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [category, setCategory] = useState('coffee');
@@ -70,6 +76,15 @@ export default function PlacesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.backButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+      >
+        <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+      </TouchableOpacity>
       <Text style={styles.title} accessibilityRole="header">Places</Text>
       <Text style={styles.subtitle}>Real spots nearby, worth checking out</Text>
 
@@ -165,6 +180,7 @@ export default function PlacesScreen() {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, paddingTop: spacing.sm },
+  backButton: { padding: spacing.xs, marginLeft: spacing.sm, marginBottom: spacing.xs, alignSelf: 'flex-start' },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2, paddingHorizontal: spacing.lg },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, paddingHorizontal: spacing.lg },
   categoryChip: {
