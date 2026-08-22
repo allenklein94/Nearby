@@ -4,6 +4,77 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — full sweep of every registered route for the same "no way back" gap — DONE
+
+Direct follow-up to the Meet New Friends/Places/Timeline fix immediately below — that section's
+own status note explicitly disclosed it hadn't done a full sweep, only fixed the one reported
+screen plus two found by direct comparison. Asked to actually do that sweep. Read all 75
+`<Stack.Screen>` registrations in `RootNavigator.js` directly and categorized every one —
+`headerShown: true` screens get a real native back chevron for free (unless overridden with
+`headerLeft`/`headerBackVisible`, confirmed zero such overrides exist anywhere in this file, so
+every one of those is genuinely fine); bottom-tab screens (`MainTabs`) don't need one; the
+remaining 13 non-`headerShown:true` routes were checked one at a time against their actual
+component code, not assumed either way. Four more real gaps found and fixed:
+
+- **`Paywall`** — `presentation: 'modal'`, no `gestureEnabled` override (so swipe-down-to-dismiss
+  does work on iOS), but zero visible affordance telling anyone that, and no explicit close
+  button at all — the exact same "technically escapable via an undiscoverable gesture" shape as
+  the original bug. Added a real ✕ close button, top-right, standard paywall UX regardless of
+  the gesture question.
+- **`AdminReports`** — identical shape to `Places`/`Timeline`: `headerShown: false`,
+  `AdminReportsScreen()` took no `navigation` prop at all, its own custom "Reports" header had no
+  back button. Fixed the same way — `navigation` prop added, a `chevron-back` button added next
+  to the existing title.
+- **`GatheringConfirmation`** — `headerShown: false` **and** `gestureEnabled: false` explicitly
+  (deliberately, so the celebratory "your gathering is live!" screen can't be accidentally
+  swiped away) — meaning a genuine `loadError` (the one real failure state this screen has) was a
+  true, gesture-proof dead end, worse than the others since even the fallback OS gesture was
+  intentionally disabled. Fixed without touching the deliberate no-swipe behavior: the
+  `loadError` branch now also shows a real "Continue to your gathering →" action alongside the
+  existing retry — `handleDone()` only ever needed the route's own already-known `gatheringId`
+  (the gathering was already created successfully before this screen even loaded), never the
+  `gathering` state that failed to fetch, so it works correctly even from the error branch.
+- **`Chat`** — the trickiest one, and a real edge case rather than the common path: `ChatScreen`
+  itself calls `navigation.setOptions({ headerShown: true, ... })` once its own `init()`
+  successfully loads the match, which is why the *normal*, successful case already had a real
+  native back button and was never actually broken. But `loadError`/`messagesLoadError`
+  (`usePaginatedMessages`) both early-return *before* that `setOptions` call ever runs — a genuine
+  network failure on this very high-traffic screen left the user on a `LoadErrorState` with only
+  retry, no header, no back button at all. Fixed at the route level, not the component: `Chat`'s
+  own `Stack.Screen` registration now defaults `headerShown: true` (blank title) up front, so a
+  real back chevron exists from the moment the screen mounts — `ChatScreen`'s own later
+  `setOptions` calls only ever layer the real title/icons on top once data loads, never turn the
+  header off, so nothing about the already-correct success-path behavior changed.
+
+**Checked and confirmed genuinely fine, not fixed, with the specific reason for each** (every one
+read directly, not assumed): `Onboarding`/`OnboardingQuestions`/`OnboardingLocation`/`Login` are
+a linear, forward-only pre-auth funnel with no prior authenticated state to return to — the same
+shape essentially every app's own signup funnel uses, not the "wandered into a real destination
+and got stuck" bug this pass targets. `OnboardingRecommendations` always keeps a real, always-
+rendered "Let's Go →" button in its footer regardless of loading/error/empty state — a genuine
+load failure there still has a real, working forward exit. `MainTabs` is the root of the
+authenticated app, no back needed. `Places`/`Timeline`/`FriendDiscovery` were already fixed in
+the prior pass (see below).
+
+**One real, deliberately *not* auto-fixed gap, flagged rather than silently patched**:
+`CompleteProfileScreen` (the required profile-setup gate between signup and the main app) has no
+`navigation` prop, no sign-out link, and no way to leave if someone gets stuck there — but unlike
+every fix above, this is a *required gate* by design (you're not supposed to be able to skip
+setting up your profile), not a screen someone merely wandered into. Whether it should also have
+a "Sign Out" escape hatch (e.g., for someone who signed up with the wrong account, or hit a
+genuine bug in the form) is a real product decision, not an obvious bug fix — flagged here for a
+direct decision rather than unilaterally added.
+
+**Verified**: the full 43-test Jest suite still passes, a direct `@babel/core` parse of all four
+touched files is clean, and a full `npx expo export --platform ios` built clean with no bundling
+errors — edits to three existing screen files plus `RootNavigator.js`, no new files.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the Paywall's new close button, AdminReports' new back
+button, GatheringConfirmation's new escape link (specifically by forcing a real load failure),
+and that Chat's loading/error states now show a real header with a back chevron, all render and
+behave correctly on a real device.
+
 ## Aug 27 2026 — Meet New Friends (and two related screens) were real dead ends — no way back — DONE
 
 Real, user-reported bug: tapping into "Meet New Friends" from Discover, and again after

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getOfferings, purchasePackage, restorePurchases, isPremium, openSubscriptionManagement } from '../services/purchases';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -75,6 +76,21 @@ export default function PaywallScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* presentation: 'modal' relies on swipe-down (iOS) / hardware back
+          (Android) to dismiss, with no visible affordance telling anyone
+          either exists -- the same "reachable, no obvious way out" gap
+          found and fixed on FriendDiscoveryScreen/PlacesScreen/
+          TimelineScreen/AdminReportsScreen. A paywall specifically also
+          deserves an explicit close, standard for this kind of screen. */}
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={styles.closeButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityLabel="Close"
+        accessibilityRole="button"
+      >
+        <Ionicons name="close" size={24} color={colors.textSecondary} />
+      </TouchableOpacity>
       <View style={styles.badge}>
         <Text style={styles.badgeText}>✨ {t('paywall.badge')}</Text>
       </View>
@@ -162,6 +178,7 @@ export default function PaywallScreen({ navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl },
+  closeButton: { position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, padding: spacing.xs },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: colors.primaryMuted,

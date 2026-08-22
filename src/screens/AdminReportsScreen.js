@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 
-export default function AdminReportsScreen() {
+// This screen is reached as a top-level stack push (not a bottom tab),
+// headerShown: false in RootNavigator, and previously took no navigation
+// prop at all -- the same "reachable, but no visible way back" shape
+// found and fixed on FriendDiscoveryScreen/PlacesScreen/TimelineScreen.
+export default function AdminReportsScreen({ navigation }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const [reports, setReports] = useState([]);
@@ -62,6 +67,15 @@ export default function AdminReportsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Reports</Text>
       </View>
       <FlatList
@@ -103,7 +117,8 @@ export default function AdminReportsScreen() {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  backButton: { padding: spacing.xs },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   empty: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
   card: {

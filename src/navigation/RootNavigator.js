@@ -408,7 +408,13 @@ export default function RootNavigator() {
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
+            {/* headerShown starts true (blank title, real back chevron) so
+                the loading/error states -- before ChatScreen's own init()
+                calls setOptions() with the real title/icons -- aren't a
+                dead end on a load failure. ChatScreen's own setOptions
+                calls only ever layer title/headerRight on top, never turn
+                the header off. */}
+            <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
             <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: true, title: 'Billing', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />

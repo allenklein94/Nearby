@@ -104,9 +104,19 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   }
 
   if (loadError) {
+    // gestureEnabled is deliberately false on this modal (RootNavigator),
+    // and there's no back button by design -- but that means a real load
+    // failure here previously had *zero* way out, only a retry. handleDone
+    // only ever needs the route's own gatheringId (already known, the
+    // gathering itself was already created successfully before this
+    // screen even loaded), not the fetched `gathering` state, so it works
+    // fine here too -- a real, working escape, not just a retry loop.
     return (
       <View style={styles.loadingContainer}>
         <LoadErrorState message="Couldn't load your gathering." onRetry={load} />
+        <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel="Continue to your gathering" accessibilityRole="button">
+          <Text style={styles.doneLink}>Continue to your gathering →</Text>
+        </TouchableOpacity>
       </View>
     );
   }
