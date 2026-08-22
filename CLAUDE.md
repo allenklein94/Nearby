@@ -5,7 +5,8 @@ This file captures known outstanding work as of early August 2026, so a fresh Cl
 session has the same context as the chat session that built most of this.
 
 ## Aug 22 2026 — weather signals engine V1 (real forecast data, not just current conditions) —
-## migration written, committed; NOT YET applied to production, NOT YET verified live
+## DONE — applied (already live from before this pass), verified live end-to-end, replayed
+## from scratch clean; client wiring resolved as a deliberate partial-defer, not silently open
 
 Found as an orphaned, fully-written, untracked migration file
 (`supabase/migrations/20260822_weather_forecast_signals.sql`) with zero reference anywhere else
@@ -77,6 +78,75 @@ disposable submit/poll round-trip against a real lat/lng (confirm the forecast l
 confirm at least one of the four derived signals reads correctly against real weather); run the
 from-scratch Docker replay; then decide whether to wire a real client consumer for the new
 signals or leave that as its own explicitly-scoped follow-up.
+
+**Follow-up pass, same day — all four "next session should" items closed.**
+
+**Migration was already live in production** from before this pass — checked directly rather
+than blindly re-applying (a second `create` would have errored): pulled `submit_weather_request`
+and `get_weather_result`'s live bodies via the Management API and confirmed both are
+byte-identical to the committed migration, `weather_requests.forecast_request_id` already
+exists, and grants on `get_weather_result` are correctly `authenticated`/`service_role` only (no
+`anon`/`public`). This closes the "apply to production" step — it just turns out a prior pass
+already did it and the file's own header hadn't caught up yet.
+
+**Verified live with a real disposable submit/poll round-trip**, not just confirmed the function
+bodies match. Called `submit_weather_request` as a real profile (`Allen`) against real Princeton,
+NJ coordinates — got back a real `request_id` (1099) with a real `forecast_request_id` (1100)
+stored on the same row. Waited for both of `pg_net`'s async HTTP calls to genuinely resolve
+(confirmed via `net._http_response`, both real `200`s), then polled `get_weather_result` as
+`Allen` — got back real, live OpenWeatherMap data: `condition: "Clouds"`, `temp_f: 73.89`,
+`forecast_label: "Good"`, and, critically, `forecast_detail: "Decent conditions out there right
+now. Rain looks likely around 11:00 PM."` — the exact rain-lookahead sentence this migration
+exists to add, genuinely derived from the real forecast payload's `pop`/condition-code data, not
+a placeholder. `outdoor_favorable: false`, `rain_risk: "high"` both correctly reflect that same
+real signal. This is real confirmation that the `jsonb_array_elements` loop and the
+timezone-offset math for `v_rain_time_label` — the one part of this migration that had only ever
+been read, never exercised — actually works against a real forecast payload, not just plausible
+SQL. Separately confirmed isolation: the identical `get_weather_result(1099)` call as a different
+real profile (`Claude`) correctly returned zero rows (the `if not found then return;` branch),
+matching every other request/poll RPC's ownership pattern in this schema. Test row deleted
+afterward; `weather_requests` confirmed back to its exact pre-test baseline (63 rows).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public` schema,
+patched the two known image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the
+test container only, then ran the full 75-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, including this migration. `weather_requests
+.forecast_request_id` and both functions at their real signatures confirmed to exist in the
+freshly-rebuilt database, matching production exactly. Container removed afterward.
+
+**The "decide whether to wire a real client consumer" step — resolved, not left open, with a
+real finding that narrows what's actually still missing.** Checked the current client code
+directly rather than assuming CLAUDE.md's own prior "No client wiring at all" line was still
+accurate: `getSocialForecast()` (`homeDashboard.js`) returns the RPC's result row **unmodified**
+(`return result`), not a destructured subset — so `forecast_detail`, including the new
+appended rain-lookahead sentence, was **already flowing to the client and already being
+rendered verbatim** on Home's weather card (`HomeScreen.js`'s `{socialForecast.forecast_detail}`)
+with zero code change needed. The honest headline improvement this migration set out to deliver
+— genuinely being able to say "rain likely around 4:15 PM" instead of only ever describing right
+now — was **already live the moment the migration was applied**, before this pass even started.
+Correcting the record: the prior claim that `getSocialForecast()` "still destructures only
+condition/forecast_label/forecast_detail" was accurate for those three fields but incomplete —
+the function was never rewritten to drop the other four, they were just never *read* downstream.
+
+**What's genuinely still unwired, confirmed via the same direct read**: `outdoor_favorable`/
+`rain_risk`/`heat_risk`/`cold_risk` are computed and returned but never referenced anywhere in
+`src/` (re-confirmed via grep). The one real candidate consumer — broadening the indoor-
+suggestions card's trigger (`HomeScreen.js`, currently gated on `forecast_label === 'Quiet'`,
+i.e. *current* conditions only) to also fire on a genuinely bad *forecast* signal
+(`rain_risk === 'high' || heat_risk || cold_risk`) even when current conditions look fine — was
+deliberately **not built this pass**. Reason, stated plainly rather than silently deferred: this
+isn't a mechanical wiring change, it's a real UX judgment call this file's own conventions treat
+as worth a decision, not a guess — showing an "indoor suggestions" list underneath a headline
+that currently reads "Excellent" (because it's genuinely nice out *right now*) risks reading as
+self-contradictory without some reconciling copy ("nice now, but rain's coming later" vs. just
+silently showing both). Flagged here for an explicit future decision rather than shipped as a
+guessed design.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the already-live rain-lookahead sentence renders
+correctly on a real device's Home weather card, and, if the UX call above is ever made, confirm
+whichever indoor-suggestions trigger design is chosen reads clearly rather than contradictorily.
 
 ## Aug 22 2026 — collapse "Meet New Friends" into a Discover People filter + a Sign Out
 ## safety valve on the required profile-setup screen — DONE
