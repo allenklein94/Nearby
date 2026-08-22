@@ -4,6 +4,80 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 22 2026 — weather signals engine V1 (real forecast data, not just current conditions) —
+## migration written, committed; NOT YET applied to production, NOT YET verified live
+
+Found as an orphaned, fully-written, untracked migration file
+(`supabase/migrations/20260822_weather_forecast_signals.sql`) with zero reference anywhere else
+in this file — no prior session logged writing it. Read in full before committing: it's a real,
+complete, self-consistent migration, not a stub or half-finished draft. Committed as-is rather
+than silently discarded, since discarding real finished work without reading it first would
+violate this file's own standing rules — but **not applied to production and not verified live
+this pass**, due to a hard session-token/time constraint at the moment it was found (a
+usage-limit checkpoint hit mid-session). This entry exists specifically so the next session
+doesn't have to rediscover the file from scratch, and knows exactly what's actually been done to
+it (committed to git) vs. not (applied/verified).
+
+**What it does, per its own header comment**: extends the existing async
+`submit_weather_request`/`get_weather_result` pair (current-conditions-only today) to also fetch
+OpenWeatherMap's free-tier 5-day/3-hour forecast endpoint (`cnt=8`, same API key, same free
+plan tier — not the paid One Call API, so no new cost) alongside the existing current-conditions
+call. Derives real, honest, normalized signals from actual forecast data —
+`outdoor_favorable`/`rain_risk`/`heat_risk`/`cold_risk` — meant as real input to Nearby's
+recommendation surfaces, not just a prettier card. This is explicitly the fix for a gap this
+file's own history has disclosed and deferred multiple times already (see the IA restructure
+round 3 / Home hierarchy sections further down: "the underlying OpenWeatherMap call is a
+current-conditions snapshot, not a real forecast... option (a) — a genuine hourly-forecast API
+integration... was not attempted and would need its own scope discussion" — this migration is
+that option (a), finally attempted).
+
+**Mechanics**: `weather_requests` gains a nullable `forecast_request_id` column.
+`submit_weather_request` now fires two `net.http_get` calls (current + forecast) instead of one,
+storing both request ids. `get_weather_result`'s return shape changed (4 new boolean/text
+columns), so per this schema's own established convention the old single-bigint-arg overload was
+explicitly `DROP FUNCTION`ed before the new one was created, not left as an orphaned second
+overload. `forecast_label`/`forecast_detail`'s core bucketing (current-conditions only) stays
+byte-identical to before this migration — the only change to `forecast_detail` is one
+conditionally-appended sentence ("Rain looks likely around {time}.") when the forecast leg found
+a real high-probability rain block within the next ~9 hours, and only when it isn't already
+raining right now (avoids saying both "it's raining" and "rain likely soon" at once). The rain
+lookahead is deliberately scoped to the first 3 of the 8 fetched 3-hour blocks (~9h), not the
+full 24h window the risk/temp signals use — so it never reads as "rain likely" about something a
+day out. `get_social_forecast` (the pre-existing, already-unused synchronous sibling — zero
+client callers, per this file's own earlier finding) was deliberately **not** extended with the
+same logic, to avoid duplicating fetch/parse logic in a function nothing calls.
+
+**Real, disclosed gaps, not silently glossed over**:
+- **Not applied to production** (`enmosvippabmuqslzrox`) — this migration exists only in git,
+  not in the live database. The next session must apply it via the Management API before
+  anything downstream can use it.
+- **Not verified live with real disposable test data** — none of this file's usual "confirmed
+  via a real profile's real async request/poll round-trip" verification has been done. The
+  forecast-parsing logic (the `jsonb_array_elements` loop, the timezone-offset math for
+  `v_rain_time_label`, the pop/condition-code thresholds) has only been read, never exercised
+  against a real OpenWeatherMap forecast payload.
+- **Not verified via a from-scratch migration replay** — per this file's own migration-
+  discipline rule (see "Known conventions" at the bottom), every schema change should be
+  replayed against a truly empty database before being considered done. Not attempted this pass.
+- **No client wiring at all.** `homeDashboard.js`'s `getSocialForecast()` (the one real client
+  caller of `get_weather_result`) still destructures only `condition`/`forecast_label`/
+  `forecast_detail` — the four new signal columns
+  (`outdoor_favorable`/`rain_risk`/`heat_risk`/`cold_risk`) are not read anywhere in `src/`,
+  confirmed via grep. They exist in the RPC's return shape but nothing consumes them yet — this
+  migration is backend-only; wiring a real consumer (e.g. Home's weather card gaining an actual
+  "rain likely around 4:15 PM" line, or the IA-round-3 Phase 7 indoor-suggestions card finally
+  using a real `rain_risk` instead of only the `forecast_label==='Quiet'` bucket) is a separate,
+  unstarted follow-up.
+- **`vault.decrypted_secrets` name `'openweather_api_key'`** was assumed to already exist (the
+  pre-existing current-conditions call already depended on it) — not independently re-confirmed
+  this pass.
+
+**Next session should, in order**: apply this migration to production; verify live with a real
+disposable submit/poll round-trip against a real lat/lng (confirm the forecast leg resolves,
+confirm at least one of the four derived signals reads correctly against real weather); run the
+from-scratch Docker replay; then decide whether to wire a real client consumer for the new
+signals or leave that as its own explicitly-scoped follow-up.
+
 ## Aug 22 2026 — collapse "Meet New Friends" into a Discover People filter + a Sign Out
 ## safety valve on the required profile-setup screen — DONE
 
