@@ -8,7 +8,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/brandOffers';
-import { searchNearbyPlaces, getPlacePhotoUrl } from '../services/places';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -593,7 +593,12 @@ export default function DiscoverHubScreen({ navigation }) {
                     <View style={{ flex: 1 }}>
                       <Text style={styles.cardTitle}>{p.name}</Text>
                       <Text style={styles.cardSubtitle} numberOfLines={1}>
-                        {[p.rating !== null ? `⭐ ${p.rating}` : null, p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null]
+                        {[
+                          p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
+                          priceLevelLabel(p.priceLevel),
+                          p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
+                          p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
+                        ]
                           .filter(Boolean)
                           .join('  ·  ') || p.address}
                       </Text>

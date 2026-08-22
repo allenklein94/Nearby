@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import * as Location from 'expo-location';
-import { searchNearbyPlaces, getPlacePhotoUrl } from '../services/places';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -125,7 +125,7 @@ export default function PlacesScreen() {
               style={styles.placeCard}
               onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}&query_place_id=${item.placeId}`)}
               activeOpacity={0.85}
-              accessibilityLabel={`${item.name}${item.gatheringCount > 0 ? `, ${item.gatheringCount} gatherings hosted here` : ''}`}
+              accessibilityLabel={`${item.name}${item.openNow !== null ? (item.openNow ? ', open now' : ', closed now') : ''}${item.gatheringCount > 0 ? `, ${item.gatheringCount} gatherings hosted here` : ''}`}
               accessibilityRole="button"
             >
               {item.photoRef ? (
@@ -136,8 +136,20 @@ export default function PlacesScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.placeName}>{item.name}</Text>
                 {item.address ? <Text style={styles.placeAddress}>{item.address}</Text> : null}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 }}>
-                  {item.rating !== null && <Text style={styles.placeRating}>⭐ {item.rating}</Text>}
+                <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: 4 }}>
+                  {item.rating !== null && (
+                    <Text style={styles.placeRating}>
+                      ⭐ {item.rating}{item.reviewCount !== null ? ` (${item.reviewCount})` : ''}
+                    </Text>
+                  )}
+                  {priceLevelLabel(item.priceLevel) !== null && (
+                    <Text style={styles.placePriceLevel}>{priceLevelLabel(item.priceLevel)}</Text>
+                  )}
+                  {item.openNow !== null && (
+                    <Text style={item.openNow ? styles.placeOpenNow : styles.placeClosedNow}>
+                      {item.openNow ? '● Open now' : '● Closed'}
+                    </Text>
+                  )}
                   {item.gatheringCount > 0 && (
                     <Text style={styles.placeGatherings}>🎉 {item.gatheringCount} gathering{item.gatheringCount === 1 ? '' : 's'} here</Text>
                   )}
@@ -172,6 +184,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   placeName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
   placeAddress: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   placeRating: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  placePriceLevel: { color: colors.textTertiary, fontSize: 12, fontWeight: '600' },
+  placeOpenNow: { color: colors.success, fontSize: 12, fontWeight: '700' },
+  placeClosedNow: { color: colors.danger, fontSize: 12, fontWeight: '700' },
   placeGatherings: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.lg },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },

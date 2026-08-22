@@ -4,6 +4,124 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — Decision 1 built: richer Google Places details (rating, review count, price
+## level, open/closed) on the three real browsing surfaces — DONE
+
+Direct follow-up to the "Two real product decisions locked" section immediately below this one,
+same day — picked the easier of the two decisions to build first, per direct instruction.
+
+### What was already there vs. what was missing
+
+Re-confirmed against the real code before building, not assumed: `searchNearbyPlaces()`
+(`services/places.js`, backing Google's Nearby Search endpoint) already captured `rating` and a
+single `photoRef`, and `PlacesScreen.js`/`DiscoverHubScreen.js` already rendered that rating —
+narrower than the original audit line implied. What was genuinely missing: review count, price
+level, and open/closed status — all three are part of Google's free "Basic Data" tier already
+returned by the same Nearby Search call (`user_ratings_total`, `price_level`, `opening_hours.
+open_now`), just never read off the response. **Full weekly hours (`opening_hours.weekday_text`)
+were deliberately not added** — that field only exists on the separate Place Details endpoint,
+meaning one extra network call *per place* for a list of up to 20 places per screen load; the
+cheap, free `open_now` boolean already answers the actual "should I go now" question this
+decision was about, without that N-extra-calls cost. `brand_partners` (Nearby's own internal
+business-partner table) has no `google_place_id` column at all — confirmed via a full migration
+grep — so there's no live Google data to enrich `BusinessProfileScreen.js`'s own internal
+business cards with; this pass only touches genuinely Google-Places-sourced browsing surfaces.
+
+### What was built
+
+`searchNearbyPlaces()` now also returns `reviewCount`, `openNow`, and `priceLevel` per place,
+alongside the existing `rating`/`photoRef` — zero new network calls, purely reading more of the
+same response already being fetched. New `priceLevelLabel()` export in `services/places.js`
+converts Google's raw 0-4 integer scale to the familiar `Free`/`$`/`$$`/`$$$`/`$$$$` labels, used
+identically everywhere a price level renders so all three surfaces can't drift into different
+conventions.
+
+Wired into the three real screens that render Google-Places-sourced cards (`getPlaceDetails()`,
+used only for the Business Partner apply flow's one-time autofill/confirm step, was deliberately
+left untouched — that's an application form, not a browsing card):
+- **`PlacesScreen.js`** (the dedicated Places tab): rating now shows its real review count
+  ("⭐ 4.6 (212)"), plus a price-level label and a colored "● Open now" / "● Closed" badge
+  (`colors.success`/`colors.danger`), wrapped in a flex row so the line doesn't clip when several
+  signals are present at once. Accessibility label extended to speak the open/closed state too.
+- **`DiscoverHubScreen.js`**'s unified-search Places section: the same three fields folded into
+  the card's existing single-line joined subtitle (rating+count, price level, open/closed,
+  gathering count — in that priority order, `·`-separated), matching this screen's own
+  established compact-card convention rather than restructuring its shared `card`/`cardSubtitle`
+  styles (used across the gatherings/communities sections too) into a new layout.
+- **`CreateGatheringScreen.js`**'s "Choose a Place" step (Create 2.0's own Popular Nearby list,
+  a compact selection row with no photo): rating, price level, and open/closed now join the
+  existing walk-time/address subtitle line — a real quality signal for someone picking a venue
+  for their own gathering, not just distance.
+
+**Verified**: all four touched files parse clean via a direct `@babel/core` transform, and a
+full `npx expo export --platform ios` completed with no bundling errors (no new files this pass,
+edits only — `services/places.js` plus the three screens above).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new signals render correctly against real Google
+data on all three surfaces (including the wrapped multi-signal row on `PlacesScreen.js` at
+narrow device widths), and that a place genuinely missing one or more fields (Google doesn't
+always return `price_level`/`opening_hours` for every place type) degrades gracefully rather than
+showing an empty gap.
+
+## Aug 27 2026 — Two real product decisions locked: Google Places scope narrowed to richer
+## place details; Stripe Connect architecture locked (direct charges, business as merchant of
+## record) — DECISIONS ONLY, NOT YET BUILT
+
+Given directly by the user, resolving two real open items this file has carried as deferred —
+Decision 5 of the Aug 17 2026 Offer System plan ("Stripe... confirmed out of scope for this
+whole pass... needs the user present for a real external-vendor/account and legal/product
+decision," further down this file) and the open question of how far to extend the
+already-integrated Google Places surface beyond what's already built. **Neither decision has
+been built yet — this section records the two locked decisions only, same restart-safety
+"written before implementation" convention as every other plan-first section in this file.**
+
+### Decision 1 — Google Places: scope narrowed to richer place details only, no standalone
+### browse/map screen
+
+Google Places is already deeply integrated (nearby venue search, Create 2.0's "Choose a Place"
+step, `BusinessPartnerApplyScreen.js`'s search/autofill, Discover's unified search) — asked
+directly what's actually still missing rather than assuming more was needed. **Locked: richer
+place details only** — surface Google's own `rating`, `photos`, and `opening_hours` (already
+returned by the existing Place Details call, just not persisted or rendered anywhere today) on
+business/place cards, giving a user enough context to actually decide "this is where I want to
+go" once a place already appears in a result. **Explicitly not building a dedicated place-
+browse/map screen** — a standalone "explore places" experience would risk pulling the app toward
+being another Google Maps/Yelp-style discovery product, when Nearby's real differentiation is the
+social-plan → business connection, not general place discovery. **Built, Aug 27 2026** — see
+this file's own "Aug 27 2026 — Decision 1 built" section further up for the full detail.
+
+### Decision 2 — Stripe payment custody: the business is merchant of record, Nearby never holds
+### consumer funds
+
+The Offer System's own Phase 1 (Aug 17 2026, further down this file) already built the real,
+currently-inert seam this decision activates — `business_reservations`/`business_payments`
+(`business_payments.status`: `not_required | pending | authorized | captured | failed |
+refunded`, `provider` nullable, `provider_transaction_id` nullable) — deliberately built ahead of
+a real processor per that phase's own Decision 5 note ("build the inert seams now since they're
+cheap... permanently inert until a real processor/provider is connected in a future, explicitly
+separate pass"). This decision is that separate pass's own architecture call, given directly:
+
+**Locked: Stripe Connect, direct charges — the business is the merchant of record and receives
+the consumer's payment directly through its own Connect account; Nearby takes its cut via an
+application/platform fee on that same charge, and never custodies consumer funds itself.**
+Rejected the alternative (Nearby holds funds via destination charges with a delayed transfer,
+paying the business out afterward) — that shape makes Nearby a real money-holder with a
+materially larger compliance/regulatory surface (refund/dispute responsibility, holding customer
+funds) for no benefit this product actually needs; direct charges keep Nearby in its intended
+role (the connection/transaction-enablement layer) without becoming a de facto bank/escrow layer,
+while still letting Nearby take a real commission automatically via the application fee.
+
+**Not yet built.** The user does not yet have a Stripe account with Connect enabled — confirmed
+directly, not assumed. Real next steps, in order, once picked up: (1) design the schema/
+onboarding-flow/RPC changes needed to wire `business_payments`/`accept_business_offer`/
+`complete_business_reservation` to real Stripe Connect PaymentIntents with
+`transfer_data.destination` + `application_fee_amount` — buildable now, no live keys required
+for schema/scaffolding; (2) the user creates the real Stripe platform account and enables
+Connect, in parallel; (3) once real keys exist, wire them as Supabase secrets and actually go
+live — matching this file's own established "real external account, needs the user present, not
+something to set up autonomously" posture for exactly this kind of decision.
+
 ## Aug 26 2026 — Gap 3: a real "Upcoming Nearby Visits" card on the Business Dashboard — DONE
 
 Direct follow-up to the section immediately below this one — the one gap deliberately scoped out

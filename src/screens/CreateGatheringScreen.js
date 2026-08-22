@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
-import { searchNearbyPlaces } from '../services/places';
+import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -544,7 +544,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
                       >
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.placeRowTitle, selected && styles.optionCardTitleActive]}>{place.name}</Text>
-                          <Text style={styles.placeRowSub}>{miles !== null ? walkTimeLabel(miles) : place.address}</Text>
+                          <Text style={styles.placeRowSub}>
+                            {[
+                              miles !== null ? walkTimeLabel(miles) : place.address,
+                              place.rating !== null ? `⭐ ${place.rating}` : null,
+                              priceLevelLabel(place.priceLevel),
+                              place.openNow !== null ? (place.openNow ? 'Open now' : 'Closed') : null,
+                            ].filter(Boolean).join('  ·  ')}
+                          </Text>
                         </View>
                         {selected && <Text style={styles.checkmark}>✓</Text>}
                       </TouchableOpacity>

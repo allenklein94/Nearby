@@ -26,11 +26,18 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
     return [];
   }
 
+  // rating/reviewCount/openNow/priceLevel are all part of Google's free "Basic Data"
+  // tier for Nearby/Text Search — no extra fields param or per-place Details call
+  // needed, unlike weekly opening hours (only in Place Details, deliberately not
+  // fetched here to avoid N extra network calls per list of 20 places).
   const places = (data.results ?? []).slice(0, 20).map((p) => ({
     placeId: p.place_id,
     name: p.name,
     address: p.vicinity,
     rating: p.rating ?? null,
+    reviewCount: p.user_ratings_total ?? null,
+    openNow: p.opening_hours?.open_now ?? null,
+    priceLevel: typeof p.price_level === 'number' ? p.price_level : null,
     latitude: p.geometry?.location?.lat,
     longitude: p.geometry?.location?.lng,
     photoRef: p.photos?.[0]?.photo_reference ?? null,
@@ -72,6 +79,14 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
 export function getPlacePhotoUrl(photoRef, maxWidth = 400) {
   if (!photoRef) return null;
   return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+}
+
+// Google's own 0-4 integer scale (0 = Free, 4 = Very Expensive), rendered as the
+// familiar $ signs — never invented when Google hasn't reported one for a place.
+export function priceLevelLabel(priceLevel) {
+  if (priceLevel === null || priceLevel === undefined) return null;
+  if (priceLevel === 0) return 'Free';
+  return '$'.repeat(priceLevel);
 }
 
 // Business Partner acquisition experience, Milestone 2 (see CLAUDE.md): "Find your
