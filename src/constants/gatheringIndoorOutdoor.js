@@ -39,3 +39,7 @@ export const CATEGORY_INDOOR_OUTDOOR = {
 export function isIndoorCategory(interestTag) {
   return CATEGORY_INDOOR_OUTDOOR[interestTag] === 'indoor';
 }
+
+export function isOutdoorCategory(interestTag) {
+  return CATEGORY_INDOOR_OUTDOOR[interestTag] === 'outdoor';
+}

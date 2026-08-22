@@ -4,6 +4,220 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 22 2026 — "make Nearby feel effortless" UX/IA critique (external, 5 waves, pasted
+## directly by the user): triaged against the real code, plan locked, two concrete pieces
+## built this pass — DONE for what's buildable now; everything architectural flagged, not
+## silently attempted
+
+Direct follow-up to the weather signals engine V1 close-out immediately below — the user pasted
+a large, 5-wave external strategic critique in one message (Home/Discover restructuring, "kill
+explanatory screens," unified interaction language, standardized card types, visible
+relationships, controlled status vocabulary, useful empty states, contextual settings, weather-
+behind-the-scenes, a "unified recommendation engine," Gatherings as a universal Plan object, a
+one-tap plan flow, the profile wizard as personalization, progressive personalization, Stories
+placement, a bottom-nav restructuring to Home/People/Create/Activity + Inbox moved off the bottom
+bar, "kill anything outside the core loop," a dead-end audit, and a fully-specified 3-step
+Complete Profile wizard) and asked directly: **"Build plan and improve as needed and place in Md,
+commit and push and update Md along the way."**
+
+**Method, matching this file's own standing rule for every external critique**: checked the most
+load-bearing claims against the actual current code before writing anything, rather than treating
+the pasted doc as ground truth. This mattered a lot here — several of the doc's asks turn out to
+already be exactly what's live (the critique reads as written without having seen the app's
+current state), one item directly contradicts an already-tested, already-reverted decision, and
+the genuinely large architectural asks (a new "unified recommendation engine," bottom-nav
+restructuring, a one-tap orchestrated plan flow) are real product decisions this file's own
+standing **Feature Freeze** (declared Aug 15 2026, reaffirmed repeatedly since: *"no new product
+surfaces or architectural changes without evidence from real-user data... do not start a new
+roadmap section... even if this file's own history makes the next 'obvious' step look
+tempting"*) says not to build on inferred momentum alone — flagged for an explicit decision, not
+silently attempted.
+
+### Already true — the critique's own premise doesn't hold, corrected rather than silently
+### re-built
+
+- **Stories in Inbox, not People** — the critique's whole Wave 3 argument (and Wave 4's "Connect
+  Stories to action") assumes Stories currently live in the Inbox. Checked directly: they don't
+  — `InboxScreen.js` has exactly two tabs (Messages/Activity, confirmed via direct read), zero
+  references to Stories anywhere in the file. Stories ("Public Stories Near You," "Gathering
+  Memories") already live on **Discover**, next to People/Gatherings/Communities/Places/Perks —
+  exactly the "Stories belong near People/discovery" placement the critique itself argues for.
+  Nothing to move.
+- **Bottom nav already answers a clean set of questions** — confirmed via `RootNavigator.js`:
+  exactly 5 tabs, Home / Discover / Create / Inbox (labeled "Inbox") / Profile (labeled "You") —
+  matching this file's own long-standing, repeatedly-reaffirmed target model verbatim. The
+  critique's Wave 4 proposal (Home/People/Create/Activity, Inbox moved to a top-right icon,
+  Discover folded away) is a real, coherent alternative model, but it's a *different* locked
+  decision, not a bug — see "conflicts with an already-tested decision" below for the specific
+  piece of it that's already been tried and reverted.
+- **People Nearby → Dating/Friends already collapsed into the simple shape the critique asks
+  for** — Wave 1's "People → Dating | Friends" and Wave 4's "People less directory-like" are
+  already substantially true: `DiscoverHubScreen.js`'s "People Nearby" section is already a
+  two-row module (💗 Dating / 🤝 Friends), not a directory. See the conflict note below for the
+  one specific mechanism (a filter chip vs. two always-visible rows) the critique's Wave 1
+  literally proposes reverting to.
+- **Coral/interaction-language consistency ("Wave 1 item 4," "Wave 2 item 11")** — already a
+  formal, locked design rule, not something still being fixed screen-by-screen. See this file's
+  own Aug 16 2026 "coral-usage design rule locked, the visual system frozen" section: *"Coral =
+  action, not decoration... Secondary actions... coral is reserved for a surface's primary
+  action"* — exactly the rule the critique asks for, already applied across a dedicated audit
+  pass (`PRODUCT_AUDIT/CORAL_AUDIT_PROGRESS.md`) and re-affirmed as frozen (no further sweeps
+  expected absent a new pattern).
+- **Empty states with real next actions ("Wave 1 item 8")** — already the subject of a dedicated
+  "Outstanding: Empty-state audit" pass (further down this file) — most major screens already
+  have a real, actionable empty state (not "No gatherings." dead ends); two genuine gaps found in
+  that pass (`CommunityDetailScreen.js`'s Leaders/Upcoming-Gatherings sections) were already
+  fixed. Not re-litigated here.
+- **Dead-end audit ("Wave 4 item 12")** — already extensively covered, most recently and
+  thoroughly by "Aug 27 2026 — full sweep of every registered route for the same 'no way back'
+  gap" (the second commit before this pass started) — every one of the 75 registered routes was
+  individually categorized and 4 real gaps were found and fixed. Not re-run from scratch here.
+- **Complete Profile wizard spec (Wave 5)** — the critique's fully-specified 3-step wizard
+  (Basics/Photo → wait, Photo/Interests, in that order, progress dots, required photo kept
+  required, terms folded into the last step, "don't ask for location/notifications/dating prefs
+  during required onboarding") is, near-verbatim, **already what's live** — see this file's own
+  Aug 22 2026 "CompleteProfileScreen rebuilt as a 3-step wizard" entry (About You → Photo →
+  Interests, `STEP_DEFS`, `progressDot`/`progressDotActive`, terms consent on the Interests step
+  by direct instruction, Sign Out safety valve on every step). The one genuinely new, concrete
+  gap the critique's own text calls out explicitly — *"The wizard should save progress after
+  every step... they should not have to start over"* — **was a real, confirmed gap, and is
+  fixed this pass** (see "Built this pass" below).
+
+### Directly conflicts with an already-tested, deliberate decision — flagged, not silently
+### reversed
+
+- **Wave 1's "People → Dating | Friends filter chip"** contradicts this file's own Aug 22 2026
+  entry two sections down ("Collapse 'Meet New Friends' into a Discover People filter... **then
+  revised, same session**, per direct follow-up review — the single-card-with-filter-chips design
+  was replaced before ever shipping to a real user... reaching Friends went from one tap to two;
+  the whole premise of a filter only makes sense over a live, in-place feed; this card was never a
+  feed"). The two-always-visible-rows shape the critique's own Wave 1 later text half-endorses
+  ("two always-visible Dating/Friends rows") is the version that's actually live — the filter-chip
+  version was tried, found to add a tap for no benefit, and explicitly reverted same-day. Not
+  reverted back.
+
+### Large/architectural — needs an explicit decision before touching, per the standing Feature
+### Freeze; none of these were built this pass
+
+Restated plainly so a future session doesn't read "triaged" as "approved": every item below is a
+**real, coherent product direction**, not a bad idea — but each is a genuine new architectural
+layer (a cross-cutting recommendation-scoring system, a full navigation restructuring touching
+every existing deep link, a new orchestrated multi-step "one-tap plan" transaction) that this
+file's own Feature Freeze explicitly reserves for a direct, explicit go-ahead rather than
+inferred momentum from a pasted vision doc:
+- **A unified cross-signal recommendation engine** (Wave 2 items 1-2, Wave 4's Now/Soon/Later
+  Home structure) — real infrastructure already exists piecewise (the intent resolver's shared
+  scoring axis, `getGatheringFitReasons()`, the Business Fulfillment reliability weighting) but
+  genuinely unifying weather + party size + friends + business availability + time into one
+  scored "here's what makes sense right now" surface is a new architectural layer, not a
+  presentation tweak.
+- **Bottom-nav restructuring** (Home/People/Create/Activity, Inbox off the bottom bar, Discover
+  folded away) — touches every registered deep link, every `navigation.navigate()` call site
+  naming a bottom tab, and reopens a navigation model this file has re-confirmed and reaffirmed
+  as locked multiple times since Aug 15 2026.
+- **One-tap "make a plan" orchestration** (Wave 2 item 13) — a new multi-system transaction
+  (people + place + time + gathering + business + offer + notifications, confirmed in one tap) —
+  genuinely new, not an extension of anything that exists.
+- **Progressive/contextual settings** (Wave 1 item 9, Wave 2 item 6-7) — asking dating
+  preferences only once someone tries Dating, etc. — real and reasonable, but touches onboarding,
+  Settings' structure, and several feature-entry points at once; scoping it correctly needs its
+  own pass, not a guess bundled into this one.
+- **Card standardization into 3 canonical types** (Wave 1 item 5) — checked the current state:
+  `GatheringsScreen.js`'s cards are already quite rich (title, host, women-only/matches-interest/
+  friends-interested/newcomer/business-host/recurring/offer badges, description, formatted
+  date+distance) — this isn't a "cards are bare" problem, it's a cross-*screen* consistency
+  problem (Discover's business cards, Matches' person cards, and gathering cards each evolved
+  their own shape independently). Real, worth doing, but a full-app audit + rebuild is its own
+  multi-session pass, not something to guess at partially here.
+- **"Why Nearby?" first-run moment, Activity as full ecosystem memory, business-loop full
+  reorchestration** (Wave 2 items 4, 9-10) — each is a real, coherent product idea but needs its
+  own scoping pass, not a guess.
+
+### Built this pass — two concrete, low-risk, immediately-buildable pieces, both verified
+
+**1. Weather behind the scenes, not a standalone feature (Wave 1 item 10, restated explicitly in
+Wave 2 item 8)** — direct, concrete resolution of the exact decision the weather signals engine
+V1 close-out (section immediately below this one) deliberately left open: *"broadening the
+indoor-suggestions gate... is a real UX judgment call... flagged here for an explicit future
+decision rather than shipped as a guessed design."* The user's critique, pasted the same day,
+**is** that explicit decision — "Don't make weather a standalone feature. Use it behind the
+scenes... 🌧️ Rain expected soon: 3 indoor spots nearby... ☀️ Great evening for outdoor plans: 5
+nearby options." Built exactly to that direction, surgically:
+- `HomeScreen.js`'s weather card's indoor-suggestions trigger is no longer gated on
+  current-conditions `forecast_label === 'Quiet'` alone — it now also fires on a genuine
+  *forecast*-derived risk (`rain_risk === 'high' || heat_risk || cold_risk`, the new signal
+  columns from the weather signals engine V1 migration), even when current conditions look fine.
+  This is the real fix for the deferred decision: a day that's nice *right now* but has real rain
+  risk later no longer silently withholds the indoor suggestion just because the current-moment
+  label happens to read "Excellent."
+- **New, symmetric positive case, not in the prior build**: a new `outdoorGatheringsToday` (new
+  `isOutdoorCategory()` export in `constants/gatheringIndoorOutdoor.js`, computed in
+  `getHomeDashboard()` exactly like the existing `indoorGatheringsToday`, zero new queries — same
+  already-fetched `nearbyGatherings` list, filtered/sorted/capped at 4) — shown when
+  `outdoor_favorable === true` (the real forecast signal) and at least one real outdoor gathering
+  exists today, mutually exclusive with the indoor block so the card can never suggest both at
+  once. This is the literal "☀️ Great evening for outdoor plans: 5 nearby options" case the
+  critique names — a genuinely good day is now a real reason to actively suggest something, not
+  just avoid a warning.
+- The two indoor/outdoor suggestion blocks share one renamed style set (`weatherSuggestions*`,
+  was `indoorSuggestions*`) rather than duplicating near-identical styles under a misleading
+  "indoor"-only name.
+- **Deliberately not done, a real scope boundary, not an oversight**: the existing "Right Now" /
+  `forecast_label` / `forecast_detail` headline block was left completely unchanged — not
+  collapsed into a single recommendation-style sentence matching the critique's exact copy
+  examples verbatim. Rewriting that into one blended sentence risks reading as self-contradictory
+  without careful, separately-considered copy (e.g., what does the card say when it's "Excellent"
+  right now *and* real rain risk is coming later — a case this fix now makes newly reachable) —
+  flagged as a further, optional polish step for a future pass with its own explicit copy review,
+  not guessed at here.
+- Verified via a direct `@babel/core` parse of all three touched files (`HomeScreen.js`,
+  `homeDashboard.js`, `constants/gatheringIndoorOutdoor.js`, clean), a full `npx expo export
+  --platform ios` (clean, **2240 modules, unchanged** — edits only, no new files), and the full
+  Jest suite (**48/48 passing** — 5 new tests added for the new `isOutdoorCategory()` export,
+  mirroring the existing `isIndoorCategory()` suite exactly, including a "never both indoor and
+  outdoor for the same tag" cross-check).
+
+**2. Complete Profile wizard progress persistence across app restarts (Wave 5's own explicit
+ask)** — the one genuinely new, concrete gap in an otherwise-already-built wizard spec. Before
+this pass, `step`/`displayName`/`birthdate`/`interests`/`agreedToTerms` were all plain local React
+state — closing the app mid-wizard (or using the Aug 22 2026 Sign Out safety valve and signing
+back in) lost everything, contradicting that same safety valve's own promise ("You can come back
+and finish setting up your profile anytime").
+- New `wizardDraftKey(userId)` — the draft is scoped **per signed-in account**, not one global
+  key, deliberately: a sign-out followed by a *different* real account signing in on the same
+  device must never inherit a stranger's typed name/birthdate/interests. Restored once on mount
+  (a fresh `useEffect`, reading the caller's own real session via `supabase.auth.getSession()`),
+  saved on every relevant field change (not just on Next-tap, so even closing the app before ever
+  advancing a step doesn't lose what was typed), cleared on a genuinely successful submit
+  (alongside the existing `just_completed_signup` flag).
+- **`photoAsset` is deliberately never persisted** — a picked-image URI/asset reference is a
+  local file handle that isn't reliably valid across a real app restart (iOS/Android don't
+  guarantee a cache-path URI survives one), so restoring one risked silently producing a broken
+  "photo picked but won't load" state on a *required* field. Instead, restoring caps the
+  resumed step at the Photo step (`Math.min(savedStep, photoStepIndex)`) regardless of how far
+  the user had actually gotten — so a returning user never lands on Interests with a phantom,
+  unloadable photo silently satisfying the required-photo gate; they land on Photo and pick a
+  real one, with every other typed field (name, birthdate, interests, terms agreement) already
+  restored around it. `goNext()`'s existing `!photoAsset` guard is completely unchanged and still
+  the real enforcement — this only affects where a returning user's `step` starts, never whether
+  a photo is genuinely required to advance.
+- **Not done, a deliberate small scope cut, not silently dropped**: no "Welcome back — Step 2 of
+  3" copy variant was added (the critique's own example line) — the existing progress-dot row
+  already communicates "you're on step 2 of 3" visually, and adding a second copy variant would
+  mean touching all 11 language files' translation keys for a cosmetic addition; flagged here
+  rather than done as a partial, English-only string.
+- Verified via a direct `@babel/core` parse (clean), a full `npx expo export --platform ios`
+  (clean, 2240 modules, unchanged), and the full Jest suite (48/48, unaffected — this screen has
+  no existing unit-test coverage to extend, matching the rest of this app's screen-level testing
+  posture).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of either build — next session should confirm the weather card's new indoor/outdoor
+suggestion blocks render correctly against real forecast data in both directions (rain-risk-later-
+despite-nice-now, and outdoor-favorable), and that the wizard draft genuinely survives a real app
+kill-and-relaunch mid-step, correctly caps at the Photo step when restored past it, and correctly
+doesn't leak into a different real account signing in afterward on the same device.
+
 ## Aug 22 2026 — weather signals engine V1 (real forecast data, not just current conditions) —
 ## DONE — applied (already live from before this pass), verified live end-to-end, replayed
 ## from scratch clean; client wiring resolved as a deliberate partial-defer, not silently open

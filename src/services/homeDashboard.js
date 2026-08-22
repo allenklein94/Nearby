@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import { getNearbyMatches } from './proximity';
 import { getNearbyGatherings, getGatheringFitReasons, getMyTopGatheringCategories } from './gatherings';
-import { isIndoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { getMyGroupPlans } from './groupPlans';
 
 function isToday(iso) {
@@ -386,6 +386,15 @@ export async function getHomeDashboard() {
     .filter((g) => isIndoorCategory(g.interest_tag))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
+  // Symmetric to indoorGatheringsToday, for the weather card's real
+  // outdoor_favorable signal (forecast-derived — see get_weather_result's
+  // rain/heat/cold-risk math) — a genuinely favorable day is a real reason
+  // to actively suggest an outdoor gathering, not just avoid warning about
+  // a bad one. Same "no new query, always computed here" convention.
+  const outdoorGatheringsToday = gatheringsToday
+    .filter((g) => isOutdoorCategory(g.interest_tag))
+    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .slice(0, 4);
   const trendingGatherings = [...nearbyGatherings]
     .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
     .slice(0, 3);
@@ -579,6 +588,7 @@ export async function getHomeDashboard() {
     becauseYouLike,
     becauseYouLikeCategories: topInterestCategories,
     indoorGatheringsToday,
+    outdoorGatheringsToday,
   };
 }
 

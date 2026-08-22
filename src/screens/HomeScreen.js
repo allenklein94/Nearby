@@ -976,40 +976,78 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.perksBannerArrow}>›</Text>
               </TouchableOpacity>
             )}
-            {socialForecast && (
-              <View style={styles.forecastCard}>
-                <View style={styles.forecastLabelRow}>
-                  <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
-                  <Text style={styles.forecastLabel}>Right Now</Text>
-                </View>
-                <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
-                <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
-                {socialForecast.forecast_label === 'Quiet' && dashboard?.indoorGatheringsToday?.length > 0 && (
-                  <View style={styles.indoorSuggestions}>
-                    <View style={styles.indoorSuggestionsHeaderRow}>
-                      <Ionicons name="home-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
-                      <Text style={styles.indoorSuggestionsHeader}>
-                        {dashboard.indoorGatheringsToday.length} indoor gathering{dashboard.indoorGatheringsToday.length === 1 ? '' : 's'} today
-                      </Text>
-                    </View>
-                    {dashboard.indoorGatheringsToday.map((g) => (
-                      <TouchableOpacity
-                        key={g.id}
-                        style={styles.indoorSuggestionRow}
-                        onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                        activeOpacity={0.85}
-                        accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.indoorSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
-                        <Text style={styles.indoorSuggestionText} numberOfLines={1}>{g.title}</Text>
-                        <Text style={styles.indoorSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
-                      </TouchableOpacity>
-                    ))}
+            {socialForecast && (() => {
+              // Broadened beyond current-conditions 'Quiet' to also cover a
+              // real forecast-derived risk later today (rain_risk/heat_risk/
+              // cold_risk — the new signals get_weather_result's forecast
+              // leg computes) — weather should power a real recommendation
+              // from the actual forecast, not just describe right now.
+              // outdoor_favorable is the symmetric positive case: a
+              // genuinely good day is a real reason to actively suggest an
+              // outdoor gathering, not just avoid a warning. The two are
+              // mutually exclusive so the card never suggests both at once.
+              const forecastRisk = socialForecast.rain_risk === 'high' || socialForecast.heat_risk || socialForecast.cold_risk;
+              const showIndoor = (socialForecast.forecast_label === 'Quiet' || forecastRisk) && dashboard?.indoorGatheringsToday?.length > 0;
+              const showOutdoor = !showIndoor && socialForecast.outdoor_favorable === true && dashboard?.outdoorGatheringsToday?.length > 0;
+              return (
+                <View style={styles.forecastCard}>
+                  <View style={styles.forecastLabelRow}>
+                    <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+                    <Text style={styles.forecastLabel}>Right Now</Text>
                   </View>
-                )}
-              </View>
-            )}
+                  <Text style={styles.forecastValue}>{socialForecast.forecast_label}</Text>
+                  <Text style={styles.forecastDetail}>{socialForecast.forecast_detail}</Text>
+                  {showIndoor && (
+                    <View style={styles.weatherSuggestions}>
+                      <View style={styles.weatherSuggestionsHeaderRow}>
+                        <Ionicons name="home-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+                        <Text style={styles.weatherSuggestionsHeader}>
+                          {dashboard.indoorGatheringsToday.length} indoor gathering{dashboard.indoorGatheringsToday.length === 1 ? '' : 's'} today
+                        </Text>
+                      </View>
+                      {dashboard.indoorGatheringsToday.map((g) => (
+                        <TouchableOpacity
+                          key={g.id}
+                          style={styles.weatherSuggestionRow}
+                          onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                          activeOpacity={0.85}
+                          accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                          <Text style={styles.weatherSuggestionText} numberOfLines={1}>{g.title}</Text>
+                          <Text style={styles.weatherSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                  {showOutdoor && (
+                    <View style={styles.weatherSuggestions}>
+                      <View style={styles.weatherSuggestionsHeaderRow}>
+                        <Ionicons name="sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+                        <Text style={styles.weatherSuggestionsHeader}>
+                          {dashboard.outdoorGatheringsToday.length} outdoor gathering{dashboard.outdoorGatheringsToday.length === 1 ? '' : 's'} today
+                        </Text>
+                      </View>
+                      {dashboard.outdoorGatheringsToday.map((g) => (
+                        <TouchableOpacity
+                          key={g.id}
+                          style={styles.weatherSuggestionRow}
+                          onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                          activeOpacity={0.85}
+                          accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.weatherSuggestionIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                          <Text style={styles.weatherSuggestionText} numberOfLines={1}>{g.title}</Text>
+                          <Text style={styles.weatherSuggestionTime}>{formatHeroDateTime(g.scheduled_at)}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })()}
             {dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0) && (
               <View style={styles.sinceAwayBanner}>
                 <Text style={styles.sinceAwayTitle}>Since you were away</Text>
@@ -1444,13 +1482,13 @@ const getStyles = (colors) => StyleSheet.create({
   forecastLabel: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   forecastValue: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   forecastDetail: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
-  indoorSuggestions: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  indoorSuggestionsHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
-  indoorSuggestionsHeader: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  indoorSuggestionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  indoorSuggestionIcon: { fontSize: 14, marginRight: spacing.xs },
-  indoorSuggestionText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
-  indoorSuggestionTime: { color: colors.textTertiary, fontSize: 11, marginLeft: spacing.xs },
+  weatherSuggestions: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
+  weatherSuggestionsHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
+  weatherSuggestionsHeader: { color: colors.textTertiary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  weatherSuggestionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  weatherSuggestionIcon: { fontSize: 14, marginRight: spacing.xs },
+  weatherSuggestionText: { flex: 1, color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
+  weatherSuggestionTime: { color: colors.textTertiary, fontSize: 11, marginLeft: spacing.xs },
   sinceAwayBanner: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },

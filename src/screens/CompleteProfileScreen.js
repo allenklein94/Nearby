@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
@@ -14,6 +14,21 @@ import { typography, spacing, radius } from '../theme';
 const MIN_AGE = 18;
 const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
 const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
+// Scoped per signed-in account (not a single global key) so a sign-out and
+// a different real account signing in on the same device never inherits a
+// stranger's typed name/birthdate/interests — the whole point of
+// persisting this is "the SAME account picks up where they left off"
+// (matches the Sign Out safety valve's own "come back and finish anytime"
+// promise), not a shared draft. photoAsset is deliberately never
+// persisted — a picked-image URI/asset reference is a local file handle
+// that isn't reliably valid across a real app restart, so restoring one
+// could silently produce a broken "photo picked but won't load" state on
+// a required field. Restoring caps the step at the photo step instead of
+// wherever the user actually was, so a returning user never lands past a
+// step whose required data (the photo) genuinely wasn't saved.
+function wizardDraftKey(userId) {
+  return `complete_profile_wizard_draft:${userId}`;
+}
 
 const INTEREST_OPTIONS = [
   'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
@@ -59,10 +74,53 @@ export default function CompleteProfileScreen() {
   const [interests, setInterests] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const draftKeyRef = useRef(null);
+  const restoredRef = useRef(false);
 
   const stepKey = STEP_DEFS[step].key;
   const maxSelectableDate = new Date();
   maxSelectableDate.setFullYear(maxSelectableDate.getFullYear() - MIN_AGE);
+
+  // Restore once, on mount — a returning user (closed the app mid-wizard,
+  // or used the Sign Out safety valve and signed back in) picks up where
+  // they left off instead of retyping everything from scratch.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (!userId) return;
+        draftKeyRef.current = wizardDraftKey(userId);
+        const stored = await AsyncStorage.getItem(draftKeyRef.current);
+        if (stored) {
+          const draft = JSON.parse(stored);
+          if (draft.displayName) setDisplayName(draft.displayName);
+          if (draft.birthdateIso) setBirthdate(new Date(draft.birthdateIso));
+          if (Array.isArray(draft.interests)) setInterests(draft.interests);
+          if (draft.agreedToTerms) setAgreedToTerms(true);
+          if (typeof draft.step === 'number') {
+            const photoStepIndex = STEP_DEFS.findIndex((s) => s.key === 'photo');
+            setStep(Math.min(draft.step, photoStepIndex));
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore profile wizard draft', e);
+      } finally {
+        restoredRef.current = true;
+      }
+    })();
+  }, []);
+
+  // Save after every change — not just on Next — so even closing the app
+  // mid-step (before Next is ever tapped) doesn't lose what was typed.
+  // Skipped until restore has actually run, so a fresh mount's own
+  // still-empty initial state can't overwrite a real saved draft a beat
+  // before it's read back in.
+  useEffect(() => {
+    if (!draftKeyRef.current || !restoredRef.current) return;
+    const draft = { step, displayName, birthdateIso: birthdate ? birthdate.toISOString() : null, interests, agreedToTerms };
+    AsyncStorage.setItem(draftKeyRef.current, JSON.stringify(draft)).catch(() => null);
+  }, [step, displayName, birthdate, interests, agreedToTerms]);
 
   function toggleInterest(interest) {
     setInterests((prev) =>
@@ -165,6 +223,9 @@ export default function CompleteProfileScreen() {
         // MainTabs — checked and cleared the very next time the app's
         // main stack renders, so it only ever fires once.
         await AsyncStorage.setItem('just_completed_signup', 'true').catch(() => null);
+        if (draftKeyRef.current) {
+          await AsyncStorage.removeItem(draftKeyRef.current).catch(() => null);
+        }
       }
 
       if (profileError) {
