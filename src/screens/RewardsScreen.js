@@ -60,8 +60,17 @@ export default function RewardsScreen({ navigation }) {
     );
   }
 
+  // Real bug fix (flagged, never resolved, in CLAUDE.md's Aug 15 2026 bug-hunt
+  // section): this used to measure raw points against the next tier's own
+  // absolute threshold (points / nextTier.min), so once past the first tier
+  // the bar read further along than "progress toward next tier" actually
+  // implies -- e.g. 20 points with Silver(15)/Gold(30) showed 66% (20/30)
+  // instead of the honest 33% through the Silver-to-Gold range. Fixed to
+  // measure relative to the current tier's own range (0 when no tier has
+  // been reached yet, matching the old behavior exactly for that one case).
+  const tierFloor = status.tier?.min ?? 0;
   const progressPct = status.nextTier
-    ? Math.min(100, Math.round((status.points / status.nextTier.min) * 100))
+    ? Math.min(100, Math.max(0, Math.round(((status.points - tierFloor) / (status.nextTier.min - tierFloor)) * 100)))
     : 100;
 
   return (

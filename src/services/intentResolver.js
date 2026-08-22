@@ -223,6 +223,10 @@ async function resolveBusinessAvailability(category, location) {
       title: `${row.partner_name} has availability`,
       subtitle: row.price != null ? `${row.title} · $${row.price}` : row.title,
       matchedAvailability: {
+        // Finding 5 fix (CLAUDE.md): the specific business_availability row
+        // itself -- threaded through AskBusinessScreen's submit call so this
+        // exact posting is really bound, not just re-derived from scratch.
+        availabilityId: row.id,
         partnerName: row.partner_name,
         title: row.title,
         description: row.description,

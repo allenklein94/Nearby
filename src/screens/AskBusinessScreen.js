@@ -97,15 +97,14 @@ export default function AskBusinessScreen({ navigation, route }) {
   const gatheringPartySize = route.params?.gatheringPartySize ?? null;
   const matchId = route.params?.matchId ?? null;
   const matchName = route.params?.matchName ?? null;
-  // Set only when reached by tapping a live business_availability
-  // candidate on Home's intent results (see intentResolver.js /
-  // PRODUCT_AUDIT/INTENT_LAYER_INTEGRATION_AUDIT_2026-08-14.md) --
-  // informational only, doesn't change what gets submitted. The business
-  // already declared these terms in advance, so submitting below is
-  // likely (not guaranteed -- the posting could fill up in the meantime)
-  // to land as an immediate real offer via the same
-  // _match_request_to_availability() matching every request already goes
-  // through, rather than a cold ask with nothing behind it yet.
+  // Set only when reached by tapping a live business_availability candidate
+  // on Home's intent results (see intentResolver.js). Its own availabilityId
+  // is threaded through handleSubmit() below into submitBusinessRequest(),
+  // so this exact posting is really bound on submit (Finding 5 fix,
+  // CLAUDE.md) -- not just informational. Still not a guarantee: the RPC
+  // re-checks the posting is genuinely still live (active/unexpired/has
+  // capacity) at submit time, so a posting that filled up in the interim
+  // correctly falls through to nothing rather than a fabricated match.
   const matchedAvailability = route.params?.matchedAvailability ?? null;
 
   const [text, setText] = useState(route.params?.prefillText ?? '');
@@ -172,6 +171,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           date: toDateParam(dateWindow),
           radiusMiles,
           submissionId,
+          preferredAvailabilityId: matchedAvailability?.availabilityId ?? null,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so

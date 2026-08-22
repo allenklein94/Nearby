@@ -25,6 +25,8 @@ const SCRIPTS = [
   'social-offer-group-plan.js',
   'date-proposal-business-request.js',
   'offer-system-prove-the-loop.js',
+  'intent-match-business-discovery.js',
+  'match-contacts-rate-limit.js',
 ];
 
 // A real, empirically-hit gotcha, not a guess: running the full suite back-to-back with no
@@ -48,6 +50,13 @@ const SCRIPTS = [
 // payment-seam.js pass and had to be found and deleted by hand). A future throttled run could
 // do the same; the fix here (a longer gap) reduces how often that can happen but doesn't make
 // cleanup itself throttle-proof.
+//
+// Bumped again, 4000ms -> 6000ms, after adding two more scripts (intent-match-business-
+// discovery.js, match-contacts-rate-limit.js) pushed the suite to 19 scripts: a full run-all.js
+// pass threw ThrottlerException starting at date-proposal-business-request.js (script #17),
+// confirmed live -- and hit the exact disclosed residual gap named above for real, not just in
+// theory: a throttled cleanup left one real orphaned date_proposals row behind, found and
+// deleted by hand afterward. Same fix as last time, same disclosed limitation still standing.
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -58,7 +67,7 @@ async function runAll() {
     console.log(`\n=== ${script} ===`);
     const result = spawnSync(process.execPath, [path.join(__dirname, script)], { stdio: 'inherit' });
     if (result.status !== 0) anyFailed = true;
-    await sleep(4000);
+    await sleep(6000);
   }
 
   if (anyFailed) {

@@ -4,6 +4,193 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 22 2026 — fixed the bugs/gaps this file had disclosed but not yet closed — DONE (the two concretely-fixable ones); everything else confirmed still a deliberate deferral, not silently dropped
+
+Direct follow-up to a request to go back through this whole file's own disclosed-but-not-yet-
+fixed list and close what's genuinely closeable without a real product decision from the user
+present — picked up mid-build after a codespace restart (a prior pass had already written the
+migrations/client edits below but never verified them live, never run a from-scratch replay, and
+never written this section itself, despite CLAUDE.md's own Gap-5 row and SECDEF-audit paragraph
+already pointing at it). This session's job was finishing that verification and writing this
+section, not re-deciding anything already decided.
+
+**Two real, concretely fixable gaps were closed. Everything else on the disclosed list — restated
+in full below, per this file's own "flag, don't silently build partial" convention — is either a
+genuine product/consent decision needing the user present, or a small judgment call already
+correctly left as a judgment call. Nothing was silently dropped; nothing was auto-decided that
+needed the user's own call.**
+
+### 1. Gap 5 — `matchedAvailability` banner now really binds the posting it shows, not just informationally
+
+Closes the exact gap named in Section D's own findings ledger (see the Aug 18 2026 section
+below): "the `matchedAvailability` banner ... is informational only, never threaded into the
+actual submit call — submitting re-runs the generic `create_business_request()` fan-out/matching
+pipeline from scratch. Usually re-matches the same posting correctly, but if it filled up or the
+resubmitted fields drifted outside its bounds in the interim, the 'already available' promise can
+go unfulfilled with no explicit reconciliation."
+
+**Fixed** (`supabase/migrations/20260822_availability_preferred_binding.sql`): both
+`_match_request_to_availability()` and `create_business_request()` gained a new
+`preferred_availability_id_param` (both old signatures explicitly `DROP FUNCTION`ed first —
+matching this schema's own established "an added param creates a distinct orphaned overload, it
+doesn't replace the old one" lesson from the Aug 17 2026 concurrency-gap section, not repeating
+that mistake). When present, the exact `business_availability` row the consumer already reviewed
+and tapped on Home's resolver results is directly, immediately bound — but only if it's still
+genuinely live (`status = 'active'`, unexpired, has capacity, the partner is still within the
+request's own real radius) — rather than only ever being re-derived by the general category/date/
+time-window matching pass below it, which still runs afterward unchanged (excluding the
+already-bound posting from its own candidate set, so it can't be double-processed) to catch any
+other real matches on top of the preferred one. A preferred id pointing at a posting that's
+expired, been cancelled, or fallen out of range correctly falls through to nothing — this is an
+honest binding of what the consumer already saw and chose, not a bypass of the app's real
+constraints. Both function bodies were pulled fresh via the Management API before editing — every
+other line is byte-for-byte unchanged from what was live in production.
+
+**Client**: `intentResolver.js`'s `resolveBusinessAvailability()` now carries the real
+`availabilityId` (`row.id`) onto `matchedAvailability`, alongside the fields it already carried.
+`AskBusinessScreen.js` threads `matchedAvailability?.availabilityId` through as
+`preferredAvailabilityId` on submit; `businessFulfillment.js`'s `submitBusinessRequest()` passes
+it through as the new `preferred_availability_id_param` — absent (`null`) for every other entry
+point into this screen, staying honestly null there exactly as before.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — new
+`scripts/live-verify/intent-match-business-discovery.js` (registered in `run-all.js`, documented
+in the README) proves it end-to-end with real disposable test data: a mismatched-category request
+(so the general matching pass alone could never have produced this offer) still binds the
+preferred posting when it's genuinely live and in range; the identical request with no preferred
+id correctly does *not* pick up that same posting (no regression to the general pass); a preferred
+id pointing at a posting flipped to `cancelled` correctly falls through with no fabricated offer;
+a preferred id genuinely outside the request's own radius is still correctly rejected by distance.
+All test rows deleted afterward, `Coastal Coffee`'s coordinates reverted to `null`.
+
+### 2. `match_contacts_to_users()` rate limit — closes the one disclosed-not-fixed finding from the Aug 16 2026 SECDEF audit
+
+That audit's own text: "one secondary observation, not scored as a finding:
+`match_contacts_to_users(phone_numbers)` has no visible rate limit, which could be a
+phone-number-enumeration vector at scale if called directly bypassing the app's own
+contact-picker UI — flagged for a future pass, not fixed this session."
+
+**Fixed** (`supabase/migrations/20260822_match_contacts_rate_limit.sql`): `profiles` gained
+`contacts_matched_calls_today`/`contacts_matched_date` (both added to
+`prevent_self_premium_edit()`'s existing guarded-column list, matching every other privileged
+daily-counter column in this schema — a client can't self-reset them via a direct `UPDATE`).
+`match_contacts_to_users()` now rejects any single call with more than 3000 phone numbers (a real,
+generous cap — `findFriendsFromContacts()` already only ever sends real US-shaped 10/11-digit
+numbers via `normalizePhone()`) and locks/reads/increments a real `SELECT ... FOR UPDATE` daily
+counter capped at 10 calls per real calendar day (the legitimate flow is "once per import tap,"
+not per-search — still real headroom for a retried transient failure without meaningfully
+weakening the enumeration bound this limit exists for).
+
+**Client**: `contactsImport.js`'s `findFriendsFromContacts()` now throws the real rate-limit/cap
+error instead of silently swallowing it into an empty `{matches: [], notOnApp: []}` — a genuine
+rejection needs an honest error shown to the caller, not a misleading "no matches found."
+`FriendsScreen.js`'s existing `handleFindFromContacts()` already wraps its call in try/catch with
+`Alert.alert('Error', e.message)`, so this needed no new client-side error handling, just for the
+service function to stop hiding the real error.
+
+**Verified live against production**, not just applied — new
+`scripts/live-verify/match-contacts-rate-limit.js` (registered in `run-all.js`, documented in the
+README): a 3001-number array is rejected by the per-call cap; a normal call succeeds and
+increments the real counter by exactly 1; 10 total calls in one day are all allowed; an 11th call
+the same day is rejected by the daily limit; a direct client-side attempt to reset the counter via
+a raw `UPDATE` is silently reverted by the guard trigger, not honored — proving the counter is
+genuinely tamper-resistant, not just present. The test profile's counter was reverted to its exact
+pre-test value afterward via `trusted_update`.
+
+### 3. `RewardsScreen.js`'s progress bar — the judgment call flagged in the Aug 15 2026 bug-hunt section, now resolved as a real bug fix
+
+That section's own text: "`RewardsScreen.js`'s progress-bar percentage measures raw points against
+the next tier's absolute threshold rather than progress within the *current* tier's range, so the
+bar reads further along than 'progress toward next tier' implies once a user is past the first
+tier — not a clear defect, left for a future explicit call rather than silently changed."
+
+Resolved as a real bug, not a design preference: the bar now measures `(points - tierFloor) /
+(nextTier.min - tierFloor)`, where `tierFloor` is the current tier's own `min` (or `0` when no
+tier has been reached yet, matching the old behavior exactly for that one case, so a brand-new
+account's bar is unchanged). Concretely, someone with 20 points sitting between Silver (15) and
+Gold (30) now correctly reads 33% through that range instead of the old, misleadingly-further-
+along 66% (20/30) it used to show.
+
+### Housekeeping
+
+`run-all.js`'s inter-script delay was bumped from 4000ms → 6000ms after registering the two new
+scripts pushed the suite to 19 total — a full run confirmed the prior delay now genuinely throws
+`ThrottlerException` starting partway through the suite, and hit the disclosed residual gap named
+in this file's own history for real this time: a throttled cleanup left one real orphaned
+`business_requests`/`business_request_offers` pair behind (tagged `live-verify: decline test`,
+from an earlier unrelated script's run), found and deleted by hand during this session's own
+verification pass, confirming production is back to its exact pre-test baseline (0 rows across
+every table these two new scripts touch).
+
+**Verified via a real from-scratch migration replay**, per this file's own migration-discipline
+rule: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated
+a truly empty `public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, then ran the full 68-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**,
+including both of this session's own migrations. Both new functions
+(`_match_request_to_availability`/`create_business_request`, both at their new 9/13-argument
+signatures) and both new `profiles` columns (`contacts_matched_calls_today`/
+`contacts_matched_date`) confirmed to exist in the freshly-rebuilt database. Container removed
+afterward. Client-side verified via a clean `npx expo export --platform ios` (no bundling errors —
+edits to five existing files, no new client files this pass).
+
+### Everything else from the disclosed-gaps list, restated in full so nothing here is silently lost
+
+Per direct instruction to go through the whole list rather than cherry-pick — every item below
+was re-checked against this file's own existing text and confirmed to still be exactly what it
+already said: either a real product/consent decision that needs the user present (not something a
+session should auto-decide), or a small, already-correctly-flagged judgment call. **None of these
+were touched this pass** — restated here, not re-decided:
+
+**Consumer-intent ↔ business connection (Section D's own findings ledger, below)**:
+- **Gap 1** — `get_aggregated_demand_for_partner()` still reads only `business_requests`, never
+  `intent_submissions`. C1 narrowed the *practical* impact (more asks now reach
+  `business_requests` in the first place), but the RPC's own SQL is unchanged — the real fix
+  needs Gap 9 (a location column on `intent_submissions`) first, which is its own deferred
+  schema/privacy decision.
+- **Gap 3** — the empty-fallback "Ask Nearby Businesses" button still only navigates to the form,
+  it doesn't submit. Someone who backs out leaves a real `intent_submissions` row but nothing
+  business-visible. Deliberately not chased, per the user's own prior "don't chase deferred gaps
+  yet" instruction — unchanged.
+- **Gap 4** — `business_fulfillment_policies` (a business's standing auto-accept rule) are still
+  invisible to the consumer resolver; they only fire reactively once a request already exists.
+  Still a real product decision about ranking a policy-only business against an actual posting —
+  not something to silently pick a ranking for.
+- **Gap 6 (the remaining half)** — C2 closed the business-facing half (the `intent_match` source
+  bucket, now with its own permanent live-verify script per section 1 above). The admin-only
+  funnel side (`get_intent_funnel_stats()`) still never surfaces "why" to a business — unchanged.
+- **Gap 7** — still no stitched conversion funnel; discovery/reputation/response-time stay three
+  separate, siloed RPCs, never combined into one story. A real new analytics-surface design
+  decision, not a mechanical fix — unchanged.
+- **Gap 8** — a gathering still never automatically becomes business-visible demand; it always
+  needs an explicit, separate "Ask Local Businesses" host action. Real product/consent decision
+  (this file's own "never auto-act on someone else's behalf" principle) — needs its own explicit
+  review, unchanged.
+- **Gap 9** — `intent_submissions` still has no location column at all (no lat/lng, no city
+  text), so unmet intent can never be rolled up "near a business." Real schema change touching
+  every `recordIntentSubmission` call site, needs a real fuzzing/privacy decision — unchanged.
+
+**Real product decisions deliberately deferred, need the user present**:
+- No Stripe integration anywhere — `business_invoices` still accumulate in `draft` forever.
+- No real external reservation/transportation provider (Resy/OpenTable/Uber) connected — the
+  seams exist (Offer System Phase 1's `business_reservations`/`business_payments`), nothing real
+  is plugged into them.
+- The Offer System still has no post-completion outcome/rating capture ("did it work?") —
+  `complete_business_reservation()` just closes the loop, no feedback prompt.
+
+**Smaller disclosed bugs/gaps, confirmed still open, not circled back to this pass**:
+- Group Plans Phase D: no live capacity/price re-quote from the business when a participant
+  leaves after an offer already exists (only stale-confirmation invalidation is built, per the
+  Offer System Phase 5/Group Plans sections' own text); no "kick" action for the initiator to
+  remove an already-accepted participant before confirm time outside the exclude-picker built
+  into `confirm_group_plan()` itself. Both are real, both are named product decisions in their
+  own sections further down this file, not silently rediscovered or auto-fixed here.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of `FriendsScreen.js`'s contact-import flow now throwing a real rate-limit error, or
+of `RewardsScreen.js`'s corrected progress bar — next session should confirm both render
+correctly against real data on a real device.
+
 ## Aug 18 2026 — connect existing consumer-intent + business systems: read-only audit — DONE, per direct instruction NOT YET IMPLEMENTED
 
 Written before implementation, same restart-safety convention as every other plan-first section
@@ -408,7 +595,7 @@ would render correctly.
 | Gap 2 | The "ask a business anyway" path only exists when the resolver finds zero matches — one weak match closes it off entirely | **FIXED by C1** |
 | Gap 3 | Empty-fallback's "Ask Nearby Businesses" only navigates, doesn't submit — a user who backs out leaves a real `intent_submissions` row (`reached_business_fallback: true`) but nothing business-visible | **Not addressed this pass** — deliberately not chased, per the user's own "don't chase deferred gaps yet" instruction |
 | Gap 4 | `business_fulfillment_policies` are invisible to the consumer resolver — only fire reactively once a request already exists, never proactively discoverable the way a manual `business_availability` posting is | **Deliberately deferred** — real product decision about ranking a policy-only business against an actual posting |
-| Gap 5 | `matchedAvailability` banner on `AskBusinessScreen` is informational only, never threaded into the actual submit call — usually re-matches correctly but not guaranteed if the posting changed in the interim | **Deliberately deferred** — minor, disclosed, not chased |
+| Gap 5 | `matchedAvailability` banner on `AskBusinessScreen` is informational only, never threaded into the actual submit call — usually re-matches correctly but not guaranteed if the posting changed in the interim | **FIXED, Aug 22 2026** — `create_business_request()`/`_match_request_to_availability()` gained a `preferred_availability_id_param`, threaded from the resolver's own `row.id` through `AskBusinessScreen`'s submit call. See "Aug 22 2026 — fixed the bugs/gaps this file had disclosed but not yet closed" below |
 | Gap 6 | Consumer intent signal and business discovery signal are two disconnected data domains — a business never learns *why* it was found | **Half-closed by C2** (the `intent_match` source bucket) — the *admin-only* funnel side (`get_intent_funnel_stats`) remains business-invisible, unchanged |
 | Gap 7 | No stitched conversion funnel — `get_business_discovery_stats`/`get_partner_offer_reputation`/`get_partner_avg_response_time` are three siloed RPCs, never combined into one story | **Deliberately deferred** — a real new analytics-surface design decision, not a mechanical fix |
 | Gap 8 | A gathering never automatically becomes business-visible demand — always requires an explicit, separate "Ask Local Businesses" host action | **Deliberately deferred** — real product/consent decision (this file's own "never auto-act on someone else's behalf" principle), needs its own explicit review |
@@ -2295,7 +2482,9 @@ than proving the actual race closed.
      isn't exploitable, not worth a dedicated fix). One secondary observation, not scored as a
      finding: `match_contacts_to_users(phone_numbers)` has no visible rate limit, which could be
      a phone-number-enumeration vector at scale if called directly bypassing the app's own
-     contact-picker UI — flagged for a future pass, not fixed this session.
+     contact-picker UI — flagged for a future pass, not fixed this session. **FIXED, Aug 22
+     2026** — see "Aug 22 2026 — fixed the bugs/gaps this file had disclosed but not yet
+     closed" below.
    - Applied via 3 migrations (`20260816_secdef_audit_batch1_fixes.sql`,
      `20260816_secdef_audit_batch1_check_is_admin_guard.sql`,
      `20260816_secdef_audit_batch2_fixes.sql`) — split into 3 rather than 1 specifically because

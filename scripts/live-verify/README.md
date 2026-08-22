@@ -276,6 +276,28 @@ CI-runnable as-is (just supply the token as a secret).
   conceptual architecture stops expanding — hardening/polish on these
   primitives is the only work that follows, not another new object.
 
+- **`intent-match-business-discovery.js`** — the C2 fix (CLAUDE.md's "connect
+  existing consumer-intent + business systems" Section D) and its own
+  follow-up Finding 5 fix, both applied via ad hoc verification and never
+  given a permanent script until now. Proves a real `intent_match`
+  `business_profile_views` row inserts cleanly, a bogus `source` value is
+  still rejected by the widened CHECK, the real owner sees
+  `intent_match_views` reflect it while a genuine non-owner still gets
+  zeroed stats. Also proves the `matchedAvailability` banner's own
+  `preferred_availability_id_param` binding: a mismatched-category request
+  still binds the exact posting the consumer already reviewed when it's
+  genuinely live and in range, the same case with no preferred id still
+  correctly excludes it (no regression to the general matching pass), a
+  preferred id pointing at a now-cancelled posting falls through cleanly
+  with no fabricated offer, and a preferred id genuinely outside the
+  request's own radius is still rejected by distance.
+- **`match-contacts-rate-limit.js`** — `match_contacts_to_users()`'s rate
+  limit, closing a real gap named (not fixed) in the Aug 15 2026 SECDEF
+  audit. Proves the per-call 3000-number array cap, the 10-call daily
+  limit, and — the actual point of putting the counter behind
+  `prevent_self_premium_edit()`'s guard — that a direct client-side attempt
+  to reset the counter is silently reverted, not honored.
+
 ## What's not covered
 
 Everything else this file's own history has verified live, one-off, over

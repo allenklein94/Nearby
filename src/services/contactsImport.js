@@ -50,9 +50,13 @@ export async function findFriendsFromContacts() {
     phone_numbers: Array.from(phoneNumbers),
   });
 
+  // Thrown, not swallowed: a real rate-limit rejection (see the migration comment
+  // on match_contacts_to_users) needs an honest error shown to the caller, not a
+  // misleading "no matches found" -- FriendsScreen's own handler already catches
+  // and surfaces this.
   if (error) {
     console.error('findFriendsFromContacts error', error);
-    return { matches: [], notOnApp: [] };
+    throw new Error(error.message || 'Could not check your contacts right now.');
   }
 
   // Contacts genuinely not on Nearby yet — we only know this because

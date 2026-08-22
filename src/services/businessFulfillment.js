@@ -31,6 +31,13 @@ export async function submitBusinessRequest({
   // originating individual ask. Re-validated server-side against the
   // caller's own submissions, never trusted blindly.
   submissionId = null,
+  // Finding 5 fix (CLAUDE.md's Intent Layer UX walkthrough): the specific
+  // business_availability row the consumer already reviewed and tapped on
+  // Home's resolver results, when this ask was reached that way -- lets the
+  // RPC directly bind this exact posting (if it's still genuinely live)
+  // instead of only ever re-deriving a match from scratch. Absent for every
+  // other entry point into this screen, stays honestly null there.
+  preferredAvailabilityId = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -51,6 +58,7 @@ export async function submitBusinessRequest({
     time_window_end_param: timeWindowEnd,
     radius_miles_param: radiusMiles,
     submission_id_param: submissionId,
+    preferred_availability_id_param: preferredAvailabilityId,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
