@@ -132,6 +132,24 @@ export async function completeBusinessReservation(offerId) {
   return data;
 }
 
+// Offer System outcome capture (CLAUDE.md, Aug 23 2026): the real, missing
+// "did it work?" step at the end of the Request -> Offer -> Commitment ->
+// Fulfillment loop. Only the real requester can call this, and only once
+// the offer is genuinely 'completed' -- both re-checked server-side, never
+// trusted from the client. Private feedback, never shown to the business
+// as raw text -- only feeds the aggregate satisfaction/would-repeat
+// percentages get_partner_offer_reputation() computes.
+export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRepeat, feedbackText = null } = {}) {
+  const { data, error } = await supabase.rpc('submit_offer_outcome', {
+    offer_id_param: offerId,
+    satisfaction_rating_param: satisfactionRating,
+    would_repeat_param: wouldRepeat,
+    feedback_text_param: feedbackText,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // ---- Business-side (Business Dashboard's "Requests" / Opportunities tab) ----
 
 // RLS already scopes business_request_offers to the caller's own managed
@@ -356,6 +374,15 @@ export function formatPartnerReliabilityLine(reputation, responseTime) {
   }
   if (reputation.completion_rate != null) {
     parts.push(`${Math.round(reputation.completion_rate)}% completed`);
+  }
+  // Offer System outcome capture (CLAUDE.md, Aug 23 2026): a real, honest
+  // consumer-satisfaction signal, gated on its own small minimum sample
+  // (3+ real ratings) since ratings accumulate independently of, and
+  // usually slower than, opportunities -- a partner could easily clear
+  // the 5-opportunity bar above with zero people having bothered to rate
+  // yet, and a 1-of-1 100% would read as false confidence either way.
+  if (reputation.rated_count >= 3 && reputation.pct_would_repeat != null) {
+    parts.push(`${Math.round(reputation.pct_would_repeat)}% would do this again`);
   }
   return parts.length > 0 ? `⭐ ${parts.join(' · ')}` : null;
 }

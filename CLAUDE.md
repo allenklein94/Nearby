@@ -4,6 +4,138 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — Offer System outcome capture: the closing "Outcome" node, finally built
+
+Picked up mid-build after a codespace restart — a prior pass had already written the migration
+and every client-side piece (`OfferOutcomeModal.js`, the `submitOfferOutcome()` wrapper, the
+`BusinessRequestDetailScreen.js` wiring) but never applied the migration to production, never
+verified it live, and never run a from-scratch replay or written this section. This session's
+job was finishing that, not re-deciding anything already decided.
+
+### Context — three gaps, three decisions given directly by the user; only this one had code in flight
+
+The user reviewed a report naming three remaining gaps in the business-fulfillment loop and gave
+a direct decision on each, restated here in full so none of the three is silently lost even
+though only one was actually mid-build:
+
+1. **Policy-only businesses invisible to the consumer resolver** (the still-open half of Gap 1/
+   Gap 4 named throughout this file's own Aug 18 2026 audit and the Offer System Phase 2 status
+   notes) — **decided: rank them below confirmed live postings**, a real three-tier hierarchy
+   (🟢 confirmed `business_availability` posting → 🟡 policy-only match, labeled "May be
+   available — business confirmation required," never "Available" → nothing). **Not built this
+   pass** — no code exists for this yet (confirmed via grep: zero hits for
+   `policy_confidence`/`may_be_available`/`business confirmation required` anywhere in `src/` or
+   `supabase/migrations/`). This is real, separately-scoped resolver work (a new tier in
+   `intentResolver.js`'s `resolveBusinessAvailability()`, a new field on the returned candidate
+   shape, new UI copy distinguishing the two tiers) — flagged here, per this file's own "flag,
+   don't silently build partial" convention, rather than rushed alongside the piece that was
+   actually mid-build. Locked decision, ready to build next: confirmed-live always outranks
+   policy-only; policy-only is never labeled as if it were confirmed inventory.
+2. **A real "ask local businesses" opt-in checkbox at gathering creation** (the still-open half
+   of Gap 8) — **decided: add it**, meaning "make this gathering eligible for business
+   matching," not "contact businesses immediately" — the existing post-creation
+   `create_business_request_for_gathering()` flow (Business Fulfillment Phase 3, already built
+   and live) still owns the actual fan-out; the checkbox is a second, earlier consent point, not
+   a new mechanism. **Not built this pass**, same reasoning as above — confirmed via grep, zero
+   trace of this checkbox anywhere in `CreateGatheringScreen.js` or its wizard steps. Locked
+   decision, ready to build next: an explicit, unticked-by-default checkbox in the gathering
+   wizard's own "More options" section, wired to the same real
+   `create_business_request_for_gathering()` RPC already live — never an implicit "gatherings
+   are visible to businesses by default" behavior.
+3. **The Offer System's missing post-completion outcome capture** (the exact gap this file's own
+   Offer System plan named and deliberately left out of its 6 phases — "the vision doc's own
+   closing 'Outcome' node... has no home anywhere in this plan") — **decided: build it now,
+   mirroring `gathering_feedback`'s existing shape rather than inventing a second feedback
+   system.** This is the one with real code already in flight before the restart — finished,
+   applied, and verified this session; full detail below.
+
+Items 1 and 2 remain open, locked decisions — restated here in full rather than silently
+dropped, ready for a future session to pick up as their own scoped pieces of work, not folded
+into this one.
+
+### What was built — real, private, per-offer outcome capture
+
+New `business_offer_outcomes` table (`supabase/migrations/20260823_offer_outcome_capture.sql`)
+— one row per `(offer_id)` (a real `UNIQUE` constraint, one outcome per offer, not per reviewer,
+since only the requester who lived the real experience can ever leave one), the same four-option
+`satisfaction_rating` scale `gathering_feedback` already established (`loved_it|good|okay|
+not_for_me`), a `would_repeat` field (`yes|maybe|no`), and optional free `feedback_text`. Unlike
+`gathering_feedback` (a plain client-writable table with reviewer-scoped RLS), writes go through
+a real `submit_offer_outcome()` SECURITY DEFINER RPC, matching this whole `business_requests`/
+`business_request_offers` ecosystem's own established "no direct client INSERT on a table this
+schema mediates through RPCs" convention — re-checks server-side, never trusted from the client,
+that (a) the offer is genuinely `status = 'completed'` (raises an honest "you can only share
+feedback once this is marked complete" otherwise) and (b) the caller is genuinely the real
+`business_requests.requester_id` for that offer's parent request (never the business, matching
+`gathering_feedback`'s own "only the attendee rates, never the host" precedent) — a duplicate
+submission hits the table's own unique constraint and gets a clear, real error rather than
+silently overwriting or erroring opaquely.
+
+Explicitly **not** a public review platform — this is private, consumer-only signal. The row's
+raw text and per-reviewer answers are never exposed to the business at all (RLS: only the real
+reviewer can ever `SELECT` their own row back); `get_partner_offer_reputation()`'s signature
+gained two new, honestly `nullif`-guarded columns — `rated_count`/`pct_satisfied`/
+`pct_would_repeat` (three new columns, not two — `rated_count` is the real sample size so a
+future caller can decide its own confidence bar, matching this schema's established
+"never present a percentage without a way to judge its sample size" discipline) — computed via a
+real `LEFT JOIN` so a partner with zero ratings yet still returns every existing column correctly
+with the three new ones simply `null`, never a fabricated default. Old 7-column signature
+explicitly `DROP FUNCTION`ed first, matching this schema's own established "an added output
+column creates a distinct orphaned overload, it doesn't replace the old one" lesson — confirmed
+only one signature exists both live and in the from-scratch replay.
+
+**Client**: `services/businessFulfillment.js`'s new `submitOfferOutcome()` thin RPC wrapper.
+`BusinessRequestDetailScreen.js`'s existing `handleComplete()` (the real `completeBusinessReservation()`
+success path — never before, matching `GatheringFeedbackModal`'s own "only ask after it actually
+happened" convention) now opens a new `OfferOutcomeModal.js` right after a real completion
+succeeds — the same four-emoji satisfaction row, a would-repeat chip row, and an optional free-
+text field `GatheringFeedbackModal` already established the visual language for, not a new
+pattern invented for this. A failed submit fails quietly (console-logged, matching
+`GatheringFeedbackModal`'s own "private signal, not worth alarming someone over" philosophy) — a
+"Skip" link is always available, this is never a forced gate. `formatPartnerReliabilityLine()`
+gained a new, separately-gated `"N% would do this again"` clause — gated on its own real minimum
+sample (`rated_count >= 3`), independent of the existing 5-opportunity `established` gate,
+since ratings accumulate independently of, and usually slower than, raw opportunity counts; a
+partner could easily clear the opportunity bar with zero people having bothered to rate yet, and
+a 1-of-1 100% would read as false confidence either way.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real
+disposable test data, a real `business_requests`/`business_request_offers` pair driven to a
+genuine `completed` status, exercised end-to-end under real `SET ROLE authenticated` (not just a
+`request.jwt.claims` GUC against the Management API's own table-owner connection, which bypasses
+RLS regardless): a genuine non-requester's submit attempt was correctly rejected ("Only the
+person who made this request can share feedback on it"); the real requester's own submit
+succeeded; a repeat submit by that same requester was correctly rejected ("You've already shared
+feedback for this," the table's own unique constraint surfacing as a clear error, not a raw
+Postgres exception); a submit attempt against a second offer still sitting at `offered` (not yet
+`completed`) was correctly rejected; a raw `anon`-role call was rejected outright with a real
+permission-denied error (no `EXECUTE` grant at all, confirmed via `information_schema.role_routine_grants`
+— only `authenticated`/`postgres`/`service_role`); `get_partner_offer_reputation()` for the real
+test partner returned exactly the hand-checked numbers (`rated_count: 1, pct_satisfied: 100.0,
+pct_would_repeat: 100.0`) alongside every pre-existing column unchanged; RLS isolation on
+`business_offer_outcomes` itself was independently confirmed (the real reviewer's own session
+sees their 1 row, an uninvolved real profile's session sees 0). All test rows deleted afterward;
+production confirmed back to its exact pre-test baseline (0 rows across `business_requests`,
+`business_request_offers`, and `business_offer_outcomes`).
+
+**Verified via a real from-scratch migration replay**, per this file's own migration-discipline
+rule: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and
+recreated a truly empty `public` schema, patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`) onto the test container only, then ran the full
+71-file `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on
+every file**, including this pass's own migration. `business_offer_outcomes`, `submit_offer_outcome()`,
+and the widened `get_partner_offer_reputation()` (confirmed as the *only* signature — the old
+7-column overload correctly gone) all confirmed to exist in the freshly-rebuilt database.
+Container removed afterward. Client-side verified via a clean `npx expo export --platform ios`
+(no bundling errors — two edited files, `OfferOutcomeModal.js`/`services/businessFulfillment.js`'s
+new export were already counted from before the restart, nothing new this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the outcome modal renders and submits correctly on a
+real device right after a real completion, that "Skip" genuinely dismisses without a forced
+gate, and that the new "N% would do this again" line reads correctly on
+`BusinessRequestDetailScreen.js` once a partner has 3+ real ratings.
+
 ## Aug 22 2026 — fixed the bugs/gaps this file had disclosed but not yet closed — DONE (the two concretely-fixable ones); everything else confirmed still a deliberate deferral, not silently dropped
 
 Direct follow-up to a request to go back through this whole file's own disclosed-but-not-yet-
@@ -1513,6 +1645,9 @@ designed — flagged as part of Phase 2's own build, not this planning pass") an
 built. A real fix would mirror `gathering_feedback`'s own shape (a short post-completion prompt,
 "did this go well? would you do this again?") — genuinely buildable, but adding a 7th phase for
 it wasn't asked for; flagged here so a future session finds it named rather than rediscovers it.
+**Closed, Aug 23 2026** — see "Aug 23 2026 — Offer System outcome capture: the closing
+'Outcome' node, finally built" near the top of this file. Built as hardening/polish on the
+already-locked primitives, not a 7th phase, matching Phase 6's own closing instruction exactly.
 
 ### Verification convention for this whole initiative, matching every other section in this file
 

@@ -6,6 +6,7 @@ import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
+import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -115,6 +116,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
   const [myPendingGroupPlanId, setMyPendingGroupPlanId] = useState(null);
   const [proposingGroupPlan, setProposingGroupPlan] = useState(false);
+  // Offer System outcome capture (CLAUDE.md, Aug 23 2026): the real "did it
+  // go well?" step, asked right after a real completeBusinessReservation()
+  // success -- never before, matching GatheringFeedbackModal's own "only
+  // ask after it actually happened" convention.
+  const [outcomeModalOfferId, setOutcomeModalOfferId] = useState(null);
 
   // "Nearby V3/V4" plan, Phase C: order the consumer's own offer list by
   // the same real completion-rate signal Phase C's fan-out now prefers,
@@ -261,6 +267,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     try {
       await completeBusinessReservation(offerId);
       await load();
+      setOutcomeModalOfferId(offerId);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -501,6 +508,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
       </ScrollView>
+      <OfferOutcomeModal
+        visible={!!outcomeModalOfferId}
+        offerId={outcomeModalOfferId}
+        onClose={() => setOutcomeModalOfferId(null)}
+      />
     </SafeAreaView>
   );
 }
