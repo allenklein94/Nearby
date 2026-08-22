@@ -70,14 +70,21 @@
       "@sentry/react-native/expo",
       "expo-localization",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "urlScheme": "nearby"
+        }
+      ]
     ],
     "extra": {
       "eas": {
         "projectId": "bcd5120e-57e9-4c3f-8ee9-4812ade060ba"
       },
       "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY",
-      "spotifyClientId": "042d42d6db1d46dfac3859bd194c91d8"
+      "spotifyClientId": "042d42d6db1d46dfac3859bd194c91d8",
+      "stripePublishableKey": ""
     }
   }
 }

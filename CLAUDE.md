@@ -4,6 +4,207 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — Decision 2, step 1: real Stripe Connect schema/RPC/Edge Function scaffolding
+## built (direct charges) — DONE, build-wise; genuinely inert, no live Stripe account exists yet
+
+Direct follow-up to Decision 2's own "real next steps" list (see the section immediately below
+this one) — closes step 1 exactly as scoped there: "design the schema/onboarding-flow/RPC
+changes needed to wire `business_payments`/`accept_business_offer`/`complete_business_reservation`
+to real Stripe Connect PaymentIntents... buildable now, no live keys required for schema/
+scaffolding." Checked directly, not assumed, before writing anything: no `STRIPE_SECRET_KEY`/
+`STRIPE_WEBHOOK_SECRET`/publishable key exists anywhere in this project's Supabase secrets, no
+Stripe Edge Function was already deployed, and `@stripe/stripe-react-native` wasn't a dependency
+yet — this really was starting from zero, matching Decision 2's own "the user does not yet have
+a Stripe account with Connect enabled" line.
+
+**One real correction to Decision 2's own "real next steps" bullet, made while building, not
+silently smoothed over**: that bullet's own shorthand named `transfer_data.destination +
+application_fee_amount` — the Stripe API shape for a *destination* charge (created on the
+platform's own account, with funds automatically transferred to the connected account). That
+contradicts Decision 2's own locked prose two paragraphs above it, which explicitly says "the
+business is the merchant of record... Nearby never custodies consumer funds." A destination
+charge still puts the underlying charge (and any dispute/chargeback) on the *platform's* Stripe
+account, not the business's — the opposite of what the locked decision actually asks for. What
+genuinely matches "business is merchant of record, Nearby never custodies funds" is a real
+Stripe Connect **direct charge** — a PaymentIntent created with a `Stripe-Account` header, i.e.
+directly in the connected account's own API context, with `application_fee_amount` set so
+Nearby's own cut is collected automatically on that same charge. Built to the locked prose, not
+the shorthand bullet — flagged here so a future session doesn't "fix" this back to a destination
+charge believing the shorthand was the real decision.
+
+### Schema (`20260827_stripe_connect_seams.sql`)
+
+Real Stripe Connect account state on `brand_partners` — every column mirrors a real field
+Stripe's own `account.updated` webhook event reports, nothing invented: `stripe_account_id`,
+`stripe_charges_enabled`/`stripe_payouts_enabled`/`stripe_details_submitted` (all `false` by
+default, matching a real never-onboarded business), `stripe_requirements_due` (text array — real
+"what Stripe still needs" strings, surfaced honestly to the owner rather than a generic "not
+ready yet"), `stripe_account_created_at`/`stripe_account_updated_at`. Real Stripe fields layered
+onto the existing (Aug 17 2026 Offer System Phase 1) `business_payments` seam:
+`stripe_payment_intent_id` (partial unique index), `stripe_charge_id`, `application_fee_amount`
+(Nearby's own real cut of that specific charge, computed once at PaymentIntent-creation time),
+`failure_reason` (mirrors `business_reservations.failure_reason`'s existing shape). New
+`stripe_webhook_events` table (`id` = the real Stripe event id, primary key) for webhook
+idempotency — Stripe's own delivery guarantee is "at least once," so a duplicate delivery must be
+a detectable no-op, not a re-run of handling logic; owner-only, `revoke all from public, anon,
+authenticated`, written exclusively by the webhook Edge Function's own service-role client.
+
+**`accept_business_offer()` re-pointed** — pulled the **live** function body fresh via the
+Management API before editing, confirming every other line is byte-for-byte unchanged: the
+one-winner sweep, the reservation auto-confirming immediately with `provider = 'nearby'`
+(a *booking* provider, unrelated to *payment* provider — untouched by this pass, matching
+Decision 2's own "Nearby is itself the initial reservation provider... zero behavior change"
+framing from Offer System Phase 1), and the push notification are all identical. The one real
+change: the new `business_payments` row now routes to a real `status = 'pending', provider =
+'stripe'` — instead of always `'not_required'` — when (and only when) the offer has a real price
+**and** the accepting business has genuinely finished Stripe Connect onboarding
+(`stripe_charges_enabled`). Every other case (no price, or a business that hasn't connected
+Stripe yet) still lands on the exact same honest `'not_required'`/`null` state as before this
+pass — zero behavior change for the overwhelming majority of real offers today, since no business
+has a Stripe account yet. Return value gained a real `paymentRequired` boolean so the client
+knows whether to make the deliberate follow-up call below. **Postgres genuinely cannot create the
+actual PaymentIntent itself** — no synchronous outbound HTTP call exists that could hand a real
+`client_secret` back to this RPC's own caller — so this RPC deliberately stops at "a payment is
+needed," and the client makes an explicit second call right after.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real disposable
+test data, two scenarios: a real offer (`$25.00`) accepted while its business had
+`stripe_charges_enabled` genuinely set `true` correctly produced a `pending`/`stripe` payment row
+(`paymentRequired: true`); the identical shape accepted while `stripe_charges_enabled` was `false`
+(the real, current state of every actual business in production today) correctly produced
+`not_required`/`null` (`paymentRequired: false`) — proving the routing genuinely depends on the
+real column, not a hardcoded branch. Confirmed the reservation still auto-confirms
+(`status: confirmed, provider: nearby`) identically in both cases, and confirmed the existing
+double-accept guard still rejects a second accept on the same offer, un-regressed by this change.
+All test rows deleted afterward and `Coastal Coffee`'s `stripe_charges_enabled` reset to `false`
+— confirmed production back to its exact pre-test baseline (0 rows across every touched table).
+**Verified via a real from-scratch migration replay**: all 74 files in `supabase/migrations/`,
+`psql -v ON_ERROR_STOP=1`, exit 0 throughout — `stripe_webhook_events` and every new column
+confirmed to exist in the freshly-rebuilt database, and the re-pointed `accept_business_offer()`
+confirmed to contain the new Stripe-routing logic. Container removed afterward.
+
+### Three new Edge Functions, all deployed and verify_jwt-confirmed live — every one genuinely
+### inert until real Stripe keys exist
+
+- **`business-stripe-connect-onboarding`** (`verify_jwt: true`) — a business owner's own real
+  entry point. Checks the caller's `managed_partner_id`, creates a real Stripe Express account
+  (once, reused after) via a plain `fetch()`-based Stripe REST client (no `stripe` npm package —
+  Deno's `npm:` specifier support wasn't relied on here, since a hand-rolled form-encoded REST
+  client is simpler to reason about and just as real), then a real Account Link
+  (`type: 'account_onboarding'`) and returns its URL. Both `refresh_url`/`return_url` point at
+  `nearby://business-stripe-return` — deliberately **not** wired into `RootNavigator.js`'s
+  `linking.config.screens` at all, since (unlike the gathering/business-profile deep links) the
+  caller is already signed in and already on their own dashboard mid-flow; the client just opens
+  this via `WebBrowser.openAuthSessionAsync` and re-fetches real status once that browser session
+  closes — no new navigation route needed.
+- **`create-business-payment-intent`** (`verify_jwt: true`) — the deliberate follow-up call
+  after `accept_business_offer()` returns `paymentRequired: true`. Re-verifies the caller is the
+  real request's requester, re-verifies the offer is genuinely `accepted`, re-verifies the
+  payment row is genuinely `pending`/`stripe` (never trusts the client's own claim), and
+  **re-checks `stripe_charges_enabled` fresh** rather than trusting the routing decision the RPC
+  already made — a real, disclosed edge case where a business's Stripe access lapses between
+  accept and this call is handled honestly (a clear 409, the pending row left exactly as-is, not
+  silently reassigned) rather than glossed over. Idempotent on retry — a payment row that already
+  has a `stripe_payment_intent_id` gets that same intent's current `client_secret` re-fetched and
+  returned, never a second PaymentIntent for the same offer. Creates the real PaymentIntent with
+  a `Stripe-Account` header (a genuine **direct charge** on the connected account, per the
+  correction above) and a real `application_fee_amount` computed from a `PLATFORM_FEE_BPS`
+  constant in the function's own code (currently `1000` = 10%) — **a placeholder default, not a
+  locked business decision**, disclosed here exactly as the constant's own code comment states,
+  since no real product/pricing conversation has picked Nearby's actual commission rate yet.
+- **`stripe-connect-webhook`** (`verify_jwt: false`, matching the existing `revenuecat-webhook`
+  precedent exactly — Stripe calls this directly, authenticated via a real HMAC-SHA256 signature
+  check against `STRIPE_WEBHOOK_SECRET` using the Web Crypto API, not a bearer token). Idempotent
+  via `stripe_webhook_events` (a duplicate event id is a detected no-op, acknowledged with 200,
+  never re-processed). Handles `account.updated` (writes the real
+  `stripe_charges_enabled`/`payouts_enabled`/`details_submitted`/`requirements_due` back onto
+  `brand_partners`), `payment_intent.succeeded` (→ `business_payments.status = 'captured'`, real
+  `stripe_charge_id`), `payment_intent.payment_failed` (→ `'failed'`, real `failure_reason`), and
+  `charge.refunded` (→ `'refunded'`) — every other event type is acknowledged and ignored.
+
+**Verified live**: all three deployed via the Supabase CLI and confirmed via the Management API —
+`business-stripe-connect-onboarding`/`create-business-payment-intent` both `verify_jwt: true`,
+`stripe-connect-webhook` `verify_jwt: false` (the exact class of mistake this file has caught
+itself making before, on `ai-concierge`'s first deploy — checked explicitly this time, not
+assumed from the CLI's default). A real unauthenticated request to each of the first two
+correctly 401s at the gateway, before ever reaching this pass's own code; a real unauthenticated
+POST to the webhook correctly reaches the function's own code and returns an honest `503
+Webhook not configured.` (no `STRIPE_WEBHOOK_SECRET` exists yet) rather than a fabricated 200.
+**Not verified, and cannot be from this sandbox**: the actual Stripe API calls inside all three
+functions (account creation, account-link creation, PaymentIntent creation, real signature
+verification against a real webhook delivery) — there is no live `STRIPE_SECRET_KEY` to call
+Stripe with, and no real Stripe account exists to call it against. Confidence here rests on
+matching Stripe's own documented REST API shapes and this codebase's own already-proven
+Edge Function conventions (bearer-token auth via a service-role `auth.getUser()` call, matching
+`create-assistant`/`ai-concierge` exactly), not a direct end-to-end test.
+
+### Client wiring
+
+New `src/services/stripeConnect.js` — `getMyStripeConnectStatus()` (a plain, cheap read of the
+caller's own managed partner's real `stripe_*` columns, safe to call on every Business Dashboard
+load), `startStripeOnboarding()` (opens the real onboarding URL via `WebBrowser.
+openAuthSessionAsync`, re-fetches status once it closes), `createBusinessPaymentIntent(offerId)`,
+and `isStripeConfigured()`/`STRIPE_PUBLISHABLE_KEY` (read from a new, currently-empty
+`app.json` → `extra.stripePublishableKey` — a publishable key is safe to embed client-side by
+design, so this field just needs the real value dropped in once a real Stripe account exists).
+
+Added `@stripe/stripe-react-native` (via `npx expo install`, so the SDK-54-compatible version was
+picked automatically) — genuinely new, confirmed absent before this pass. `app.json` gained its
+config plugin entry (`urlScheme: 'nearby'`, for 3D-Secure browser-redirect returns) and the empty
+`stripePublishableKey` placeholder. `App.js` gained a `MaybeStripeProvider` wrapper — only
+actually mounts `<StripeProvider>` once `isStripeConfigured()` is true, so the app behaves
+exactly as it did before this pass for as long as no real publishable key exists; the payment
+UI itself separately checks `isStripeConfigured()` before ever attempting to use the SDK, rather
+than relying on the provider's absence alone.
+
+`BusinessDashboardScreen.js`'s Business Profile section gained a real "Get Paid via Stripe" card
+— three honest states (not configured platform-wide / connect-or-finish-onboarding, showing real
+`stripe_requirements_due` when Stripe has reported any / ready), a Connect/Continue Setup button
+wired to `startStripeOnboarding()`. `BusinessRequestDetailScreen.js`'s `handleAccept()` now checks
+the RPC's own `paymentRequired` flag and, when true, calls the new `collectPayment()` — presents
+Stripe's real `PaymentSheet` (`initPaymentSheet`/`presentPaymentSheet` via the `useStripe()` hook,
+re-scoped to the accepting business's own connected account via a fresh `initStripe({
+publishableKey, stripeAccountId })` call right before presenting, since a marketplace app charges
+across many different connected accounts, not one fixed account) when Stripe is genuinely
+configured, or an honest "reach out to them directly for now — your reservation is still
+confirmed" message when it isn't. `getBusinessRequestWithOffers()` (`services/businessFulfillment.js`)
+gained a real nested embed (`business_reservations(business_payments(...))`) — both the requester
+and the business owner already had their own correctly-scoped SELECT RLS on both tables from
+Offer System Phase 1, re-confirmed live before relying on this, so this is a real, honest read,
+not a new access grant. The accepted-offer card now shows the real payment state (✅ sent /
+⚠️ failed with the real reason + a "Try Payment Again" button / ↩️ refunded / 💳 still needs a
+real payment + a "Complete Payment" button for the `pending`-with-no-successful-charge-yet case)
+instead of silently having no payment UI at all.
+
+**Verified via a full `npx expo export --platform ios`**: clean, no bundling errors, 2239 modules
+(a real jump from the pre-Stripe baseline — entirely `@stripe/stripe-react-native`'s own
+dependency tree, the one genuinely new native module this pass adds, matching the same kind of
+jump this file has already seen once before for `react-native-qrcode-svg`). All touched/new
+client files also verified via a direct `@babel/core` parse (clean).
+
+### Not yet live — the real remaining steps, restated from Decision 2's own list, still open
+
+Steps 2 and 3 of Decision 2's own "real next steps" are genuinely unstarted, and can't be started
+from this sandbox: **(2) the user creates the real Stripe platform account and enables Connect**
+— still not done, confirmed directly (no Stripe secrets exist). **(3) once real keys exist, wire
+them as Supabase secrets and actually go live** — `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`
+need setting as Supabase Edge Function secrets, `extra.stripePublishableKey` in `app.json` needs
+the real publishable key, and a real webhook endpoint (`https://enmosvippabmuqslzrox.supabase.co/
+functions/v1/stripe-connect-webhook`) needs registering in the real Stripe dashboard against the
+four event types this function actually handles (`account.updated`, `payment_intent.succeeded`,
+`payment_intent.payment_failed`, `charge.refunded`) before anything here does anything real.
+
+**One real, disclosed product decision still open, not silently picked**: `PLATFORM_FEE_BPS` in
+`create-business-payment-intent/index.ts` is a placeholder `1000` (10%) — Nearby's actual
+commission rate is a real product/business decision nobody has made yet, and this one constant
+is where it lives once someone does.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of this pass's own UI (the new dashboard card, the payment-sheet flow, the
+accepted-offer card's new payment-status branches) — impossible to meaningfully exercise anyway
+without a real Stripe account to onboard against and a real card to pay with, but flagged
+honestly rather than assumed clean once real keys do exist.
+
 ## Aug 27 2026 — Decision 1 built: richer Google Places details (rating, review count, price
 ## level, open/closed) on the three real browsing surfaces — DONE
 
@@ -112,15 +313,24 @@ funds) for no benefit this product actually needs; direct charges keep Nearby in
 role (the connection/transaction-enablement layer) without becoming a de facto bank/escrow layer,
 while still letting Nearby take a real commission automatically via the application fee.
 
-**Not yet built.** The user does not yet have a Stripe account with Connect enabled — confirmed
-directly, not assumed. Real next steps, in order, once picked up: (1) design the schema/
-onboarding-flow/RPC changes needed to wire `business_payments`/`accept_business_offer`/
-`complete_business_reservation` to real Stripe Connect PaymentIntents with
-`transfer_data.destination` + `application_fee_amount` — buildable now, no live keys required
-for schema/scaffolding; (2) the user creates the real Stripe platform account and enables
-Connect, in parallel; (3) once real keys exist, wire them as Supabase secrets and actually go
-live — matching this file's own established "real external account, needs the user present, not
-something to set up autonomously" posture for exactly this kind of decision.
+**Not yet built at the time this decision was locked.** The user does not yet have a Stripe
+account with Connect enabled — confirmed directly, not assumed. Real next steps, in order, once
+picked up: (1) design the schema/onboarding-flow/RPC changes needed to wire
+`business_payments`/`accept_business_offer`/`complete_business_reservation` to real Stripe
+Connect PaymentIntents with `transfer_data.destination` + `application_fee_amount` — buildable
+now, no live keys required for schema/scaffolding; (2) the user creates the real Stripe platform
+account and enables Connect, in parallel; (3) once real keys exist, wire them as Supabase
+secrets and actually go live — matching this file's own established "real external account,
+needs the user present, not something to set up autonomously" posture for exactly this kind of
+decision. **Step 1 — built, Aug 27 2026** (same day) — see this file's own "Aug 27 2026 —
+Decision 2, step 1" section further up for the full schema/RPC/Edge Function detail, including a
+real correction to this paragraph's own shorthand: the actual implementation is a genuine Stripe
+Connect **direct charge** (a `Stripe-Account`-scoped PaymentIntent), not a `transfer_data.
+destination` **destination** charge as this bullet's own wording suggested — a destination charge
+would put the underlying charge, and any dispute, on Nearby's own account, contradicting this
+same paragraph's own locked "the business is the merchant of record... Nearby never custodies
+consumer funds" reasoning two paragraphs up. Steps 2 and 3 remain not started — need the user's
+own real Stripe account, not something this session can create.
 
 ## Aug 26 2026 — Gap 3: a real "Upcoming Nearby Visits" card on the Business Dashboard — DONE
 

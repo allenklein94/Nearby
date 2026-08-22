@@ -155,9 +155,15 @@ export async function getBusinessRequestWithOffers(requestId) {
     .single();
   if (requestError) throw new Error(requestError.message);
 
+  // business_reservations(business_payments(...)) is a real, honest nested
+  // embed -- both the requester and the business owner already have their
+  // own real SELECT policies on both tables (see 20260817_offer_system_
+  // phase1_reservation_payment_seams.sql), so this never surfaces payment
+  // data to anyone but the two real parties to it. Only present once a
+  // real reservation exists (i.e. the offer has been accepted).
   const { data: offers, error: offersError } = await supabase
     .from('business_request_offers')
-    .select('*, brand_partners(name, logo_url)')
+    .select('*, brand_partners(name, logo_url), business_reservations(status, business_payments(status, amount, provider, failure_reason))')
     .eq('request_id', requestId)
     .order('created_at', { ascending: true });
   if (offersError) throw new Error(offersError.message);

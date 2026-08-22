@@ -11,6 +11,7 @@ import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRe
 import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
+import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -171,6 +172,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // session (matches Milestone 1's own disclosed, honest scope boundary).
   const [sessionId] = useState(() => crypto.randomUUID());
 
+  const [stripeStatus, setStripeStatus] = useState(null);
+  const [connectingStripe, setConnectingStripe] = useState(false);
+
   useEffect(() => {
     loadMyPartner();
   }, []);
@@ -188,6 +192,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } finally {
       setLoading(false);
     }
+    // Non-fatal secondary loader, matching this screen's own established
+    // convention (loadPartnershipRequests/loadOffers/etc.) — Stripe status
+    // failing to load never blocks the rest of the dashboard.
+    try {
+      const status = await getMyStripeConnectStatus();
+      setStripeStatus(status);
+    } catch (e) {
+      console.error('loadMyStripeConnectStatus failed', e);
+    }
+  }
+
+  async function handleConnectStripe() {
+    setConnectingStripe(true);
+    try {
+      const status = await startStripeOnboarding();
+      setStripeStatus(status);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setConnectingStripe(false);
   }
 
   async function handleUpdateAddress() {
@@ -1571,6 +1595,54 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   >
                     <Text style={styles.messageMemberLink}>✏️ Edit Profile</Text>
                   </TouchableOpacity>
+                </View>
+
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>
+                <View style={styles.gatheringRow}>
+                  {!isStripeConfigured() ? (
+                    <Text style={styles.offerDescription}>
+                      Payment collection isn't set up yet — check back soon.
+                    </Text>
+                  ) : stripeStatus?.chargesEnabled ? (
+                    <>
+                      <Text style={styles.offerTitle}>✅ Ready to accept payments</Text>
+                      <Text style={styles.offerDescription}>
+                        Offers with a real price now collect payment directly through your own
+                        Stripe account when a customer accepts them.
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.offerTitle}>
+                        {stripeStatus?.hasAccount ? 'Finish setting up payments' : 'Connect Stripe to get paid'}
+                      </Text>
+                      <Text style={styles.offerDescription}>
+                        {stripeStatus?.hasAccount
+                          ? "You started Stripe onboarding but haven't finished it yet — until you do, offers you accept won't collect a real payment."
+                          : 'Connect a real Stripe account so accepted offers with a price can actually collect payment, directly to you.'}
+                      </Text>
+                      {stripeStatus?.requirementsDue?.length > 0 && (
+                        <Text style={styles.breakdownText}>
+                          Stripe still needs: {stripeStatus.requirementsDue.join(', ')}
+                        </Text>
+                      )}
+                      <TouchableOpacity
+                        style={[styles.createOfferButton, { marginTop: spacing.sm }]}
+                        onPress={handleConnectStripe}
+                        disabled={connectingStripe}
+                        accessibilityLabel={stripeStatus?.hasAccount ? 'Continue Stripe setup' : 'Connect Stripe'}
+                        accessibilityRole="button"
+                      >
+                        {connectingStripe ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.createOfferButtonText}>
+                            {stripeStatus?.hasAccount ? 'Continue Setup' : 'Connect Stripe'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </>
             )}

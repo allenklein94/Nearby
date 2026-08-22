@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed } from '../services/businessFulfillment';
 import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans';
 import { recordIntentSelection } from '../services/intentOutcomes';
+import { createBusinessPaymentIntent, isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from '../services/stripeConnect';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import OfferOutcomeModal from '../components/OfferOutcomeModal';
@@ -91,6 +93,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   function handleTryWiderRadius() {
     navigation.push('AskBusiness', { ...prefillFields, prefillRadiusMiles: widerRadiusMiles });
   }
+
+  // Stripe Connect direct-charge payment collection (CLAUDE.md's 2026-08-27
+  // locked Decision 2). Safe to call unconditionally regardless of whether
+  // isStripeConfigured() is true -- this SDK's hooks don't throw for a
+  // missing StripeProvider, they just fail at actual call time, which is
+  // why collectPayment() below explicitly gates on isStripeConfigured()
+  // before ever calling initPaymentSheet/presentPaymentSheet.
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [collectingPayment, setCollectingPayment] = useState(false);
 
   const [request, setRequest] = useState(null);
   const [offers, setOffers] = useState([]);
@@ -254,12 +265,56 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   async function handleAccept(offerId) {
     setActingOfferId(offerId);
     try {
-      await acceptBusinessOffer(offerId);
+      const result = await acceptBusinessOffer(offerId);
       await load();
+      // accept_business_offer() itself already confirmed the real
+      // reservation ('nearby' provider) regardless of payment -- this is
+      // purely the follow-up payment-collection step, never a condition
+      // for the accept/reservation itself succeeding.
+      if (result?.paymentRequired) {
+        await collectPayment(offerId);
+      }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
     setActingOfferId(null);
+  }
+
+  // The real Stripe Connect direct-charge flow: create_business_payment_intent
+  // returns a real client_secret scoped to the accepting business's own
+  // connected account; PaymentSheet confirms it against that account, so
+  // the charge (and any dispute) lands on the business, not Nearby -- only
+  // Nearby's own application fee is collected automatically on the side.
+  async function collectPayment(offerId) {
+    if (!isStripeConfigured()) {
+      Alert.alert(
+        'Payment not yet available',
+        "This business collects payment through Nearby, but that isn't fully set up yet — reach out to them directly to arrange payment for now. Your reservation is still confirmed."
+      );
+      return;
+    }
+    setCollectingPayment(true);
+    try {
+      const { clientSecret, stripeAccountId, amount } = await createBusinessPaymentIntent(offerId);
+      await initStripe({ publishableKey: STRIPE_PUBLISHABLE_KEY, stripeAccountId });
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'Nearby',
+      });
+      if (initError) throw new Error(initError.message);
+      const { error: presentError } = await presentPaymentSheet();
+      if (presentError) {
+        if (presentError.code !== 'Canceled') {
+          Alert.alert('Payment not completed', presentError.message);
+        }
+        return;
+      }
+      Alert.alert('Payment sent', `Your $${Number(amount).toFixed(2)} payment is on its way to the business.`);
+      await load();
+    } catch (e) {
+      Alert.alert('Payment error', e.message);
+    }
+    setCollectingPayment(false);
   }
 
   async function handleComplete(offerId) {
@@ -454,6 +509,49 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
+                  {(() => {
+                    const payment = o.business_reservations?.[0]?.business_payments?.[0];
+                    if (!payment || payment.status === 'not_required') return null;
+                    if (payment.status === 'captured') {
+                      return <Text style={styles.helperText}>✅ Payment sent to the business.</Text>;
+                    }
+                    if (payment.status === 'failed') {
+                      return (
+                        <>
+                          <Text style={styles.helperText}>⚠️ Payment didn't go through{payment.failure_reason ? `: ${payment.failure_reason}` : '.'}</Text>
+                          <TouchableOpacity
+                            style={styles.acceptButton}
+                            onPress={() => collectPayment(o.id)}
+                            disabled={collectingPayment}
+                            accessibilityLabel="Try payment again"
+                            accessibilityRole="button"
+                          >
+                            {collectingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Try Payment Again</Text>}
+                          </TouchableOpacity>
+                        </>
+                      );
+                    }
+                    if (payment.status === 'refunded') {
+                      return <Text style={styles.helperText}>↩️ This payment was refunded.</Text>;
+                    }
+                    // 'pending' -- accept_business_offer() already created this row,
+                    // but no PaymentIntent has actually been confirmed yet (the
+                    // in-app payment sheet was skipped, cancelled, or failed to load).
+                    return (
+                      <>
+                        <Text style={styles.helperText}>💳 This offer needs a real payment before it's fully confirmed.</Text>
+                        <TouchableOpacity
+                          style={styles.acceptButton}
+                          onPress={() => collectPayment(o.id)}
+                          disabled={collectingPayment}
+                          accessibilityLabel="Complete payment"
+                          accessibilityRole="button"
+                        >
+                          {collectingPayment ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>Complete Payment</Text>}
+                        </TouchableOpacity>
+                      </>
+                    );
+                  })()}
                   <TouchableOpacity
                     style={styles.completeButton}
                     onPress={() => handleComplete(o.id)}
