@@ -4,6 +4,39 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 22 2026 — real user report on build 73: Stories were genuinely still showing in Inbox —
+## found, fixed, and a correction to this file's own prior claim
+
+Direct follow-up to the critique triage immediately below — the user reported, from an actual
+running build, that Stories were still visible in Inbox, directly contradicting that triage's own
+"Already true" claim ("Stories... already live on Discover... zero references to Stories anywhere
+in [InboxScreen.js]"). That check was real but incomplete — it only read `InboxScreen.js` and
+`DiscoverHubScreen.js` directly, and missed that `MatchesScreen.js` (which `InboxScreen.js`
+embeds, unmodified, for its own Messages tab) independently rendered its own `<StoriesRow />` —
+the classic "Your Story + friends'/matches' story rings" horizontal carousel, a genuinely
+different component from Discover's "Public Stories Near You"/"Gathering Memories" sections
+(different backing functions — `getVisibleStoriesGrouped()` vs. `getPublicStoriesGrouped()`/
+`getGatheringStoriesGrouped()`, confirmed via direct read of `services/stories.js`). The user's
+report was correct; my earlier claim was wrong — corrected here rather than left standing.
+
+**Fixed**: confirmed `MatchesScreen.js` is reachable *only* from inside `InboxScreen.js` (grepped
+every import site — no standalone `Matches` route exists in `RootNavigator.js`, so there was
+nowhere else this component needed to keep rendering Stories for). Moved `<StoriesRow />` from
+`MatchesScreen.js`'s Messages-tab render (was directly under the header, above the new-offers
+banner) to `DiscoverHubScreen.js`'s "People Nearby" section — rendered right above the "People
+Nearby" header, gated the same `isAll` way the People module itself already is, matching the
+critique's own explicit mockup ("People / [Your Story] [Sarah] [Mike]... / then below that:
+Friends, People Nearby..."). Removed the now-dead `StoriesRow` import from `MatchesScreen.js`.
+
+**Verified**: confirmed zero remaining "Stor" references anywhere in `MatchesScreen.js`/
+`InboxScreen.js`/`ActivityScreen.js` (the whole Inbox tree); direct `@babel/core` parse of both
+touched files (clean); a full `npx expo export --platform ios` (clean, **2240 modules,
+unchanged** — edits only, no new files); the full Jest suite (48/48, unaffected).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session (or the user's own next build) should confirm Stories now render
+correctly at the top of Discover's People section and are genuinely gone from Inbox.
+
 ## Aug 22 2026 — "make Nearby feel effortless" UX/IA critique (external, 5 waves, pasted
 ## directly by the user): triaged against the real code, plan locked, two concrete pieces
 ## built this pass — DONE for what's buildable now; everything architectural flagged, not

@@ -11,6 +11,7 @@ import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
+import StoriesRow from '../components/StoriesRow';
 import GatheringsMapView from '../components/GatheringsMapView';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -393,6 +394,7 @@ export default function DiscoverHubScreen({ navigation }) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {isAll && <StoriesRow />}
           {isAll && (
             <>
               <Text style={styles.sectionHeader}>People Nearby</Text>

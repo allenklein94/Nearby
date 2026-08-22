@@ -9,7 +9,6 @@ import { generateCompatibilityReport } from '../services/compatibility';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
-import StoriesRow from '../components/StoriesRow';
 import LoadErrorState from '../components/LoadErrorState';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import * as Haptics from 'expo-haptics';
@@ -226,8 +225,6 @@ export default function MatchesScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('matches.title')}</Text>
       </View>
-
-      <StoriesRow />
 
       {newOfferCount > 0 && (
         <TouchableOpacity
