@@ -4,6 +4,118 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — policy-only business ranking + gathering-creation opt-in checkbox — DONE
+
+Direct follow-up to the section immediately below this one — the two locked decisions that
+section's own item 1/2 left open (no code in flight for either at the time) were both built this
+pass, per direct instruction to build them now. Both are additive on top of already-existing,
+already-verified mechanisms (the resolver's existing business-availability branch, the existing
+`create_business_request_for_gathering()` RPC) — neither introduces a new fulfillment pathway.
+
+### 1. Policy-only businesses, ranked below confirmed live postings, never labeled "Available"
+
+New `search_policy_only_businesses(latitude, longitude, radius_miles, party_size)` SECURITY
+DEFINER RPC (`supabase/migrations/20260824_policy_only_resolver_ranking.sql`) — same narrow,
+read-only shape `search_active_business_availability()` already established (`business_fulfillment_policies`
+has owner-only SELECT RLS, so this can't be a direct client query), a business's own standing
+Offer System fulfillment policy is intentionally discoverable supply, same posture as a manual
+availability posting. Eligibility deliberately mirrors `_match_request_to_policy()`'s own real
+matching criteria exactly (`active = true`, `auto_accept_party_size_max is not null`, party-size
+bounds respected when a party size is known) — a policy without `auto_accept_party_size_max` set
+can never actually auto-match a real request today, so surfacing one here would be a false "may
+be available" promise nothing downstream could ever honor. No category filter (the policy table
+has none — a whole-business standing rule, not a per-posting one) and no active-hours check (the
+resolver only ever has a coarse `dateWindow` at this point, not a precise time window; the real
+hours check still runs for real inside `_match_request_to_policy()` at submission time).
+
+**Client**: `services/businessFulfillment.js` gained `searchPolicyOnlyBusinesses()`.
+`intentResolver.js` gained a new `resolvePolicyOnlyBusinesses(location, partySize)` branch,
+mapped to a new `business_policy_match` result type — deliberately **never** scored with
+`SCORE_HAPPENING_NOW` the way the confirmed-availability branch always is (that branch's own
+comment: "eligibility already guarantees `ends_at > now()`, so any result here is, by
+construction, available right now" — a standing policy carries no such guarantee), so on the
+shared score axis a policy-only candidate can never outrank a genuinely confirmed posting for the
+same real estate — the hierarchy is an emergent, deterministic property of honest scoring, not a
+type-based special case. `resolveIntent()` gained an optional `partySize` param (threaded from
+`HomeScreen.js`'s already-classified `result.partySize`, create-assistant's own best-effort
+field, no new fetch) and a real de-dup step: any `business_policy_match` candidate whose
+`partnerId` also appears among the same result set's `business_availability` candidates is
+dropped before sorting — a business with both a confirmed posting and a standing policy is never
+shown twice at two confidence levels; the confirmed tier always wins, deterministically, per
+direct instruction, not by score alone.
+
+`HomeScreen.js`: `INTENT_RESULT_TYPE_LABELS` gained `business_policy_match: '🟡 A business may be
+able to help'`, and the existing confirmed-availability label gained a `🟢` prefix
+(`'🟢 A business has this ready'`) — the exact 🟢/🟡 visual hierarchy from the report's own
+mockup. Row copy is the report's own recommended wording verbatim: title
+`"{partner name} may be able to help"`, subtitle `"May be available — business confirmation
+required"` — never "Available." `handleIntentResultTap()` gained a `business_policy_match`
+branch: no `matchedAvailability` to bind (there's no specific posting, only a standing
+willingness — the real match, if any, happens inside `_match_request_to_policy()` when the
+request is actually submitted, ranked among every other eligible policy the same reliability-
+weighted way it already is), same real `intent_match` discovery-view logging the other two
+business branches already do.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real
+disposable test data against the real `Coastal Coffee` partner (coordinates temporarily set, as
+in every other pass touching this partner, reverted after): a real fulfillment policy
+(`auto_accept_party_size_max: 6`, party size 1–8) correctly returned for a party size of 4 and
+for no party size at all; correctly excluded for a party size of 10 (over the auto-accept bound);
+correctly excluded once the policy was flipped `active = false`; correctly excluded even while
+`active = true` once `auto_accept_party_size_max` was nulled out (the "never-auto-accepting
+policy is never surfaced" rule, proven, not just asserted); correctly excluded for a point outside
+the radius; a raw `anon`-role call was rejected outright (no `EXECUTE` grant — only
+`authenticated`/`postgres`/`service_role`). All test state reverted afterward — confirmed
+production back to its exact pre-test baseline (0 `business_fulfillment_policies` rows,
+`Coastal Coffee`'s coordinates back to `null`).
+
+### 2. A real "Ask Local Businesses" opt-in checkbox at gathering creation
+
+`CreateGatheringScreen.js`'s "More options" section gained a real, unticked-by-default toggle
+(`askLocalBusinesses`, same visual treatment as the existing Women-Only toggle right above it) —
+per direct instruction, checking it means **"make this gathering eligible for business
+matching,"** never "contact businesses immediately" in some separate, implicit way. The actual
+mechanism is the exact same, already-live `create_business_request_for_gathering()` RPC
+(Business Fulfillment Phase 3) the existing post-creation "🍽️ Ask Local Businesses →" link on
+`GatheringDetailScreen.js` already calls — this is a second, earlier consent point onto the same
+real pipeline, not a second mechanism. No new schema, no new RPC.
+
+On submit, once `createGathering()` succeeds, if the checkbox was ticked, `submitBusinessRequestForGathering()`
+is called with the gathering's own real title as `raw_text` and its own real `interestTag` as
+`category` — the same real fields the wizard already collected, no new typing required and
+nothing invented. A failure here is non-fatal and never blocks the gathering itself (already
+created and real) — matches this codebase's established "secondary, non-fatal write" convention
+(`logBusinessProfileView`/`recordIntentSelection`), logged rather than surfaced as an error. The
+Publish-step preview gained a real "🍽️ Local businesses will be told about this gathering" row
+when checked, and `GatheringConfirmationScreen.js` gained a matching honest note
+("🍽️ We've also let nearby businesses know about this gathering.") threaded through a new
+`businessesAsked` route param — so the host sees the consequence of their own choice both before
+and after publishing, not just a silent side effect.
+
+**Not separately re-verified via a live RPC call this pass** — `create_business_request_for_gathering()`
+itself is unchanged (no migration touched it), and its own real behavior (host-only, real
+party-size/location sourced server-side, fan-out + availability + policy matching) was already
+exhaustively verified live when Business Fulfillment Phase 3 first built it; this pass only added
+a second, earlier call site onto the identical, already-proven RPC.
+
+**Verified via a real from-scratch migration replay** covering both this pass's own migration and
+every prior one: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped
+and recreated a truly empty `public` schema, patched the two known image-version gaps onto the
+test container only, then ran the full 72-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, `search_policy_only_businesses()` confirmed
+to exist in the freshly-rebuilt database. Container removed afterward. Client-side verified via a
+clean `npx expo export --platform ios` (no bundling errors — edits to four existing files,
+`intentResolver.js`/`businessFulfillment.js`/`HomeScreen.js`/`CreateGatheringScreen.js`/
+`GatheringConfirmationScreen.js`, no new files this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the 🟢/🟡 result groups render correctly on a real
+device once both a confirmed posting and a policy-only match exist side by side (uncommon at
+today's real volume, worth constructing a real two-tier scenario to check), that tapping a
+policy-only result lands cleanly on `AskBusinessScreen` with no stale `matchedAvailability`
+banner, and that the new gathering-creation checkbox reads correctly and its post-publish note
+renders correctly end-to-end on a real device.
+
 ## Aug 23 2026 — Offer System outcome capture: the closing "Outcome" node, finally built
 
 Picked up mid-build after a codespace restart — a prior pass had already written the migration
@@ -31,6 +143,8 @@ though only one was actually mid-build:
    don't silently build partial" convention, rather than rushed alongside the piece that was
    actually mid-build. Locked decision, ready to build next: confirmed-live always outranks
    policy-only; policy-only is never labeled as if it were confirmed inventory.
+   **Built, Aug 24 2026** — see "Aug 24 2026 — policy-only business ranking + gathering-creation
+   opt-in checkbox" further down this file.
 2. **A real "ask local businesses" opt-in checkbox at gathering creation** (the still-open half
    of Gap 8) — **decided: add it**, meaning "make this gathering eligible for business
    matching," not "contact businesses immediately" — the existing post-creation
@@ -42,6 +156,8 @@ though only one was actually mid-build:
    wizard's own "More options" section, wired to the same real
    `create_business_request_for_gathering()` RPC already live — never an implicit "gatherings
    are visible to businesses by default" behavior.
+   **Built, Aug 24 2026** — see "Aug 24 2026 — policy-only business ranking + gathering-creation
+   opt-in checkbox" further down this file.
 3. **The Offer System's missing post-completion outcome capture** (the exact gap this file's own
    Offer System plan named and deliberately left out of its 6 phases — "the vision doc's own
    closing 'Outcome' node... has no home anywhere in this plan") — **decided: build it now,
@@ -49,9 +165,10 @@ though only one was actually mid-build:
    system.** This is the one with real code already in flight before the restart — finished,
    applied, and verified this session; full detail below.
 
-Items 1 and 2 remain open, locked decisions — restated here in full rather than silently
-dropped, ready for a future session to pick up as their own scoped pieces of work, not folded
-into this one.
+Items 1 and 2 were left open at the time this section was written, restated here in full rather
+than silently dropped so a future session could pick them up as their own scoped pieces of work.
+**Both are now also done, Aug 24 2026** — see the section below this whole one for the full
+detail; nothing here was silently dropped.
 
 ### What was built — real, private, per-offer outcome capture
 

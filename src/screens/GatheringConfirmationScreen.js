@@ -17,7 +17,7 @@ import { spacing, radius, typography } from '../theme';
 // decision #3 — never nearby strangers, even ones the recommendation
 // engine would score as a good match).
 export default function GatheringConfirmationScreen({ route, navigation }) {
-  const { gatheringId, placeName } = route.params;
+  const { gatheringId, placeName, businessesAsked } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -127,6 +127,10 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
           <Text style={styles.summaryTitle}>{gathering?.title}</Text>
         </View>
 
+        {businessesAsked && (
+          <Text style={styles.businessAskedNote}>🍽️ We've also let nearby businesses know about this gathering.</Text>
+        )}
+
         {!showInvite ? (
           <View style={{ width: '100%' }}>
             <TouchableOpacity style={styles.actionButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel="Share Gathering" accessibilityRole="button">
@@ -197,6 +201,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   summaryIcon: { fontSize: 28, marginRight: spacing.md },
   summaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1 },
+  businessAskedNote: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
   actionButton: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16,
     alignItems: 'center', marginBottom: spacing.sm, ...shadow.button,

@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
+import { submitBusinessRequestForGathering } from '../services/businessFulfillment';
 import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
@@ -146,6 +147,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [recurrenceRule, setRecurrenceRule] = useState(null);
   const [capacityOption, setCapacityOption] = useState('no_limit');
   const [capacityCustom, setCapacityCustom] = useState(15);
+  // CLAUDE.md, Aug 23-24 2026 locked decision: an explicit, unticked-by-
+  // default opt-in -- checking it means "make this gathering eligible for
+  // business matching," not "contact businesses immediately." The actual
+  // fan-out still runs through the exact same create_business_request_for_gathering()
+  // RPC the existing post-creation "Ask Local Businesses" link already
+  // uses -- this is an earlier consent point onto the same real mechanism,
+  // not a second one.
+  const [askLocalBusinesses, setAskLocalBusinesses] = useState(false);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -308,7 +317,27 @@ export default function CreateGatheringScreen({ navigation, route }) {
         communityId: visibility === 'community' ? communityId : null,
         capacity: capacityValue,
       });
-      navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName });
+
+      // Consent given at creation, not a forced part of publishing --
+      // a real failure here never blocks the gathering itself, which
+      // already exists; matches this codebase's established "secondary,
+      // non-fatal write" convention for the same reasoning as
+      // logBusinessProfileView/recordIntentSelection elsewhere.
+      let businessesAsked = false;
+      if (askLocalBusinesses) {
+        try {
+          await submitBusinessRequestForGathering({
+            gatheringId: created.id,
+            text: title.trim(),
+            category: interestTag,
+          });
+          businessesAsked = true;
+        } catch (e) {
+          console.error('submitBusinessRequestForGathering failed', e);
+        }
+      }
+
+      navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName, businessesAsked });
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -681,6 +710,20 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 >
                   <Text style={styles.womenOnlyToggleText}>{womenOnly ? '✓ ' : ''}Women-Only Gathering</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setAskLocalBusinesses((v) => !v); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={askLocalBusinesses ? 'Ask local businesses about this gathering, tap to turn off' : "Let relevant local businesses know about this gathering, so they can potentially offer options"}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: askLocalBusinesses }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{askLocalBusinesses ? '✓ ' : ''}Ask Local Businesses</Text>
+                </TouchableOpacity>
+                <Text style={styles.helperText}>
+                  Let relevant local businesses know about this gathering so they can potentially offer options — never contacted on your behalf beyond that.
+                </Text>
               </>
             )}
           </>
@@ -724,6 +767,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>👥</Text>
                 <Text style={styles.previewRowText}>Up to {capacityValue} people — waitlist after that</Text>
+              </View>
+            )}
+            {askLocalBusinesses && (
+              <View style={styles.previewRow}>
+                <Text style={styles.previewRowIcon}>🍽️</Text>
+                <Text style={styles.previewRowText}>Local businesses will be told about this gathering</Text>
               </View>
             )}
           </View>

@@ -43,6 +43,10 @@ const INTENT_RESULT_ICONS = {
   friend_request: 'person-outline',
   community: 'business-outline',
   business_availability: 'storefront-outline',
+  // Same storefront glyph as a confirmed business match -- the row's own
+  // title/subtitle text (never "Available") is what carries the weaker
+  // confidence, not a different icon.
+  business_policy_match: 'storefront-outline',
   gathering: 'people-outline',
 };
 
@@ -61,7 +65,11 @@ const INTENT_RESULT_TYPE_LABELS = {
   community: '🏘️ A community for this',
   friend_request: '👥 Someone you know wants this too',
   perk: '🎁 A perk that fits',
-  business_availability: '🏪 A business has this ready',
+  // 🟢/🟡: real hierarchy per direct instruction -- confirmed live supply
+  // is ranked and labeled distinctly from a business's standing willingness
+  // to fulfill, which is never called "Available."
+  business_availability: '🟢 A business has this ready',
+  business_policy_match: '🟡 A business may be able to help',
 };
 
 function groupIntentResultsByType(items) {
@@ -386,7 +394,7 @@ export default function HomeScreen({ navigation }) {
           proceedToCreation(result, typedText, submissionId);
         }
       } else {
-        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText });
+        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null });
         const submissionId = await recordIntentSubmission({
           rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
           intentKind: result.intent, hadAnyResult: resolved.length > 0, reachedBusinessFallback: resolved.length === 0,
@@ -446,6 +454,22 @@ export default function HomeScreen({ navigation }) {
         prefillBudgetMax: classifyResult?.budgetMax ?? null,
         prefillDateWindow: classifyResult?.dateWindow ?? null,
         matchedAvailability: item.matchedAvailability ?? null,
+      });
+    } else if (item.type === 'business_policy_match') {
+      // A business's own standing willingness, not a specific posting to
+      // bind -- there's no matchedAvailability here, and no way to force
+      // this exact business as the winner: the real match (or not) happens
+      // inside _match_request_to_policy() when the request is actually
+      // submitted, ranked among every other eligible policy the same way.
+      // C2: same real discovery signal as the two branches above.
+      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+      navigation.navigate('AskBusiness', {
+        prefillText: typedText ?? '',
+        prefillCategory: classifyResult?.category ?? null,
+        prefillPartySize: classifyResult?.partySize ?? null,
+        prefillBudgetMax: classifyResult?.budgetMax ?? null,
+        prefillDateWindow: classifyResult?.dateWindow ?? null,
+        matchedAvailability: null,
       });
     }
   }

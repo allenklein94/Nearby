@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers } from './brandOffers';
-import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability } from './businessFulfillment';
+import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses } from './businessFulfillment';
 // 10/10 roadmap Part 8: these five pure helpers used to be defined
 // locally in this file -- moved verbatim (no behavior change) to
 // intentResolverScoring.js so they're directly unit-testable without
@@ -238,6 +238,35 @@ async function resolveBusinessAvailability(category, location) {
   });
 }
 
+// The weaker, second tier of business supply -- a standing Offer System
+// fulfillment policy (CLAUDE.md, Aug 23 2026 decision) rather than a
+// business's own manually-posted live availability. Deliberately never
+// scored with SCORE_HAPPENING_NOW the way resolveBusinessAvailability
+// always is above -- a policy is a real, standing capability, not a
+// confirmed live slot, so on the shared score axis it can never outrank a
+// genuinely confirmed posting for the same real estate. Any partner that
+// also has a live availability match gets de-duped out of this tier
+// entirely in resolveIntent() below, so the same business is never shown
+// twice at two confidence levels.
+async function resolvePolicyOnlyBusinesses(location, partySize) {
+  if (!location) return [];
+  const rows = await searchPolicyOnlyBusinesses({
+    latitude: location.latitude,
+    longitude: location.longitude,
+    partySize: partySize ?? null,
+  });
+  return rows.map((row) => ({
+    type: 'business_policy_match',
+    id: row.partner_id,
+    partnerId: row.partner_id,
+    title: `${row.partner_name} may be able to help`,
+    // Exact wording per direct instruction: never "Available" -- this is a
+    // standing willingness, not confirmed inventory.
+    subtitle: 'May be available — business confirmation required',
+    score: row.distance_miles != null && row.distance_miles < 2 ? SCORE_CLOSE_DISTANCE : 0,
+  }));
+}
+
 // Resolves a submitted intent against every real, already-existing
 // fulfillment path Nearby has -- gatherings, communities the caller
 // already belongs to, friends/matches independently asking for the same
@@ -251,8 +280,11 @@ async function resolveBusinessAvailability(category, location) {
 // not because business supply is inherently lower priority than social
 // supply. No fabricated results, no stranger discovery — every branch
 // here reads already-real, already-existing data, and nothing here
-// creates or commits to anything.
-export async function resolveIntent({ category, dateWindow, rawText }) {
+// creates or commits to anything. `partySize` is optional (create-assistant's
+// own best-effort classification, already collected upstream, never a new
+// fetch) -- only used to bound the weaker policy-only tier's own eligibility
+// check against a real business's stated party-size range.
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
@@ -298,6 +330,7 @@ export async function resolveIntent({ category, dateWindow, rawText }) {
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
     resolveBusinessAvailability(category, location),
+    resolvePolicyOnlyBusinesses(location, partySize),
   ]);
 
   const candidates = [];
@@ -309,6 +342,18 @@ export async function resolveIntent({ category, dateWindow, rawText }) {
     }
   }
 
-  candidates.sort((a, b) => b.score - a.score);
-  return candidates.slice(0, RESULT_CAP);
+  // A business with both a confirmed live posting and a standing policy
+  // must only ever appear once, at its stronger (confirmed) tier -- never
+  // twice at two confidence levels. Deterministic, per direct instruction:
+  // confirmed live always outranks policy-only, so the policy-only
+  // duplicate is the one dropped, not decided by score.
+  const confirmedPartnerIds = new Set(
+    candidates.filter((c) => c.type === 'business_availability' && c.partnerId).map((c) => c.partnerId)
+  );
+  const deduped = candidates.filter(
+    (c) => !(c.type === 'business_policy_match' && confirmedPartnerIds.has(c.partnerId))
+  );
+
+  deduped.sort((a, b) => b.score - a.score);
+  return deduped.slice(0, RESULT_CAP);
 }

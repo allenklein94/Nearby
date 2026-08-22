@@ -314,6 +314,24 @@ export async function searchActiveBusinessAvailability({ category = null, latitu
   return data ?? [];
 }
 
+// Real supply, one tier weaker than the above: a business's own standing
+// Offer System fulfillment policy (CLAUDE.md, Aug 23 2026 decision) rather
+// than a manually-posted live availability slot. business_fulfillment_policies
+// has the same owner-only SELECT RLS as business_availability, so this is
+// the same narrow read-only RPC shape, not a broadened policy. Callers must
+// rank/label this below a confirmed business_availability match -- never
+// "Available," always "may be available."
+export async function searchPolicyOnlyBusinesses({ latitude = null, longitude = null, radiusMiles = 15, partySize = null } = {}) {
+  const { data, error } = await supabase.rpc('search_policy_only_businesses', {
+    latitude_param: latitude,
+    longitude_param: longitude,
+    radius_miles_param: radiusMiles,
+    party_size_param: partySize,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 // ---- 10/10 roadmap Part 5: business marketplace reliability (see
 // CLAUDE.md's "10/10 roadmap" plan) ----
 // Both real, public-safe aggregates over a partner's own past
