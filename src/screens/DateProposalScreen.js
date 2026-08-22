@@ -10,6 +10,7 @@ import {
   withdrawDateProposal,
 } from '../services/dateProposals';
 import { getAcceptedOfferForRequest, formatOfferSummary } from '../services/businessFulfillment';
+import { openUberToDestination } from '../utils/uberDeepLink';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -226,6 +227,21 @@ export default function DateProposalScreen({ navigation, route }) {
                   {acceptedOffer.offer_description ? (
                     <Text style={styles.confirmedOfferDesc}>{acceptedOffer.offer_description}</Text>
                   ) : null}
+                  {acceptedOffer.brand_partners?.latitude != null && acceptedOffer.brand_partners?.longitude != null && (
+                    <TouchableOpacity
+                      onPress={() => openUberToDestination({
+                        latitude: acceptedOffer.brand_partners.latitude,
+                        longitude: acceptedOffer.brand_partners.longitude,
+                        nickname: acceptedOffer.brand_partners.name,
+                        address: acceptedOffer.brand_partners.address,
+                      })}
+                      style={{ marginTop: spacing.sm }}
+                      accessibilityLabel="Get an Uber there"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.confirmedOfferLink}>🚗 Get an Uber there</Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                     style={{ marginTop: spacing.sm }}

@@ -114,7 +114,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, offer_description, proposed_time, status, partner_id, brand_partners(name, logo_url)')
+    .select('id, offer_type, offer_price, offer_description, proposed_time, status, partner_id, brand_partners(name, logo_url, address, latitude, longitude)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
@@ -163,7 +163,7 @@ export async function getBusinessRequestWithOffers(requestId) {
   // real reservation exists (i.e. the offer has been accepted).
   const { data: offers, error: offersError } = await supabase
     .from('business_request_offers')
-    .select('*, brand_partners(name, logo_url), business_reservations(status, business_payments(status, amount, provider, failure_reason))')
+    .select('*, brand_partners(name, logo_url, address, latitude, longitude), business_reservations(status, business_payments(status, amount, provider, failure_reason))')
     .eq('request_id', requestId)
     .order('created_at', { ascending: true });
   if (offersError) throw new Error(offersError.message);

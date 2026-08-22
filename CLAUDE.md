@@ -4,6 +4,70 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — "Get an Uber there": a real destination deep link, not a ride-booking
+## integration — DONE
+
+Direct follow-up to the Stripe pass above, same day. Asked whether "Uber" was still needed —
+Gap 7 of the vision-doc audit and Offer System Phase 1's own Decision 5 both name Uber
+(alongside Resy/OpenTable) as a real external transportation provider that could one day plug
+into the `business_reservations.provider` seam, in the same "needs the user present for a real
+external-vendor/account decision" category as Stripe. **Asked which of two very different scopes
+this actually meant before building anything** — a real Uber Guest Rides/Uber-for-Business
+integration (Nearby books and pays for the ride server-side, needs a real Uber for Business
+account/credentials, takes on real ride-lifecycle/payment responsibility) vs. a plain deep link
+that opens the Uber app with a destination pre-filled (no account, no API key, no credentials at
+all). **Locked, given directly: option 1 only, and explicitly not option 2.** The user's own
+reasoning: option 2 would make Nearby's backend responsible for ride requests, payment,
+lifecycle, and reconciliation for no validated user need — real product/compliance scope Nearby
+doesn't need to prove the actual value ("Get an Uber there" from a confirmed venue). The UI must
+never imply Nearby is booking or paying for the ride — the deep link is the entire feature.
+
+**Built exactly to that scope.** New `src/utils/uberDeepLink.js` — `openUberToDestination({
+latitude, longitude, nickname, address })`, building Uber's real, public, no-account-needed
+universal link (`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=…
+&dropoff[longitude]=…&dropoff[nickname]=…&dropoff[formatted_address]=…`, documented Uber
+deep-linking parameters, no `client_id` required for this basic "set destination" case) via a
+plain `Linking.openURL()` — the exact same external-hand-off shape this codebase already uses
+for Google Maps/Spotify links (`PlacesScreen.js`, `SharedPlaylistScreen.js`), not a new
+integration pattern. Opens the real Uber app if installed; falls back to Uber's own web page
+otherwise — the OS/Uber's own domain handles that resolution, same as every other `https://`
+deep link in this app.
+
+**Wired into every real spot a confirmed venue's real coordinates already exist**, reusing
+already-fetched data — no new query, no new schema, no geocoding:
+- **`GatheringHubScreen.js`**'s existing "Meet-Up Point" section (built in the original Aug 7
+  Gathering Hub pass) already fetches real, precise coordinates via `get_gathering_meetup_point()`
+  — host/approved-attendee-only, matching this app's own coordinate-fuzzing access rules exactly.
+  A "🚗 Get an Uber there" link now sits right under that map, using the gathering's own real
+  title as the nickname.
+- **`getAcceptedOfferForRequest()`** (`services/businessFulfillment.js`) — the one shared function
+  already powering both `GatheringDetailScreen.js`'s and `DateProposalScreen.js`'s merged
+  "accepted business offer" cards (Gap 1/Gap 2, Aug 25 2026) — gained `address`/`latitude`/
+  `longitude` on its existing `brand_partners(...)` embed. One shared change, both screens'
+  merged cards gained a real "🚗 Get an Uber there" link at once, using the business's own real
+  name/address/coordinates — never shown when a business has no real coordinates set (most
+  businesses today, since this field is usually null until an owner sets a real address).
+- **`getBusinessRequestWithOffers()`** gained the identical `address`/`latitude`/`longitude`
+  fields on its own `brand_partners(...)` embed (the same one this pass's Stripe work already
+  widened with reservation/payment data) — `BusinessRequestDetailScreen.js`'s own accepted-offer
+  card gained the same link.
+
+**Verified**: confirmed `address`/`latitude`/`longitude` are real, already-existing columns on
+`brand_partners` (used elsewhere throughout this app for maps/search), and confirmed both
+widened PostgREST embeds parse correctly against the live REST API (a real anon-key request to
+each new select shape reaches the table's own RLS-internal check rather than erroring on the
+embed/column itself — the failure mode that would have shown up immediately if either the
+relationship or a column name were wrong). All five touched/new files verified via a direct
+`@babel/core` parse (clean) and a full `npx expo export --platform ios` (clean, no bundling
+errors — edits to four existing screens/one existing service, one new file).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the Uber app (or its web fallback) actually opens with
+the right destination pre-filled on a real device, from all three real entry points (Gathering
+Hub's meet-up point, the merged gathering/date accepted-offer cards, and
+`BusinessRequestDetailScreen`'s own accepted-offer card), and that the link is honestly absent
+wherever a business has no real coordinates set.
+
 ## Aug 27 2026 — Decision 2, step 1: real Stripe Connect schema/RPC/Edge Function scaffolding
 ## built (direct charges) — DONE, build-wise; genuinely inert, no live Stripe account exists yet
 

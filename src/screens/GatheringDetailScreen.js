@@ -33,6 +33,7 @@ import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import LoadErrorState from '../components/LoadErrorState';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
+import { openUberToDestination } from '../utils/uberDeepLink';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -605,6 +606,21 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     {acceptedBusinessOffer.offer_description ? (
                       <Text style={styles.perkDesc}>{acceptedBusinessOffer.offer_description}</Text>
                     ) : null}
+                    {acceptedBusinessOffer.brand_partners?.latitude != null && acceptedBusinessOffer.brand_partners?.longitude != null && (
+                      <TouchableOpacity
+                        onPress={() => openUberToDestination({
+                          latitude: acceptedBusinessOffer.brand_partners.latitude,
+                          longitude: acceptedBusinessOffer.brand_partners.longitude,
+                          nickname: acceptedBusinessOffer.brand_partners.name,
+                          address: acceptedBusinessOffer.brand_partners.address,
+                        })}
+                        style={{ marginTop: spacing.xs }}
+                        accessibilityLabel="Get an Uber there"
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.businessOfferLink}>🚗 Get an Uber there</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                       onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                       style={{ marginTop: spacing.xs }}

@@ -16,6 +16,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { getSignedPhotoUrl } from '../services/photos';
 import { iceBreakersFor, prepTipsFor } from '../constants/gatheringHubContent';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { openUberToDestination } from '../utils/uberDeepLink';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
@@ -416,6 +417,14 @@ export default function GatheringHubScreen({ route, navigation }) {
                 >
                   <Marker coordinate={meetupPoint} pinColor={categoryStyle.color} />
                 </MapView>
+                <TouchableOpacity
+                  style={styles.uberLink}
+                  onPress={() => openUberToDestination({ ...meetupPoint, nickname: gathering.title })}
+                  accessibilityLabel="Get an Uber there"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.uberLinkText}>🚗 Get an Uber there</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -517,6 +526,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   bigButtonText: { color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.5 },
   checkInLink: { marginTop: spacing.md, alignItems: 'center' },
   checkInLinkText: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
+  uberLink: { marginTop: spacing.sm, alignItems: 'center' },
+  uberLinkText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   duringPanel: { marginTop: spacing.xl, alignItems: 'center', padding: spacing.lg },
   duringTitle: { ...typography.title, color: colors.textPrimary },
   duringSub: { color: colors.textSecondary, fontSize: 14, marginTop: 4 },

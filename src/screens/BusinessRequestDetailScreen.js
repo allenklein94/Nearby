@@ -6,6 +6,7 @@ import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessReques
 import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { createBusinessPaymentIntent, isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from '../services/stripeConnect';
+import { openUberToDestination } from '../utils/uberDeepLink';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import OfferOutcomeModal from '../components/OfferOutcomeModal';
@@ -509,6 +510,20 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                   {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time)}</Text> : null}
                   {o.offer_price !== null ? <Text style={styles.offerPrice}>${Number(o.offer_price).toFixed(2)}</Text> : null}
+                  {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
+                    <TouchableOpacity
+                      onPress={() => openUberToDestination({
+                        latitude: o.brand_partners.latitude,
+                        longitude: o.brand_partners.longitude,
+                        nickname: o.brand_partners.name,
+                        address: o.brand_partners.address,
+                      })}
+                      accessibilityLabel="Get an Uber there"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.uberLinkText}>🚗 Get an Uber there</Text>
+                    </TouchableOpacity>
+                  )}
                   {(() => {
                     const payment = o.business_reservations?.[0]?.business_payments?.[0];
                     if (!payment || payment.status === 'not_required') return null;
@@ -654,6 +669,7 @@ const getStyles = (colors) => StyleSheet.create({
   groupPlanSection: { marginTop: spacing.lg, marginBottom: spacing.md },
   groupPlanSectionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
   helperText: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
+  uberLinkText: { ...typography.body, color: colors.primary, fontWeight: '700', marginBottom: spacing.sm },
   candidateRow: {
     backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.sm, marginBottom: spacing.xs,
