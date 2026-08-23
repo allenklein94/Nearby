@@ -1121,6 +1121,13 @@ export default function GatheringsScreen({ navigation, route }) {
         />
       )}
 
+      {/* Explicit decision (Aug 23 2026 Product Coherence Audit P1,
+          CLAUDE.md): this tab's own real rows genuinely overlap with
+          PlansScreen's "My Hosting" tab -- kept as two separate screens on
+          purpose, not a duplicate. This tab is the real active-management
+          surface (approve/edit/cancel/invite, below); PlansScreen is a
+          pure tap-through calendar glance with a real link back into this
+          exact tab for anyone who needs to act. */}
       {tab === 'hosting' && viewStyle === 'map' ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView

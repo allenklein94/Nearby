@@ -183,6 +183,42 @@ this file's own history carries the headline result without needing to open that
 are for review together before any of them turn into a diff — this section stays a pointer to
 the real deliverable, not a build log.
 
+**Update, same day — both P1 findings reviewed and fixed, per direct instruction.** The two P2/
+DEFERRED lists and the rest of the audit's own recommendations are untouched (not asked for);
+only the two P1 items were acted on:
+
+1. **The "Confirmed" terminology overlap — fixed, `GroupPlanScreen.js` only, both
+   occurrences.** `OFFER_STATUS_COPY.accepted` ("Accepted — reservation confirmed") now reads
+   "Accepted — your reservation" — matches `BusinessRequestDetailScreen.js`'s own identical
+   solo-flow copy verbatim (previously two independently-worded copies of the same real fact),
+   and stops the offer-accept step from promising more than the data actually guarantees per the
+   Offer System's own locked "Accepted ≠ Confirmed" design (a real `business_reservations` row
+   is what actually gets to `confirmed` — it just happens to auto-confirm immediately today
+   since Nearby itself is the only reservation provider so far, not because Accepted and
+   Confirmed are the same fact). The proposal-level status line ("Confirmed — a real request is
+   out to nearby businesses") is now "Locked In — a real request is out to nearby businesses" —
+   the enum value itself (`proposal.status`) is unchanged, only the displayed label, so no
+   schema/RPC touched. Grepped for any other screen displaying this same status word for a group
+   plan — none found, so the fix is fully scoped to this one file.
+2. **`GatheringsScreen` vs. `PlansScreen` — the explicit decision the audit asked for, written
+   down, plus one real UI bridge.** Both screens now carry a real code comment stating the
+   decision plainly: kept as two separate screens on purpose (`PlansScreen` = pure tap-through
+   commitment glance, `GatheringsScreen`'s attending/hosting tabs = the real active-management
+   surface), not a duplicate nobody noticed. `PlansScreen.js`'s "My Hosting" tab gained a real
+   "⚙️ Manage your hosted gatherings →" link, shown only on that tab, navigating straight to
+   `Gatherings` with `initialTab: 'hosting'` — closing the actual gap the split created (a host
+   viewing their own hosting tab on Plans had no way to approve/edit/cancel/invite without
+   already knowing `GatheringDetailScreen`'s own "Manage attendees →" link existed as an
+   indirect route).
+
+**Verified**: a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors — edits only, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm both renamed status lines read correctly against
+real data, and that the new "Manage your hosted gatherings" link on Plans' Hosting tab
+navigates cleanly to Gatherings' own Hosting tab.
+
 ## Aug 23 2026 — "Start Something / Make a Date Plan / Your Life on Nearby" IA pass
 ## (Create tab, Matches, Profile) — DONE, client-only, no schema change
 

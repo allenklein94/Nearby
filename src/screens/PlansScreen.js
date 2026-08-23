@@ -22,6 +22,17 @@ const TABS = [
 // hosted/past gathering, regardless of timing — distinct from Home's "Your
 // Plans" (the next 1-3 things) and from Gatherings' "nearby" tab (browse,
 // not commitments).
+//
+// Explicit decision (Aug 23 2026 Product Coherence Audit P1, CLAUDE.md):
+// this screen's own Upcoming/Hosting tabs *do* overlap with Gatherings'
+// attending/hosting tabs — same underlying rows, real overlap, not a
+// coincidence. Kept as two real, separate screens on purpose: this one is
+// a pure, tap-through-only glance ("what's on my calendar," no actions at
+// all); Gatherings' attending/hosting tabs are the real active-management
+// surface (approve requests, edit, cancel, invite). Written down here so
+// a future session doesn't have to re-derive the reasoning from scratch —
+// see the "Manage your hosted gatherings" link below for the one real,
+// discoverable bridge between the two.
 export default function PlansScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -189,6 +200,22 @@ export default function PlansScreen({ navigation, route }) {
         ))}
       </View>
 
+      {/* The one real, discoverable bridge into the actual management
+          surface (see the top-of-file comment) -- this tab is tap-through
+          only, so a host who wants to approve a request, edit, cancel, or
+          invite someone needs a real, visible way to get there. */}
+      {tab === 'hosting' && !loading && !loadError && (
+        <TouchableOpacity
+          style={styles.manageLink}
+          onPress={() => navigation.navigate('Gatherings', { initialTab: 'hosting' })}
+          activeOpacity={0.85}
+          accessibilityLabel="Manage your hosted gatherings — approve requests, edit, cancel, or invite"
+          accessibilityRole="button"
+        >
+          <Text style={styles.manageLinkText}>⚙️ Manage your hosted gatherings →</Text>
+        </TouchableOpacity>
+      )}
+
       {loading ? (
         <View>
           <ActivityIndicator style={{ marginTop: spacing.xl }} color={colors.primary} />
@@ -259,6 +286,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tabActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
+  manageLink: {
+    marginHorizontal: spacing.lg, marginTop: spacing.md, backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.md,
+  },
+  manageLinkText: { color: colors.primary, fontWeight: '700', fontSize: 13, textAlign: 'center' },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.md, marginBottom: spacing.sm },
   // PlanCard (Phase 2 of the "Build everything" plan) renders its own
   // icon/title/subtitle/badge internally -- this screen only supplies the

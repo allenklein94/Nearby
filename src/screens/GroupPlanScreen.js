@@ -28,7 +28,15 @@ const PARTICIPANT_STATUS_COPY = {
 const OFFER_STATUS_COPY = {
   pending: 'Waiting for a response',
   offered: 'Made an offer',
-  accepted: 'Accepted — reservation confirmed',
+  // Matches BusinessRequestDetailScreen's own identical solo-flow copy
+  // verbatim (Aug 23 2026 P1 fix, CLAUDE.md) -- "reservation confirmed"
+  // overstated what's actually guaranteed the moment an offer is
+  // accepted (per the Offer System's own locked "Accepted != Confirmed"
+  // design: the real business_reservations row starts at "requested," it
+  // just happens to auto-confirm immediately today since Nearby itself
+  // is the only reservation provider so far). Neither screen should
+  // promise more than the data actually does.
+  accepted: 'Accepted — your reservation',
   declined: "Can't help with this one",
   expired: 'No longer available',
   cancelled: 'Cancelled',
@@ -311,7 +319,15 @@ export default function GroupPlanScreen({ navigation, route }) {
         <Text style={styles.title}>{proposal.category} — Group Plan</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && 'Deciding together'}
-          {proposal.status === 'confirmed' && 'Confirmed — a real request is out to nearby businesses'}
+          {/* "Locked In," not "Confirmed" -- the roster/budget is locked and
+              a real request is genuinely out, but nothing about the actual
+              business side (an offer, let alone a reservation) has happened
+              yet. "Confirmed" is reserved for a real business_reservations
+              row further down this same screen and on PlanCard's own
+              controlled vocabulary -- reusing it here read as the same
+              fact at two very different stages (Aug 23 2026 P1 fix,
+              CLAUDE.md). */}
+          {proposal.status === 'confirmed' && 'Locked In — a real request is out to nearby businesses'}
           {proposal.status === 'cancelled' && 'Cancelled'}
           {proposal.status === 'expired' && 'Expired — nobody confirmed in time'}
         </Text>
