@@ -257,6 +257,99 @@ correctly never appears for a gathering that already has a confirmed venue, and 
 "View Gathering →" lands cleanly on the right `GatheringDetailScreen` in the right host-banner
 state.
 
+### Phases 3-4 — locked directly by the user after a restart interrupted the session
+### (Phases 1-2 above were already DONE at that point) — extending The Plan Engine with two
+### more real items pulled from its own 🟡 "later" list, same audit-first discipline
+
+Picked up after a codespace restart with nothing lost (git was clean, both Phase 1/2 commits
+already pushed) — the user asked directly to continue with "Phase 3 and all the rest of the
+phases," and confirmed via a direct question that this meant extending The Plan Engine itself
+with a real Phase 3+, not a different plan. Rather than re-derive scope from scratch, picked two
+concrete, well-scoped items straight from this section's own already-written 🟡 "later" list
+above — each small enough to build with the same "one nudge, reuse existing plumbing, no new
+screen" discipline Phases 1-2 already established, each independently checkable against real
+code before being locked in.
+
+**Phase 3 — "Outstanding RSVPs" Home nudge, the narrowly-scoped piece of "plan health beyond
+venue" (ideas 33-34).** The 🟡 list's own text already flagged the fuller plan-health checklist
+(RSVPs/transportation/weather) as "a materially larger, multi-signal status widget," deferred —
+this phase deliberately closes only the RSVP piece, matching Phase 2's own precedent of scoping
+"plan health" down to one honest, buildable signal rather than half-building the whole idea.
+Checked directly before designing this: `social_invites` (the table both the invite-friend modal
+and `invite_friend_to_gathering()`'s own push path already write real rows into, per this file's
+Aug 8 2026 "Outstanding: Invite People" section) has a real, already-live RLS SELECT policy —
+`"Users can view invites they sent or received" using (auth.uid() = inviter_id OR auth.uid() =
+invitee_id)` — so a host can already directly query the real response status of every invite they
+sent, no new RPC needed, matching Phase 2's own "no new RPC, reuses already-RLS-correct tables"
+shape exactly.
+
+New `getMyGatheringsWithOutstandingRsvps()` in `services/gatherings.js` — the caller's own real
+upcoming hosted gatherings (`host_id = me`, `scheduled_at > now()`), then a second query over
+`social_invites` (`inviter_id = me`, `invite_type = 'gathering'`, `target_id in (candidate ids)`,
+`status = 'pending'`) — real counts, grouped client-side, gatherings with zero pending invites
+correctly excluded (nothing to nudge about), sorted soonest-first. A new Home nudge card, same
+banner-cluster/`outcomePromptCard`/`predictiveActButton` visual language and per-day `AsyncStorage`
+dismiss convention every other Home nudge already uses: "🙋 N invite(s) to {title} haven't been
+answered yet — want to check in?" — tapping "View Gathering →" navigates straight to that
+gathering's real `GatheringDetailScreen`, matching Phase 2's own "no second mechanism" rule — the
+existing "Manage attendees →"/"🤝 Invite friends →" host-banner links there already own the actual
+follow-up action, this nudge's only job is surfacing that it's still pending. Same
+`home_nudge_events` logging (`nudge_type: 'predictive'`, `category: 'rsvps_outstanding'`).
+
+**Deliberately not built, flagged rather than silently expanded into**: no reminder-push *to the
+invitee* (a genuinely different, larger feature — nudging someone else to respond isn't asked for
+here and isn't a small addition); no broader multi-signal "plan health" widget (transportation/
+weather) — both remain 🟡, unchanged from this section's own original framing above.
+
+**Phase 4 — post-visit feedback feeds the recommendation engine, closing the doc's own named
+VISIT → FEEDBACK → NEXT PLAN loop.** Directly closes the 🟡 list's own "post-visit 👍/would-go-
+again feedback feeding the recommendation engine" item. Checked directly before designing:
+`gathering_feedback` (`satisfaction_rating`, `would_attend_again`, real RLS: `"Anyone can view
+feedback" using (true)` for `authenticated`) and `business_offer_outcomes` (Aug 23 2026's own
+Offer System outcome-capture table — `satisfaction_rating`/`would_repeat`, RLS scoped to
+`auth.uid() = reviewer_id` only) both already exist and already capture exactly this signal —
+nothing here is a new feedback mechanism, only a new consumer of data this app already collects,
+matching this file's oldest standing rule (no invented signals).
+
+New `get_my_positive_experience_signals()` SECURITY DEFINER RPC — internal `auth.uid()`-only, no
+caller-supplied id (matching every RPC of this shape elsewhere in this file), returns one row of
+two real arrays: `host_ids` (every host the caller has rated `loved_it`/`good` **and**
+`would_attend_again = true` on a past gathering) and `partner_ids` (every business the caller has
+rated `loved_it`/`good` **and** `would_repeat in ('yes','maybe')` on a past offer, joined from
+`business_offer_outcomes` through `business_request_offers.partner_id`) — built as one RPC rather
+than two plain client queries specifically to avoid relying on `business_request_offers`' own RLS
+shape (not independently re-verified this pass), matching this file's own precedent of preferring
+a narrow, internal RPC over an assumption about a table's read policy.
+
+`homeRecommendations.js`'s `buildHomeRecommendations()` gains two new optional context fields,
+`positiveHostIds`/`positivePartnerIds` (default empty `Set`, so every existing caller/test is
+unaffected) — a gathering candidate whose real `host_id` is in the set, or a perk candidate whose
+real `partner_id` is in the set, earns a real bonus reusing `SCORE_OWN_NETWORK` (6, the highest
+existing weight — matching this file's "reuse an existing weight, don't invent a new number"
+convention, and proportionate since a real personal, lived-experience signal is at least as
+strong as an "own network" signal) with an honest, itemized reason ("You loved a gathering with
+this host before" / "You loved this business last time"). `HomeScreen.js` fetches the new RPC in
+the same try/catch block as the existing recommendation build, right alongside the `getActiveOffers()`
+call, and passes both sets through — supplementary, non-fatal, matching every other nudge fetch
+on this screen.
+
+**Deliberately not built, flagged rather than silently expanded into**: no negative-signal
+penalty — a `not_for_me`/`would_repeat: no` rating actively suppressing a future candidate is a
+real, separate product decision (does one bad night mean "never show me this host again,
+forever"?) this pass doesn't make unilaterally, not an oversight.
+
+**Verification convention, matching every other schema-touching section in this file**: Phase 3
+is client-only, no schema change — verified via a direct `@babel/core` parse and a full
+`npx expo export --platform ios`. Phase 4's migration: applied to production and verified live
+with real disposable test data (a real positive gathering rating produces a real `host_ids` hit,
+a real positive offer outcome produces a real `partner_ids` hit, a negative/neutral rating is
+correctly excluded from both), plus a from-scratch migration replay before considered done. Both
+phases: full Jest suite re-run, each phase its own commit pushed individually, this section's own
+status notes updated as each lands — not batched at the end, same restart-safety convention as
+Phases 1-2.
+
+**Status: plan locked, executing below.**
+
 ## Aug 22 2026 — "Build everything" — the 6 large/architectural items from the UX/IA critique,
 ## Feature Freeze explicitly overridden for this scope, PLAN LOCKED, not yet built
 
