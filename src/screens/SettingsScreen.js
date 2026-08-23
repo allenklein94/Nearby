@@ -9,10 +9,8 @@ import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
+import { DISCOVERY_GENDER_OPTIONS, SHOW_ME_OPTIONS } from '../constants/discoveryOptions';
 import { typography, spacing, radius } from '../theme';
-
-const GENDER_OPTIONS = ['Men', 'Women', 'Other', 'Prefer not to say'];
-const SHOW_ME_OPTIONS = ['Men', 'Women', 'Everyone'];
 
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
@@ -45,6 +43,17 @@ function toE164(rawInput) {
 // - "Review Reports (Admin)" (a 4th admin row the plan never named) goes
 //   into Privacy & Safety's Safety sub-group — it's content-moderation/
 //   safety-complaint review, not a business concern.
+//
+// Aug 28 2026, Phase 3 of the "build everything" plan (progressive/
+// contextual settings): the always-visible "Friend Discovery" toggle was
+// removed from this screen outright -- it's now asked for the first time
+// contextually inside FriendDiscoveryScreen.js itself (that screen's own
+// pre-existing "Turn On" explainer state), reached via Discover's "Meet
+// New Friends" card, not from here. "Looking For"/"Discovery Preferences"
+// below are unchanged and still fully editable here -- Phase 3 only added
+// an *earlier*, contextual first ask inside DiscoveryScreen.js for a user
+// who opens Dating before ever visiting Settings; it didn't remove
+// anything from this screen.
 export default function SettingsScreen({ navigation }) {
   const { isAdmin } = useAuth();
   const { colors, shadow, isDark, toggleTheme } = useTheme();
@@ -56,7 +65,6 @@ export default function SettingsScreen({ navigation }) {
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
   const [genderHidden, setGenderHidden] = useState(false);
-  const [friendDiscoveryEnabled, setFriendDiscoveryEnabled] = useState(false);
   const [myEthnicity, setMyEthnicity] = useState(null);
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
@@ -113,7 +121,6 @@ export default function SettingsScreen({ navigation }) {
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
       setGenderHidden(data.gender_hidden ?? false);
-      setFriendDiscoveryEnabled(data.open_to_friend_discovery ?? false);
       setMyEthnicity(data.ethnicity ?? null);
       setEthnicityHidden(data.ethnicity_hidden ?? false);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
@@ -160,6 +167,11 @@ export default function SettingsScreen({ navigation }) {
         preferred_max_age: maxAgeNum,
         ethnicity: myEthnicity,
         ethnicity_preferences: ethnicityPreferences,
+        // Phase 3 (progressive/contextual settings): explicitly saving here
+        // is itself "already engaged with these preferences" -- flips the
+        // same flag DiscoveryScreen's first-open prompt gates on, so a user
+        // who edits this in Settings first is never asked again.
+        dating_preferences_set: true,
       })
       .eq('id', userId);
 
@@ -464,7 +476,7 @@ export default function SettingsScreen({ navigation }) {
 
           <Text style={styles.label}>{t('settings.myGender')}</Text>
           <View style={styles.chipsWrap}>
-            {GENDER_OPTIONS.map((option) => (
+            {DISCOVERY_GENDER_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option}
                 style={[styles.chip, discoveryGender === option && styles.chipSelected]}
@@ -555,26 +567,6 @@ export default function SettingsScreen({ navigation }) {
           >
             <Text style={styles.buttonText}>Save Preferences</Text>
           </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionLabel} accessibilityRole="header">Friend Discovery</Text>
-        <View style={styles.card}>
-          <View style={styles.settingRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Meet New Friends</Text>
-              <Text style={styles.helperText}>
-                Swipe to meet new people looking to make friends nearby — completely separate
-                from dating discovery above. Off by default; only people who've also turned this
-                on can ever show up in your deck.
-              </Text>
-            </View>
-            <Switch
-              value={friendDiscoveryEnabled}
-              onValueChange={(v) => toggleNotifPref('open_to_friend_discovery', v, setFriendDiscoveryEnabled)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Meet New Friends"
-            />
-          </View>
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>

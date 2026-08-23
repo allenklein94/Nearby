@@ -378,6 +378,90 @@ opened Dating or turned on Friend Discovery. Locked moves:
   reasoning for why Settings was organized as a real control center in the first place). Not
   touched.
 
+**Status: Phase 3 is DONE.** Built exactly per the locked mapping above, with one honest
+correction made while building, not silently smoothed over — worth flagging since it changes
+what "relocates when its adjacent preferences are asked" actually meant in practice:
+
+- **Real gate needed a new column, not a null check — checked live before assuming otherwise.**
+  Queried the real live schema first: `discovery_gender`/`show_me`/`preferred_min_age`/
+  `preferred_max_age` all already carry real, non-null defaults (`'Prefer not to say'`/
+  `'Everyone'`/`18`/`99` respectively) — there is no null/unset state to gate on, so the plan's
+  own "real gate: profiles' own existing dating-preference columns being null/unset" line
+  doesn't hold against the actual schema. Added one real boolean instead,
+  `profiles.dating_preferences_set` (`20260828_progressive_settings_phase3.sql`), the identical
+  "shown once, flip a flag, never again" shape `profiles.seen_browse_callout` already
+  established for `DiscoveryScreen.js`'s own browse-mode callout — not a new pattern invented
+  for this. **Backfilled honestly, not blanket-false**: any profile whose discovery_gender/
+  show_me/age-range/relationship_intention already differ from their untouched defaults is
+  backfilled `true` (they've already explicitly engaged with these prefs via the existing
+  Settings form, before this prompt existed) — only a profile still sitting at every default
+  value backfills `false` and genuinely sees the new prompt. Verified live against production
+  (`enmosvippabmuqslzrox`): of the 4 real profiles, the 2 that had already customized these
+  fields (`Allen`, `Claude`) backfilled `true`; the 2 that never had (`Allen Klein`,
+  `Google voice`) backfilled `false` — the honest split, not a guess.
+- **New `src/components/DatingPreferencesPromptModal.js`** — a real first-open prompt, reached
+  from `DiscoveryScreen.js`'s existing `load()` (the same place `seen_browse_callout` is already
+  checked), gated on `mine && !mine.dating_preferences_set`. Deliberately scoped to just the
+  core matching fields the plan's own text names (relationship intention/"Looking For", Show
+  Me, age range, discovery gender) — Settings' own ethnicity + hide-gender/hide-ethnicity fields
+  living in the same "Discovery Preferences" card are **not** duplicated here, per this whole
+  phase's "ask only what's necessary up front" principle; they stay Settings-only, still fully
+  editable there afterward exactly as the plan requires. `SHOW_ME_OPTIONS`/the discovery-gender
+  list (previously two bare local consts inside `SettingsScreen.js`, never exported) were
+  factored into a new shared `src/constants/discoveryOptions.js` so the modal and Settings can't
+  drift apart on the same option list — `SettingsScreen.js` now imports from there too. "Save"
+  writes the real chosen values + the flag; "Skip for now" writes only the flag (matches
+  `seen_browse_callout`'s own "shown once regardless of what was picked" behavior) — both are
+  non-fatal on failure (logged, never blocks Discover, matching this codebase's established
+  "supplementary, never blocks core content" convention). `SettingsScreen.js`'s own
+  `savePreferences()` now also sets `dating_preferences_set: true` on every save, so a user who
+  edits these in Settings first is never shown the prompt afterward either.
+- **"Friend Discovery" — the plan's own "relocates when its adjacent preferences are asked"
+  phrase needed a real correction, not a literal build.** Checked live: `open_to_friend_discovery`
+  is the *only* friend-discovery-specific column on `profiles` — there are no "adjacent
+  preferences" to ask alongside it, the toggle itself *is* the whole preference. So "relocating"
+  it doesn't mean building a new contextual-ask screen; it means removing the always-visible
+  Settings toggle outright and relying on `FriendDiscoveryScreen.js`'s own pre-existing "not yet
+  enabled" explainer state (already built, Aug 16 2026 — a real "Turn On" button, shown the
+  moment someone reaches that screen without having opted in yet) as the sole on-ramp — the
+  exact first-toggle-on contextual ask the plan asks for, just already built under a different
+  name. `SettingsScreen.js`'s whole "Friend Discovery" section (state, `load()` read, and the
+  JSX card) was deleted outright — confirmed via grep this was the only reference to
+  `friendDiscoveryEnabled` anywhere in the file, and confirmed `FriendDiscoveryScreen.js`'s own
+  header toggle (`Switch value={enabled} onValueChange={handleDisable}`) already lets a user turn
+  it back off from inside that same screen, so nothing is stranded by removing Settings' copy.
+  Discover's own "Meet New Friends" card (built Aug 22 2026) remains the one real entry point
+  into that screen — unchanged.
+- **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: ran the exact
+  write shapes both modal actions perform, under genuine `SET ROLE authenticated` RLS (not just
+  a JWT-claim GUC against the table-owner connection — this file's own repeatedly-learned
+  "false-negative first pass" lesson), against a real, currently-untouched profile
+  (`Google voice`): the skip path correctly sets only `dating_preferences_set`, leaving every
+  other field untouched; the save path correctly round-trips real `relationship_intention`/
+  `show_me`/`discovery_gender`/age-range values; a genuine non-owner (`Allen Klein`) attempting
+  the identical write against `Google voice`'s row was correctly rejected by RLS (0 rows
+  affected). All test writes reverted afterward — confirmed production back to its exact
+  pre-test baseline for that profile.
+- **Verified via a real from-scratch migration replay**: pulled the already-cached
+  `supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+  schema, patched the two known image-version gaps (`auth.users.phone`,
+  `storage.buckets.public`) onto the test container only, then ran the full 76-file
+  `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every
+  file**, `profiles.dating_preferences_set` confirmed to exist in the freshly-rebuilt database.
+  Container removed afterward.
+- **Client-side verified** via a direct `@babel/core` parse of all four touched/new files
+  (clean) and a full `npx expo export --platform ios` (clean, no bundling errors, **2247
+  modules** — two more than the 2245 baseline, the two new files this phase adds
+  (`DatingPreferencesPromptModal.js`, `discoveryOptions.js`) — every other touched file was an
+  edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the prompt actually renders on `DiscoveryScreen.js`'s
+first real open for a genuinely never-set account, that Save/Skip both correctly dismiss it and
+never show it again, that Settings' "Looking For"/"Discovery Preferences" cards still work
+exactly as before, and that Friend Discovery is still reachable and toggleable end-to-end via
+Discover → "Meet New Friends" now that Settings' own copy of the toggle is gone.
+
 ### Phase 4 — One-tap "make a plan" orchestrated flow
 
 **Builds directly on Phase 1's ranked recommendation list and existing, already-proven

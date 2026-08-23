@@ -16,6 +16,7 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import ReportBlockModal from '../components/ReportBlockModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
+import DatingPreferencesPromptModal from '../components/DatingPreferencesPromptModal';
 import ConfidenceModeBanner from '../components/ConfidenceModeBanner';
 import FiltersModal from '../components/FiltersModal';
 import SkeletonCard from '../components/SkeletonCard';
@@ -105,6 +106,7 @@ export default function DiscoveryScreen({ navigation }) {
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showBrowseCallout, setShowBrowseCallout] = useState(false);
+  const [showDatingPrefsPrompt, setShowDatingPrefsPrompt] = useState(false);
   const [quickFilterOrder, setQuickFilterOrder] = useState(['verified', 'highCompat', 'online']);
   const [quickFilterVisible, setQuickFilterVisible] = useState(['verified', 'highCompat', 'online']);
   const undoTimeoutRef = useRef(null);
@@ -136,7 +138,7 @@ export default function DiscoveryScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, seen_browse_callout, quick_filter_order, quick_filter_visible').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, seen_browse_callout, quick_filter_order, quick_filter_visible, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set').eq('id', myId).single();
       if (mine?.quick_filter_order) setQuickFilterOrder(mine.quick_filter_order);
       if (mine?.quick_filter_visible) setQuickFilterVisible(mine.quick_filter_visible);
       setMyProfile(mine);
@@ -147,6 +149,16 @@ export default function DiscoveryScreen({ navigation }) {
 
       if (mine && !mine.seen_browse_callout) {
         setShowBrowseCallout(true);
+      }
+
+      // Phase 3 (progressive/contextual settings, see CLAUDE.md): the
+      // real first-open gate -- a genuinely unset profile, not just
+      // "still at the default value" (discovery_gender/show_me/age range
+      // all have real non-null defaults, so a bare null check would never
+      // fire). Shown once, same "flip a flag, never again" shape as the
+      // browse callout right above it.
+      if (mine && !mine.dating_preferences_set) {
+        setShowDatingPrefsPrompt(true);
       }
     }
   }, []);
@@ -793,6 +805,16 @@ export default function DiscoveryScreen({ navigation }) {
           </TouchableOpacity>
         </Animated.View>
       )}
+
+      <DatingPreferencesPromptModal
+        visible={showDatingPrefsPrompt}
+        userId={myUserId}
+        initialValues={myProfile}
+        onDone={(fields) => {
+          setShowDatingPrefsPrompt(false);
+          setMyProfile((prev) => (prev ? { ...prev, ...fields } : prev));
+        }}
+      />
 
       <ReportBlockModal
         visible={!!reportTarget}
