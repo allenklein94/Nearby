@@ -13,6 +13,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
 import StoriesRow from '../components/StoriesRow';
 import GatheringsMapView from '../components/GatheringsMapView';
+import PlaceCard from '../components/PlaceCard';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -604,34 +605,24 @@ export default function DiscoverHubScreen({ navigation }) {
                 <Text style={styles.emptyText}>Nothing found nearby{typeFilter === 'places' ? ' in this category' : ''}.</Text>
               ) : (
                 placesToShow.map((p) => (
-                  <TouchableOpacity
+                  <PlaceCard
                     key={p.placeId}
-                    style={styles.card}
+                    photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
+                    icon="📍"
+                    title={p.name}
+                    reason={
+                      [
+                        p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
+                        priceLevelLabel(p.priceLevel),
+                        p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
+                        p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
+                      ]
+                        .filter(Boolean)
+                        .join('  ·  ') || p.address
+                    }
                     onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}&query_place_id=${p.placeId}`)}
-                    activeOpacity={0.85}
                     accessibilityLabel={p.name}
-                    accessibilityRole="button"
-                  >
-                    {p.photoRef ? (
-                      <Image source={{ uri: getPlacePhotoUrl(p.photoRef) }} style={styles.cardImage} />
-                    ) : (
-                      <Text style={styles.cardIcon}>📍</Text>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle}>{p.name}</Text>
-                      <Text style={styles.cardSubtitle} numberOfLines={1}>
-                        {[
-                          p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
-                          priceLevelLabel(p.priceLevel),
-                          p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
-                          p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
-                        ]
-                          .filter(Boolean)
-                          .join('  ·  ') || p.address}
-                      </Text>
-                    </View>
-                    <Text style={styles.cardChevron}>›</Text>
-                  </TouchableOpacity>
+                  />
                 ))
               )}
               {isAll && places.length > 0 && (
@@ -660,23 +651,14 @@ export default function DiscoverHubScreen({ navigation }) {
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
               {offersToShow.map((o) => (
-                <TouchableOpacity
+                <PlaceCard
                   key={o.id}
-                  style={styles.card}
+                  icon="🎁"
+                  title={o.title}
+                  reason={`${o.brand_partners?.name}${o.target_interest_tag ? ' · Matches your interests' : ''}`}
                   onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
-                  activeOpacity={0.85}
                   accessibilityLabel={`${o.title}, ${o.brand_partners?.name}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.cardIcon}>🎁</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{o.title}</Text>
-                    <Text style={styles.cardSubtitle} numberOfLines={1}>
-                      {o.brand_partners?.name}{o.target_interest_tag ? ' · Matches your interests' : ''}
-                    </Text>
-                  </View>
-                  <Text style={styles.cardChevron}>›</Text>
-                </TouchableOpacity>
+                />
               ))}
               {isAll && (
                 <TouchableOpacity onPress={() => navigation.navigate('BrandOffers')} accessibilityLabel="See all perks" accessibilityRole="button">

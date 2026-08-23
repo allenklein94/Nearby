@@ -311,6 +311,47 @@ behave correctly (especially the dual-action Friend Requests row and the conditi
 icon), and that nothing regressed for the "Not On Nearby Yet" row now that its info block is a
 real (disabled) `TouchableOpacity` instead of a plain `View`.
 
+**`PlaceCard` — built and migrated into `DiscoverHubScreen.js`'s Places and Perks sections,
+DONE. `BusinessProfileScreen.js`'s own perk cards checked and deliberately not migrated — same
+"real interactive card, not a navigate-away row" reasoning as `GatheringsScreen.js`.** Built
+`src/components/PlaceCard.js` — photo (or a fallback icon), title, one real "why now" reason
+line, one primary whole-row action — reusing the exact card chrome (`radius.lg`/border/
+`shadow.card`) `DiscoverHubScreen.js`'s own Gatherings/Communities/Recommended/Trending sections
+already independently converged on, so this genuinely standardizes what was already the de
+facto shared shape there rather than inventing a new one. Migrated the **Places** section (real
+Google Places rating/price/open-now/gathering-count reason line, unchanged data/logic, only the
+row JSX replaced) and the **Perks** section (business name + real interest-match reason) onto
+it — both previously used `styles.card`/`cardIcon`/`cardImage`/`cardTitle`/`cardSubtitle`/
+`cardChevron` directly; those styles are untouched (still used by the screen's other,
+non-place/perk sections) rather than removed.
+
+Checked `BusinessProfileScreen.js`'s own "Perks" cards before assuming they'd migrate too, per
+this phase's own "read before forcing" discipline: they're a real, self-contained *action* card
+— description text, a real scarcity line ("N of M spots left"), a real group-unlock progress
+line, and a live Locked/Redeem state with an in-place Redeem button — not a "tap to see the real
+thing elsewhere" row the way every other `PlaceCard` call site is. Same reasoning already
+applied to `GatheringsScreen.js`'s cards: forcing this onto `PlaceCard`'s one-reason-line,
+whole-row-navigates shape would mean deleting real, working detail (scarcity/unlock state) or
+growing `PlaceCard` well past "canonical minimal card." Left as its own layout, flagged here
+rather than silently skipped.
+
+Verified via a direct `@babel/core` parse of both touched/new files (clean), the full Jest suite
+(65/65, unaffected), and a full `npx expo export --platform ios` (clean, 2245 modules — one more
+than the 2244 baseline, the one new `PlaceCard.js`).
+
+**Phase 2 status, overall: the three canonical components (`PersonCard`/`PlaceCard`/`PlanCard`)
+are all built, tested, and each has at least one real screen migrated onto it — `PlanCard` into
+Home's Your Plans and `PlansScreen.js`; `PersonCard` into `FriendsScreen.js`; `PlaceCard` into
+`DiscoverHubScreen.js`'s Places/Perks sections. Three real, informed decisions not to force a
+migration were made and disclosed rather than silently skipped or blindly forced —
+`GatheringsScreen.js`'s three tabs, `MatchesScreen.js`'s dual-tap-target match row, and
+`BusinessProfileScreen.js`'s own action-heavy perk cards — each is a genuinely different,
+already-correct interaction pattern the canonical shapes would either flatten or have to grow
+far beyond "canonical minimal card" to accommodate.** The status-vocabulary cleanup the critique
+asked for landed as part of `PlanCard` (`constants/planStatus.js`), per this phase's own "folded
+into Phase 2, not a seventh phase" plan. Same standing gap as everywhere else in this file: no
+manual simulator/device run-through of anything in this whole phase.
+
 ### Phase 3 — Progressive/contextual settings
 
 **Real mapping, checked against the actual current Settings groups (`SettingsScreen.js`) before
