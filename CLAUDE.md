@@ -86,6 +86,69 @@ correctly from Create, that the 💌 button appears only for a genuinely romanti
 lands cleanly on `DateProposalScreen`, and that Profile's reordered "Your Plans"/"Your Story"
 sections read correctly against real data.
 
+## Aug 23 2026 — same-day follow-up: the actual bug was Home's FAB modal, not the Create tab
+## — fixed; the match-plan button made self-explanatory; a real "who am I" snapshot added to
+## Profile — DONE
+
+Direct user follow-up after reviewing the pass above, restated so the correction is on record:
+the literal-duplication complaint ("Start Something" shows the exact same 3 tiles as Home's
+"This Weekend" row) was about tapping the **"+ Start Something" FAB on Home**
+(`StartSomethingModal`, opened via `setStartModalVisible(true)`) — not the bottom-tab
+**Create** screen (`CreateHubScreen.js`), which is what the earlier pass in this same session
+actually touched. Two genuinely different screens with a similar name; the real bug was in the
+one left unfixed.
+
+**Confirmed the bug directly, not assumed from the report**: `StartSomethingModal`'s own
+default (`topLevelOptions ?? [...getQuickPrompts(), SOMETHING_ELSE]`) falls back to
+`getQuickPrompts()` — the exact same function, on the exact same period, that Home's own Quick
+Picks row a few sections up already renders. For the weekend period specifically,
+`QUICK_PROMPTS_BY_PERIOD.weekend` is literally `Beach Volleyball / Beach Cleanup / Wine
+Tasting` — tapping the FAB opened a sheet showing the identical three suggestions Home had just
+shown, one tap away, on the same screen. Home's FAB call site passed neither `topLevelOptions`
+nor `initialCategory`, so it always hit this exact fallback. **Fixed**: the FAB's
+`StartSomethingModal` now passes `topLevelOptions={CREATE_HUB_OPTIONS}` (the same fixed,
+non-time-adaptive category set — Coffee/Dinner/Walk/Sports/Games/Music/Volunteer — the Create
+tab's own grid already uses, exported from `StartSomethingModal.js`) instead of falling through
+to the period-flavored default. The FAB now genuinely offers a different, stable set from
+whatever Home's Quick Picks row happens to be showing at that moment, closing the actual
+literal duplication. Home's Quick Picks chip taps themselves are unaffected — those navigate
+straight to `GatheringsScreen` via a separate handler, never through this modal.
+
+**Match → date-plan button made self-explanatory.** The 💌 button added to `MatchesScreen.js`
+in the pass above was a bare, unlabeled circular icon — functionally correct (routes straight
+into `DateProposalScreen`, which already fans out to real competing business offers once both
+sides accept a plan) but relied on someone discovering what a heart-emoji circle does. Widened
+into a labeled pill reading "💌 Plan", with a fuller accessibility label ("Plan a date with
+{name}, get offers from nearby businesses") — this *is* the "suggest a date night and ask for
+offers from businesses, directly from Matches" mechanism asked for; it just needed to read as
+one.
+
+**Profile ("You") — a real "who am I" snapshot added, closing the actual flow problem.**
+Investigated what "doesn't flow well" concretely meant rather than reordering blind again: the
+screen's own header dropped straight into stat-tile numbers (Plans/Connections counts) with
+zero visual sense of "this is me" — the actual photo/name/bio identity fields didn't appear
+until scrolling all the way past Plans/Connections/Story/Business/Achievements. Fixed with two
+real, cheap structural pieces, no new query (both read the same `photoUrl`/`displayName`/`bio`
+state the edit form below already uses):
+- A real snapshot card, first thing on the screen after the header — thumbnail photo, name,
+  a one-line bio preview (or an honest "Add a bio..." nudge when there isn't one), and an
+  "Edit Profile ›" link that scrolls straight to the editing section (`ScrollView` ref +
+  `onLayout`-captured y-offset on that section, not a guessed pixel value).
+- A real visual break before the identity-editing content begins — a top border plus a
+  genuinely bigger heading ("Edit Your Profile" + a one-line subtitle), instead of the same
+  small `sectionLabel` caption every other section already uses — so the screen now reads as
+  two real modes (a read-only "your life on Nearby" summary, then an editing form) instead of
+  one flat stack of same-weight sections.
+
+**Verified**: a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors — edits only, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the FAB now shows a genuinely different set than
+whatever Home's Quick Picks row is showing at that moment, that the snapshot card's "Edit
+Profile" link scrolls to the right place (not just close to it) on a real device, and that the
+labeled "💌 Plan" pill reads clearly against the rest of the match row.
+
 ## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 3: Business
 ## Partner "Request More Information" reviewer state — DONE
 

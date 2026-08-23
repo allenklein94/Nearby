@@ -17,7 +17,7 @@ import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
-import StartSomethingModal from '../components/StartSomethingModal';
+import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
@@ -1690,10 +1690,24 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.fabText}>+ Start Something</Text>
       </TouchableOpacity>
 
+      {/* Aug 23 2026 (CLAUDE.md): topLevelOptions is now always the fixed
+          CREATE_HUB_OPTIONS set, not the modal's own default fallback
+          (getQuickPrompts()) -- that default is period-flavored, and for
+          the weekend period it's the exact same 3 items (Beach Volleyball/
+          Beach Cleanup/Wine Tasting) already rendered a few sections up in
+          Home's own Quick Picks row. Tapping "+ Start Something" would
+          have opened a sheet showing the identical suggestions Home just
+          showed, one tap away, from the same screen -- a real, confirmed
+          duplication, not a stylistic quibble. CREATE_HUB_OPTIONS is a
+          different, stable category set (Coffee/Dinner/Walk/Sports/Games/
+          Music/Volunteer), matching what the Create tab's own grid shows,
+          so the FAB now genuinely offers something Home's own Quick Picks
+          row didn't already just say. */}
       <StartSomethingModal
         visible={startModalVisible}
         onClose={closeStartModal}
         navigation={navigation}
+        topLevelOptions={CREATE_HUB_OPTIONS}
       />
       <GatheringFeedbackModal
         visible={!!unratedGathering}

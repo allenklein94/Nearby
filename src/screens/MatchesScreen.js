@@ -314,10 +314,10 @@ export default function MatchesScreen({ navigation }) {
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Plan a date with ${other?.display_name}`}
+                  accessibilityLabel={`Plan a date with ${other?.display_name}, get offers from nearby businesses`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.planDateButtonText}>💌</Text>
+                  <Text style={styles.planDateButtonText}>💌 Plan</Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.chevron}>›</Text>
@@ -382,9 +382,10 @@ const getStyles = (colors) => StyleSheet.create({
   compatText: { fontSize: 10, fontWeight: '700' },
   sub: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   planDateButton: {
-    width: 34, height: 34, borderRadius: radius.full, backgroundColor: colors.primaryMuted,
+    borderRadius: radius.full, backgroundColor: colors.primaryMuted,
     alignItems: 'center', justifyContent: 'center', marginRight: spacing.xs,
+    paddingHorizontal: spacing.sm, paddingVertical: 6,
   },
-  planDateButtonText: { fontSize: 16 },
+  planDateButtonText: { fontSize: 12, fontWeight: '700', color: colors.primary },
   chevron: { color: colors.textTertiary, fontSize: 22, fontWeight: '700' },
 });

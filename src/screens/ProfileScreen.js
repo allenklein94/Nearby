@@ -131,6 +131,8 @@ export default function ProfileScreen({ navigation }) {
   const [uploadingIntro, setUploadingIntro] = useState(false);
   const recordingIntroRef = useRef(null);
   const recordingIntroTimerRef = useRef(null);
+  const scrollRef = useRef(null);
+  const editSectionYRef = useRef(0);
 
   useEffect(() => {
     load();
@@ -530,7 +532,7 @@ const result = await response.json();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }}>
         <View style={styles.header}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('profile.title')}</Text>
           <TouchableOpacity
@@ -543,6 +545,35 @@ const result = await response.json();
           </TouchableOpacity>
         </View>
         <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
+
+        {/* Aug 23 2026 IA pass (CLAUDE.md): a real "who am I" snapshot,
+            first thing on the screen — direct feedback was that this
+            screen dropped straight into numbers (stat tiles) with no
+            visual sense of "this is me" until scrolling all the way down
+            to the photo/bio editing fields. Read-only preview of the
+            same already-loaded state the edit fields below use (no new
+            query) — tapping "Edit Profile" scrolls straight to that
+            section instead of making the user hunt for it. */}
+        <View style={styles.snapshotCard}>
+          {photoUrl ? (
+            <Image source={{ uri: photoUrl }} style={styles.snapshotPhoto} />
+          ) : (
+            <View style={[styles.snapshotPhoto, styles.snapshotPhotoPlaceholder]} />
+          )}
+          <View style={styles.snapshotInfo}>
+            <Text style={styles.snapshotName} numberOfLines={1}>{displayName || 'Your name'}</Text>
+            <Text style={styles.snapshotBio} numberOfLines={2}>
+              {bio ? bio : 'Add a bio so people know a bit about you.'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true })}
+              accessibilityLabel="Edit your profile"
+              accessibilityRole="button"
+            >
+              <Text style={styles.snapshotEditLink}>Edit Profile ›</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {completeness.percent < 100 && (
           <View
@@ -694,7 +725,19 @@ const result = await response.json();
           </TouchableOpacity>
         )}
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Your Profile</Text>
+        {/* A real visual break, not just another sectionLabel — everything
+            above this point is a read-only summary of "your life on
+            Nearby" (plans, connections, story, business); everything
+            below is the identity-editing form. onLayout captures this
+            section's real y-position so the snapshot card's "Edit
+            Profile" link can scroll straight to it. */}
+        <View
+          style={styles.editSectionDivider}
+          onLayout={(e) => { editSectionYRef.current = e.nativeEvent.layout.y; }}
+        >
+          <Text style={styles.editSectionTitle} accessibilityRole="header">Edit Your Profile</Text>
+          <Text style={styles.editSectionSubtitle}>Your photos, bio, and what people see about you.</Text>
+        </View>
         <TouchableOpacity
           style={styles.photoWrap}
           onPress={changePhoto}
@@ -1119,6 +1162,22 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  snapshotCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  snapshotPhoto: { width: 64, height: 64, borderRadius: radius.full },
+  snapshotPhotoPlaceholder: { backgroundColor: colors.surfaceElevated },
+  snapshotInfo: { flex: 1 },
+  snapshotName: { ...typography.headline, color: colors.textPrimary },
+  snapshotBio: { ...typography.caption, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.xs },
+  snapshotEditLink: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  editSectionDivider: {
+    borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.xl, paddingTop: spacing.lg, marginBottom: spacing.sm,
+  },
+  editSectionTitle: { ...typography.title, color: colors.textPrimary },
+  editSectionSubtitle: { ...typography.body, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.sm },
   completenessCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,
