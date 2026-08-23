@@ -4,6 +4,161 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — Product Coherence Audit (30-Second / Convergence / One-Product / UI-UX) —
+## PLAN LOCKED, read-only, no implementation — see its own status note below for progress
+
+Written before execution, same restart-safety convention as every other plan-first section in
+this file — if a codespace restart hits mid-pass, check this section's own status note (updated
+as work lands) and `PRODUCT_AUDIT/` for what's actually been produced vs. still just this plan.
+
+**Direct instruction, given twice, not to be silently deviated from**: this is a **read-only
+audit — no application code gets touched in this pass, for any reason.** The user's own words:
+"Do not implement anything yet. I want the audit and prioritized decisions first... don't let
+Claude immediately implement everything it recommends. We should review the findings together
+first." Every finding below is a recommendation for a future, separately-authorized pass, not
+something this session acts on unilaterally — matches this file's own established precedent for
+exactly this shape of request (the Aug 10 2026 "Current UI Map for IA review" section, the Aug
+15 2026 connectivity audit, several others).
+
+**Why now, in the user's own framing**: after a heavy multi-day build streak (the whole Offer
+System, Business Fulfillment, Group Plans, Community Area, the Aug 23 convergence pass, and
+more), the standing risk flips from *underbuilding* to *fragmenting* — several real user jobs
+now have more than one way to accomplish them, built at different times by different passes
+that didn't know about each other. The literal trigger: a pasted screenshot showing "Request a
+Business Partner" and "Ask Local Businesses" as two separate banners on the same gathering — a
+duplication this file's own Aug 23 convergence pass (P0, below) had *already* fixed the same
+day. That's the actual lesson: convergence work needs to be **audited fresh against current
+code**, not inferred from a stale screenshot or from memory of what was "supposedly" merged —
+several of the pasted external AI's own named examples (Request Business Partner vs. Ask Local
+Businesses, AskBusiness vs. MakeAPlan, Insights vs. Momentum) are already resolved per this
+file's own Aug 23 "convergence pass: P0/P1/P2" section, written the same day. The value of this
+pass is checking whether that's *actually* still true today, and finding whatever's real and
+still open — not re-litigating what's already closed.
+
+### The four layers, run in order, one combined deliverable at the end
+
+1. **30-Second / Comprehension audit** — can a brand-new person understand what Nearby is and
+   what to do first, from the app alone, with no explanation? Catches: confusing navigation,
+   unclear labels, too many choices at once, screens that need explaining, duplicated
+   destinations, unclear primary actions, onboarding friction.
+2. **Convergence audit** — the user's own locked rule for this layer, restated verbatim so it
+   isn't softened: *"If two screens perform substantially the same user job but originate from
+   different parts of the app, don't automatically preserve both screens. Find the canonical
+   user job and make the entry points converge into it."* Checked fresh against current code,
+   not assumed from the pasted screenshot/report — several named examples may already be
+   resolved (see above), and the job here is finding what's real *today*, including anything not
+   already named.
+3. **One-Product / Ecosystem audit** — a different question from #1 and #2: something can be
+   easy to navigate and still feel like five apps stitched together. Does Dating + Friends +
+   Gatherings + Businesses + Weather + Plans + Offers actually cohere as one system, or does
+   each part still carry its own separate mental model? The user's own target end-state,
+   recorded verbatim as the thing this layer is checking progress against — **not** a redesign
+   spec to build from, a reference point to measure against:
+   - **People** → Friends / Dating
+   - **Discover** → People / Places / relevant opportunities
+   - **Plans** → Gatherings / Dates / Occasions
+   - **Businesses** → Places / Offers / Visits
+   - **Inbox** → Messages / Connections / actionable activity
+   - Weather, birthdays, availability, business offers, transportation, interests, etc. are
+     **not** destinations in this model — they're intelligence/context flowing *through* the
+     five above, never their own screen/tab.
+   Includes 12 explicit end-to-end flow traces, method matching this file's own established
+   "flywheel trace" precedent (Aug 9 2026, real code reading — nav params, RPC calls, screen
+   wiring — never a simulator run, which this sandbox has never had access to):
+   1. Person → Friend
+   2. Person → Date
+   3. Person → Gathering
+   4. Gathering → Business
+   5. Gathering → Business Offer
+   6. Business Offer → Confirmed Visit
+   7. Date → Business
+   8. Birthday/occasion → Plan
+   9. Weather → Recommendation
+   10. Recommendation → Plan
+   11. Plan → Transportation
+   12. Completed Visit → Future Recommendation
+
+   Per flow: does the user stay in one coherent mental model; does information carry forward
+   (or get re-typed); is the user forced into an unrelated screen; does the business
+   relationship feel native to the plan or bolted on; does the user understand what actually
+   happened; are there unnecessary handoffs; are status/state labels consistent; is there a
+   better convergence point. Special attention to whether the app's architecture is actually
+   converging around one real core object — **WHO + WHAT + WHEN + WHERE + WHY + BUSINESS +
+   OFFER** — or whether different parts of the app still build competing versions of it.
+4. **UI/UX audit** — folded in as the fourth layer of the *same* pass, not a separate later
+   one, per direct instruction. Scope: visual hierarchy (is the primary action obvious, are
+   secondary actions subordinate, are cards too dense), navigation predictability, interaction
+   consistency (button behavior, tappable areas, confirmation patterns), language (is
+   internal/architectural vocabulary ever leaking into user-facing copy, is
+   Dating/Friends/Connections/People terminology consistent), a real state-by-state check
+   (empty/loading/success/error/pending/accepted/declined/cancelled/completed — named as
+   especially important now given how many states the business → plan → offer → visit system
+   has), form friction, and whether the new 3-step Complete Profile wizard feels lightweight.
+   **Explicit, locked instruction for this layer specifically, not to be softened**: *"Prioritize
+   usability, hierarchy, comprehension, and interaction quality over aesthetic preference. Do
+   not recommend changing something merely because another visual treatment might look nicer."*
+   This layer must not turn into a 100-item spacing/icon/color list — the deliverable format
+   below (10 things, not 100) is the actual guardrail against that, not a separate instruction.
+
+### Deliverable shape — locked, not to be reinterpreted as "write everything you find"
+
+One combined, prioritized document, not four separate reports and not a giant list. Findings
+grouped into:
+- **P0 — Fix immediately.** Problems that make the app objectively confusing or fragmented.
+- **P1 — Fix before adding more major features.** Convergence/navigation issues that get more
+  expensive the longer they sit.
+- **P2 — Polish later.** Real, but doesn't materially affect the core experience.
+- **DEFERRED — do not touch yet.** Looks improvable but should wait for real usage data before
+  guessing at the fix, matching this file's own long-standing "no premature optimization without
+  evidence" posture (see the Aug 15 2026 Feature Freeze section, still in force elsewhere).
+
+Then, explicitly, not folded into the P0-P2 lists:
+1. The 5 highest-impact simplifications.
+2. The 5 highest-impact convergence opportunities.
+3. Any screens that should be eliminated.
+4. Any screens that should become the canonical destination for their job.
+5. Any terminology that should be standardized.
+6. Any navigation changes.
+7. Any flows that should **remain** intentionally separate — the user's own explicit caution
+   here, restated: "technically similar doesn't necessarily mean [two things] should share an
+   engine or identical UX" (Dating vs. Friends is the named example — already correctly kept as
+   two separate matching systems under one shared "People Nearby" entry model, per this file's
+   own Aug 16 2026 Friend Discovery section). This audit's job is to apply that same judgment
+   elsewhere, not to flatten everything indiscriminately.
+8. Any schema/architecture changes that should explicitly **not** be made despite a real UX
+   opportunity — matching this file's own repeated "flag a real change, don't guess at it"
+   convention for anything touching the data model.
+9. "The 10 biggest things making Nearby feel more complicated than it needs to be" — not 100.
+   Each: current experience → why it's confusing → proposed simpler experience → affected
+   screens → real implementation difficulty (not guessed).
+10. "The 10 strongest things that already make Nearby feel like one integrated product" — so a
+    future pass doesn't accidentally simplify away what's actually working.
+
+Finally, five direct questions, answered plainly rather than hedged:
+- **A.** Can a brand-new user understand Nearby in 30 seconds?
+- **B.** Does Nearby currently feel like one product?
+- **C.** What are the biggest remaining sources of cognitive load?
+- **D.** What are the biggest duplicate/converging user jobs?
+- **E.** If feature development stopped today, what would be fixed before launch?
+
+### Output
+
+A real, standalone file — `PRODUCT_AUDIT/PRODUCT_COHERENCE_AUDIT_2026-08-23.md` — self-contained
+enough to hand to a different AI for independent review (matching this file's own established
+"UI_IA_REVIEW_FOR_EXTERNAL_AI" precedent, Aug 10 2026), plus a short pointer/summary in this
+section once the full pass lands. Handed to the user directly as a file once done.
+
+### Explicitly out of scope for this pass
+
+No code changes of any kind. No fixes applied, even for something that looks trivially safe to
+fix while already looking at it — every finding, regardless of how obviously correct it seems,
+goes into the deliverable for the user's own review, not into a diff. This is a hard boundary
+for this specific pass, not this file's usual "fix small confirmed bugs while auditing" posture
+seen elsewhere.
+
+**Status: plan locked. Execution below — check this line for progress, updated as the pass
+lands, not batched at the end, per this file's own restart-safety convention.**
+
 ## Aug 23 2026 — "Start Something / Make a Date Plan / Your Life on Nearby" IA pass
 ## (Create tab, Matches, Profile) — DONE, client-only, no schema change
 
