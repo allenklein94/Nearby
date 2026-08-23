@@ -624,6 +624,15 @@ const result = await response.json();
             doing / what have I earned" set of links, not the plans
             themselves. */}
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Story</Text>
+        {/* Aug 23 2026 Product Coherence Audit P2 (CLAUDE.md): "Your
+            Activity" and "Your Rewards" read as two similar "how am I
+            doing" rows with no framing telling a reader why they're
+            different things (a real social-participation streak vs. a
+            real loyalty-tier count from perk redemptions -- genuinely
+            different core objects, correctly kept as two screens, per
+            the same audit's own "flows that should remain separate"
+            list). A one-line subtitle per row, added to all four here
+            for visual consistency rather than singling two out. */}
         <TouchableOpacity
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Timeline')}
@@ -631,7 +640,10 @@ const result = await response.json();
           accessibilityLabel="View your timeline, how your social life has grown"
           accessibilityRole="button"
         >
-          <Text style={styles.timelineLinkText}>📖 View Your Timeline</Text>
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>📖 View Your Timeline</Text>
+            <Text style={styles.timelineLinkSubtitle}>How your social life has grown over time</Text>
+          </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -641,7 +653,10 @@ const result = await response.json();
           accessibilityLabel="View your memory vaults, one per match"
           accessibilityRole="button"
         >
-          <Text style={styles.timelineLinkText}>💫 Memory Vault</Text>
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>💫 Memory Vault</Text>
+            <Text style={styles.timelineLinkSubtitle}>Saved moments, one collection per match</Text>
+          </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
         {/* Convergence pass P2 (CLAUDE.md): "Your Insights" and "Your
@@ -655,7 +670,10 @@ const result = await response.json();
           accessibilityLabel="View your activity, stats, and streak"
           accessibilityRole="button"
         >
-          <Text style={styles.timelineLinkText}>🔥 Your Activity</Text>
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>🔥 Your Activity</Text>
+            <Text style={styles.timelineLinkSubtitle}>Your weekly streak and social stats</Text>
+          </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -665,7 +683,10 @@ const result = await response.json();
           accessibilityLabel="View your rewards tier"
           accessibilityRole="button"
         >
-          <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>🎁 Your Rewards</Text>
+            <Text style={styles.timelineLinkSubtitle}>Your loyalty tier, from perks you've redeemed</Text>
+          </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
@@ -1191,7 +1212,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
   },
+  timelineLinkTextCol: { flex: 1 },
   timelineLinkText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
+  timelineLinkSubtitle: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
   timelineLinkChevron: { color: colors.textTertiary, fontSize: 18, fontWeight: '700' },
   earnedStatsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   earnedStat: {

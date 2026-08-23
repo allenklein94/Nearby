@@ -632,6 +632,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   // this.
                   <View style={styles.businessReadyBanner}>
                     <Text style={styles.businessReadyText}>You asked us to look for local business options. Ready to see what's available?</Text>
+                    {/* Aug 23 2026 Product Coherence Audit P2 (CLAUDE.md):
+                        this banner's own wording was the third, visually
+                        disconnected narration of the same one decision (the
+                        "Ask Local Businesses" checkbox at creation time,
+                        then this screen's own later-visit banner) -- a
+                        small caption naming where "You asked us" actually
+                        came from closes that gap without changing the real
+                        underlying flow. */}
+                    <Text style={styles.businessReadyCaption}>You turned this on when you created this gathering.</Text>
                     <TouchableOpacity
                       style={styles.businessReadyButton}
                       onPress={handleAskBusinessesNow}
@@ -914,7 +923,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     marginTop: spacing.xs, backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
     padding: spacing.md,
   },
-  businessReadyText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
+  businessReadyText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 2 },
+  businessReadyCaption: { color: colors.textTertiary, fontSize: 11, marginBottom: spacing.sm },
   businessReadyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },
   businessReadyButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   businessHelpChooser: { marginTop: spacing.sm },

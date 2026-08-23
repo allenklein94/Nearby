@@ -219,6 +219,62 @@ run-through — next session should confirm both renamed status lines read corre
 real data, and that the new "Manage your hosted gatherings" link on Plans' Hosting tab
 navigates cleanly to Gatherings' own Hosting tab.
 
+**Update, same day — all three P2 findings also picked up and fixed, per direct follow-up
+instruction.** Same audit file's own P2 list ("Polish later" — real, but not urgent) — the user
+asked to close these out too rather than leave them for a separately-authorized future pass.
+Picked up cleanly after a codespace restart interrupted the session mid-build: `git status`
+showed all three files already modified — two (`GatheringDetailScreen.js`'s narration-continuity
+caption, `ProfileScreen.js`'s four one-line subtitles) were already complete; the third
+(`TabHeaderActions.js`) had its state/logic half written (a `showHint` flag, an
+`AsyncStorage`-backed "seen" key, a 6-second auto-hide timer) but the actual hint bubble had
+never been added to the render — finished that piece, nothing else needed touching.
+
+1. **Profile's Rewards/Your Activity one-line subtitle differentiator** — `ProfileScreen.js`'s
+   four "Your Story" group rows (Timeline / Memory Vault / Your Activity / Your Rewards) each
+   gained a real, honest one-line subtitle under their existing label, added to all four for
+   visual consistency rather than singling out just the two the audit named ("How your social
+   life has grown over time" / "Saved moments, one collection per match" / "Your weekly streak
+   and social stats" / "Your loyalty tier, from perks you've redeemed") — closes the audit's own
+   "no framing telling a reader why these are different things" finding without touching either
+   screen's real content.
+2. **The gathering-creation-checkbox-to-banner narration continuity** —
+   `GatheringDetailScreen.js`'s "You asked us to look for local business options..." banner (the
+   third, visually disconnected narration of the same one decision — after the creation-time
+   checkbox and the checkbox's own creation-time copy) now carries a small caption underneath
+   naming where "You asked us" actually came from: "You turned this on when you created this
+   gathering." No logic touched, no new state — purely closes the continuity gap between the
+   checkbox decision and this later banner restating it.
+3. **A first-open hint pointing at the header Messages/Profile icons** — `TabHeaderActions.js`
+   (the persistent header-icon pair that replaced the old Messages/Profile bottom tabs in Phase
+   5) gained a real, shown-once floating hint bubble, matching `DiscoveryScreen.js`'s own
+   established `calloutBanner`/`calloutText`/`calloutDismiss` visual language (neutral
+   `colors.surface`/`border`, neutral dismiss text per the locked coral-usage rule — this is
+   informational chrome, not a primary action) reworked into a floating card anchored below the
+   icon row (`position: 'absolute', top: '100%', right: 0`) since, unlike that screen's inline
+   banner, there's no natural banner slot here across the 4 different tab-root screens
+   (Home/People/Create/Activity) this component renders inside of. Reads "💬 Messages and your
+   profile live here now" with a "Got it" dismiss; also auto-hides after 6 seconds
+   (`HINT_AUTO_HIDE_MS`) if never tapped. Shown/dismissed state is local-device-only
+   (`AsyncStorage`, key `tab_header_actions_hint_seen`) — deliberately not a new `profiles`
+   column/migration, since this is purely "have you noticed this UI chrome," not real content
+   that needs to sync across a user's own devices the way the Home first-run moment's card does.
+
+**Verified**: a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, 2251 modules, unchanged — edits
+only, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the four new Profile subtitles read correctly against
+real data, the new banner caption on `GatheringDetailScreen` renders only in the "ask nearby
+businesses" ready-state, and the new header hint bubble actually renders positioned correctly
+under the icon row on all 4 tab-root screens (Home/People/Create/Activity), dismisses correctly
+on tap, auto-hides after 6 seconds if untouched, and never reappears on a subsequent app open
+once seen.
+
+**Per the audit's own DEFERRED list, both items there remain untouched** (the Activity/Messages
+re-merge question, and the weather forecast-API ceiling) — neither was in scope for this P2
+follow-up, matching the audit's own explicit "do not touch yet" framing.
+
 ## Aug 23 2026 — "Start Something / Make a Date Plan / Your Life on Nearby" IA pass
 ## (Create tab, Matches, Profile) — DONE, client-only, no schema change
 

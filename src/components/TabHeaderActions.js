@@ -1,12 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getUnreadMessagesCount } from '../services/homeDashboard';
 import { useTheme } from '../context/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, radius, typography } from '../theme';
+
+// Aug 23 2026 Product Coherence Audit P2 (CLAUDE.md): these two icons
+// have no on-screen affordance anywhere telling a first-time user they
+// exist here at all (Messages/Profile both left the bottom tab bar in
+// Phase 5) -- a small, real, shown-once hint closes that. Local-device-
+// only (AsyncStorage, not a new profiles column/migration) -- this is
+// purely "have you noticed this UI chrome," not something that needs to
+// sync across a user's own devices the way the Home first-run moment's
+// real content-bearing card does.
+const HINT_SEEN_KEY = 'tab_header_actions_hint_seen';
+const HINT_AUTO_HIDE_MS = 6000;
 
 // Phase 5 of the "build everything" plan (see CLAUDE.md): the one
 // genuinely new navigation mechanism this phase needs -- a persistent
@@ -23,6 +35,29 @@ export default function TabHeaderActions({ navigation }) {
   const styles = getStyles(colors);
   const [photoUrl, setPhotoUrl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const hintTimerRef = useRef(null);
+
+  const dismissHint = useCallback(() => {
+    setShowHint(false);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    AsyncStorage.setItem(HINT_SEEN_KEY, 'true').catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(HINT_SEEN_KEY)
+      .then((seen) => {
+        if (cancelled || seen) return;
+        setShowHint(true);
+        hintTimerRef.current = setTimeout(dismissHint, HINT_AUTO_HIDE_MS);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    };
+  }, [dismissHint]);
 
   const load = useCallback(async () => {
     try {
@@ -78,12 +113,21 @@ export default function TabHeaderActions({ navigation }) {
           <Ionicons name="person-circle-outline" size={28} color={colors.textPrimary} />
         )}
       </TouchableOpacity>
+
+      {showHint && (
+        <View style={styles.hintBubble} pointerEvents="box-none">
+          <Text style={styles.hintText}>💬 Messages and your profile live here now</Text>
+          <TouchableOpacity onPress={dismissHint} accessibilityLabel="Dismiss this tip" accessibilityRole="button">
+            <Text style={styles.hintDismiss}>Got it</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, position: 'relative' },
   iconButton: { padding: 2 },
   avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceElevated },
   badge: {
@@ -91,4 +135,17 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
   },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  // Matches DiscoveryScreen's own calloutBanner/calloutText/calloutDismiss
+  // visual language (neutral surface + border, neutral dismiss text per
+  // the locked coral-usage rule -- this is informational chrome, not a
+  // primary action) -- reworked into a floating card since, unlike that
+  // screen's callout, there's no natural inline banner slot here across
+  // the 4 different screens this component renders inside of.
+  hintBubble: {
+    position: 'absolute', top: '100%', right: 0, marginTop: spacing.sm, zIndex: 20, elevation: 20,
+    width: 220, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.sm, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+  },
+  hintText: { ...typography.small, color: colors.textSecondary, lineHeight: 16, marginBottom: spacing.xs },
+  hintDismiss: { color: colors.textSecondary, fontSize: 12, fontWeight: '800', textAlign: 'right' },
 });
