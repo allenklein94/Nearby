@@ -12,7 +12,8 @@ import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers
 import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
-import GatheringStatusBadge from '../components/GatheringStatusBadge';
+import PlanCard from '../components/PlanCard';
+import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal from '../components/StartSomethingModal';
@@ -849,23 +850,16 @@ export default function HomeScreen({ navigation }) {
                 <>
                   <Text style={styles.subLabel}>Going</Text>
                   {dashboard.plansGoing.map((plan) => (
-                    <TouchableOpacity
+                    <PlanCard
                       key={plan.id}
-                      style={styles.planRow}
+                      icon={categoryStyleFor(plan.interest_tag).icon}
+                      title={plan.title}
+                      dateTimeText={formatHeroDateTime(plan.scheduled_at)}
+                      peopleCount={plan.peopleCount}
+                      hostingPartnerId={plan.hosting_partner_id}
+                      status={resolveGatheringPlanStatus({ role: 'attending' })}
                       onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
-                      activeOpacity={0.85}
-                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're going`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
-                      <View style={styles.planInfo}>
-                        <Text style={styles.planTitle}>{plan.title}</Text>
-                        <Text style={styles.planMeta}>
-                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="going" />
-                        </Text>
-                      </View>
-                      <Text style={styles.planChevron}>›</Text>
-                    </TouchableOpacity>
+                    />
                   ))}
                 </>
               )}
@@ -873,23 +867,16 @@ export default function HomeScreen({ navigation }) {
                 <>
                   <Text style={[styles.subLabel, dashboard.plansGoing.length > 0 && styles.subLabelSpaced]}>Hosting</Text>
                   {dashboard.plansHosting.map((plan) => (
-                    <TouchableOpacity
+                    <PlanCard
                       key={plan.id}
-                      style={styles.planRow}
+                      icon={categoryStyleFor(plan.interest_tag).icon}
+                      title={plan.title}
+                      dateTimeText={formatHeroDateTime(plan.scheduled_at)}
+                      peopleCount={plan.peopleCount}
+                      hostingPartnerId={plan.hosting_partner_id}
+                      status={resolveGatheringPlanStatus({ role: 'hosting' })}
                       onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
-                      activeOpacity={0.85}
-                      accessibilityLabel={`${plan.title}, ${formatHeroDateTime(plan.scheduled_at)}, you're hosting`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.planIcon}>{categoryStyleFor(plan.interest_tag).icon}</Text>
-                      <View style={styles.planInfo}>
-                        <Text style={styles.planTitle}>{plan.title}</Text>
-                        <Text style={styles.planMeta}>
-                          {formatHeroDateTime(plan.scheduled_at)} · <GatheringStatusBadge variant="inline" status="hosting" />
-                        </Text>
-                      </View>
-                      <Text style={styles.planChevron}>›</Text>
-                    </TouchableOpacity>
+                    />
                   ))}
                 </>
               )}
@@ -897,23 +884,15 @@ export default function HomeScreen({ navigation }) {
                 <>
                   <Text style={[styles.subLabel, (dashboard.plansGoing.length > 0 || dashboard.plansHosting.length > 0) && styles.subLabelSpaced]}>Group Plans</Text>
                   {dashboard.plansGroup.map((plan) => (
-                    <TouchableOpacity
+                    <PlanCard
                       key={plan.id}
-                      style={styles.planRow}
+                      icon={categoryStyleFor(plan.category).icon}
+                      title={plan.raw_text}
+                      dateTimeText={plan.date ? formatHeroDateTime(plan.date) : null}
+                      peopleCount={plan.party_size}
+                      status={resolveGroupPlanStatus(plan.status)}
                       onPress={() => navigation.navigate('GroupPlan', { proposalId: plan.group_plan_id })}
-                      activeOpacity={0.85}
-                      accessibilityLabel={`${plan.raw_text}, group plan`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.planIcon}>{categoryStyleFor(plan.category).icon}</Text>
-                      <View style={styles.planInfo}>
-                        <Text style={styles.planTitle}>{plan.raw_text}</Text>
-                        <Text style={styles.planMeta}>
-                          👥 {plan.status === 'fulfilled' ? 'Reservation confirmed' : 'Sent to nearby businesses'}
-                        </Text>
-                      </View>
-                      <Text style={styles.planChevron}>›</Text>
-                    </TouchableOpacity>
+                    />
                   ))}
                 </>
               )}

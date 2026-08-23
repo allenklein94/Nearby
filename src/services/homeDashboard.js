@@ -456,16 +456,20 @@ export async function getHomeDashboard() {
   // for (approved interest) or hosting, sorted soonest first, not
   // just a count of what's happening nearby generally.
   const now = new Date().toISOString();
+  // hosting_partner_id is carried through so PlanCard (Phase 2 of the
+  // "Build everything" plan) can show a real linked venue name -- not a
+  // new signal, the same column SAFE_GATHERING_FIELDS already exposes
+  // elsewhere, just not previously selected by this pair of queries.
   const { data: attendingUpcoming } = await supabase
     .from('gathering_interest')
-    .select('gatherings!inner(id, title, scheduled_at, interest_tag)')
+    .select('gatherings!inner(id, title, scheduled_at, interest_tag, hosting_partner_id)')
     .eq('user_id', myId)
     .eq('status', 'approved')
     .gte('gatherings.scheduled_at', now);
 
   const { data: hostingUpcoming } = await supabase
     .from('gatherings')
-    .select('id, title, scheduled_at, interest_tag')
+    .select('id, title, scheduled_at, interest_tag, hosting_partner_id')
     .eq('host_id', myId)
     .gte('scheduled_at', now);
 
@@ -473,14 +477,33 @@ export async function getHomeDashboard() {
   // "Your Plans" section shows Going and Hosting as two distinct groups
   // (an explicit commitment-type distinction the user asked for), not one
   // flat list that conflates "I'm attending" with "I'm running this."
-  const plansGoing = (attendingUpcoming ?? [])
+  const plansGoingRaw = (attendingUpcoming ?? [])
     .map((row) => ({ ...row.gatherings, role: 'attending' }))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
-  const plansHosting = (hostingUpcoming ?? [])
+  const plansHostingRaw = (hostingUpcoming ?? [])
     .map((g) => ({ ...g, role: 'hosting' }))
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 3);
+
+  // Real people count for PlanCard's subtitle line (Phase 2) -- one
+  // grouped query over just the displayed slice's own ids, not a new
+  // per-row fetch. Same real gathering_interest/status='approved' source
+  // attachApprovedAttendees() already uses elsewhere.
+  const planGatheringIds = [...plansGoingRaw, ...plansHostingRaw].map((p) => p.id);
+  const approvedCountByGathering = {};
+  if (planGatheringIds.length > 0) {
+    const { data: approvedRows } = await supabase
+      .from('gathering_interest')
+      .select('gathering_id')
+      .in('gathering_id', planGatheringIds)
+      .eq('status', 'approved');
+    for (const row of approvedRows ?? []) {
+      approvedCountByGathering[row.gathering_id] = (approvedCountByGathering[row.gathering_id] ?? 0) + 1;
+    }
+  }
+  const plansGoing = plansGoingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
+  const plansHosting = plansHostingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
 
   // Finding G.1 (Aug 15 2026 connectivity audit): a confirmed group
   // plan's own resulting business_requests row was a real, already-

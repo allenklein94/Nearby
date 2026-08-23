@@ -47,7 +47,7 @@ export async function getMyGroupPlans() {
 
   const { data: requests } = await supabase
     .from('business_requests')
-    .select('id, raw_text, category, status, date, group_plan_id')
+    .select('id, raw_text, category, status, date, party_size, group_plan_id')
     .in('group_plan_id', proposalIds)
     .in('status', ['open', 'fulfilled']);
 
