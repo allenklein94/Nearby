@@ -4,6 +4,86 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 2: Gap 1 —
+## unmet intent now surfaces in a business's own aggregated-demand view — DONE
+
+Direct follow-up to item 1 above, same backlog-clearing pass. Closes Gap 1 from the Aug 18
+2026 connectivity-audit findings ledger — `get_aggregated_demand_for_partner()` had only
+ever read real `business_requests` rows, so any real ask that Tiers 1-3 already satisfied
+(or that never made it to a business ask at all) was permanently invisible to the business
+it was actually about. Gap 9 (a real coarse `wide_area` column on `intent_submissions`, Aug
+23 2026 earlier this same day) was built specifically to unblock this — this closes it for
+real, resolving both open questions the ledger itself named rather than guessing at either.
+
+**"How 'near' should be defined against a coarse bucket"** — reused, not invented: the exact
+same coarse-bucket-plus-3x3-neighbor-grid convention `proximity.js`'s own Crossed Paths
+matching already established (round lat/lng to 1 decimal, check the bucket and its 8
+neighbors) — a business's own real coordinates are bucketed the same way, then any
+`intent_submissions` row in that same bucket set counts as "near."
+
+**A real, previously-uncaught formatting bug found and fixed before it ever shipped, not
+just assumed correct**: casting a rounded value straight from `numeric` to `text` in
+Postgres keeps a trailing zero (`"40.0"`), but the client's own JS
+(`Math.round(x*10)/10`, template-literal-interpolated) drops it for any whole-number bucket
+edge (`"40"`) — confirmed directly against real stored `profiles`/`gatherings` `wide_area`
+values before trusting either format. Casting through `double precision` before `::text`
+reproduces the client's exact formatting character-for-character (verified: `40.0 -> "40"`,
+`40.7 -> "40.7"`) — without this fix, every whole-number bucket edge would have silently
+never matched a single real stored row, a completely invisible failure mode no code review
+alone would have caught.
+
+**"How to present it without blending with the existing real-request-based signal"** — a
+real new `unmet_intent_count` output column (drop + recreate, since the return `TABLE`
+shape changed — `20260823_v2_aggregated_demand_unmet_intent.sql`), computed via a
+`FULL OUTER JOIN` between the existing real-request aggregation and a new
+`intent_submissions`-based CTE (`category is not null`, `had_any_result = false`, `wide_area`
+in the business's own neighbor-bucket set, `created_at` within a real, stated 14-day recency
+window — intent submissions never expire on their own the way `business_requests` does via
+`expires_at`, so an unbounded window would have surfaced stale, no-longer-real demand). The
+join means a category with **zero** currently-open real requests but real recent unmet
+intent nearby now surfaces at all, for the first time — the actual point of this fix, not
+just decorating an already-visible row.
+
+`BusinessDashboardScreen.js`'s "Demand Near You" section renders the new signal honestly
+distinct from the real one: a category with real open requests keeps its existing "N people
+are looking for X" line unchanged; a category with **only** unmet intent (zero real requests)
+gets its own 🟡-marked row ("N recent searches near you for X found nothing") instead of a
+misleading "0 people are looking for X"; a category with **both** gets the real line plus a
+separate 🟡 note stating plainly the softer count is "never counted toward the number above."
+The section's own helper text now states the 🟡 marker's meaning up front. The existing
+"→ Turn into an offer" action works unchanged for either row shape, since it only ever needs
+the real category name.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real
+disposable test data against the real `Coastal Coffee` partner (coordinates temporarily set,
+reverted after): a real unmet `Music` submission in-bucket correctly surfaced
+`request_count: 0, unmet_intent_count: 1` (the whole point of the fix — a category with no
+open request now visible at all); a far-away submission, a `had_any_result: true`
+(resolved) submission, and a 35-day-old submission were each independently confirmed
+correctly excluded (`unmet_intent_count` stayed at exactly 1 throughout, not 2/3/4); a real
+open `Coffee` request alongside a real unmet `Coffee` submission correctly produced
+`request_count: 1, unmet_intent_count: 1` — both real, both present, never summed into a
+single 2; a genuine non-owner's call correctly returned 0 rows. All test rows deleted
+afterward; production confirmed back to its exact pre-test baseline (0 `intent_submissions`,
+0 `business_requests`, `Coastal Coffee`'s coordinates back to `null`, 11 gatherings, 1
+community). **Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+schema, patched the two known image-version gaps onto the test container only, then ran the
+full 81-file `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0
+on every file**, the new 7-column function signature confirmed as the *only* signature in
+the freshly-rebuilt database (the drop-before-create is real, not an orphaned second
+overload). Container removed afterward.
+
+Client-side verified via a direct `@babel/core` parse of the one touched file (clean), the
+full Jest suite (67/67, unaffected), and a full `npx expo export --platform ios` (clean, no
+bundling errors, 2251 modules, unchanged — one migration change plus one edited client file,
+no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new 🟡-marked row and the "never counted
+toward the number above" note both render correctly on a real device once real unmet-intent
+volume exists nearby a real business.
+
 ## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 1: community
 ## demand-generation — DONE
 

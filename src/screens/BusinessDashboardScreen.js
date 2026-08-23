@@ -1257,28 +1257,51 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.sectionHeader}>📊 Demand Near You</Text>
                 <Text style={styles.helperText}>
                   Real open requests within reach of your business right now, grouped by
-                  category -- a quantified early signal, not a review score. Reads near-zero
-                  until there's real volume nearby, which is expected this early on.
+                  category -- a quantified early signal, not a review score. Categories marked
+                  🟡 are a softer signal: real recent searches nearby that found nothing, not a
+                  confirmed request. Reads near-zero until there's real volume nearby, which is
+                  expected this early on.
                 </Text>
                 {aggregatedDemand.length === 0 ? (
                   <Text style={styles.emptyText}>No aggregated demand nearby yet.</Text>
                 ) : (
                   aggregatedDemand.map((d) => (
                     <View key={d.category} style={styles.gatheringRow}>
-                      <Text style={styles.offerTitle}>
-                        {d.request_count} {d.request_count === 1 ? 'person is' : 'people are'} looking for {d.category}
-                      </Text>
-                      <Text style={styles.breakdownText}>
-                        {[
-                          d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
-                          d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
-                          // "Nearby V3/V4" plan, Phase A: a real time-window
-                          // breakdown of already-collected data (business_requests.
-                          // time_window_start), not a new signal -- only shown when
-                          // at least one real open request actually specified a time.
-                          d.dominant_period ? `mostly ${d.dominant_period} (${d.dominant_period_count} of ${d.request_count})` : null,
-                        ].filter(Boolean).join(' · ')}
-                      </Text>
+                      {d.request_count > 0 ? (
+                        <Text style={styles.offerTitle}>
+                          {d.request_count} {d.request_count === 1 ? 'person is' : 'people are'} looking for {d.category}
+                        </Text>
+                      ) : (
+                        // Gap 1 (see CLAUDE.md's "Aug 18 2026" connectivity-audit
+                        // ledger): a real, honestly-softer row for a category with
+                        // zero currently-open requests but real recent unmet
+                        // intent nearby -- was previously invisible here entirely.
+                        // Deliberately never phrased like a confirmed count.
+                        <Text style={styles.offerTitle}>
+                          🟡 {d.unmet_intent_count} recent {d.unmet_intent_count === 1 ? 'search' : 'searches'} near you for {d.category} found nothing
+                        </Text>
+                      )}
+                      {d.request_count > 0 && (
+                        <Text style={styles.breakdownText}>
+                          {[
+                            d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
+                            d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                            // "Nearby V3/V4" plan, Phase A: a real time-window
+                            // breakdown of already-collected data (business_requests.
+                            // time_window_start), not a new signal -- only shown when
+                            // at least one real open request actually specified a time.
+                            d.dominant_period ? `mostly ${d.dominant_period} (${d.dominant_period_count} of ${d.request_count})` : null,
+                          ].filter(Boolean).join(' · ')}
+                        </Text>
+                      )}
+                      {d.request_count > 0 && d.unmet_intent_count > 0 && (
+                        // Gap 1's own "never blended" requirement -- a real,
+                        // separate softer signal on top of the real request
+                        // count above, never summed into it.
+                        <Text style={styles.helperText}>
+                          🟡 Also: {d.unmet_intent_count} more recent {d.unmet_intent_count === 1 ? 'search' : 'searches'} nearby found nothing -- a softer, unconfirmed signal, never counted toward the number above.
+                        </Text>
+                      )}
                       {/* "Nearby V3/V4" plan, Phase B: no new backend mechanism --
                           this pre-fills the already-real, already-verified Phase 4
                           availability-posting modal instead of making the owner
