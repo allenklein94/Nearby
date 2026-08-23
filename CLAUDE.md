@@ -4,6 +4,72 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 1: community
+## demand-generation — DONE
+
+Direct follow-up to a request to work through this file's own scattered "flagged but
+deferred" list. Triaged the whole list first (not built here — Stripe activation, real
+Resy/OpenTable/Uber booking, the Option B unified `plans` table, and "a gathering
+auto-becomes business-visible demand" all explicitly need either a real external account
+the user must set up, or an explicit architectural go-ahead this file's own conventions say
+needs the user present — none of those were touched). Three items were picked as genuinely
+open, safely completable, no external account needed: this one, Gap 1's demand-aggregation
+wiring, and the Business Partner "Request More Information" reviewer state — each gets its
+own section, committed/pushed individually as it lands, per this file's own restart-safety
+convention.
+
+**What this closes**: the Community Area work (Aug 17 2026, city/region/lat/lng on
+`communities`) deliberately left "communities becoming a real Tier 2 supply source for
+aggregated-demand notifications" as its own explicit follow-up — "a natural next step once
+Area exists," not built at the time. This is that follow-up.
+
+**Built**: `notify_community_area_demand_threshold()`
+(`20260823_community_area_demand_notify.sql`), a new AFTER INSERT trigger on
+`business_requests` — mirrors `notify_aggregated_demand_threshold()`'s own shape almost
+exactly (real haversine radius check, fire-once-on-first-crossing-2, a real push), just
+scoped to a community's own coarse Area point + `interest_tag` instead of a business's exact
+`brand_partners` location. Radius is a fixed 15 miles — reused from `AskBusinessScreen`'s
+own existing default request radius rather than inventing a new number, since communities
+have no per-request radius of their own and Area is deliberately coarse anyway. A community
+with no Area set is simply never matched (`area_lat`/`area_lng is not null`), same "excluded,
+never penalized" rule the intent resolver's own Community Area scoring already established.
+Notifies the community's own `creator`/`leader` rows only (`community_members.role in
+('creator','leader')`) — never exposed publicly, no new stranger-discovery surface.
+
+New push type `community_area_demand_growing` routed client-side
+(`services/notifications.js`) to `CommunityDetail` — the one real place this signal is
+actionable from, matching `aggregated_demand_growing`'s own "land where the signal is
+actually visible" precedent.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: a real
+disposable test community (`interest_tag: 'Coffee'`, a real Area point) with its creator as
+a real `community_members` row — a first real nearby `Coffee` request correctly produced no
+push (no prior demand); a second, ~3.4mi-away real request correctly crossed the threshold
+and produced exactly one new `net._http_response` row, a real `200` from the live `send-push`
+function; a third request in the same area/category correctly did **not** re-fire; a control
+pair of two requests in a non-matching category (`Music`, no community with that
+`interest_tag` exists) correctly never fired at all. All test rows deleted afterward;
+production confirmed back to its exact pre-test baseline (0 `business_requests`, 1
+pre-existing real community, 11 gatherings — matching this file's own recorded baseline).
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, then ran the full 80-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every
+file**, no `pg_cron`/`shared_preload_libraries` workaround needed this run, the new function
+and trigger both confirmed to exist in the freshly-rebuilt database. Container removed
+afterward.
+
+Client-side verified via a direct `@babel/core` parse of the one touched file (clean), the
+full Jest suite (67/67, unaffected — no pure-logic file was touched), and a full `npx expo
+export --platform ios` (clean, no bundling errors, 2251 modules, unchanged — one new
+migration plus an edit to one existing client file, no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm a real community leader actually receives and can
+tap through the new push on a real device, landing correctly on that community's own
+`CommunityDetailScreen`.
+
 ## Aug 23 2026 — convergence pass: P0/P1/P2 all DONE — "Find a Business for This Plan" merge,
 ## a converged Plan-creation entry point (business-anchored MakeAPlanScreen), and the
 ## Insights/Momentum merge into one "Your Activity" screen

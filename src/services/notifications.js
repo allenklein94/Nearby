@@ -195,6 +195,16 @@ export function routeNotificationTap(data) {
     case 'aggregated_demand_growing':
       navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
       break;
+    // Community demand-generation (see CLAUDE.md's "community
+    // demand-generation" entry) -- the community-Area-scoped counterpart to
+    // aggregated_demand_growing above, notifying a community's own
+    // creator/leaders instead of a business. Lands on that community's own
+    // detail screen, the one real place this signal is actionable from.
+    case 'community_area_demand_growing':
+      if (data.community_id) {
+        navigationRef.navigate('CommunityDetail', { communityId: data.community_id });
+      }
+      break;
     case 'business_offer_accepted':
       navigationRef.navigate('BusinessDashboard');
       break;
