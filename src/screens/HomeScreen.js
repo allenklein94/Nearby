@@ -146,6 +146,16 @@ export default function HomeScreen({ navigation }) {
   // "not today," and a fresh day naturally re-evaluates the real pattern.
   const [predictivePattern, setPredictivePattern] = useState(null);
   const [groupIntentSignal, setGroupIntentSignal] = useState(null);
+  // Phase 6 of the "Build everything" plan (CLAUDE.md) -- a real, one-time
+  // first-run demonstration moment, gated on the real profiles.
+  // seen_home_first_run_moment flag (same "shown once, flip a flag, never
+  // again" shape seen_browse_callout already established). null = not yet
+  // known (never renders while null, avoiding a flash before the profile
+  // fetch resolves); false = show it once; true = already seen, never
+  // shown again. Content is honest either way -- real top recommendations
+  // when Phase 1's engine has real content, an honest "we'll get smarter"
+  // state when it doesn't -- never fabricated narrative.
+  const [seenFirstRunMoment, setSeenFirstRunMoment] = useState(null);
   // Phase 1 of the "Build everything" plan (CLAUDE.md) -- the unified
   // recommendation engine's ranked output. A small, capped, additive
   // section (never a replacement for Best Pick/Trending/Because You Like),
@@ -166,9 +176,10 @@ export default function HomeScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
       if (myId) {
-        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories').eq('id', myId).single();
+        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
+        setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
       }
       const result = await getHomeDashboard();
       setDashboard(result);
@@ -624,6 +635,16 @@ export default function HomeScreen({ navigation }) {
     }
   }
 
+  // Same explicit-dismiss-only shape as DiscoveryScreen's own
+  // dismissBrowseCallout() -- marked seen only once the user actually
+  // acknowledges it, not silently on first render.
+  async function handleDismissFirstRunMoment() {
+    setSeenFirstRunMoment(true);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const myId = sessionData?.session?.user?.id;
+    if (myId) await supabase.from('profiles').update({ seen_home_first_run_moment: true }).eq('id', myId);
+  }
+
   function handlePredictiveAct() {
     if (!predictivePattern) return;
     const category = predictivePattern.category;
@@ -836,6 +857,51 @@ export default function HomeScreen({ navigation }) {
             </View>
           )}
         </View>
+
+        {/* Phase 6 of the "Build everything" plan (CLAUDE.md) -- a real,
+            one-time first-run demonstration moment. Deliberately not styled
+            like intentSection above (the one real hero on this screen, per
+            the locked Home-hierarchy work) -- same calm colors.surface/
+            colors.border treatment as outcomePromptCard, so it reads as a
+            real explanatory card, not a second competing hero. */}
+        {seenFirstRunMoment === false && (
+          <View style={styles.firstRunCard}>
+            <View style={styles.outcomePromptHeaderRow}>
+              <Text style={styles.firstRunHeading}>👋 This is Nearby</Text>
+              <TouchableOpacity onPress={handleDismissFirstRunMoment} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={16} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+            {homeRecommendations.length > 0 ? (
+              <>
+                <Text style={styles.firstRunBody}>
+                  We looked at what's real nearby right now — here's {homeRecommendations.length === 1 ? 'what we found' : 'a couple of things we found'}:
+                </Text>
+                {homeRecommendations.slice(0, 2).map((item) => (
+                  <View key={`firstrun-${item.type}-${item.id}`} style={styles.firstRunItemRow}>
+                    <Text style={styles.firstRunItemIcon}>{item.type === 'perk' ? '🎁' : categoryStyleFor(item.data?.interest_tag).icon}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.firstRunItemTitle}>{item.title}</Text>
+                      <Text style={styles.firstRunItemMeta}>{item.reasons.join(' · ')}</Text>
+                    </View>
+                  </View>
+                ))}
+                <Text style={styles.firstRunFooter}>
+                  That's the idea — real things nearby, with a real reason attached. Ask for
+                  anything up top, or scroll down for more.
+                </Text>
+              </>
+            ) : (
+              <Text style={styles.firstRunBody}>
+                Nothing real to show you here just yet — as you explore gatherings, communities,
+                and perks nearby, Nearby gets smarter about what's actually worth your time.
+              </Text>
+            )}
+            <TouchableOpacity onPress={handleDismissFirstRunMoment} accessibilityLabel="Got it" accessibilityRole="button">
+              <Text style={styles.firstRunGotIt}>Got it →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {(() => {
           const insight = getHomeInsight(dashboard);
@@ -1562,6 +1628,18 @@ const getStyles = (colors) => StyleSheet.create({
   outcomePromptButtonLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   predictiveActButton: { alignSelf: 'flex-start', paddingVertical: 6 },
   predictiveActButtonText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  firstRunCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  firstRunHeading: { ...typography.headline, color: colors.textPrimary },
+  firstRunBody: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
+  firstRunItemRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.sm },
+  firstRunItemIcon: { fontSize: 22, marginRight: spacing.sm },
+  firstRunItemTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  firstRunItemMeta: { ...typography.caption, color: colors.textTertiary, marginTop: 1 },
+  firstRunFooter: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.sm },
+  firstRunGotIt: { color: colors.primary, fontWeight: '700', fontSize: 13, alignSelf: 'flex-start' },
   forecastCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,

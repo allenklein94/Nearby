@@ -756,6 +756,78 @@ correctly on the right screen.
 already needs a real, shared status-label function to render its badge, so this is built as part
 of Phase 2's `PlanCard`, not a seventh phase.
 
+**Status: Phase 6 is DONE, build-wise — all three items closed (two built, one confirmed as an
+already-satisfied design constraint, not a build item).**
+
+- **First-run demonstration moment — DONE.** New `profiles.seen_home_first_run_moment` column
+  (`20260829_home_first_run_moment.sql`) — same "shown once, flip a flag, never again" shape
+  `seen_browse_callout` already established, a plain self-editable boolean, no `trusted_update`
+  guard needed (matches that column's own posture — purely a client-visible UI flag, not a
+  privileged field). **One honest interpretation call, not a silent deviation**: the plan's own
+  text says "a brand-new account's *first* Home load" — there's no way to retroactively know who
+  was genuinely brand-new at signup time for the 4 real profiles already in production, so this
+  follows `seen_browse_callout`'s own precedent exactly: gated on "hasn't seen it yet," not
+  "signed up after this shipped." A new card on `HomeScreen.js`, rendered right below the intent
+  box (the screen's one real hero, per the locked Home-hierarchy work — this card deliberately
+  reuses `outcomePromptCard`'s calm `colors.surface`/`colors.border` treatment, not
+  `intentSection`'s louder hero styling, so it doesn't compete with it), shown once
+  (`seenFirstRunMoment === false`) with two honest branches: when Phase 1's `homeRecommendations`
+  has real content, shows the real top 1-2 items (icon/title/real reasons, the identical row
+  shape "Nearby Right Now" already renders) under a "👋 This is Nearby" heading and a real
+  explanatory line — never the critique's own fabricated example ("two friends nearby tonight" —
+  no such signal exists in this app) — when it doesn't, an honest "Nothing real to show you here
+  just yet... Nearby gets smarter" state instead, matching this file's own "no invented data"
+  convention. Dismissed explicitly (an X icon or "Got it →", both call the same handler), same
+  explicit-dismiss-only shape `dismissBrowseCallout()` already uses — never auto-hidden on render.
+- **Activity as ecosystem memory — DONE.** New `getMyBusinessEcosystemActivity(myId)` in
+  `services/businessFulfillment.js` — a plain client read (no new RPC; RLS already scopes both
+  `business_request_offers`/`business_reservations` to the real requester via the same
+  "Requesters can view..." policies `BusinessRequestDetailScreen` already relies on, confirmed
+  live under genuine `SET ROLE authenticated` before trusting it, see below) surfacing the real
+  three events the plan names — a business's own reply, an accepted offer, a confirmed
+  reservation — each derived from real timestamp presence (`responded_at`/`accepted_at`/
+  `confirmed_at`), not a snapshot of an offer's current `status`. **A real design correction made
+  while building, not the plan's own literal framing**: gating strictly on current `status`
+  would have silently dropped a real "the business replied" fact the moment that same offer was
+  later accepted (status moves past `'offered'`) — fixed by deriving each event from its own
+  real timestamp column instead, so an offer that was replied to and later accepted correctly
+  produces *two* real memory-trail events at two real distinct times, not one that erases the
+  other. Interleaved into `ActivityScreen.js`'s existing "Earlier" chronological feed (same
+  `type`/`key`/`timestamp`/`raw` shape every other item there already uses, sorted by the same
+  real timestamp, not a separate section) — three new render branches (💬 reply / ✅ accepted /
+  📅 reservation confirmed), each tapping through to the existing `BusinessRequestDetail` screen.
+- **Business loop stays invisible-but-present — confirmed, not a separate build item, per the
+  plan's own framing.** Re-checked directly rather than assumed: Phase 1's recommendation reasons
+  (`homeRecommendations.js`) never surface a business as its own competing entry, only as part of
+  a scored candidate's real reasons; Phase 4's "Make a plan" flow is perk-anchored by design
+  (built directly around a specific business's own offer, never a separate ad unit). Both already
+  match this constraint exactly — nothing to change.
+
+**Verified**: the new migration applied to production (`enmosvippabmuqslzrox`) and confirmed live
+(`information_schema.columns`); the exact three query shapes `getMyBusinessEcosystemActivity()`
+runs were independently proven under genuine `SET ROLE authenticated` (not just the Management
+API's own table-owner bypass) against a real disposable test scenario — a real `business_requests`
+row for `Claude`, a real offer from `Coastal Coffee` carrying both `responded_at` and
+`accepted_at`, and a real confirmed `business_reservations` row — the real requester correctly
+sees all three rows across all three tables, a genuine stranger (`Allen Klein`) correctly sees
+zero across all three; all test rows deleted afterward, production confirmed back to its exact
+pre-test baseline (0 requests, 0 offers, 0 reservations). **Verified via a real from-scratch
+migration replay**: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image,
+dropped and recreated a truly empty `public` schema, patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`) onto the test container only, then ran the full
+77-file `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — exit 0 on every
+file, `profiles.seen_home_first_run_moment` confirmed to exist in the freshly-rebuilt database.
+Container removed afterward. Client-side verified via a direct `@babel/core` parse of all three
+touched files (clean), the full Jest suite (65/65, unaffected), and a full `npx expo export
+--platform ios` (clean, no bundling errors — edits to three existing files, one new migration,
+no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the first-run card actually renders on a genuinely
+never-seen account (both the real-content and honest-empty branches), that dismissing it via
+either the X or "Got it →" correctly never shows it again, and that the three new Activity event
+types render and tap through correctly against real (not simulated) data.
+
 **Status: plan locked, per direct instruction to build everything and remove the freeze for this
 scope. Nothing in Phases 1-6 has been built yet — execution starts with Phase 1 next, each
 phase's own status updated here and committed/pushed individually as it lands, matching every

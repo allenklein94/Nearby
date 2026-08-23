@@ -9,6 +9,7 @@ import { sendNoticeTo } from '../services/noticeActions';
 import { getNearbyMatches } from '../services/proximity';
 import { getPendingFriendRequests, respondToFriendRequest } from '../services/friends';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
+import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
 import { getMyPendingGroupPlanInvites } from '../services/groupPlans';
@@ -34,6 +35,11 @@ import { typography, spacing, radius } from '../theme';
 // anywhere in its schema (just title/body/created_at), so there's no real
 // signal to sort on; scoping "Needs Your Attention" to requests/invitations
 // only is what the data actually supports, not an invented distinction.
+// Phase 6 ("Build everything" plan, CLAUDE.md): "Earlier" also carries real
+// business-request/offer ecosystem events (a business's own reply, an
+// accepted offer, a confirmed reservation) — see getMyBusinessEcosystemActivity()
+// — interleaved by the same real timestamp as everything else here, not a
+// separate section.
 // `initialSubSection` (e.g. Home's pending-invites banner deep-linking into
 // the real Activity tab) still brings the requested content to the front —
 // either promoting the whole Today cluster ahead of Needs Your Attention,
@@ -153,10 +159,17 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       raw: u,
     }));
 
+    // Phase 6 of the "build everything" plan (CLAUDE.md): "Activity as
+    // ecosystem memory" — real business-request/offer status-change
+    // events (a business's own reply, an accepted offer, a confirmed
+    // reservation), interleaved into the same chronological feed as
+    // every other real signal here, not a separate section.
+    const businessEcosystemItems = await getMyBusinessEcosystemActivity(myId).catch(() => []);
+
     // Friend requests are no longer interleaved into this chronological
     // feed — they now render in the "Invitations" group below instead,
     // alongside gathering/community invites, so they aren't shown twice.
-    const allItems = [...noticeItems, ...sightingItems, ...businessUpdateItems].sort(
+    const allItems = [...noticeItems, ...sightingItems, ...businessUpdateItems, ...businessEcosystemItems].sort(
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
 
@@ -561,6 +574,33 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   <View style={{ flex: 1 }}>
                     <Text style={styles.rowTitle}>{u.brand_partners?.name}: {u.title}</Text>
                     {u.body ? <Text style={styles.rowSubtitle}>{u.body}</Text> : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            }
+
+            if (item.type === 'business_reply' || item.type === 'business_offer_accepted' || item.type === 'business_reservation_confirmed') {
+              const { offer, request, partnerName } = item.raw;
+              const icon = item.type === 'business_reply' ? '💬' : item.type === 'business_offer_accepted' ? '✅' : '📅';
+              const title = item.type === 'business_reply'
+                ? `${partnerName} responded to your request`
+                : item.type === 'business_offer_accepted'
+                  ? `You accepted ${partnerName}'s offer`
+                  : `${partnerName} confirmed your reservation`;
+              const subtitleParts = [formatOfferSummary(offer), request?.raw_text].filter(Boolean);
+              return (
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => request?.id && navigation.navigate('BusinessRequestDetail', { requestId: request.id })}
+                  accessibilityLabel={`${title}${subtitleParts.length > 0 ? `, ${subtitleParts.join(', ')}` : ''}`}
+                  accessibilityRole="button"
+                >
+                  <View style={[styles.rowAvatar, styles.avatarPlaceholder, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ fontSize: 20 }}>{icon}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>{title}</Text>
+                    {subtitleParts.length > 0 && <Text style={styles.rowSubtitle}>{subtitleParts.join(' · ')}</Text>}
                   </View>
                 </TouchableOpacity>
               );

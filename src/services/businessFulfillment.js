@@ -481,3 +481,88 @@ export function formatPartnerReliabilityLine(reputation, responseTime) {
   }
   return parts.length > 0 ? `⭐ ${parts.join(' · ')}` : null;
 }
+
+// Phase 6 of the "build everything" plan (see CLAUDE.md): "Activity as
+// ecosystem memory" — the one real, checkable gap that section named was
+// that business-side events (a business's own reply, an accepted offer, a
+// confirmed reservation) weren't represented as Activity rows the way
+// social events already are. Reuses real, already-tracked columns
+// (business_request_offers.status/responded_at/accepted_at,
+// business_reservations.status/confirmed_at) -- no new signal, no new
+// table, and RLS already scopes both tables to the real requester (the
+// same "Requesters can view..." policies BusinessRequestDetailScreen
+// itself already relies on), so this is a plain client read, no new RPC.
+// Deliberately scoped to exactly the three events the plan names, not a
+// broader business-activity feed.
+export async function getMyBusinessEcosystemActivity(myId) {
+  if (!myId) return [];
+
+  const { data: myRequests } = await supabase
+    .from('business_requests')
+    .select('id, raw_text, category')
+    .eq('requester_id', myId);
+
+  const requestIds = (myRequests ?? []).map((r) => r.id);
+  if (requestIds.length === 0) return [];
+
+  const requestById = Object.fromEntries((myRequests ?? []).map((r) => [r.id, r]));
+
+  // No status filter here, deliberately -- an offer that's since moved on
+  // to 'accepted' or 'completed' still genuinely had a real 'offered'
+  // moment (responded_at), and the memory trail should keep showing both
+  // real facts (a reply, then later an accept) rather than only the
+  // offer's own current status. Each event below is derived from real
+  // timestamp presence, not a snapshot of "what status is this row at
+  // right now".
+  const { data: offers } = await supabase
+    .from('business_request_offers')
+    .select('id, request_id, offer_type, offer_price, status, responded_at, accepted_at, brand_partners(name)')
+    .in('request_id', requestIds);
+
+  const events = [];
+
+  for (const offer of offers ?? []) {
+    const request = requestById[offer.request_id];
+    const partnerName = offer.brand_partners?.name ?? 'A local business';
+    if (offer.responded_at) {
+      events.push({
+        type: 'business_reply',
+        key: `business-reply-${offer.id}`,
+        timestamp: offer.responded_at,
+        raw: { offer, request, partnerName },
+      });
+    }
+    if (offer.accepted_at) {
+      events.push({
+        type: 'business_offer_accepted',
+        key: `business-accepted-${offer.id}`,
+        timestamp: offer.accepted_at,
+        raw: { offer, request, partnerName },
+      });
+    }
+  }
+
+  const acceptedOfferIds = (offers ?? []).filter((o) => o.accepted_at).map((o) => o.id);
+  if (acceptedOfferIds.length > 0) {
+    const { data: reservations } = await supabase
+      .from('business_reservations')
+      .select('id, offer_id, status, confirmed_at')
+      .in('offer_id', acceptedOfferIds)
+      .eq('status', 'confirmed');
+
+    const offerById = Object.fromEntries((offers ?? []).map((o) => [o.id, o]));
+    for (const reservation of reservations ?? []) {
+      const offer = offerById[reservation.offer_id];
+      if (!offer || !reservation.confirmed_at) continue;
+      const request = requestById[offer.request_id];
+      events.push({
+        type: 'business_reservation_confirmed',
+        key: `business-reservation-${reservation.id}`,
+        timestamp: reservation.confirmed_at,
+        raw: { offer, request, partnerName: offer.brand_partners?.name ?? 'A local business' },
+      });
+    }
+  }
+
+  return events;
+}
