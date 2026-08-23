@@ -63,7 +63,15 @@ export async function getProfileQuickStats() {
   };
 }
 
-export async function getInboxUnreadCount() {
+// Phase 5 of the "build everything" plan (see CLAUDE.md): the old combined
+// Inbox tab badge (messages + notices + pending requests, all in one
+// number) was split in two once Messages and Activity became genuinely
+// separate destinations (a persistent header icon vs. its own bottom
+// tab) -- getUnreadMessagesCount() feeds the Messages icon,
+// getActivityBadgeCount() feeds the Activity tab. Neither is a new
+// signal; both are the same real queries the old combined function
+// already ran, just reported separately instead of summed together.
+export async function getUnreadMessagesCount() {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
   if (!myId) return 0;
@@ -73,16 +81,21 @@ export async function getInboxUnreadCount() {
     .select('id')
     .or(`user_a.eq.${myId},user_b.eq.${myId}`);
 
-  let unreadMessages = 0;
-  if (myMatches && myMatches.length > 0) {
-    const { count } = await supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .in('match_id', myMatches.map((m) => m.id))
-      .neq('sender_id', myId)
-      .is('read_at', null);
-    unreadMessages = count ?? 0;
-  }
+  if (!myMatches || myMatches.length === 0) return 0;
+
+  const { count } = await supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .in('match_id', myMatches.map((m) => m.id))
+    .neq('sender_id', myId)
+    .is('read_at', null);
+  return count ?? 0;
+}
+
+export async function getActivityBadgeCount() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return 0;
 
   const { data: profile } = await supabase.from('profiles').select('last_activity_check').eq('id', myId).single();
   let newActivity = 0;
@@ -95,22 +108,18 @@ export async function getInboxUnreadCount() {
     newActivity = count ?? 0;
   }
 
-  // Was only ever messages + notices — undercounted the Inbox tab badge,
-  // since pending gathering-join requests (for hosts), pending friend
-  // requests, and pending gathering/community invites all live in Inbox
-  // too but never moved this number.
   const pendingCount = await getPendingInvitesCount(myId);
 
-  return unreadMessages + newActivity + pendingCount;
+  return newActivity + pendingCount;
 }
 
 // Pending gathering-join requests (for hosts), pending friend requests,
 // pending gathering/community invites, and pending group-plan action
-// items — the things Inbox's Requests/Invites tabs and (as of the Aug 15
-// connectivity audit's Finding G.1) group plans actually surface, kept
-// separate from getInboxUnreadCount()'s messages/notices so Home can show
-// a real "N pending invites" banner without also counting unread chat
-// messages. Group plans were previously invisible here entirely — the
+// items — the things Activity's Needs-Your-Attention groups and (as of
+// the Aug 15 connectivity audit's Finding G.1) group plans actually
+// surface, kept separate from getUnreadMessagesCount()/getActivityBadgeCount()
+// so Home can show a real "N pending invites" banner without also counting
+// unread chat messages. Group plans were previously invisible here entirely — the
 // only way to discover a pending invite/re-consent/offer-confirmation was
 // tapping the one real push notification for it; this closes that gap.
 export async function getPendingInvitesCount(myIdParam) {

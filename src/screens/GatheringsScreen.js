@@ -362,7 +362,7 @@ export default function GatheringsScreen({ navigation, route }) {
       } else if (result?.autoApproved) {
         Alert.alert("You're In! ✓", "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.", [
           { text: 'Keep Browsing', style: 'cancel' },
-          { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
+          { text: 'Send a Message', onPress: () => navigation.navigate('Messages') },
         ]);
       } else {
         Alert.alert("You're interested!", "The host will review and let you know.");

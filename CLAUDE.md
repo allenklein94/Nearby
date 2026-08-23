@@ -634,6 +634,100 @@ re-verified against the new navigator shape via React Navigation's own `getState
 work) before considered done. **This phase is the one most likely to need its own dedicated,
 uninterrupted pass** given its blast radius — sequenced last on purpose.
 
+**Status: Phase 5 is DONE, build-wise — picked up mid-build after a codespace restart, finished
+and verified in this pass.** On resume, `git status` showed real, uncommitted work already in
+progress: `src/components/TabHeaderActions.js` and `src/screens/PeopleScreen.js` both fully
+written (a persistent Messages/Profile header-icon pair, and the new People tab absorbing
+Discover's Stories carousel + "People Nearby" Dating/Friends module, exactly per the reconciled
+target model above), `HomeScreen.js` already wired to render `TabHeaderActions`, and
+`DiscoverHubScreen.js` already stripped of the Stories/People-Nearby content that moved to
+`PeopleScreen`. `homeDashboard.js` had also already been split — `getInboxUnreadCount()` became
+two real, separately-reported functions, `getUnreadMessagesCount()` (feeds the Messages icon's
+badge) and `getActivityBadgeCount()` (feeds the Activity tab's badge, no longer double-counting
+unread messages into it) — but nothing yet consumed the new split, and `RootNavigator.js` itself
+was still the untouched old 5-tab shape (Home/Discover/Create/Matches/Profile). **The Profile
+open question this plan's own text flagged ("confirm this specific piece before Phase 5 actually
+touches navigation") was not independently re-confirmed with the user this pass** — the
+already-built `TabHeaderActions` (Messages icon + Profile avatar icon, both header-mounted) is
+unambiguous evidence the prior pass had already resolved it in the direction this plan's own text
+proposed ("fold it into the same persistent-header-icon pattern as Messages"), and the user's own
+restart-continuation instruction ("continue... phase 5") is read here as authorization to finish
+that already-in-flight direction, not license to silently reopen it. Flagged plainly rather than
+silently smoothed over, since this file's own convention is to say so when a checkpoint the plan
+itself asked for wasn't literally re-confirmed.
+
+Finished this pass, on top of what was already there:
+- **`RootNavigator.js`'s `Tab.Navigator` rebuilt to the real 4 tabs** — Home / People / Create /
+  Activity — replacing the old Home/Discover/Create/Matches/Profile five. `Activity` renders
+  `ActivityScreen` directly (no more toggle wrapper — see below), badged with the real
+  `getActivityBadgeCount()` (refreshed on a 15s interval *and* on tab focus, not just the
+  interval, so returning to the tab after clearing something reflects it immediately). `Discover`
+  and `Profile` both left the tab bar but stay real, fully working, pushed `Stack.Screen`s — same
+  `headerShown: true, title: '', headerTransparent: true` shape `Gatherings`/`Communities` already
+  use for a screen that builds its own in-JS header/title (gives a real native back chevron with
+  no header-title duplication), not deleted or demoted to something lesser.
+- **New `src/screens/MessagesScreen.js`** — the "messages" half of the old `InboxScreen.js`
+  (the Friends quick-link, the group-chats chip row, `MatchesScreen` embedded), extracted as its
+  own real pushed screen (native header, title "Messages", real back chevron) reached from
+  `TabHeaderActions`' Messages icon on all 4 tabs — not a rebuild, `MatchesScreen`/the group-chat
+  fetch are both completely unmodified underneath.
+- **`InboxScreen.js` deleted outright** — its entire role is now split cleanly in two: the
+  Activity tab (real `ActivityScreen`, no wrapper) and `MessagesScreen` (above). Confirmed zero
+  remaining references anywhere before deleting.
+- **`ActivityScreen.js` now correctly serves three real callers under one component**: the actual
+  `Activity` bottom tab, the standalone pushed `Notices` route (cold-start push taps land here,
+  unchanged), and — still — a direct `initialSubSection` prop for any future embedder. Gained a
+  `route` param with `initialSubSection` falling back to `route?.params?.initialSubSection` (so a
+  real tab/route navigation with params reorders the clusters correctly, not just a prop from an
+  embedding parent that no longer exists), and `TabHeaderActions` only renders when
+  `route?.name === 'Activity'` (never on the `Notices` push, which already has its own back
+  chevron and would otherwise show a redundant Messages/Profile pair).
+- **`CreateHubScreen.js` gained `TabHeaderActions` plus a real "🔎 Browse what's already out
+  there" link into `Discover`** — the one real, honest reachable-link version of "Create absorbs
+  Discover's browsing role" this pass actually built. **Disclosed, not silently smoothed over**:
+  the plan's own fuller text ("leaning further into Create 2.0's already-existing discover-first
+  behavior... to cover what Discover's other sections show today") describes a real behavioral
+  merge into Create's own flow — that was **not** attempted this pass. `DiscoverHubScreen` stays
+  a complete, independent, fully-working screen (search/filter/map/list over Gatherings/
+  Communities/Places/Perks) reachable by one link, not folded into Create's own UI. A genuine
+  future scope item if the fuller merge is ever wanted, not assumed done here.
+- **Fixed every stale `navigate('Matches', ...)` call site app-wide** (a real grep-driven pass,
+  per the plan's own instruction) — `ActivityScreen.js`'s two "Send a Message" alert actions,
+  `GatheringsScreen.js`'s "Send a Message" alert action, and Home's unread-messages row all now
+  target `Messages`; Home's pending-invites banner now targets `Activity` with
+  `initialSubSection: 'invitations'` (was `initialSection` on the old `Matches` route) — each
+  retargeted to whichever real destination actually matches its own intent, not a blanket
+  find-replace. Re-grepped afterward: zero remaining `navigate('Matches', ...)` call sites
+  anywhere in `src/`.
+- **Dead code removed**, found while finishing the above: `DiscoverHubScreen.js`'s now-orphaned
+  `PEOPLE_MODES` const, `StoriesRow` import, and `peopleModule*` styles (all fully absorbed into
+  `PeopleScreen`); `RootNavigator.js`'s `ProfileTabIcon`/`profileIconStyles` (the old Profile
+  tab's photo-avatar icon logic — `TabHeaderActions` now independently loads and renders the same
+  photo for its own avatar icon) and the now-unused `supabase`/`getSignedPhotoUrl`/`View`/
+  `Image`/`StyleSheet` imports that only existed to support it.
+- **Every existing deep link re-verified against the new navigator shape**, per the plan's own
+  requirement — both `linking.config.screens` entries (`GatheringDetail`, `BusinessPartnerApply`)
+  confirmed via a direct `getStateFromPath()` call (same method Create 2.0's own deep-linking work
+  already established) to still resolve correctly, unaffected since neither targets a route that
+  moved; the two stash-then-imperatively-navigate mechanisms (`nearby://business/:id`'s
+  `resolveAndNavigateToBusiness`, and the cold-start `nearby://gathering/:id` consume) both
+  confirmed via direct code read to target `BusinessDashboard`/`BusinessProfile`/`GatheringDetail`
+  — all three untouched, top-level `Stack.Screen`s, not affected by the tab restructuring.
+
+**Verified**: a direct `@babel/core` parse of every touched/new file (clean); a full `npx expo
+export --platform ios` (clean, no bundling errors, 2251 modules); the full Jest suite (65/65
+passing, unaffected — no pure-logic file was touched this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the real 4-tab bar renders and switches correctly,
+that `TabHeaderActions`' Messages badge count and Profile avatar render and navigate correctly
+from all 4 tabs, that the transparent-header back chevron on the now-pushed `Profile`/`Discover`
+screens doesn't visually clash with either screen's own in-JS header row (same established
+pattern `Gatherings`/`Communities` already use, but neither of those was ever reached any other
+way before, so this is a genuinely new combination worth a specific check), and that a real
+push-notification tap and a real `nearby://` link tap (both warm and cold-start) still land
+correctly on the right screen.
+
 ### Phase 6 — Smaller polish: a real "why Nearby" first-run moment, Activity as full ecosystem
 ### memory, business loop stays invisible-but-present
 

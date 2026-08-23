@@ -11,7 +11,6 @@ import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
-import StoriesRow from '../components/StoriesRow';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
 import { useTheme } from '../context/ThemeContext';
@@ -23,28 +22,6 @@ const TYPE_FILTERS = [
   { key: 'communities', label: 'Communities' },
   { key: 'places', label: 'Places' },
   { key: 'perks', label: 'Perks' },
-];
-
-// Dating and Friends stay two genuinely separate matching systems under
-// the hood (separate opt-in flags, separate swipe tables, separate
-// exclusion/safety rules) -- this is a navigation-only grouping, not a
-// combined candidate pool or a filter over one feed. Deliberately two
-// always-visible rows, not a filter-gated single card: a filter would
-// cost an extra tap on whichever path isn't the default, for a launcher
-// that only ever opens one of two other screens anyway -- there's no
-// live feed here for a filter to actually filter. "Everyone" was
-// deliberately left off both rows: there's no real merged pool to show
-// under that label, and inventing one would mean building a new combined
-// feed across two independently safety-gated systems, a real
-// architecture decision on its own, not a relabel. See CLAUDE.md's
-// Aug 22 2026 entry for the full reasoning.
-// The Friends row's icon (🤝) intentionally matches FriendDiscoveryScreen's
-// own explainer and Settings' "Friends" row exactly, rather than a new
-// icon invented just for this entry point -- the row should visually
-// teach "this is the same Friends feature you're about to open."
-const PEOPLE_MODES = [
-  { key: 'dating', route: 'Nearby', icon: '💗', title: 'Dating', subtitle: 'Meet people nearby who are open to dating' },
-  { key: 'friends', route: 'FriendDiscovery', icon: '🤝', title: 'Friends', subtitle: 'Meet new people nearby and make friends' },
 ];
 
 const PLACE_CATEGORIES = [
@@ -72,15 +49,10 @@ const PREVIEW_COUNT = 3;
 // by Home's bestPick and GatheringDetailScreen) rather than a new LLM
 // call, matching this codebase's existing no-new-API-cost convention.
 //
-// People entry point (Aug 22 2026): what used to be two separate,
-// disconnected-looking cards here -- "Dating Nearby" and "Meet New
-// Friends" -- are now one "People Nearby" module (PEOPLE_MODES, above)
-// with two always-visible rows. One concept (discovering people), two
-// clearly differentiated intentions (Dating / Friends) -- each row still
-// opens the same two existing, unmodified screens underneath (Nearby
-// for dating, FriendDiscovery for friends), since those two screens'
-// own matching engines/safety rules were deliberately left untouched.
-// See CLAUDE.md's Aug 22 2026 entry for the full reasoning.
+// Stories and the People Nearby (Dating/Friends) module moved off this
+// screen onto the new 👥 People tab as part of Phase 5's bottom-nav
+// restructuring (CLAUDE.md, Aug 22 2026) -- Discover's own job narrows
+// to Gatherings/Communities/Places/Perks browsing.
 export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -395,34 +367,6 @@ export default function DiscoverHubScreen({ navigation }) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {isAll && <StoriesRow />}
-          {isAll && (
-            <>
-              <Text style={styles.sectionHeader}>People Nearby</Text>
-              <View style={styles.peopleModule}>
-                {PEOPLE_MODES.map((mode, index) => (
-                  <React.Fragment key={mode.key}>
-                    {index > 0 && <View style={styles.peopleModuleDivider} />}
-                    <TouchableOpacity
-                      style={styles.peopleModuleRow}
-                      onPress={() => navigation.navigate(mode.route)}
-                      activeOpacity={0.7}
-                      accessibilityLabel={`${mode.title}, ${mode.subtitle}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.cardIcon}>{mode.icon}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.cardTitle}>{mode.title}</Text>
-                        <Text style={styles.cardSubtitle}>{mode.subtitle}</Text>
-                      </View>
-                      <Text style={styles.cardChevron}>›</Text>
-                    </TouchableOpacity>
-                  </React.Fragment>
-                ))}
-              </View>
-            </>
-          )}
-
           {isAll && (
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
               <TouchableOpacity
@@ -808,12 +752,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
   },
-  peopleModule: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
-    borderColor: colors.border, marginBottom: spacing.md, ...shadow.card, overflow: 'hidden',
-  },
-  peopleModuleRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
-  peopleModuleDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginHorizontal: spacing.lg },
   cardImage: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
   cardIcon: { fontSize: 32, marginRight: spacing.md },
   cardTitle: { ...typography.headline, color: colors.textPrimary },

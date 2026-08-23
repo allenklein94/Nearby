@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Image, StyleSheet, Animated, TouchableOpacity, Linking } from 'react-native';
+import { Animated, TouchableOpacity, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -11,9 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { registerForPushNotifications, updateBadgeCount, consumePendingNotificationTap } from '../services/notifications';
 import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
-import { supabase } from '../services/supabase';
-import { getSignedPhotoUrl } from '../services/photos';
-import { getInboxUnreadCount } from '../services/homeDashboard';
+import { getActivityBadgeCount } from '../services/homeDashboard';
 import { getMyManagedPartner } from '../services/brandOffers';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
@@ -26,7 +24,8 @@ import HomeScreen from '../screens/HomeScreen';
 import DiscoverHubScreen from '../screens/DiscoverHubScreen';
 import FriendDiscoveryScreen from '../screens/FriendDiscoveryScreen';
 import CreateHubScreen from '../screens/CreateHubScreen';
-import InboxScreen from '../screens/InboxScreen';
+import PeopleScreen from '../screens/PeopleScreen';
+import MessagesScreen from '../screens/MessagesScreen';
 import CommunitiesScreen from '../screens/CommunitiesScreen';
 import CreateCommunityScreen from '../screens/CreateCommunityScreen';
 import CommunityDetailScreen from '../screens/CommunityDetailScreen';
@@ -182,33 +181,21 @@ async function resolveAndNavigateToBusiness(partnerId) {
   }
 }
 
+// Phase 5 of the "build everything" plan (see CLAUDE.md): the
+// reconciled 4-tab target model -- Home / People / Create / Activity.
+// Discover and Profile both left the bottom bar (Discover's browsing
+// content is reachable via Create's own "Browse" entry point below;
+// Profile moved to the persistent header-icon avatar, TabHeaderActions)
+// -- both are still real, registered Stack screens, just pushed rather
+// than tabbed, so every existing `navigate('Discover'|'Profile')` call
+// site still resolves via the normal parent-navigator bubbling React
+// Navigation already does for an unmatched route name.
 const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
-  Discover: { active: 'compass', inactive: 'compass-outline', label: 'Discover' },
+  People: { active: 'people', inactive: 'people-outline', label: 'People' },
   Create: { active: 'add-circle', inactive: 'add-circle-outline', label: 'Create' },
-  Matches: { active: 'chatbubbles', inactive: 'chatbubbles-outline', label: 'Inbox' },
+  Activity: { active: 'notifications', inactive: 'notifications-outline', label: 'Activity' },
 };
-
-function ProfileTabIcon({ focused, size, colors, photoUrl }) {
-  if (!photoUrl) {
-    return <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={size} color={focused ? colors.primary : colors.textTertiary} />;
-  }
-
-  return (
-    <View style={[
-      profileIconStyles.wrap,
-      { width: size + 6, height: size + 6, borderRadius: (size + 6) / 2 },
-      focused && { borderWidth: 2, borderColor: colors.primary },
-    ]}>
-      <Image source={{ uri: photoUrl }} style={[profileIconStyles.image, { width: size, height: size, borderRadius: size / 2 }]} />
-    </View>
-  );
-}
-
-const profileIconStyles = StyleSheet.create({
-  wrap: { justifyContent: 'center', alignItems: 'center' },
-  image: {},
-});
 
 function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityState }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -241,31 +228,17 @@ function BouncyTabButton({ children, onPress, accessibilityLabel, accessibilityS
 
 function MainTabs() {
   const { colors } = useTheme();
-  const [myPhotoUrl, setMyPhotoUrl] = useState(null);
-  const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
+  const [activityBadgeCount, setActivityBadgeCount] = useState(0);
 
   useEffect(() => {
-    loadMyPhoto();
-    loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 15000);
+    loadActivityBadgeCount();
+    const interval = setInterval(loadActivityBadgeCount, 15000);
     return () => clearInterval(interval);
   }, []);
 
-  async function loadUnreadCount() {
-    const count = await getInboxUnreadCount();
-    setInboxUnreadCount(count);
-  }
-
-  async function loadMyPhoto() {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData?.session?.user?.id;
-    if (!userId) return;
-
-    const { data } = await supabase.from('profiles').select('photo_url').eq('id', userId).single();
-    if (data?.photo_url) {
-      const url = await getSignedPhotoUrl(data.photo_url);
-      setMyPhotoUrl(url);
-    }
+  async function loadActivityBadgeCount() {
+    const count = await getActivityBadgeCount();
+    setActivityBadgeCount(count);
   }
 
   return (
@@ -278,13 +251,10 @@ function MainTabs() {
         tabBarButton: (props) => (
           <BouncyTabButton
             {...props}
-            accessibilityLabel={route.name === 'Profile' ? 'Your Profile' : TAB_ICONS[route.name]?.label}
+            accessibilityLabel={TAB_ICONS[route.name]?.label}
           />
         ),
         tabBarIcon: ({ focused, size }) => {
-          if (route.name === 'Profile') {
-            return <ProfileTabIcon focused={focused} size={size} colors={colors} photoUrl={myPhotoUrl} />;
-          }
           const iconSet = TAB_ICONS[route.name];
           const iconName = focused ? iconSet.active : iconSet.inactive;
           return <Ionicons name={iconName} size={size} color={focused ? colors.primary : colors.textTertiary} />;
@@ -292,10 +262,9 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={DiscoverHubScreen} />
+      <Tab.Screen name="People" component={PeopleScreen} />
       <Tab.Screen name="Create" component={CreateHubScreen} />
-      <Tab.Screen name="Matches" component={InboxScreen} options={{ tabBarLabel: 'Inbox', tabBarBadge: inboxUnreadCount > 0 ? inboxUnreadCount : undefined }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} listeners={{ focus: loadMyPhoto }} options={{ tabBarLabel: 'You' }} />
+      <Tab.Screen name="Activity" component={ActivityScreen} options={{ tabBarBadge: activityBadgeCount > 0 ? activityBadgeCount : undefined }} listeners={{ focus: loadActivityBadgeCount }} />
     </Tab.Navigator>
   );
 }
@@ -408,6 +377,16 @@ export default function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
+            {/* Phase 5: Profile and Discover both left the bottom tab bar --
+                Profile reached via the persistent header-icon avatar
+                (TabHeaderActions), Discover reached via Create's own
+                "Browse" entry point -- both stay real, pushed screens (a
+                transparent native header for the real back chevron, same
+                shape as Nearby/Gatherings/Communities below, since both
+                already render their own in-JS header/title). */}
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Discover" component={DiscoverHubScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: 'Messages', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             {/* headerShown starts true (blank title, real back chevron) so
                 the loading/error states -- before ChatScreen's own init()

@@ -21,6 +21,7 @@ import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
 import LoadErrorState from '../components/LoadErrorState';
+import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime } from '../utils/timeContext';
@@ -732,8 +733,13 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
-        <Text style={styles.subtitle}>{PERIOD_SUBTITLES[period]}</Text>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.greeting}>{getGreeting()}{myName ? `, ${myName}` : ''} 👋</Text>
+            <Text style={styles.subtitle}>{PERIOD_SUBTITLES[period]}</Text>
+          </View>
+          <TabHeaderActions navigation={navigation} />
+        </View>
 
         <View style={[styles.intentSection, shadow.card]}>
           <Text style={styles.intentHeading}>What do you want to do?</Text>
@@ -1027,7 +1033,7 @@ export default function HomeScreen({ navigation }) {
             {pendingInvitesCount > 0 && (
               <TouchableOpacity
                 style={styles.pendingInvitesBanner}
-                onPress={() => navigation.navigate('Matches', { initialSection: 'invitations' })}
+                onPress={() => navigation.navigate('Activity', { initialSubSection: 'invitations' })}
                 activeOpacity={0.85}
                 accessibilityLabel={`${pendingInvitesCount} pending invite${pendingInvitesCount === 1 ? '' : 's'} and requests`}
                 accessibilityRole="button"
@@ -1253,7 +1259,7 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Matches')} accessibilityLabel={`${dashboard?.unreadCount ?? 0} unread messages, tap to view`} accessibilityRole="button">
+          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Messages')} accessibilityLabel={`${dashboard?.unreadCount ?? 0} unread messages, tap to view`} accessibilityRole="button">
             <Ionicons name="chatbubble-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.unreadCount ?? 0} unread message{dashboard?.unreadCount === 1 ? '' : 's'}</Text>
             <Text style={styles.cardChevron}>›</Text>
@@ -1424,6 +1430,7 @@ export default function HomeScreen({ navigation }) {
 
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   greeting: { ...typography.title, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },

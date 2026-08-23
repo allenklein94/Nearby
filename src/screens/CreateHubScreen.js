@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CREATE_HUB_OPTIONS, SUB_OPTIONS } from '../components/StartSomethingModal';
+import TabHeaderActions from '../components/TabHeaderActions';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -101,8 +102,30 @@ export default function CreateHubScreen({ navigation }) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Create</Text>
-          <Text style={styles.subtitle}>What do you want to create?</Text>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>Create</Text>
+              <Text style={styles.subtitle}>What do you want to create?</Text>
+            </View>
+            <TabHeaderActions navigation={navigation} />
+          </View>
+
+          {/* Phase 5: Discover left the bottom tab bar; this is the one
+              real reachable link into it from here (Create absorbs
+              Discover's browsing role by pointer, not yet a full
+              behavioral merge into this screen's own flow -- disclosed
+              in CLAUDE.md rather than silently claimed done). */}
+          {!activeSubCategory && !showSomethingElse && (
+            <TouchableOpacity
+              style={styles.browseLink}
+              onPress={() => navigation.navigate('Discover')}
+              accessibilityLabel="Browse gatherings, communities, places, and perks"
+              accessibilityRole="button"
+            >
+              <Text style={styles.browseLinkText}>🔎 Browse what's already out there</Text>
+              <Text style={styles.browseLinkChevron}>›</Text>
+            </TouchableOpacity>
+          )}
 
           {(activeSubCategory || showSomethingElse) && (
             <TouchableOpacity onPress={resetGrid} accessibilityLabel="Back" accessibilityRole="button">
@@ -179,9 +202,17 @@ export default function CreateHubScreen({ navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   backLink: { color: colors.primary, fontWeight: '600', marginBottom: spacing.md },
+  browseLink: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  browseLinkText: { ...typography.body, color: colors.textPrimary, fontWeight: '600', flex: 1 },
+  browseLinkChevron: { color: colors.textTertiary, fontSize: 22 },
   gridHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridItem: {

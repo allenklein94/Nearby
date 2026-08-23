@@ -14,6 +14,7 @@ import { getMyReceivedInvites, respondToInvite } from '../services/invites';
 import { getMyPendingGroupPlanInvites } from '../services/groupPlans';
 import SkeletonGridCard from '../components/SkeletonGridCard';
 import LoadErrorState from '../components/LoadErrorState';
+import TabHeaderActions from '../components/TabHeaderActions';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -33,15 +34,24 @@ import { typography, spacing, radius } from '../theme';
 // anywhere in its schema (just title/body/created_at), so there's no real
 // signal to sort on; scoping "Needs Your Attention" to requests/invitations
 // only is what the data actually supports, not an invented distinction.
-// `initialSubSection` (Inbox's deep-link) still brings the requested content
-// to the front — either promoting the whole Today cluster ahead of Needs
-// Your Attention, or reordering which sub-group leads inside it — without
+// `initialSubSection` (e.g. Home's pending-invites banner deep-linking into
+// the real Activity tab) still brings the requested content to the front —
+// either promoting the whole Today cluster ahead of Needs Your Attention,
+// or reordering which sub-group leads inside it — without
 // hiding anything else.
 
-export default function ActivityScreen({ navigation, initialSubSection }) {
+export default function ActivityScreen({ navigation, route, initialSubSection: initialSubSectionProp }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
+  // Reached two ways: as the real bottom-tab route (name 'Activity',
+  // Phase 5's bottom-nav restructuring) and as the standalone pushed
+  // 'Notices' route (e.g. a cold-start push tap) -- initialSubSection
+  // falls back to route.params for the direct-navigation case, and the
+  // header's Messages/Profile icons only render for the real tab, not
+  // a pushed 'Notices' screen that already has its own back chevron.
+  const initialSubSection = initialSubSectionProp ?? route?.params?.initialSubSection;
+  const showHeaderActions = route?.name === 'Activity';
   const [items, setItems] = useState([]);
   const [premium, setPremium] = useState(false);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -296,7 +306,7 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
       setNoticedBackIds((prev) => ({ ...prev, [item.key]: true }));
       Alert.alert("It's a Match! 🎉", `You and ${item.raw.profiles?.display_name} noticed each other.`, [
         { text: 'Keep Browsing', style: 'cancel' },
-        { text: 'Send a Message', onPress: () => navigation.navigate('Matches') },
+        { text: 'Send a Message', onPress: () => navigation.navigate('Messages') },
       ]);
       load();
     } catch (e) {
@@ -486,7 +496,10 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle} accessibilityRole="header">Activity</Text>
+        <View style={styles.headerRow}>
+          <Text style={[styles.headerTitle, { flex: 1 }]} accessibilityRole="header">Activity</Text>
+          {showHeaderActions && <TabHeaderActions navigation={navigation} />}
+        </View>
       </View>
 
       {!premium && (
@@ -628,6 +641,7 @@ export default function ActivityScreen({ navigation, initialSubSection }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   upsell: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary,
