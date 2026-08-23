@@ -557,6 +557,25 @@ const result = await response.json();
           </View>
         )}
 
+        {/* Aug 23 2026 IA pass (CLAUDE.md): "Your Plans" pulled out as its
+            own leading section — "what am I actually doing" is a more
+            important question than "who am I connected to," per direct
+            product feedback, so it now comes first, right after the
+            profile header, instead of buried inside the activity group
+            below it. Same two real quick-stat tiles, same destination
+            (the existing Plans screen) -- only the grouping moved. */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">Your Plans</Text>
+        <View style={styles.quickStatsRow}>
+          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
+            <Text style={styles.quickStatLabel}>Upcoming</Text>
+          </TouchableOpacity>
+         <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
+            <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
+            <Text style={styles.quickStatLabel}>Past</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.sectionLabel} accessibilityRole="header">Your Connections</Text>
         <View style={styles.quickStatsRow}>
           <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={`${quickStats.communities} communities`} accessibilityRole="button">
@@ -569,17 +588,11 @@ const result = await response.json();
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Your Activity</Text>
-        <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'upcoming' })} accessibilityLabel={`${quickStats.upcomingPlans} upcoming plans`} accessibilityRole="button">
-            <Text style={styles.quickStatNumber}>{quickStats.upcomingPlans}</Text>
-            <Text style={styles.quickStatLabel}>Upcoming</Text>
-          </TouchableOpacity>
-         <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Plans', { initialTab: 'past' })} accessibilityLabel={`${quickStats.pastGatherings} past experiences`} accessibilityRole="button">
-            <Text style={styles.quickStatNumber}>{quickStats.pastGatherings}</Text>
-            <Text style={styles.quickStatLabel}>Past</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Renamed from "Your Activity" -- that label now belongs to the
+            leading Plans section above; this group is the "how am I
+            doing / what have I earned" set of links, not the plans
+            themselves. */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">Your Story</Text>
         <TouchableOpacity
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Timeline')}

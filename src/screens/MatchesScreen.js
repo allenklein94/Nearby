@@ -309,6 +309,17 @@ export default function MatchesScreen({ navigation }) {
                 </View>
                 <Text style={styles.sub}>{subLabel}</Text>
               </TouchableOpacity>
+              {isRomanticMatch && (
+                <TouchableOpacity
+                  style={styles.planDateButton}
+                  onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`Plan a date with ${other?.display_name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.planDateButtonText}>💌</Text>
+                </TouchableOpacity>
+              )}
               <Text style={styles.chevron}>›</Text>
             </View>
           );
@@ -370,5 +381,10 @@ const getStyles = (colors) => StyleSheet.create({
   compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: 6, paddingVertical: 1 },
   compatText: { fontSize: 10, fontWeight: '700' },
   sub: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  planDateButton: {
+    width: 34, height: 34, borderRadius: radius.full, backgroundColor: colors.primaryMuted,
+    alignItems: 'center', justifyContent: 'center', marginRight: spacing.xs,
+  },
+  planDateButtonText: { fontSize: 16 },
   chevron: { color: colors.textTertiary, fontSize: 22, fontWeight: '700' },
 });

@@ -4,6 +4,88 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — "Start Something / Make a Date Plan / Your Life on Nearby" IA pass
+## (Create tab, Matches, Profile) — DONE, client-only, no schema change
+
+Direct follow-up to a pasted external product-critique reply (not a new vision doc — a reply
+to a screenshot of the current app pointing out three specific, concrete frictions) asking for
+three things: (1) "Start Something"/Create shouldn't feel like a second copy of Home's own
+weekend recommendation chips, (2) matching someone should have a visible, direct path into
+"plan a real date," not just a chat menu item, (3) the "You" tab should read as "here's my
+life on Nearby," not a pile of settings-shaped rows. **Checked all three against the real,
+current code before building anything, per this file's own standing rule — two of the three
+turned out to already be substantially built** (the Match → Date Proposal → real business
+offer loop already exists end-to-end, built Aug 17 2026 in "The Offer System" Phase 5; the You
+tab's Connections/Activity/Business/Profile grouping already exists, built in the Aug 2026 IA
+restructure rounds 2-3) — so this pass is real, scoped deltas on top of that existing work, not
+a rebuild of any of it.
+
+**1. Create tab ("Start Something") — real, confirmed duplication, closed.** Home's own
+weekend/time-of-day "Quick Picks" chip row (`HomeScreen.js`) and `CreateHubScreen.js`'s
+primary activity grid draw from the *same* category set (Coffee/Dinner/Walk/Sports/etc.) —
+Home's is personalized/time-flavored, Create's is a fixed default list, but side by side they
+read as the same content shown twice, exactly the complaint. **Fix, scoped to framing/
+structure, not a second data source**: `CreateHubScreen.js` now leads with a new "With
+people" row — three real action verbs (👤 Invite Friends → the existing `InviteFriends`
+referral screen, 💌 Plan a Date → `Messages` where a real match now has its own direct
+plan-a-date entry point, see item 2 — 🤝 Meet New People → the existing `FriendDiscovery`
+swipe deck) — followed by a "Something to do" header above the pre-existing activity grid.
+**Deliberately not built**: a second "popular near you this weekend" data section pulling
+from the same real signal Home's Quick Picks already uses — that would just reintroduce the
+literal duplication the whole complaint was about; the real fix here is structural (Create
+leads with people-actions, framed as "turn an idea into an action," not another
+recommendation feed), not a second copy of Home's content under a new label. The existing
+grid's actual behavior (tapping a category skips straight to `CreateGathering`'s "Who should
+discover this?" step, pre-filled) is completely unchanged.
+
+**2. Match → Date Night → Business — mostly already real, closed the one real reachability
+gap.** Confirmed live: `DateProposalScreen.js` (propose a plan → the other person explicitly
+accepts → "Find Somewhere to Go" → `AskBusinessScreen` in match mode → real competing
+business offers → accept) is a complete, already-built, already-verified loop (Aug 17 2026).
+The only real gap: it was reachable *only* via `ChatScreen.js`'s "Do Something Together" menu
+— a match's own row on the Matches list itself had no path into it, so making a real date plan
+needed opening the chat first. Fixed: every genuinely romantic match row on `MatchesScreen.js`
+(the screen embedded inside the pushed `Messages` surface) now shows a small 💌 button — real,
+per-match, one tap straight into `DateProposalScreen` with that match's own real id/name, no
+detour through chat first. Gated on the same `isRomanticMatch` check (`!source_gathering_id &&
+!source_friendship_id`) this screen already uses to decide whether to show a compatibility
+score — a friend-sourced or gathering-sourced match never gets this button, matching the
+existing "a dating-style plan doesn't make sense for a friend" reasoning already established
+on this same screen. **Deliberately not built**: a single generic top-of-list "Make a Date
+Plan" banner — with a real matches list, a banner has no obvious single target to open, and a
+per-row button is the more honest affordance. The whole match/offer state machine underneath
+(`propose_date`/`respond_to_date_proposal`/`create_business_request_for_match`, real
+row-locked one-winner offer acceptance) is completely untouched.
+
+**3. Profile ("You") — already close, one real reordering.** Confirmed live:
+`ProfileScreen.js` already groups into "Your Connections" (Communities/Friends), an activity
+group (Plans stats + Timeline/Memory Vault/Momentum/Rewards links), "Business", and "Your
+Profile" (identity fields) — already close to the requested Profile → Plans → Connections →
+Settings hierarchy, from the Aug 2026 IA restructure rounds. The one real gap: "what am I
+actually doing" (the Plans quick-stat tiles) was buried inside the same group as "how am I
+doing" (Timeline/Momentum/Rewards), both under one "Your Activity" header, and came *after*
+Connections rather than before it. Fixed: "Your Plans" is now its own leading section — same
+two real quick-stat tiles (Upcoming/Past, same destination, the existing `Plans` screen),
+moved to sit directly under the profile header, ahead of Your Connections — matching the
+"who am I → what am I doing → who am I connected to → how I manage it" order from the
+feedback. The remaining group (Timeline/Memory Vault/the Momentum-backed "Your Activity"
+row/Rewards) was renamed from "Your Activity" to **"Your Story"** so it no longer duplicates
+the label of the "🔥 Your Activity" row rendered inside it — a naming collision the reorder
+would otherwise have introduced, not a content change. Business and Your Profile groups are
+completely untouched.
+
+**Verified**: a direct `@babel/core` parse of all three touched files (clean, no new files —
+`CreateHubScreen.js`/`MatchesScreen.js`/`ProfileScreen.js` are all edits) and a full
+`npx expo export --platform ios` (clean, no bundling errors). No schema/RPC touched this pass,
+so no live-production verification or migration replay was needed, matching this file's own
+"no schema change, no replay required" convention.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "With people" row renders and routes
+correctly from Create, that the 💌 button appears only for a genuinely romantic match and
+lands cleanly on `DateProposalScreen`, and that Profile's reordered "Your Plans"/"Your Story"
+sections read correctly against real data.
+
 ## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 3: Business
 ## Partner "Request More Information" reviewer state — DONE
 
