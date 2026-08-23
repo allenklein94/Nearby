@@ -269,23 +269,44 @@ same-day (Request Business Partner/Ask Local Businesses, AskBusiness/MakeAPlan, 
 Momentum) or was never actually a duplication once traced against current code. This is a real,
 positive finding in its own right, not an empty section by default.
 
-### P1 — Fix before adding more major features
+### P1 — Fix before adding more major features — BOTH DONE, same day, see CLAUDE.md
 1. **The "Confirmed" terminology overlap** (Audit 4) — a real, if narrow, misread risk sitting
    exactly in the highest-state-complexity part of the app. Cheapest fix, if picked up: rename
    `GroupPlanScreen`'s own proposal-confirmed copy to something that doesn't reuse the word
    "Confirmed" for a roster-lock event distinct from a venue confirmation.
+   **FIXED** — `OFFER_STATUS_COPY.accepted` reworded to "Accepted — your reservation" (matching
+   `BusinessRequestDetailScreen.js`'s own identical solo-flow copy) and the proposal-level status
+   line reworded to "Locked In — a real request is out to nearby businesses"; the underlying
+   `proposal.status` enum value is unchanged, only the displayed label. See CLAUDE.md's Aug 23
+   "Fix both P1 findings" entry for the full detail.
 2. **`GatheringsScreen` vs. `PlansScreen`** (Audit 2) — not broken, but worth an explicit,
    documented decision (keep both with today's real split, or converge further) rather than
    leaving it as an implicit "we reasoned through this once" — exactly the shape of thing this
    audit exists to surface for review, not silently re-confirm.
+   **FIXED** — both screens now carry a real code comment stating the decision plainly (kept as
+   two separate screens on purpose), plus `PlansScreen.js`'s Hosting tab gained a real "⚙️ Manage
+   your hosted gatherings →" link into `GatheringsScreen`'s own Hosting tab, closing the actual
+   gap the split had created. See CLAUDE.md's same entry.
 
-### P2 — Polish later
+### P2 — Polish later — ALL THREE DONE, same day, see CLAUDE.md
 1. Profile's Rewards/Your Activity rows could use a one-line subtitle differentiator, matching
    other rows on the same screen — cheap, not urgent.
+   **FIXED** — all four "Your Story" rows on `ProfileScreen.js` (Timeline/Memory Vault/Your
+   Activity/Your Rewards) gained a real one-line subtitle, added to all four for visual
+   consistency rather than singling out just the two named here.
 2. The gathering-creation "ask local businesses" checkbox's three different narrations across a
    host's first visit, later visits, and the merged banner — a real continuity gap, low stakes.
+   **FIXED** — `GatheringDetailScreen.js`'s "You asked us to look for local business options..."
+   banner now carries a caption naming where that came from: "You turned this on when you
+   created this gathering."
 3. Messages/Profile living in header icons rather than the tab bar has no on-screen affordance
    telling a first-time user they exist there — minor discoverability gap.
+   **FIXED** — `TabHeaderActions.js` gained a real, shown-once floating hint bubble ("💬 Messages
+   and your profile live here now"), matching `DiscoveryScreen.js`'s own established callout
+   visual language, auto-hiding after 6s or on tap, tracked locally per device via `AsyncStorage`.
+
+See CLAUDE.md's Aug 23 "Update, same day — all three P2 findings also picked up and fixed" entry
+for the full build/verification detail on all three.
 
 ### DEFERRED — do not touch yet
 1. Whether Activity/Messages should re-merge into one literal "Inbox" screen to match the target
