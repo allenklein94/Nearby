@@ -3,7 +3,7 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAr
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { getMostRecentUnratedGathering } from '../services/gatherings';
+import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
@@ -154,6 +154,13 @@ export default function HomeScreen({ navigation }) {
   // -- this fires days ahead, while there's still real time to plan, and
   // routes to gathering creation instead.
   const [birthdayNudge, setBirthdayNudge] = useState(null);
+  // "The Plan Engine" Phase 2 (CLAUDE.md) -- the soonest real upcoming
+  // hosted gathering that genuinely has no venue and no business_requests
+  // row yet at all. Same per-day dismiss convention as the nudges above;
+  // acting on it navigates to that gathering's own real detail screen,
+  // never submits anything itself (the 4-state host banner there already
+  // owns that decision).
+  const [venueNeededGathering, setVenueNeededGathering] = useState(null);
   // Phase 6 of the "Build everything" plan (CLAUDE.md) -- a real, one-time
   // first-run demonstration moment, gated on the real profiles.
   // seen_home_first_run_moment flag (same "shown once, flip a flag, never
@@ -277,6 +284,28 @@ export default function HomeScreen({ navigation }) {
           }
         } catch (e) {
           console.error('getUpcomingConnectedBirthdays failed', e);
+        }
+
+        // "The Plan Engine" Phase 2 (CLAUDE.md) -- real, dismissible: the
+        // soonest real upcoming hosted gathering with genuinely no venue
+        // and no business_requests row yet. Per-day dismiss, same
+        // convention as every other nudge here.
+        try {
+          const needingVenue = await getMyGatheringsNeedingVenue();
+          if (needingVenue.length > 0) {
+            const soonest = needingVenue[0];
+            const dismissKey = `venue_needed_dismiss_${new Date().toDateString()}_${soonest.id}`;
+            const dismissed = await AsyncStorage.getItem(dismissKey);
+            if (!dismissed) {
+              setVenueNeededGathering(soonest);
+              if (!loggedNudgeShownRef.current.has(dismissKey)) {
+                loggedNudgeShownRef.current.add(dismissKey);
+                recordNudgeEvent('predictive', 'shown', 'venue_needed');
+              }
+            }
+          }
+        } catch (e) {
+          console.error('getMyGatheringsNeedingVenue failed', e);
         }
       } catch (e) {
         // These are supplementary cards, not core functionality — a
@@ -736,6 +765,28 @@ export default function HomeScreen({ navigation }) {
     recordNudgeEvent('predictive', 'dismissed', 'birthday');
   }
 
+  // "The Plan Engine" Phase 2 (CLAUDE.md) -- deliberately does NOT submit
+  // or create anything itself. GatheringDetailScreen's own existing
+  // 4-state host banner already owns the real decision/submit step; this
+  // nudge's only job is surfacing that it's still pending.
+  function handleVenueNeededAct() {
+    if (!venueNeededGathering) return;
+    const dismissKey = `venue_needed_dismiss_${new Date().toDateString()}_${venueNeededGathering.id}`;
+    const gatheringId = venueNeededGathering.id;
+    setVenueNeededGathering(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'acted', 'venue_needed');
+    navigation.navigate('GatheringDetail', { gatheringId });
+  }
+
+  function handleVenueNeededDismiss() {
+    if (!venueNeededGathering) return;
+    const dismissKey = `venue_needed_dismiss_${new Date().toDateString()}_${venueNeededGathering.id}`;
+    setVenueNeededGathering(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'dismissed', 'venue_needed');
+  }
+
   // Shared by both "Ask Nearby Businesses" entry points (the empty-fallback
   // panel, and -- per CLAUDE.md's C1 -- the non-empty ranked-results panel
   // too) -- record+navigate only, no state-clearing responsibility of its
@@ -1091,7 +1142,7 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || venueNeededGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {predictivePattern && (
               <View style={styles.outcomePromptCard}>
@@ -1137,6 +1188,25 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <TouchableOpacity style={styles.predictiveActButton} onPress={handleBirthdayAct} accessibilityLabel="Plan something" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {venueNeededGathering && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    {venueNeededGathering.requestId
+                      ? `🍽️ Still waiting to hear back from local businesses for ${venueNeededGathering.title}`
+                      : venueNeededGathering.ask_local_businesses
+                        ? `🍽️ You asked us to look for local business options for ${venueNeededGathering.title} — ready to see what's available?`
+                        : `📍 ${venueNeededGathering.title} still doesn't have a venue — want Nearby to look for local business options?`}
+                  </Text>
+                  <TouchableOpacity onPress={handleVenueNeededDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleVenueNeededAct} accessibilityLabel="View gathering" accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>View Gathering →</Text>
                 </TouchableOpacity>
               </View>
             )}

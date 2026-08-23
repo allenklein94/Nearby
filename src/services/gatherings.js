@@ -1234,3 +1234,69 @@ export async function getMyGatheringChats() {
 
   return [...byId.values()].sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
 }
+
+// "The Plan Engine" Phase 2 (see CLAUDE.md, Aug 23 2026): the caller's own
+// real upcoming hosted gatherings that genuinely have no confirmed venue
+// yet. No new RPC needed -- reuses the exact same real, already-RLS-scoped
+// tables GatheringDetailScreen's own 4-state host banner already reads,
+// just aggregated across every one of the host's own upcoming gatherings
+// instead of one at a time. Deliberately does NOT create or submit
+// anything itself -- Home's only job is surfacing that it's still pending;
+// the actual decision/submit step stays owned by GatheringDetailScreen.
+//
+// A real correction made while building this, caught by live-verifying
+// against production rather than assumed: gatherings.hosting_partner_id is
+// NOT the "has a venue" signal it might sound like -- it's auto-set at
+// creation time for any host who manages a business (set_hosting_partner_
+// from_host(), unrelated to whether *this* gathering secured a venue via
+// Ask Local Businesses) and by the separate "Request a Business Partner"
+// sponsorship flow. The real Ask Local Businesses flow this phase targets
+// never touches hosting_partner_id at all -- a confirmed venue there is
+// signaled by a real accepted/completed business_request_offers row, the
+// same real field getAcceptedOfferForRequest() already reads. So
+// hosting_partner_id is null is kept only as a real, legitimate reason to
+// skip a gathering entirely (it's already business-owned/sponsored, a
+// different category this nudge isn't about) -- it is NOT treated as
+// proof a venue is missing.
+export async function getMyGatheringsNeedingVenue() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data: candidates } = await supabase
+    .from('gatherings')
+    .select('id, title, ask_local_businesses, scheduled_at')
+    .eq('host_id', myId)
+    .is('hosting_partner_id', null)
+    .gt('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true });
+
+  if (!candidates || candidates.length === 0) return [];
+
+  const { data: requests } = await supabase
+    .from('business_requests')
+    .select('id, gathering_id')
+    .in('gathering_id', candidates.map((g) => g.id));
+
+  const requestByGathering = new Map((requests ?? []).map((r) => [r.gathering_id, r]));
+
+  let acceptedRequestIds = new Set();
+  if (requests && requests.length > 0) {
+    const { data: acceptedOffers } = await supabase
+      .from('business_request_offers')
+      .select('request_id')
+      .in('request_id', requests.map((r) => r.id))
+      .in('status', ['accepted', 'completed']);
+    acceptedRequestIds = new Set((acceptedOffers ?? []).map((o) => o.request_id));
+  }
+
+  return candidates
+    .filter((g) => {
+      const request = requestByGathering.get(g.id);
+      // A real accepted/completed offer means the venue is genuinely
+      // confirmed -- exclude entirely, matching GatheringDetailScreen's
+      // own "Local Business Confirmed" state.
+      return !(request && acceptedRequestIds.has(request.id));
+    })
+    .map((g) => ({ ...g, requestId: requestByGathering.get(g.id)?.id ?? null }));
+}

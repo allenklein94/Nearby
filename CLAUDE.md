@@ -144,7 +144,7 @@ phases: full Jest suite re-run, each phase its own commit pushed individually, t
 status notes updated as each lands — not batched at the end, matching this file's own restart-
 safety convention.
 
-**Status: plan locked. Phase 1 is DONE. Phase 2 not yet started — see below.**
+**Status: plan locked. Phases 1 and 2 are both DONE — see their own status notes below.**
 
 **Phase 1 — DONE.** Built exactly per the locked design above, no changes during
 implementation. `supabase/migrations/20260823_upcoming_connected_birthdays.sql` — the new
@@ -202,6 +202,60 @@ genuinely upcoming real connection's birthday, that the today/tomorrow/N-days wo
 correctly at each boundary, that dismissing it correctly suppresses it for the rest of that same
 day, and that tapping "Yes, let's plan something" lands on `CreateGathering` with the right
 prefilled title and the host can still complete the wizard normally from there.
+
+**Phase 2 — DONE, with one real correctness bug found and fixed during live verification, not
+just a clean pass on the first try.** Built exactly per the locked design (no schema/migration —
+purely a client-side query reusing already-existing, already-RLS-correct tables), but the
+original design text above turned out to rest on a wrong assumption about `gatherings.
+hosting_partner_id`, caught only by actually exercising the query against real production data
+under real `SET ROLE authenticated` rather than trusting the column's name. **The real finding**:
+`hosting_partner_id` is not a "this gathering has a confirmed venue" signal — it's auto-set at
+gathering *creation* time by the pre-existing `set_hosting_partner_from_host()` trigger for any
+host who manages a business (unrelated to whether that specific gathering ever secured a venue),
+and separately by the "Request a Business Partner" sponsorship flow — confirmed live by creating
+a real disposable test gathering as `Allen` (who genuinely manages `Coastal Coffee` in
+production) and finding it landed with `hosting_partner_id` already set despite never having
+gone through the Ask Local Businesses flow at all. The real Ask Local Businesses flow this phase
+actually targets never touches `hosting_partner_id` — a confirmed venue there is signaled by a
+real `accepted`/`completed` row in `business_request_offers`, the same field
+`getAcceptedOfferForRequest()` already reads on `GatheringDetailScreen`. Fixed by rewriting
+`getMyGatheringsNeedingVenue()` (`services/gatherings.js`) to keep `hosting_partner_id is null`
+only as a legitimate "already business-owned/sponsored, a different category" exclusion — never
+as proof a venue is missing — and to instead check for a real accepted/completed offer on any
+existing `business_requests` row before excluding a gathering. The function now also returns a
+real `requestId` per gathering, letting `HomeScreen.js`'s card render the honest third state
+`GatheringDetailScreen`'s own host banner already has (a request exists but nothing's been
+accepted yet → "🍽️ Still waiting to hear back from local businesses for {title}") rather than
+collapsing it into either of the other two.
+
+**Verified live against production** (`enmosvippabmuqslzrox`) end-to-end under real `SET ROLE
+authenticated`, not just reasoned about: built 4 real disposable test gatherings hosted by
+`Claude` (who manages no business, unlike `Allen`) covering all four real states — never asked
+(`ask_local_businesses: false`, no request), consented-but-not-triggered (`ask_local_businesses:
+true`, no request), a real open request with no accepted offer yet, and a real request with a
+genuine `accepted` offer — and confirmed the exact query the client function runs, run as
+`Claude`, returns the first three (each with the correct real `requestId`/`ask_local_businesses`
+combination the UI branches on) and correctly excludes the fourth. All test rows (4 gatherings, 2
+business_requests, 1 business_request_offers) deleted afterward; production confirmed back to
+its exact pre-test baseline (0 matching rows across all three tables).
+
+Client: `HomeScreen.js` gained a `venueNeededGathering` state, fetched in the same nudge-fetching
+try/catch block as the other three Home nudges, same per-day `AsyncStorage` dismiss convention,
+same `home_nudge_events` logging (`nudge_type: 'predictive'`, `category: 'venue_needed'`). A new
+card in the same banner cluster shows the correct one of three honest messages and a single
+"View Gathering →" action that navigates straight to that gathering's real `GatheringDetailScreen`
+— deliberately never submits or creates anything itself; the existing 4-state host banner there
+already owns that real decision/submit step, matching the locked design's own "no second
+mechanism" requirement. Verified via a direct `@babel/core` parse of both touched files (clean),
+the full Jest suite (65/65, unaffected), and a full `npx expo export --platform ios` (clean, no
+bundling errors — edits to two existing files, no new files, no schema change this phase).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the card renders the correct one of the three real
+messages for a genuine test case in the running app (not just via direct queries), that it
+correctly never appears for a gathering that already has a confirmed venue, and that tapping
+"View Gathering →" lands cleanly on the right `GatheringDetailScreen` in the right host-banner
+state.
 
 ## Aug 22 2026 — "Build everything" — the 6 large/architectural items from the UX/IA critique,
 ## Feature Freeze explicitly overridden for this scope, PLAN LOCKED, not yet built
