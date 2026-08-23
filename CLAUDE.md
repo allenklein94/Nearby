@@ -348,7 +348,7 @@ phases: full Jest suite re-run, each phase its own commit pushed individually, t
 status notes updated as each lands — not batched at the end, same restart-safety convention as
 Phases 1-2.
 
-**Status: plan locked. Phase 3 is DONE — see its own status note below. Phase 4 not yet built.**
+**Status: plan locked. Phases 3 and 4 are both DONE — see their own status notes below.**
 
 **Phase 3 — DONE.** Built exactly per the locked design above, no changes during
 implementation. New `getMyGatheringsWithOutstandingRsvps()` in `services/gatherings.js` — no
@@ -379,6 +379,68 @@ run-through — next session should confirm the card renders the correct real pe
 and singular/plural wording at each boundary (1 vs. N), that it correctly never appears for a
 gathering with zero real pending invites, and that tapping "View Gathering →" lands cleanly on
 the right `GatheringDetailScreen`.
+
+**Phase 4 — DONE.** Built exactly per the locked design above, no changes during
+implementation. New `get_my_positive_experience_signals()` SECURITY DEFINER RPC
+(`supabase/migrations/20260830_positive_experience_signals.sql`) — internal `auth.uid()`-only,
+returns two real arrays: `host_ids` (every host the caller rated `loved_it`/`good` **and**
+`would_attend_again = true` on a real past `gathering_feedback` row) and `partner_ids` (every
+business the caller rated `loved_it`/`good` **and** `would_repeat in ('yes','maybe')` on a real
+past `business_offer_outcomes` row, joined through `business_request_offers.partner_id`).
+Applied to production (`enmosvippabmuqslzrox`) and **verified live with real disposable test
+data**, not just applied, under real `SET ROLE authenticated`: a real gathering hosted by
+`Claude`, rated `loved_it`/`would_attend_again: true` by `Allen`, correctly produced
+`host_ids: [Claude's id]`; a second real gathering hosted by `Google voice`, rated
+`loved_it`/`would_attend_again: false` by the same reviewer, correctly excluded `Google voice`
+(proving the **AND**, not just the satisfaction rating alone, gates the bonus). For the business
+half: two real disposable offers against the real `Coastal Coffee` partner — one rated
+`good`/`yes`, one rated `okay`/`no` — correctly produced `partner_ids: [Coastal Coffee's id]`
+(at least one positive rating is enough, matching the RPC's own `array_agg` semantics, not
+requiring every rating on that partner to be positive); a third real disposable partner with
+**only** a negative (`not_for_me`/`no`) outcome was correctly excluded entirely — proving a
+partner needs at least one genuinely positive rating, not just any rating. Querying as a real
+profile with zero feedback history (`Allen Klein`) correctly returned two empty arrays, not an
+error. A raw `anon`-role call was rejected outright (`permission denied for function`, no
+`EXECUTE` grant — only `authenticated`/`service_role`/`postgres`). All test rows (2 gatherings,
+2 `gathering_feedback`, 1 disposable `brand_partners`, 3 `business_requests`, 3
+`business_request_offers`, 3 `business_offer_outcomes`) deleted afterward — confirmed
+production back to its exact pre-test baseline (11 gatherings, 1 partner, 0 across every other
+touched table). **Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image — the first attempt (a bare `docker run ... postgres`
+override) accidentally bypassed the image's own default `-D /etc/postgresql` data directory,
+landing on an empty `shared_preload_libraries` and breaking `pg_cron`; fixed by re-running the
+container with the image's own default `CMD` (no override) instead, which correctly preloads
+`pg_cron`/`pg_net`/`pgsodium`/etc. from the start — a real, previously-undocumented gotcha,
+distinct from the already-known `shared_preload_libraries`-override mistake this file has
+flagged before, now flagged here too so a future session doesn't repeat it. With that fixed, the
+full 79-file `supabase/migrations/` folder applied via `psql -v ON_ERROR_STOP=1` — **exit 0 on
+every file**, the new function confirmed to exist in the freshly-rebuilt database. Container
+removed afterward.
+
+Client: `homeRecommendations.js`'s `buildHomeRecommendations()` gained two new optional context
+fields, `positiveHostIds`/`positivePartnerIds` (default empty `Set`, every existing caller
+unaffected) — a gathering candidate whose real `host_id` is in the set, or a perk candidate
+whose real `partner_id` is in the set, earns a real bonus reusing `SCORE_OWN_NETWORK` (6, the
+highest existing weight) with an honest, itemized reason ("You loved a gathering with this host
+before" / "You loved this business last time"). New `getMyPositiveExperienceSignals()` thin RPC
+wrapper in `services/gatherings.js` (returns two `Set`s, never raw arrays, for an O(1) membership
+check per candidate). `HomeScreen.js` fetches it in the same try/catch block as the existing
+recommendation build, right alongside the `getActiveOffers()` call, and passes both sets through
+— supplementary, non-fatal (falls back to two empty Sets on failure), matching every other nudge
+fetch on this screen. 2 new real unit tests added to `homeRecommendations.test.js` (the host
+bonus fires only for a matching `host_id`, the partner bonus fires only for a matching
+`partner_id` — both with a real negative case proving no bonus for a non-matching id).
+
+Verified via a direct `@babel/core` parse of all four touched/new files (clean), the full Jest
+suite (**67/67 passing** — 65 pre-existing + the 2 new tests), and a full `npx expo export
+--platform ios` (clean, no bundling errors, 2251 modules, unchanged — edits to three existing
+files plus one new migration, no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the two new reason lines actually render correctly on
+Home's "Nearby Right Now"/recommendations section against real post-visit feedback history, and
+that a genuinely fresh account with no feedback history sees the section exactly as before this
+phase (no phantom bonus, no error).
 
 ## Aug 22 2026 — "Build everything" — the 6 large/architectural items from the UX/IA critique,
 ## Feature Freeze explicitly overridden for this scope, PLAN LOCKED, not yet built

@@ -18,6 +18,7 @@ const offer = (overrides = {}) => ({
   id: 'o1',
   title: '10% Off',
   target_interest_tag: null,
+  partner_id: 'partner1',
   brand_partners: { name: 'Coastal Coffee' },
   ...overrides,
 });
@@ -88,6 +89,34 @@ describe('buildHomeRecommendations', () => {
   it('still surfaces an untargeted offer, just with a smaller reason set', () => {
     const results = buildHomeRecommendations({ offers: [offer()] });
     expect(results[0].reasons).toEqual(['At Coastal Coffee']);
+  });
+
+  it('adds a real "loved this host before" bonus only when the gathering\'s host is in positiveHostIds', () => {
+    const withBonus = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host1', scheduled_at: new Date().toISOString() })],
+      positiveHostIds: new Set(['host1']),
+    });
+    expect(withBonus[0].reasons).toContain('You loved a gathering with this host before');
+
+    const noBonus = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host2', scheduled_at: new Date().toISOString() })],
+      positiveHostIds: new Set(['host1']),
+    });
+    expect(noBonus[0].reasons).not.toContain('You loved a gathering with this host before');
+  });
+
+  it('adds a real "loved this business before" bonus only when the offer\'s partner is in positivePartnerIds', () => {
+    const withBonus = buildHomeRecommendations({
+      offers: [offer({ partner_id: 'partner1' })],
+      positivePartnerIds: new Set(['partner1']),
+    });
+    expect(withBonus[0].reasons).toContain('You loved this business last time');
+
+    const noBonus = buildHomeRecommendations({
+      offers: [offer({ partner_id: 'partner2' })],
+      positivePartnerIds: new Set(['partner1']),
+    });
+    expect(noBonus[0].reasons).not.toContain('You loved this business last time');
   });
 
   it('caps the merged, sorted result at MAX_HOME_RECOMMENDATIONS', () => {

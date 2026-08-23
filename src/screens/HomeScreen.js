@@ -3,7 +3,7 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAr
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps } from '../services/gatherings';
+import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals } from '../services/gatherings';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
@@ -372,12 +372,23 @@ export default function HomeScreen({ navigation }) {
       // screen.
       try {
         const offers = await getActiveOffers(myLocation?.coords?.latitude ?? null, myLocation?.coords?.longitude ?? null).catch(() => []);
+        // "The Plan Engine" Phase 4 (CLAUDE.md) -- real post-visit
+        // feedback (gathering_feedback/business_offer_outcomes) feeding
+        // back into this same scoring pass. Supplementary, non-fatal --
+        // falls back to two empty Sets (no bonus applied) on failure,
+        // matching this whole block's own established convention.
+        const { positiveHostIds, positivePartnerIds } = await getMyPositiveExperienceSignals().catch(() => ({
+          positiveHostIds: new Set(),
+          positivePartnerIds: new Set(),
+        }));
         setHomeRecommendations(
           buildHomeRecommendations({
             gatherings: result?.nearbyGatherings ?? [],
             offers,
             weather: forecast,
             excludeIds: new Set(result?.upcomingPlanIds ?? []),
+            positiveHostIds,
+            positivePartnerIds,
           })
         );
       } catch (e) {

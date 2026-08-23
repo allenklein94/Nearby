@@ -9,7 +9,7 @@
 // machine-learned weight, matching this file's oldest and most
 // consistently-enforced rule (see CLAUDE.md's own repeated "no premature
 // universal/AI-driven matching algorithm" constraint).
-import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW } from './intentResolverScoring';
+import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 
 export const MAX_HOME_RECOMMENDATIONS = 5;
@@ -41,7 +41,7 @@ function weatherAdjustment(interestTag, weather) {
   return null;
 }
 
-function scoreGathering(gathering, weather) {
+function scoreGathering(gathering, weather, positiveHostIds) {
   let score = 0;
   const reasons = [];
 
@@ -62,11 +62,22 @@ function scoreGathering(gathering, weather) {
     score += weatherBonus.points;
     reasons.push(weatherBonus.reason);
   }
+  // "The Plan Engine" Phase 4 (CLAUDE.md) -- closes the doc's own VISIT ->
+  // FEEDBACK -> NEXT PLAN loop: a real, itemized bonus when the caller has
+  // genuinely rated a past gathering with this same host positively
+  // (satisfaction_rating loved_it/good AND would_attend_again = true, per
+  // get_my_positive_experience_signals()) -- reuses SCORE_OWN_NETWORK, the
+  // highest existing weight, since a real lived experience is at least as
+  // strong a signal as an own-network connection.
+  if (gathering.host_id && positiveHostIds?.has(gathering.host_id)) {
+    score += SCORE_OWN_NETWORK;
+    reasons.push('You loved a gathering with this host before');
+  }
 
   return { score, reasons };
 }
 
-function scoreOffer(offer) {
+function scoreOffer(offer, positivePartnerIds) {
   let score = 0;
   const reasons = [];
 
@@ -82,27 +93,43 @@ function scoreOffer(offer) {
   if (offer.brand_partners?.name) {
     reasons.push(`At ${offer.brand_partners.name}`);
   }
+  // "The Plan Engine" Phase 4 (CLAUDE.md) -- same real closing-the-loop
+  // bonus as scoreGathering above, for a business the caller has genuinely
+  // rated positively before (satisfaction_rating loved_it/good AND
+  // would_repeat yes/maybe on a real past offer).
+  if (offer.partner_id && positivePartnerIds?.has(offer.partner_id)) {
+    score += SCORE_OWN_NETWORK;
+    reasons.push('You loved this business last time');
+  }
 
   return { score, reasons };
 }
 
-// context: { gatherings=[], offers=[], weather=null, excludeIds=Set() }
+// context: { gatherings=[], offers=[], weather=null, excludeIds=Set(),
+// positiveHostIds=Set(), positivePartnerIds=Set() }
 // Returns up to MAX_HOME_RECOMMENDATIONS items, highest score first, each
 // carrying every real reason it earned that score — never a bare number
 // with no explanation attached.
-export function buildHomeRecommendations({ gatherings = [], offers = [], weather = null, excludeIds = new Set() } = {}) {
+export function buildHomeRecommendations({
+  gatherings = [],
+  offers = [],
+  weather = null,
+  excludeIds = new Set(),
+  positiveHostIds = new Set(),
+  positivePartnerIds = new Set(),
+} = {}) {
   const candidates = [];
 
   for (const gathering of gatherings) {
     if (excludeIds.has(gathering.id)) continue;
-    const { score, reasons } = scoreGathering(gathering, weather);
+    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, data: gathering });
   }
 
   for (const offer of offers) {
     if (excludeIds.has(offer.id)) continue;
-    const { score, reasons } = scoreOffer(offer);
+    const { score, reasons } = scoreOffer(offer, positivePartnerIds);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, data: offer });
   }
