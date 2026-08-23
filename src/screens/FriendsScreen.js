@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest, getSuggestedFriends } from '../services/friends';
 import { getMyCircles, createCircle, deleteCircle, addFriendToCircle, removeFriendFromCircle } from '../services/friendCircles';
 import { findFriendsFromContacts } from '../services/contactsImport';
 import StoriesRow from '../components/StoriesRow';
+import PersonCard from '../components/PersonCard';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
 import LoadErrorState from '../components/LoadErrorState';
@@ -212,33 +213,25 @@ export default function FriendsScreen({ navigation }) {
               <>
                 <Text style={styles.sectionHeader}>People You May Know</Text>
                 {suggestedFriends.map((person) => (
-                  <View key={person.suggested_id} style={styles.requestRow}>
-                    <TouchableOpacity
-                      style={styles.personInfo}
-                      onPress={() => navigation.navigate('ViewProfile', { userId: person.suggested_id })}
-                      accessibilityLabel={`View ${person.display_name}'s profile, ${person.mutual_count} mutual friends`}
-                      accessibilityRole="button"
-                    >
-                      {photoUrls[person.suggested_id] ? (
-                        <Image source={{ uri: photoUrls[person.suggested_id] }} style={styles.avatar} />
-                      ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                      )}
-                      <View>
-                        <Text style={styles.personName}>{person.display_name}</Text>
-                        <Text style={styles.mutualText}>{person.mutual_count} mutual friend{person.mutual_count === 1 ? '' : 's'}</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.acceptButton, requestedIds[person.suggested_id] && styles.acceptButtonSent]}
-                      onPress={() => handleSendRequest(person.suggested_id)}
-                      disabled={requestedIds[person.suggested_id]}
-                      accessibilityLabel={requestedIds[person.suggested_id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.acceptButtonText}>{requestedIds[person.suggested_id] ? '✓ Sent' : 'Add'}</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <PersonCard
+                    key={person.suggested_id}
+                    style={styles.requestRow}
+                    photoUrl={photoUrls[person.suggested_id]}
+                    name={person.display_name}
+                    subtitle={`${person.mutual_count} mutual friend${person.mutual_count === 1 ? '' : 's'}`}
+                    onPress={() => navigation.navigate('ViewProfile', { userId: person.suggested_id })}
+                    action={
+                      <TouchableOpacity
+                        style={[styles.acceptButton, requestedIds[person.suggested_id] && styles.acceptButtonSent]}
+                        onPress={() => handleSendRequest(person.suggested_id)}
+                        disabled={requestedIds[person.suggested_id]}
+                        accessibilityLabel={requestedIds[person.suggested_id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.acceptButtonText}>{requestedIds[person.suggested_id] ? '✓ Sent' : 'Add'}</Text>
+                      </TouchableOpacity>
+                    }
+                  />
                 ))}
                 <View style={styles.divider} />
               </>
@@ -248,30 +241,24 @@ export default function FriendsScreen({ navigation }) {
               <>
                 <Text style={styles.sectionHeader}>From Your Contacts</Text>
                 {contactMatches.map((person) => (
-                  <View key={person.id} style={styles.requestRow}>
-                    <TouchableOpacity
-                      style={styles.personInfo}
-                      onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
-                      accessibilityLabel={`View ${person.display_name}'s profile`}
-                      accessibilityRole="button"
-                    >
-                      {photoUrls[person.id] ? (
-                        <Image source={{ uri: photoUrls[person.id] }} style={styles.avatar} />
-                      ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                      )}
-                      <Text style={styles.personName}>{person.display_name}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.acceptButton, requestedIds[person.id] && styles.acceptButtonSent]}
-                      onPress={() => handleSendRequest(person.id)}
-                      disabled={requestedIds[person.id]}
-                      accessibilityLabel={requestedIds[person.id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.acceptButtonText}>{requestedIds[person.id] ? '✓ Sent' : 'Add'}</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <PersonCard
+                    key={person.id}
+                    style={styles.requestRow}
+                    photoUrl={photoUrls[person.id]}
+                    name={person.display_name}
+                    onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
+                    action={
+                      <TouchableOpacity
+                        style={[styles.acceptButton, requestedIds[person.id] && styles.acceptButtonSent]}
+                        onPress={() => handleSendRequest(person.id)}
+                        disabled={requestedIds[person.id]}
+                        accessibilityLabel={requestedIds[person.id] ? 'Friend request sent' : `Send friend request to ${person.display_name}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.acceptButtonText}>{requestedIds[person.id] ? '✓ Sent' : 'Add'}</Text>
+                      </TouchableOpacity>
+                    }
+                  />
                 ))}
                 <View style={styles.divider} />
               </>
@@ -281,20 +268,22 @@ export default function FriendsScreen({ navigation }) {
               <>
                 <Text style={styles.sectionHeader}>Not On Nearby Yet</Text>
                 {notOnAppContacts.map((contact) => (
-                  <View key={contact.phone} style={styles.requestRow}>
-                    <View style={styles.personInfo}>
-                      <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                      <Text style={styles.personName}>{contact.name}</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.acceptButton}
-                      onPress={() => handleInviteContact(contact)}
-                      accessibilityLabel={`Invite ${contact.name} to Nearby`}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.acceptButtonText}>Invite</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <PersonCard
+                    key={contact.phone}
+                    style={styles.requestRow}
+                    name={contact.name}
+                    accessibilityLabel={contact.name}
+                    action={
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => handleInviteContact(contact)}
+                        accessibilityLabel={`Invite ${contact.name} to Nearby`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.acceptButtonText}>Invite</Text>
+                      </TouchableOpacity>
+                    }
+                  />
                 ))}
                 <View style={styles.divider} />
               </>
@@ -304,39 +293,33 @@ export default function FriendsScreen({ navigation }) {
               <>
                 <Text style={styles.sectionHeader}>Friend Requests</Text>
                 {pending.map((person) => (
-                  <View key={person.friendshipId} style={styles.requestRow}>
-                    <TouchableOpacity
-                      style={styles.personInfo}
-                      onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
-                      accessibilityLabel={`View ${person.display_name}'s profile`}
-                      accessibilityRole="button"
-                    >
-                      {photoUrls[person.id] ? (
-                        <Image source={{ uri: photoUrls[person.id] }} style={styles.avatar} />
-                      ) : (
-                        <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                      )}
-                      <Text style={styles.personName}>{person.display_name}</Text>
-                    </TouchableOpacity>
-                    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-                      <TouchableOpacity
-                        style={styles.acceptButton}
-                        onPress={() => handleRespond(person.friendshipId, true)}
-                        accessibilityLabel={`Accept friend request from ${person.display_name}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.acceptButtonText}>Accept</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.declineButton}
-                        onPress={() => handleRespond(person.friendshipId, false)}
-                        accessibilityLabel={`Decline friend request from ${person.display_name}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.declineButtonText}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  <PersonCard
+                    key={person.friendshipId}
+                    style={styles.requestRow}
+                    photoUrl={photoUrls[person.id]}
+                    name={person.display_name}
+                    onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
+                    action={
+                      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                        <TouchableOpacity
+                          style={styles.acceptButton}
+                          onPress={() => handleRespond(person.friendshipId, true)}
+                          accessibilityLabel={`Accept friend request from ${person.display_name}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.acceptButtonText}>Accept</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.declineButton}
+                          onPress={() => handleRespond(person.friendshipId, false)}
+                          accessibilityLabel={`Decline friend request from ${person.display_name}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.declineButtonText}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    }
+                  />
                 ))}
                 <View style={styles.divider} />
               </>
@@ -390,30 +373,23 @@ export default function FriendsScreen({ navigation }) {
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.friendRow}>
-            <TouchableOpacity
-              style={styles.personInfo}
-              onPress={() => navigation.navigate('ViewProfile', { userId: item.id })}
-              accessibilityLabel={`View ${item.display_name}'s profile`}
-              accessibilityRole="button"
-            >
-              {photoUrls[item.id] ? (
-                <Image source={{ uri: photoUrls[item.id] }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]} />
-              )}
-              <Text style={styles.personName}>{item.display_name}</Text>
-            </TouchableOpacity>
-            {circles.length > 0 && (
-              <TouchableOpacity
-                onPress={() => setManageCirclesFor(item)}
-                accessibilityLabel={`Manage circles for ${item.display_name}`}
-                accessibilityRole="button"
-              >
-                <Text style={styles.circleTagIcon}>🏷️</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <PersonCard
+            style={styles.friendRow}
+            photoUrl={photoUrls[item.id]}
+            name={item.display_name}
+            onPress={() => navigation.navigate('ViewProfile', { userId: item.id })}
+            action={
+              circles.length > 0 ? (
+                <TouchableOpacity
+                  onPress={() => setManageCirclesFor(item)}
+                  accessibilityLabel={`Manage circles for ${item.display_name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.circleTagIcon}>🏷️</Text>
+                </TouchableOpacity>
+              ) : null
+            }
+          />
         )}
       />
       )}
@@ -491,10 +467,9 @@ const getStyles = (colors) => StyleSheet.create({
     letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm,
   },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
-  requestRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  personInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  requestRow: { marginBottom: spacing.md },
   friendRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   circleTagIcon: { fontSize: 16, paddingHorizontal: spacing.sm },
@@ -524,10 +499,6 @@ const getStyles = (colors) => StyleSheet.create({
   circleToggleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   circleToggleCheck: { width: 24, color: colors.primary, fontWeight: '800', fontSize: 16 },
   circleToggleName: { color: colors.textPrimary, fontSize: 15 },
-  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
-  avatarPlaceholder: {},
-  personName: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
-  mutualText: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8 },
   acceptButtonSent: { backgroundColor: colors.success },
   acceptButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },

@@ -252,11 +252,64 @@ run-through of either increment — next session should confirm Home's Your Plan
 read sensibly next to the (for `PlansScreen`) real card chrome, and that a merged Upcoming/Past
 row's `roleLabel` text reads clearly alongside its own lifecycle badge rather than redundantly.
 
-**Remaining migration targets, in the locked order, not yet started**: `GatheringsScreen.js`'s
-three tabs (largest/riskiest, sequenced last among the `PlanCard` rollout on purpose); then
-`PersonCard` into `MatchesScreen.js`/`FriendsScreen.js`/`ViewProfileScreen.js`'s mutual-friends
-rows; then `PlaceCard` into `DiscoverHubScreen.js`'s business/place sections and
-`BusinessProfileScreen.js`.
+**`GatheringsScreen.js`'s three tabs — read in full before migrating, per this phase's own
+"verified after each" discipline, and found genuinely unfit for `PlanCard` as designed, not a
+silent skip.** All three tabs' cards (nearby/attending/hosting) are real, standalone,
+*interactive* content cards, not a "tap to open the real thing" row the way Home's Your Plans or
+`PlansScreen`'s rows are: a cover photo, a category badge, up to 6 conditionally-rendered badges
+(women-only/matches-interest/friends-interested/newcomer/business-host/recurring/offer), a
+description line, an expand/collapse toggle revealing real inline Q&A and a fellow-attendees
+list with per-person notice-sending, a Gathering Hub button, a feedback prompt for past
+gatherings, and (nearby tab) inline Interest/Invite action buttons — all real, already-built
+functionality, not padding. Forcing this onto `PlanCard`'s deliberately minimal shape (icon,
+title, one subtitle line, a status badge, tap-through) would mean either genuinely deleting a
+large amount of real, working functionality (this file's own oldest and most consistently-
+enforced rule is never to cut real signal), or growing `PlanCard` into something that duplicates
+this screen's own already-correct complexity inside a new file — standardizing nothing, just
+relocating it. **Decision, made here rather than forced through**: `GatheringsScreen.js` is left
+building its own cards, matching this phase's own already-established precedent for exactly this
+situation (swipe-deck cards, above) — a real interaction pattern that's a worse fit for the
+canonical shape than staying as its own component. Not silently dropped: flagged here so a
+future session doesn't rediscover this by attempting the same migration blind.
+
+**`PersonCard` — built and migrated into `FriendsScreen.js`, DONE. `MatchesScreen.js` checked
+and deliberately not migrated — see below.** Two corrections to this phase's own original text,
+both found by reading the real screens before migrating rather than assuming either fit:
+
+- `ViewProfileScreen.js` has no *list* of mutual friends to convert — only a single plain
+  summary sentence ("You both know Sarah") — so there's no row there for `PersonCard` to
+  replace. Nothing to migrate.
+- `MatchesScreen.js`'s match row has a real, deliberate **dual tap-target** design — tapping the
+  avatar navigates to `ViewProfile`, tapping the rest of the row (name/subtitle/compat badge)
+  navigates to `Chat` — two genuinely different destinations from one row, not a single
+  "tap anywhere to open the person" shell the way every `PersonCard` call site elsewhere in this
+  phase actually is. Forcing this onto `PersonCard`'s one-`onPress` shape would mean either
+  silently dropping the avatar's own separate destination (a real behavior regression on this
+  app's single highest-traffic message-list screen) or growing `PersonCard`'s prop surface with a
+  second tap target used nowhere else — same "worse fit than leaving it alone" reasoning already
+  applied to `GatheringsScreen.js` and swipe-deck cards. Left as its own component, flagged here
+  rather than silently skipped.
+
+Built `src/components/PersonCard.js` — a presentational shell only (photo, name, an optional
+subtitle line, up to 2 real context chips), the one real primary action passed in via an
+`action` node rather than absorbed into the component itself (mirrors `PlanCard`'s own
+Interest/Invite buttons staying with `GatheringsScreen` — action semantics genuinely differ per
+screen, only the photo+name+context presentation was actually redundant). Migrated all 5 of
+`FriendsScreen.js`'s real person-row shapes onto it: "People You May Know" (mutual-friend-count
+subtitle + Add/Sent), "From Your Contacts" (Add/Sent), "Not On Nearby Yet" (no profile to view,
+so no `onPress` — Invite action only), "Friend Requests" (Accept + ✕ Decline, two actions in one
+node), and the accepted-friends list itself (an optional 🏷️ circle-tag icon action). Removed
+the now-dead `personInfo`/`avatar`/`avatarPlaceholder`/`personName`/`mutualText` styles and the
+now-unused `Image` import once every row that used them was migrated. Verified via a direct
+`@babel/core` parse (clean), the full Jest suite (65/65, unaffected — no pure logic changed
+here), and a full `npx expo export --platform ios` (clean, 2244 modules — one more than the 2243
+baseline, the one new `PersonCard.js`).
+
+**Not done yet, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm all 5 migrated `FriendsScreen` row types render and
+behave correctly (especially the dual-action Friend Requests row and the conditional circle-tag
+icon), and that nothing regressed for the "Not On Nearby Yet" row now that its info block is a
+real (disabled) `TouchableOpacity` instead of a plain `View`.
 
 ### Phase 3 — Progressive/contextual settings
 
