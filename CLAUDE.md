@@ -4,6 +4,205 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — "The Plan Engine": real-life-trigger → intent → people → plan → business →
+## offer → confirmation → visit → feedback → next-plan loop (external vision doc, 73 numbered
+## ideas) — PLAN LOCKED, Phases 1-2 building this pass; most of the rest already real or
+## explicitly deferred, per an audit against current code, not a blind build
+
+Direct follow-up to Phase 6 of the "Build everything" plan closing out (immediately below this
+section). The user pasted a very long external strategic vision (73 numbered trigger ideas —
+"I have an hour to kill," "we're already together," "your plans changed," birthdays, weather,
+group-has-no-venue, business counteroffers, "plan health," etc.) organized around one real
+architectural claim worth protecting: every one of these triggers is a variation of the same
+underlying cycle —
+
+```
+SIGNAL → INTENT → PEOPLE → PLAN → BUSINESS → OFFER → CONFIRMATION → VISIT → FEEDBACK → NEXT PLAN
+```
+
+— and the instruction, given directly: build a plan into this file first, then start building
+and commit/push/update this file along the way. The doc's own closing framing is explicit and is
+adopted here without reservation: **don't build 40 new screens — make the existing Plan/People/
+Business/Weather/Offer architecture smart enough that these triggers plug into it.** The doc's
+own author-supplied prioritization is followed, not re-derived: a 🔥 "build toward" list, a 🟡
+"later" list, and a 🚫 "don't build as separate features" list (Birthday app, Weather app, Friend
+reminder app, Event app, Restaurant deal app, Transportation app — all correctly rejected as
+separate products; every one of their real triggers should live as a nudge inside Home/Gathering/
+Business surfaces this app already has, never a new tab or a new mini-app).
+
+### Audit first — checked every "first five"/"🔥 build toward" item against the real, current
+### code before writing anything, same standing rule as every other section in this file
+
+Most of the doc's own headline priorities turn out to already be real and shipped, from earlier
+phases in this file — re-verified directly, not assumed from memory:
+- **"Weather → recommendation ranking"** — already fully real. `homeRecommendations.js`'s
+  `buildHomeRecommendations()` (Phase 1 of "Build everything," Aug 22 2026) already applies a
+  real forecast bonus/penalty to gathering candidates. Nothing to build.
+- **"Friends/activity → make a plan"** — already substantially real. Layer 3's group-intent
+  signal (`get_my_group_intent_signals()`, "N people you know are looking for X") and Phase 4's
+  perk-anchored `MakeAPlanScreen.js` both already exist and are wired into Home. The doc's
+  broader "universal Make a Plan action reachable from anywhere" (idea 73) is a real future
+  direction but not re-attempted here — it's a convergence point for *all* these triggers, worth
+  revisiting once more of them exist, not a prerequisite for building any single one.
+- **"Date → business → weather/context"** (idea 12) — the business-linked-offer merge on
+  `GatheringDetailScreen`/`DateProposalScreen` (Aug 25 2026, "Gaps 1/2") already ties a confirmed
+  plan to its real accepted business offer; Home's weather card already exists independently.
+  Not re-combined into one literal "❤️ Your date is Friday, 76°, 4 nearby options" card this
+  pass — a real, small, additive follow-up, not attempted here to keep this pass's own scope from
+  creeping past the two phases actually locked below.
+- **"Business counteroffers" / "businesses compete on more than price"** (ideas 35-36) — the
+  underlying mechanism (multiple simultaneous offers of different real `offer_type`s — standard/
+  discount/perk/upgrade/alt_time — per request, reliability-ranked) has existed since the Offer
+  System phases (Aug 17 2026) and Phase 3's "Compare Your Options" view. A business proposing a
+  genuinely different *time* than requested is already real (`alt_time` + `proposed_time`); a
+  business proposing different *terms* on an already-`offered` row (a true renegotiation, not a
+  second competing offer) is **not** built — flagged as a real, later gap, not attempted here.
+- **"Gathering without venue → businesses compete"** (idea 7 / 🔥 item 2) — the *mechanism* is
+  fully real and has been since Aug 25 2026's deferred-consent redesign
+  (`gatherings.ask_local_businesses`, `submitBusinessRequestForGathering()`,
+  `GatheringDetailScreen`'s 4-state host banner). **What's genuinely missing, confirmed by
+  reading the code directly**: this is entirely *reactive* — a host only ever sees "ready to see
+  what's available?" if they happen to reopen that specific gathering's own detail screen. There
+  is no proactive surface anywhere (Home included) telling a host "this upcoming gathering still
+  has no venue." **This is Phase 2 below.**
+- **"Existing plan needs something" / "plan health"** (ideas 33-34) — confirmed via grep: no
+  such status concept exists anywhere in this codebase (no "missing venue"/"missing RSVPs"
+  aggregation surfaced proactively). The venue half is exactly Phase 2 below. The fuller "plan
+  health" checklist (RSVPs outstanding, transportation, weather) is real and valuable but a
+  materially larger, multi-signal status widget — **flagged for a later pass** (🟡), not built
+  now; Phase 2 only closes the single highest-value piece (venue), matching this file's own
+  "close the real gap, don't half-build the whole idea" discipline.
+- **"Birthday → Gathering → business offer"** (🔥 item 1, the doc's own first pick) — confirmed
+  via a direct read of `send_birthday_reminders()` (the live cron function, `00000000000000_
+  baseline.sql`): a real "🎂 Birthday Today" push already exists, but it fires same-day only and
+  taps through to the birthday person's `ViewProfile` — a "happy birthday" touchpoint, not a
+  planning one. **There is no advance-notice signal at all** (nothing surfaces "Sarah's birthday
+  is in N days" while there's still real time to plan around it), and no path from either signal
+  to gathering creation. **This is Phase 1 below.**
+
+### Ideas explicitly not being built this pass, and why — matching the doc's own 🟡/🚫 framing
+
+**🟡 Later, real and worth doing eventually, deliberately not attempted now** (each would need
+its own scoping pass, same as every other "flagged, not built" item elsewhere in this file):
+plan-health beyond venue (RSVP/transportation status), business counteroffers on an already-
+offered row, "we're already together" (co-location-triggered spontaneous plans — needs a real
+decision about presence-detection precision beyond what `report-presence`'s coarse crossed-paths
+buckets already give), "you haven't seen them in a while" / anniversary reminders (both need
+careful non-creepy copy review before building, per the doc's own explicit caution), empty-
+capacity matching, "Nearby noticed…" cross-signal recommendations, second-date prompts, group-
+disagreement compromise scoring, meeting-point midpoint calculation, novelty-aware
+recommendations ("try somewhere new"), post-visit 👍/would-go-again feedback feeding the
+recommendation engine, and the eventual universal "Make a Plan" convergence action (idea 73).
+**🚫 Explicitly rejected as separate features, per the doc's own closing warning, reaffirmed
+here**: no Birthday app, no Weather app, no Friend-reminder app, no Event app, no Restaurant-deal
+app, no Transportation app, no new bottom tab, no new mini-app screen for any of the 73 ideas.
+Every real trigger built from this doc must land as a nudge inside a surface this app already
+has (Home's banner cluster, `GatheringDetailScreen`'s host banner) — never a new destination.
+
+### Locked build order — 2 phases this pass, each its own commit, verified before considered done
+
+**Phase 1 — Birthday-aware plan nudge.** New `get_upcoming_connected_birthdays(days_ahead_param
+int default 14)` SECURITY DEFINER RPC — real connected-set scoping (accepted friendships ∪
+matches, both directions — the same definition Tier 2/Layer 3 already use elsewhere in this
+file), internal `auth.uid()`-only (no caller-supplied id, matching every other RPC of this
+shape), computes each connected person's real next birthday from their real `birthdate` (month/
+day only, year-agnostic, with an explicit Feb-29-in-a-non-leap-year fallback to Feb 28 — a real
+edge case, not glossed over), returns only rows within the real window. A new Home banner-
+cluster card (same `outcomePromptCard`/`predictiveActButton` visual language and per-day
+`AsyncStorage` dismiss convention every other Home nudge already uses — no new visual pattern)
+surfaces the single soonest real upcoming birthday among the caller's own real connections:
+"🎂 {name}'s birthday is {today/tomorrow/in N days} — want to plan something?" Tapping navigates
+straight to `CreateGathering` with a real prefilled title (`"{name}'s Birthday"`) — never
+auto-submits, never guesses a date/time (matches this file's oldest standing rule) — the host
+still picks everything else, including whether to invite the birthday person, through the
+already-existing wizard/invite flow. The existing same-day "🎂 Birthday Today" push (→
+`ViewProfile`) is completely untouched — a different, already-correct job (a relationship
+touchpoint), not superseded by this new, earlier, planning-oriented nudge.
+
+**Phase 2 — "This gathering still needs a venue" Home nudge.** A new, lightweight client-side
+query (`getMyGatheringsNeedingVenue()`, no new RPC needed — reuses already-existing, already-RLS-
+correct tables exactly as `GatheringDetailScreen`'s own host banner already does) surfaces the
+caller's own real upcoming hosted gatherings that have no `hosting_partner_id` set and no
+`business_requests` row yet at all — i.e., genuinely nothing has happened toward finding a venue,
+whether or not the host ticked "ask local businesses" at creation time. A new Home nudge card,
+copy honestly distinguishing the two real cases (`ask_local_businesses` already true: "you asked
+us to look — ready to see what's available?"; not yet set: "still no venue — want Nearby to look
+for local business options?"), tapping navigates straight to that specific gathering's real
+`GatheringDetailScreen` — **not** a second mechanism, the existing 4-state host banner there
+already owns the actual decision/submit step; Home's only job is surfacing that it's still
+pending, matching the doc's own "the app does work for the user" framing without inventing a
+duplicate business-request pathway.
+
+### Verification convention for both phases, matching every other schema-touching section here
+
+Phase 1's migration: applied to production and verified live with real disposable test data
+(a real connected pair with a real birthdate inside the window; a non-connected profile with an
+in-window birthdate correctly excluded; the Feb-29 fallback path exercised directly), plus a
+from-scratch migration replay before considered done. Phase 2 is client-only, no schema change —
+verified via a direct `@babel/core` parse and a full `npx expo export --platform ios`. Both
+phases: full Jest suite re-run, each phase its own commit pushed individually, this section's own
+status notes updated as each lands — not batched at the end, matching this file's own restart-
+safety convention.
+
+**Status: plan locked. Phase 1 is DONE. Phase 2 not yet started — see below.**
+
+**Phase 1 — DONE.** Built exactly per the locked design above, no changes during
+implementation. `supabase/migrations/20260823_upcoming_connected_birthdays.sql` — the new
+`get_upcoming_connected_birthdays(days_ahead_param int default 14)` SECURITY DEFINER RPC,
+applied to production (`enmosvippabmuqslzrox`) and **verified live with real disposable test
+data**, not just applied: temporarily set real birthdates on three real profiles (the real
+`Claude`↔`Allen` accepted friendship and `Google voice`↔`Allen` match already in production) —
+`Claude`'s birthdate set to land 9 days out, `Google voice`'s set to `2000-02-29` (specifically
+to exercise the Feb-29-in-a-non-leap-year fallback, since Aug 23 2026's next occurrence of
+Feb 29 falls in 2027, itself non-leap — the fallback path fires for *both* the current-year and
+next-year attempts, not just one), and `Allen Klein`'s (a real profile with **zero** friendship/
+match rows to anyone) set to land 5 days out, as a genuine non-connected control. Calling the
+RPC as `Allen` with the default 14-day window correctly returned only `Claude` (`days_until: 9`)
+— `Google voice`'s real 189-day-out Feb-29 birthday correctly excluded at the default window,
+and `Allen Klein` correctly excluded entirely (not connected) even though his birthdate was
+in-window. Widening the window to 200 days correctly added `Google voice` at `days_until: 189`
+without erroring — proving the Feb-29 fallback (→ Feb 28) computed correctly in both the
+current-year and rolled-forward-year branches, not just present in the SQL text. Querying as
+`Allen Klein` himself (a genuine stranger to both other test profiles) correctly returned zero
+rows. A raw `anon`-role call was rejected outright (no `EXECUTE` grant — only `authenticated`/
+`service_role`/`postgres`). All three profiles' birthdates reverted to their exact real values
+afterward — confirmed production back to its exact pre-test baseline. **Verified via a real
+from-scratch migration replay**: pulled the already-cached `supabase/postgres:15.1.0.147`
+Docker image (this time started with **no** `shared_preload_libraries` override — a copy/paste
+mistake from an earlier session's own documented gotcha would otherwise strip `pg_cron`'s
+preload and break the replay for an unrelated reason), patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`) onto the test container only, created `pg_cron`/
+`pg_trgm` once as `supabase_admin` (the only superuser role in this image — `postgres` itself is
+not a superuser here), then ran the full 78-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, the new function confirmed to exist in the
+freshly-rebuilt database. Container removed afterward.
+
+Client: new `getUpcomingConnectedBirthdays(daysAhead = 14)` in `services/friends.js` (thin RPC
+wrapper). `HomeScreen.js` gained a new `birthdayNudge` state, fetched alongside the existing
+predictive-pattern/group-intent nudges in the same try/catch block, same per-day `AsyncStorage`
+dismiss-key convention, same `home_nudge_events` logging (reuses the existing `'predictive'`
+`nudge_type` bucket with `category: 'birthday'` — a real, honest sub-bucket of "proactive nudge,"
+not a fabricated new category value, since `home_nudge_events.category` has no CHECK constraint
+to widen and adding a third `nudge_type` enum value for one nudge would be more invasive than
+this reuse). A new card in Home's existing banner cluster (same `outcomePromptCard`/
+`predictiveActButton` visual language every other nudge there already uses) reads "🎂
+{name}'s birthday is today/tomorrow/in N days — want to plan something?" — tapping "Yes, let's
+plan something →" navigates straight to `CreateGathering` with `quickStartTitle: "{name}'s
+Birthday"` (the existing, already-proven prefill param `CreateGatheringScreen.js` already reads
+elsewhere) — never auto-submits, never picks a date/time, the host still does everything else
+through the already-existing wizard/invite flow. The existing same-day "🎂 Birthday Today" push
+(→ `ViewProfile`) is completely untouched, confirmed via `git diff` — a different, already-
+correct job. Verified via a direct `@babel/core` parse of both touched files (clean), the full
+Jest suite (65/65, unaffected), and a full `npx expo export --platform ios` (clean, no bundling
+errors — edits to two existing files, one new migration, no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the card renders correctly on a real device for a
+genuinely upcoming real connection's birthday, that the today/tomorrow/N-days wording reads
+correctly at each boundary, that dismissing it correctly suppresses it for the rest of that same
+day, and that tapping "Yes, let's plan something" lands on `CreateGathering` with the right
+prefilled title and the host can still complete the wizard normally from there.
+
 ## Aug 22 2026 — "Build everything" — the 6 large/architectural items from the UX/IA critique,
 ## Feature Freeze explicitly overridden for this scope, PLAN LOCKED, not yet built
 

@@ -8,6 +8,7 @@ import { classifyCreateRequest } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals } from '../services/businessFulfillment';
+import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
 import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -146,6 +147,13 @@ export default function HomeScreen({ navigation }) {
   // "not today," and a fresh day naturally re-evaluates the real pattern.
   const [predictivePattern, setPredictivePattern] = useState(null);
   const [groupIntentSignal, setGroupIntentSignal] = useState(null);
+  // "The Plan Engine" Phase 1 (CLAUDE.md, Aug 23 2026) -- a real, dismissible
+  // advance-notice birthday nudge, same per-day AsyncStorage dismiss
+  // convention as predictivePattern/groupIntentSignal above. Distinct from
+  // the existing same-day "Birthday Today" push (-> ViewProfile, unchanged)
+  // -- this fires days ahead, while there's still real time to plan, and
+  // routes to gathering creation instead.
+  const [birthdayNudge, setBirthdayNudge] = useState(null);
   // Phase 6 of the "Build everything" plan (CLAUDE.md) -- a real, one-time
   // first-run demonstration moment, gated on the real profiles.
   // seen_home_first_run_moment flag (same "shown once, flip a flag, never
@@ -247,6 +255,28 @@ export default function HomeScreen({ navigation }) {
           }
         } catch (e) {
           console.error('getMyGroupIntentSignals failed', e);
+        }
+
+        // "The Plan Engine" Phase 1 (CLAUDE.md) -- real, dismissible: the
+        // single soonest real upcoming birthday among the caller's own real
+        // connections (friends+matches), scoped server-side. Per-day
+        // dismiss, same convention as the two nudges above.
+        try {
+          const birthdays = await getUpcomingConnectedBirthdays();
+          if (birthdays.length > 0) {
+            const soonest = birthdays[0];
+            const dismissKey = `birthday_dismiss_${new Date().toDateString()}_${soonest.connection_id}`;
+            const dismissed = await AsyncStorage.getItem(dismissKey);
+            if (!dismissed) {
+              setBirthdayNudge(soonest);
+              if (!loggedNudgeShownRef.current.has(dismissKey)) {
+                loggedNudgeShownRef.current.add(dismissKey);
+                recordNudgeEvent('predictive', 'shown', 'birthday');
+              }
+            }
+          }
+        } catch (e) {
+          console.error('getUpcomingConnectedBirthdays failed', e);
         }
       } catch (e) {
         // These are supplementary cards, not core functionality — a
@@ -683,6 +713,29 @@ export default function HomeScreen({ navigation }) {
     recordNudgeEvent('group_intent', 'dismissed', category);
   }
 
+  // "The Plan Engine" Phase 1 (CLAUDE.md) -- deliberately does NOT go
+  // through handleHomeIntentSubmit/resolveIntent the way the two nudges
+  // above do: this is a real creation intent from the moment it's tapped
+  // (a birthday isn't "existing supply" to check against first), so it
+  // navigates straight to gathering creation with an honest prefilled
+  // title -- never auto-submits, never guesses a date/time.
+  function handleBirthdayAct() {
+    if (!birthdayNudge) return;
+    const dismissKey = `birthday_dismiss_${new Date().toDateString()}_${birthdayNudge.connection_id}`;
+    setBirthdayNudge(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'acted', 'birthday');
+    navigation.navigate('CreateGathering', { quickStartTitle: `${birthdayNudge.display_name}'s Birthday` });
+  }
+
+  function handleBirthdayDismiss() {
+    if (!birthdayNudge) return;
+    const dismissKey = `birthday_dismiss_${new Date().toDateString()}_${birthdayNudge.connection_id}`;
+    setBirthdayNudge(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'dismissed', 'birthday');
+  }
+
   // Shared by both "Ask Nearby Businesses" entry points (the empty-fallback
   // panel, and -- per CLAUDE.md's C1 -- the non-empty ranked-results panel
   // too) -- record+navigate only, no state-clearing responsibility of its
@@ -1038,7 +1091,7 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {predictivePattern && (
               <View style={styles.outcomePromptCard}>
@@ -1067,6 +1120,23 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <TouchableOpacity style={[styles.predictiveActButton, intentThinking && styles.intentButtonDisabled]} onPress={handleGroupIntentAct} disabled={intentThinking} accessibilityLabel="Find something together" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Find something for the group →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {birthdayNudge && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    🎂 {birthdayNudge.display_name}'s birthday is{' '}
+                    {birthdayNudge.days_until === 0 ? 'today' : birthdayNudge.days_until === 1 ? 'tomorrow' : `in ${birthdayNudge.days_until} days`}
+                    {' '}— want to plan something?
+                  </Text>
+                  <TouchableOpacity onPress={handleBirthdayDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleBirthdayAct} accessibilityLabel="Plan something" accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
                 </TouchableOpacity>
               </View>
             )}

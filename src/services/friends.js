@@ -117,3 +117,19 @@ export async function filterToMyFriends(userIds) {
   const friendIds = new Set(friends.map((f) => f.id));
   return friends.filter((f) => userIds.includes(f.id));
 }
+
+// "The Plan Engine" Phase 1 (see CLAUDE.md, Aug 23 2026) -- an advance-notice
+// birthday signal, distinct from the existing same-day "Birthday Today" push
+// (which routes to ViewProfile). Real connected-set scoping (friends+matches)
+// is enforced server-side by get_upcoming_connected_birthdays() itself, not
+// re-derived here.
+export async function getUpcomingConnectedBirthdays(daysAhead = 14) {
+  const { data, error } = await supabase.rpc('get_upcoming_connected_birthdays', {
+    days_ahead_param: daysAhead,
+  });
+  if (error) {
+    console.error('getUpcomingConnectedBirthdays error', error);
+    return [];
+  }
+  return data ?? [];
+}
