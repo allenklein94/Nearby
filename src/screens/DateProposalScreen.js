@@ -9,9 +9,9 @@ import {
   respondToDateProposal,
   withdrawDateProposal,
 } from '../services/dateProposals';
-import { getAcceptedOfferForRequest, formatOfferSummary } from '../services/businessFulfillment';
-import { openUberToDestination } from '../utils/uberDeepLink';
+import { getAcceptedOfferForRequest } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
+import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -19,11 +19,6 @@ const TERMINAL_STATUS_COPY = {
   declined: "Didn't work out that time",
   withdrawn: 'Withdrawn',
 };
-
-function formatOfferTime(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-}
 
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4). The
 // one real screen for the locked Match -> Proposal -> Other person
@@ -215,42 +210,16 @@ export default function DateProposalScreen({ navigation, route }) {
                 // Gap #2: the merged "your date is set" view -- the real
                 // accepted offer's own venue/time/what-they-offered,
                 // inline, not just a link off to BusinessRequestDetail.
-                <View style={styles.confirmedOfferBlock}>
-                  <Text style={styles.confirmedOfferKicker}>❤️ Your date is set</Text>
-                  <Text style={styles.confirmedOfferVenue}>{acceptedOffer.brand_partners?.name ?? 'A local business'}</Text>
-                  {acceptedOffer.proposed_time && (
-                    <Text style={styles.confirmedOfferSub}>{formatOfferTime(acceptedOffer.proposed_time)}</Text>
-                  )}
-                  {formatOfferSummary(acceptedOffer) && (
-                    <Text style={styles.confirmedOfferSub}>{formatOfferSummary(acceptedOffer)}</Text>
-                  )}
-                  {acceptedOffer.offer_description ? (
-                    <Text style={styles.confirmedOfferDesc}>{acceptedOffer.offer_description}</Text>
-                  ) : null}
-                  {acceptedOffer.brand_partners?.latitude != null && acceptedOffer.brand_partners?.longitude != null && (
-                    <TouchableOpacity
-                      onPress={() => openUberToDestination({
-                        latitude: acceptedOffer.brand_partners.latitude,
-                        longitude: acceptedOffer.brand_partners.longitude,
-                        nickname: acceptedOffer.brand_partners.name,
-                        address: acceptedOffer.brand_partners.address,
-                      })}
-                      style={{ marginTop: spacing.sm }}
-                      accessibilityLabel="Get an Uber there"
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.confirmedOfferLink}>🚗 Get an Uber there</Text>
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
-                    style={{ marginTop: spacing.sm }}
-                    accessibilityLabel="View full business request"
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.confirmedOfferLink}>View full request →</Text>
-                  </TouchableOpacity>
-                </View>
+                // Shared with GatheringDetailScreen's own Gap #1 rendering
+                // of the exact same fact via AcceptedBusinessOfferCard
+                // (convergence pass P1 follow-up) -- one component, not
+                // two hand-copied blocks.
+                <AcceptedBusinessOfferCard
+                  offer={acceptedOffer}
+                  kicker="❤️ Your date is set"
+                  bordered={false}
+                  onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+                />
               ) : businessRequest ? (
                 <TouchableOpacity
                   style={styles.primaryButton}
@@ -338,12 +307,6 @@ const getStyles = (colors) => StyleSheet.create({
     padding: spacing.md, marginBottom: spacing.lg,
   },
   acceptedTitle: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xs },
-  confirmedOfferBlock: { marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border },
-  confirmedOfferKicker: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: 2 },
-  confirmedOfferVenue: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
-  confirmedOfferSub: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  confirmedOfferDesc: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-  confirmedOfferLink: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   primaryButton: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
     alignItems: 'center', marginTop: spacing.md,

@@ -222,6 +222,71 @@ run-through — next session should confirm `MakeAPlanScreen` renders correctly 
 (the "With {business}" line, the blank title, the working confirm flow) and that the new
 "Make a Plan Here" button on `BusinessProfileScreen` navigates correctly.
 
+### P1 follow-up — a real gap in the above, found by direct question and closed: entry points
+### had converged, but the post-creation "same experience" had not — DONE
+
+The user reviewed the P1 write-up above and asked a direct, correct challenge: does this actually
+deliver "same underlying user experience regardless of how the plan started," or did it only
+converge *where you start*? Investigated rather than assumed either way — the honest answer was
+the latter. Restated here as the four things the user explicitly asked to have documented before
+any more building, each answered against the real code, not guessed:
+
+1. **What is the shared UI/entry abstraction?** Two, not one, and that's fine — `MakeAPlanScreen`
+   (perk- or business-anchored: makes a brand-new `gatherings` row) and `AskBusinessScreen` (solo/
+   gathering/match-anchored: makes a `business_requests` row). These are genuinely two different
+   creation transactions, not one form with two skins — forcing them into a single "Plan" entry
+   component would mean picking one transaction shape for both, which isn't honest to what each
+   actually does. `DateProposalScreen` sits in front of `AskBusinessScreen`'s match mode as a real
+   consent gate, not a third creation form.
+2. **What existing IDs/entities connect the three flows?** This part was already real, not
+   something built new: `business_requests` is one table with three optional origins baked into
+   its own schema today — `gathering_id` (nullable FK, set when reached from a gathering) and
+   `match_id` (nullable FK, added in the Offer System Phase 5 work) alongside the plain solo case
+   where both are null. One row shape, one lifecycle (`business_request_offers` →
+   `business_reservations` → completion), regardless of which of the three flows created it. This
+   is the real connective tissue this whole convergence pass has always been able to lean on — no
+   new schema, confirmed again explicitly per point 5 below.
+3. **Where does the accepted business offer become visible?** This was the actual gap. Before this
+   pass: three independent, hand-copied renderings of the identical fact — `GatheringDetailScreen`
+   (Gap #1, Aug 25 2026), `DateProposalScreen` (Gap #2, same day), and the solo path's own default
+   home on `BusinessRequestDetailScreen`. Same content (venue, time, offer summary, description, a
+   real Uber deep link, a "view request" link), three copies with three different style-name sets.
+   **Fixed this pass**: factored into a new shared `src/components/AcceptedBusinessOfferCard.js`,
+   now rendered by both `GatheringDetailScreen` and `DateProposalScreen` (a `bordered` prop
+   controls whether it renders as its own standalone card or an inline block nested in a parent
+   card — the one real visual difference between the two contexts, kept explicit rather than
+   forced to match). `BusinessRequestDetailScreen`'s own per-offer accepted-state rendering was
+   deliberately **not** folded into this component — it's a genuinely richer view (multiple
+   competing offers, live payment status, accept/decline actions), not the same duplication;
+   collapsing it in would either lose real detail or bloat the shared component with props only
+   one caller needs. One small, deliberate behavior correction made while extracting this:
+   `GatheringDetailScreen`'s old block showed "Confirmed for — people" when `party_size` was
+   somehow null; the shared component only renders that line when a real number exists, matching
+   this codebase's own standing "never show a fabricated placeholder" convention.
+4. **How does a gathering/date get from creation → business connection → confirmed visit?** Real
+   and already-working per path, unchanged by this pass — `create_business_request[_for_gathering|
+   _for_match]()` → fan-out → `business_request_offers` → `accept_business_offer()` →
+   `business_reservations` → `complete_business_reservation()`, the same Offer System lifecycle
+   documented further down this file. What changed this pass is only the *view* of that lifecycle
+   at the "accepted" stage — one shared component instead of three independent renderings of the
+   same underlying rows.
+5. **Confirm no new schema/table is required** — confirmed, both before and after building: this
+   whole follow-up (a new client-side React component, two screens repointed to use it) touched
+   zero migrations, zero RPCs, zero tables. The user's own verdict — approve Option A, don't
+   introduce a universal `plans` table unless an audit later proves the existing entities can't
+   support the merged experience — held completely; nothing found while doing this proved that.
+
+Verified via a direct `@babel/core` parse of all three touched/new files (clean), the full Jest
+suite (67/67, unaffected), and a full `npx expo export --platform ios` (clean, no bundling errors,
+**2251 modules** — one more than the 2250 P1/P2 baseline, the one new
+`AcceptedBusinessOfferCard.js`; both screen files were edits, no other new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the shared card renders correctly in both its bordered
+(`GatheringDetailScreen`) and inline (`DateProposalScreen`) contexts against real accepted-offer
+data, and that the dropped "— people" placeholder line is genuinely never missed (i.e.
+`business_requests.party_size` is, in practice, always set by the time an offer can be accepted).
+
 ### P2 — Insights vs. Momentum ("how am I doing?") — DONE, merged into one destination
 
 Originally flagged as explicitly deferred/lowest priority per the user's own words (*"I wouldn't

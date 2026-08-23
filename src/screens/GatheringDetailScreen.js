@@ -24,7 +24,6 @@ import {
   getBusinessRequestForGathering,
   getAcceptedOfferForRequest,
   submitBusinessRequestForGathering,
-  formatOfferSummary,
 } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import GatheringQnA from '../components/GatheringQnA';
@@ -32,9 +31,9 @@ import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import LoadErrorState from '../components/LoadErrorState';
+import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
-import { openUberToDestination } from '../utils/uberDeepLink';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -602,46 +601,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 acceptedBusinessOffer ? (
                   // Gap #1: the accepted business offer, shown inline
                   // instead of only ever living on a separate
-                  // BusinessRequestDetailScreen.
-                  <View style={[styles.businessOfferCard, { marginTop: spacing.xs }]}>
-                    <Text style={styles.businessOfferKicker}>🍽️ Local Business Confirmed</Text>
-                    <Text style={styles.businessOfferTitle}>{acceptedBusinessOffer.brand_partners?.name ?? 'A local business'}</Text>
-                    {acceptedBusinessOffer.proposed_time && (
-                      <Text style={styles.businessOfferSub}>{formatDate(acceptedBusinessOffer.proposed_time)}</Text>
-                    )}
-                    <Text style={styles.businessOfferSub}>
-                      Confirmed for {businessRequest?.party_size ?? '—'} {businessRequest?.party_size === 1 ? 'person' : 'people'}
-                    </Text>
-                    {formatOfferSummary(acceptedBusinessOffer) && (
-                      <Text style={styles.businessOfferSub}>{formatOfferSummary(acceptedBusinessOffer)}</Text>
-                    )}
-                    {acceptedBusinessOffer.offer_description ? (
-                      <Text style={styles.perkDesc}>{acceptedBusinessOffer.offer_description}</Text>
-                    ) : null}
-                    {acceptedBusinessOffer.brand_partners?.latitude != null && acceptedBusinessOffer.brand_partners?.longitude != null && (
-                      <TouchableOpacity
-                        onPress={() => openUberToDestination({
-                          latitude: acceptedBusinessOffer.brand_partners.latitude,
-                          longitude: acceptedBusinessOffer.brand_partners.longitude,
-                          nickname: acceptedBusinessOffer.brand_partners.name,
-                          address: acceptedBusinessOffer.brand_partners.address,
-                        })}
-                        style={{ marginTop: spacing.xs }}
-                        accessibilityLabel="Get an Uber there"
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.businessOfferLink}>🚗 Get an Uber there</Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
-                      style={{ marginTop: spacing.xs }}
-                      accessibilityLabel="View your business request"
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.businessOfferLink}>View request →</Text>
-                    </TouchableOpacity>
-                  </View>
+                  // BusinessRequestDetailScreen. Shared with
+                  // DateProposalScreen's own Gap #2 rendering of the exact
+                  // same fact via AcceptedBusinessOfferCard (convergence
+                  // pass P1 follow-up) -- one component, not two
+                  // hand-copied blocks.
+                  <AcceptedBusinessOfferCard
+                    offer={acceptedBusinessOffer}
+                    partySize={businessRequest?.party_size ?? null}
+                    onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+                    style={{ marginTop: spacing.xs }}
+                  />
                 ) : businessRequest ? (
                   <View style={{ marginTop: spacing.xs }}>
                     <Text style={styles.hostBannerLink}>🍽️ Waiting to hear back from local businesses.</Text>
@@ -940,7 +910,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   businessOfferKicker: { color: colors.primary, fontSize: 11, fontWeight: '700', marginBottom: 2 },
   businessOfferTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
   businessOfferSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
-  businessOfferLink: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   businessReadyBanner: {
     marginTop: spacing.xs, backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
     padding: spacing.md,
