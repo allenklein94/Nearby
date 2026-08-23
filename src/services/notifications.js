@@ -169,6 +169,12 @@ export function routeNotificationTap(data) {
     case 'business_partner_denied':
       navigationRef.navigate('MyBusinessApplication');
       break;
+    // "Request More Information" reviewer state (see CLAUDE.md's own entry)
+    // -- lands on the same status screen, which now renders a real
+    // resubmit form for a 'needs_info' row.
+    case 'business_partner_needs_info':
+      navigationRef.navigate('MyBusinessApplication');
+      break;
     case 'business_partnership_response':
       if (data.target_type === 'gathering' && data.target_id) {
         navigationRef.navigate('GatheringDetail', { gatheringId: data.target_id });

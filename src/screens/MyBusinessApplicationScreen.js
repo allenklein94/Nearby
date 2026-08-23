@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
+import { getMyBusinessPartnerRequest, resubmitBusinessPartnerRequest } from '../services/businessPartnerApply';
+import { checkTextModeration } from '../services/textModeration';
 import { BUSINESS_CATEGORIES, FEATURE_OPTIONS } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -23,6 +24,15 @@ const STATUS_COPY = {
     title: 'Application Not Approved',
     body: "This application wasn't approved. You're welcome to submit a new one any time.",
   },
+  // "Request More Information" -- closes the state deliberately deferred
+  // when this app's Business Partner acquisition flow first shipped
+  // ("skip building... for v1... flagged for later"). Same row, real
+  // history preserved, not a fresh application.
+  needs_info: {
+    icon: '✍️',
+    title: 'One More Thing Needed',
+    body: 'Your application is almost there — add the missing info below and resend it.',
+  },
 };
 
 export default function MyBusinessApplicationScreen({ navigation }) {
@@ -31,18 +41,74 @@ export default function MyBusinessApplicationScreen({ navigation }) {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
+  const [form, setForm] = useState(null);
 
   const load = useCallback(async () => {
     try {
       const data = await getMyBusinessPartnerRequest();
       setRequest(data);
       setLoadError(false);
+      if (data?.status === 'needs_info') {
+        setForm({
+          businessName: data.business_name || '',
+          businessDescription: data.business_description || '',
+          contactInfo: data.contact_info || '',
+          category: data.category || null,
+          website: data.website || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          requestedFeatures: data.requested_features || [],
+        });
+      }
     } catch (e) {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  function updateForm(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleFeature(key) {
+    setForm((prev) => ({
+      ...prev,
+      requestedFeatures: prev.requestedFeatures.includes(key)
+        ? prev.requestedFeatures.filter((k) => k !== key)
+        : [...prev.requestedFeatures, key],
+    }));
+  }
+
+  async function handleResubmit() {
+    if (!form?.businessName?.trim()) {
+      return Alert.alert('Business name required', "Tell us your business's name.");
+    }
+    const nameCheck = await checkTextModeration(form.businessName);
+    if (!nameCheck.safe) {
+      return Alert.alert('Name not allowed', 'Please revise and try again.');
+    }
+    setResubmitting(true);
+    try {
+      await resubmitBusinessPartnerRequest(request.id, {
+        businessName: form.businessName.trim(),
+        businessDescription: form.businessDescription.trim(),
+        contactInfo: form.contactInfo.trim(),
+        category: form.category,
+        website: form.website.trim(),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        requestedFeatures: form.requestedFeatures,
+      });
+      Alert.alert('Sent', "We'll take another look and let you know.");
+      await load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setResubmitting(false);
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -103,25 +169,110 @@ export default function MyBusinessApplicationScreen({ navigation }) {
           <Text style={styles.statusBody}>{copy.body}</Text>
         </View>
 
-        {request.status === 'denied' && request.admin_notes ? (
+        {(request.status === 'denied' || request.status === 'needs_info') && request.admin_notes ? (
           <View style={styles.notesCard}>
             <Text style={styles.notesLabel}>Note from our team</Text>
             <Text style={styles.notesText}>{request.admin_notes}</Text>
           </View>
         ) : null}
 
-        <View style={styles.detailsCard}>
-          <Text style={styles.detailsHeader}>Your Application</Text>
-          <DetailRow label="Business Name" value={request.business_name} styles={styles} />
-          {categoryLabel ? <DetailRow label="Category" value={categoryLabel} styles={styles} /> : null}
-          {request.business_description ? <DetailRow label="Description" value={request.business_description} styles={styles} /> : null}
-          {request.website ? <DetailRow label="Website" value={request.website} styles={styles} /> : null}
-          {request.phone ? <DetailRow label="Phone" value={request.phone} styles={styles} /> : null}
-          {request.address ? <DetailRow label="Address" value={request.address} styles={styles} /> : null}
-          {featureLabels.length ? (
-            <DetailRow label="Interested In" value={featureLabels.join(', ')} styles={styles} />
-          ) : null}
-        </View>
+        {request.status !== 'needs_info' && (
+          <View style={styles.detailsCard}>
+            <Text style={styles.detailsHeader}>Your Application</Text>
+            <DetailRow label="Business Name" value={request.business_name} styles={styles} />
+            {categoryLabel ? <DetailRow label="Category" value={categoryLabel} styles={styles} /> : null}
+            {request.business_description ? <DetailRow label="Description" value={request.business_description} styles={styles} /> : null}
+            {request.website ? <DetailRow label="Website" value={request.website} styles={styles} /> : null}
+            {request.phone ? <DetailRow label="Phone" value={request.phone} styles={styles} /> : null}
+            {request.address ? <DetailRow label="Address" value={request.address} styles={styles} /> : null}
+            {featureLabels.length ? (
+              <DetailRow label="Interested In" value={featureLabels.join(', ')} styles={styles} />
+            ) : null}
+          </View>
+        )}
+
+        {request.status === 'needs_info' && form && (
+          <View style={styles.detailsCard}>
+            <Text style={styles.detailsHeader}>Update & Resend</Text>
+            <TextInput
+              style={styles.formInput}
+              placeholder="Business name"
+              placeholderTextColor={colors.textTertiary}
+              value={form.businessName}
+              onChangeText={(t) => updateForm('businessName', t)}
+            />
+            <TextInput
+              style={[styles.formInput, styles.formInputMultiline]}
+              placeholder="Description"
+              placeholderTextColor={colors.textTertiary}
+              value={form.businessDescription}
+              onChangeText={(t) => updateForm('businessDescription', t)}
+              multiline
+            />
+            <TextInput
+              style={styles.formInput}
+              placeholder="Website"
+              placeholderTextColor={colors.textTertiary}
+              value={form.website}
+              onChangeText={(t) => updateForm('website', t)}
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.formInput}
+              placeholder="Phone"
+              placeholderTextColor={colors.textTertiary}
+              value={form.phone}
+              onChangeText={(t) => updateForm('phone', t)}
+              keyboardType="phone-pad"
+            />
+            <TextInput
+              style={styles.formInput}
+              placeholder="Address"
+              placeholderTextColor={colors.textTertiary}
+              value={form.address}
+              onChangeText={(t) => updateForm('address', t)}
+            />
+
+            <Text style={styles.formSectionLabel}>Category</Text>
+            <View style={styles.chipRow}>
+              {BUSINESS_CATEGORIES.map((c) => (
+                <TouchableOpacity
+                  key={c.key}
+                  style={[styles.chip, form.category === c.key && styles.chipSelected]}
+                  onPress={() => updateForm('category', c.key)}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.chipText, form.category === c.key && styles.chipTextSelected]}>{c.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.formSectionLabel}>What would you like to offer?</Text>
+            <View style={styles.chipRow}>
+              {FEATURE_OPTIONS.map((f) => (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[styles.chip, form.requestedFeatures.includes(f.key) && styles.chipSelected]}
+                  onPress={() => toggleFeature(f.key)}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.chipText, form.requestedFeatures.includes(f.key) && styles.chipTextSelected]}>{f.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.button, { marginTop: spacing.lg }, resubmitting && { opacity: 0.6 }]}
+              onPress={handleResubmit}
+              disabled={resubmitting}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Resend application"
+            >
+              {resubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Resend Application</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {request.status === 'denied' && (
           <TouchableOpacity
@@ -187,4 +338,18 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   detailValue: { ...typography.body, color: colors.textPrimary },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  formInput: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.sm, color: colors.textPrimary, fontSize: 14, marginBottom: spacing.sm,
+  },
+  formInputMultiline: { minHeight: 70, textAlignVertical: 'top' },
+  formSectionLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginTop: spacing.sm, marginBottom: spacing.xs },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chip: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
+    paddingVertical: 6, paddingHorizontal: 12, marginBottom: spacing.xs, backgroundColor: colors.surfaceElevated,
+  },
+  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
 });

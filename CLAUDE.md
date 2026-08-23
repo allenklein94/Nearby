@@ -4,6 +4,81 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 3: Business
+## Partner "Request More Information" reviewer state — DONE
+
+Direct follow-up to items 1-2 above, same backlog-clearing pass, the last of the three items
+picked from the triage. Closes the one explicitly-deferred piece from the Business Partner
+Onboarding work: "skip building a real 'Request More Information' reviewer state for v1...
+an admin denying with a note and letting the person reapply... is a workable substitute for
+a whole extra state-machine branch. Flagged for later, not built now." Built now, per direct
+instruction to clear the backlog.
+
+**Schema** (`20260823_business_partner_needs_info.sql`): a new `'needs_info'` value added to
+`business_partner_requests`' existing `status` CHECK constraint, additive — `pending`/
+`approved`/`denied` are all completely unchanged, matching this schema's own established
+"widen the CHECK, never repurpose a value" convention. Two new SECURITY DEFINER RPCs:
+- **`request_more_business_partner_info(request_id, notes)`** — admin-only, same
+  double-review guard every sibling review RPC on this table already uses (only succeeds from
+  `pending`), requires a real non-empty note. Sends a real push
+  (`business_partner_needs_info`) with the note as the body.
+- **`resubmit_business_partner_request(request_id, ...every editable field)`** —
+  requester-only, own row only, only succeeds from `needs_info`. Deliberately updates the
+  **same row** rather than the deny-and-fresh-INSERT pattern the original v1 deferral leaned
+  on — a genuinely different flow from a denial (the application wasn't rejected, it just
+  needed one more real field), so preserving the original id/`created_at`/`admin_notes`
+  history is the honest behavior, not a resurrection of a denied decision. Flips status back
+  to `pending` for a real second review pass — the existing `approve_business_partner_request`/
+  `deny_business_partner_request` RPCs needed zero changes to handle a resubmitted row
+  correctly, confirmed live (below), not assumed.
+
+**Client**: `AdminBusinessRequestsScreen.js` gained a real "Request Info" button (pending
+rows only) opening an inline notes field + Send action, a `needs info` status badge, and a
+persistent "Waiting on: {note}" line while a row sits in `needs_info`.
+`MyBusinessApplicationScreen.js` gained a `needs_info` branch: the admin's note (now shown
+for `needs_info`, not just `denied`), and a real resubmit form — every field the original
+apply screen collects, prefilled from the existing row (name/description/website/phone/
+address, the same `BUSINESS_CATEGORIES` chip picker, the same `FEATURE_OPTIONS` checkbox
+row) — "Resend Application" calls the new RPC directly, same business-name text-moderation
+check the original apply screen already runs. New `business_partner_needs_info` push-tap
+route (`services/notifications.js`) lands on the same status screen, which now renders the
+right thing for whatever the row's real current status is.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — a real,
+disposable, full end-to-end lifecycle, not just each RPC in isolation: a real pending test
+request → a non-admin's `request_more_business_partner_info` call correctly rejected → an
+admin call with an empty note correctly rejected (`A note is required...`) → a real admin
+call with a real note correctly transitioned the row to `needs_info` with `reviewed_at`/
+`reviewed_by`/`admin_notes` all genuinely set → a non-requester's resubmit attempt correctly
+rejected → the real requester's resubmit (adding the missing address) correctly flipped the
+row back to `pending` with the new field saved and the original `admin_notes`/`reviewed_by`
+correctly **retained** as history, not nulled → a repeat resubmit attempt on the now-pending
+row correctly rejected (the `needs_info`-only guard holds) → and, closing the loop for real:
+the **existing, untouched** `approve_business_partner_request()` RPC was called on this same
+resubmitted row and succeeded, creating a real `brand_partners` row with the address added
+during resubmit — proving the new state genuinely integrates with the pre-existing approval
+flow, not just working in isolation. All real side effects from that final approve call (the
+new partner row, the requester's `managed_partner_id`, two real gatherings' retroactively-set
+`hosting_partner_id`, the acquisition-event rows) were found and reverted — production
+confirmed back to its exact pre-test baseline (1 pre-existing `business_partner_requests`
+row, 1 pre-existing `brand_partners` row, 11 gatherings). **Verified via a real from-scratch
+migration replay**: pulled the already-cached `supabase/postgres:15.1.0.147` Docker image,
+dropped and recreated a truly empty `public` schema, patched the two known image-version
+gaps onto the test container only, then ran the full 82-file `supabase/migrations/` folder
+in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, both new functions and the
+widened CHECK constraint confirmed to exist in the freshly-rebuilt database. Container
+removed afterward.
+
+Client-side verified via a direct `@babel/core` parse of all four touched/new files (clean),
+the full Jest suite (67/67, unaffected), and a full `npx expo export --platform ios` (clean,
+no bundling errors, 2251 modules, unchanged — every touched file was an edit, no new client
+files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the admin's inline notes field and the applicant's
+full resubmit form (including the category chips and feature checkboxes) both render and
+behave correctly on a real device.
+
 ## Aug 23 2026 — clearing the "flagged but deferred" backlog, item 2: Gap 1 —
 ## unmet intent now surfaces in a business's own aggregated-demand view — DONE
 
