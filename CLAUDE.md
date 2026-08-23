@@ -156,8 +156,32 @@ goes into the deliverable for the user's own review, not into a diff. This is a 
 for this specific pass, not this file's usual "fix small confirmed bugs while auditing" posture
 seen elsewhere.
 
-**Status: plan locked. Execution below — check this line for progress, updated as the pass
-lands, not batched at the end, per this file's own restart-safety convention.**
+**Status: DONE — the full 4-layer pass is complete.**
+`PRODUCT_AUDIT/PRODUCT_COHERENCE_AUDIT_2026-08-23.md` has the full writeup; summarized here so
+this file's own history carries the headline result without needing to open that file:
+
+- **P0: none found.** The specific duplications the pasted external report named (Request
+  Business Partner vs. Ask Local Businesses, AskBusiness vs. MakeAPlan, Insights vs. Momentum)
+  were all confirmed, directly against current code, to already be resolved by the same-day
+  convergence pass documented immediately below this section — the report was reacting to a
+  stale screenshot, not current state. Real, positive finding in its own right.
+- **P1 (2 items)**: the word "Confirmed" means three different things across `PlanCard`/
+  `GroupPlanScreen`/`business_reservations`, a real subtle-misread risk; and
+  `GatheringsScreen` vs. `PlansScreen` show overlapping "your own gatherings" data with
+  different action sets — a real, deliberate, but never explicitly *written-down* split, worth
+  an explicit decision rather than an implicit one.
+- **P2 (3 items)**, **DEFERRED (2 items)**: both listed in full in the audit file, none urgent.
+- The 12-flow WHO+WHAT+WHEN+WHERE+WHY+BUSINESS+OFFER trace found the architecture genuinely
+  converging around one real shared object (`business_requests`, written to by 4 of the app's
+  most different-feeling entry points) — the strongest single signal in the whole audit that
+  this reads as one product, not several bolted together.
+- Direct answers to the audit's own 5 closing questions, and the "10 biggest complexity sources
+  / 10 strongest integration signals" lists (shorter than 10 in practice, on the honest evidence
+  found — not padded to hit a round number), are both in the file, not duplicated here.
+
+**Per the user's own explicit instruction, nothing above has been implemented.** The findings
+are for review together before any of them turn into a diff — this section stays a pointer to
+the real deliverable, not a build log.
 
 ## Aug 23 2026 — "Start Something / Make a Date Plan / Your Life on Nearby" IA pass
 ## (Create tab, Matches, Profile) — DONE, client-only, no schema change
