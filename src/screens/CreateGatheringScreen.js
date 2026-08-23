@@ -8,6 +8,7 @@ import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -38,30 +39,6 @@ const CAPACITY_OPTIONS = [
   { key: '10+', label: '10+ people' },
 ];
 
-const WHEN_PRESETS = [
-  { key: 'now', icon: '⚡', label: 'Now' },
-  { key: 'tonight', icon: '🌙', label: 'Tonight' },
-  { key: 'tomorrow', icon: '☀️', label: 'Tomorrow' },
-  { key: 'custom', icon: '🗓️', label: 'Pick a Date' },
-];
-
-function dateForPreset(preset) {
-  const now = new Date();
-  if (preset === 'now') return new Date(now.getTime() + 15 * 60 * 1000);
-  if (preset === 'tonight') {
-    const d = new Date(now);
-    d.setHours(19, 0, 0, 0);
-    if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 1);
-    return d;
-  }
-  if (preset === 'tomorrow') {
-    const d = new Date(now);
-    d.setDate(d.getDate() + 1);
-    d.setHours(12, 0, 0, 0);
-    return d;
-  }
-  return new Date(now.getTime() + 60 * 60 * 1000);
-}
 
 // Real venue category mapping — same PLACE_CATEGORIES key set
 // DiscoverHubScreen's Places filter already uses (coffee/restaurants/

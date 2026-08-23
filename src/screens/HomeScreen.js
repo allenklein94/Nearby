@@ -939,6 +939,25 @@ export default function HomeScreen({ navigation }) {
                   <View style={styles.planInfo}>
                     <Text style={styles.planTitle}>{item.title}</Text>
                     <Text style={styles.planMeta}>{item.reasons.join(' · ')}</Text>
+                    {/* Phase 4 (see CLAUDE.md's "build everything" plan):
+                        "Make a plan" is deliberately perk-only, not also
+                        offered on a gathering-type recommendation — that
+                        one already names a real, existing event someone
+                        else is running; join (the row's own tap-through
+                        above) is the honest one-tap action there, not a
+                        second, duplicate gathering. A perk has no event
+                        around it yet, which is exactly where creating one
+                        is a real value-add. */}
+                    {item.type === 'perk' && (
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate('MakeAPlan', { offerId: item.id })}
+                        activeOpacity={0.7}
+                        accessibilityLabel={`Make a plan around ${item.title}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.makePlanLink}>📅 Make a plan →</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                   <Text style={styles.planChevron}>›</Text>
                 </TouchableOpacity>
@@ -1470,6 +1489,7 @@ const getStyles = (colors) => StyleSheet.create({
   planInfo: { flex: 1 },
   planTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   planMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  makePlanLink: { color: colors.primary, fontWeight: '700', fontSize: 12, marginTop: 4 },
   planChevron: { color: colors.textTertiary, fontSize: 18 },
   subLabelSpaced: { marginTop: spacing.md },
   seeAllPlansButton: { alignItems: 'center', paddingVertical: spacing.xs, marginBottom: spacing.lg },

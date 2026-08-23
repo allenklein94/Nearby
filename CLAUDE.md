@@ -484,6 +484,103 @@ recommendation type or only gathering-shaped ones (a perk/business-availability 
 doesn't obviously need a new gathering created around it) — resolve this by reading Phase 1's
 real candidate-type mix once it's live, not decided here in the abstract.
 
+**Status: Phase 4 is DONE — the open question resolved, and resolved in the opposite direction
+from how it reads at first pass, once actually traced through the real mechanics rather than
+guessed.** Phase 1's real, live candidate-type mix (checked directly in `homeRecommendations.js`
+before building anything) is exactly two types — `gathering` and `perk` (business-availability
+was never wired in, per Phase 1's own disclosed scope) — and each `gathering`-type item's `id`
+already points at a **real, existing gathering** someone else is hosting (Phase 1's own
+`excludeIds` already excludes anything the caller has committed to, so every gathering-type
+recommendation is, by construction, one the caller hasn't joined yet). Tracing the plan's own
+named primitives against that reality surfaced a real mismatch, not a style choice:
+
+- A `gathering`-type recommendation already **is** a real plan in progress — the honest one-tap
+  action there is *joining* it, which is already exactly one tap away (the row's own existing
+  tap-through to `GatheringDetail`, then Join). Building a second "Make a plan" action that calls
+  `createGathering()` on top of it would create a genuinely confusing **duplicate** gathering
+  with the same title, not orchestrate anything — this is a real product bug the plan's own
+  literal text would have shipped if built without checking.
+- A `perk`-type recommendation is a standing business offer with **no event around it at all** —
+  this is exactly where "create a new gathering, host it, invite people" is a real value-add
+  (there's nothing to duplicate), and it's the one candidate type where every primitive the plan
+  names — `createGathering()`, a friends-to-invite picker, `GatheringConfirmationScreen.js`'s
+  existing "you're the host, your gathering is live" success shape — genuinely fits without
+  forcing anything.
+
+**Resolution, stated plainly so it isn't re-litigated**: "Make a plan" is built for `perk`-type
+Home recommendations only. A `gathering`-type recommendation gets no such button — its own
+existing tap-through already is the honest one-tap commitment path.
+
+**Built**:
+- New `src/screens/MakeAPlanScreen.js` + `MakeAPlan` route (`RootNavigator.js`, `presentation:
+  'modal'`, matching `CreateGathering`'s own registration shape) — a real, single confirm
+  screen. Pre-fills an editable title (`"{offer.title} at {partner.name}"` when a partner name
+  is known, else just the offer's own title), a deterministic "When?" chip row (Now/Tonight/
+  Tomorrow/Pick a Date — factored out of `CreateGatheringScreen.js`'s own existing chips into a
+  new shared `src/utils/whenPresets.js`, so neither copy can drift; AI never infers a date/time
+  here, matching this app's oldest standing rule), and a real friends-to-invite **multi-select**
+  picker reusing `getFriendsWithSharedContext()` verbatim (the exact function
+  `GatheringConfirmationScreen.js` already uses for its own post-create invite step — confirmed
+  it works identically when called with the caller's own id *before* any gathering exists, since
+  it only ever compares the "host"'s communities/past-gathering history against each friend's,
+  not a specific gathering row).
+- **One Confirm tap**: `createGathering()` (location = the offer's own real lat/lng when set,
+  else the partner's own real address coordinates, else `createGathering()`'s own existing
+  device-location fallback — never a third invented fallback), then `sendInvite('gathering',
+  newId, friendId)` for every selected friend (`Promise.allSettled` — a partial failure among
+  several selected friends surfaces honestly as a real "invited N of M" count, never a fake
+  all-or-nothing claim), then `navigation.replace('GatheringConfirmation', ...)` — the exact
+  existing success screen, unmodified in its core shape, now also accepting an optional
+  `preInviteResult: {sent, total}` param rendered as one more honest note (same visual
+  convention as the screen's existing `businessesAsked` note) when invites were actually sent as
+  part of this flow.
+- New `getOfferById(offerId)` in `services/brandOffers.js` — the one real new fetch this phase
+  needed, widening nothing about `getActiveOffers()`'s own existing contract (kept completely
+  separate, no risk to Phase 1's own recommendation-scoring pipeline).
+- Home's "Nearby Right Now" row gained a small nested "📅 Make a plan →" link, shown only for
+  `item.type === 'perk'` rows, alongside — not replacing — the row's own existing tap-through to
+  `BrandOffers`. Nested `TouchableOpacity`s claim their own tap correctly, same established
+  pattern this codebase already relies on elsewhere (e.g. `BusinessDashboardScreen.js`'s own
+  "+ Attach Reward" row).
+- **Deliberately not built, a real primitive checked and found not to fit, not silently
+  skipped**: the plan's own "when the recommendation is business-linked, a real
+  `submitBusinessRequest()`/availability-match call" piece. Checked `submitBusinessRequestForGathering()`
+  directly — it only ever does a **broad fan-out** to every eligible business within a radius,
+  with no way to target one specific, already-known partner. Since a perk-anchored plan already
+  names its one real business by construction, running that broad fan-out anyway would risk
+  surfacing offers from *unrelated* nearby businesses instead of the one the plan is actually
+  built around — a real mismatch, not a missing wire-up. The perk itself already **is** the real
+  business tie for this plan; no second business-fulfillment step was added on top of it.
+- **Verified live against production** (`enmosvippabmuqslzrox`), not just read: built a real
+  disposable active offer (with its own real `latitude`/`longitude`, distinct from its partner's)
+  against the real `Coastal Coffee` partner (temporarily given real coordinates, same
+  established convention this file's own history already uses for this exact partner) —
+  confirmed, under genuine `SET ROLE authenticated` RLS, that `getOfferById()`'s exact query
+  shape correctly resolves the joined `brand_partners.name`/address/coordinates, that the
+  offer's own coordinates correctly win over the partner's when both are set, and that a second,
+  genuinely **inactive** disposable offer is correctly invisible under real RLS (`0` rows) —
+  proving a perk that expires between Home's fetch and the "Make a plan" tap fails honestly (a
+  real load error with retry) rather than silently proceeding on stale data. All test rows
+  deleted and `Coastal Coffee`'s coordinates reverted to `null` afterward — confirmed production
+  back to its exact pre-test baseline (0 offers).
+- **No migration/RPC changed this phase** — every backend call this screen makes reuses
+  already-existing, already-proven RPCs (`create_gathering`'s underlying insert,
+  `send_social_invite`) and already-existing, already-RLS-correct tables — so no from-scratch
+  Docker replay was needed, matching this file's own migration-discipline rule (a replay is only
+  required when a real schema change ships).
+- **Client-side verified** via a direct `@babel/core` parse of all seven touched/new files
+  (clean) and a full `npx expo export --platform ios` (clean, no bundling errors, **2249
+  modules** — two more than the 2247 baseline, the two new files this phase adds
+  (`MakeAPlanScreen.js`, `whenPresets.js`); every other touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the confirm screen renders and behaves correctly on a
+real device (the When chips, the friend multi-select, the native date/time picker on both iOS
+and Android), that Confirm genuinely creates a real gathering with the right location/time,
+that selected friends actually receive a real invite, and that the resulting
+`GatheringConfirmationScreen` renders its new `preInviteResult` note correctly alongside its
+existing Share/Invite-Connections actions.
+
 ### Phase 5 — Bottom-nav restructuring: Home / People / Create / Activity, Inbox off the bottom
 ### bar — real reconciliation needed first, real open question flagged, not guessed silently
 

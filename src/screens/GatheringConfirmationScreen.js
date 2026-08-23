@@ -17,7 +17,7 @@ import { spacing, radius, typography } from '../theme';
 // decision #3 — never nearby strangers, even ones the recommendation
 // engine would score as a good match).
 export default function GatheringConfirmationScreen({ route, navigation }) {
-  const { gatheringId, placeName, businessesAsked } = route.params;
+  const { gatheringId, placeName, businessesAsked, preInviteResult } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -139,6 +139,18 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
 
         {businessesAsked && (
           <Text style={styles.businessAskedNote}>🍽️ We'll look for local business options once real people have joined — check back on your gathering to see.</Text>
+        )}
+
+        {/* Phase 4 (see CLAUDE.md's "build everything" plan): "Make a
+            plan" sends invites as part of its own one-tap Confirm, before
+            ever landing here -- an honest count, not a fabricated
+            "invites sent!" claim, since a partial failure among the
+            selected friends is a real, disclosed possibility (this whole
+            phase deliberately isn't one atomic transaction). */}
+        {preInviteResult && (
+          <Text style={styles.businessAskedNote}>
+            🤝 We invited {preInviteResult.sent} of {preInviteResult.total} {preInviteResult.total === 1 ? 'person' : 'people'} you picked.
+          </Text>
         )}
 
         {!showInvite ? (
