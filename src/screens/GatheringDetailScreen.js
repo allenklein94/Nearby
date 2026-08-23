@@ -26,6 +26,7 @@ import {
   submitBusinessRequestForGathering,
   formatOfferSummary,
 } from '../services/businessFulfillment';
+import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -73,6 +74,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
   const [firingBusinessRequest, setFiringBusinessRequest] = useState(false);
+  // "Find a Business for This Plan" merge (CLAUDE.md, locked directly by
+  // the user) -- the specific-business half of the merged entry point.
+  // myPartnershipRequest is null (no real request), 'declined' (treated
+  // the same as null -- try again), or a real 'pending'/'approved' row.
+  const [myPartnershipRequest, setMyPartnershipRequest] = useState(null);
+  const [businessHelpChooserOpen, setBusinessHelpChooserOpen] = useState(false);
 
   const load = useCallback(async () => {
     let g;
@@ -136,10 +143,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
         } else {
           setAcceptedBusinessOffer(null);
         }
+        const partnershipRequest = await getMyPartnershipRequestForTarget('gathering', gatheringId);
+        setMyPartnershipRequest(partnershipRequest);
       } else {
         setCountdownStats(null);
         setBusinessRequest(null);
         setAcceptedBusinessOffer(null);
+        setMyPartnershipRequest(null);
       }
 
       if (g.approvedAttendees?.length > 0) {
@@ -588,14 +598,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>🤝 Invite friends →</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('RequestBusinessPartner', { targetType: 'gathering', targetId: gatheringId, targetTitle: gathering.title })}
-                style={{ marginTop: spacing.xs }}
-                accessibilityLabel="Request a business partner for this gathering"
-                accessibilityRole="button"
-              >
-                <Text style={styles.hostBannerLink}>🤝 Request a Business Partner →</Text>
-              </TouchableOpacity>
               {new Date(gathering.scheduled_at) >= new Date() && (
                 acceptedBusinessOffer ? (
                   // Gap #1: the accepted business offer, shown inline
@@ -670,20 +672,72 @@ export default function GatheringDetailScreen({ route, navigation }) {
                       {firingBusinessRequest ? <ActivityIndicator color="#fff" /> : <Text style={styles.businessReadyButtonText}>Yes, look now →</Text>}
                     </TouchableOpacity>
                   </View>
+                ) : myPartnershipRequest?.status === 'approved' ? (
+                  // "Find a Business for This Plan" merge (CLAUDE.md,
+                  // locked directly by the user) -- the specific-business
+                  // mechanism's own confirmed state, same visual language
+                  // as the broadcast mechanism's "Local Business
+                  // Confirmed" card above rather than a third invented one.
+                  <View style={[styles.businessOfferCard, { marginTop: spacing.xs }]}>
+                    <Text style={styles.businessOfferKicker}>🎯 Business Partner Confirmed</Text>
+                    <Text style={styles.businessOfferTitle}>{myPartnershipRequest.partnerName}</Text>
+                    <Text style={styles.businessOfferSub}>Confirmed as your business partner for this gathering</Text>
+                  </View>
+                ) : myPartnershipRequest?.status === 'pending' ? (
+                  <View style={{ marginTop: spacing.xs }}>
+                    <Text style={styles.hostBannerLink}>🎯 Waiting to hear back from {myPartnershipRequest.partnerName}.</Text>
+                  </View>
                 ) : (
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('AskBusiness', {
-                      gatheringId,
-                      gatheringTitle: gathering.title,
-                      gatheringPartySize: (gathering.approvedAttendees?.length ?? 0) + 1,
-                      prefillCategory: gathering.interest_tag ?? null,
-                    })}
-                    style={{ marginTop: spacing.xs }}
-                    accessibilityLabel="Ask local businesses on behalf of this gathering"
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.hostBannerLink}>🍽️ Ask Local Businesses →</Text>
-                  </TouchableOpacity>
+                  // The merged front door itself: neither mechanism has any
+                  // real progress yet, so the host sees one primary action
+                  // instead of two competing ones ("Request a Business
+                  // Partner" / "Ask Local Businesses"). Both underlying
+                  // capabilities are untouched -- this only changes which
+                  // mental model the host has to understand up front.
+                  <View>
+                    <TouchableOpacity
+                      onPress={() => setBusinessHelpChooserOpen((v) => !v)}
+                      style={{ marginTop: spacing.xs }}
+                      accessibilityLabel="Find a business for this plan"
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: businessHelpChooserOpen }}
+                    >
+                      <Text style={styles.hostBannerLink}>🏪 Find a Business for This Plan →</Text>
+                    </TouchableOpacity>
+                    {businessHelpChooserOpen && (
+                      <View style={styles.businessHelpChooser}>
+                        <TouchableOpacity
+                          style={styles.businessHelpChooserOption}
+                          onPress={() => {
+                            setBusinessHelpChooserOpen(false);
+                            navigation.navigate('RequestBusinessPartner', { targetType: 'gathering', targetId: gatheringId, targetTitle: gathering.title });
+                          }}
+                          accessibilityLabel="Ask a specific business"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.businessHelpChooserOptionTitle}>🎯 Ask a specific business</Text>
+                          <Text style={styles.businessHelpChooserOptionSub}>You already have a place in mind.</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.businessHelpChooserOption, { marginTop: spacing.xs }]}
+                          onPress={() => {
+                            setBusinessHelpChooserOpen(false);
+                            navigation.navigate('AskBusiness', {
+                              gatheringId,
+                              gatheringTitle: gathering.title,
+                              gatheringPartySize: (gathering.approvedAttendees?.length ?? 0) + 1,
+                              prefillCategory: gathering.interest_tag ?? null,
+                            });
+                          }}
+                          accessibilityLabel="Ask nearby businesses"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.businessHelpChooserOptionTitle}>📍 Ask nearby businesses</Text>
+                          <Text style={styles.businessHelpChooserOptionSub}>Let businesses nearby make offers.</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 )
               )}
               {!gathering.community_id && new Date(gathering.scheduled_at) < new Date() && (
@@ -894,6 +948,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   businessReadyText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
   businessReadyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center' },
   businessReadyButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  businessHelpChooser: { marginTop: spacing.sm },
+  businessHelpChooserOption: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md,
+  },
+  businessHelpChooserOptionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  businessHelpChooserOptionSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   communityCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.md,

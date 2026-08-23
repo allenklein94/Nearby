@@ -44,6 +44,31 @@ export async function requestBusinessPartnership({ targetType, targetId, partner
   if (error) throw error;
 }
 
+// "Find a Business for This Plan" merge (locked directly by the user,
+// CLAUDE.md) -- the most recent real request the caller has made for this
+// specific target, regardless of status. A 'declined' row is deliberately
+// still returned (not filtered out) so the caller can decide how to treat
+// it -- GatheringDetailScreen's own host banner treats anything other than
+// 'pending'/'approved' as "no active progress," letting the host try again
+// through the same merged entry point rather than being permanently stuck.
+export async function getMyPartnershipRequestForTarget(targetType, targetId) {
+  const { data, error } = await supabase
+    .from('business_partnership_requests')
+    .select('id, status, created_at, brand_partners(name)')
+    .eq('target_type', targetType)
+    .eq('target_id', targetId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('getMyPartnershipRequestForTarget error', error);
+    return null;
+  }
+  if (!data) return null;
+  return { id: data.id, status: data.status, partnerName: data.brand_partners?.name ?? 'a local business' };
+}
+
 export async function respondToBusinessPartnershipRequest(requestId, approve) {
   const { error } = await supabase.rpc('respond_to_business_partnership_request', {
     request_id_param: requestId,

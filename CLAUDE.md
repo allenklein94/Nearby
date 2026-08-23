@@ -4,6 +4,188 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — convergence pass: "Find a Business for This Plan" merge (P0) — DONE; a locked
+## design for converging Plan-creation entry points (P1) — plan only, not built; Insights/
+## Momentum merge (P2) — explicitly deferred, not this pass
+
+Direct follow-up to The Plan Engine Phases 1-4 (immediately below this section, all DONE) — a
+codespace restart interrupted the session mid-build on a different, independently-scoped piece
+of work: a real screenshot review (from a prior session, not re-derived here) had surfaced three
+places where Nearby now shows two competing UI paths for what a user experiences as one job —
+asking a business for help on a gathering, creating a plan, and checking "how am I doing" — and
+the user, after reviewing an assessment of that screenshot, gave a direct, explicit priority
+order rather than leaving it for a session to guess: **P0 — do now** (the gathering business-help
+duplication), **P1 — design/converge, don't rush** (Make a Plan vs. Ask a Business as one
+canonical creation flow with different entry contexts), **P2 — consolidate, lowest priority**
+(Insights vs. Momentum as one "how am I doing" surface). The user's own framing, worth keeping
+verbatim since it's now a standing rule for this kind of work, not just advice for this pass:
+
+> If two screens perform substantially the same user job but originate from different parts of
+> the app, don't automatically preserve both screens. Find the canonical user job and make the
+> entry points converge into it.
+
+On resume, `git status` showed the entire P0 build already written and uncommitted —
+`GatheringDetailScreen.js` (+103/-21) and `services/businessPartnerships.js` (+25) — matching the
+user's own P0 spec almost line-for-line. Finished verifying it (it was already functionally
+complete, just unverified/uncommitted) rather than rebuilding it.
+
+### P0 — "Find a Business for This Plan" merge on `GatheringDetailScreen`'s host banner — DONE
+
+**The real duplication, confirmed against the actual code before touching anything**: a host
+previously saw two separate, competing links on their own gathering's host banner —
+"🤝 Request a Business Partner →" (`RequestBusinessPartnerScreen`, the specific-business
+mechanism: propose one named business, that business approves/declines,
+`business_partnership_requests`) and "🍽️ Ask Local Businesses →" (`AskBusinessScreen`, the
+broadcast mechanism: fan out to every eligible nearby business, they each independently make a
+competing offer, `business_requests`/`business_request_offers`, "The Offer System"). Both are
+real, already-working, already-verified mechanisms from earlier phases of this file — nothing
+about either was rebuilt or replaced. The actual gap was purely presentational: the host had to
+already understand these are two technically-different systems before picking one, when from
+their own point of view both answer the identical question, "I need a business for this plan."
+
+**Fixed exactly per the user's own locked copy**, not a paraphrase: the host's own banner now
+shows one primary action, **"🏪 Find a Business for This Plan →"**, whenever neither mechanism
+has any real progress yet (no live broadcast request, no `ask_local_businesses` checkbox-ready
+state, no partnership request of any status other than a stale/declined one). Tapping it expands
+an inline chooser with the user's own two options, verbatim:
+- **"🎯 Ask a specific business"** / "You already have a place in mind." → unchanged
+  `RequestBusinessPartnerScreen` navigation, same params as before.
+- **"📍 Ask nearby businesses"** / "Let businesses nearby make offers." → unchanged
+  `AskBusinessScreen` navigation (gathering mode), same params as before.
+
+Once either mechanism has real state, the banner shows that mechanism's own existing honest
+status (the broadcast side's pre-existing `businessRequest`/`acceptedBusinessOffer`/
+`ask_local_businesses` branches, all byte-for-byte unchanged) — plus two new states for the
+specific-business side, matching the same visual language already established for the broadcast
+side rather than inventing a third look: a real "🎯 Business Partner Confirmed" card
+(`myPartnershipRequest.status === 'approved'`) and a "🎯 Waiting to hear back from {business}."
+line (`'pending'`). A `'declined'` (or any other non-active) partnership request is deliberately
+**not** treated as permanent — `getMyPartnershipRequestForTarget()`'s own doc comment states this
+directly: anything other than `pending`/`approved` falls back to the merged chooser so the host
+can simply try again, through the same one front door, rather than getting stuck.
+
+**New `getMyPartnershipRequestForTarget(targetType, targetId)`** in `services/businessPartnerships.js`
+— the one new query this merge needed. Relies on `business_partnership_requests`' own existing
+RLS ("Requester or target business owner can view requests") rather than filtering by requester
+id itself; safe here because the call site is host-only (`gathering.isHost`), so the only rows
+RLS could ever return to this caller are ones they either requested or, in the unusual case where
+a host also happens to manage the target business, approve — never a leak of someone else's
+request for the same target.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just read: a real disposable
+test gathering hosted by a real profile (`Claude`), a real `request_business_partnership()` call
+against the real `Coastal Coffee` partner produced a real `pending` row; the exact query shape
+`getMyPartnershipRequestForTarget()` runs (embed join, under genuine RLS via
+`SET ROLE authenticated`) correctly returned it — `status: pending`, `partnerName: "Coastal
+Coffee"` — for the real requester and for the target business's own real owner, and correctly
+returned nothing for a genuine third-party stranger. `respond_to_business_partnership_request()`
+called as the real business owner correctly flipped it to `approved`. All test rows deleted
+afterward; production confirmed back to its exact pre-test baseline (0 `business_partnership_requests`
+rows, 11 gatherings — matching the same 11-gathering baseline this file has recorded before).
+
+Verified via a direct `@babel/core` parse of both touched files (clean), the full Jest suite
+(67/67, unaffected — no pure-logic file was touched), and a full `npx expo export --platform ios`
+(clean, no bundling errors, 2251 modules, unchanged from the last recorded baseline — edits to
+two existing files only, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the chooser expands/collapses correctly, that tapping
+either option lands cleanly on the right unchanged screen, and that the two new confirmed/pending
+states for the specific-business path render correctly against real data.
+
+### P1 — converging "Make a Plan" / "Ask a Business" / "Date Proposal" into one canonical
+### creation flow — locked design questions below, NOT BUILT this pass, per direct instruction
+
+The user's own instruction was explicit and is being followed literally: *"I would not simply
+merge the screens blindly... define the canonical object first... don't rush it."* This section
+is that definition — a real architectural read of what exists today, not a guess — written so a
+future session can pick this up and build from an already-locked design rather than re-deriving
+it. Nothing in this subsection has been built.
+
+**What actually exists today, confirmed by reading each screen directly, not assumed similar
+because they look alike in the UI**: these are three genuinely different backend mechanisms
+wearing three similar-looking "fill in a plan, tap go" forms — not one object with three skins.
+
+1. **`AskBusinessScreen`** (`src/screens/AskBusinessScreen.js`) — creates a `business_requests`
+   row that **fans out to every eligible nearby business**, each of which can independently
+   respond with a real competing offer (`business_request_offers`); the consumer picks a winner
+   afterward on `BusinessRequestDetailScreen`. Three real entry modes today, already converged at
+   the *screen* level (not three separate screens) via `route.params`: solo (`gatheringId`/
+   `matchId` both absent — party size/date typed fresh), gathering-anchored (`gatheringId` set —
+   party size/date/location all read server-side from the real gathering, never re-typed), and
+   match-anchored (`matchId` set — party size is always the real 2, date stays user-picked since
+   an accepted date proposal has no fixed date the way a gathering does).
+2. **`MakeAPlanScreen`** (`src/screens/MakeAPlanScreen.js`) — perk-anchored only, reachable
+   exclusively from a `perk`-type Home recommendation. Creates a **real new `gatherings` row**
+   tied to one already-known, already-live business offer (`createGathering()` +
+   `sendInvite('gathering', ...)` per selected friend) — there is no broadcast, no competing
+   offers, no `business_requests` row anywhere in this path. The offer already exists; this
+   screen's whole job is "build a real event around it and invite people," a fundamentally
+   different transaction from AskBusiness's "ask around and see who responds."
+3. **`DateProposalScreen`** (`src/screens/DateProposalScreen.js`) — a real state machine
+   (`date_proposals`: propose → the other match participant explicitly accepts → only then does
+   `AskBusinessScreen`'s match mode become reachable at all, enforced server-side via
+   `propose_date()`/`respond_to_date_proposal()`, never just a client-side gate). This isn't a
+   plan-creation form at all — it's the **consent gate** in front of one specific mode of
+   `AskBusinessScreen`, and doesn't itself create anything a business ever sees.
+
+**The real convergence question, stated plainly rather than glossed over**: the user's own worked
+examples (`Make a Plan / Business = The Grove`, `Make a Plan / People = 6, Date = Saturday,
+Business = TBD`, `Make a Plan / Type = Date, Person = Sarah`) describe **one creation experience
+with different pre-filled starting context** — not necessarily one new database object. Read
+literally against what exists, `AskBusinessScreen`'s own three-mode shape (route params
+pre-filling context, one screen, one underlying transaction shape) is already the *right pattern*
+for this — it's just scoped to only one of the three real transactions (the broadcast). The
+honest options, not yet decided between:
+
+- **Option A — converge at the UI/entry-point layer only, three real transactions stay real and
+  distinct underneath.** One "Make a Plan" screen (likely `MakeAPlanScreen` generalized, or a new
+  screen replacing both) that always asks the same three real questions — Who (friends to
+  invite), What/Business (a specific business, "ask nearby," or none yet), When — and internally
+  routes to whichever real transaction actually fits the resolved context: a perk already known
+  → `createGathering()` + invite (today's `MakeAPlanScreen` path); a business named but no perk
+  → `request_business_partnership()` (today's `RequestBusinessPartnerScreen` path, itself now
+  unified under P0); no business yet, broadcast → `submitBusinessRequest()` (today's
+  `AskBusinessScreen` path); a date context → the existing `date_proposals` gate, unchanged. This
+  is the smaller, safer option — no new schema, no new RPC, matches the plan's own explicit
+  request that "different entry points can still exist" as long as they "resolve into the same
+  experience." Real cost: the screen's own internal branching gets meaningfully more complex than
+  any of today's three screens individually, and the three underlying objects (`gatherings` row
+  vs. `business_requests` row vs. `date_proposals` row) still don't share one queryable shape,
+  so a future "show me all my plans, whatever kind" view would still need to union three tables,
+  same as it already effectively does today.
+- **Option B — a real new `plans` (or similarly named) table that all three flows write through**,
+  with `gatherings`/`business_requests`/`date_proposals` becoming implementation details behind
+  it rather than the user-facing object. Materially larger: touches every RLS policy, every RPC,
+  every screen that currently reads any of the three tables directly (dozens, per this file's own
+  history — `HomeScreen`'s Plan Engine nudges, `PlansScreen`, `GatheringDetailScreen`,
+  `BusinessRequestDetailScreen`, the whole Offer System). This is real architectural surgery, not
+  a UI convergence pass, and is exactly the shape of change this file's own standing Feature
+  Freeze (declared Aug 15 2026, still in force except where explicitly overridden) would want a
+  direct, explicit go-ahead for before touching — not something to infer from "converge these
+  screens."
+
+**Recommendation, not yet locked as a decision**: Option A first. It's a real, honest reading of
+the user's own instruction ("different entry points can still exist... resolve into the same
+experience/object" — "experience," not necessarily "database row"), it's buildable without
+reopening the Feature Freeze, and it doesn't foreclose Option B later — a future session could
+still introduce a real `plans` abstraction on top of an already-UI-converged flow with less
+rework than doing both at once blind. **Not started. The next session picking this up should
+either get an explicit go-ahead on Option A as scoped above, or a correction, before writing any
+code** — matching the user's own "don't rush it" instruction literally.
+
+### P2 — Insights vs. Momentum ("how am I doing?") — explicitly deferred, not this pass
+
+Per the user's own words: *"I wouldn't make this your first priority. It doesn't affect the core
+Nearby → People → Plan → Business → Visit loop nearly as much as the business-help duplication
+does."* `InsightsScreen.js` and `MomentumScreen.js` are both real, already-built, already-honest
+(no fabricated numbers) screens computing genuinely overlapping "how has my activity been"
+signals from different angles (Insights: lifetime stat grid + vibe breakdown + achievements;
+Momentum: weekly streak + month-over-month deltas) — both already reachable from Profile's own
+"Your Activity" group (see the IA restructure round 3 section, Phase 5, further down this file).
+Flagged here so a future session doesn't rediscover this duplication from scratch, but
+deliberately not scoped or built this pass, per direct instruction.
+
 ## Aug 23 2026 — "The Plan Engine": real-life-trigger → intent → people → plan → business →
 ## offer → confirmation → visit → feedback → next-plan loop (external vision doc, 73 numbered
 ## ideas) — PLAN LOCKED, Phases 1-2 building this pass; most of the rest already real or
