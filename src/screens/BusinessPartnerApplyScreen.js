@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
+import { randomUUID } from 'expo-crypto';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { searchPlacesByText, getPlaceDetails } from '../services/places';
@@ -48,7 +49,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   // app's existing live Google Places integration to reduce typing — never framed
   // as "claiming a pre-existing Nearby listing," since no such listing exists.
   const [step, setStep] = useState('search'); // 'search' | 'confirm' | 'form'
-  const [sessionId] = useState(() => crypto.randomUUID());
+  // Real crash fix (Aug 23 2026, TestFlight build 73, see CLAUDE.md): Hermes
+  // has no global `crypto` object -- expo-crypto's randomUUID() is the same
+  // synchronous, real-UUID-v4 call, just Hermes-safe.
+  const [sessionId] = useState(() => randomUUID());
   const searchStartedLogged = useRef(false);
 
   const [searchQuery, setSearchQuery] = useState('');

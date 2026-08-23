@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import QRCode from 'react-native-qrcode-svg';
+import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats } from '../services/brandOffers';
@@ -165,12 +166,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [replyText, setReplyText] = useState('');
 
   // Business Partner acquisition experience, Milestone 6 (see CLAUDE.md): a
-  // real per-mount session id, same crypto.randomUUID() pattern
+  // real per-mount session id, same randomUUID() pattern
   // BusinessPartnerApplyScreen.js already established -- groups this
   // screen visit's own dashboard_viewed/profile_completed/first_offer_created
   // events, deliberately not threaded through to the earlier apply-flow
   // session (matches Milestone 1's own disclosed, honest scope boundary).
-  const [sessionId] = useState(() => crypto.randomUUID());
+  // Real crash fix (Aug 23 2026, TestFlight build 73, see CLAUDE.md): Hermes
+  // has no global `crypto` object -- crypto.randomUUID() threw a
+  // ReferenceError the instant this screen mounted, crashing every real
+  // attempt to open Business Mode. expo-crypto's randomUUID() is the same
+  // synchronous, real-UUID-v4 call, just Hermes-safe.
+  const [sessionId] = useState(() => randomUUID());
 
   const [stripeStatus, setStripeStatus] = useState(null);
   const [connectingStripe, setConnectingStripe] = useState(false);

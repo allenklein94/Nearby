@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -67,7 +68,7 @@ export async function createGathering({ title, description, interestTag, schedul
       show_on_map: showOnMap,
       women_only: womenOnly,
       recurrence_rule: recurrenceRule,
-      recurring_series_id: recurrenceRule ? crypto.randomUUID() : null,
+      recurring_series_id: recurrenceRule ? randomUUID() : null,
       visibility,
       community_id: visibility === 'community' ? communityId : null,
       capacity,

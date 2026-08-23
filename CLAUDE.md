@@ -4,6 +4,52 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 23 2026 — real crash fix: `crypto.randomUUID()` doesn't exist in Hermes, crashed
+## Business Mode on every real device (TestFlight build 73) — DONE
+
+Direct user report, not a code audit: "when I tried the business mode on build 73 the app
+crashed." Got the real Sentry breadcrumb trail (Sentry is wired into this app and enabled for
+production builds, `App.js`, `enabled: !__DEV__`) rather than guessing — the actual crash:
+
+```
+ReferenceError: Property 'crypto' doesn't exist
+    at anonymous ... mountStateImpl ... useState ... BusinessDashboardScreen
+```
+
+**Root cause, confirmed precisely, not inferred**: `BusinessDashboardScreen.js` had
+`const [sessionId] = useState(() => crypto.randomUUID());` (added in the Business Partner
+acquisition Milestone 6 work, for grouping a screen visit's own funnel events) — Hermes (this
+app's JS engine) has **no global `crypto` object** at all, unlike Node/browsers. The instant
+this screen mounted, that initializer threw, uncaught, taking the whole screen down — this is
+exactly the "when I tried business mode" crash, reproduced precisely by the stack trace, not
+guessed at from a static read (a prior static-only pass through this same file had found
+nothing, since every other code path really is correctly defensive — this one genuinely wasn't
+catchable without the actual runtime error).
+
+**Two more call sites of the identical bug found by grep and fixed in the same pass, before
+they could produce the same crash report a second time**:
+- `BusinessPartnerApplyScreen.js` — the same `useState(() => crypto.randomUUID())` session-id
+  pattern, on the "List Your Business"/apply screen. Would have crashed any non-business-owner
+  the moment they tapped "Become a Business Partner."
+- `services/gatherings.js`'s `createGathering()` — `recurring_series_id: recurrenceRule ?
+  crypto.randomUUID() : null`. Not a mount-time crash like the other two, but would have thrown
+  for **every real host setting a recurrence rule** on a new gathering — arguably the more
+  severe of the three, since it's in the create-gathering write path, not just a screen open.
+
+**Fixed**: all three now use `expo-crypto`'s `randomUUID()` (already a real dependency,
+`~15.0.9`, confirmed before using it) instead of the bare global — same synchronous, real
+UUID-v4 output, just Hermes-safe. Re-grepped the whole `src/` tree afterward for any other bare
+`crypto.` usage — none remain.
+
+**Verified**: a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, 2251 modules, unchanged — this is
+a pure JS fix, no native module involved, so a normal OTA/Expo Update should be enough to reach
+existing installs, no new native/EAS build required).
+
+**Not done, same standing gap as everywhere else in this file**: no manual device run-through of
+the actual fix — next session (or the user directly) should confirm Business Mode now opens
+cleanly on a real device, and that creating a recurring gathering no longer throws.
+
 ## Aug 23 2026 — Product Coherence Audit (30-Second / Convergence / One-Product / UI-UX) —
 ## PLAN LOCKED, read-only, no implementation — see its own status note below for progress
 
