@@ -600,24 +600,18 @@ const result = await response.json();
           <Text style={styles.timelineLinkText}>💫 Memory Vault</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Insights')}
-          activeOpacity={0.85}
-          accessibilityLabel="View your insights"
-          accessibilityRole="button"
-        >
-          <Text style={styles.timelineLinkText}>📊 Your Insights</Text>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
+        {/* Convergence pass P2 (CLAUDE.md): "Your Insights" and "Your
+            Momentum" were two separate rows both answering "how am I
+            doing?" -- merged into one destination (still the Momentum
+            route/screen underneath, now covering both). */}
         <TouchableOpacity
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Momentum')}
           activeOpacity={0.85}
-          accessibilityLabel="View your momentum, weekly activity streak"
+          accessibilityLabel="View your activity, stats, and streak"
           accessibilityRole="button"
         >
-          <Text style={styles.timelineLinkText}>🔥 Your Momentum</Text>
+          <Text style={styles.timelineLinkText}>🔥 Your Activity</Text>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity

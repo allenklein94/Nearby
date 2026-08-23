@@ -1660,11 +1660,11 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             style={styles.recapCard}
             onPress={() => navigation.navigate('Momentum')}
-            accessibilityLabel={`This week: ${formatWeeklyRecap(dashboard.weeklyRecap)}. View Momentum`}
+            accessibilityLabel={`This week: ${formatWeeklyRecap(dashboard.weeklyRecap)}. View your activity`}
             accessibilityRole="button"
           >
             <Text style={styles.recapSummary}>This week: {formatWeeklyRecap(dashboard.weeklyRecap)}</Text>
-            <Text style={styles.recapLink}>View Momentum →</Text>
+            <Text style={styles.recapLink}>View your activity →</Text>
           </TouchableOpacity>
         )}
 

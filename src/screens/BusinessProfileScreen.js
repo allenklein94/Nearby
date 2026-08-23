@@ -222,6 +222,24 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Convergence pass P1 (CLAUDE.md, "Make a Plan / Business = The
+            Grove") -- the real new entry point for planning something at a
+            specific business that has no live standing offer right now.
+            When a real active offer does exist, that offer's own row on
+            the Perks section below already gets its own "Make a plan"
+            treatment in the resolver-driven flow (Home's perk
+            recommendation) -- this button is the honest general case,
+            reachable regardless of whether a perk happens to be live. */}
+        <TouchableOpacity
+          style={styles.planHereButton}
+          onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
+          activeOpacity={0.85}
+          accessibilityLabel={`Make a plan at ${partner.name}`}
+          accessibilityRole="button"
+        >
+          <Text style={styles.planHereButtonText}>📅 Make a Plan Here</Text>
+        </TouchableOpacity>
+
         {reputation && reputation.feedbackCount > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>What People Say</Text>
@@ -334,6 +352,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   followingButtonText: { color: colors.textSecondary },
   messageButton: { flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
   messageButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  planHereButton: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginBottom: spacing.lg, backgroundColor: colors.surface,
+  },
+  planHereButtonText: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
   section: { marginBottom: spacing.lg },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   repLine: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs },

@@ -3,7 +3,7 @@ import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, StyleSheet,
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { supabase } from '../services/supabase';
-import { getOfferById } from '../services/brandOffers';
+import { getOfferById, getBusinessProfile } from '../services/brandOffers';
 import { createGathering, getFriendsWithSharedContext } from '../services/gatherings';
 import { sendInvite } from '../services/invites';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -16,23 +16,36 @@ import { typography, spacing, radius } from '../theme';
 // Phase 4 of the "build everything" plan (see CLAUDE.md): "Make a plan" —
 // one-tap orchestration over already-proven primitives (createGathering,
 // sendInvite, GatheringConfirmationScreen's existing success shape), not
-// a new atomic transaction/RPC. Reachable only from a perk-type Phase 1
-// Home recommendation, not a gathering-type one -- see this file's own
-// header comment in HomeScreen.js and CLAUDE.md's Phase 4 status note for
-// the full reasoning: a gathering-type recommendation already names a
-// real, existing event someone else is running (join is the honest
-// action there, already one tap away); a perk-type recommendation is a
-// standing business offer with no event around it yet, which is exactly
-// where "create a new gathering, host it, invite people" is a genuine
-// value-add rather than a confusing duplicate.
+// a new atomic transaction/RPC. Originally reachable only from a perk-type
+// Phase 1 Home recommendation (offerId) -- see HomeScreen.js's own header
+// comment and CLAUDE.md's Phase 4 status note for why a gathering-type
+// recommendation never gets this button (join is already one tap away
+// there; a perk has no event around it yet, which is where this screen
+// earns its keep).
+//
+// Generalized (CLAUDE.md, "convergence pass P1", locked Option A -- the
+// entry points converge, the real underlying transactions stay distinct)
+// to also accept a bare partnerId with no live offer -- "Make a Plan /
+// Business = The Grove," reached from BusinessProfileScreen directly, for
+// the real case of wanting to plan something at a specific business that
+// doesn't happen to have a standing perk right now. Both modes end at the
+// exact same createGathering()+sendInvite() orchestration below --
+// nothing about the actual plan-creation transaction changed, only which
+// real business context feeds it. Deliberately does NOT also accept a
+// bare "no business at all yet" mode here -- that's CreateGatheringScreen's
+// own already-real "ask_local_businesses" checkbox path (Aug 25 2026,
+// CLAUDE.md), and duplicating it here would be a second, competing
+// mechanism for the identical "business TBD" case, exactly what this
+// whole convergence pass exists to avoid.
 export default function MakeAPlanScreen({ route, navigation }) {
-  const { offerId } = route.params;
+  const { offerId = null, partnerId = null } = route.params ?? {};
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [offer, setOffer] = useState(null);
+  const [directPartner, setDirectPartner] = useState(null);
   const [title, setTitle] = useState('');
   const [whenPreset, setWhenPreset] = useState(null);
   const [scheduledAt, setScheduledAt] = useState(null);
@@ -52,16 +65,40 @@ export default function MakeAPlanScreen({ route, navigation }) {
       const myId = sessionData?.session?.user?.id;
       setMyUserId(myId);
 
-      const found = await getOfferById(offerId);
-      if (!found) {
+      if (offerId) {
+        const found = await getOfferById(offerId);
+        if (!found) {
+          setLoadError(true);
+          setLoading(false);
+          setLoadingFriends(false);
+          return;
+        }
+        setOffer(found);
+        setDirectPartner(null);
+        const partnerName = found.brand_partners?.name;
+        setTitle(partnerName ? `${found.title} at ${partnerName}` : found.title);
+      } else if (partnerId) {
+        const found = await getBusinessProfile(partnerId);
+        if (!found) {
+          setLoadError(true);
+          setLoading(false);
+          setLoadingFriends(false);
+          return;
+        }
+        setOffer(null);
+        setDirectPartner(found);
+        // No standing offer to name a title from -- left blank, matching
+        // the user's own worked example (just "Business = The Grove," the
+        // host still types their own real title, same "AI/prefill never
+        // invents the title outright" discipline every other creation
+        // flow in this app already follows).
+        setTitle('');
+      } else {
         setLoadError(true);
         setLoading(false);
         setLoadingFriends(false);
         return;
       }
-      setOffer(found);
-      const partnerName = found.brand_partners?.name;
-      setTitle(partnerName ? `${found.title} at ${partnerName}` : found.title);
       setLoadError(false);
 
       if (myId) {
@@ -81,7 +118,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
     }
     setLoading(false);
     setLoadingFriends(false);
-  }, [offerId]);
+  }, [offerId, partnerId]);
 
   useEffect(() => {
     load();
@@ -117,10 +154,12 @@ export default function MakeAPlanScreen({ route, navigation }) {
 
     setConfirming(true);
     try {
-      const partner = offer?.brand_partners;
+      const partner = offer?.brand_partners ?? directPartner;
       // The offer's own coordinates win when set (a real, specific spot
       // within the business, e.g. a particular counter); otherwise the
-      // partner's own address coordinates; when neither exists,
+      // partner's own address coordinates (real either way -- offer.brand_
+      // partners and directPartner are both real brand_partners rows, just
+      // reached via different queries); when neither exists,
       // createGathering() already falls back to the caller's own current
       // device location, matching Create 2.0's own established behavior
       // rather than inventing a third fallback here.
@@ -173,7 +212,7 @@ export default function MakeAPlanScreen({ route, navigation }) {
   if (loadError) {
     return (
       <View style={styles.centered}>
-        <LoadErrorState message="Couldn't load this perk." onRetry={load} />
+        <LoadErrorState message={offerId ? "Couldn't load this perk." : "Couldn't load this business."} onRetry={load} />
       </View>
     );
   }
@@ -184,6 +223,9 @@ export default function MakeAPlanScreen({ route, navigation }) {
         <Text style={styles.subtitle}>
           Turn this into a real plan — pick a time and who to invite. You're the host.
         </Text>
+        {(offer?.brand_partners?.name ?? directPartner?.name) && (
+          <Text style={styles.businessContextLine}>📍 With {offer?.brand_partners?.name ?? directPartner?.name}</Text>
+        )}
 
         <Text style={styles.label}>Title</Text>
         <TextInput
@@ -291,7 +333,8 @@ export default function MakeAPlanScreen({ route, navigation }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
+  businessContextLine: { ...typography.small, color: colors.primary, fontWeight: '600', marginBottom: spacing.lg },
   label: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginTop: spacing.lg, marginBottom: spacing.sm },
   helperText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.sm },
   input: {

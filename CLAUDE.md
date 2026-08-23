@@ -4,9 +4,9 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Aug 23 2026 — convergence pass: "Find a Business for This Plan" merge (P0) — DONE; a locked
-## design for converging Plan-creation entry points (P1) — plan only, not built; Insights/
-## Momentum merge (P2) — explicitly deferred, not this pass
+## Aug 23 2026 — convergence pass: P0/P1/P2 all DONE — "Find a Business for This Plan" merge,
+## a converged Plan-creation entry point (business-anchored MakeAPlanScreen), and the
+## Insights/Momentum merge into one "Your Activity" screen
 
 Direct follow-up to The Plan Engine Phases 1-4 (immediately below this section, all DONE) — a
 codespace restart interrupted the session mid-build on a different, independently-scoped piece
@@ -94,13 +94,16 @@ either option lands cleanly on the right unchanged screen, and that the two new 
 states for the specific-business path render correctly against real data.
 
 ### P1 — converging "Make a Plan" / "Ask a Business" / "Date Proposal" into one canonical
-### creation flow — locked design questions below, NOT BUILT this pass, per direct instruction
+### creation flow — Option A below is DONE; Option B remains an explicitly open future decision
 
-The user's own instruction was explicit and is being followed literally: *"I would not simply
-merge the screens blindly... define the canonical object first... don't rush it."* This section
-is that definition — a real architectural read of what exists today, not a guess — written so a
-future session can pick this up and build from an already-locked design rather than re-deriving
-it. Nothing in this subsection has been built.
+The user's own instruction was explicit and was followed literally at the time this was written:
+*"I would not simply merge the screens blindly... define the canonical object first... don't rush
+it."* This section is that definition — a real architectural read of what exists today, not a
+guess. **Status update**: the user came back the same session and directly asked to build P1 (and
+P2) — "build p1 and p2, commit and push." Option A, the smaller and already-recommended path
+below, is what got built; Option B (a real new `plans` table) remains untouched, still needing its
+own explicit go-ahead per the reasoning already written for it below, unchanged from when it was
+first laid out.
 
 **What actually exists today, confirmed by reading each screen directly, not assumed similar
 because they look alike in the UI**: these are three genuinely different backend mechanisms
@@ -165,26 +168,102 @@ honest options, not yet decided between:
   direct, explicit go-ahead for before touching — not something to infer from "converge these
   screens."
 
-**Recommendation, not yet locked as a decision**: Option A first. It's a real, honest reading of
-the user's own instruction ("different entry points can still exist... resolve into the same
-experience/object" — "experience," not necessarily "database row"), it's buildable without
-reopening the Feature Freeze, and it doesn't foreclose Option B later — a future session could
-still introduce a real `plans` abstraction on top of an already-UI-converged flow with less
-rework than doing both at once blind. **Not started. The next session picking this up should
-either get an explicit go-ahead on Option A as scoped above, or a correction, before writing any
-code** — matching the user's own "don't rush it" instruction literally.
+**Recommendation, locked and built as Option A** — real, honest reading of the user's own
+instruction ("different entry points can still exist... resolve into the same experience/object"
+— "experience," not necessarily "database row"), buildable without reopening the Feature Freeze,
+and doesn't foreclose Option B later.
 
-### P2 — Insights vs. Momentum ("how am I doing?") — explicitly deferred, not this pass
+**Built**: `MakeAPlanScreen.js` (`src/screens/MakeAPlanScreen.js`) — previously `offerId`-only
+(perk-anchored) — now also accepts a bare `partnerId` with no live offer at all, the real
+`"Make a Plan / Business = The Grove"` case from the user's own worked example. In `partnerId`
+mode, `getBusinessProfile(partnerId)` (an already-existing, already-used function — no new query)
+resolves the real business directly, the title field starts blank (never invents a title the way
+no other creation flow in this app invents one either — the host types it, same discipline as
+everywhere else), and a new "📍 With {business name}" context line renders regardless of which
+mode the screen is in, so the business context is always visible even without it being baked into
+the title string. `handleConfirm()`'s only change: `partner = offer?.brand_partners ??
+directPartner` — the exact same `createGathering()` + `sendInvite()` orchestration underneath is
+completely unchanged; both modes are real `brand_partners` rows reached by different queries, not
+two different shapes.
 
-Per the user's own words: *"I wouldn't make this your first priority. It doesn't affect the core
-Nearby → People → Plan → Business → Visit loop nearly as much as the business-help duplication
-does."* `InsightsScreen.js` and `MomentumScreen.js` are both real, already-built, already-honest
-(no fabricated numbers) screens computing genuinely overlapping "how has my activity been"
-signals from different angles (Insights: lifetime stat grid + vibe breakdown + achievements;
-Momentum: weekly streak + month-over-month deltas) — both already reachable from Profile's own
-"Your Activity" group (see the IA restructure round 3 section, Phase 5, further down this file).
-Flagged here so a future session doesn't rediscover this duplication from scratch, but
-deliberately not scoped or built this pass, per direct instruction.
+New real entry point: `BusinessProfileScreen.js` gained a "📅 Make a Plan Here" button (below the
+existing Follow/Message row) navigating to `MakeAPlan` with `{ partnerId }` — the first time
+"plan something at this specific business" has ever been reachable without either an already-live
+perk or an already-existing gathering to formally request partnership for.
+
+**A real, deliberate distinction kept, not glossed over**: `RequestBusinessPartnerScreen` (P0's
+"🎯 Ask a specific business" option) and `MakeAPlanScreen`'s new `partnerId` mode are NOT the same
+thing, even though both now start from "pick a business." `RequestBusinessPartnerScreen` requires
+an already-existing gathering/community *target* and creates a formal `business_partnership_requests`
+row the business must actually approve. `MakeAPlanScreen`'s `partnerId` mode immediately creates a
+brand-new, ordinary `gatherings` row with no approval workflow at all — it's just a normal
+gathering whose location/context happens to be that business, the same as if the host had typed
+the address in by hand. Converging the entry *feel* ("pick a business, get a plan") does not mean
+these two real transactions became one; keeping them honestly distinct is what P0's own
+"transactions stay real and distinct underneath" framing already called for.
+
+**Deliberately not built, per Option A's own scope**: a bare "no business at all yet" mode inside
+`MakeAPlanScreen` — that's `CreateGatheringScreen`'s own already-real `ask_local_businesses`
+checkbox path (Aug 25 2026, further down this file), and a second, competing mechanism for the
+identical "business TBD" case would be exactly the kind of duplication this whole pass exists to
+remove, not add. The date/person case (`DateProposalScreen`, reached via ChatScreen's "💌 Plan
+Something Together") was left completely untouched — it already reads consistently with "make a
+plan," and its Match ≠ Date consent gate is a real, deliberate boundary this pass had no reason to
+touch. Option B (a real new `plans` table unifying all three transactions into one queryable
+shape) remains unbuilt and unscoped beyond the analysis above — a real, separate, larger decision,
+not something this pass's "build Option A" instruction extended to.
+
+Verified via a direct `@babel/core` parse of both touched files (clean) and a full `npx expo
+export --platform ios` (clean, no bundling errors, 2250 modules — see P2's own note just below for
+the accounting, since P1 and P2 landed in the same build/verification pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm `MakeAPlanScreen` renders correctly in `partnerId` mode
+(the "With {business}" line, the blank title, the working confirm flow) and that the new
+"Make a Plan Here" button on `BusinessProfileScreen` navigates correctly.
+
+### P2 — Insights vs. Momentum ("how am I doing?") — DONE, merged into one destination
+
+Originally flagged as explicitly deferred/lowest priority per the user's own words (*"I wouldn't
+make this your first priority... It doesn't affect the core loop nearly as much as the
+business-help duplication"*) — then built in the same pass as P1, per the same direct "build p1
+and p2" instruction. `InsightsScreen.js` and `MomentumScreen.js` were both real, already-built,
+already-honest (no fabricated numbers) screens computing genuinely overlapping "how has my
+activity been" signals from different angles (Insights: lifetime stat grid + vibe breakdown +
+achievements; Momentum: weekly streak + month-over-month deltas), both reachable as two separate
+rows from Profile's own "Your Activity" group.
+
+**Merged into `MomentumScreen.js`**, not a new third file — `getInsightsStats()`
+(`services/insights.js`, unchanged, still real) is now called alongside `getMomentumStats()` in
+one `Promise.all`, and the screen renders both sections in one scroll: streak card → weekly bar
+chart → this-month-vs-last-month deltas → lifetime stat grid → communities-created inline stat →
+favorite vibe/usually active → vibe breakdown → achievements grid → one CTA button at the bottom.
+Every individual section's own JSX/logic is byte-for-byte carried over from whichever of the two
+original screens owned it — this was a real merge of two existing, working sections into one
+scroll, not a rewrite of either.
+
+**Route name deliberately kept as `Momentum`, on-screen title changed to "Your Activity"** — a
+conscious choice to avoid touching the two real call sites that specifically target the `Momentum`
+route by name for reasons that still make sense post-merge: the `momentum_streak_nudge` push-tap
+handler (`services/notifications.js`) and Home's Weekly Recap card (`HomeScreen.js`, copy also
+updated from "View Momentum →" to "View your activity →" to match). Both still land correctly on
+the merged screen with zero routing changes needed. The old `Insights` route was retired outright
+— `InsightsScreen.js` deleted, its `RootNavigator.js` registration and import removed.
+`ProfileScreen.js`'s two separate rows ("📊 Your Insights" / "🔥 Your Momentum") collapsed into one:
+"🔥 Your Activity" → the same `Momentum` route.
+
+Verified via a direct `@babel/core` parse of all six touched/deleted files (clean), the full Jest
+suite (67/67, unaffected — no pure-logic file was touched by either P1 or P2), and a full `npx
+expo export --platform ios` (clean, no bundling errors, **2250 modules** — one fewer than the
+2251 baseline recorded for P0 above, exactly matching the one file this pass deleted
+(`InsightsScreen.js`); every other touched file in P1+P2 was an edit, no other new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the merged screen renders all its sections correctly
+against real data (including the case where a genuinely new account has neither a real streak nor
+real lifetime stats yet), that both real call sites into the `Momentum` route still land
+correctly, and that Profile's collapsed "Your Activity" row is the only remaining entry point (no
+dead link left where "Your Insights" used to be).
 
 ## Aug 23 2026 — "The Plan Engine": real-life-trigger → intent → people → plan → business →
 ## offer → confirmation → visit → feedback → next-plan loop (external vision doc, 73 numbered

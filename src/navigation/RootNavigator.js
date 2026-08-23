@@ -72,7 +72,6 @@ import RelationshipHubScreen from '../screens/RelationshipHubScreen';
 import TimelinePlannerScreen from '../screens/TimelinePlannerScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import MemoryVaultIndexScreen from '../screens/MemoryVaultIndexScreen';
-import InsightsScreen from '../screens/InsightsScreen';
 import MomentumScreen from '../screens/MomentumScreen';
 import PlansScreen from '../screens/PlansScreen';
 import RewardsScreen from '../screens/RewardsScreen';
@@ -417,8 +416,10 @@ export default function RootNavigator() {
             <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: 'Timeline Thoughts', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: 'Memory Vault', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVaultIndex" component={MemoryVaultIndexScreen} options={{ headerShown: true, title: 'Memory Vaults', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Insights" component={InsightsScreen} options={{ headerShown: true, title: 'Your Insights', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: 'Your Momentum', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            {/* Convergence pass P2 (CLAUDE.md): the old separate "Insights"
+                route is retired -- MomentumScreen now covers both, one
+                real "how am I doing" destination instead of two. */}
+            <Stack.Screen name="Momentum" component={MomentumScreen} options={{ headerShown: true, title: 'Your Activity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: 'Your Plans', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Rewards" component={RewardsScreen} options={{ headerShown: true, title: 'Your Rewards', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MarketValidation" component={MarketValidationScreen} options={{ headerShown: true, title: 'Market Validation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
