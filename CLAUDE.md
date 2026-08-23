@@ -348,7 +348,37 @@ phases: full Jest suite re-run, each phase its own commit pushed individually, t
 status notes updated as each lands — not batched at the end, same restart-safety convention as
 Phases 1-2.
 
-**Status: plan locked, executing below.**
+**Status: plan locked. Phase 3 is DONE — see its own status note below. Phase 4 not yet built.**
+
+**Phase 3 — DONE.** Built exactly per the locked design above, no changes during
+implementation. New `getMyGatheringsWithOutstandingRsvps()` in `services/gatherings.js` — no
+new RPC (confirmed live before designing this: `social_invites` already has a real RLS SELECT
+policy, `"Users can view invites they sent or received" using (auth.uid() = inviter_id OR
+auth.uid() = invitee_id)`, so a host can already directly query the real response status of
+every invite they sent). Fetches the caller's own real upcoming hosted gatherings, then the
+real pending `social_invites` rows targeting them, groups into a real `pendingCount` per
+gathering, excludes anything with zero pending invites, sorted soonest-first.
+
+Client: `HomeScreen.js` gained a `rsvpsOutstandingGathering` state, fetched in the same
+nudge-fetching try/catch block as the other four Home nudges, same per-day `AsyncStorage`
+dismiss-key convention, same `home_nudge_events` logging (`nudge_type: 'predictive'`,
+`category: 'rsvps_outstanding'`). A new card in Home's existing banner cluster (same
+`outcomePromptCard`/`predictiveActButton` visual language every other nudge there already uses)
+reads "🙋 N invite(s) to {title} haven't been answered yet — want to check in?" — tapping
+"View Gathering →" navigates straight to that gathering's real `GatheringDetailScreen`, matching
+Phase 2's own "no second mechanism" rule exactly — the existing "Manage attendees →"/
+"🤝 Invite friends →" host-banner links there already own the real follow-up action.
+
+Verified via a direct `@babel/core` parse of both touched files (clean), the full Jest suite
+(65/65, unaffected), and a full `npx expo export --platform ios` (clean, no bundling errors,
+2251 modules, unchanged — edits to two existing files, no new files, no schema change this
+phase).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the card renders the correct real pending-invite count
+and singular/plural wording at each boundary (1 vs. N), that it correctly never appears for a
+gathering with zero real pending invites, and that tapping "View Gathering →" lands cleanly on
+the right `GatheringDetailScreen`.
 
 ## Aug 22 2026 — "Build everything" — the 6 large/architectural items from the UX/IA critique,
 ## Feature Freeze explicitly overridden for this scope, PLAN LOCKED, not yet built

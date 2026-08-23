@@ -1300,3 +1300,44 @@ export async function getMyGatheringsNeedingVenue() {
     })
     .map((g) => ({ ...g, requestId: requestByGathering.get(g.id)?.id ?? null }));
 }
+
+// "The Plan Engine" Phase 3 (CLAUDE.md) -- the RSVP-only slice of "plan
+// health," deliberately scoped down from the fuller (transportation/
+// weather included) multi-signal widget the doc's own text flags as a
+// materially larger, still-deferred piece. No new RPC needed -- reuses
+// social_invites' already-live RLS policy ("Users can view invites they
+// sent or received", auth.uid() = inviter_id or invitee_id), the exact
+// same table both InviteFriendsModal and invite_friend_to_gathering()
+// already write real rows into. A gathering with zero pending invites is
+// correctly excluded -- nothing to check in on.
+export async function getMyGatheringsWithOutstandingRsvps() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return [];
+
+  const { data: candidates } = await supabase
+    .from('gatherings')
+    .select('id, title, scheduled_at')
+    .eq('host_id', myId)
+    .gt('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true });
+
+  if (!candidates || candidates.length === 0) return [];
+
+  const { data: invites } = await supabase
+    .from('social_invites')
+    .select('target_id')
+    .eq('inviter_id', myId)
+    .eq('invite_type', 'gathering')
+    .eq('status', 'pending')
+    .in('target_id', candidates.map((g) => g.id));
+
+  const pendingCountByGathering = new Map();
+  for (const invite of invites ?? []) {
+    pendingCountByGathering.set(invite.target_id, (pendingCountByGathering.get(invite.target_id) ?? 0) + 1);
+  }
+
+  return candidates
+    .filter((g) => pendingCountByGathering.has(g.id))
+    .map((g) => ({ ...g, pendingCount: pendingCountByGathering.get(g.id) }));
+}
