@@ -853,6 +853,7 @@ export default function HomeScreen({ navigation }) {
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
+                      iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
                       dateTimeText={formatHeroDateTime(plan.scheduled_at)}
                       peopleCount={plan.peopleCount}
@@ -870,6 +871,7 @@ export default function HomeScreen({ navigation }) {
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.interest_tag).icon}
+                      iconColor={categoryStyleFor(plan.interest_tag).color}
                       title={plan.title}
                       dateTimeText={formatHeroDateTime(plan.scheduled_at)}
                       peopleCount={plan.peopleCount}
@@ -887,6 +889,7 @@ export default function HomeScreen({ navigation }) {
                     <PlanCard
                       key={plan.id}
                       icon={categoryStyleFor(plan.category).icon}
+                      iconColor={categoryStyleFor(plan.category).color}
                       title={plan.raw_text}
                       dateTimeText={plan.date ? formatHeroDateTime(plan.date) : null}
                       peopleCount={plan.party_size}

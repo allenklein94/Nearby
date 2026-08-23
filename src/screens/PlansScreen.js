@@ -5,7 +5,9 @@ import { getMyAttendingGatherings, getMyGatherings } from '../services/gathering
 import { getMyGroupPlans } from '../services/groupPlans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
-import GatheringStatusBadge, { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
+import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
+import PlanCard from '../components/PlanCard';
+import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -104,6 +106,39 @@ export default function PlansScreen({ navigation, route }) {
 
   const rows = rowsFor(tab);
 
+  // Phase 2 of the "Build everything" plan (CLAUDE.md): PlanCard's badge
+  // needs the two real signals resolveGatheringPlanStatus() takes --
+  // this screen's own legacy per-row status ("going"/"hosting"/
+  // "attended"/"hosted") already encodes both, just needs unpacking.
+  const ROLE_STATUS_FROM_LEGACY = {
+    going: { role: 'attending', isPast: false },
+    hosting: { role: 'hosting', isPast: false },
+    attended: { role: 'attending', isPast: true },
+    hosted: { role: 'hosting', isPast: true },
+  };
+  // The "hosting" tab is already grouped under real Upcoming/Past section
+  // headers, and every row on it is hosting -- a roleLabel there would be
+  // redundant. "upcoming" and "past" both merge attending+hosting rows
+  // into one sorted list with no separating header, so PlanCard's
+  // subtitle needs to carry that real distinction instead.
+  const needsRoleLabel = tab !== 'hosting';
+
+  // Real people count where it's actually available -- attending.upcoming
+  // rows already carry a real approvedAttendees list (attachApprovedAttendees,
+  // gatherings.js), hosting rows of either timing already carry every real
+  // gathering_interest row via `interested`. A past attending row has
+  // neither fetched (this pass didn't add a new query for it) -- PlanCard
+  // already renders correctly with peopleCount omitted.
+  const peopleCountFor = (item) => {
+    if (item.status === 'going') return item.gathering.approvedAttendees?.length ?? null;
+    if (item.status === 'hosting' || item.status === 'hosted') {
+      return Array.isArray(item.gathering.interested)
+        ? item.gathering.interested.filter((i) => i.status === 'approved').length
+        : null;
+    }
+    return null;
+  };
+
   const emptyCopy = {
     upcoming: "Nothing on your calendar yet — join or host something to see it here.",
     hosting: "You're not hosting anything yet.",
@@ -179,49 +214,35 @@ export default function PlansScreen({ navigation, route }) {
             }
             if (item.type === 'groupPlanRow') {
               const plan = item.plan;
-              const categoryStyle = categoryStyleFor(plan.category);
               return (
-                <TouchableOpacity
-                  style={styles.planRow}
+                <PlanCard
+                  icon={categoryStyleFor(plan.category).icon}
+                  iconColor={categoryStyleFor(plan.category).color}
+                  title={plan.raw_text}
+                  roleLabel="Group plan"
+                  dateTimeText={plan.date ? formatHeroDateTime(plan.date) : null}
+                  peopleCount={plan.party_size}
+                  status={resolveGroupPlanStatus(plan.status)}
                   onPress={() => openGroupPlan(plan.group_plan_id)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${plan.raw_text}, group plan`}
-                  accessibilityRole="button"
-                >
-                  <View style={[styles.planIconWrap, { backgroundColor: categoryStyle.color + '30' }]}>
-                    <Text style={styles.planIcon}>{categoryStyle.icon}</Text>
-                  </View>
-                  <View style={styles.planInfo}>
-                    <Text style={styles.planTitle}>{plan.raw_text}</Text>
-                    <Text style={styles.planMeta}>
-                      👥 Group plan · {plan.status === 'fulfilled' ? 'Reservation confirmed' : 'Sent to nearby businesses'}
-                    </Text>
-                  </View>
-                  <Text style={styles.planChevron}>›</Text>
-                </TouchableOpacity>
+                  style={styles.planCardSpacing}
+                />
               );
             }
             const g = item.gathering;
-            const categoryStyle = categoryStyleFor(g.interest_tag);
+            const legacy = ROLE_STATUS_FROM_LEGACY[item.status] ?? { role: 'attending', isPast: false };
             return (
-              <TouchableOpacity
-                style={styles.planRow}
+              <PlanCard
+                icon={categoryStyleFor(g.interest_tag).icon}
+                iconColor={categoryStyleFor(g.interest_tag).color}
+                title={g.title}
+                roleLabel={needsRoleLabel ? GATHERING_STATUS_META[item.status]?.label : null}
+                dateTimeText={formatHeroDateTime(g.scheduled_at)}
+                peopleCount={peopleCountFor(item)}
+                hostingPartnerId={g.hosting_partner_id}
+                status={resolveGatheringPlanStatus(legacy)}
                 onPress={() => openGathering(g.id)}
-                activeOpacity={0.85}
-                accessibilityLabel={`${g.title}, ${formatHeroDateTime(g.scheduled_at)}, ${GATHERING_STATUS_META[item.status]?.label}`}
-                accessibilityRole="button"
-              >
-                <View style={[styles.planIconWrap, { backgroundColor: categoryStyle.color + '30' }]}>
-                  <Text style={styles.planIcon}>{categoryStyle.icon}</Text>
-                </View>
-                <View style={styles.planInfo}>
-                  <Text style={styles.planTitle}>{g.title}</Text>
-                  <Text style={styles.planMeta}>
-                    {formatHeroDateTime(g.scheduled_at)} · <GatheringStatusBadge variant="inline" status={item.status} />
-                  </Text>
-                </View>
-                <Text style={styles.planChevron}>›</Text>
-              </TouchableOpacity>
+                style={styles.planCardSpacing}
+              />
             );
           }}
         />
@@ -239,16 +260,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tabText: { color: colors.textSecondary, fontWeight: '600', fontSize: 12 },
   tabTextActive: { color: '#fff' },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.md, marginBottom: spacing.sm },
-  planRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+  // PlanCard (Phase 2 of the "Build everything" plan) renders its own
+  // icon/title/subtitle/badge internally -- this screen only supplies the
+  // outer card chrome its old bespoke rows used to have, via PlanCard's
+  // own `style` override.
+  planCardSpacing: {
+    backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
   },
-  planIconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
-  planIcon: { fontSize: 18 },
-  planInfo: { flex: 1 },
-  planTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
-  planMeta: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
-  planChevron: { color: colors.textTertiary, fontSize: 20, marginLeft: spacing.sm },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl ?? 48 },
   emptyEmoji: { fontSize: 32, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.lg },

@@ -21,7 +21,9 @@ import { PLAN_STATUS_META } from '../constants/planStatus';
 // without widening its own query just to carry a business name through.
 export default function PlanCard({
   icon,
+  iconColor,
   title,
+  roleLabel,
   dateTimeText,
   peopleCount,
   hostingPartnerId,
@@ -54,6 +56,12 @@ export default function PlanCard({
   const venueName = venueNameProp ?? fetchedVenueName;
 
   const subtitleParts = [];
+  // Real caller relationship to the plan (e.g. "Going"/"Hosting") -- only
+  // ever needed when the surrounding UI doesn't already convey it some
+  // other way (e.g. Home's own "Going"/"Hosting" section headers make
+  // this redundant there, but a merged/sorted list with no per-role
+  // grouping still needs it, same real gap this prop closes).
+  if (roleLabel) subtitleParts.push(roleLabel);
   if (peopleCount != null) subtitleParts.push(`${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`);
   if (venueName) subtitleParts.push(venueName);
   if (dateTimeText) subtitleParts.push(dateTimeText);
@@ -78,11 +86,17 @@ export default function PlanCard({
       accessibilityLabel={accessibilityLabel ?? `${title}${subtitle ? `, ${subtitle}` : ''}${meta ? `, ${meta.label}` : ''}`}
       accessibilityRole="button"
     >
-      {icon != null && (
+      {icon != null && (iconColor ? (
+        <View style={[styles.iconWrap, { backgroundColor: `${iconColor}30` }]}>
+          <Text style={styles.iconInWrap} accessibilityElementsHidden>
+            {icon}
+          </Text>
+        </View>
+      ) : (
         <Text style={styles.icon} accessibilityElementsHidden>
           {icon}
         </Text>
-      )}
+      ))}
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -107,6 +121,8 @@ const getStyles = (colors) =>
   StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs },
     icon: { fontSize: 22, marginRight: spacing.sm },
+    iconWrap: { width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
+    iconInWrap: { fontSize: 18 },
     info: { flex: 1 },
     title: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
     subtitle: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },

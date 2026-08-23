@@ -204,6 +204,60 @@ deck cards (`SwipeableDiscoveryCards.js`, `FriendDiscoverySwipeCards.js`) — a 
 gesture card is a genuinely different interaction pattern, not a list row, and forcing it into
 `PersonCard`'s shape would be a worse fit than leaving it as its own established component.
 
+**Status: Phase 2 is IN PROGRESS, migrating one screen at a time per the locked order — check
+below for exactly what's landed.**
+
+**Increment 1 — `PlanCard`/`planStatus.js` built, migrated into Home's "Your Plans" — DONE.**
+Built `src/constants/planStatus.js` (`resolveGatheringPlanStatus()`/`resolveGroupPlanStatus()`,
+a real 6-word vocabulary distinct from `GatheringStatusBadge`'s own role vocabulary — this one
+describes lifecycle stage, that one describes the caller's relationship) and
+`src/components/PlanCard.js` (icon, title, one real subtitle line joining people count/venue
+name/date-time, a real status badge — self-contained venue-name lookup, same established
+pattern as `BusinessHostBadge.js`, so a caller can pass a bare `hostingPartnerId` without
+widening its own query). `getHomeDashboard()`'s `attendingUpcoming`/`hostingUpcoming` queries
+now also select `hosting_partner_id`, plus one new grouped query for real approved-attendee
+counts on just the displayed slice (no per-row query). `getMyGroupPlans()` now also selects
+`party_size`. `HomeScreen.js`'s Going/Hosting/Group Plans rows all render via `PlanCard` now,
+replacing their own bespoke `TouchableOpacity`/`GatheringStatusBadge` JSX. 7 new unit tests for
+`planStatus.js`. Verified via a direct `@babel/core` parse (clean), the full Jest suite (65/65),
+and a full `npx expo export --platform ios` (clean, 2243 modules — two more than the 2241
+Phase-1 baseline, the two new files).
+
+**Increment 2 — migrated into `PlansScreen.js` — DONE.** The same real gap surfaced here that
+Increment 1 didn't have to deal with: this screen's "Upcoming" and "Past" tabs both merge
+attending+hosting rows into one sorted list with **no separating header** — the old per-row
+`<GatheringStatusBadge variant="inline" status={item.status} />` was the *only* way to tell a
+"Going" row from a "Hosting" row there, information the new lifecycle-stage badge alone would
+have silently dropped (both would just read "Confirmed"). Closed by giving `PlanCard` a new
+optional `roleLabel` prop — plain text prepended to the subtitle line (e.g. "Hosting · 6 people
+· 7:00 PM"), used only where the surrounding UI doesn't already convey role some other way (the
+"My Hosting" tab's own real Upcoming/Past section headers make it redundant there, so it's
+correctly omitted on that one tab only). Also gave `PlanCard` an optional `iconColor` prop (a
+colored circle wrap, matching this screen's own nicer pre-existing icon treatment) rather than
+downgrading its look to Home's plainer emoji-only icon — Home's own three `PlanCard` call sites
+were updated to pass it too, so both surfaces now render visually identically, not almost.
+`getMyGatherings()`/`getMyAttendingGatherings()` (`services/gatherings.js`) both gained
+`hosting_partner_id` in their selects (additive, only these two screens use either function).
+Real people counts wired from data these two functions already fetch — `approvedAttendees` for
+attending/upcoming rows, a client-side `interested.filter(status==='approved').length` for
+hosting rows of either timing — with one disclosed, honest gap: a past *attending* row has
+neither fetched, so its subtitle simply omits people count rather than a new query being added
+for it this pass. Verified via a direct `@babel/core` parse (clean), the full Jest suite (65/65,
+unaffected), and a full `npx expo export --platform ios` (clean, 2243 modules, unchanged — every
+touched file this increment was an edit, no new files).
+
+**Not done yet, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of either increment — next session should confirm Home's Your Plans and
+`PlansScreen`'s three tabs all render correctly against real data, that the new status badges
+read sensibly next to the (for `PlansScreen`) real card chrome, and that a merged Upcoming/Past
+row's `roleLabel` text reads clearly alongside its own lifecycle badge rather than redundantly.
+
+**Remaining migration targets, in the locked order, not yet started**: `GatheringsScreen.js`'s
+three tabs (largest/riskiest, sequenced last among the `PlanCard` rollout on purpose); then
+`PersonCard` into `MatchesScreen.js`/`FriendsScreen.js`/`ViewProfileScreen.js`'s mutual-friends
+rows; then `PlaceCard` into `DiscoverHubScreen.js`'s business/place sections and
+`BusinessProfileScreen.js`.
+
 ### Phase 3 — Progressive/contextual settings
 
 **Real mapping, checked against the actual current Settings groups (`SettingsScreen.js`) before

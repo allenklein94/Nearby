@@ -321,7 +321,7 @@ export async function getMyGatherings() {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select('id, title, description, interest_tag, scheduled_at, show_on_map, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
+    .select('id, title, description, interest_tag, scheduled_at, show_on_map, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
     .eq('host_id', userId)
     .order('scheduled_at', { ascending: true });
 
@@ -373,7 +373,7 @@ export async function getMyAttendingGatherings() {
 
   const { data, error } = await supabase
     .from('gathering_interest')
-    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
+    .select('id, status, gatherings(id, title, description, interest_tag, scheduled_at, show_on_map, host_id, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, host:profiles!gatherings_host_id_fkey(display_name, photo_url))')
     .eq('user_id', userId)
     .eq('status', 'approved')
     .order('id', { ascending: false });
