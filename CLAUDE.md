@@ -4,6 +4,131 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — Nearby Universal Taxonomy, Filters & Matching Audit — PLAN LOCKED, executing
+## below; read-only, no application code changes; check each phase's own status note for
+## what's landed
+
+Written before execution, same restart-safety convention as every other plan-first section in
+this file — if a codespace restart hits mid-audit, check this section's own status notes (and
+`PRODUCT_AUDIT/` for any intermediate research files) for what's actually been produced vs.
+still just this plan. **Hard boundary for this whole pass, stated once so it isn't
+re-litigated per phase: read-only.** No schema change, no RPC change, no client edit, for any
+reason, even a fix that looks trivially safe mid-audit — every finding goes into the
+deliverable, not into a diff. Matches this file's own established precedent for exactly this
+shape of request (the Aug 23 2026 Product Coherence Audit, the Aug 10 2026 Current UI Map, the
+Aug 15 2026 Connectivity Audit).
+
+**Context, given directly by the user**: a pasted external strategic message arguing that
+before adding more categories/filters to the just-finished taxonomy pass (the section
+immediately below this one), Nearby needs a real audit of the *whole* preference → matching →
+discovery → recommendation → business system — one universal taxonomy/preference language, not
+five independently-evolved ones. The user's own proposed structure (6 layers, a
+category/preference/filter/attribute/intent/context vocabulary, a persona walkthrough, and a
+"matching matrix" cross-referencing every signal against every recommendation surface) is
+adopted as the audit's real shape below — reframed against Nearby's actual current code
+structure rather than the external message's own illustrative (non-Nearby-specific) taxonomy
+examples, which were never meant as a literal spec.
+
+**Real grounding, checked directly before writing this plan, not assumed from the pasted
+message** (same standing rule as every other section in this file): Nearby already has more
+real, non-duplicated taxonomy infrastructure than a from-scratch audit would assume —
+`src/constants/gatheringCategories.js` (the just-built canonical 26-tag `INTEREST_OPTIONS` +
+`CATEGORY_GROUPS`, this pass's own immediate predecessor) is already the single source of truth
+for "what kind of gathering/community/business-request is this," reused across 6+ screens.
+Real, **separate, already-justified** vocabularies also exist and were confirmed live: personal
+profile interests (`CompleteProfileScreen.js`'s own local `INTEREST_OPTIONS` — deliberately
+*not* pointed at the shared gathering list, since "what am I into" and "what kind of event is
+this" are different semantics, an explicit decision from the pass immediately below); dating
+discovery preferences (`discoveryOptions.js`'s `DISCOVERY_GENDER_OPTIONS`/`SHOW_ME_OPTIONS`, plus
+`profiles.relationship_intention`); business categories (`BUSINESS_CATEGORIES`, 6 broad
+industry buckets — a genuinely different granularity than the 26-tag activity list); Google
+Places categories (`PLACE_CATEGORIES`, 4 keys tied to Google's own API `type` parameter, not
+this app's own vocabulary at all); the indoor/outdoor map (`CATEGORY_INDOOR_OUTDOOR`, an
+attribute layer *over* the canonical tag list, not a competing category list); the just-shipped
+`price_level`/`party_type` fields (real attribute/intent-adjacent signals, not categories). The
+real audit question per the user's own framing isn't "why are there 5 lists" — some of that
+plurality is already correct, deliberate, and documented — it's **which of these are genuinely
+duplicated/drifting vs. deliberately distinct, and does every real preference actually reach
+every surface it should (or does it just sit on a profile row unused)?**
+
+### Deliverable, locked
+
+One single, self-contained file —
+`PRODUCT_AUDIT/TAXONOMY_FILTERS_MATCHING_AUDIT_2026-08-24.md` — handed to the user directly once
+done, written to be legible to a different AI (ChatGPT) with zero other context, matching this
+file's own established `UI_IA_REVIEW_FOR_EXTERNAL_AI`/`CONSOLIDATED_AUDIT` precedent. Contains,
+per the user's own requested shape: (1) Master Taxonomy, (2) Master Attributes, (3) Master User
+Preferences, (4) Master Filters, (5) the Matching Matrix (signal × People/Friends/Dating/Things
+to Do/Gatherings/Businesses, each cell also tagged hard/strong/soft/contextual per the user's
+own "not every preference should eliminate someone" framing), (6) the category/preference/
+filter/attribute/intent/context vocabulary distinctions written down explicitly, (7) the
+4-persona real-code walkthrough, (8) unused-data and missing-scenario findings, (9) a ranked
+list of real, concrete recommendations — **findings only, nothing built or fixed in this pass.**
+
+### Phases — the user's own 10, consolidated into 4 real research passes plus synthesis (the
+### natural grouping given Nearby's actual code shape, not a re-numbering for its own sake)
+
+1. **Master Taxonomy + Attributes inventory** (closes the user's phases 1, 2, 4 in part). Every
+   category/tag/attribute constant anywhere in `src/constants/` and inline in screens — the
+   canonical 26-tag gathering list, personal interests, business categories, place categories,
+   indoor/outdoor, discovery gender/show-me, relationship intention, price_level/party_type,
+   community categories (if any distinct from gatherings') — catalogued with its real file/line,
+   every consumer screen, and an explicit verdict per list: **intentional-and-distinct** (with
+   the real reason already on record, e.g. the interests-vs-gathering-category split) vs.
+   **real, uncaught drift** (two lists that should be one, or one list silently missing a value
+   the sibling list has — the exact bug class the immediately-preceding taxonomy pass already
+   found and fixed once for `AskBusinessScreen.js`'s own copy).
+2. **Master User Preferences + Filters inventory** (closes the user's phases 3, 6). Every
+   question this app asks a user about themselves (Settings' now-7-group structure, Profile,
+   `CompleteProfileScreen`, `DiscoveryPreferencesPromptModal`, gathering-creation host fields)
+   classified into the user's own buckets (Identity / Intent / Interests / Experience
+   preferences / Logistics / Relationship preferences / Availability) — a real table, not a
+   guess. Every filter UI anywhere in the app (`GatheringsScreen`'s 6-section accordion,
+   `DiscoverHubScreen`'s type/place filters, `AskBusinessScreen`'s category/date/budget fields,
+   `PlacesScreen`, `DiscoveryScreen`'s Show-Me/age/distance filters, Friend Discovery) captured
+   into the user's own requested table shape (filter / where used / data source / user-facing? /
+   used by matching? / used by ranking?) — this is where a filter that's cosmetic-only (renders,
+   narrows the visible list, but was never wired into any scoring/matching function) gets caught.
+3. **Matching Signal Audit — the Matching Matrix** (closes the user's phase 5, 7, and the
+   hard/strong/soft/contextual dimension). For every real signal this app collects (interests,
+   distance, availability, activity/category type, price, group size, indoor/outdoor, weather,
+   relationship intent, business attributes) trace exactly where it's actually *read* —
+   `intentResolver.js`'s 5+ tiers and `intentResolverScoring.js`'s shared `SCORE_*` weights,
+   `homeRecommendations.js`, `DiscoveryScreen.js`'s dating match logic, Friend Discovery's
+   candidate query, `GatheringsScreen`'s filter chain, the business-fulfillment RPCs
+   (`_match_request_to_availability`, `_match_request_to_policy`, the reliability-weighted
+   fan-out) — building the real matrix, not an assumed one, and separately noting whether each
+   live signal's influence is a hard constraint, a scored boost, or a contextual (weather/time)
+   modifier, matching this file's own long-standing "ranking stays simple/explainable, no opaque
+   blended score" rule already locked elsewhere (the same rule that rejected a single "Nearby
+   Score" percentage in the Aug 15 2026 V3/V4 vision-doc section).
+4. **Business Category/Attribute Audit** (closes the user's phase 6 specifically as its own
+   check, since businesses are the one surface with a genuinely different-shape taxonomy problem
+   — an industry category plus a completely separate cuisine/attribute layer the schema doesn't
+   have yet). Confirms directly whether `brand_partners`/`business_requests`/
+   `business_availability` have any attribute columns beyond `category` (outdoor seating,
+   date-friendly, price tier, cuisine) or whether "Italian + outdoor + date-friendly" is
+   currently unrepresentable — a real schema-gap finding either way, not assumed.
+5. **Synthesis — the 4-persona walkthrough + unused-data/gap findings + final deliverable.**
+   Traces real navigation/query paths (not a simulator run, same method this file's own
+   "flywheel trace" precedent already established) for the user's own 4 personas — wants
+   friends, wants dating, wants activities, is a business owner — through the real screens,
+   checking at each step: is the same preference represented the same way across screens; does
+   changing it actually change results; is data collected that nothing downstream reads; could
+   a signal collected for one surface (e.g. dating) improve another (e.g. Things to Do) but
+   currently doesn't. Assembles all of the above into the single deliverable file.
+
+**Execution method**: Phases 1-4 are dispatched as parallel, read-only research forks (capped
+at 2 concurrent, matching this session's own standing convention) — each produces its own
+scoped write-up with real file/line citations, no code changed, no tool output kept verbose in
+the main session's own context. Phase 5 (synthesis + the persona walkthrough + assembling the
+final file) is done directly, once Phases 1-4 are back, since it requires holistically
+cross-referencing all four rather than another isolated pass. This section's own status notes
+are updated as each phase lands — not batched at the end — so a mid-audit restart never loses
+more than one phase's worth of research.
+
+**Status: plan locked, phases executing below.**
+
 ## Aug 24 2026 — Category/filter taxonomy pass (closes item 12 for real this time) — PLAN
 ## LOCKED, executing below; check each piece's own status note for what's landed
 
