@@ -4,7 +4,58 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Aug 24 2026 — Discover becomes a real bottom tab, People merges into it as a mode — PLAN LOCKED, not yet built
+## Aug 24 2026 — Product Coherence Audit refresh (30-Second / Convergence / One-Product / UI-UX) — DONE, read-only
+
+Direct follow-up to today's Discover/People tab merge and the Stories placement discussion — the
+user asked to run the same 4-layer audit CLAUDE.md already documents from Aug 23 (see that
+section further down) again, given real structural change since. **This is a refresh, not a
+from-scratch redo** — re-verifies the Aug 23 audit's own findings against current code, audits
+the one real change since (today's Discover/People merge), and looks for anything genuinely new.
+Same hard rule as the original pass: **read-only, no code changes** — findings are for review,
+not something acted on unilaterally in the same pass.
+
+Full detail: `PRODUCT_AUDIT/PRODUCT_COHERENCE_AUDIT_2026-08-24_REFRESH.md`. Headline findings,
+summarized so this file's own history carries the result without needing to open that file:
+
+- **The single most useful finding is a methodology one, stated plainly rather than buried**: the
+  Aug 23 audit reviewed the (then-)4-tab shape and called it "already-converged... better than
+  most apps this scope reaches" — without ever questioning whether Discover being reachable only
+  via a buried hyperlink was itself a comprehension problem. It wasn't flagged at P0, P1, or P2 —
+  not flagged at all. The very next day, a *direct user report* (not this audit) caught exactly
+  that gap, which is what led to today's tab restructuring. Lesson recorded for future passes:
+  auditing a screen's own internal correctness is a different question from auditing whether the
+  screen is reachable at all — a future coherence pass should explicitly check "is every tier-1
+  surface reachable in ≤2 taps from a cold open," not assume it from a screen reading clean.
+- **P0: none found**, same as Aug 23 — today's own change already closed the one gap that came
+  closest to P0-severity in practice.
+- **P1: none new.** Both Aug 23 P1s (the "Confirmed"→"Locked In" reword, the `GatheringsScreen`/
+  `PlansScreen` explicit-decision comment + cross-link) were re-verified still intact in code,
+  untouched by anything since.
+- **P2 (1 new item)**: reaching Dating/Friends now costs one extra tap on a cold Discover visit
+  (Discover → tap People mode → tap Dating/Friends) versus the old dedicated People tab — real,
+  disclosed, low-stakes given the mode is remembered locally across visits. The honest fix, if
+  ever revisited, isn't defaulting Discover to People mode (that just inverts the same cost onto
+  Things-to-Do) — it's confirming on a real device that the remembered-mode behavior genuinely
+  survives a real app restart, not just a same-session tab switch, which hasn't been verified
+  from this sandbox.
+- The 3 flow traces most plausibly affected by today's change (Person→Friend, Person→Date,
+  Person→Gathering) were re-run — all still trace cleanly; the only change is Person→Date's
+  entry-point depth (the disclosed P2 above), the underlying mechanism is unchanged. The other 9
+  flows from Aug 23's 12-flow trace don't touch Discover/People at all and weren't re-run.
+- Re-checked the two "already converged" citations that named the now-deleted `PeopleScreen.js`
+  directly — both updated to describe the current shape (People's target model now lives inside
+  Discover's People mode instead of at the top level); the underlying convergence claims
+  themselves (Dating/Friends stay two separate matching engines, never merged into one pool) are
+  unchanged.
+- Checked for a "Discover" terminology collision (the tab name is now a proper noun) against
+  every other lowercase use of the word "discover" elsewhere in the app's copy — none found, all
+  other occurrences are generic verbs, not competing destination names.
+
+**Per the same read-only convention as the original pass, nothing above has been implemented.**
+The one concrete P2 (the extra-tap trade-off) and the one open verification item (remembered-mode
+on a real device restart) are both recorded for a future pass, not acted on here.
+
+## Aug 24 2026 — Discover becomes a real bottom tab, People merges into it as a mode — DONE
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` and this
