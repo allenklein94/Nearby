@@ -93,7 +93,22 @@ export default function MatchesScreen({ navigation }) {
         // Gathering-sourced connections are a quiet confirmation, not
         // a romantic "It's a Match!" celebration — joining a public
         // gathering isn't the same kind of moment as a mutual Notice.
+        //
+        // Real bug, found live (Aug 24 2026): this branch used to call
+        // load() again and return *without* ever marking newMatch as
+        // seen first — markMatchesSeen() only ran further down, past
+        // this early return. The recursive load() re-fetched the exact
+        // same data, found the exact same still-unseen newMatch, and hit
+        // this same branch again -- an infinite loop that never reached
+        // setLoading(false), leaving the screen stuck on its skeleton-
+        // loading placeholders forever the moment a real gathering- or
+        // friendship-sourced match existed. markMatchesSeen() overwrites
+        // the whole stored seen-list (not additive), so the fix passes
+        // the *entire* current dataset, matching the same call further
+        // down -- not just [newMatch.id], which would have wiped out
+        // every other already-seen match instead.
         if (newMatch.source_gathering_id || newMatch.source_friendship_id) {
+          await markMatchesSeen(myId, data.map((m) => m.id));
           load();
           return;
         }

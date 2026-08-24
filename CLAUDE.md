@@ -4,6 +4,48 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — real, pre-existing bug: Messages/Matches stuck on skeleton loading
+## forever the instant a gathering- or friendship-sourced match existed — DONE
+
+User-reported, live: after creating a test match, the Messages tab's Matches side never
+finished loading — just showed the skeleton-loading placeholder cards, indefinitely, never
+resolving to the real list. Traced directly, not guessed at: `MatchesScreen.js`'s `load()` has
+a "quiet confirmation" branch for a gathering- or friendship-sourced match (introduced
+`9a37f2f4`, extended to friendships `f193c37f`) — the newest unseen match being one of those two
+kinds means skip the romantic "It's a Match!" modal, just silently re-`load()` instead. **The
+bug**: that branch called `load()` again and `return`ed *before* ever marking the match as seen
+— `markMatchesSeen()` only ever ran later in the function, past this early return. The recursive
+`load()` re-fetched the identical data, `getSeenMatchIds()` still didn't include the match (never
+marked), so it found the exact same "newest unseen match," hit the exact same branch, and
+recursed again — a genuine infinite loop that could never reach `setLoading(false)`, leaving the
+screen stuck on `SkeletonCard` placeholders forever the moment a real gathering/friendship match
+existed. Not something the Aug 24 Discover People-mode toggle work touched or introduced — this
+bug predates that pass; the user's own test match (very plausibly a friendship-sourced one, from
+Friend Discovery) is what actually surfaced it.
+
+**Fixed**: the branch now calls `markMatchesSeen(myId, data.map((m) => m.id))` — the same full-
+dataset call the normal (non-early-return) path already makes further down — before recursing,
+not just `markMatchesSeen(myId, [newMatch.id])`, since `markMatchesSeen()` **overwrites** the
+whole stored seen-list rather than appending to it (confirmed by reading `matchCelebration.js`
+directly) — passing only the one id would have silently wiped every other already-seen match off
+the list, re-triggering stale celebration checks for old matches on a future load. With the full
+current dataset marked seen before the recursive call, the next `load()` correctly finds no
+newly-unseen match (or a genuinely different one, if a second real match landed in the interim)
+and proceeds straight through to `setLoading(false)` as normal. Self-healing, no manual data
+cleanup needed — the very next time Messages loads with the fix in place, the stuck match gets
+marked seen and the screen resolves normally.
+
+Verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios`
+(clean, no bundling errors — edit to one existing file only). Grepped for any other caller of
+`markMatchesSeen`/`getSeenMatchIds` — `MatchesScreen.js` is the only one, so this was the whole
+fix, not one of several call sites needing the same treatment.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session (or the user directly) should confirm Messages now loads correctly on
+a real device with a real gathering-sourced and a real friendship-sourced match both present, and
+that a genuinely new romantic (Notice/Wave-sourced) match still shows its real "It's a Match!"
+celebration correctly, unaffected by this fix.
+
 ## Aug 24 2026 — Discover's People mode gets its own Dating|Friends toggle — DONE
 
 Direct follow-up to the "Discover becomes a real bottom tab, People merges into it as a mode"
