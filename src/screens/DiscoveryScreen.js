@@ -72,10 +72,21 @@ function calculateAge(birthdateString) {
   return age;
 }
 
-export default function DiscoveryScreen({ navigation }) {
+// Aug 24 2026 (CLAUDE.md): an optional `embedded` prop lets this screen be
+// mounted directly inside Discover's People mode -- the exact same
+// "embed the real screen, no navigation, no rebuild" pattern MatchesScreen/
+// FriendsScreen are already embedded with inside MessagesScreen's own
+// Matches|Friends toggle. When embedded, the outer SafeAreaView is skipped
+// (the host screen already provides one) and the redundant big title Text
+// is hidden -- the segmented Dating|Friends toggle one level up already
+// names this surface, so repeating "Nearby"/"Browse" underneath it would
+// just be noise. Everything else (the info/view-toggle/map buttons, the
+// Crossed Paths/Browse switcher, filters, the list/card deck) is unchanged.
+export default function DiscoveryScreen({ navigation, embedded = false }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
+  const Container = embedded ? View : SafeAreaView;
   const posthog = usePostHog();
   const [nearby, setNearby] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -439,12 +450,14 @@ export default function DiscoveryScreen({ navigation }) {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Container style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle} accessibilityRole="header">
-            {discoveryMode === 'browse' ? 'Browse' : t('discovery.title')}
-          </Text>
+          {!embedded && (
+            <Text style={styles.headerTitle} accessibilityRole="header">
+              {discoveryMode === 'browse' ? 'Browse' : t('discovery.title')}
+            </Text>
+          )}
           <TouchableOpacity
             onPress={showRadiusInfo}
             style={styles.infoButton}
@@ -861,7 +874,7 @@ export default function DiscoveryScreen({ navigation }) {
           </SafeAreaView>
         </View>
       )}
-    </SafeAreaView>
+    </Container>
   );
 }
 

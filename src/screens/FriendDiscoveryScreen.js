@@ -30,9 +30,21 @@ import { typography, spacing, radius } from '../theme';
 // screen's own header to reuse DiscoveryScreen's header/headerRow/
 // headerTitle/headerSubtitle style values verbatim, present across every
 // render branch -- never again just a bare back arrow over nothing.
-export default function FriendDiscoveryScreen({ navigation }) {
+//
+// Aug 24 2026 (CLAUDE.md): an optional `embedded` prop lets this screen
+// mount directly inside Discover's People mode, the same real-screen-
+// embedded-with-a-toggle pattern DiscoveryScreen just gained alongside it
+// and MatchesScreen/FriendsScreen already have inside MessagesScreen. When
+// embedded, the outer SafeAreaView is skipped (the host already has one)
+// and the big "🤝 Friends" title is hidden -- the segmented Dating|Friends
+// toggle one level up already names this surface. The subtitle and the
+// On/Off switch both stay -- the subtitle is the one place the "separate
+// from dating" boundary is actually stated, and the switch is a real,
+// necessary control, not decoration.
+export default function FriendDiscoveryScreen({ navigation, embedded = false }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const Container = embedded ? View : SafeAreaView;
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -142,9 +154,13 @@ export default function FriendDiscoveryScreen({ navigation }) {
   const Header = () => (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        <Text style={styles.headerTitle} accessibilityRole="header">
-          🤝 Friends
-        </Text>
+        {!embedded ? (
+          <Text style={styles.headerTitle} accessibilityRole="header">
+            🤝 Friends
+          </Text>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
         {enabled && (
           <View style={styles.headerToggle}>
             <Text style={styles.headerToggleLabel}>On</Text>
@@ -160,29 +176,29 @@ export default function FriendDiscoveryScreen({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Container style={styles.container}>
         <Header />
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
         </View>
-      </SafeAreaView>
+      </Container>
     );
   }
 
   if (loadError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Container style={styles.container}>
         <Header />
         <View style={styles.centered}>
           <LoadErrorState message="Couldn't load Meet New Friends." onRetry={load} />
         </View>
-      </SafeAreaView>
+      </Container>
     );
   }
 
   if (!enabled) {
     return (
-      <SafeAreaView style={styles.container}>
+      <Container style={styles.container}>
         <Header />
         <View style={styles.explainer}>
           <Text style={styles.explainerEmoji}>🤝</Text>
@@ -204,12 +220,12 @@ export default function FriendDiscoveryScreen({ navigation }) {
             <Text style={styles.enableButtonText}>{togglingOn ? 'Turning on…' : 'Turn On'}</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </Container>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <Container style={styles.container}>
       <Header />
 
       <FriendDiscoverySwipeCards data={candidates} photoUrls={photoUrls} onSwipe={handleSwipe} />
@@ -225,7 +241,7 @@ export default function FriendDiscoveryScreen({ navigation }) {
         }}
         onDismiss={() => setMatchModal(null)}
       />
-    </SafeAreaView>
+    </Container>
   );
 }
 

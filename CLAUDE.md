@@ -4,6 +4,86 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — Discover's People mode gets its own Dating|Friends toggle — DONE
+
+Direct follow-up to the "Discover becomes a real bottom tab, People merges into it as a mode"
+section further below (itself already DONE) — the user clarified a misread: this was never
+about a bottom-tab-level "People" destination. It's about People **mode inside Discover**
+specifically — once you tap the "👥 People" segment of Discover's own Things-to-Do|People
+toggle, the two rows underneath it ("💗 Dating" / "🤝 Friends", each a plain
+`navigation.navigate()` away to a full separate screen) should themselves become a second,
+nested segmented toggle using the *exact same visual chrome* as the outer toggle — content
+swaps in place, never a navigation away — mirroring the pattern this file's own Aug 24 "14-item
+UX/product review response" item 2 already established for `MessagesScreen`'s Matches|Friends
+switch (`MatchesScreen`/`FriendsScreen` embedded directly, no navigation).
+
+**Built exactly that, reusing three already-proven patterns rather than inventing a new one**:
+`DiscoverHubScreen.js`'s People-mode content is no longer a `ScrollView` with a bordered
+"People Nearby" card holding two tap-away rows — it's now a non-scrolling header area
+(`StoriesRow` + a new `PEOPLE_SUBMODES` toggle, literally reusing `modeToggleRow`/
+`modeToggleButton`/`modeToggleButtonActive`/`modeToggleText`/`modeToggleTextActive` — the same
+style object the outer Things-to-Do|People toggle already uses, not a second visual language)
+followed by a `flex: 1` area rendering either `DiscoveryScreen` (Dating) or
+`FriendDiscoveryScreen` (Friends) **mounted directly as a component**, not navigated to. The
+selected sub-mode persists locally across visits (`AsyncStorage`, key
+`discover_last_people_submode`, same "remember where they left off" convention the outer
+mode's own `discover_last_mode` key already established), defaulting to Dating.
+
+**Not a ScrollView, on purpose**: `DiscoveryScreen` renders a real `FlatList` (list view) or a
+`PanResponder`-driven swipe deck (card view); `FriendDiscoveryScreen` renders a `PanResponder`
+swipe deck too. Nesting either inside this screen's own outer `ScrollView` would produce the
+classic "VirtualizedList nested inside a plain ScrollView" bug (broken/double scrolling) — so
+the People-mode branch is a plain flex column instead, with the embedded screen as a `flex: 1`
+sibling below the fixed header area. This is the same structural shape `MessagesScreen.js`
+already uses for its own embedded `MatchesScreen`/`FriendsScreen` (a fixed header row, then a
+`flex: 1` wrapper around whichever embedded screen is active) — not a new pattern.
+
+**Both `DiscoveryScreen.js` and `FriendDiscoveryScreen.js` gained a new optional `embedded`
+prop** (default `false`) so they can be mounted either as their own top-level routes (`Nearby`,
+`FriendDiscovery` — both completely unchanged for every other real entry point: Home's
+people-nearby quick-stat card still `navigate()`s to `Nearby` exactly as before, and
+`FriendDiscovery` stays a registered standalone route with its own native transparent header)
+or embedded inline here. When `embedded` is true: the outer `SafeAreaView` is skipped in favor
+of a plain `View` (the host screen — Discover — already provides one; a nested `SafeAreaView`
+would double up safe-area insets), and each screen's own big, now-redundant title Text
+("Nearby"/"Browse" for Dating, "🤝 Friends" for Friends) is hidden — the segmented toggle one
+level up already names the surface, so repeating it underneath would just be visual noise.
+Everything else stays exactly as-is: Dating's info button/list-vs-cards toggle/sightings-map
+button, its Crossed Paths|Browse mode switcher, its filters accordion, its Notice/Wave cards;
+Friends' subtitle (the one place "separate from dating" is actually stated to the user) and its
+On/Off `Switch` (a real, necessary control, kept — not decoration to strip out).
+
+**Two real, deliberate scope boundaries, not oversights**:
+- The two matching engines themselves are completely untouched — this is a navigation-layer
+  merge only, exactly like the outer Discover mode toggle and `MessagesScreen`'s toggle before
+  it. Dating and Friends still have separate opt-in flags, separate swipe tables, separate
+  exclusion/safety rules, and there is still no merged "Everyone" pool anywhere — matches every
+  prior locked decision on this exact boundary.
+- `DiscoveryScreen`'s own custom "all your crossed paths" map overlay (`showSightingsOverview`,
+  a plain absolutely-positioned `View`, not a real `Modal`) will visually cover only the
+  embedded `flex: 1` region it's mounted in when reached this way, not the literal full device
+  screen the way it does when `Nearby` is opened as its own top-level route — a real, minor,
+  disclosed visual nuance for an already-secondary feature (viewing every crossed-paths sighting
+  on one map), not something this pass rebuilt to be insets-aware. Every real `<Modal>` in either
+  screen (`ReportBlockModal`, `CompatibilityReportModal`, `FiltersModal`, `SightingMapModal`,
+  `DatingPreferencesPromptModal`, `FriendMatchCelebrationModal`) is unaffected either way — a
+  native `Modal` renders as a true OS-level overlay regardless of where its owning screen is
+  mounted in the component tree.
+
+Verified via a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, 2255 modules — unchanged, since
+`DiscoveryScreen`/`FriendDiscoveryScreen` were already in the bundle graph via their existing
+top-level route registrations; this pass only added new edges to already-bundled modules, no
+new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the nested Dating|Friends toggle renders and switches
+correctly against real data, that Dating's list/card views and Friends' swipe deck both scroll
+and respond to gestures correctly when embedded (the actual risk this pass's own restructuring
+away from a `ScrollView` exists to avoid), that the remembered last-used sub-mode survives a
+real app restart, and that both screens' still-standalone routes (`Nearby` from Home's quick-stat
+card, `FriendDiscovery` if reached directly) still render with their full, non-embedded chrome.
+
 ## Aug 24 2026 — 14-item UX/product review response — governing principle: "not a bunch of
 ## mini apps within one app" — DONE, all 14 items now built or resolved — see each item's own
 ## status below; items 8/11/13 were reworked from their original "decision, not built" framing

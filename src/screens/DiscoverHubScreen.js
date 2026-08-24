@@ -19,6 +19,8 @@ import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
 import StoriesRow from '../components/StoriesRow';
 import TabHeaderActions from '../components/TabHeaderActions';
+import DiscoveryScreen from './DiscoveryScreen';
+import FriendDiscoveryScreen from './FriendDiscoveryScreen';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -52,11 +54,22 @@ const DISCOVER_MODES = [
   { key: 'things', icon: '🔎', label: 'Things to Do', subtitle: "What's happening nearby." },
   { key: 'people', icon: '👥', label: 'People', subtitle: "Who's around you." },
 ];
-const PEOPLE_MODES = [
-  { key: 'dating', route: 'Nearby', icon: '💗', title: 'Dating', subtitle: 'Meet people nearby who are open to dating' },
-  { key: 'friends', route: 'FriendDiscovery', icon: '🤝', title: 'Friends', subtitle: 'Meet new people nearby and make friends' },
+// Aug 24 2026 (CLAUDE.md, direct follow-up): People mode itself now gets the
+// identical segmented-toggle treatment as the outer Things-to-Do|People
+// switch, one level down -- Dating and Friends were previously two rows that
+// each navigated away to a full separate screen; now they're a real
+// Discover-style toggle (same modeToggleRow/modeToggleButton chrome, no new
+// visual language) that swaps embedded content in place, no navigation.
+// DiscoveryScreen/FriendDiscoveryScreen are both mounted directly (their own
+// `embedded` prop suppresses each screen's own redundant title, since this
+// toggle already names the surface) -- still two genuinely separate matching
+// systems underneath, this is a navigation-layer merge only.
+const PEOPLE_SUBMODES = [
+  { key: 'dating', icon: '💗', label: 'Dating' },
+  { key: 'friends', icon: '🤝', label: 'Friends' },
 ];
 const LAST_MODE_KEY = 'discover_last_mode';
+const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
 
 // A real unified search + filter + map/list surface across the four
 // browsable, listable content types (gatherings, communities, places,
@@ -80,6 +93,7 @@ export default function DiscoverHubScreen({ navigation }) {
   const styles = getStyles(colors, shadow);
 
   const [mode, setMode] = useState('things');
+  const [peopleSubMode, setPeopleSubMode] = useState('dating');
 
   useEffect(() => {
     AsyncStorage.getItem(LAST_MODE_KEY)
@@ -87,11 +101,21 @@ export default function DiscoverHubScreen({ navigation }) {
         if (saved === 'things' || saved === 'people') setMode(saved);
       })
       .catch(() => {});
+    AsyncStorage.getItem(LAST_PEOPLE_SUBMODE_KEY)
+      .then((saved) => {
+        if (saved === 'dating' || saved === 'friends') setPeopleSubMode(saved);
+      })
+      .catch(() => {});
   }, []);
 
   function selectMode(key) {
     setMode(key);
     AsyncStorage.setItem(LAST_MODE_KEY, key).catch(() => {});
+  }
+
+  function selectPeopleSubMode(key) {
+    setPeopleSubMode(key);
+    AsyncStorage.setItem(LAST_PEOPLE_SUBMODE_KEY, key).catch(() => {});
   }
 
   const [publicStories, setPublicStories] = useState([]);
@@ -502,32 +526,49 @@ export default function DiscoverHubScreen({ navigation }) {
       </View>
 
       {mode === 'people' ? (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <StoriesRow />
-
-          <Text style={styles.sectionHeader}>People Nearby</Text>
-          <View style={styles.peopleModule}>
-            {PEOPLE_MODES.map((pm, index) => (
-              <React.Fragment key={pm.key}>
-                {index > 0 && <View style={styles.peopleModuleDivider} />}
-                <TouchableOpacity
-                  style={styles.peopleModuleRow}
-                  onPress={() => navigation.navigate(pm.route)}
-                  activeOpacity={0.7}
-                  accessibilityLabel={`${pm.title}, ${pm.subtitle}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.cardIcon}>{pm.icon}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{pm.title}</Text>
-                    <Text style={styles.cardSubtitle}>{pm.subtitle}</Text>
-                  </View>
-                  <Text style={styles.cardChevron}>›</Text>
-                </TouchableOpacity>
-              </React.Fragment>
-            ))}
+        // Real screens embedded in place, no navigation -- the exact same
+        // "segmented toggle swaps content in place" pattern the outer
+        // Things-to-Do|People toggle above already uses, and the same real-
+        // component-embedded-with-a-toggle pattern MessagesScreen already
+        // established for its own Matches|Friends switch. Dating and
+        // Friends stay two genuinely separate matching systems underneath
+        // (own opt-in, own swipe table, own exclusion rules) -- this is a
+        // navigation-only merge, never a combined candidate pool. Not a
+        // ScrollView: each embedded screen manages its own scroll (a real
+        // FlatList for Dating's list view, a PanResponder deck for both) --
+        // nesting either inside this screen's own ScrollView would break
+        // scrolling, the same reason MessagesScreen renders its own
+        // embedded screens in a flex sibling, not inside a ScrollView.
+        <View style={{ flex: 1 }}>
+          <View style={styles.peopleFixedArea}>
+            <StoriesRow />
+            <View style={styles.modeToggleRow}>
+              {PEOPLE_SUBMODES.map((pm) => {
+                const active = peopleSubMode === pm.key;
+                return (
+                  <TouchableOpacity
+                    key={pm.key}
+                    style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
+                    onPress={() => selectPeopleSubMode(pm.key)}
+                    accessibilityLabel={pm.label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                  >
+                    <Text style={styles.modeToggleIcon}>{pm.icon}</Text>
+                    <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{pm.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-        </ScrollView>
+          <View style={{ flex: 1 }}>
+            {peopleSubMode === 'dating' ? (
+              <DiscoveryScreen navigation={navigation} embedded />
+            ) : (
+              <FriendDiscoveryScreen navigation={navigation} embedded />
+            )}
+          </View>
+        </View>
       ) : viewStyle === 'map' && showViewToggle ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView
@@ -926,12 +967,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modeToggleIcon: { fontSize: 16 },
   modeToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
   modeToggleTextActive: { color: colors.primary },
-  peopleModule: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
-    borderColor: colors.border, marginBottom: spacing.md, ...shadow.card, overflow: 'hidden',
-  },
-  peopleModuleRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
-  peopleModuleDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginHorizontal: spacing.lg },
+  // The non-scrolling header area above People mode's embedded Dating/
+  // Friends content (Stories + the sub-toggle) -- same horizontal padding
+  // as the outer `header`/`scrollContent` blocks so it lines up visually.
+  peopleFixedArea: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   searchBarWrap: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md,
