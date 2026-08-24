@@ -127,7 +127,55 @@ cross-referencing all four rather than another isolated pass. This section's own
 are updated as each phase lands — not batched at the end — so a mid-audit restart never loses
 more than one phase's worth of research.
 
-**Status: plan locked, phases executing below.**
+**Status: Phases 1-4 DONE (research only, real findings, nothing built/fixed). Phase 5
+(synthesis + final deliverable) executing next.** Forking turned out to be unavailable inside
+this session's own execution context this pass, so all 4 phases were run directly, sequentially,
+rather than as parallel forks — same rigor, no shortcuts taken. Each phase produced its own
+scoped file under `PRODUCT_AUDIT/` (`TAXONOMY_AUDIT_phase1_taxonomy_attributes.md` through
+`_phase4_business_attributes.md`) — read those for full file/line detail; headline findings only,
+summarized here:
+
+- **Phase 1 (Taxonomy + Attributes)**: the canonical 26-tag gathering/community/business-request
+  list (`gatheringCategories.js`) is genuinely clean and consolidated, as of today's own taxonomy
+  pass. **One real, live, previously-uncaught bug found**: `ProfileScreen.js` and
+  `CompleteProfileScreen.js` each keep their own independently-typed, byte-identical 24-tag
+  personal-interest list, and **both are missing "Faith & Spirituality"** — the exact same value
+  already found and fixed once for `AskBusinessScreen.js`'s old copy earlier today, just never
+  caught in these two screens. A user literally cannot select "Faith & Spirituality" as a
+  personal interest anywhere in the app. Also found: two full generations of gender-identity
+  infrastructure coexist (legacy single-select `discovery_gender`/`show_me` on Settings vs. new
+  multi-select `gender_identity`/`interested_in_genders` on Profile) with a real, correct
+  matching fallback but no UI cross-link; `relationship_intention` and `basics.relationship_goals`
+  both answer "what am I looking for" with two unrelated vocabularies and jobs, never
+  reconciled; `gatheringIndoorOutdoor.js`'s own header comment is now stale ("25 canonical," now
+  26); `QUICK_PICK_ICON_BY_CATEGORY` has no icon yet for the new "Dating" tag (falls back to a
+  generic default, not broken, just incomplete).
+- **Phase 2 (Preferences + Filters)**: `BASICS_FIELDS`' 24 select-type fields are already real,
+  live, premium-gated hard filters on Dating (corrects an initial mis-read from Phase 1's own
+  first draft, left visible in that file rather than silently fixed) — this app already does
+  more real attribute-filtering than a surface read suggests, just scoped to Dating only. Friend
+  Discovery has **zero** user-facing filters of any kind. **No "when am I available" preference
+  exists anywhere on a profile** — every "when" signal in this app describes an event, never the
+  user's own free time. `price_level`/`party_type` (today's new fields) are filter-only, not
+  read by any matching/ranking function.
+- **Phase 3 (Matching Matrix)**: built the full signal × Dating/Friends/Gatherings/Communities/
+  Businesses matrix with hard/strong/soft/contextual tags. `get_friend_discovery_candidates`
+  (read directly from production) turns out to already score a real weighted sum (shared
+  interests + shared communities + mutual friends, distance as tiebreak) — real, honest,
+  explainable — with literally no user-facing control over any of it. Confirms Phase 2's
+  `price_level`/`party_type`-unused finding is real end-to-end, not just a client-side gap.
+- **Phase 4 (Business Attributes)**: the single largest structural finding of the whole audit,
+  confirmed directly against live production's real column lists — `brand_partners`/
+  `business_requests`/`business_availability`/`business_fulfillment_policies` have **category +
+  price + party-size + time-window only, zero attribute dimension anywhere**. The external
+  message's own worked example ("Italian + outdoor + date-friendly") is completely
+  unrepresentable today, not partially. A real, honestly-sized fix sketch (a small curated
+  `attributes text[]` tag set, plus a `food_drink`-only cuisine sub-category) is recorded in the
+  file, not designed in full — this is a scoping note for a future pass, not a build.
+
+**Not done yet**: Phase 5 (the 4-persona code-trace walkthrough, the unused-data/gap synthesis,
+and assembling everything above into one consolidated file for external/ChatGPT review) —
+executing next, same session.
 
 ## Aug 24 2026 — Category/filter taxonomy pass (closes item 12 for real this time) — PLAN
 ## LOCKED, executing below; check each piece's own status note for what's landed
