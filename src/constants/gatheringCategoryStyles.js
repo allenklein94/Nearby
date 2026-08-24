@@ -33,6 +33,12 @@ export const CATEGORY_STYLES = {
   Meditation: { icon: '🕯️', color: PALETTE[4] },
   Running: { icon: '🏃', color: PALETTE[3] },
   'Faith & Spirituality': { icon: '🙏', color: PALETTE[5] },
+  // Added for the category/filter taxonomy pass (CLAUDE.md) -- the one
+  // whole group with no prior coverage at all. Deliberately not added to
+  // gatheringIndoorOutdoor.js (a date can honestly be either) or
+  // gatheringCoverPhotos.js (no verified real image sourced this pass --
+  // falls back to this icon/color block, same as 'Faith & Spirituality').
+  Dating: { icon: '💗', color: PALETTE[1] },
 };
 
 export function categoryStyleFor(interestTag) {

@@ -3,16 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'rea
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-
-// Same canonical 25-tag list used everywhere interest_tag is picked
-// (GatheringsScreen, CreateGatheringScreen, ProfileScreen, etc.) — no new
-// category vocabulary invented for this picker.
-const INTEREST_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality',
-];
+import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 
 const MAX_PICKS = 5;
 

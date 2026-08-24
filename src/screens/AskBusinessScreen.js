@@ -2,18 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
+import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-// Same 24-tag list create-assistant's own VALID_CATEGORIES uses -- the
-// exact list business_requests.category's own CHECK constraint validates
-// against, so nothing picked here can ever be rejected server-side.
-export const CATEGORY_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
-];
+// Same canonical 26-tag list business_requests.category's own (now-widened)
+// CHECK constraint validates against -- was a separate, independently-
+// drifting 24-tag copy (missing 'Faith & Spirituality' and 'Dating') before
+// the category/filter taxonomy pass (CLAUDE.md). Re-exported under its
+// original name since CommunityDetailScreen.js still imports it by this
+// name for its own prefill-validity guard.
+export const CATEGORY_OPTIONS = INTEREST_OPTIONS;
 
 // Reuses the exact same coarse dateWindow vocabulary as create-assistant's
 // Phase 1b extension and intentResolver.js -- never a specific date/time

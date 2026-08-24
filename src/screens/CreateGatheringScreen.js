@@ -8,16 +8,36 @@ import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-const INTEREST_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
+// Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
+// visual convention services/places.js's own priceLevelLabel() already
+// established for Google Places results, without reusing that function
+// directly (it expects a Google 0-4 integer; this is a genuinely
+// different, host-declared enum shape).
+const PRICE_OPTIONS = [
+  { key: null, label: 'Not specified' },
+  { key: 'free', label: 'Free' },
+  { key: '$', label: '$' },
+  { key: '$$', label: '$$' },
+  { key: '$$$', label: '$$$' },
+];
+
+// "Who's this for?" -- a real, host-declared field, deliberately not
+// derived/guessed from group_size_feel or capacity (both measure
+// something different -- a felt vibe, and a hard cap -- and fabricating
+// this label from either would misrepresent real data). See CLAUDE.md's
+// "Category/filter taxonomy pass" section.
+const PARTY_TYPE_OPTIONS = [
+  { key: null, label: 'Not specified' },
+  { key: 'solo', label: '🧍 Solo-Friendly' },
+  { key: 'friends', label: '👥 Bring Friends' },
+  { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
+  { key: 'date', label: '💕 A Date Idea' },
 ];
 
 const VISIBILITY_OPTIONS = [
@@ -131,6 +151,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   // uses -- this is an earlier consent point onto the same real mechanism,
   // not a second one.
   const [askLocalBusinesses, setAskLocalBusinesses] = useState(false);
+  const [priceLevel, setPriceLevel] = useState(null);
+  const [partyType, setPartyType] = useState(null);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -293,6 +315,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
         communityId: visibility === 'community' ? communityId : null,
         capacity: capacityValue,
         askLocalBusinesses,
+        priceLevel,
+        partyType,
       });
 
       // Checking the box only stores real consent/intent on the
@@ -344,25 +368,30 @@ export default function CreateGatheringScreen({ navigation, route }) {
             />
 
             <Text style={styles.label}>{t('gatherings.categoryLabel')}</Text>
-            <View style={styles.chipsWrap}>
-              {INTEREST_OPTIONS.map((option) => {
-                const style = categoryStyleFor(option);
-                const isSelected = interestTag === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    style={[styles.chip, isSelected && { backgroundColor: style.color, borderColor: style.color }]}
-                    onPress={() => setInterestTag(interestTag === option ? null : option)}
-                    activeOpacity={0.8}
-                    accessibilityLabel={`Category: ${option}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{style.icon} {option}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {CATEGORY_GROUPS.map((group) => (
+              <View key={group.key} style={{ marginBottom: spacing.sm }}>
+                <Text style={styles.subLabel}>{group.icon} {group.label}</Text>
+                <View style={styles.chipsWrap}>
+                  {group.tags.map((option) => {
+                    const style = categoryStyleFor(option);
+                    const isSelected = interestTag === option;
+                    return (
+                      <TouchableOpacity
+                        key={option}
+                        style={[styles.chip, isSelected && { backgroundColor: style.color, borderColor: style.color }]}
+                        onPress={() => setInterestTag(interestTag === option ? null : option)}
+                        activeOpacity={0.8}
+                        accessibilityLabel={`Category: ${option}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isSelected }}
+                      >
+                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{style.icon} {option}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
           </>
         )}
 
@@ -644,6 +673,46 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   <Text style={styles.helperText}>Once full, new joins go to a waitlist — if a spot opens, the next person in line is added automatically.</Text>
                 )}
 
+                <Text style={styles.label}>Price</Text>
+                <View style={styles.chipsWrap}>
+                  {PRICE_OPTIONS.map((option) => {
+                    const selected = priceLevel === option.key;
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setPriceLevel(option.key); }}
+                        activeOpacity={0.8}
+                        accessibilityLabel={option.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.label}>Who's this for?</Text>
+                <View style={styles.chipsWrap}>
+                  {PARTY_TYPE_OPTIONS.map((option) => {
+                    const selected = partyType === option.key;
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setPartyType(option.key); }}
+                        activeOpacity={0.8}
+                        accessibilityLabel={option.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
                 {visibility === 'invite_only' && (
                   <>
                     <Text style={styles.label}>Map Visibility</Text>
@@ -747,6 +816,18 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🍽️</Text>
                 <Text style={styles.previewRowText}>We'll look for local business options once your gathering has real attendees</Text>
+              </View>
+            )}
+            {priceLevel && (
+              <View style={styles.previewRow}>
+                <Text style={styles.previewRowIcon}>💵</Text>
+                <Text style={styles.previewRowText}>{PRICE_OPTIONS.find((o) => o.key === priceLevel)?.label}</Text>
+              </View>
+            )}
+            {partyType && (
+              <View style={styles.previewRow}>
+                <Text style={styles.previewRowIcon}>🙋</Text>
+                <Text style={styles.previewRowText}>{PARTY_TYPE_OPTIONS.find((o) => o.key === partyType)?.label}</Text>
               </View>
             )}
           </View>

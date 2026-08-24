@@ -17,6 +17,7 @@ import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } f
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
+import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -43,16 +44,10 @@ const RESERVATION_PROVIDER_OPTIONS = [
   { key: 'opentable', label: 'OpenTable' },
 ];
 
-// Same 24-tag list business_requests/business_availability's own category
-// CHECK constraints validate against (mirrors AskBusinessScreen.js's own
-// copy of create-assistant's VALID_CATEGORIES) -- kept local rather than
-// imported so this file has no new cross-screen dependency.
-const AVAILABILITY_CATEGORY_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
-];
+// Same canonical 26-tag list business_requests/business_availability's own
+// (now-widened) category CHECK constraints validate against -- see
+// CLAUDE.md's "Category/filter taxonomy pass" section.
+const AVAILABILITY_CATEGORY_OPTIONS = INTEREST_OPTIONS;
 
 // "Time-boxed... right now" per the plan's own framing -- starts_at is
 // always the moment of posting, the business only ever picks how long it

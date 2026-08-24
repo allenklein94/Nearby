@@ -4,15 +4,9 @@ import { createCommunity, seedCommunityFromGathering } from '../services/communi
 import { getMyManagedPartner } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-
-const INTEREST_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality',
-];
 
 export default function CreateCommunityScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
