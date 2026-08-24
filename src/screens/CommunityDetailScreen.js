@@ -743,7 +743,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   areaText: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.xs },
   editAreaLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, padding: spacing.lg },
+  modalSheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   modalTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   modalSubtitle: { color: colors.textTertiary, fontSize: 12, marginBottom: spacing.md, lineHeight: 17 },
   modalInput: {

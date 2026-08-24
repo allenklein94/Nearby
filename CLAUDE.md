@@ -4,6 +4,83 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — static-analysis bug audit, one real bug found and fixed — DONE
+
+Direct follow-up to a request to keep auditing for bugs (continuing a pass a codespace restart
+had interrupted mid-way through), this time via real static analysis rather than another
+read-through — a deliberately different method from every prior bug-hunt pass in this file's own
+history, chosen specifically to catch a different class of mistake than a human read would.
+
+**Method**: stood up a temporary, uncommitted ESLint 9 flat-config setup
+(`@babel/eslint-parser` + `babel-preset-expo`, already available in `node_modules`) scoped to
+`no-undef` only, run across every non-test file in `src/`. Confirmed empirically first, via a
+deliberate throwaway `<UndefinedComponent />` test case, that ESLint's `no-undef` does **not**
+catch an undefined JSX component tag by default (JSX element names aren't wired into
+`eslint-scope`'s reference tracking without `eslint-plugin-react`, which wasn't installed) — so a
+second, purpose-built script (`@babel/parser` + `@babel/traverse`) was written to specifically
+catch JSX component tags referenced but never imported/declared in the same file, the exact
+shape of two real bugs this file's own history already caught once each (a missing `Alert`
+import, a missing `ScrollView` import). A third script cross-checked every named/default import
+against the real exports of the local module it imports from, catching the "renamed an export,
+forgot to update a caller" class of bug that doesn't throw at parse time and just silently
+resolves to `undefined` at runtime.
+
+**One real, previously-undetected bug found and fixed**: `CommunityDetailScreen.js`'s
+`modalSheet` style (the Community Area editor's bottom-sheet modal, built in an earlier Aug 17
+2026 pass) referenced `radius.xl` — but `theme.js`'s `radius` scale only defines `sm`/`md`/`lg`/
+`full`, no `xl`. Found by grepping every `radius.*`/`spacing.*`/`shadow.*`/`typography.*`/
+`colors.*` token reference across `src/` and diffing against `theme.js`'s real exported keys (all
+11 real `colors.*` references and every `spacing`/`shadow`/`typography` reference checked out
+valid — `radius.xl` was the one exception). Since `borderTopLeftRadius`/`borderTopRightRadius`
+would silently resolve to `undefined`, React Native would just render that modal's top corners
+with no rounding at all — a real, if minor, visual bug, not a crash. This is the same bug shape
+as the already-once-caught `colors.surfaceAlt` mistake (Aug 11 2026, Category grouping section),
+just never re-checked systematically until now. Fixed by pointing it at the existing `radius.lg`
+token (20) instead of inventing a new theme-wide `xl` entry for one call site — matches this
+file's own "reuse an existing value, don't invent a new scale for one caller" convention used
+everywhere else.
+
+**Everything else checked came back clean, not silently assumed clean**:
+- `no-undef` across every non-test file in `src/`: zero real findings (the one initial hit,
+  `BusinessPartnerApplyScreen.js`'s `react-hooks/exhaustive-deps` disable-comment error, was
+  tooling noise from an unloaded plugin rule, not an app bug).
+- The custom JSX-undefined-component check: zero real findings across all 221 files — the first
+  run reported 6 hits (`BouncyTabButton`, `VoiceBubble`, `GatheringStoryItem`, `StatRow`,
+  `DetailRow`, `AccordionField`), but all 6 turned out to be a bug in the *audit script itself*
+  (two overlapping Babel-traverse visitor object keys for the same node type, where the
+  pipe-combined key silently clobbered the standalone `FunctionDeclaration` collector) — fixed
+  the script, re-ran, confirmed all 6 were real, correctly-declared local component functions.
+  Restated here so a future session doesn't rediscover the same false positive.
+- Import/export cross-check: zero stale named/default imports anywhere across 227 files.
+- No duplicate `<Stack.Screen name="...">`/`<Tab.Screen name="...">` registrations in
+  `RootNavigator.js`.
+- Every `navigation.navigate/replace/push('X', ...)` call site across `src/` resolves to a real
+  registered route name (after correcting the audit's own regex, which initially missed
+  `CommunityChat`'s multi-line `<Stack.Screen>` registration — a false positive, not a real gap).
+- Every `navigate('MainTabs', { screen: 'X' })` nested target matches the real, current 4-tab
+  set (`Home`/`Discover`/`Create`/`Activity`) — confirms the Aug 24 2026 Discover/People tab
+  merge left no stale nested-tab references anywhere.
+- No stale `navigate('People', ...)`/`navigate('Matches', ...)` calls and no remaining
+  `PeopleScreen` import anywhere (only one harmless comment mentions the retired screen by name)
+  — confirms that same tab-merge pass's own cleanup was complete.
+- `GroupPlanScreen.js`'s "Locked In" vs. "Confirmed" copy rename (Aug 23 2026, convergence pass)
+  re-checked directly: the display string changed, the underlying `proposal.status === 'confirmed'`
+  comparison is untouched — not a bug, matches what CLAUDE.md already claims.
+- No `DEBUG`-labeled scaffolding, no `__DEV__ === undefined` (the exact shape of a bug already
+  fixed once — see the Aug 8 2026 `ChatScreen.js` debug-overlay entry, further down this file) —
+  and the 7 remaining `console.log` calls anywhere in `src/` were all individually read and
+  confirmed to be legitimate non-fatal-failure logging, not leftover debug output.
+- Full Jest suite: 67/67 passing, unchanged.
+
+**Verification**: a full `npx expo export --platform ios` after the fix — clean, no bundling
+errors, edit to one existing file only, no new files. The temporary ESLint config/scripts used
+for this pass were not committed (uncommitted, one-off audit tooling, not this codebase's
+established `scripts/live-verify/` convention for permanent reusable scripts).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of the one visual fix (`CommunityDetailScreen`'s Area-editor modal sheet) — next
+session should confirm its top corners now render with the intended rounding on a real device.
+
 ## Aug 24 2026 — Product Coherence Audit refresh (30-Second / Convergence / One-Product / UI-UX) — DONE, read-only
 
 Direct follow-up to today's Discover/People tab merge and the Stories placement discussion — the
