@@ -14,6 +14,7 @@ import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessO
 import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
+import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -34,6 +35,11 @@ const OFFER_TYPE_OPTIONS = [
   { key: 'perk', label: 'Perk' },
   { key: 'upgrade', label: 'Upgrade' },
   { key: 'alt_time', label: 'Alt. time' },
+];
+
+const RESERVATION_PROVIDER_OPTIONS = [
+  { key: 'resy', label: 'Resy' },
+  { key: 'opentable', label: 'OpenTable' },
 ];
 
 // Same 24-tag list business_requests/business_availability's own category
@@ -182,6 +188,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [stripeStatus, setStripeStatus] = useState(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
 
+  const [reservationProviderStatus, setReservationProviderStatus] = useState(null);
+  const [editingReservationProvider, setEditingReservationProvider] = useState(false);
+  const [reservationProviderInput, setReservationProviderInput] = useState(null);
+  const [reservationVenueIdInput, setReservationVenueIdInput] = useState('');
+  const [savingReservationProvider, setSavingReservationProvider] = useState(false);
+
   // Real user ask, not a code audit (Aug 24 2026): "a way to start seeing
   // demand and posting offers... with a tutorial almost." A brand-new
   // business owner landing here for the first time (right after admin
@@ -223,6 +235,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       console.error('loadMyStripeConnectStatus failed', e);
     }
+    try {
+      const status = await getMyReservationProviderStatus();
+      setReservationProviderStatus(status);
+    } catch (e) {
+      console.error('loadMyReservationProviderStatus failed', e);
+    }
   }
 
   async function dismissWelcomeCard() {
@@ -241,6 +259,49 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setConnectingStripe(false);
+  }
+
+  function openEditReservationProvider() {
+    setReservationProviderInput(reservationProviderStatus?.provider ?? null);
+    setReservationVenueIdInput(reservationProviderStatus?.venueId ?? '');
+    setEditingReservationProvider(true);
+  }
+
+  async function handleSaveReservationProvider() {
+    if (!selectedPartner || !reservationProviderInput) return;
+    setSavingReservationProvider(true);
+    try {
+      await updateReservationProvider(
+        selectedPartner.id,
+        reservationProviderInput,
+        reservationVenueIdInput.trim() || null
+      );
+      const status = await getMyReservationProviderStatus();
+      setReservationProviderStatus(status);
+      setEditingReservationProvider(false);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingReservationProvider(false);
+  }
+
+  function handleDisconnectReservationProvider() {
+    if (!selectedPartner) return;
+    Alert.alert('Remove reservation provider?', 'This just clears what you told us -- nothing about your real bookings changes.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await updateReservationProvider(selectedPartner.id, null, null);
+            setReservationProviderStatus({ ...reservationProviderStatus, provider: null, venueId: null, connectedAt: null });
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
   }
 
   async function handleUpdateAddress() {
@@ -1731,6 +1792,99 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             {stripeStatus?.hasAccount ? 'Continue Setup' : 'Connect Stripe'}
                           </Text>
                         )}
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Reservation Provider</Text>
+                <View style={styles.gatheringRow}>
+                  {editingReservationProvider ? (
+                    <>
+                      <Text style={styles.offerDescription}>
+                        Which system do you take reservations through? This doesn't connect real
+                        bookings yet -- Resy and OpenTable both require applying for real partner
+                        API access before Nearby can actually create a reservation there. Telling
+                        us now means it's ready the moment that's built.
+                      </Text>
+                      <View style={styles.chipRow}>
+                        {RESERVATION_PROVIDER_OPTIONS.map((p) => (
+                          <TouchableOpacity
+                            key={p.key}
+                            style={[styles.chip, reservationProviderInput === p.key && styles.chipSelected]}
+                            onPress={() => setReservationProviderInput(p.key)}
+                            accessibilityRole="button"
+                            accessibilityLabel={p.label}
+                            accessibilityState={{ selected: reservationProviderInput === p.key }}
+                          >
+                            <Text style={[styles.chipText, reservationProviderInput === p.key && styles.chipTextSelected]}>
+                              {p.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      <TextInput
+                        style={[styles.input, { marginTop: spacing.sm }]}
+                        placeholder="Your venue ID on that system (optional)"
+                        placeholderTextColor={colors.textTertiary}
+                        value={reservationVenueIdInput}
+                        onChangeText={setReservationVenueIdInput}
+                        autoCapitalize="none"
+                        accessibilityLabel="Reservation provider venue ID"
+                      />
+                      <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+                        <TouchableOpacity
+                          style={[styles.createOfferButton, { opacity: savingReservationProvider || !reservationProviderInput ? 0.6 : 1 }]}
+                          onPress={handleSaveReservationProvider}
+                          disabled={savingReservationProvider || !reservationProviderInput}
+                          accessibilityLabel="Save reservation provider"
+                          accessibilityRole="button"
+                        >
+                          {savingReservationProvider ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <Text style={styles.createOfferButtonText}>Save</Text>
+                          )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ marginLeft: spacing.md, justifyContent: 'center' }}
+                          onPress={() => setEditingReservationProvider(false)}
+                          accessibilityLabel="Cancel"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.messageMemberLink}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : reservationProviderStatus?.provider ? (
+                    <>
+                      <Text style={styles.offerTitle}>
+                        ✅ Connected to {RESERVATION_PROVIDER_OPTIONS.find((p) => p.key === reservationProviderStatus.provider)?.label ?? reservationProviderStatus.provider}
+                      </Text>
+                      <Text style={styles.offerDescription}>
+                        {reservationProviderStatus.venueId
+                          ? `Venue ID: ${reservationProviderStatus.venueId}`
+                          : 'No venue ID on file yet.'}{' '}
+                        Real bookings aren't wired up yet -- this is just recorded so it's ready
+                        once Nearby has real Resy/OpenTable API access.
+                      </Text>
+                      <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+                        <TouchableOpacity onPress={openEditReservationProvider} accessibilityLabel="Edit reservation provider" accessibilityRole="button">
+                          <Text style={styles.messageMemberLink}>✏️ Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleDisconnectReservationProvider} style={{ marginLeft: spacing.lg }} accessibilityLabel="Remove reservation provider" accessibilityRole="button">
+                          <Text style={[styles.messageMemberLink, { color: colors.danger }]}>Remove</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.offerDescription}>
+                        If you already take reservations through Resy or OpenTable, tell us which
+                        one. This is groundwork only -- it doesn't connect real bookings yet.
+                      </Text>
+                      <TouchableOpacity onPress={openEditReservationProvider} style={{ marginTop: spacing.sm }} accessibilityLabel="Add reservation provider" accessibilityRole="button">
+                        <Text style={styles.messageMemberLink}>+ Add Reservation Provider</Text>
                       </TouchableOpacity>
                     </>
                   )}

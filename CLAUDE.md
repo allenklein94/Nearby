@@ -4,6 +4,90 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — Resy/OpenTable reservation-provider scaffolding: backend was already live
+## from before a codespace restart, client wiring built this pass — DONE
+
+Direct follow-up to Decision 2's own Stripe Connect scaffolding pass (further down this file,
+"Aug 27 2026 — Decision 2, step 1") — the same "build the inert seams now, they're cheap"
+discipline applied to the *other* named external seam from that same locked decision: a real
+Resy/OpenTable reservation-provider integration. Picked up after a codespace restart — on
+resume, `git status` showed one untracked file,
+`supabase/migrations/20260824_reservation_provider_scaffolding.sql`, fully written. Checking
+production directly (not re-applying blind) confirmed the whole migration — all three new
+`brand_partners` columns, the CHECK constraint, and the `update_business_reservation_provider()`
+RPC — was already live from before the restart interrupted the session; only the client side
+was still unbuilt.
+
+**A real, stated difference from the Stripe pass, in the migration's own header comment**:
+Stripe has a public, stable, self-serve REST API, which is what let that earlier pass build a
+real outbound client against a known spec. Resy and OpenTable do not — both require applying
+for and being approved for a real partner API relationship before their real endpoint/auth/
+payload shape is even knowable. So this migration deliberately does not attempt an outbound
+client at all. What it actually does: lets a business owner record which external reservation
+system they use and their venue id in that system — real, genuinely useful groundwork, safe to
+capture today. What it deliberately does **not** do: touch `accept_business_offer()` in any
+way — that function still always creates an immediately-confirmed `provider='nearby'`
+reservation regardless of what's set here, since branching real reservation confirmation on a
+provider Nearby has no real way to actually call yet would strand a customer's reservation in
+`'requested'` forever with no path to `'confirmed'`.
+
+**Schema** (already live): `brand_partners` gained `reservation_provider` (nullable,
+`check (... in ('resy', 'opentable'))`), `reservation_provider_venue_id`, and
+`reservation_provider_connected_at`. `update_business_reservation_provider(partner_id, provider,
+venue_id)` — owner-only (same `profiles.managed_partner_id = partner_id_param` check
+`update_business_profile()`/`upsert_business_fulfillment_policy()` already use), no direct
+client UPDATE on these three columns. Clearing the provider (`provider = null`) also clears its
+venue id and `connected_at` — a stale venue id left behind after disconnecting would be a real,
+if minor, data-integrity gap.
+
+**Client, built this pass**: new `src/services/reservationProvider.js`
+(`getMyReservationProviderStatus()` — a plain, already-fetched set of `brand_partners` columns,
+same cheap-to-call-on-every-dashboard-load shape as `getMyStripeConnectStatus()`;
+`updateReservationProvider()`, a thin RPC wrapper). New "Reservation Provider" card on
+`BusinessDashboardScreen.js`'s Business tab, right after the existing "Get Paid via Stripe"
+card, same visual language (chip row for Resy/OpenTable — reusing the screen's own established
+`chip`/`chipSelected` styles verbatim, no new pattern — a venue-id text field, Save/Cancel).
+Three honest states, matching the Stripe card's own "say what's real, don't imply more"
+convention: not connected → a plain "+ Add Reservation Provider" prompt with copy stating
+directly that this doesn't connect real bookings yet; connected → "✅ Connected to {provider}"
+plus Edit/Remove, with the same "real bookings aren't wired up yet — this is just recorded so
+it's ready once Nearby has real API access" line restated at the point where an owner might
+otherwise assume it already works.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — the schema was
+already live, but the RPC's own real behavior was independently re-proven this pass under
+genuine `SET ROLE authenticated`, not assumed correct from reading the SQL: a non-owner
+(`Claude`) attempting to set a reservation provider on `Coastal Coffee` (owned by `Allen`) was
+correctly rejected (`You do not manage this business.`); the real owner's attempt with an
+invalid provider value was correctly rejected (`Invalid reservation provider.`); the real
+owner's real set (`resy`, a real venue id) correctly landed with a real `connected_at`
+timestamp; switching to `opentable` with no venue id correctly cleared the old venue id and
+refreshed `connected_at`; clearing (`provider: null`) correctly nulled all three columns. All
+test state reverted afterward — confirmed production back to its exact pre-test baseline (every
+`brand_partners` row's three reservation columns `null`, matching the state before any of this
+pass's testing began). **Verified via a real from-scratch migration replay**: pulled the
+already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty
+`public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin`, then ran the full 84-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, including this one — the new columns,
+constraint, and function all confirmed to exist in the freshly-rebuilt database. Container
+removed afterward. Client-side verified via a direct `@babel/core` parse of both touched/new
+files (clean), the full Jest suite (67/67, unaffected — no pure-logic file was touched), and a
+full `npx expo export --platform ios` (clean, no bundling errors, 2251 modules — one more than
+the 2250 baseline, the one new `reservationProvider.js`; every other touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new card renders and saves/edits/removes
+correctly on a real device, in all three states (not connected, connected to Resy, connected to
+OpenTable). **The real, deferred next step, stated plainly**: applying for and getting approved
+for real Resy/OpenTable partner API access, getting their real API docs/credentials, building a
+real outbound integration against their real spec, and only then re-pointing
+`accept_business_offer()` to branch on `reservation_provider` — none of which is something this
+sandbox can do; it needs the user present for the real external-vendor relationship, same
+standing posture as every other real external-account decision this file has deferred (Stripe,
+Uber, a real reservation-system partner API in general).
+
 ## Aug 24 2026 — required fields on "Ask Nearby Businesses" + Friend Discovery chrome
 ## parity with Dating — PLAN LOCKED, both pieces now DONE (see status notes below)
 
