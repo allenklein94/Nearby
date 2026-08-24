@@ -20,7 +20,13 @@ function wideArea(latitude, longitude) {
 
 const WIDE_TIER_MAX_MILES = 15;
 
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses';
+// price_level/party_type: two real, optional, host-declared fields backing
+// the new Price/People filters (CLAUDE.md "Category/filter taxonomy pass")
+// -- both null by default, matching this schema's own "null means honestly
+// unknown, never a guessed value" convention. Added here (the one shared
+// select list every gathering-fetching function already reads from) so
+// every caller starts returning them for free, no per-call-site change.
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -34,7 +40,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -73,6 +79,8 @@ export async function createGathering({ title, description, interestTag, schedul
       community_id: visibility === 'community' ? communityId : null,
       capacity,
       ask_local_businesses: askLocalBusinesses,
+      price_level: priceLevel,
+      party_type: partyType,
     })
     .select()
     .single();
