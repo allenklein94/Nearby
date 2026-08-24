@@ -169,6 +169,44 @@ restart/re-focus of the tab, that both Dating and Friends rows in People mode st
 correctly, and that the tab bar's new compass icon reads clearly next to Home/Create/Activity's
 icons on a real device.
 
+### Follow-up, same day — Stories placement locked as a real product decision, no code changed
+
+Direct follow-up discussion, resolved by the user rather than guessed at: whether `StoriesRow`
+(the personal "Your Story + connections' stories" ring row, currently People-mode-only) should
+also render in Things-to-Do mode, or move to a persistent position above the mode toggle so it's
+visible regardless of mode. **Verdict, locked, matches what's already shipped — no code change
+needed this pass**: Stories stays in People mode only. Not duplicated into Things-to-Do (would
+reintroduce the exact "same StoriesRow rendered in two places" bug already found and fixed the
+day before this change, People vs. Friends). Not pulled above the toggle either — a persistent
+third layer that belongs to neither mode would work against the same convergence/simplification
+effort this whole restructuring is part of, and there's no real usage data yet to justify
+optimizing around an assumed "checked every session" frequency (the Instagram-style comparison
+this option was modeled on).
+
+**A real product-question framework was locked alongside the verdict, worth restating verbatim
+since it's meant to govern this and future placement calls, not just this one**: don't ask
+"should X be persistent/more prominent" — ask "what is the user's job when they reach for X, and
+which surface does that job actually belong to." Applied here:
+- **Personal Stories** (your own ring + connections' rings) → **People** — the job is "what are
+  the people I know up to," a *who* question.
+- **Public/local Stories** ("Public Stories Near You," already in Things-to-Do) and **Gathering
+  Memories** (also already in Things-to-Do) → **Things to Do** — the job is "what's happening
+  nearby," a *what* question. These are genuinely different jobs from personal Stories despite
+  sharing a "story" UI shape — the standing rule this section exists to state explicitly:
+  **converge identical user jobs, preserve genuinely different ones, even when they reuse similar
+  components.** Not doing so here — i.e., treating "these are all called Stories" as a reason to
+  merge them — would have been convergence for its own sake, the opposite of the actual goal.
+- **Story replies/reactions** → flagged as belonging to **Inbox/Activity as real activity**, not
+  yet audited or built — a genuine open question for a future pass, not decided here.
+
+**Explicitly deferred, not silently dropped**: whether Stories deserves more prominence *within*
+People (e.g. moved above "People Nearby" instead of below it, or given its own sub-header) is a
+real question once real usage data exists showing how often it's actually opened — not decided
+now, and not something to guess at from an assumed-Instagram-like check frequency. Per the user's
+own explicit instruction, this whole placement question (and the job-based framework above) is
+recorded here specifically so it feeds the still-pending 30-Second/Convergence/One-Product/UI-UX
+audit as one real input, rather than being treated as a one-off isolated UI decision.
+
 ## Aug 24 2026 — seven real UI/UX complaints from actual use, all fixed — DONE
 
 Seven distinct real-usage reports in one message, not a code audit — each investigated against
