@@ -110,6 +110,7 @@ export function routeNotificationTap(data) {
     case 'timeline_addition':
     case 'match_reminder':
     case 'screenshot':
+    case 'video_call':
       // Same "Together" tools family as playlist/trip/decision — all of
       // these are per-match content additions or nudges, all carry a
       // match_id, all belong in that match's own chat.

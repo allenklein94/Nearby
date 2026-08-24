@@ -29,6 +29,7 @@ import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
+import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -123,6 +124,12 @@ export default function GatheringsScreen({ navigation, route }) {
   const [loadingFellows, setLoadingFellows] = useState(false);
   const [sentNoticeTo, setSentNoticeTo] = useState({});
   const [interestFilter, setInterestFilter] = useState(route?.params?.initialCategoryFilter ?? null);
+  // Real filter, not fabricated -- backed by the same CATEGORY_INDOOR_OUTDOOR
+  // map already used for the weather-aware suggestions elsewhere (CLAUDE.md
+  // item 12/9). null = either, 'indoor'/'outdoor' = only categories this
+  // codebase can honestly classify -- a genuinely ambiguous category
+  // (Sports, Music, etc.) is simply excluded from both, never guessed.
+  const [environmentFilter, setEnvironmentFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState(route?.params?.initialDateFilter ?? 'anytime');
   const [forYouActive, setForYouActive] = useState(false);
   const [trendingActive, setTrendingActive] = useState(false);
@@ -514,6 +521,7 @@ export default function GatheringsScreen({ navigation, route }) {
   const distanceSummary = radiusTier === 'local' ? 'Local (~1 mi)' : 'Wider Area (~15 mi)';
   const dateSummaryLabel = DATE_OPTIONS.find((d) => d.key === dateFilter)?.label ?? 'Anytime';
   const categorySummary = forYouActive ? 'For You' : (interestFilter || 'All Categories');
+  const environmentSummary = environmentFilter === 'indoor' ? 'Indoor' : environmentFilter === 'outdoor' ? 'Outdoor' : 'Either';
 
   // Real server-side search results (searchedNearby) once actively
   // searching (2+ characters — matches the debounced effect above), the
@@ -525,6 +533,7 @@ export default function GatheringsScreen({ navigation, route }) {
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => !trendingActive || trendingIds.includes(g.id))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
+    .filter((g) => !environmentFilter || (environmentFilter === 'indoor' ? isIndoorCategory(g.interest_tag) : isOutdoorCategory(g.interest_tag)))
     .sort((a, b) => {
       if (!forYouActive) return 0;
       const aRank = topCategories.indexOf(a.interest_tag);
@@ -757,6 +766,43 @@ export default function GatheringsScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.accordionDivider} />
+
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('environment')}
+            accessibilityLabel={`Indoor or outdoor: ${environmentSummary}, ${expandedFilterSection === 'environment' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'environment' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>🏠 Indoor / Outdoor</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{environmentSummary}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'environment' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'environment' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.chipsWrapInline}>
+                {[{ key: null, label: 'Either' }, { key: 'indoor', label: '🏠 Indoor' }, { key: 'outdoor', label: '🌳 Outdoor' }].map((option) => {
+                  const active = environmentFilter === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.label}
+                      style={[styles.dateChip, active && styles.dateChipActive]}
+                      onPress={() => setEnvironmentFilter(option.key)}
+                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
                     </TouchableOpacity>
                   );
                 })}

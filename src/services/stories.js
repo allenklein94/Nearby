@@ -34,7 +34,7 @@ export async function captureStoryMedia() {
   return { uri: asset.uri, type: asset.type === 'video' ? 'video' : 'image' };
 }
 
-export async function uploadStory(userId, uri, mediaType, isPublic = false, gatheringId = null) {
+export async function uploadStory(userId, uri, mediaType, isPublic = false, gatheringId = null, partnerId = null) {
   const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   if (!base64 || base64.length === 0) {
     throw new Error('Could not read the selected media. Please try again.');
@@ -47,12 +47,14 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false, gath
     .upload(path, bytes, { contentType: mediaType === 'video' ? 'video/quicktime' : 'image/jpeg' });
   if (error) throw error;
 
-  // Only public stories need a location captured — private ones are
-  // matches/friends-only and never appear on the map, so there's no
-  // reason to prompt for location access in the common case.
+  // Only public stories (and business moments, which are always real,
+  // publicly-visible promotional content — see the RLS policy) need a
+  // location captured — private ones are matches/friends-only and never
+  // appear on the map, so there's no reason to prompt for location
+  // access in the common case.
   let latitude = null;
   let longitude = null;
-  if (isPublic) {
+  if (isPublic || partnerId) {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status === 'granted') {
       const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
@@ -65,8 +67,47 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false, gath
 
   const { error: insertError } = await supabase
     .from('stories')
-    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic, latitude, longitude, gathering_id: gatheringId });
+    .insert({ user_id: userId, media_path: path, media_type: mediaType, is_public: isPublic, latitude, longitude, gathering_id: gatheringId, partner_id: partnerId });
   if (insertError) throw insertError;
+}
+
+// A business-authored "moment" — the honest, buildable version of
+// "going live to promote a business" (CLAUDE.md item 13): a real
+// photo/video post, real 24h expiry, reusing this exact same
+// infrastructure rather than actual live video streaming (which needs
+// a real paid CDN/ingest vendor this app doesn't have). RLS re-checks
+// server-side that the caller genuinely manages partnerId — this is a
+// thin, honest wrapper, not the real enforcement.
+export async function uploadBusinessMoment(userId, partnerId, uri, mediaType) {
+  return uploadStory(userId, uri, mediaType, false, null, partnerId);
+}
+
+// Groups business moments by business — the same "Happening Nearby" job
+// gathering-linked stories already serve, just for a business's own real
+// posted moment instead of an attendee's. Joined to brand_partners for a
+// real name, not a fabricated label.
+export async function getBusinessMomentsGrouped() {
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, media_path, media_type, created_at, partner_id, brand_partners(name)')
+    .not('partner_id', 'is', null)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('getBusinessMomentsGrouped error', error);
+    return [];
+  }
+
+  const grouped = {};
+  for (const story of data ?? []) {
+    if (!grouped[story.partner_id]) {
+      grouped[story.partner_id] = { partnerId: story.partner_id, partnerName: story.brand_partners?.name, stories: [] };
+    }
+    grouped[story.partner_id].stories.push(story);
+  }
+
+  return Object.values(grouped).sort((a, b) => new Date(b.stories[0].created_at) - new Date(a.stories[0].created_at));
 }
 
 // Groups gathering-linked stories together — "☕ Coffee Meetup (6

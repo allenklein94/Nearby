@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped } from '../services/stories';
+import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped, getBusinessMomentsGrouped } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
@@ -96,6 +96,15 @@ export default function DiscoverHubScreen({ navigation }) {
 
   const [publicStories, setPublicStories] = useState([]);
   const [gatheringStories, setGatheringStories] = useState([]);
+  // Real business-authored moments (CLAUDE.md items 11/13) -- the honest,
+  // buildable version of "going live to promote a business": a real
+  // photo/video post, real 24h expiry, reusing the exact same `stories`
+  // infrastructure gathering memories already use, not real live video
+  // streaming (no paid CDN/ingest vendor exists for this app). Merged
+  // with gatheringStories below into one "Happening Nearby" row -- both
+  // answer the identical job ("what's actually happening near me right
+  // now"), so they read as one section, not two.
+  const [businessMoments, setBusinessMoments] = useState([]);
   const [gatheringStoryViewer, setGatheringStoryViewer] = useState(null);
   const [storyPhotoUrls, setStoryPhotoUrls] = useState({});
   const [viewerTarget, setViewerTarget] = useState(null);
@@ -140,6 +149,7 @@ export default function DiscoverHubScreen({ navigation }) {
     useCallback(() => {
       loadPublicStories();
       loadGatheringStories();
+      loadBusinessMoments();
       loadCore();
     }, [])
   );
@@ -275,6 +285,36 @@ export default function DiscoverHubScreen({ navigation }) {
       console.error('loadGatheringStories failed', e);
     }
   }
+  async function loadBusinessMoments() {
+    try {
+      const grouped = await getBusinessMomentsGrouped();
+      setBusinessMoments(grouped);
+    } catch (e) {
+      console.error('loadBusinessMoments failed', e);
+    }
+  }
+
+  // One merged "Happening Nearby" list -- gathering memories and real
+  // business moments genuinely answer the same question, so they render
+  // as one section, sorted by real recency, not two competing ones.
+  const happeningNearby = [
+    ...gatheringStories.map((group) => ({
+      kind: 'gathering',
+      key: `gathering-${group.gatheringId}`,
+      icon: '🎉',
+      title: group.gatheringTitle,
+      posterLabelFallback: group.gatheringTitle,
+      stories: group.stories,
+    })),
+    ...businessMoments.map((group) => ({
+      kind: 'business',
+      key: `business-${group.partnerId}`,
+      icon: '🔴',
+      title: group.partnerName ?? 'A local business',
+      posterLabelFallback: group.partnerName ?? 'A local business',
+      stories: group.stories,
+    })),
+  ].sort((a, b) => new Date(b.stories[0]?.created_at ?? 0) - new Date(a.stories[0]?.created_at ?? 0));
 
   const q = searchQuery.trim().toLowerCase();
   // 2-character minimum, matching the Places search's own established
@@ -787,22 +827,24 @@ export default function DiscoverHubScreen({ navigation }) {
             </>
           )}
 
-          {isAll && gatheringStories.length > 0 && (
+          {isAll && happeningNearby.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Gathering Memories</Text>
-              {gatheringStories.map((group) => (
+              <Text style={styles.sectionHeader}>🔴 Happening Nearby</Text>
+              {happeningNearby.map((group) => (
                 <TouchableOpacity
-                  key={group.gatheringId}
+                  key={group.key}
                   style={styles.card}
                   onPress={() => setGatheringStoryViewer(group)}
                   activeOpacity={0.85}
-                  accessibilityLabel={`${group.gatheringTitle}, ${group.stories.length} stories`}
+                  accessibilityLabel={`${group.title}, ${group.stories.length} ${group.kind === 'business' ? 'moment' : 'stor'}${group.stories.length === 1 ? (group.kind === 'business' ? '' : 'y') : (group.kind === 'business' ? 's' : 'ies')}`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.cardIcon}>🎉</Text>
+                  <Text style={styles.cardIcon}>{group.icon}</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{group.gatheringTitle}</Text>
-                    <Text style={styles.cardSubtitle}>{group.stories.length} stor{group.stories.length === 1 ? 'y' : 'ies'}</Text>
+                    <Text style={styles.cardTitle}>{group.title}</Text>
+                    <Text style={styles.cardSubtitle}>
+                      {group.stories.length} {group.kind === 'business' ? `moment${group.stories.length === 1 ? '' : 's'}` : `stor${group.stories.length === 1 ? 'y' : 'ies'}`}
+                    </Text>
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
@@ -823,7 +865,7 @@ export default function DiscoverHubScreen({ navigation }) {
       <Modal visible={!!gatheringStoryViewer} animationType="slide" onRequestClose={() => setGatheringStoryViewer(null)}>
         <SafeAreaView style={styles.container}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', margin: spacing.lg }}>
-            <Text style={styles.title}>{gatheringStoryViewer?.gatheringTitle}</Text>
+            <Text style={styles.title}>{gatheringStoryViewer?.title}</Text>
             <TouchableOpacity onPress={() => setGatheringStoryViewer(null)} accessibilityLabel="Close" accessibilityRole="button">
               <Text style={{ color: colors.primary, fontWeight: '700' }}>Close</Text>
             </TouchableOpacity>
@@ -831,7 +873,7 @@ export default function DiscoverHubScreen({ navigation }) {
           <FlatList
             data={gatheringStoryViewer?.stories ?? []}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <GatheringStoryItem story={item} colors={colors} />}
+            renderItem={({ item }) => <GatheringStoryItem story={item} colors={colors} posterLabelFallback={gatheringStoryViewer?.posterLabelFallback} />}
           />
         </SafeAreaView>
       </Modal>
@@ -839,14 +881,15 @@ export default function DiscoverHubScreen({ navigation }) {
   );
 }
 
-function GatheringStoryItem({ story, colors }) {
+function GatheringStoryItem({ story, colors, posterLabelFallback }) {
   const [url, setUrl] = useState(null);
   React.useEffect(() => {
     getSignedStoryUrl(story.media_path).then(setUrl);
   }, [story.media_path]);
+  const posterLabel = story.profiles?.display_name ?? posterLabelFallback;
   return (
     <View style={{ marginBottom: spacing.lg, paddingHorizontal: spacing.lg }}>
-      <Text style={{ color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm }}>{story.profiles?.display_name}</Text>
+      <Text style={{ color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm }}>{posterLabel}</Text>
       {url ? (
         story.media_type === 'video' ? (
           <Video
@@ -854,7 +897,7 @@ function GatheringStoryItem({ story, colors }) {
             style={{ width: '100%', height: 400, borderRadius: radius.lg }}
             resizeMode="cover"
             useNativeControls
-            accessibilityLabel={`${story.profiles?.display_name}'s video story`}
+            accessibilityLabel={`${posterLabel}'s video story`}
           />
         ) : (
           <Image source={{ uri: url }} style={{ width: '100%', height: 400, borderRadius: radius.lg }} resizeMode="cover" />

@@ -10,6 +10,7 @@ import { startRecording, stopRecording, uploadVoiceNote, getSignedAudioUrl } fro
 import { checkVoiceNoteLimit } from '../services/voiceNoteLimits';
 import { pickChatPhoto, uploadChatPhoto, pickChatVideo, uploadChatVideo, getSignedChatMediaUrl } from '../services/chatMedia';
 import { unmatch } from '../services/matchActions';
+import { startVideoCall } from '../services/videoCall';
 import { toggleReaction, getReactionsForMatch } from '../services/messageReactions';
 import { randomExperiment } from '../constants/relationshipExperiments';
 import { usePostHog } from 'posthog-react-native';
@@ -293,6 +294,14 @@ export default function ChatScreen({ route, navigation }) {
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity
+            onPress={handleVideoCall}
+            style={{ paddingHorizontal: spacing.sm }}
+            accessibilityLabel="Start a video call"
+            accessibilityRole="button"
+          >
+            <Text style={{ fontSize: 18 }}>🎥</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={showTogetherMenu}
             style={{ paddingHorizontal: spacing.sm }}
             accessibilityLabel="Do something together"
@@ -380,6 +389,14 @@ export default function ChatScreen({ route, navigation }) {
         headerShadowVisible: false,
         headerRight: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={handleVideoCall}
+              style={{ paddingHorizontal: spacing.sm }}
+              accessibilityLabel="Start a video call"
+              accessibilityRole="button"
+            >
+              <Text style={{ fontSize: 18 }}>🎥</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={showTogetherMenu}
               style={{ paddingHorizontal: spacing.sm }}
@@ -475,6 +492,17 @@ export default function ChatScreen({ route, navigation }) {
 
   function showTogetherMenu() {
     setTogetherMenuVisible(true);
+  }
+
+  function handleVideoCall() {
+    Alert.alert(
+      'Video Call',
+      `Start a real-time video call with ${otherUser?.display_name || 'this match'}? This opens a private call room in your browser — they'll get a notification to join too.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Start Call', onPress: () => startVideoCall(matchId) },
+      ]
+    );
   }
 
   // Real menu options, not an Alert.alert button list — RN's Alert is

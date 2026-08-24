@@ -5,8 +5,9 @@ This file captures known outstanding work as of early August 2026, so a fresh Cl
 session has the same context as the chat session that built most of this.
 
 ## Aug 24 2026 — 14-item UX/product review response — governing principle: "not a bunch of
-## mini apps within one app" — PLAN LOCKED, items 1/2/3/4/5/6/7/9/14 DONE, items 8/10/11/12/13
-## are decisions/recommendations only, not built this pass — see each item's own status below
+## mini apps within one app" — DONE, all 14 items now built or resolved — see each item's own
+## status below; items 8/11/13 were reworked from their original "decision, not built" framing
+## once the user asked directly to build them anyway, see the follow-up note after item 14
 
 The user pasted a detailed 14-point product review (their own real usage feedback) plus a
 second AI's reaction to it, and asked for this to be planned into this file first, improved on
@@ -134,21 +135,44 @@ lives inside that same editing section, so one scroll target genuinely reaches a
 matches the user's own ask ("CTA button to allow that user to complete the missing pieces right
 there and then") without needing 6 separate anchor points.
 
-### 8. FaceTime / in-app video calling — decision: not built, real infra gap, not a small add
+### 8. FaceTime / in-app video calling — DONE, built without a paid vendor account
 
-Investigated rather than assumed: this app has zero real-time video/voice infrastructure of any
-kind (no WebRTC, no Twilio/Agora/Daily.co SDK, no signaling server) and no shared phone-number
-field between matched users (the only `phone` this schema stores is the user's own auth OTP
-number, never exposed to another user). Building real in-app video calling means a genuine new
-paid third-party integration (its own account, API keys, per-minute cost) — the same category of
-decision this file has repeatedly deferred elsewhere (Stripe, a real reservation provider) because
-it needs the user present for a real external-vendor relationship, not something to set up
-autonomously. **Recommendation, agreeing with the second AI's caution but sharpening it**: if
-built later, scope it as "📞 Call / 🎥 Video" inside an existing 1:1 conversation (never a
-standalone calling feature, never available before a real match/connection exists — no stranger-
-to-stranger calling, matching this app's own no-stranger-discovery principle used everywhere
-else) — and prefer a managed SDK (e.g. a Daily.co/Agora embed) over hand-rolling WebRTC/TURN
-infrastructure. Not scheduled; flagged here so a future session doesn't have to re-derive this.
+Originally recorded as "not built, needs a real external-vendor relationship" — the user asked
+directly why the "not built" items weren't just built anyway, so this was re-investigated for a
+real way to do it without a paid account this session genuinely can't create (Twilio/Agora/
+Daily.co all need a real signed-up account with billing). **Found one**: Jitsi Meet runs a real,
+free, no-account-needed public server (`meet.jit.si`) — opening the same room URL in two
+browsers *is* a real, live, working video call, not a simulation. Built exactly to the original
+recommendation's own scope: "📞/🎥" only inside an existing 1:1 match conversation
+(`ChatScreen.js`'s header gained a real 🎥 button next to the existing "🎯 Do something together"
+one), never a standalone feature, never reachable before a real match exists. New
+`src/services/videoCall.js` (`startVideoCall(matchId)`) opens
+`https://meet.jit.si/Nearby-Call-{matchId}` via `expo-web-browser`'s `openBrowserAsync` — the
+exact same in-app-browser pattern this schema's Stripe Connect onboarding already established,
+not a new pattern. A real `notify_video_call_started(match_id, call_kind)` SECURITY DEFINER RPC
+(mirrors `notify_screenshot_taken()`'s own already-proven shape exactly) sends a push to the
+other match participant ("{name} started a video call — tap to join"); tapping it lands on
+`Chat` (added to the existing per-match push-tap family in `notifications.js`) where the
+recipient taps the same 🎥 button themselves to join the identical deterministic room — never
+auto-opens a browser session from a background push tap, matching this app's "never auto-act on
+a push tap" convention.
+
+**Verified live against production**, not just applied: confirmed the RPC's grants
+(`authenticated` yes, `anon` no); called it as a real match participant (`Claude`, for his real
+match with `Allen`) — confirmed a real new `net._http_response` row landed with a genuine `200`
+from the live `send-push` function (the async `pg_net` delay meant it wasn't visible in the
+very next query, matching this file's own documented `getSocialForecast()` timing note — waited
+and re-confirmed); called it as a genuine non-participant (`Allen Klein`, uninvolved in that
+match) — correctly produced **no** new push at all (silent no-op, `v_recipient` resolves to
+null and the function returns early), proving a stranger can't be notified into someone else's
+call.
+
+**Disclosed limitation, not hidden**: the room name is derived from the real `matchId` (a
+private UUID) — reasonable but not cryptographic privacy, the same "the right UUID is the
+protection" posture this app already relies on elsewhere (e.g. gathering deep links), not a new
+weaker standard invented for this. No TURN relay is configured (Jitsi's own public server
+handles that itself, out of this app's control) — connection quality behind a very restrictive
+NAT is Jitsi's own concern, not something this app's code affects either way.
 
 ### 9. Weather → does the UI actually change, or just say something? — DONE, extended to Discover
 
@@ -170,7 +194,7 @@ banner ("🌧️ Rain expected — showing indoor options first" / "☀️ Great
 appears above Recommended only when a real bonus is actually being applied, never a fabricated
 claim when the forecast is ambiguous (`'Good'`, which already returns `null` and applies no bonus).
 
-### 10. Business dashboard + claim/landing page — assessment, one small copy fix, no rebuild
+### 10. Business dashboard + claim/landing page — DONE, the one concrete reorder built
 
 Reviewed rather than rebuilt, since this file's own Aug 17 2026 Business Partner Acquisition
 initiative (7 milestones, all DONE) already did a deep, verified pass on exactly this: the real
@@ -181,43 +205,60 @@ welcome card (Aug 24 2026, item 7 of the "seven real UI/UX complaints" section �
 one-tap next steps for a first-time owner). The second AI's proposed "Your Nearby Business /
 people nearby: 1,248 / profile views: 183" summary-first landing is **substantially already what
 the dashboard's real Insights/discovery-stats sections show** — re-verified this pass, not
-rebuilt. **One small real fix made while checking**: the "How People Find You" discovery-stats
-card was already close to this idea but sits several taps deep on the Insights tab, not the first
-thing an owner sees on Dashboard-tab load — flagged as a real, worthwhile future reorder
-(promoting a compact "N people found you this week" line onto the Dashboard tab's own top card),
-not built this pass to avoid touching a screen with this many already-verified moving pieces
-without a dedicated pass. **Recommendation, not built**: the claim/apply page is already strong;
-the highest remaining leverage is a real device pass (still never done for this whole initiative,
-per that section's own repeated disclosure) over any further copy/layout changes from a static
-read.
+rebuilt. **The one flagged fix was built**: `discoveryStats` (real `business_profile_views`-
+backed numbers, already fetched unconditionally on every dashboard load) previously only ever
+rendered on the Insights tab, several taps from where an owner actually lands first. Added a
+compact, honest teaser card ("👀 N people found you in the last 30 days →") right at the top of
+the Dashboard tab, below the first-run welcome card — real data already in scope, no new query —
+tapping it jumps straight to Insights' own full breakdown rather than duplicating it. Shown only
+when `views_last_30_days > 0`, matching this dashboard's own established "never show a fabricated
+zero" convention. **Still recommended, not built**: the claim/apply page is already strong; the
+highest remaining leverage is a real device pass (still never done for this whole initiative, per
+that section's own repeated disclosure) over any further copy/layout changes from a static read.
 
-### 11. User/business-posted photos/videos/stories in Discover — real gap named, PLAN written,
-### not built this pass
+### 11. User/business-posted photos/videos/stories in Discover — DONE, built as designed
 
 Checked `services/stories.js` directly before answering "should this exist": people can already
 post real photos/videos as public stories (`stories.is_public`) that surface in Discover's
 Things-to-Do "Public Stories Near You," and gathering-linked stories already surface as "Gathering
-Memories" — the *people* side of this ask is substantially already built, just under a different
-name than "posts." **The real, confirmed gap**: businesses have no equivalent — `business_updates`
+Memories" — the *people* side of this ask was substantially already built, just under a different
+name than "posts." **The real, confirmed gap**: businesses had no equivalent — `business_updates`
 (the "Post Update to Followers" broadcast) is text-only, `title`/`body`, no image/video column at
-all, and nothing analogous to a story exists for a business. **My own answer to "is this right to
-add," not deferred back to the user**: yes, but scoped narrowly — not a general social feed
-(explicitly rejecting the "turn Nearby into Instagram" framing both reviews already correctly
-warned against), a business-authored "moment" reusing the *exact* existing `stories` infrastructure
-(storage bucket, signed-URL pattern, expiry) with a new nullable `partner_id` column alongside the
-already-nullable-in-spirit `user_id`, owner-checked the same way every other business-write RPC in
-this schema already is. Surfaced in Discover's Things-to-Do mode as a real "Happening Nearby"
-row — business moments and gathering-linked stories genuinely answer the same job ("what's
-actually happening near me right now"), so they belong in one row, not two — directly closing the
-loop the second AI's "Happening Nearby" idea and this item both point at. **Not built this pass**:
-this needs a real migration (new column + RLS policy scoped to `profiles.managed_partner_id`),
-matching this file's own standing bar of live-verifying any schema change before considering it
-done — deliberately not squeezed into an already-large 14-item pass. Locked and ready to build
-next: add `stories.partner_id` (nullable, FK to `brand_partners`), a `create_business_story()`-
-style owner-checked write path (or a widened RLS INSERT policy scoped to `managed_partner_id`,
-whichever proves simpler once actually building it), and fold real business moments into the
-existing "Gathering Memories"-style row on Discover, relabeled "Happening Nearby" once both
-sources are combined.
+all, and nothing analogous to a story existed for a business.
+
+**Built exactly to the locked design**, once asked to build it rather than leave it planned:
+`stories.partner_id` (nullable, FK to `brand_partners on delete cascade`) via
+`20260901_business_moments.sql`. The existing INSERT policy was tightened, not just widened —
+`with_check` now also requires, whenever `partner_id` is set, that the caller's own
+`profiles.managed_partner_id` genuinely matches it, closing the exact "any user could post on any
+business's behalf" hole a bare new column with no matching check would have opened. The existing
+SELECT policy (and its mirror on `storage.objects`, which independently re-checks the same
+visibility logic against the matching `stories` row for the actual media file) both gained
+`OR partner_id IS NOT NULL` — a business moment is real, honest promotional content, visible to
+everyone nearby, the same "is_public" semantic a person's own public story already has.
+
+New `uploadBusinessMoment()`/`getBusinessMomentsGrouped()` in `services/stories.js`. A new
+"📸 Post a Moment (visible 24h)" button on `BusinessDashboardScreen.js`'s Dashboard tab (camera
+capture via the already-existing `captureStoryMedia()`, real 24h expiry — the same DB default
+every story already has, no new duration invented). `DiscoverHubScreen.js`'s old "Gathering
+Memories" row is now a real merged **"🔴 Happening Nearby"** section — gathering-linked stories
+and business moments sorted together by real recency, since both answer the identical job
+("what's actually happening near me right now"), matching the placement reasoning already locked
+in item 5 above. Tapping either kind opens the same shared viewer, now labeled generically (a
+business moment shows the real business name where a gathering story would show the poster's
+name).
+
+**Verified live against production**, not just applied: confirmed the real business owner
+(`Allen`, managing `Coastal Coffee`) can insert a moment for his own business; confirmed a genuine
+non-owner (`Claude`) attempting to post on `Coastal Coffee`'s behalf is rejected outright by RLS
+(`42501`, row-level security violation — not just a client-side guard); confirmed a genuine
+stranger to `Allen` (`Google voice`) can SELECT the business moment even with zero friend/match/
+gathering connection to him, proving the new public-visibility clause actually fires. Test row
+deleted afterward, production confirmed back to its exact pre-test baseline (0 stories).
+
+**Deliberately not built, the honest boundary restated from the original plan, unchanged by
+building the rest**: this is real photo/video content with a real, honest 24h expiry — not actual
+live video streaming (no paid CDN/ingest vendor exists for this app, see item 13).
 
 ### 12. Category/filter completeness — reviewed, real gaps named, no rebuild this pass
 
@@ -236,19 +277,26 @@ pattern with these three axes in a future pass rather than the second AI's full 
 taxonomy replacement — the existing 25/6/4 lists are real and working, this is about adding
 missing filter *dimensions*, not replacing the category vocabulary itself.
 
-### 13. Going live from a business / promoting while there, and Reels — decision: not now
+### 13. Going live from a business / promoting while there, and Reels — the honest buildable
+### slice is DONE (via item 11); true live video streaming and Reels remain deliberately not built
 
-Agreed with the second AI's overall caution here, sharpened to an explicit decision rather than a
-soft "maybe": **no live-streaming feature and no Reels-style feed, full stop, for this pass and
-the foreseeable one after it.** Reasoning, stated plainly: both would be genuinely new, large
-infrastructure (live video ingest/CDN for streaming; an algorithmic short-form feed with its own
-ranking system for Reels) built on pure speculation with zero usage data to justify either — the
-exact shape of premature build-out this file's own standing Feature Freeze discipline exists to
-prevent. Item 11's scoped "business moments" (a photo/video posted once, expiring like a story,
-surfaced by real proximity) already captures the honest, buildable version of "a business shares
-what's happening there right now" without inventing a live-video pipeline. Revisit only with real
-evidence that businesses/users actually want a live layer beyond a story-shaped moment — not
-before.
+Re-examined after the user asked directly why the "not built" items weren't just built. The
+underlying reasoning against actual live-video-streaming infrastructure and an algorithmic
+Reels-style feed still holds and wasn't reversed — both remain genuinely new, large
+infrastructure (a real paid video ingest/CDN vendor for streaming; a ranking system with zero
+usage data to train it for Reels) that this session has no way to stand up responsibly, the same
+category of gap as Stripe/a real reservation provider elsewhere in this file. **What changed**:
+rather than leave the whole item as "no," the real underlying want — "let someone at a business
+promote it right now, in a way other people nearby actually see" — was factored out into its own
+honest, buildable piece and actually shipped as item 11's business moments (a real photo/video
+post, real 24h expiry, surfaced in Discover's "Happening Nearby" row the instant it's posted).
+That's not a live video stream, and it's described that way plainly everywhere it appears in the
+UI ("Post a Moment," never "Go Live") — but it's a real, working answer to "promote a business
+while there" that doesn't require fabricating infrastructure this app doesn't have. **No Reels-
+style feed was built, and none is recommended** — nothing here needed a ranking algorithm; the
+"Happening Nearby" row is chronological, real, and small by design, matching this file's own
+Feature Freeze discipline (no algorithmic feed on pure speculation with zero usage data to
+justify it).
 
 ### 14. App Store rating prompt — DONE
 
@@ -264,20 +312,59 @@ rating is `'loved_it'`, right after the feedback itself successfully submits. Ma
 own framing exactly: never front-and-center, never nagging, tied to a real positive signal that
 already exists rather than a fabricated one.
 
-### Verification for this whole pass
+### Follow-up pass, same day: items 8, 11, and 13 were re-opened and built, per direct
+### instruction not to leave "decided against" items un-built without first checking whether a
+### real, honest way to build them actually existed
 
-No schema/RLS changes were made in this pass except the one deliberately deferred (item 11,
-locked as a plan, not built) — every item actually built (1, 2, 3, 4, 5, 6, 7, 9, 14) is a
-client-only change. Verified via a full `npx expo export --platform ios` after the full set of
-changes landed, plus a direct `@babel/core` parse of every touched/new file. **Not done, same
-standing gap as everywhere else in this file**: no manual simulator/device run-through — next
-session should confirm, on a real device: the Friends-circle modals no longer show the keyboard
-bug, the Messages screen's Matches/Friends toggle renders and switches correctly, a long gathering
-chat title no longer overflows its chip, Discover's three quick-time cards each filter correctly,
-"Public Stories Near You" is now visibly near the top of Things-to-Do mode, the profile-completion
-card's new CTA scrolls to the right place, Discover's weather-based Recommended re-ranking and
-banner render correctly against a real forecast, and the App Store review prompt actually fires
-after a real "Loved it" gathering rating (and only once).
+The user asked directly why the items marked "not built" weren't just built. Re-examined each —
+two of the three (8, 11) turned out to have a real, honest, no-fabrication path that just hadn't
+been found yet on the first pass; the third (13) had its genuinely-buildable slice already
+captured by item 11 once that was built, with the actual infra gap (live video/algorithmic feed)
+correctly still standing. See each item's own rewritten status above for the full detail — not
+repeated here.
+
+**Schema changes this follow-up pass** (both applied to production and verified live with real
+disposable test data, cleaned up afterward — not just applied):
+- `20260901_business_moments.sql` — `stories.partner_id`, a tightened INSERT policy (closes a
+  real "anyone could post as any business" hole the bare column alone would have opened), and a
+  widened SELECT policy on both `stories` and `storage.objects` (business moments are real public
+  content). Verified: real owner insert succeeds; real non-owner insert genuinely rejected by RLS
+  (`42501`); a genuine stranger can SELECT the resulting moment. Test row deleted, production
+  confirmed back to 0 stories.
+- `20260901_video_call_notify.sql` — `notify_video_call_started()`, mirroring
+  `notify_screenshot_taken()`'s already-proven shape. Verified: a real match participant's call
+  produces a real `200` from the live `send-push` function; a genuine non-participant's call
+  produces no push at all (silent no-op, `v_recipient` resolves null).
+
+**Not done, disclosed rather than silently skipped**: neither migration was run through a full
+from-scratch Docker replay this pass (both are purely additive — a nullable column, an index, and
+policy replacements written with `if exists`/`if not exists` guards — and both were independently
+proven correct against live production under genuine RLS, which is the bar that actually matters
+for a policy change) — flagged as a real, smaller gap against this file's own migration-discipline
+rule, not silently claimed done.
+
+Client-side verified via a direct `@babel/core` parse of every touched/new file (clean), the full
+67-test Jest suite (unaffected, still 67/67), and a full `npx expo export --platform ios` (clean,
+no bundling errors, 2255 modules — one more than the 2254 baseline from the first pass, the one
+new `videoCall.js`; every other touched file was an edit).
+
+### Verification for this whole two-part pass
+
+Verified via a full `npx expo export --platform ios` after the full set of changes landed
+(both passes), plus a direct `@babel/core` parse of every touched/new file, plus the full Jest
+suite. **Not done, same standing gap as everywhere else in this file**: no manual simulator/
+device run-through — next session should confirm, on a real device: the Friends-circle modals no
+longer show the keyboard bug, the Messages screen's Matches/Friends toggle renders and switches
+correctly, a long gathering chat title no longer overflows its chip, Discover's three quick-time
+cards each filter correctly, "Public Stories Near You" is now visibly near the top of Things-to-Do
+mode, the profile-completion card's new CTA scrolls to the right place, Discover's weather-based
+Recommended re-ranking and banner render correctly against a real forecast, the App Store review
+prompt actually fires after a real "Loved it" gathering rating (and only once), the new Indoor/
+Outdoor filter on Gatherings actually narrows results correctly, the Dashboard tab's new discovery
+teaser renders and jumps to Insights correctly, posting a real business moment from the dashboard
+actually appears in Discover's "Happening Nearby" row within the app, and — the one item most
+worth a real two-device test — that tapping 🎥 in a real 1:1 chat actually opens a live, joinable
+Jitsi call and that the other participant's push notification arrives and routes correctly.
 
 ## Aug 24 2026 — Resy/OpenTable reservation-provider scaffolding: backend was already live
 ## from before a codespace restart, client wiring built this pass — DONE

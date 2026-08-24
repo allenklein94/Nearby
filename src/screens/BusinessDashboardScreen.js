@@ -15,6 +15,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
+import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -104,6 +105,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateBody, setUpdateBody] = useState('');
   const [postingUpdate, setPostingUpdate] = useState(false);
+  const [postingMoment, setPostingMoment] = useState(false);
   const [needsAttention, setNeedsAttention] = useState([]);
   const [topMembers, setTopMembers] = useState([]);
   const [expandedMemberId, setExpandedMemberId] = useState(null);
@@ -883,6 +885,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     return { kicker: '🙋 A Request', title: br?.raw_text ?? 'A visit', when: soloWhen };
   }
 
+  // Business moment — CLAUDE.md items 11/13: the real, honest version of
+  // "going live to promote a business," reusing the exact stories
+  // infrastructure (real photo/video, real 24h expiry) rather than actual
+  // live video streaming, which needs a real paid CDN/ingest vendor this
+  // app doesn't have. Surfaces in Discover's "Happening Nearby" row.
+  async function handlePostMoment() {
+    if (!selectedPartner) return;
+    try {
+      const media = await captureStoryMedia();
+      if (!media) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const myUserId = sessionData?.session?.user?.id;
+      if (!myUserId) return;
+      setPostingMoment(true);
+      await uploadBusinessMoment(myUserId, selectedPartner.id, media.uri, media.type);
+      Alert.alert('Posted', 'Your moment is live for the next 24 hours — people nearby will see it under "Happening Nearby" on Discover.');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setPostingMoment(false);
+  }
+
   async function handlePostUpdate() {
     if (!updateTitle.trim()) {
       return Alert.alert('Title required', 'Give your update a short title.');
@@ -1092,6 +1116,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </TouchableOpacity>
                   </View>
                 )}
+                {/* CLAUDE.md item 10: the real discovery-stats signal already
+                    existed but sat several taps deep on the Insights tab --
+                    a compact teaser here surfaces it where an owner
+                    actually lands first, without duplicating the full
+                    breakdown (still only on Insights). */}
+                {discoveryStats && discoveryStats.views_last_30_days > 0 && (
+                  <TouchableOpacity
+                    style={styles.discoveryTeaser}
+                    onPress={() => setSection('insights')}
+                    accessibilityLabel={`${discoveryStats.views_last_30_days} people found you in the last 30 days — tap for the full breakdown`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.discoveryTeaserText}>
+                      👀 {discoveryStats.views_last_30_days} people found you in the last 30 days
+                    </Text>
+                    <Text style={styles.discoveryTeaserChevron}>›</Text>
+                  </TouchableOpacity>
+                )}
                 {stats ? (
                 <>
                   <Text style={styles.sectionHeader}>Community Health</Text>
@@ -1159,6 +1201,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     accessibilityRole="button"
                   >
                     <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
+                    onPress={handlePostMoment}
+                    disabled={postingMoment}
+                    accessibilityLabel="Post a real-time photo or video moment, visible to people nearby for 24 hours"
+                    accessibilityRole="button"
+                  >
+                    {postingMoment ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔴 Post a Moment (visible 24h)</Text>
+                    )}
                   </TouchableOpacity>
 
                   {selectedPartner && (
@@ -2584,6 +2640,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.lg, marginBottom: spacing.lg,
   },
+  discoveryTeaser: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  discoveryTeaserText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13, flex: 1 },
+  discoveryTeaserChevron: { color: colors.textTertiary, fontSize: 20 },
   welcomeCardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   welcomeCardTitle: { ...typography.headline, color: colors.textPrimary },
   welcomeCardClose: { color: colors.textTertiary, fontSize: 16, fontWeight: '700', paddingLeft: spacing.sm },
