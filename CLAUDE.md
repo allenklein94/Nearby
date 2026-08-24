@@ -173,9 +173,33 @@ summarized here:
   `attributes text[]` tag set, plus a `food_drink`-only cuisine sub-category) is recorded in the
   file, not designed in full — this is a scoping note for a future pass, not a build.
 
-**Not done yet**: Phase 5 (the 4-persona code-trace walkthrough, the unused-data/gap synthesis,
-and assembling everything above into one consolidated file for external/ChatGPT review) —
-executing next, same session.
+**Status: DONE — all 5 phases complete.** Phase 5 (the 4-persona code-trace walkthrough plus
+assembling everything above into one consolidated file for external review) landed the same
+session as Phases 1-4. Real, new finding from the persona trace, beyond what Phases 1-4 already
+found in isolation: the Person C (activities) walkthrough makes the `price_level`/`party_type`
+gap concrete — a user filtering Gatherings by "$" and "Solo-Friendly" gets a correctly narrowed
+list, but a user *typing* "cheap solo activity" into Home's own intent box gets zero benefit
+from either field, even though the same resolver already scores every other signal for the
+identical candidate rows. The Person D (business owner) trace confirms the category axis is now
+genuinely consistent end-to-end (business owners already post using the same canonical 26-tag
+list consumers filter by) — the gap is entirely on the attribute side (Part 6/Phase 4), not
+categories.
+
+**The single consolidated deliverable — `PRODUCT_AUDIT/TAXONOMY_FILTERS_MATCHING_AUDIT_2026-08-24.md`
+— is self-contained (no other context needed) and was handed directly to the user for external
+(ChatGPT) review.** It contains an executive summary, all 4 phases' Master Taxonomy/Attributes/
+Preferences/Filters tables plus the Matching Matrix, the Business Attribute Audit, the 4-persona
+walkthrough, and a ranked recommendations list. The 4 individual phase working files stay
+committed alongside it for anyone who wants the fuller file:line-level detail behind any single
+finding.
+
+**Per this whole audit's own locked scope boundary: nothing above has been built, fixed, or
+changed in application code.** Every item in the ranked recommendations list — the personal-
+interest-list duplication (the one genuine live bug found), wiring `price_level`/`party_type`
+into the resolver, the missing Dating quick-pick icon, the stale indoor/outdoor comment, the
+business-attribute layer, Friend Discovery's filter-less scoring, the relationship-intention/
+gender-field overlaps, and whether Availability is worth building at all — is a recommendation
+for a future, separately-authorized pass, not something acted on here.
 
 ## Aug 24 2026 — Category/filter taxonomy pass (closes item 12 for real this time) — PLAN
 ## LOCKED, executing below; check each piece's own status note for what's landed
