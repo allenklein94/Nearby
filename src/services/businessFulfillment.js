@@ -80,6 +80,45 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
 }
 
+// A community's own version of submitBusinessRequestForGathering() above --
+// creator/leader-only, real fan-out to every eligible nearby business.
+// Unlike the gathering path, party size/budget/date all stay caller-
+// supplied (a community has no fixed attendee count the way one specific
+// gathering does -- the organizer is describing a real but self-reported
+// event, e.g. "our end-of-year mixer, about 100 people"). Location is
+// sourced server-side from the community's own real Community Area
+// (area_lat/area_lng) -- the RPC itself raises a clear, actionable error
+// if that hasn't been set yet, rather than silently falling back to
+// nothing.
+export async function submitBusinessRequestForCommunity({ communityId, text, category = null, partySize = null, budgetMax = null, date = null, radiusMiles = 15 }) {
+  const { data, error } = await supabase.rpc('create_business_request_for_community', {
+    community_id_param: communityId,
+    raw_text_param: text,
+    category_param: category,
+    party_size_param: partySize,
+    budget_max_param: budgetMax,
+    date_param: date,
+    radius_miles_param: radiusMiles,
+  });
+  if (error) throw new Error(error.message);
+  return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
+}
+
+// Community counterpart of getBusinessRequestForGathering() below -- same
+// reasoning, same shape.
+export async function getBusinessRequestForCommunity(communityId) {
+  const { data, error } = await supabase
+    .from('business_requests')
+    .select('id, status, party_size')
+    .eq('community_id', communityId)
+    .in('status', ['open', 'fulfilled'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // Whichever real business_requests row is currently active for this
 // gathering, if any -- lets GatheringDetailScreen tell "never asked yet"
 // apart from "already asked, waiting/confirmed" without re-deriving it

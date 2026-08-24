@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { submitBusinessRequest, submitBusinessRequestForGathering } from '../services/businessFulfillment';
+import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -8,7 +8,7 @@ import { typography, spacing, radius } from '../theme';
 // Same 24-tag list create-assistant's own VALID_CATEGORIES uses -- the
 // exact list business_requests.category's own CHECK constraint validates
 // against, so nothing picked here can ever be rejected server-side.
-const CATEGORY_OPTIONS = [
+export const CATEGORY_OPTIONS = [
   'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
   'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
   'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
@@ -70,7 +70,7 @@ function toDateParam(dateWindow) {
   return null;
 }
 
-// Reached three ways: from Home's intent box once Tiers 1/3 (existing
+// Reached four ways: from Home's intent box once Tiers 1/3 (existing
 // gatherings/perks) genuinely found nothing -- Tier 4 of the resolver,
 // "ask a business to make it happen," framed as a real, first-class path,
 // never a fallback after "the real options" failed -- or, when
@@ -78,16 +78,24 @@ function toDateParam(dateWindow) {
 // banner (Phase 3, "a gathering becomes a demand generator") -- or, when
 // `route.params.matchId` is present, from a match's own accepted date
 // proposal (Offer System Phase 5, see CLAUDE.md's own plan, Decision 4:
-// the "Dating Experience -> Business Request" bridge). In gathering
-// mode, party size/date/location are all real data sourced server-side
-// from the gathering itself, never re-asked here -- the "When" step is
-// skipped entirely since the gathering already has a real date, and party
-// size renders as a fact, not an editable field. Match mode is similar
-// for party size (always the real 2 -- both match participants, never
-// user-typed) but keeps the "When" chips, since an accepted plan has no
-// fixed date the way a gathering does, and uses real device location
-// (like the solo path) since a match has no stored coordinates of its
-// own the way a gathering does.
+// the "Dating Experience -> Business Request" bridge) -- or, when
+// `route.params.communityId` is present, from a community's own "Find a
+// Business for This Plan" chooser (real user ask, Aug 24 2026: "can't I
+// just send the request out the category?" instead of naming one specific
+// business). In gathering mode, party size/date/location are all real
+// data sourced server-side from the gathering itself, never re-asked here
+// -- the "When" step is skipped entirely since the gathering already has
+// a real date, and party size renders as a fact, not an editable field.
+// Match mode is similar for party size (always the real 2 -- both match
+// participants, never user-typed) but keeps the "When" chips, since an
+// accepted plan has no fixed date the way a gathering does, and uses real
+// device location (like the solo path) since a match has no stored
+// coordinates of its own the way a gathering does. Community mode reads
+// closest to the solo path -- party size/budget/date all stay caller-
+// supplied, since a community has no fixed attendee count the way one
+// specific gathering does -- but, like gathering mode, location comes from
+// real server-side data (the community's own Community Area), never the
+// device's own GPS.
 export default function AskBusinessScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -97,6 +105,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   const gatheringPartySize = route.params?.gatheringPartySize ?? null;
   const matchId = route.params?.matchId ?? null;
   const matchName = route.params?.matchName ?? null;
+  const communityId = route.params?.communityId ?? null;
+  const communityName = route.params?.communityName ?? null;
   // Set only when reached by tapping a live business_availability candidate
   // on Home's intent results (see intentResolver.js). Its own availabilityId
   // is threaded through handleSubmit() below into submitBusinessRequest(),
@@ -162,6 +172,16 @@ export default function AskBusinessScreen({ navigation, route }) {
           date: toDateParam(dateWindow),
           radiusMiles,
         });
+      } else if (communityId) {
+        result = await submitBusinessRequestForCommunity({
+          communityId,
+          text: text.trim(),
+          category,
+          partySize: safePartySize,
+          budgetMax: safeBudgetMax,
+          date: toDateParam(dateWindow),
+          radiusMiles,
+        });
       } else {
         result = await submitBusinessRequest({
           text: text.trim(),
@@ -194,6 +214,8 @@ export default function AskBusinessScreen({ navigation, route }) {
         gatheringPartySize,
         matchId,
         matchName,
+        communityId,
+        communityName,
       });
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
@@ -210,16 +232,20 @@ export default function AskBusinessScreen({ navigation, route }) {
               ? `Find ${gatheringTitle ?? 'your gathering'} somewhere to go`
               : matchId
                 ? `Find something for you and ${matchName ?? 'your match'}`
-                : 'Can Nearby make this happen?'}
+                : communityId
+                  ? `Ask nearby businesses for ${communityName ?? 'your community'}`
+                  : 'Can Nearby make this happen?'}
           </Text>
           <Text style={styles.subtitle}>
             {gatheringId
               ? `Asking on behalf of your ${gatheringPartySize ?? ''}-person gathering — real nearby businesses can respond with a real offer for the group.`
               : matchId
                 ? `You both agreed on a plan — real nearby businesses can respond with a real offer for the two of you.`
-                : matchedAvailability
-                  ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
-                  : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
+                : communityId
+                  ? `Describe what you need — every eligible business near your community's Area can respond with a real, custom offer.`
+                  : matchedAvailability
+                    ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
+                    : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
           </Text>
 
           {matchedAvailability && (

@@ -5,9 +5,13 @@ import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
 import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
+import { getBusinessRequestForCommunity, getAcceptedOfferForRequest } from '../services/businessFulfillment';
+import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
+import { CATEGORY_OPTIONS as BUSINESS_REQUEST_CATEGORY_OPTIONS } from './AskBusinessScreen';
 import { getSignedPhotoUrl } from '../services/photos';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
+import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -45,6 +49,17 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [areaPoint, setAreaPoint] = useState(null);
   const [savingArea, setSavingArea] = useState(false);
   const [locatingArea, setLocatingArea] = useState(false);
+  // "Find a Business for This Plan" merge, community side (real user ask,
+  // Aug 24 2026): the same merged front-door pattern GatheringDetailScreen
+  // already established, so a community's own leader/creator sees the
+  // identical mental model -- one primary action, expanding to "ask a
+  // specific business" (the existing single-target flow) or "ask nearby
+  // businesses" (the new category/party-size broadcast) -- instead of only
+  // ever being offered the single-business path.
+  const [businessRequest, setBusinessRequest] = useState(null);
+  const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
+  const [myPartnershipRequest, setMyPartnershipRequest] = useState(null);
+  const [businessHelpChooserOpen, setBusinessHelpChooserOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -76,6 +91,28 @@ export default function CommunityDetailScreen({ route, navigation }) {
       })
     );
     setMemberPhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
+
+    // Real ownership check computed from the values just fetched above, not
+    // from React state (which wouldn't have committed yet) -- matches
+    // request_business_partnership's own creator/leader authority model for
+    // a community target.
+    const canManageBusiness = data?.creator_id === myId || memberList.some((m) => m.user_id === myId && m.role === 'leader');
+    if (canManageBusiness) {
+      const request = await getBusinessRequestForCommunity(communityId);
+      setBusinessRequest(request);
+      if (request) {
+        const accepted = await getAcceptedOfferForRequest(request.id);
+        setAcceptedBusinessOffer(accepted);
+      } else {
+        setAcceptedBusinessOffer(null);
+      }
+      const partnershipRequest = await getMyPartnershipRequestForTarget('community', communityId);
+      setMyPartnershipRequest(partnershipRequest);
+    } else {
+      setBusinessRequest(null);
+      setAcceptedBusinessOffer(null);
+      setMyPartnershipRequest(null);
+    }
 
     if (data?.hosting_partner_id) {
       const following = await isFollowingBusiness(data.hosting_partner_id);
@@ -395,15 +432,92 @@ export default function CommunityDetailScreen({ route, navigation }) {
         )}
 
         {(isCreator || members.some((m) => m.user_id === myId && m.role === 'leader')) && (
-          <TouchableOpacity
-            style={styles.chatButton}
-            onPress={() => navigation.navigate('RequestBusinessPartner', { targetType: 'community', targetId: communityId, targetTitle: community?.name })}
-            activeOpacity={0.85}
-            accessibilityLabel="Request a business partner for this community"
-            accessibilityRole="button"
-          >
-            <Text style={styles.chatButtonText}>🤝 Request a Business Partner</Text>
-          </TouchableOpacity>
+          acceptedBusinessOffer ? (
+            <AcceptedBusinessOfferCard
+              offer={acceptedBusinessOffer}
+              partySize={businessRequest?.party_size ?? null}
+              onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+              style={{ marginBottom: spacing.lg }}
+            />
+          ) : businessRequest ? (
+            <View style={{ marginBottom: spacing.lg }}>
+              <Text style={styles.businessHelpLink}>🍽️ Waiting to hear back from local businesses.</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
+                accessibilityLabel="View your business request"
+                accessibilityRole="button"
+              >
+                <Text style={styles.businessHelpLink}>View request →</Text>
+              </TouchableOpacity>
+            </View>
+          ) : myPartnershipRequest?.status === 'approved' ? (
+            <View style={styles.businessOfferCard}>
+              <Text style={styles.businessOfferKicker}>🎯 Business Partner Confirmed</Text>
+              <Text style={styles.businessOfferTitle}>{myPartnershipRequest.partnerName}</Text>
+              <Text style={styles.businessOfferSub}>Confirmed as your business partner for this community</Text>
+            </View>
+          ) : myPartnershipRequest?.status === 'pending' ? (
+            <View style={{ marginBottom: spacing.lg }}>
+              <Text style={styles.businessHelpLink}>🎯 Waiting to hear back from {myPartnershipRequest.partnerName}.</Text>
+            </View>
+          ) : (
+            // The merged front door: neither mechanism has any real
+            // progress yet, so a leader sees one primary action instead of
+            // being funneled straight into "name one specific business" --
+            // matches GatheringDetailScreen's own "Find a Business for This
+            // Plan" chooser exactly.
+            <View>
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={() => setBusinessHelpChooserOpen((v) => !v)}
+                activeOpacity={0.85}
+                accessibilityLabel="Find a business for this community"
+                accessibilityRole="button"
+                accessibilityState={{ expanded: businessHelpChooserOpen }}
+              >
+                <Text style={styles.chatButtonText}>🏪 Find a Business for This Community</Text>
+              </TouchableOpacity>
+              {businessHelpChooserOpen && (
+                <View style={styles.businessHelpChooser}>
+                  <TouchableOpacity
+                    style={styles.businessHelpChooserOption}
+                    onPress={() => {
+                      setBusinessHelpChooserOpen(false);
+                      navigation.navigate('RequestBusinessPartner', { targetType: 'community', targetId: communityId, targetTitle: community?.name });
+                    }}
+                    accessibilityLabel="Ask a specific business"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.businessHelpChooserOptionTitle}>🎯 Ask a specific business</Text>
+                    <Text style={styles.businessHelpChooserOptionSub}>You already have a place in mind.</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.businessHelpChooserOption, { marginTop: spacing.xs }]}
+                    onPress={() => {
+                      setBusinessHelpChooserOpen(false);
+                      navigation.navigate('AskBusiness', {
+                        communityId,
+                        communityName: community?.name,
+                        // A community's own interest_tag can be "Faith &
+                        // Spirituality" (CreateCommunityScreen's own 25-tag
+                        // list) -- a real value business_requests.category's
+                        // CHECK constraint doesn't accept (the 24-tag list
+                        // this screen's own chips use). Only prefill when it's
+                        // genuinely one of those 24, so a mismatched tag never
+                        // gets silently carried into a submit that would fail.
+                        prefillCategory: BUSINESS_REQUEST_CATEGORY_OPTIONS.includes(community?.interest_tag) ? community.interest_tag : null,
+                      });
+                    }}
+                    accessibilityLabel="Ask nearby businesses by category"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.businessHelpChooserOptionTitle}>📍 Ask nearby businesses</Text>
+                    <Text style={styles.businessHelpChooserOptionSub}>Describe what you need, real party size and budget — every eligible business nearby can respond with a custom offer.</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )
         )}
 
         {members.length === 0 && (
@@ -572,6 +686,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   leaveButtonText: { color: colors.textSecondary },
   chatButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.lg },
   chatButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  businessHelpLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  businessHelpChooser: { marginTop: spacing.sm, marginBottom: spacing.lg },
+  businessHelpChooserOption: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md,
+  },
+  businessHelpChooserOptionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  businessHelpChooserOptionSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  businessOfferCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  businessOfferKicker: { color: colors.primary, fontSize: 12, fontWeight: '700', marginBottom: 2 },
+  businessOfferTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  businessOfferSub: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   businessProfileLink: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   ownBusinessNotice: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1,

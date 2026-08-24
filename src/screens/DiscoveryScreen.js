@@ -105,7 +105,6 @@ export default function DiscoveryScreen({ navigation }) {
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
-  const [showBrowseCallout, setShowBrowseCallout] = useState(false);
   const [showDatingPrefsPrompt, setShowDatingPrefsPrompt] = useState(false);
   const [quickFilterOrder, setQuickFilterOrder] = useState(['verified', 'highCompat', 'online']);
   const [quickFilterVisible, setQuickFilterVisible] = useState(['verified', 'highCompat', 'online']);
@@ -138,7 +137,7 @@ export default function DiscoveryScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, seen_browse_callout, quick_filter_order, quick_filter_visible, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set').eq('id', myId).single();
       if (mine?.quick_filter_order) setQuickFilterOrder(mine.quick_filter_order);
       if (mine?.quick_filter_visible) setQuickFilterVisible(mine.quick_filter_visible);
       setMyProfile(mine);
@@ -146,10 +145,6 @@ export default function DiscoveryScreen({ navigation }) {
 
       const reason = await shouldOfferBreak(myId);
       setConfidenceBannerReason(reason);
-
-      if (mine && !mine.seen_browse_callout) {
-        setShowBrowseCallout(true);
-      }
 
       // Phase 3 (progressive/contextual settings, see CLAUDE.md): the
       // real first-open gate -- a genuinely unset profile, not just
@@ -234,13 +229,6 @@ export default function DiscoveryScreen({ navigation }) {
   async function handleDismissConfidenceBanner() {
     setConfidenceBannerReason(null);
     if (myUserId) await dismissBreakSuggestion(myUserId);
-  }
-
-  async function dismissBrowseCallout() {
-    setShowBrowseCallout(false);
-    if (myUserId) {
-      await supabase.from('profiles').update({ seen_browse_callout: true }).eq('id', myUserId);
-    }
   }
 
   function showRadiusInfo() {
@@ -454,11 +442,13 @@ export default function DiscoveryScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          <Text style={styles.headerTitle} accessibilityRole="header">{t('discovery.title')}</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">
+            {discoveryMode === 'browse' ? 'Browse' : t('discovery.title')}
+          </Text>
           <TouchableOpacity
             onPress={showRadiusInfo}
             style={styles.infoButton}
-            accessibilityLabel="Learn how Crossed Paths works"
+            accessibilityLabel={discoveryMode === 'browse' ? 'Learn how Browse works' : 'Learn how Crossed Paths works'}
             accessibilityRole="button"
           >
             <Text style={styles.infoButtonText}>ⓘ</Text>
@@ -483,7 +473,13 @@ export default function DiscoveryScreen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={styles.headerSubtitle}>{t('discovery.subtitle')}</Text>
+        {/* Was a static "Crossed Paths"/"People you've been near recently"
+            title+subtitle, unconditionally, even in Browse mode -- directly
+            contradicting the mode switcher two rows below it. Now tracks
+            whichever mode is actually selected. */}
+        <Text style={styles.headerSubtitle}>
+          {discoveryMode === 'browse' ? 'A wider pool of people matching your filters' : t('discovery.subtitle')}
+        </Text>
       </View>
 
       <View style={styles.modeSwitcher}>
@@ -507,17 +503,12 @@ export default function DiscoveryScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {showBrowseCallout && (
-        <View style={styles.calloutBanner}>
-          <Text style={styles.calloutText}>
-            👆 New: tap "Browse" to see a wider pool of people matching your filters, not just who you've crossed paths with.
-          </Text>
-          <TouchableOpacity onPress={dismissBrowseCallout} accessibilityLabel="Dismiss this tip" accessibilityRole="button">
-            <Text style={styles.calloutDismiss}>Got it</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
+      {/* The one-time "tap Browse" hint banner was removed -- the two-button
+          Crossed Paths / Browse switcher directly above is already
+          self-explanatory (clearly labeled, always visible), and the
+          banner's own hand emoji read as pointing at the mode buttons
+          themselves rather than its own text, which was confusing rather
+          than helpful. */}
       {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
       <View style={styles.accordionContainer}>
@@ -916,22 +907,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modeButtonActive: { backgroundColor: colors.primary },
   modeButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
   modeButtonTextActive: { color: '#fff' },
-  calloutBanner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md,
-    marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
-  },
-  // Phase 3 item 4 of the "Scorecard to 10" initiative (CLAUDE.md): the one coral
-  // judgment call left open by the Aug 16 2026 coral audit. "Got it" is a real dismiss
-  // action -- the locked rule names "Cancel, dismiss" explicitly as secondary actions
-  // that should read neutral, coral reserved for a surface's primary action. The body
-  // text next to it is purely informational, not itself interactive. Both now render
-  // neutral, matching this app's own established secondary-action convention
-  // (AdminVerificationScreen's rejectButtonText, CommunityDetailScreen's
-  // leaveButtonText) rather than the ambiguous "self-contained interactive unit"
-  // carve-out the audit flagged but left undecided.
-  calloutText: { flex: 1, color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginRight: spacing.sm, lineHeight: 16 },
-  calloutDismiss: { color: colors.textSecondary, fontSize: 12, fontWeight: '800' },
   filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
   filterRow: { flexGrow: 0, flexShrink: 1 },
   filterChip: {

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Modal } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { getCommunityMessagesPage, getCommunityMessageById, sendCommunityMessage } from '../services/communities';
+import { getCommunityMessagesPage, getCommunityMessageById, sendCommunityMessage, getCommunitySummary } from '../services/communities';
 import { getSignedPhotoUrl } from '../services/photos';
 import ReportBlockModal from '../components/ReportBlockModal';
 import LoadErrorState from '../components/LoadErrorState';
@@ -24,6 +25,42 @@ export default function CommunityChatScreen({ route, navigation }) {
   const [myUserId, setMyUserId] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [infoVisible, setInfoVisible] = useState(false);
+  const [communitySummary, setCommunitySummary] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
+  // The header "i" button used to navigate straight to CommunityDetail --
+  // since this chat is only ever reached FROM that same screen, it was
+  // already on the stack, so tapping "i" just popped back to it,
+  // indistinguishable from the back button and confusing as a result
+  // ("it just takes me back to the previous screen"). Now it opens a real
+  // in-chat info panel instead -- a genuine group-chat-info affordance, not
+  // a disguised back button -- with an explicit link to the full community
+  // page for anyone who actually wants to leave the chat.
+  useLayoutEffect(() => {
+    if (!communityId) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => setInfoVisible(true)}
+          style={{ paddingHorizontal: 8 }}
+          accessibilityLabel={communityName ? `About ${communityName}` : 'About this community'}
+          accessibilityRole="button"
+        >
+          <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, communityId, communityName, colors.textPrimary]);
+
+  useEffect(() => {
+    if (!infoVisible || communitySummary) return;
+    setLoadingSummary(true);
+    getCommunitySummary(communityId).then((data) => {
+      setCommunitySummary(data);
+      setLoadingSummary(false);
+    });
+  }, [infoVisible, communityId, communitySummary]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));
@@ -206,6 +243,42 @@ export default function CommunityChatScreen({ route, navigation }) {
         reportedUserId={reportTarget?.id}
         reportedUserName={reportTarget?.name}
       />
+
+      <Modal visible={infoVisible} animationType="slide" transparent onRequestClose={() => setInfoVisible(false)}>
+        <View style={styles.infoOverlay}>
+          <View style={styles.infoSheet}>
+            {loadingSummary && !communitySummary ? (
+              <ActivityIndicator color={colors.primary} style={{ paddingVertical: spacing.xl }} />
+            ) : (
+              <>
+                <Text style={styles.infoTitle}>{communitySummary?.name ?? communityName ?? 'Community'}</Text>
+                <Text style={styles.infoMeta}>
+                  {communitySummary?.memberCount ?? 0} member{communitySummary?.memberCount === 1 ? '' : 's'}
+                  {communitySummary?.interest_tag ? ` · ${communitySummary.interest_tag}` : ''}
+                  {communitySummary && !communitySummary.is_public ? ' · Private' : ''}
+                </Text>
+                {communitySummary?.description ? (
+                  <Text style={styles.infoDescription}>{communitySummary.description}</Text>
+                ) : null}
+                <TouchableOpacity
+                  style={styles.infoLinkRow}
+                  onPress={() => {
+                    setInfoVisible(false);
+                    navigation.navigate('CommunityDetail', { communityId });
+                  }}
+                  accessibilityLabel="View the full community page"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.infoLinkText}>View Full Community Page →</Text>
+                </TouchableOpacity>
+              </>
+            )}
+            <TouchableOpacity onPress={() => setInfoVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Close" accessibilityRole="button">
+              <Text style={styles.infoCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -232,4 +305,12 @@ const getStyles = (colors) => StyleSheet.create({
   input: { flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, color: colors.textPrimary, maxHeight: 100, borderWidth: 1, borderColor: colors.border },
   sendButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   sendButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  infoOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  infoSheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  infoTitle: { ...typography.headline, color: colors.textPrimary },
+  infoMeta: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  infoDescription: { ...typography.body, color: colors.textSecondary, marginTop: spacing.md, lineHeight: 20 },
+  infoLinkRow: { marginTop: spacing.lg },
+  infoLinkText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  infoCloseText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
 });

@@ -4,7 +4,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest, getSuggestedFriends } from '../services/friends';
 import { getMyCircles, createCircle, deleteCircle, addFriendToCircle, removeFriendFromCircle } from '../services/friendCircles';
 import { findFriendsFromContacts } from '../services/contactsImport';
-import StoriesRow from '../components/StoriesRow';
 import PersonCard from '../components/PersonCard';
 import { Share } from 'react-native';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -166,7 +165,6 @@ export default function FriendsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StoriesRow />
       {loading ? (
         <View style={{ marginTop: spacing.xl, alignItems: 'center' }}>
           <ActivityIndicator color={colors.primary} />
@@ -324,7 +322,7 @@ export default function FriendsScreen({ navigation }) {
                 <View style={styles.divider} />
               </>
             )}
-            {(circles.length > 0 || friends.length > 0) && (
+            {circles.length > 0 && (
               <>
                 <Text style={styles.sectionHeader}>Circles</Text>
                 <View style={styles.circlesRow}>
@@ -357,9 +355,26 @@ export default function FriendsScreen({ navigation }) {
                 </View>
               </>
             )}
-            <Text style={styles.sectionHeader}>
-              {selectedCircleId ? circles.find((c) => c.id === selectedCircleId)?.name : `Your Friends (${friends.length})`}
-            </Text>
+            <View style={styles.friendsHeaderRow}>
+              <Text style={[styles.sectionHeader, { marginBottom: 0, marginTop: 0 }]}>
+                {selectedCircleId ? circles.find((c) => c.id === selectedCircleId)?.name : `Your Friends (${friends.length})`}
+              </Text>
+              {/* Circles used to appear as a whole always-visible chip row the
+                  moment anyone had a single friend -- a new UI concept
+                  showing up unprompted, which read as a "random tab." Now it
+                  only shows once you actually have a circle; this small text
+                  link is the one deliberate way in for everyone else, so the
+                  feature stays reachable without reintroducing the clutter. */}
+              {circles.length === 0 && friends.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setNewCircleModalVisible(true)}
+                  accessibilityLabel="Organize your friends into circles"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.organizeCirclesLink}>+ Organize into Circles</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </>
         }
         ListEmptyComponent={
@@ -466,6 +481,11 @@ const getStyles = (colors) => StyleSheet.create({
     ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
     letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm,
   },
+  friendsHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: spacing.sm, marginTop: spacing.sm,
+  },
+  organizeCirclesLink: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
   requestRow: { marginBottom: spacing.md },
   friendRow: {

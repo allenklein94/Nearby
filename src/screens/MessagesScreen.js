@@ -1,11 +1,24 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import MatchesScreen from './MatchesScreen';
 import { getMyGatheringChats } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+
+// getMyGatheringChats() deliberately keeps a gathering's chat chip visible
+// for up to 7 real days after it happened (a recent-past gathering's chat
+// is still genuinely useful -- "thanks everyone!") before it drops off this
+// row on its own. Real, user-reported gap in that window: nothing let
+// someone dismiss a gathering's chat chip early if they didn't want to see
+// it anymore -- and leave_gathering() itself explicitly refuses to "un-attend"
+// something that already happened, so there was never a real leave action to
+// reach for a past gathering either. This is a lightweight, local,
+// non-destructive dismiss -- it never touches real attendance history or
+// the gathering itself, it only ever hides the chip from this device.
+const HIDDEN_GATHERING_CHATS_KEY = 'hidden_gathering_chats';
 
 // Phase 5 of the "build everything" plan (see CLAUDE.md): Messages left
 // the bottom tab bar entirely, reachable instead from the persistent
@@ -24,9 +37,16 @@ export default function MessagesScreen({ navigation, route }) {
 
   const loadGroupChats = useCallback(async () => {
     try {
-      const [gatheringChats, communities] = await Promise.all([getMyGatheringChats(), getMyCommunities()]);
+      const [gatheringChats, communities, hiddenRaw] = await Promise.all([
+        getMyGatheringChats(),
+        getMyCommunities(),
+        AsyncStorage.getItem(HIDDEN_GATHERING_CHATS_KEY),
+      ]);
+      const hidden = new Set(hiddenRaw ? JSON.parse(hiddenRaw) : []);
       setGroupChats([
-        ...gatheringChats.map((g) => ({ kind: 'gathering', id: g.id, title: g.title })),
+        ...gatheringChats
+          .filter((g) => !hidden.has(g.id))
+          .map((g) => ({ kind: 'gathering', id: g.id, title: g.title, isPast: new Date(g.scheduled_at) < new Date() })),
         ...communities.map((c) => ({ kind: 'community', id: c.id, title: c.name })),
       ]);
     } catch (e) {
@@ -39,6 +59,27 @@ export default function MessagesScreen({ navigation, route }) {
       loadGroupChats();
     }, [loadGroupChats])
   );
+
+  async function hideGatheringChat(chat) {
+    Alert.alert(
+      'Hide this chat?',
+      `"${chat.title} Chat" won't show up here anymore. This only affects this device — it doesn't remove you from the gathering.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Hide',
+          style: 'destructive',
+          onPress: async () => {
+            const raw = await AsyncStorage.getItem(HIDDEN_GATHERING_CHATS_KEY);
+            const hidden = raw ? JSON.parse(raw) : [];
+            if (!hidden.includes(chat.id)) hidden.push(chat.id);
+            await AsyncStorage.setItem(HIDDEN_GATHERING_CHATS_KEY, JSON.stringify(hidden));
+            setGroupChats((prev) => prev.filter((c) => !(c.kind === 'gathering' && c.id === chat.id)));
+          },
+        },
+      ]
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -65,12 +106,18 @@ export default function MessagesScreen({ navigation, route }) {
                     ? { gatheringId: chat.id, gatheringTitle: chat.title }
                     : { communityId: chat.id, communityName: chat.title }
                 )}
+                onLongPress={chat.kind === 'gathering' ? () => hideGatheringChat(chat) : undefined}
                 activeOpacity={0.85}
-                accessibilityLabel={`Open ${chat.title} group chat`}
+                accessibilityLabel={
+                  chat.kind === 'gathering'
+                    ? `Open ${chat.title} group chat${chat.isPast ? ', this gathering already happened' : ''}. Long press to hide.`
+                    : `Open ${chat.title} group chat`
+                }
                 accessibilityRole="button"
               >
                 <Text style={styles.groupChatChipIcon}>{chat.kind === 'gathering' ? '🎉' : '🏘️'}</Text>
                 <Text style={styles.groupChatChipText} numberOfLines={1}>{chat.title} Chat</Text>
+                {chat.isPast && <Text style={styles.groupChatChipPast}>Past</Text>}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -98,4 +145,9 @@ const getStyles = (colors) => StyleSheet.create({
   },
   groupChatChipIcon: { fontSize: 14, marginRight: 4 },
   groupChatChipText: { color: colors.textPrimary, fontWeight: '600', fontSize: 13 },
+  groupChatChipPast: {
+    color: colors.textTertiary, fontSize: 10, fontWeight: '700', textTransform: 'uppercase',
+    marginLeft: 6, borderWidth: 1, borderColor: colors.border, borderRadius: radius.full,
+    paddingHorizontal: 6, paddingVertical: 1,
+  },
 });

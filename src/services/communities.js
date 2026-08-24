@@ -153,6 +153,20 @@ export async function getCommunityMemberCount(communityId) {
   return count ?? 0;
 }
 
+// A small, chat-friendly summary -- built for CommunityChatScreen's own
+// "i" info panel, which used to just navigate to CommunityDetail (a no-op
+// when that screen is already on the stack, since that's the only real way
+// this chat is ever reached). Real name/description/category plus a real
+// member count, one round trip.
+export async function getCommunitySummary(communityId) {
+  const [{ data }, memberCount] = await Promise.all([
+    supabase.from('communities').select('name, description, interest_tag, is_public').eq('id', communityId).single(),
+    getCommunityMemberCount(communityId),
+  ]);
+  if (!data) return null;
+  return { ...data, memberCount };
+}
+
 export async function joinCommunity(communityId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

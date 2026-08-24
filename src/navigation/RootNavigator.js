@@ -452,23 +452,19 @@ export default function RootNavigator() {
             <Stack.Screen
               name="CommunityChat"
               component={CommunityChatScreen}
-              options={({ route, navigation }) => ({
+              options={({ route }) => ({
                 headerShown: true,
                 title: route.params?.communityName ? `${route.params.communityName} Chat` : 'Community Chat',
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.textPrimary,
                 headerShadowVisible: false,
-                headerRight: () =>
-                  route.params?.communityId ? (
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('CommunityDetail', { communityId: route.params.communityId })}
-                      style={{ paddingHorizontal: 8 }}
-                      accessibilityLabel={route.params?.communityName ? `View ${route.params.communityName}'s community page` : 'View community page'}
-                      accessibilityRole="button"
-                    >
-                      <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
-                    </TouchableOpacity>
-                  ) : null,
+                // headerRight is no longer set here -- it used to navigate
+                // straight to CommunityDetail, which (since this screen is
+                // only ever reached FROM CommunityDetail) just popped back to
+                // the exact screen already on the stack, indistinguishable
+                // from the back button and confusing as a result. The screen
+                // itself now owns headerRight via navigation.setOptions and
+                // opens a real in-chat info panel instead.
               })}
             />
             <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
@@ -181,6 +182,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [stripeStatus, setStripeStatus] = useState(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
 
+  // Real user ask, not a code audit (Aug 24 2026): "a way to start seeing
+  // demand and posting offers... with a tutorial almost." A brand-new
+  // business owner landing here for the first time (right after admin
+  // approval -- see CLAUDE.md's Business Partner Onboarding history for why
+  // that step is a deliberate manual review, not something this card
+  // touches) had no orientation at all, just the same dashboard a
+  // long-established partner sees. Shown once per real business (keyed by
+  // partner id, matching this app's own "shown once, flip a local flag"
+  // convention elsewhere -- e.g. TabHeaderActions' first-open hint), always
+  // dismissible, never blocking anything below it.
+  const [showWelcomeCard, setShowWelcomeCard] = useState(false);
+
   useEffect(() => {
     loadMyPartner();
   }, []);
@@ -192,6 +205,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setLoadError(false);
       if (partner) {
         logBusinessAcquisitionEvent(sessionId, 'dashboard_viewed', { partnerId: partner.id });
+        const seenKey = `business_dashboard_welcome_seen_${partner.id}`;
+        const seen = await AsyncStorage.getItem(seenKey);
+        if (!seen) setShowWelcomeCard(true);
       }
     } catch (e) {
       setLoadError(true);
@@ -206,6 +222,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setStripeStatus(status);
     } catch (e) {
       console.error('loadMyStripeConnectStatus failed', e);
+    }
+  }
+
+  async function dismissWelcomeCard() {
+    setShowWelcomeCard(false);
+    if (selectedPartner) {
+      await AsyncStorage.setItem(`business_dashboard_welcome_seen_${selectedPartner.id}`, 'true');
     }
   }
 
@@ -970,7 +993,45 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         ) : (
           <>
             {section === 'home' && (
-              stats ? (
+              <>
+                {showWelcomeCard && (
+                  <View style={styles.welcomeCard}>
+                    <View style={styles.welcomeCardHeaderRow}>
+                      <Text style={styles.welcomeCardTitle}>👋 Welcome to your dashboard</Text>
+                      <TouchableOpacity onPress={dismissWelcomeCard} accessibilityLabel="Dismiss welcome card" accessibilityRole="button">
+                        <Text style={styles.welcomeCardClose}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.welcomeCardBody}>
+                      Here's how to get the most out of Nearby, in order:
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.welcomeCardStep}
+                      onPress={() => setSection('requests')}
+                      accessibilityLabel="See real demand near you"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.welcomeCardStepText}>📊 See real demand near you →</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.welcomeCardStep}
+                      onPress={() => setCreateModalVisible(true)}
+                      accessibilityLabel="Post your first offer"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.welcomeCardStepText}>🎁 Post your first offer →</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.welcomeCardStep}
+                      onPress={() => setEditProfileModalVisible(true)}
+                      accessibilityLabel="Complete your business profile"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.welcomeCardStepText}>✏️ Complete your profile →</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {stats ? (
                 <>
                   <Text style={styles.sectionHeader}>Community Health</Text>
                   <View style={styles.statsGrid}>
@@ -1061,7 +1122,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </>
               ) : (
                 <Text style={styles.emptyText}>No data yet for this business.</Text>
-              )
+              )}
+              </>
             )}
 
             {section === 'gatherings' && (
@@ -2364,6 +2426,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   sectionTabIcon: { fontSize: 16 },
   sectionTabLabel: { color: colors.textTertiary, fontSize: 10, fontWeight: '700', marginTop: 2 },
   sectionTabLabelActive: { color: colors.primary },
+  welcomeCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.lg, marginBottom: spacing.lg,
+  },
+  welcomeCardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  welcomeCardTitle: { ...typography.headline, color: colors.textPrimary },
+  welcomeCardClose: { color: colors.textTertiary, fontSize: 16, fontWeight: '700', paddingLeft: spacing.sm },
+  welcomeCardBody: { color: colors.textSecondary, fontSize: 14, marginTop: spacing.xs, marginBottom: spacing.md },
+  welcomeCardStep: { paddingVertical: spacing.xs },
+  welcomeCardStepText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCard: {

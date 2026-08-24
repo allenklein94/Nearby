@@ -4,6 +4,131 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — seven real UI/UX complaints from actual use, all fixed — DONE
+
+Seven distinct real-usage reports in one message, not a code audit — each investigated against
+the actual current code before touching anything (several turned out to have a real, specific
+root cause, not just a vague "feels off").
+
+1. **Stories duplicated on People and Friends — DONE.** `<StoriesRow />` rendered on both
+   `PeopleScreen.js` (the real bottom-tab home for it, per its own Phase 5 comment) and
+   `FriendsScreen.js`. Removed from `FriendsScreen.js` only — People keeps it.
+2. **"A random Circles tab" on Friends, "too many embedded screens" — DONE, decluttered rather
+   than removed.** The real cause: the Circles chip row + "+ New Circle" rendered unconditionally
+   for anyone with at least one friend (`circles.length > 0 || friends.length > 0`), so the
+   feature announced itself to every user the moment they had a single friend, whether or not
+   they'd ever touched it — reading exactly as "a random new tab." Fixed: the chip row now only
+   renders once a real circle exists (`circles.length > 0`); everyone else gets a small,
+   deliberate "+ Organize into Circles" text link next to the "Your Friends" header instead —
+   discoverable, not thrust on them. The rest of the screen's real sections (search, find-from-
+   contacts, suggested friends, contact matches, not-on-app, pending requests) were left alone —
+   each is real, working functionality, not clutter to cut.
+3. **"Can't I send the request out by category?" — DONE, the biggest piece.** Requesting a
+   business partner from a community only ever supported naming one specific business
+   (`RequestBusinessPartnerScreen`) — there was no community equivalent of the real, already-
+   built broadcast mechanism gatherings and matches already have ("Ask Local Businesses" ->
+   `create_business_request_for_gathering`/`create_business_request_for_match`, fan-out to every
+   eligible nearby business, each can respond with a real competing offer). Built the missing
+   third leg: new `create_business_request_for_community(community_id, raw_text, category,
+   party_size, budget_max, date, radius_miles)` SECURITY DEFINER RPC
+   (`20260824_business_request_for_community.sql`) — creator/leader-only (same authority check
+   `request_business_partnership` already uses for a community target), location sourced
+   server-side from the community's own real Community Area (`area_lat`/`area_lng`, Aug 17 2026)
+   with a clear, actionable error if one hasn't been set, reuses every real piece of the already-
+   proven pipeline unchanged (the same spam guard, fan-out, availability/policy matching every
+   other `create_business_request*` variant calls). `business_requests` gained a nullable
+   `community_id` FK. Unlike the gathering path, party size/budget/date all stay genuinely
+   caller-supplied — a community has no fixed attendee count the way one specific gathering does;
+   the organizer describes a real but self-reported event (matches the user's own example
+   verbatim: "Italian catering... party of 100... $2000").
+   `CommunityDetailScreen.js`'s single "Request a Business Partner" button became the same real
+   merged chooser `GatheringDetailScreen`'s own "Find a Business for This Plan" already
+   established — "🎯 Ask a specific business" (the existing flow, unchanged) / "📍 Ask nearby
+   businesses" (new, routes to `AskBusinessScreen` in a new community mode), plus the same
+   real waiting/confirmed states (`AcceptedBusinessOfferCard`, reused as-is) once a request or
+   partnership actually exists. `AskBusinessScreen.js` gained real `communityId`/`communityName`
+   support (location sourced server-side like gathering mode, but party size/budget/date stay
+   editable like solo mode). A real, previously-latent bug caught and fixed while wiring the
+   prefill: a community's own `interest_tag` can be "Faith & Spirituality" (`CreateCommunityScreen`'s
+   25-tag list), a value `business_requests.category`'s CHECK constraint doesn't accept (the
+   24-tag list `AskBusinessScreen`'s own chips use) — would have silently carried a doomed
+   category into a submit that failed with a raw constraint error. Fixed by only prefilling when
+   the tag is genuinely one of the 24 (`CATEGORY_OPTIONS` exported from `AskBusinessScreen.js`
+   for this one guard).
+   **Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed
+   grants (`authenticated` yes, `anon` no); a real disposable test community with a real
+   Community Area — a non-leader's call correctly rejected; the creator's call correctly
+   succeeded with real `party_size: 100`, `budget_max: 2000`, `category: 'Foodie'`, real fan-out
+   to the one real active nearby partner (temporarily coordinated, same established convention);
+   a repeat call correctly returned the same request id (`duplicate: true`); a second test
+   community with no Community Area set correctly rejected with the clear "set a Community Area
+   first" error. All test rows deleted afterward, confirmed production back to its exact
+   pre-test baseline (0 rows with a `community_id` set). **Not done**: no from-scratch Docker
+   migration replay this pass (time-boxed against the other six items in the same session) —
+   disclosed rather than silently skipped, per this file's own migration-discipline rule;
+   filename ordering was checked by hand instead (every function this migration depends on is
+   defined in an earlier-sorting `2026081*`/`20260817*` file, no later migration drops any of
+   them).
+4. **Community chat's "i" info bubble just went back to the previous screen — DONE.** Real bug,
+   not a misunderstanding: `CommunityChat` is only ever reached from `CommunityDetailScreen`
+   (confirmed via grep — the only `navigate('CommunityChat', ...)` call site in the app), so the
+   header's `navigate('CommunityDetail', ...)` always found that exact screen already on the
+   stack and just popped back to it — indistinguishable from the back button, and confusing
+   because nothing appeared to happen. Fixed: the header info button is now owned by
+   `CommunityChatScreen` itself (`navigation.setOptions` in a `useLayoutEffect`, RootNavigator's
+   own route-level `headerRight` removed) and opens a real in-chat info panel — name, member
+   count, category, description, and an explicit "View Full Community Page →" link for anyone
+   who genuinely wants to leave the chat. New `getCommunitySummary()` in `services/communities.js`
+   backs it, one round trip.
+5. **Messages showing chats for expired gatherings, no way to leave — DONE.** `getMyGatheringChats()`
+   deliberately keeps a gathering's chat chip visible for up to 7 days after it happened (a
+   recent-past "thanks everyone!" chat is genuinely still useful) — that part is by design, not a
+   bug. The real gap: nothing let someone dismiss a chip early, and `leave_gathering()` itself
+   explicitly refuses to "un-attend" something that already happened, so there was never a real
+   leave action to reach for either. Fixed with a lightweight, local, non-destructive dismiss —
+   long-press a gathering chip on `MessagesScreen.js` → confirm → hidden from that device only
+   (`AsyncStorage`, never touches real attendance history or the gathering itself). Chips for a
+   gathering that's already happened also now show a small "Past" badge, so the state reads as
+   intentional rather than a mystery.
+6. **Discovery's "Crossed Paths" header stayed bold even in Browse mode; the hint bubble's hand
+   icon pointed at the wrong thing — DONE.** Real bug: `discovery.title`/`discovery.subtitle`
+   were static translation strings ("Crossed Paths" / "People you've been near recently"),
+   rendered unconditionally regardless of which of the two modes (`Crossed Paths`/`Browse`) was
+   actually selected — directly contradicting the mode switcher two rows below. Now both are
+   mode-aware. The one-time "👆 New: tap 'Browse'..." callout banner was removed outright, per
+   the user's own instinct — the two-button switcher right above it is already self-explanatory
+   (clearly labeled, always visible), and the banner's own hand emoji read as pointing at the
+   mode buttons themselves rather than its own text.
+7. **Business onboarding — reviewed, one concrete gap closed.** The user asked whether "claim my
+   business" auto-creates the account and lands on the dashboard with a tutorial. It doesn't, by
+   deliberate design already locked earlier (see the Business Partner Onboarding section further
+   below): approval is a real manual admin review, not instant — stated on the landing page and
+   the apply screen as a credibility signal, not a limitation to silently work around. What was a
+   genuine, closeable gap: once approved, a first-time business owner landed on the exact same
+   dashboard a long-established partner sees, with zero orientation. Added a real, dismissible
+   "👋 Welcome to your dashboard" card, shown once per business (`AsyncStorage`, keyed by partner
+   id), with three real, one-tap next steps — "📊 See real demand near you" (jumps to the
+   Requests tab), "🎁 Post your first offer" (opens the real create-offer modal), "✏️ Complete
+   your profile" (opens the real edit-profile modal). `docs/business.html` itself was reviewed
+   and left untouched — it already matches this file's own extensive prior "audit + adversarial
+   review" history (honest hero copy, real demo, honest pricing, an honest "reviewed before going
+   live" line) and nothing concrete stood out as broken.
+
+**Verified**: a direct `@babel/core` parse of all 11 touched files (clean), a full `npx expo
+export --platform ios` (clean, no bundling errors, 2251 modules, unchanged — every touched file
+was an edit, no new client files), and the full Jest suite (67/67, unaffected). Item 3's schema/
+RPC piece verified live against production with real disposable test data, cleaned up afterward
+(see its own writeup above for the full detail).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of the seven fixes — next session should confirm, on a real device: the
+Friends screen reads clearly with and without real circles; a real community broadcast request
+(item 3) actually reaches a real nearby business and that business can respond; the community
+chat info panel renders correctly and its "View Full Community Page" link lands cleanly; a
+long-pressed gathering chat chip actually hides and stays hidden across an app restart; Discovery's
+header/subtitle read correctly in both modes; and the dashboard welcome card's three links each
+land on the right place and the card genuinely never reappears once dismissed.
+
 ## Aug 23 2026 — real crash fix: `crypto.randomUUID()` doesn't exist in Hermes, crashed
 ## Business Mode on every real device (TestFlight build 73) — DONE
 
