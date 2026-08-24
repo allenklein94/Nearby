@@ -136,7 +136,79 @@ change verified via a direct `@babel/core` parse and a full `npx expo export --p
 run-through is possible from this sandbox — flagged per-piece as it lands, not silently assumed
 clean.
 
-**Status: plan locked, executing below — check the next section for what's landed.**
+**Status: DONE, build-wise — all 5 steps landed, each its own commit, pushed individually.**
+
+Picked up after a codespace restart interrupted the session mid-build — on resume,
+`git status` showed the migration already staged, `services/gatherings.js`/
+`QuickPicksEditModal.js`/`gatheringCategoryStyles.js`/`CreateGatheringScreen.js`/
+`GatheringsScreen.js` already partially edited, and both
+`src/constants/gatheringCategories.js` and `supabase/migrations/20260902_widen_business_
+category_checks.sql` already fully written but untracked. Read every file directly (not
+assumed from the plan text) before continuing: step 1 (migration), step 2
+(`SAFE_GATHERING_FIELDS`/`createGathering()`), the new shared `gatheringCategories.js`, and
+`categoryStyleFor()`'s Dating entry were already complete. `CreateGatheringScreen.js`
+(step 5 — grouped category picker, Price/People chip rows in "More options," both threaded
+through `submit()`, both on the Publish preview) was also already fully built.
+`GatheringsScreen.js` had only its import repointed to the shared list — step 4's actual
+work (grouped accordion, the two new Price/People accordion sections, "Starting Soon," the
+filter-chain wiring) hadn't been touched. Three of the six step-3 repoint targets
+(`AskBusinessScreen.js`/`CreateCommunityScreen.js`/`BusinessDashboardScreen.js`) still had
+their own independent 24-tag copies. Finished both from there:
+
+- **Step 3, the remaining 3 files**: `AskBusinessScreen.js`'s own `CATEGORY_OPTIONS` is now
+  `export const CATEGORY_OPTIONS = INTEREST_OPTIONS` (re-exported under its original name
+  since `CommunityDetailScreen.js` already imports it by that name for its own prefill-
+  validity guard — that guard is now correctly wider, since the shared list includes both
+  `Faith & Spirituality` and `Dating`, closing the exact drift this file's own plan text
+  already flagged). `CreateCommunityScreen.js`'s local `INTEREST_OPTIONS` copy and
+  `BusinessDashboardScreen.js`'s local `AVAILABILITY_CATEGORY_OPTIONS` copy were both
+  replaced with the shared import the same way.
+- **Step 4, `GatheringsScreen.js`**: the category accordion's flat `INTEREST_OPTIONS.map()`
+  chip list is now grouped by `CATEGORY_GROUPS`, each group under a small caption (reusing a
+  new `groupCaption` style, same treatment as `CreateGatheringScreen.js`'s own `subLabel`) —
+  the pre-existing ⭐ For You / 🔥 Trending chips stay ungrouped at the top, unchanged. Two new
+  accordion sections, **💵 Price** and **🙋 People**, inserted after Environment, same
+  header/chevron/summary-label shape as every other section — both filter on the new real
+  `price_level`/`party_type` fields, a gathering whose host never set either is simply
+  excluded from a non-null filter, never guessed at. `DATE_OPTIONS` gained **"Starting
+  Soon"** (key `'soon'`) between "Right Now" and "Today," backed by a new `matchesDateFilter`
+  branch (`date > now && date <= now + 90min` — a real, narrower, non-symmetric window,
+  distinct from "Right Now"'s `[-30min, +2h]`). All three new filters (`priceFilter`,
+  `partyTypeFilter`, the `'soon'` date branch) folded into the existing `filteredNearby`
+  chain alongside category/trending/environment, applying on top of either the plain `nearby`
+  list or active search results exactly like every other filter already does.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: a real
+disposable test gathering round-tripped `price_level: '$$'`/`party_type: 'date'` exactly;
+attempting `price_level: 'bogus'`/`party_type: 'bogus'` on that same row was correctly
+rejected by both CHECK constraints (`23514`), with the row confirmed still holding its
+original valid values afterward, not silently clobbered; the full `SAFE_GATHERING_FIELDS`
+select shape returns both new columns correctly. Separately, a real disposable
+`business_requests` row with `category: 'Dating'` — previously an invalid value under the
+old 24-tag constraint — was correctly accepted under the widened check. Both test rows
+deleted afterward; production confirmed back to its exact pre-test baseline (0 matching test
+rows in either table). **Verified via a real from-scratch migration replay**: pulled the
+already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly
+empty `public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin`, then ran the full 88-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, both new migrations included; the new
+columns, both CHECK constraints, and the widened `business_requests`/`business_availability`
+category constraints all confirmed to exist in the freshly-rebuilt database afterward.
+Container removed.
+
+Client-side verified via a direct `@babel/core` parse of all 9 touched/new files (clean), the
+full Jest suite (67/67 passing, unaffected — no pure-logic file was touched), and a full
+`npx expo export --platform ios` (clean, no bundling errors, 2256 modules — one more than the
+2255 baseline, the one new `gatheringCategories.js`; every other touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the grouped category accordion
+on both `GatheringsScreen`/`CreateGatheringScreen` renders and selects correctly, the new
+Price/People accordion sections on `GatheringsScreen` actually narrow results correctly
+against real data, "Starting Soon" correctly excludes a gathering that's already started or
+more than 90 minutes out, and `CreateGatheringScreen`'s Price/People chip rows save correctly
+and render on the Publish preview only when set.
 
 ## Aug 24 2026 — real, pre-existing bug: Messages/Matches stuck on skeleton loading
 ## forever the instant a gathering- or friendship-sourced match existed — DONE
