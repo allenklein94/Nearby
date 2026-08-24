@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyFriends, getPendingFriendRequests, respondToFriendRequest, sendFriendRequest, getSuggestedFriends } from '../services/friends';
 import { getMyCircles, createCircle, deleteCircle, addFriendToCircle, removeFriendFromCircle } from '../services/friendCircles';
@@ -410,54 +410,66 @@ export default function FriendsScreen({ navigation }) {
       )}
 
       <Modal visible={newCircleModalVisible} animationType="slide" transparent onRequestClose={() => setNewCircleModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>New Circle</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g. Work, Fitness, Family, Travel"
-              placeholderTextColor={colors.textTertiary}
-              value={newCircleName}
-              onChangeText={setNewCircleName}
-              autoFocus
-              accessibilityLabel="Circle name"
-            />
-            <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85} accessibilityLabel="Create circle" accessibilityRole="button">
-              <Text style={styles.modalButtonText}>Create Circle</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.modalSheet}>
+                  <Text style={styles.modalTitle}>New Circle</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="e.g. Work, Fitness, Family, Travel"
+                    placeholderTextColor={colors.textTertiary}
+                    value={newCircleName}
+                    onChangeText={setNewCircleName}
+                    autoFocus
+                    accessibilityLabel="Circle name"
+                  />
+                  <TouchableOpacity style={styles.modalButton} onPress={handleCreateCircle} activeOpacity={0.85} accessibilityLabel="Create circle" accessibilityRole="button">
+                    <Text style={styles.modalButtonText}>Create Circle</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => { setNewCircleModalVisible(false); setNewCircleName(''); }} style={{ marginTop: spacing.md }}>
+                    <Text style={styles.modalCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={!!manageCirclesFor} animationType="slide" transparent onRequestClose={() => setManageCirclesFor(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Circles for {manageCirclesFor?.display_name}</Text>
-            {circles.length === 0 && <Text style={styles.emptyText}>No circles yet — create one from the Friends screen first.</Text>}
-            {circles.map((circle) => {
-              const isMember = manageCirclesFor && circle.memberIds.includes(manageCirclesFor.id);
-              return (
-                <TouchableOpacity
-                  key={circle.id}
-                  style={styles.circleToggleRow}
-                  onPress={() => handleToggleCircleMembership(circle, manageCirclesFor.id)}
-                  accessibilityLabel={`${circle.name}, ${isMember ? 'in this circle' : 'not in this circle'}`}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isMember }}
-                >
-                  <Text style={styles.circleToggleCheck}>{isMember ? '✓' : ''}</Text>
-                  <Text style={styles.circleToggleName}>{circle.name}</Text>
-                </TouchableOpacity>
-              );
-            })}
-            <TouchableOpacity onPress={() => setManageCirclesFor(null)} style={{ marginTop: spacing.md }}>
-              <Text style={styles.modalCancelText}>Done</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback>
+                <View style={styles.modalSheet}>
+                  <Text style={styles.modalTitle}>Circles for {manageCirclesFor?.display_name}</Text>
+                  {circles.length === 0 && <Text style={styles.emptyText}>No circles yet — create one from the Friends screen first.</Text>}
+                  {circles.map((circle) => {
+                    const isMember = manageCirclesFor && circle.memberIds.includes(manageCirclesFor.id);
+                    return (
+                      <TouchableOpacity
+                        key={circle.id}
+                        style={styles.circleToggleRow}
+                        onPress={() => handleToggleCircleMembership(circle, manageCirclesFor.id)}
+                        accessibilityLabel={`${circle.name}, ${isMember ? 'in this circle' : 'not in this circle'}`}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: isMember }}
+                      >
+                        <Text style={styles.circleToggleCheck}>{isMember ? '✓' : ''}</Text>
+                        <Text style={styles.circleToggleName}>{circle.name}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity onPress={() => setManageCirclesFor(null)} style={{ marginTop: spacing.md }}>
+                    <Text style={styles.modalCancelText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

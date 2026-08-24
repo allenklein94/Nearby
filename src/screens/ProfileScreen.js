@@ -578,13 +578,28 @@ const result = await response.json();
         {completeness.percent < 100 && (
           <View
             style={styles.completenessCard}
-            accessibilityLabel={`Your profile is ${completeness.percent}% complete. ${completeness.missing[0].label} to stand out more.`}
+            accessibilityLabel={`Your profile is ${completeness.percent}% complete. Missing: ${completeness.missing.map((m) => m.label).join(', ')}.`}
           >
             <Text style={styles.completenessTitle}>Your profile is {completeness.percent}% complete</Text>
             <View style={styles.completenessBarTrack}>
               <View style={[styles.completenessBarFill, { width: `${completeness.percent}%` }]} />
             </View>
-            <Text style={styles.completenessHint}>{completeness.missing[0].label} to stand out more.</Text>
+            <View style={styles.completenessMissingList}>
+              {completeness.missing.map((item) => (
+                <View key={item.key} style={styles.completenessMissingRow}>
+                  <Text style={styles.completenessMissingBullet}>○</Text>
+                  <Text style={styles.completenessMissingText}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.completenessCta}
+              onPress={() => scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true })}
+              accessibilityLabel="Complete your profile"
+              accessibilityRole="button"
+            >
+              <Text style={styles.completenessCtaText}>Complete Profile →</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1207,6 +1222,15 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   completenessBarTrack: { height: 6, borderRadius: radius.full, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
   completenessBarFill: { height: '100%', borderRadius: radius.full, backgroundColor: colors.primary },
   completenessHint: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm },
+  completenessMissingList: { marginTop: spacing.sm },
+  completenessMissingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  completenessMissingBullet: { color: colors.textTertiary, fontSize: 13, marginRight: spacing.xs },
+  completenessMissingText: { color: colors.textSecondary, fontSize: 13 },
+  completenessCta: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
+    alignItems: 'center', marginTop: spacing.md,
+  },
+  completenessCtaText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   timelineLink: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

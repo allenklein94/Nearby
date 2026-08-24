@@ -10,6 +10,9 @@ import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getG
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
+import { getSocialForecast } from '../services/homeDashboard';
+import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -114,6 +117,13 @@ export default function DiscoverHubScreen({ navigation }) {
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const placesRequestId = useRef(0);
 
+  // Real weather signal (same async submit-then-poll RPC Home's own weather
+  // card already uses), fetched non-blocking after the main load resolves --
+  // never awaited as part of loadCore's own Promise.all, since the RPC has
+  // an inherent ~2s round trip and this is purely supplementary ranking
+  // context, not core content. See CLAUDE.md, 14-item UX review item 9.
+  const [weatherSignal, setWeatherSignal] = useState(null);
+
   // Real search results for gatherings/communities, fetched server-side via
   // searchGatherings()/searchPublicCommunities() (indexed ILIKE queries)
   // instead of filtering the already-fetched `gatherings`/`communities`
@@ -170,6 +180,13 @@ export default function DiscoverHubScreen({ navigation }) {
         })
       );
       setCoverPhotoUrls(Object.fromEntries(coverEntries.filter(Boolean)));
+
+      // Fire-and-forget, never awaited -- a real forecast signal is
+      // supplementary ranking context (see the `recommended` computation
+      // below), never something the rest of the screen should wait on.
+      if (loc) {
+        getSocialForecast(loc.latitude, loc.longitude).then(setWeatherSignal).catch(() => {});
+      }
     } catch (e) {
       console.error('Discover loadCore failed', e);
     }
@@ -279,9 +296,36 @@ export default function DiscoverHubScreen({ navigation }) {
   // client-side .filter().includes() this used before.
   const filteredOffers = isSearching ? searchedOffers : offers;
 
+  // Weather-aware re-ranking (CLAUDE.md, 14-item UX review item 9) --
+  // reuses the exact same real forecast_label bucketing and
+  // isIndoorCategory/isOutdoorCategory map Home's own weather card
+  // already established, applied here as a real scoring bonus (not just
+  // a caption) using WEATHER_BONUS (SCORE_HAPPENING_NOW's own weight,
+  // not a new invented number). Only ever applied once a real signal
+  // exists -- weatherSignal stays null until the background fetch
+  // resolves, and getSocialForecast() already returns null for the
+  // ambiguous 'Good' case, so no bonus/banner fires on a weak signal.
+  const weatherIndoorBias = weatherSignal?.forecast_label === 'Quiet';
+  const weatherOutdoorBias = weatherSignal?.forecast_label === 'Excellent';
+  const weatherBanner = weatherIndoorBias
+    ? '🌧️ Rain expected — showing indoor options first'
+    : weatherOutdoorBias
+      ? '☀️ Great day out — showing outdoor options first'
+      : null;
+
   const recommended = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
     ? filteredGatherings
-        .map((g) => ({ ...g, fit: getGatheringFitReasons(g) }))
+        .map((g) => {
+          const fit = getGatheringFitReasons(g);
+          if (weatherIndoorBias && isIndoorCategory(g.interest_tag)) {
+            fit.score += WEATHER_BONUS;
+            fit.reasons = [...fit.reasons, 'Good for the weather'];
+          } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
+            fit.score += WEATHER_BONUS;
+            fit.reasons = [...fit.reasons, 'Great weather for it'];
+          }
+          return { ...g, fit };
+        })
         .filter((g) => g.fit.score >= 5)
         .sort((a, b) => b.fit.score - a.fit.score)
         .slice(0, 3)
@@ -462,25 +506,65 @@ export default function DiscoverHubScreen({ navigation }) {
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
               <TouchableOpacity
                 style={styles.quickTimeCard}
-                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })}
+                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'now' })}
                 activeOpacity={0.85}
-                accessibilityLabel="Gatherings happening tonight"
+                accessibilityLabel="Gatherings happening right now"
                 accessibilityRole="button"
               >
-                <Text style={styles.quickTimeCardIcon}>🌙</Text>
-                <Text style={styles.quickTimeCardText}>Tonight</Text>
+                <Text style={styles.quickTimeCardIcon}>🔴</Text>
+                <Text style={styles.quickTimeCardText}>Right Now</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quickTimeCard}
-                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'weekend' })}
+                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })}
                 activeOpacity={0.85}
-                accessibilityLabel="Gatherings happening this weekend"
+                accessibilityLabel="Gatherings happening today"
+                accessibilityRole="button"
+              >
+                <Text style={styles.quickTimeCardIcon}>🌅</Text>
+                <Text style={styles.quickTimeCardText}>Today</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickTimeCard}
+                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'week' })}
+                activeOpacity={0.85}
+                accessibilityLabel="Gatherings happening this week"
                 accessibilityRole="button"
               >
                 <Text style={styles.quickTimeCardIcon}>📅</Text>
-                <Text style={styles.quickTimeCardText}>This Weekend</Text>
+                <Text style={styles.quickTimeCardText}>This Week</Text>
               </TouchableOpacity>
             </View>
+          )}
+
+          {weatherBanner && (
+            <View style={styles.weatherBanner}>
+              <Text style={styles.weatherBannerText}>{weatherBanner}</Text>
+            </View>
+          )}
+
+          {isAll && publicStories.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>Public Stories Near You</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+                {publicStories.map((group) => (
+                  <TouchableOpacity
+                    key={group.userId}
+                    style={styles.storyRing}
+                    onPress={() => setViewerTarget(group)}
+                    accessibilityLabel={`${group.displayName}'s public story`}
+                    accessibilityRole="button"
+                  >
+                    {storyPhotoUrls[group.userId] ? (
+                      <Image source={{ uri: storyPhotoUrls[group.userId] }} style={styles.storyAvatar} />
+                    ) : (
+                      <View style={[styles.storyAvatar, styles.storyAvatarPlaceholder]} />
+                    )}
+                    <Text style={styles.storyName} numberOfLines={1}>{group.displayName}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
           )}
 
           {loadingCore && (
@@ -725,29 +809,6 @@ export default function DiscoverHubScreen({ navigation }) {
               ))}
             </>
           )}
-          {isAll && publicStories.length > 0 && (
-            <>
-              <Text style={styles.sectionHeader}>Public Stories Near You</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
-                {publicStories.map((group) => (
-                  <TouchableOpacity
-                    key={group.userId}
-                    style={styles.storyRing}
-                    onPress={() => setViewerTarget(group)}
-                    accessibilityLabel={`${group.displayName}'s public story`}
-                    accessibilityRole="button"
-                  >
-                    {storyPhotoUrls[group.userId] ? (
-                      <Image source={{ uri: storyPhotoUrls[group.userId] }} style={styles.storyAvatar} />
-                    ) : (
-                      <View style={[styles.storyAvatar, styles.storyAvatarPlaceholder]} />
-                    )}
-                    <Text style={styles.storyName} numberOfLines={1}>{group.displayName}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </>
-          )}
         </ScrollView>
       )}
 
@@ -855,6 +916,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   quickTimeCardIcon: { fontSize: 22, marginBottom: 4 },
   quickTimeCardText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
+  weatherBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.md,
+  },
+  weatherBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

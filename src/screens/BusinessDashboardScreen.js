@@ -311,7 +311,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await updateBusinessAddress(selectedPartner.id, addressInput.trim());
       setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim() }));
       setAddressModalVisible(false);
-      Alert.alert('Saved', 'Your business address is now set — offers will show to people nearby.');
+      Alert.alert('Saved', 'Your business address is now set — offers will show to people nearby, and your business will now appear on the map.');
     } catch (e) {
       Alert.alert('Error', e.message);
     }

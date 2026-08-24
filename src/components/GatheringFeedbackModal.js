@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { submitGatheringFeedback } from '../services/gatherings';
+import { maybeRequestAppReview } from '../services/appReview';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -62,6 +63,11 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
       // worth blocking or alarming someone over if it doesn't save.
     }
     setSubmitting(false);
+    // A real, clearly high-satisfaction moment — the one honest place
+    // in this app to ask for an App Store rating (see CLAUDE.md item 14).
+    if (satisfaction === 'loved_it') {
+      maybeRequestAppReview();
+    }
     // Only worth asking "what's next" if we actually have somewhere
     // useful to send them (navigation) — otherwise just close, same
     // as before this was added.

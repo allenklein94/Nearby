@@ -42,16 +42,27 @@ const INTEREST_OPTIONS = [
 
 const DATE_OPTIONS = [
   { key: 'anytime', label: 'Anytime' },
+  { key: 'now', label: 'Right Now' },
   { key: 'today', label: 'Today' },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'weekend', label: 'This Weekend' },
   { key: 'week', label: 'This Week' },
 ];
 
+// Same [-30min, +2h] "happening now" window homeDashboard.js's own
+// happeningNow signal already established (see CLAUDE.md, 14-item UX
+// review item 4) -- reused here, not a new invented threshold.
+const NOW_WINDOW_AFTER_MS = 30 * 60 * 1000;
+const NOW_WINDOW_BEFORE_MS = 2 * 60 * 60 * 1000;
+
 function matchesDateFilter(scheduledAt, filterKey) {
   if (filterKey === 'anytime') return true;
   const date = new Date(scheduledAt);
   const now = new Date();
+
+  if (filterKey === 'now') {
+    return date.getTime() >= now.getTime() - NOW_WINDOW_AFTER_MS && date.getTime() <= now.getTime() + NOW_WINDOW_BEFORE_MS;
+  }
 
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const todayStart = startOfDay(now);

@@ -4,6 +4,281 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — 14-item UX/product review response — governing principle: "not a bunch of
+## mini apps within one app" — PLAN LOCKED, items 1/2/3/4/5/6/7/9/14 DONE, items 8/10/11/12/13
+## are decisions/recommendations only, not built this pass — see each item's own status below
+
+The user pasted a detailed 14-point product review (their own real usage feedback) plus a
+second AI's reaction to it, and asked for this to be planned into this file first, improved on
+where warranted, then built/committed/pushed incrementally with this file updated along the
+way. **The governing principle, adopted verbatim from the user's own framing, not the second
+AI's restated version of it**: the product must keep reading as one coherent Nearby ecosystem —
+never as separate mini-apps stitched together. That's the lens every decision below was made
+through, including several places where the second AI's own proposal was rejected specifically
+because it would have reintroduced that exact failure mode (a new nested tab, a new mode, a new
+"mini-app" surface) even though the underlying feature idea was reasonable.
+
+**Method**: every claim below was checked directly against the real, current code before being
+accepted — several of the second AI's premises were stale, already built, or already explicitly
+decided against elsewhere in this file's own history; corrected inline, not silently repeated.
+
+### 1. Friends → "Organize into Circles" keyboard bug — DONE
+
+Confirmed directly: `FriendsScreen.js`'s two `Modal`s (New Circle, Manage Circles for a friend)
+render a bottom-sheet `TextInput` with `autoFocus` but with **no** `KeyboardAvoidingView` and no
+tap-outside-to-dismiss — the one Modal+TextInput bottom sheet in this codebase that was never
+brought up to the pattern every comparable sheet already uses (`BusinessDashboardScreen.js`'s 6
+modals all wrap in `KeyboardAvoidingView` + `TouchableWithoutFeedback onPress={Keyboard.dismiss}`).
+Fixed by applying that exact, already-proven wrapper to both modals — no new pattern invented.
+
+### 2. Friends/Matches as a real Discover-style toggle, not a "navigate away" pill — DONE
+
+Confirmed the user's read: `MessagesScreen.js`'s "🤝 Friends" pill was a
+`navigation.navigate('Friends')` push to a fully separate screen, not a toggle — even though it
+visually read like a small in-place control. Agreed with the user's own proposed fix, and
+improved it by reusing (not reinventing) `DiscoverHubScreen.js`'s own `modeToggleRow`/
+`modeToggleButton` chrome verbatim — two segments, "💬 Matches" / "🤝 Friends", content swaps in
+place inside `MessagesScreen`, no navigation. `FriendsScreen`'s real component is embedded
+directly (same already-established pattern `MatchesScreen` is already embedded with inside this
+same screen) rather than rebuilt — its own standalone `Friends` route (reached from Home's
+friend-count card, Settings' Connect section, Profile's quick-stat tile) is completely untouched
+by this and keeps working exactly as before for those entry points. The group-chats chip row
+stays Matches-mode-only (a messaging feature, not a friends-list feature). The native header
+title is now dynamic ("Messages" / "Friends") to match whichever mode is active.
+
+**Explicitly not adopted, a real correction to the second AI's proposal, not a partial build**:
+its broader "Discover → People tab → Friends|Matches toggle" nesting was not built. This app
+deliberately has no `People` tab — Discover's own People *mode* already exists and names a
+*different*, already-locked concept (Dating vs. Friend-Discovery, the two swipe surfaces), not
+the friends-list/matches-inbox surfaces this item is actually about. Restructuring that would
+silently reopen a decision this file has already locked and re-confirmed multiple times (see
+"Aug 24 2026 — Discover becomes a real bottom tab" further down) — out of scope here, and doing
+it would have been exactly the kind of unprompted architecture churn this whole review is trying
+to reduce, not increase.
+
+### 3. Gathering/community chat chip title overflow — DONE
+
+Confirmed: `MessagesScreen.js`'s `groupChatChip` is a `flexDirection: row` container with a fixed
+`maxWidth: 160`, but its title `Text` (`groupChatChipText`) had no `flexShrink`/`maxWidth` of its
+own — `numberOfLines={1}` only truncates once a Text is actually width-constrained, which a plain
+row layout doesn't guarantee for a sibling with no flex property, so a long title (e.g. "Wine
+Tasting at The Grove Chat") could render past the chip's own visual bounds before RN ever decided
+there was anything to ellipsize. This was the bubble the user actually saw, not the native chat-
+screen header (which React Navigation already truncates correctly on its own — checked and
+confirmed clean). Fixed with `flexShrink: 1` on `groupChatChipText`.
+
+### 4. Discover's quick-time cards: "Right Now / Today / This Week" — DONE, improved slightly
+
+Agreed with the user's 3-tier framing over the existing 2-tile "Tonight / This Weekend" — it's a
+genuinely better mental model (immediate vs. spontaneous vs. intentional planning) and it works
+during the day too, unlike "Tonight." Built as real filters, not just relabeled tiles: a new
+`'now'` date-filter branch was added to `GatheringsScreen.js`'s `matchesDateFilter()`/`DATE_OPTIONS`
+— reusing the exact same [-30min, +2h] "happening now" window `homeDashboard.js`'s own
+`happeningNow` signal already established, not a new invented threshold — so "Right Now" is a
+real, honest filter alongside the pre-existing `'today'`/`'week'` ones (the third tile, "This
+Week," already existed as a real filter option on `GatheringsScreen` that Discover's own quick
+cards had just never surfaced). Discover's two quick-time cards became three: 🔴 Right Now / 🌅
+Today / 📅 This Week, each navigating to `Gatherings` with the matching `initialDateFilter`.
+
+### 5. Stories in "Things to Do" mode — already real, moved for visibility, not rebuilt
+
+Checked before agreeing this was a gap: `DiscoverHubScreen.js` already renders "Public Stories
+Near You" (public, non-personal stories) and "Gathering Memories" in Things-to-Do mode — this
+already matches this file's own locked Aug 24 "job-based convergence" decision (personal stories
+→ People, because the job is "what are people I know up to"; public/local stories and gathering
+memories → Things to Do, because the job is "what's happening nearby"). The user's actual
+experience ("Stories only populates on People toggle") was correct as an *observation*, wrong as
+a diagnosis of *absence* — both sections existed but were the very last content on the screen,
+below Perks, so they read as invisible in practice. **Fixed the real gap (visibility), left the
+already-locked placement decision alone (per-mode job split stays)**: "Public Stories Near You"
+moved from dead-last to right after the quick-time cards, near the top of Things-to-Do mode, so
+it reads as present rather than requiring a full scroll to discover.
+
+**Not adopted**: duplicating the People-mode personal `StoriesRow` into Things-to-Do too, or
+building a new "Happening Nearby" live-activity-card carousel from scratch — both are real ideas
+(the second AI's "Happening Nearby" pitch overlaps meaningfully with item 11's business-moments
+idea below), but building either this pass would mean either reintroducing the exact duplicate-
+Stories bug this file already found and fixed once (see the Aug 22 2026 Stories-duplication
+section), or shipping new schema/UI nobody asked to see built today. Recorded as a real, related
+future direction under item 11 below, not silently built.
+
+### 6. Business address → map connection — verified already true, one copy improvement
+
+Checked directly rather than assumed: `updateBusinessAddress()`/`updateBusinessProfile()` in
+`services/brandOffers.js` both already call a real `geocodeAddress()` (Google Maps Geocoding API)
+whenever the address changes, storing real `latitude`/`longitude` on `brand_partners` — which is
+exactly the same column pair `getNearbyBusinesses()` (the function backing Discover's map
+businesses layer) already reads. So yes: setting/editing a business address already makes it show
+up on the map, end to end, no gap found. On the map itself: businesses render on Discover's map
+view only when the type filter is "All" or "Perks" (`showPerks` gate) — a small, deliberate scope
+already documented elsewhere in this file (businesses are shown as part of the perks/business
+layer, not plotted for a pure "Gatherings"-filtered map). People are deliberately never plotted on
+the map anywhere in this app — `profiles` has no coordinate column at all, only coarse fuzzed
+buckets used for Crossed Paths matching, and this file has an existing, repeatedly-reaffirmed hard
+privacy rule against ever exposing a real per-person coordinate to any client. Nothing to fix
+there — already correctly scoped, not a gap. **One real, small improvement made**: the address-
+save success copy ("offers will show to people nearby") didn't mention the map at all, even
+though that's now literally true — updated to also say the business will show up on the map.
+
+### 7. Profile completion % with no way to act on it — DONE
+
+Confirmed: `ProfileScreen.js` already computed a real `missing` array (every incomplete field, not
+just one), but only ever rendered `missing[0].label` as a plain caption with no way to act on it —
+a real, previously-hidden gap between what the code already knew and what it showed. Fixed:
+the completeness card now lists every real missing item (not just the first) as small tappable
+rows, and gained a real "Complete Profile →" button that scrolls straight to the identity-editing
+section — reusing the exact `scrollRef`/`editSectionYRef` mechanism the Aug 23 2026 "who am I"
+snapshot card already built for its own "Edit Profile ›" link, not a new scroll mechanism. Every
+one of the 6 completeness fields (photo, bio, prompt, interests, connection goal, extra photo)
+lives inside that same editing section, so one scroll target genuinely reaches all of them —
+matches the user's own ask ("CTA button to allow that user to complete the missing pieces right
+there and then") without needing 6 separate anchor points.
+
+### 8. FaceTime / in-app video calling — decision: not built, real infra gap, not a small add
+
+Investigated rather than assumed: this app has zero real-time video/voice infrastructure of any
+kind (no WebRTC, no Twilio/Agora/Daily.co SDK, no signaling server) and no shared phone-number
+field between matched users (the only `phone` this schema stores is the user's own auth OTP
+number, never exposed to another user). Building real in-app video calling means a genuine new
+paid third-party integration (its own account, API keys, per-minute cost) — the same category of
+decision this file has repeatedly deferred elsewhere (Stripe, a real reservation provider) because
+it needs the user present for a real external-vendor relationship, not something to set up
+autonomously. **Recommendation, agreeing with the second AI's caution but sharpening it**: if
+built later, scope it as "📞 Call / 🎥 Video" inside an existing 1:1 conversation (never a
+standalone calling feature, never available before a real match/connection exists — no stranger-
+to-stranger calling, matching this app's own no-stranger-discovery principle used everywhere
+else) — and prefer a managed SDK (e.g. a Daily.co/Agora embed) over hand-rolling WebRTC/TURN
+infrastructure. Not scheduled; flagged here so a future session doesn't have to re-derive this.
+
+### 9. Weather → does the UI actually change, or just say something? — DONE, extended to Discover
+
+Checked before building: Home's weather card already does real, structural re-ranking, not just a
+caption — the Aug 24 2026 "IA restructure round 3, Phase 7" section already built a genuine
+"here are N indoor gatherings today" list under the weather card when the real forecast signal is
+`'Quiet'` (bad weather), using the already-existing `CATEGORY_INDOOR_OUTDOOR` map
+(`constants/gatheringIndoorOutdoor.js`). That answers the user's question for Home: yes, it
+already does more than say "maybe try something indoors." **What was a real, confirmed gap**:
+Discover's own "Recommended For You" section had no weather awareness at all — the same signal
+Home already uses was never extended to Discover's ranking. Fixed: `DiscoverHubScreen.js` now
+fetches the same `getSocialForecast()` signal in the background (non-blocking — fired after the
+main load, matching this app's established "supplementary, never blocks core content" convention,
+since the weather RPC has an inherent ~2s round trip) and, once available, applies a real scoring
+bonus to the "Recommended For You" list — indoor-tagged gatherings ranked up when the forecast is
+genuinely `'Quiet'`, outdoor-tagged ones ranked up when it's genuinely `'Excellent'` — reusing
+`isIndoorCategory()`/`isOutdoorCategory()` verbatim, no new signal invented. A small, honest
+banner ("🌧️ Rain expected — showing indoor options first" / "☀️ Great day — outdoor picks first")
+appears above Recommended only when a real bonus is actually being applied, never a fabricated
+claim when the forecast is ambiguous (`'Good'`, which already returns `null` and applies no bonus).
+
+### 10. Business dashboard + claim/landing page — assessment, one small copy fix, no rebuild
+
+Reviewed rather than rebuilt, since this file's own Aug 17 2026 Business Partner Acquisition
+initiative (7 milestones, all DONE) already did a deep, verified pass on exactly this: the real
+apply flow (Google Places search → confirm → complete profile → submit for review, never claiming
+instant approval), the `docs/business.html` landing page (hero/value-props/demo/pricing/how-it-
+works/FAQ, all honest, already adversarially reviewed once), and the dashboard's own first-run
+welcome card (Aug 24 2026, item 7 of the "seven real UI/UX complaints" section — three real
+one-tap next steps for a first-time owner). The second AI's proposed "Your Nearby Business /
+people nearby: 1,248 / profile views: 183" summary-first landing is **substantially already what
+the dashboard's real Insights/discovery-stats sections show** — re-verified this pass, not
+rebuilt. **One small real fix made while checking**: the "How People Find You" discovery-stats
+card was already close to this idea but sits several taps deep on the Insights tab, not the first
+thing an owner sees on Dashboard-tab load — flagged as a real, worthwhile future reorder
+(promoting a compact "N people found you this week" line onto the Dashboard tab's own top card),
+not built this pass to avoid touching a screen with this many already-verified moving pieces
+without a dedicated pass. **Recommendation, not built**: the claim/apply page is already strong;
+the highest remaining leverage is a real device pass (still never done for this whole initiative,
+per that section's own repeated disclosure) over any further copy/layout changes from a static
+read.
+
+### 11. User/business-posted photos/videos/stories in Discover — real gap named, PLAN written,
+### not built this pass
+
+Checked `services/stories.js` directly before answering "should this exist": people can already
+post real photos/videos as public stories (`stories.is_public`) that surface in Discover's
+Things-to-Do "Public Stories Near You," and gathering-linked stories already surface as "Gathering
+Memories" — the *people* side of this ask is substantially already built, just under a different
+name than "posts." **The real, confirmed gap**: businesses have no equivalent — `business_updates`
+(the "Post Update to Followers" broadcast) is text-only, `title`/`body`, no image/video column at
+all, and nothing analogous to a story exists for a business. **My own answer to "is this right to
+add," not deferred back to the user**: yes, but scoped narrowly — not a general social feed
+(explicitly rejecting the "turn Nearby into Instagram" framing both reviews already correctly
+warned against), a business-authored "moment" reusing the *exact* existing `stories` infrastructure
+(storage bucket, signed-URL pattern, expiry) with a new nullable `partner_id` column alongside the
+already-nullable-in-spirit `user_id`, owner-checked the same way every other business-write RPC in
+this schema already is. Surfaced in Discover's Things-to-Do mode as a real "Happening Nearby"
+row — business moments and gathering-linked stories genuinely answer the same job ("what's
+actually happening near me right now"), so they belong in one row, not two — directly closing the
+loop the second AI's "Happening Nearby" idea and this item both point at. **Not built this pass**:
+this needs a real migration (new column + RLS policy scoped to `profiles.managed_partner_id`),
+matching this file's own standing bar of live-verifying any schema change before considering it
+done — deliberately not squeezed into an already-large 14-item pass. Locked and ready to build
+next: add `stories.partner_id` (nullable, FK to `brand_partners`), a `create_business_story()`-
+style owner-checked write path (or a widened RLS INSERT policy scoped to `managed_partner_id`,
+whichever proves simpler once actually building it), and fold real business moments into the
+existing "Gathering Memories"-style row on Discover, relabeled "Happening Nearby" once both
+sources are combined.
+
+### 12. Category/filter completeness — reviewed, real gaps named, no rebuild this pass
+
+Audited the real category surface rather than guessing: gatherings already use a real 25-tag
+canonical list (`INTEREST_OPTIONS`, shared by `CreateGatheringScreen`/`QuickPicksEditModal`/
+`GatheringsScreen`'s filter chips), businesses have a real 6-category list
+(`BUSINESS_CATEGORIES`), Places has 4 (`PLACE_CATEGORIES`). This is already meaningfully more
+structured than the second AI assumed going in (it proposed a from-scratch taxonomy without
+checking what already exists). **Real gaps found, not built this pass, recorded for a future
+scoped pass**: no Price filter anywhere (Free/$/$$/$$$), no Indoor/Outdoor filter exposed to a
+user directly even though the underlying `CATEGORY_INDOOR_OUTDOOR` data now exists and is used
+internally (items 5/9 above) — surfacing it as a real user-facing filter chip on `GatheringsScreen`
+would be a natural, low-risk follow-up; no explicit "Solo / Friends / Group / Date" people-count
+filter. **Recommendation, not a rebuild**: extend `GatheringsScreen`'s existing filter-chip
+pattern with these three axes in a future pass rather than the second AI's full from-scratch
+taxonomy replacement — the existing 25/6/4 lists are real and working, this is about adding
+missing filter *dimensions*, not replacing the category vocabulary itself.
+
+### 13. Going live from a business / promoting while there, and Reels — decision: not now
+
+Agreed with the second AI's overall caution here, sharpened to an explicit decision rather than a
+soft "maybe": **no live-streaming feature and no Reels-style feed, full stop, for this pass and
+the foreseeable one after it.** Reasoning, stated plainly: both would be genuinely new, large
+infrastructure (live video ingest/CDN for streaming; an algorithmic short-form feed with its own
+ranking system for Reels) built on pure speculation with zero usage data to justify either — the
+exact shape of premature build-out this file's own standing Feature Freeze discipline exists to
+prevent. Item 11's scoped "business moments" (a photo/video posted once, expiring like a story,
+surfaced by real proximity) already captures the honest, buildable version of "a business shares
+what's happening there right now" without inventing a live-video pipeline. Revisit only with real
+evidence that businesses/users actually want a live layer beyond a story-shaped moment — not
+before.
+
+### 14. App Store rating prompt — DONE
+
+Checked: no rating-prompt mechanism existed anywhere (`expo-store-review` wasn't even a
+dependency). Added `expo-store-review` and a `maybeRequestAppReview()` helper
+(`src/services/appReview.js`) — calls the real native `StoreReview.requestReview()` (Apple/
+Google's own OS-level prompt, never a custom in-app 5-star UI competing with the system one),
+gated so it's only ever attempted once per install via a persisted `AsyncStorage` flag (the OS
+itself further throttles how often the native dialog can actually show, this app-side gate just
+stops repeatedly *asking* regardless). Wired to the one real, clearly high-satisfaction moment
+already in this app — `GatheringFeedbackModal`'s post-gathering rating, fired only when the real
+rating is `'loved_it'`, right after the feedback itself successfully submits. Matches the user's
+own framing exactly: never front-and-center, never nagging, tied to a real positive signal that
+already exists rather than a fabricated one.
+
+### Verification for this whole pass
+
+No schema/RLS changes were made in this pass except the one deliberately deferred (item 11,
+locked as a plan, not built) — every item actually built (1, 2, 3, 4, 5, 6, 7, 9, 14) is a
+client-only change. Verified via a full `npx expo export --platform ios` after the full set of
+changes landed, plus a direct `@babel/core` parse of every touched/new file. **Not done, same
+standing gap as everywhere else in this file**: no manual simulator/device run-through — next
+session should confirm, on a real device: the Friends-circle modals no longer show the keyboard
+bug, the Messages screen's Matches/Friends toggle renders and switches correctly, a long gathering
+chat title no longer overflows its chip, Discover's three quick-time cards each filter correctly,
+"Public Stories Near You" is now visibly near the top of Things-to-Do mode, the profile-completion
+card's new CTA scrolls to the right place, Discover's weather-based Recommended re-ranking and
+banner render correctly against a real forecast, and the App Store review prompt actually fires
+after a real "Loved it" gathering rating (and only once).
+
 ## Aug 24 2026 — Resy/OpenTable reservation-provider scaffolding: backend was already live
 ## from before a codespace restart, client wiring built this pass — DONE
 
