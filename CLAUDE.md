@@ -4,6 +4,133 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — required fields on "Ask Nearby Businesses" + Friend Discovery chrome
+## parity with Dating — PLAN LOCKED, both pieces now DONE (see status notes below)
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file. Direct response to a real user critique (an external-AI design conversation
+pasted in full) raising two separate points, both verified against the actual current code
+before planning anything — not accepted at face value.
+
+### Point 1 — `AskBusinessScreen.js`'s fields should be mandatory, not optional, for real
+### matching, plus a genuinely separate optional "anything else" note
+
+**Verified first**: today, only the free-text "What do you want?" field is actually required
+(`if (!text.trim())` gate) — category, when, party size, and budget are all optional chips/
+inputs a user can skip entirely, across all four entry modes (solo/gathering/match/community).
+Only one `raw_text` column exists server-side (`business_requests.raw_text`) — there is no
+second free-text column to add, so a real second "anything else" box needs to be a client-side
+composition, not a schema change.
+
+**Locked design**: every field that's actually rendered as an editable input in a given mode
+becomes required (validated in `handleSubmit()`, one clear ordered `Alert` naming the first
+missing field — matching this screen's own existing single-check convention, not a blanket
+"fill in required fields" message). Fields that are already server-sourced per mode (gathering
+mode's party size/date, match mode's party size) stay correctly hidden and unrequired — this
+locked exemption is unchanged. A genuinely new, real second field — "Anything else? (optional)"
+— is added, always optional, concatenated onto the existing required "What do you want?" text at
+submit time (`${text}. ${extraNotes}` when non-empty) before it's sent as the one real
+`raw_text_param` the RPC already accepts — no RPC/schema change needed. A small, honest
+structured recap ("Looking for: … · When: … · People: … · Budget: $… · Within N mi") renders
+just above the Submit button, reusing the exact same "real preview built from the state about to
+be submitted" pattern Create 2.0's own Publish step already established — not a new UI concept.
+
+### Point 2 — Friend Discovery reads as a different, blank product next to Dating
+
+**Verified first**: `FriendDiscoverySwipeCards.js`'s card content is already genuinely rich
+(name, distance, shared-interest/community/mutual-friend context, bio, interest chips) —
+comparable to Dating's own `SwipeableDiscoveryCards.js`, so the "blank"/"different product"
+feeling isn't a card-content gap. The real, structural gap: `RootNavigator.js` registers
+`FriendDiscovery` as `headerShown: false` (forcing `FriendDiscoveryScreen.js` to hand-roll its
+own bare back button with no title/subtitle anywhere), while `Nearby` (Dating) is registered
+`headerShown: true, headerTransparent: true` and gets a real native back chevron for free,
+leaving `DiscoveryScreen.js` free to render a persistent, theme-consistent header (title +
+subtitle) across every one of its states. Friend Discovery's own "not yet enabled" state
+(genuinely the state most users mean when they say "it's blank") renders nothing but a bare back
+arrow above a centered emoji/title/body/button — no header row at all until the deck itself
+loads.
+
+**Explicitly not built, per a hard, repeatedly-locked decision elsewhere in this file**: Dating
+and Friend Discovery stay two separate matching engines with separate consent models — this
+pass does not merge them, does not build the external doc's broader "one universal MODE/INTENT/
+MATCHING/ACTION framework" spanning the business loop, and does not add a Fitness mode (the user
+directly confirmed Fitness was "just an example" illustrating the same principle, not a real
+ask). Scope is narrowly: give Friend Discovery the same **chrome** Dating already has —
+consistent header/back-button treatment across every render state — not a merged product.
+
+**Locked design**: `FriendDiscovery`'s route registration changes to the identical
+`headerShown: true, title: '', headerTransparent: true, headerTintColor, headerShadowVisible:
+false` shape `Nearby`/`Gatherings`/`Communities` already use — the native header now supplies
+the back chevron for free, so `FriendDiscoveryScreen.js`'s own hand-rolled `BackButton`/`topBar`
+are removed entirely. A new, persistent header block (title "🤝 Friends" + a constant, honest
+subtitle — "People nearby who are also here to make friends — separate from dating.") renders at
+the very top of *every* render branch (loading/error/not-enabled/enabled), reusing the exact
+`header`/`headerRow`/`headerTitle`/`headerSubtitle` style tokens `DiscoveryScreen.js` already
+established (same `spacing`/`typography`/`colors` values, not new ones) — so the screen never
+again looks blank at any point, and switching between Dating and Friends reads as the same
+product with a different focus, not two different apps. The existing On/Off `Switch` is kept
+(a real, necessary control — this screen's one genuine difference from Dating, which has no
+opt-in gate) but re-homed into the header's right side, matching where Dating places its own
+info/view-toggle buttons.
+
+**Verification plan**: a direct `@babel/core` parse of both touched files, a full `npx expo
+export --platform ios`, and the full Jest suite. Same standing limitation as everywhere else in
+this file: no manual simulator/device run-through is possible from this sandbox — flagged for
+next session, same as always.
+
+**Status: both pieces are DONE, build-wise — see each one's own status note below.**
+
+**Point 1 — DONE, one real design correction made while building, not silently smoothed over.**
+Built almost exactly per the locked design above, with one honest adjustment: "When?" is **not**
+given a required-field gate. The chip row always has a real, deterministic value already
+selected (defaults to `'flexible'`, a genuine "no preference" answer, never an unanswered
+field) — there's no missing state a `!dateWindow` check could ever actually catch, so adding one
+would have been dead code pretending to enforce something that was already true. The real,
+enforced-with-a-specific-alert set is: category, party size (skipped in gathering/match mode,
+both of which already source it server-side), and budget max — each checked in
+`handleSubmit()`'s own `findMissingField()`, one specific `Alert` naming exactly what's missing,
+before the existing text-required check (kept first, matching its prior primacy as the one field
+required since this screen was built). A new
+"Anything else? (optional)" `TextInput` was added directly below the required text field —
+genuinely, unconditionally optional, concatenated onto the required text at submit time only
+when non-empty, so the RPC still only ever receives the one real `raw_text_param` it always has.
+A new recap card renders directly above the Submit button once the required fields for that mode
+are all filled — a real, honest summary line built from the same state about to be submitted
+("Looking for: {text} · {category} · {date label} · {party size} people · Up to ${budget} ·
+Within {radius} mi"), reusing the exact `matchedAvailabilityBanner`-style card treatment already
+on this screen (bordered `colors.surface` card, no new visual language). The submit button's own
+`disabled` condition is unchanged (text-only, matching its prior behavior) — full validation
+still happens on tap, per this screen's own established convention, not via a grayed-out button
+with no visible reason.
+
+**Point 2 — DONE.** `RootNavigator.js`'s `FriendDiscovery` registration now exactly matches
+`Nearby`'s (`headerShown: true, title: '', headerTransparent: true, headerTintColor:
+colors.textPrimary, headerShadowVisible: false`). `FriendDiscoveryScreen.js`'s hand-rolled
+`BackButton` component and every `topBar`/`backButton` render branch were removed — the native
+header now supplies the back chevron for free, matching `Gatherings`/`Communities`/`Nearby`'s
+own established pattern exactly. A new persistent header block (🤝 "Friends" title + a constant
+subtitle, "People nearby who are also here to make friends — separate from dating.") now renders
+identically across all four render branches (loading/error/not-enabled/enabled), reusing
+`DiscoveryScreen.js`'s own `header`/`headerRow`/`headerTitle`/`headerSubtitle` style values
+verbatim (not approximated). The On/Off `Switch` moved into the header's own right side (only
+shown once `enabled` is true — before that, there's nothing to toggle off yet), matching where
+Dating hangs its own info/view-toggle buttons off the same `headerRow`. The not-enabled
+explainer's own emoji/title/body/button content is otherwise unchanged — only the chrome around
+it changed.
+
+Verified via a direct `@babel/core` parse of both touched files (clean), a full `npx expo export
+--platform ios` (clean, no bundling errors), and the full Jest suite (67/67, unaffected — no
+pure-logic file was touched by either piece).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: `AskBusinessScreen`'s new required-
+field validation fires the right specific alert for each missing field across all four modes,
+the "Anything else?" note genuinely stays optional and gets correctly appended only when filled
+in, and the recap card renders correctly once every required field for that mode is set; and
+that `FriendDiscoveryScreen`'s new header renders correctly (no visual collision with the native
+transparent back chevron, matching the already-proven `Nearby`/`Gatherings` pattern) across all
+four of its render states, and that the re-homed On/Off switch still toggles correctly.
+
 ## Aug 24 2026 — static-analysis bug audit, one real bug found and fixed — DONE
 
 Direct follow-up to a request to keep auditing for bugs (continuing a pass a codespace restart

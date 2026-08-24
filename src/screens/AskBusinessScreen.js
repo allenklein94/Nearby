@@ -139,11 +139,32 @@ export default function AskBusinessScreen({ navigation, route }) {
   // (a gathering's own "Ask Local Businesses" link, a direct nav) --
   // stays honestly null there, never fabricated.
   const submissionId = route.params?.prefillSubmissionId ?? null;
+  const [extraNotes, setExtraNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Per the locked design (CLAUDE.md, Aug 24 2026): every field genuinely
+  // rendered as an editable input in this mode is required -- fields
+  // already server-sourced per mode (gathering's party size/date, match's
+  // party size) stay correctly exempt. Checked in the same top-to-bottom
+  // order the fields render in, one specific alert per missing field,
+  // matching this screen's own established single-check convention rather
+  // than a generic "fill in required fields" message.
+  // Date isn't checked here -- the "When?" chip row always has a real,
+  // deterministic value selected (defaults to 'flexible', a genuine "no
+  // preference" answer, not an unanswered field), so there's no missing
+  // state to validate against for it.
+  function findMissingField() {
+    if (!text.trim()) return { title: 'Tell us what you want', body: 'A few words about what you’re looking for.' };
+    if (!category) return { title: 'Pick a category', body: 'Helps us route this to the right kind of business.' };
+    if (!gatheringId && !matchId && !partySize.trim()) return { title: 'How many people?', body: 'A real party size helps a business quote the right offer.' };
+    if (!budgetMax.trim()) return { title: 'What’s your budget?', body: 'A rough ceiling is enough -- it just helps businesses respond with something realistic.' };
+    return null;
+  }
+
   async function handleSubmit() {
-    if (!text.trim()) {
-      Alert.alert('Tell us what you want', 'A few words about what you’re looking for.');
+    const missing = findMissingField();
+    if (missing) {
+      Alert.alert(missing.title, missing.body);
       return;
     }
     setSubmitting(true);
@@ -154,11 +175,18 @@ export default function AskBusinessScreen({ navigation, route }) {
       const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
       const safePartySize = Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null;
 
+      // Only one real raw_text column exists server-side -- the optional
+      // "Anything else?" note is a genuinely separate, always-optional
+      // field client-side, appended onto the required text only when
+      // filled in, so businesses still only ever get the one composed
+      // description.
+      const finalText = extraNotes.trim() ? `${text.trim()}. ${extraNotes.trim()}` : text.trim();
+
       let result;
       if (gatheringId) {
         result = await submitBusinessRequestForGathering({
           gatheringId,
-          text: text.trim(),
+          text: finalText,
           category,
           budgetMax: safeBudgetMax,
           radiusMiles,
@@ -166,7 +194,7 @@ export default function AskBusinessScreen({ navigation, route }) {
       } else if (matchId) {
         result = await createBusinessRequestForMatch({
           matchId,
-          text: text.trim(),
+          text: finalText,
           category,
           budgetMax: safeBudgetMax,
           date: toDateParam(dateWindow),
@@ -175,7 +203,7 @@ export default function AskBusinessScreen({ navigation, route }) {
       } else if (communityId) {
         result = await submitBusinessRequestForCommunity({
           communityId,
-          text: text.trim(),
+          text: finalText,
           category,
           partySize: safePartySize,
           budgetMax: safeBudgetMax,
@@ -184,7 +212,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         });
       } else {
         result = await submitBusinessRequest({
-          text: text.trim(),
+          text: finalText,
           category,
           partySize: safePartySize,
           budgetMax: safeBudgetMax,
@@ -202,7 +230,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         justSubmitted: true,
         notifiedCount: result.notifiedCount,
         duplicate: result.duplicate,
-        prefillText: text.trim(),
+        prefillText: finalText,
         prefillCategory: category,
         prefillPartySize: safePartySize,
         prefillBudgetMax: safeBudgetMax,
@@ -221,6 +249,24 @@ export default function AskBusinessScreen({ navigation, route }) {
       Alert.alert('Something went wrong', e.message);
     }
     setSubmitting(false);
+  }
+
+  // A real, honest recap built from the exact state about to be submitted --
+  // same "preview the state you're about to submit" pattern Create 2.0's own
+  // Publish step already established, not a new UI concept. Only rendered
+  // once every field genuinely required for this mode is actually filled in.
+  const recapReady = findMissingField() === null;
+  const recapParts = [];
+  if (recapReady) {
+    recapParts.push(`Looking for: ${text.trim()}`);
+    if (category) recapParts.push(category);
+    if (!gatheringId) {
+      const dateLabel = DATE_OPTIONS.find((d) => d.key === dateWindow)?.label;
+      if (dateLabel) recapParts.push(dateLabel);
+    }
+    if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
+    if (budgetMax.trim()) recapParts.push(`up to $${budgetMax.trim()}`);
+    recapParts.push(`within ${radiusMiles} mi`);
   }
 
   return (
@@ -264,7 +310,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           <Text style={styles.label}>What do you want?</Text>
           <TextInput
             style={styles.textArea}
-            placeholder="Dinner for 4 tonight, budget around $150…"
+            placeholder="Dinner for 4 tonight…"
             placeholderTextColor={colors.textTertiary}
             value={text}
             onChangeText={setText}
@@ -272,7 +318,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             accessibilityLabel="What do you want?"
           />
 
-          <Text style={styles.label}>Category (optional)</Text>
+          <Text style={styles.label}>Category</Text>
           <View style={styles.chipRow}>
             {CATEGORY_OPTIONS.map((c) => (
               <TouchableOpacity
@@ -309,7 +355,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           <View style={styles.row}>
             {!gatheringId && !matchId && (
               <View style={{ flex: 1, marginRight: spacing.sm }}>
-                <Text style={styles.label}>Party size (optional)</Text>
+                <Text style={styles.label}>Party size</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. 4"
@@ -322,7 +368,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               </View>
             )}
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Budget max (optional)</Text>
+              <Text style={styles.label}>Budget max</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. 150"
@@ -334,6 +380,17 @@ export default function AskBusinessScreen({ navigation, route }) {
               />
             </View>
           </View>
+
+          <Text style={styles.label}>Anything else? (optional)</Text>
+          <TextInput
+            style={[styles.textArea, { minHeight: 60 }]}
+            placeholder="Atmosphere, dietary needs, anything else that'd help…"
+            placeholderTextColor={colors.textTertiary}
+            value={extraNotes}
+            onChangeText={setExtraNotes}
+            multiline
+            accessibilityLabel="Anything else? Optional."
+          />
 
           <Text style={styles.label}>Search radius</Text>
           <View style={styles.chipRow}>
@@ -349,6 +406,12 @@ export default function AskBusinessScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          {recapReady && (
+            <View style={styles.recapCard}>
+              <Text style={styles.recapText}>{recapParts.join(' · ')}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.submitButton, (submitting || !text.trim()) && styles.submitButtonDisabled]}
@@ -376,6 +439,11 @@ const getStyles = (colors) => StyleSheet.create({
   matchedAvailabilityTitle: { ...typography.body, fontWeight: '700', color: colors.textPrimary, marginBottom: 2 },
   matchedAvailabilityText: { ...typography.body, color: colors.primary, fontWeight: '600', marginBottom: 2 },
   matchedAvailabilityDescription: { ...typography.caption, color: colors.textSecondary },
+  recapCard: {
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginTop: spacing.lg,
+  },
+  recapText: { ...typography.caption, color: colors.textSecondary, lineHeight: 19 },
   label: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.md },
   textArea: {
     ...typography.body, color: colors.textPrimary, backgroundColor: colors.surface,

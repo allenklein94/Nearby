@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   isOpenToFriendDiscovery,
@@ -15,9 +14,22 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-// The one real entry point into Friend Discovery -- a completely
-// separate product surface from dating discovery, its own screen chrome,
-// its own copy throughout. Reached from Discover's "Meet New Friends" card.
+// The one real entry point into Friend Discovery -- a completely separate
+// product surface from dating discovery (own opt-in gate, own matching
+// engine, own consent model -- see CLAUDE.md, never merged into Dating's
+// pool). Reached from Discover's People mode.
+//
+// Aug 24 2026 (CLAUDE.md): this screen's own chrome used to diverge hard
+// from Dating's -- registered headerShown:false in RootNavigator (forcing
+// a hand-rolled back button with no title/subtitle anywhere), where Dating
+// gets a real native transparent header + a persistent title/subtitle
+// DiscoveryScreen.js builds itself. That divergence, not the card content
+// (already comparably rich -- shared interests/communities/mutual friends,
+// bio, chips), is what made this read as "a different, blank product."
+// Fixed by matching Nearby's exact route registration and rebuilding this
+// screen's own header to reuse DiscoveryScreen's header/headerRow/
+// headerTitle/headerSubtitle style values verbatim, present across every
+// render branch -- never again just a bare back arrow over nothing.
 export default function FriendDiscoveryScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -120,29 +132,36 @@ export default function FriendDiscoveryScreen({ navigation }) {
     }
   }
 
-  // This screen is reached as a top-level stack push (not a bottom tab),
-  // headerShown: false in RootNavigator -- with no visible way back, it
-  // was a real dead end (a real user-reported bug: the only way out was
-  // an undiscoverable OS-level swipe/back-button gesture). Every render
-  // branch below gets its own explicit back button, not just the deck.
-  const BackButton = () => (
-    <TouchableOpacity
-      onPress={() => navigation.goBack()}
-      style={styles.backButton}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      accessibilityLabel="Go back"
-      accessibilityRole="button"
-    >
-      <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-    </TouchableOpacity>
+  // Reused identically across every render branch below so the screen
+  // never again reads as blank -- the native header (headerTransparent,
+  // matching Nearby's own registration) already supplies the back
+  // chevron, so this block is purely the persistent title/subtitle and,
+  // once there's something to toggle, the On/Off switch -- the same
+  // headerRow-right-side placement Dating uses for its own info/view-
+  // toggle buttons.
+  const Header = () => (
+    <View style={styles.header}>
+      <View style={styles.headerRow}>
+        <Text style={styles.headerTitle} accessibilityRole="header">
+          🤝 Friends
+        </Text>
+        {enabled && (
+          <View style={styles.headerToggle}>
+            <Text style={styles.headerToggleLabel}>On</Text>
+            <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} />
+          </View>
+        )}
+      </View>
+      <Text style={styles.headerSubtitle}>
+        People nearby who are also here to make friends — separate from dating.
+      </Text>
+    </View>
   );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.topBar}>
-          <BackButton />
-        </View>
+        <Header />
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -153,9 +172,7 @@ export default function FriendDiscoveryScreen({ navigation }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.topBar}>
-          <BackButton />
-        </View>
+        <Header />
         <View style={styles.centered}>
           <LoadErrorState message="Couldn't load Meet New Friends." onRetry={load} />
         </View>
@@ -166,9 +183,7 @@ export default function FriendDiscoveryScreen({ navigation }) {
   if (!enabled) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.topBar}>
-          <BackButton />
-        </View>
+        <Header />
         <View style={styles.explainer}>
           <Text style={styles.explainerEmoji}>🤝</Text>
           <Text style={styles.explainerTitle}>Meet New Friends</Text>
@@ -195,16 +210,7 @@ export default function FriendDiscoveryScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <BackButton />
-          <Text style={styles.headerTitle}>Meet New Friends</Text>
-        </View>
-        <View style={styles.headerToggleRow}>
-          <Text style={styles.headerToggleLabel}>On</Text>
-          <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} />
-        </View>
-      </View>
+      <Header />
 
       <FriendDiscoverySwipeCards data={candidates} photoUrls={photoUrls} onSwipe={handleSwipe} />
 
@@ -226,15 +232,14 @@ export default function FriendDiscoveryScreen({ navigation }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  topBar: { paddingHorizontal: spacing.sm, paddingTop: spacing.xs },
-  backButton: { padding: spacing.xs, alignSelf: 'flex-start' },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.sm, paddingVertical: spacing.sm,
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  headerTitle: { ...typography.headline, color: colors.textPrimary },
-  headerToggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  // Same values as DiscoveryScreen.js's own header/headerRow/headerTitle/
+  // headerSubtitle -- reused verbatim, not approximated, so the two
+  // screens' chrome is genuinely identical, not just similar.
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerTitle: { ...typography.title, color: colors.textPrimary },
+  headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
   explainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
   explainerEmoji: { fontSize: 48, marginBottom: spacing.md },

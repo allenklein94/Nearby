@@ -482,7 +482,7 @@ export default function RootNavigator() {
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: 'Edit Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Timeline" component={TimelineScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="FriendDiscovery" component={FriendDiscoveryScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="FriendDiscovery" component={FriendDiscoveryScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
           </>
         )}
       </Stack.Navigator>
