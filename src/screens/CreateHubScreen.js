@@ -128,11 +128,10 @@ export default function CreateHubScreen({ navigation }) {
             <TabHeaderActions navigation={navigation} />
           </View>
 
-          {/* Phase 5: Discover left the bottom tab bar; this is the one
-              real reachable link into it from here (Create absorbs
-              Discover's browsing role by pointer, not yet a full
-              behavioral merge into this screen's own flow -- disclosed
-              in CLAUDE.md rather than silently claimed done). */}
+          {/* Aug 24 2026: Discover is a real bottom tab again (see
+              CLAUDE.md) -- this stays as a real, harmless secondary
+              shortcut straight into its Things-to-Do mode, not the only
+              way to reach it anymore. */}
           {!activeSubCategory && !showSomethingElse && (
             <TouchableOpacity
               style={styles.browseLink}

@@ -24,7 +24,6 @@ import HomeScreen from '../screens/HomeScreen';
 import DiscoverHubScreen from '../screens/DiscoverHubScreen';
 import FriendDiscoveryScreen from '../screens/FriendDiscoveryScreen';
 import CreateHubScreen from '../screens/CreateHubScreen';
-import PeopleScreen from '../screens/PeopleScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import CommunitiesScreen from '../screens/CommunitiesScreen';
 import CreateCommunityScreen from '../screens/CreateCommunityScreen';
@@ -180,18 +179,18 @@ async function resolveAndNavigateToBusiness(partnerId) {
   }
 }
 
-// Phase 5 of the "build everything" plan (see CLAUDE.md): the
-// reconciled 4-tab target model -- Home / People / Create / Activity.
-// Discover and Profile both left the bottom bar (Discover's browsing
-// content is reachable via Create's own "Browse" entry point below;
-// Profile moved to the persistent header-icon avatar, TabHeaderActions)
-// -- both are still real, registered Stack screens, just pushed rather
-// than tabbed, so every existing `navigate('Discover'|'Profile')` call
-// site still resolves via the normal parent-navigator bubbling React
-// Navigation already does for an unmatched route name.
+// Aug 24 2026 (CLAUDE.md): the current 4-tab model -- Home / Discover /
+// Create / Activity. Discover was a Phase 5 casualty (pushed screen only,
+// reachable via a single buried hyperlink) despite being a core
+// exploration surface -- it's a real tab again, with People folded in as
+// a mode inside it (Things to Do / People) rather than People keeping its
+// own tab for comparatively little content. Profile stays off the bottom
+// bar, reached via the persistent header-icon avatar (TabHeaderActions);
+// `navigate('Profile')` still resolves via the normal parent-navigator
+// bubbling React Navigation does for an unmatched route name.
 const TAB_ICONS = {
   Home: { active: 'home', inactive: 'home-outline', label: 'Home' },
-  People: { active: 'people', inactive: 'people-outline', label: 'People' },
+  Discover: { active: 'compass', inactive: 'compass-outline', label: 'Discover' },
   Create: { active: 'add-circle', inactive: 'add-circle-outline', label: 'Create' },
   Activity: { active: 'notifications', inactive: 'notifications-outline', label: 'Activity' },
 };
@@ -261,7 +260,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="People" component={PeopleScreen} />
+      <Tab.Screen name="Discover" component={DiscoverHubScreen} />
       <Tab.Screen name="Create" component={CreateHubScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} options={{ tabBarBadge: activityBadgeCount > 0 ? activityBadgeCount : undefined }} listeners={{ focus: loadActivityBadgeCount }} />
     </Tab.Navigator>
@@ -376,15 +375,17 @@ export default function RootNavigator() {
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={MainTabs} />
-            {/* Phase 5: Profile and Discover both left the bottom tab bar --
-                Profile reached via the persistent header-icon avatar
-                (TabHeaderActions), Discover reached via Create's own
-                "Browse" entry point -- both stay real, pushed screens (a
-                transparent native header for the real back chevron, same
-                shape as Nearby/Gatherings/Communities below, since both
-                already render their own in-JS header/title). */}
+            {/* Phase 5: Profile left the bottom tab bar -- reached via the
+                persistent header-icon avatar (TabHeaderActions) -- and
+                stays a real, pushed screen (a transparent native header for
+                the real back chevron, same shape as Nearby/Gatherings/
+                Communities below, since it already renders its own in-JS
+                header/title). Discover, unlike Profile, is a real bottom
+                tab again as of Aug 24 2026 (see CLAUDE.md) -- People merged
+                into it as a mode, so there's no separate pushed Discover
+                screen anymore; `navigate('Discover')` from a sibling tab
+                resolves to the tab directly. */}
             <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Discover" component={DiscoverHubScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: 'Messages', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             {/* headerShown starts true (blank title, real back chevron) so

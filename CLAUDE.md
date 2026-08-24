@@ -111,7 +111,63 @@ no new files added — everything else is edits). Same standing limitation as ev
 this file: no manual simulator/device run-through is possible from this sandbox — flagged for
 next session, same as always.
 
-**Status: plan locked, build starts now — see this section's own status note once it lands.**
+**Status: DONE, build-wise.** Built exactly per the plan above, no design changes during
+implementation.
+
+`DiscoverHubScreen.js` now holds two modes behind a real `useState('things')`, restored from
+`AsyncStorage`'s `discover_last_mode` key on mount (persisted on every tap, not just on leaving
+the screen). The header row now matches every other tab root's shape exactly (`headerRow`: title
+block `flex:1` + `TabHeaderActions` on the right) — Discover never had `TabHeaderActions` before
+since it used to be a pushed screen with its own native transparent-header back chevron; that
+native registration is gone now (see below), so this in-JS header is the only one. A new
+`modeToggleRow` (two `flex:1` segmented buttons, active state reusing the same
+`primaryMuted`/`primary`-border treatment `filterChip`/`filterChipActive` already established a
+few lines down, so no new color language was introduced) sits directly under the subtitle.
+Things-to-Do mode is the screen's entire prior body, untouched — search bar, `TYPE_FILTERS` chip
+row, map/list toggle, Places category chips, Recommended/Trending, all four content sections,
+Gathering Memories, Public Stories — now just nested under `mode === 'things'` (implicitly, via
+the render ternary's `viewStyle === 'map' ... : (...)` else-branch, since `mode` only has two
+values and the `mode === 'people'` branch is checked first — no separate wrapping `{mode ===
+'things' && (...)}` needed, simpler than the plan's own literal wording). People mode renders
+`<StoriesRow />` plus the exact `PEOPLE_MODES` two-row module ported verbatim from the retired
+`PeopleScreen.js` — same data, same styles (`peopleModule`/`peopleModuleRow`/
+`peopleModuleDivider`, copied in unchanged; `card`/`cardIcon`/`cardTitle`/`cardSubtitle`/
+`cardChevron` were already shared style names on this screen, reused as-is), same Dating→`Nearby`/
+Friends→`FriendDiscovery` navigation, same "no merged Everyone pool, two separate matching
+systems" reasoning restated in the file's own updated header comment.
+
+`RootNavigator.js`: `Tab.Navigator` now registers `Discover` (component `DiscoverHubScreen`) in
+People's old second-position slot; `TAB_ICONS.People` replaced with `Discover: { active:
+'compass', inactive: 'compass-outline', label: 'Discover' }`. The old top-level pushed
+`<Stack.Screen name="Discover" .../>` (transparent-header-for-a-back-chevron, meant for a screen
+reached by pushing) is deleted outright — Discover is now exclusively a tab root, and the
+`import PeopleScreen` line is gone along with the file itself. Both explanatory comments above
+`MainTabs`/`TAB_ICONS` were rewritten to describe the current model rather than left describing
+Phase 5's now-superseded one.
+
+`src/screens/PeopleScreen.js` deleted (`git rm`) — confirmed via grep it had no importer left
+anywhere in `src/` once `RootNavigator.js`'s reference was removed.
+
+Two copy fixes: `FeaturesOverviewScreen.js`'s static glossary line ("Switch to it from the People
+screen") now reads "Switch to it from Discover's People mode." `CreateHubScreen.js`'s "🔎 Browse
+what's already out there" link and its comment were updated to describe it as a real secondary
+shortcut into a tab that already exists, not the only way to reach a hidden screen — the link
+itself, and `HomeScreen.js`'s unrelated "Continue Browsing →" button, were both left completely
+functionally unchanged (both still `navigate('Discover')`, which now resolves to the sibling tab
+directly since both callers are themselves screens inside the same `Tab.Navigator`).
+
+**Verified**: a direct `@babel/core` parse of all four touched files (clean) and a full `npx expo
+export --platform ios` (clean, no bundling errors, **2250 modules** — exactly one fewer than the
+2251 baseline recorded in the entry directly below this one, matching the plan's own predicted
+delta exactly: the one deleted `PeopleScreen.js`, every other touched file was an edit, no new
+files added).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the mode toggle renders and switches correctly against
+real data, that the remembered-last-mode behavior actually persists across a real app
+restart/re-focus of the tab, that both Dating and Friends rows in People mode still navigate
+correctly, and that the tab bar's new compass icon reads clearly next to Home/Create/Activity's
+icons on a real device.
 
 ## Aug 24 2026 — seven real UI/UX complaints from actual use, all fixed — DONE
 

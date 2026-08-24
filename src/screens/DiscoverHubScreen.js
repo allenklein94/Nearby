@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaVi
 import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
@@ -13,6 +14,8 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
+import StoriesRow from '../components/StoriesRow';
+import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -33,29 +36,60 @@ const PLACE_CATEGORIES = [
 
 const PREVIEW_COUNT = 3;
 
+// Aug 24 2026 (CLAUDE.md): Discover is now the real 🔎 bottom tab (it
+// used to be a pushed screen reachable only via a single buried
+// hyperlink, while People had a full tab for comparatively little
+// content) — People merged in as a real mode, not a flattened dump.
+// Dating and Friends stay two genuinely separate matching systems under
+// the hood (separate opt-in flags, separate swipe tables, separate
+// exclusion/safety rules); this is a navigation-only grouping, not a
+// combined candidate pool. "Everyone" is still deliberately absent —
+// there's no real merged pool to show under that label.
+const DISCOVER_MODES = [
+  { key: 'things', icon: '🔎', label: 'Things to Do', subtitle: "What's happening nearby." },
+  { key: 'people', icon: '👥', label: 'People', subtitle: "Who's around you." },
+];
+const PEOPLE_MODES = [
+  { key: 'dating', route: 'Nearby', icon: '💗', title: 'Dating', subtitle: 'Meet people nearby who are open to dating' },
+  { key: 'friends', route: 'FriendDiscovery', icon: '🤝', title: 'Friends', subtitle: 'Meet new people nearby and make friends' },
+];
+const LAST_MODE_KEY = 'discover_last_mode';
+
 // A real unified search + filter + map/list surface across the four
 // browsable, listable content types (gatherings, communities, places,
-// perks). People are deliberately kept as a separate entry card, not
-// folded into unified text search — this is a proximity dating app,
-// and search-by-name over nearby people is a stalking vector this
-// codebase has never built anywhere else; Browse/Crossed Paths on the
-// dedicated Nearby screen remains the only way to find people. "Card"
-// view (the doc's third view style) was also left out: DiscoveryScreen
-// already owns a dedicated swipe-card interaction for people, and a
-// generic "everything" card view would need a bespoke action per
-// content type with no single natural gesture — not built here.
-// "AI recommendations" is a real, signal-based "Recommended for you"
-// section (getGatheringFitReasons, the same pure scorer already used
-// by Home's bestPick and GatheringDetailScreen) rather than a new LLM
-// call, matching this codebase's existing no-new-API-cost convention.
-//
-// Stories and the People Nearby (Dating/Friends) module moved off this
-// screen onto the new 👥 People tab as part of Phase 5's bottom-nav
-// restructuring (CLAUDE.md, Aug 22 2026) -- Discover's own job narrows
-// to Gatherings/Communities/Places/Perks browsing.
+// perks) in Things-to-Do mode, plus a People mode (Stories + the
+// Dating/Friends launcher, ported from the retired PeopleScreen). People
+// are deliberately kept out of Things-to-Do's own unified text search —
+// this is a proximity dating app, and search-by-name over nearby people
+// is a stalking vector this codebase has never built anywhere else;
+// Browse/Crossed Paths on the dedicated Nearby screen remains the only
+// way to find people. "Card" view (the doc's third view style) was also
+// left out: DiscoveryScreen already owns a dedicated swipe-card
+// interaction for people, and a generic "everything" card view would
+// need a bespoke action per content type with no single natural
+// gesture — not built here. "AI recommendations" is a real, signal-based
+// "Recommended for you" section (getGatheringFitReasons, the same pure
+// scorer already used by Home's bestPick and GatheringDetailScreen)
+// rather than a new LLM call, matching this codebase's existing
+// no-new-API-cost convention.
 export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+
+  const [mode, setMode] = useState('things');
+
+  useEffect(() => {
+    AsyncStorage.getItem(LAST_MODE_KEY)
+      .then((saved) => {
+        if (saved === 'things' || saved === 'people') setMode(saved);
+      })
+      .catch(() => {});
+  }, []);
+
+  function selectMode(key) {
+    setMode(key);
+    AsyncStorage.setItem(LAST_MODE_KEY, key).catch(() => {});
+  }
 
   const [publicStories, setPublicStories] = useState([]);
   const [gatheringStories, setGatheringStories] = useState([]);
@@ -278,82 +312,139 @@ export default function DiscoverHubScreen({ navigation }) {
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
   const mapBusinesses = showPerks ? businesses : [];
 
+  const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Discover</Text>
-        <Text style={styles.subtitle}>Explore what's happening nearby.</Text>
-
-        <View style={styles.searchBarWrap}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search gatherings, communities, places, perks"
-            placeholderTextColor={colors.textTertiary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            accessibilityLabel="Search Discover"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
-              <Text style={styles.searchClear}>✕</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Discover</Text>
+            <Text style={styles.subtitle}>{activeModeInfo.subtitle}</Text>
+          </View>
+          <TabHeaderActions navigation={navigation} />
         </View>
 
-        <View style={styles.filterRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-            {TYPE_FILTERS.map((f) => {
-              const active = typeFilter === f.key;
-              return (
-                <TouchableOpacity
-                  key={f.key}
-                  style={[styles.filterChip, active && styles.filterChipActive]}
-                  onPress={() => setTypeFilter(f.key)}
-                  accessibilityLabel={f.label}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-          {showViewToggle && (
-            <TouchableOpacity
-              style={styles.viewToggleButton}
-              onPress={() => setViewStyle(viewStyle === 'list' ? 'map' : 'list')}
-              accessibilityLabel={viewStyle === 'list' ? 'Switch to map view' : 'Switch to list view'}
-              accessibilityRole="button"
-            >
-              <Text style={styles.viewToggleIcon}>{viewStyle === 'list' ? '🗺️' : '📋'}</Text>
-            </TouchableOpacity>
-          )}
+        <View style={styles.modeToggleRow}>
+          {DISCOVER_MODES.map((m) => {
+            const active = mode === m.key;
+            return (
+              <TouchableOpacity
+                key={m.key}
+                style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
+                onPress={() => selectMode(m.key)}
+                accessibilityLabel={m.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+              >
+                <Text style={styles.modeToggleIcon}>{m.icon}</Text>
+                <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{m.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {typeFilter === 'places' && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingTop: spacing.sm }}>
-            {PLACE_CATEGORIES.map((c) => {
-              const active = placesCategory === c.key;
-              return (
-                <TouchableOpacity
-                  key={c.key}
-                  style={[styles.filterChip, active && styles.filterChipActive]}
-                  onPress={() => setPlacesCategory(c.key)}
-                  accessibilityLabel={c.label}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={styles.filterChipIcon}>{c.icon}</Text>
-                  <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{c.label}</Text>
+        {mode === 'things' && (
+          <>
+            <View style={styles.searchBarWrap}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search gatherings, communities, places, perks"
+                placeholderTextColor={colors.textTertiary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                accessibilityLabel="Search Discover"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+                  <Text style={styles.searchClear}>✕</Text>
                 </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.filterRow}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+                {TYPE_FILTERS.map((f) => {
+                  const active = typeFilter === f.key;
+                  return (
+                    <TouchableOpacity
+                      key={f.key}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                      onPress={() => setTypeFilter(f.key)}
+                      accessibilityLabel={f.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{f.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+              {showViewToggle && (
+                <TouchableOpacity
+                  style={styles.viewToggleButton}
+                  onPress={() => setViewStyle(viewStyle === 'list' ? 'map' : 'list')}
+                  accessibilityLabel={viewStyle === 'list' ? 'Switch to map view' : 'Switch to list view'}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.viewToggleIcon}>{viewStyle === 'list' ? '🗺️' : '📋'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {typeFilter === 'places' && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingTop: spacing.sm }}>
+                {PLACE_CATEGORIES.map((c) => {
+                  const active = placesCategory === c.key;
+                  return (
+                    <TouchableOpacity
+                      key={c.key}
+                      style={[styles.filterChip, active && styles.filterChipActive]}
+                      onPress={() => setPlacesCategory(c.key)}
+                      accessibilityLabel={c.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={styles.filterChipIcon}>{c.icon}</Text>
+                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{c.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </>
         )}
       </View>
 
-      {viewStyle === 'map' && showViewToggle ? (
+      {mode === 'people' ? (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <StoriesRow />
+
+          <Text style={styles.sectionHeader}>People Nearby</Text>
+          <View style={styles.peopleModule}>
+            {PEOPLE_MODES.map((pm, index) => (
+              <React.Fragment key={pm.key}>
+                {index > 0 && <View style={styles.peopleModuleDivider} />}
+                <TouchableOpacity
+                  style={styles.peopleModuleRow}
+                  onPress={() => navigation.navigate(pm.route)}
+                  activeOpacity={0.7}
+                  accessibilityLabel={`${pm.title}, ${pm.subtitle}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.cardIcon}>{pm.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>{pm.title}</Text>
+                    <Text style={styles.cardSubtitle}>{pm.subtitle}</Text>
+                  </View>
+                  <Text style={styles.cardChevron}>›</Text>
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </View>
+        </ScrollView>
+      ) : viewStyle === 'map' && showViewToggle ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView
             gatherings={showGatherings ? filteredGatherings : []}
@@ -718,8 +809,25 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   scrollContent: { padding: spacing.lg, paddingTop: spacing.md },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  modeToggleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  modeToggleButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1.5,
+    borderColor: colors.border, paddingVertical: spacing.sm + 2, gap: 6,
+  },
+  modeToggleButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  modeToggleIcon: { fontSize: 16 },
+  modeToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
+  modeToggleTextActive: { color: colors.primary },
+  peopleModule: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1,
+    borderColor: colors.border, marginBottom: spacing.md, ...shadow.card, overflow: 'hidden',
+  },
+  peopleModuleRow: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
+  peopleModuleDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginHorizontal: spacing.lg },
   searchBarWrap: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
     borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md,
