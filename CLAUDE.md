@@ -4,6 +4,115 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — Discover becomes a real bottom tab, People merges into it as a mode — PLAN LOCKED, not yet built
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and this
+section's own status note for what's actually landed vs. still just this plan.
+
+**The problem, in the user's own words**: the current 4-tab bar is Home / People / Create /
+Activity. Discover (`DiscoverHubScreen.js` — real search, real filters, gatherings/communities/
+places/perks) is not a tab at all — it's a pushed screen reachable only via a single hyperlink
+("🔎 Browse what's already out there" on Create, "Continue Browsing →" buried inside Home's
+quiet-night empty-state fallback). The user's read: Discover is one of the app's core surfaces
+and burying it behind a link effectively hides it, while People — Stories plus a two-row
+Dating/Friends launcher, 86 lines, the thinnest tab in the app — gets permanent bottom-bar real
+estate.
+
+**Verified directly against the current code before planning, not assumed**: confirmed via grep
+that `People` (the tab route name) is referenced nowhere except its own registration in
+`RootNavigator.js` — nothing else `navigate()`s to it by name, so retiring the tab has zero
+call-site fallout. Confirmed `Discover` is `navigate()`d from exactly two places
+(`CreateHubScreen.js`'s browse link, `HomeScreen.js`'s "Continue Browsing" fallback) — both calls
+survive this change unmodified, since a screen `navigate()`ing to a *sibling tab's* route name
+from inside the same `Tab.Navigator` (which is what Home/Create both are) resolves and switches
+tabs correctly without needing the `navigate('MainTabs', {screen: 'Discover'})` nested form.
+`FeaturesOverviewScreen.js`'s static glossary has one stale line ("Switch to it from the People
+screen") that needs updating, nothing else in the app references "the People tab"/"People
+screen" in user-facing copy.
+
+**Decision, locked**: yes, combine them — but as a hierarchy, not a flat merge. Discover becomes
+the real second tab; People becomes a mode *inside* Discover, not deleted content. This matches
+the user's own reasoning from the design discussion: Discover answers "what's around me
+(places/things *and* people)"; People was never actually competing with Discover, it's one
+category within it.
+
+### New tab order
+
+**Home | Discover | Create | Activity** (Discover replaces People's slot — second position,
+right after Home, since it's the primary exploration surface, not an afterthought).
+
+### `DiscoverHubScreen.js` — rebuilt to hold two modes, not just Things-to-Do
+
+- **Header**: title "Discover" + a mode-aware one-line subtitle ("What's happening nearby." for
+  Things to Do / "Who's around you." for People) + `TabHeaderActions` on the right — matching the
+  exact `headerRow` pattern `PeopleScreen.js`/`CreateHubScreen.js` already use for their own
+  tab-root headers (title block `flex:1` + the persistent Messages/Profile icon pair). Discover
+  was never a `TabHeaderActions` host before (it was a pushed screen with its own native
+  transparent header for a back chevron) — becoming a tab root means it needs the same header
+  treatment every other tab root already has.
+- **A real, prominent mode toggle** directly under the subtitle — two large segmented buttons,
+  **"🔎 Things to Do" / "👥 People"** — not folded into the existing small `TYPE_FILTERS` chip
+  row (All/Gatherings/Communities/Places/Perks stays exactly as-is, but only ever renders in
+  Things-to-Do mode; People is a different *kind* of content, not a 6th filter chip next to
+  "Places"). Default mode is `'things'`; the last-used mode is remembered locally
+  (`AsyncStorage`, key `discover_last_mode` — device-only, no schema change, same "have you
+  noticed this UI chrome" posture `TabHeaderActions`' own hint-seen key already established) so
+  returning to the tab lands where the user actually left it, not always reset to Things to Do.
+- **Things to Do mode**: exactly the screen's current content, byte-for-byte — search bar, type
+  filter chips, map/list toggle, Recommended/Trending, Gatherings/Communities/Places/Perks
+  sections, Gathering Memories, Public Stories — all of it just gated under `mode === 'things'`
+  instead of being the screen's only content. No behavior change to any of it.
+- **People mode**: `PeopleScreen.js`'s entire body ported in as-is — the Stories carousel plus
+  the "People Nearby" Dating/Friends two-row module (same `PEOPLE_MODES` data, same styles,
+  same not-a-merged-pool reasoning already locked in that file's own comment, unchanged: Dating
+  and Friends stay two genuinely separate matching systems, this is a navigation grouping only).
+  Tapping Dating navigates to `Nearby` (the existing swipe-discovery screen); tapping Friends
+  navigates to `FriendDiscovery` — both unchanged, both still full, separate screens, not
+  flattened into Discover itself.
+
+### `RootNavigator.js`
+
+- `Tab.Navigator`: `<Tab.Screen name="Discover" component={DiscoverHubScreen} />` replaces
+  `<Tab.Screen name="People" component={PeopleScreen} />`, reordered to sit right after `Home`.
+- `TAB_ICONS`: `People` entry removed; new `Discover: { active: 'compass', inactive:
+  'compass-outline', label: 'Discover' }` (a compass reads as "explore," distinct from the
+  magnifying-glass search icon already used inside the screen's own search bar).
+- The old top-level pushed `Stack.Screen name="Discover"` (with its transparent-header-for-a-
+  back-chevron treatment, meant for a screen reached by pushing) is removed outright — Discover
+  is now exclusively a tab root, the same shape as Home/Create/Activity, and keeping a second,
+  differently-configured registration under the identical route name would be confusing dead
+  weight, not a real fallback.
+- `PeopleScreen.js` is deleted outright once its content is ported into Discover — confirmed via
+  grep it has no other importer anywhere in `src/`.
+
+### Smaller copy fixes, not structural
+
+- `FeaturesOverviewScreen.js`'s one stale line ("Switch to it from the People screen") updated to
+  point at Discover's People mode instead.
+- `CreateHubScreen.js`'s "🔎 Browse what's already out there" link and its explanatory comment
+  updated to reflect that Discover is now a real tab, not just a pointer to a hidden screen — the
+  link itself (and `HomeScreen.js`'s "Continue Browsing →") stay as real, harmless secondary
+  shortcuts into Things-to-Do mode, not removed.
+
+### Explicitly not changed
+
+Dating (`DiscoveryScreen.js`/`Nearby`) and Friend Discovery (`FriendDiscoveryScreen.js`) stay
+completely untouched, full-screen, separate destinations — this is a navigation-hierarchy change
+only, never a merge of the two matching engines themselves, matching every prior locked decision
+on this exact boundary elsewhere in this file. No new schema, no new RPC — this is a pure
+client-side navigation/IA change.
+
+### Verification plan
+
+A direct `@babel/core` parse of every touched/deleted file, then a full `npx expo export
+--platform ios`, checking the module count drops by exactly one (the deleted `PeopleScreen.js`,
+no new files added — everything else is edits). Same standing limitation as everywhere else in
+this file: no manual simulator/device run-through is possible from this sandbox — flagged for
+next session, same as always.
+
+**Status: plan locked, build starts now — see this section's own status note once it lands.**
+
 ## Aug 24 2026 — seven real UI/UX complaints from actual use, all fixed — DONE
 
 Seven distinct real-usage reports in one message, not a code audit — each investigated against
