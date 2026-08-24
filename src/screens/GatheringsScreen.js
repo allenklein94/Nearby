@@ -30,20 +30,16 @@ import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-const INTEREST_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality',
-];
 
 const DATE_OPTIONS = [
   { key: 'anytime', label: 'Anytime' },
   { key: 'now', label: 'Right Now' },
+  { key: 'soon', label: 'Starting Soon' },
   { key: 'today', label: 'Today' },
   { key: 'tomorrow', label: 'Tomorrow' },
   { key: 'weekend', label: 'This Weekend' },
@@ -56,6 +52,33 @@ const DATE_OPTIONS = [
 const NOW_WINDOW_AFTER_MS = 30 * 60 * 1000;
 const NOW_WINDOW_BEFORE_MS = 2 * 60 * 60 * 1000;
 
+// Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
+// mirrors CreateGatheringScreen's own PRICE_OPTIONS chip labels.
+const PRICE_FILTER_OPTIONS = [
+  { key: null, label: 'Any' },
+  { key: 'free', label: 'Free' },
+  { key: '$', label: '$' },
+  { key: '$$', label: '$$' },
+  { key: '$$$', label: '$$$' },
+];
+
+// "Who's this for?" filter, backed by gatherings.party_type -- mirrors
+// CreateGatheringScreen's own PARTY_TYPE_OPTIONS chip labels.
+const PARTY_TYPE_FILTER_OPTIONS = [
+  { key: null, label: 'Any' },
+  { key: 'solo', label: '🧍 Solo-Friendly' },
+  { key: 'friends', label: '👥 Bring Friends' },
+  { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
+  { key: 'date', label: '💕 A Date Idea' },
+];
+
+// "Starting Soon" -- a real, narrower window than "Right Now"'s symmetric
+// +/- window: starts in the next 90 minutes and hasn't started yet. Folded
+// into the existing "When" accordion rather than a second Availability
+// section, per CLAUDE.md's own reasoning ("Right Now" already is an honest
+// "Open now" -- this is the genuinely distinct addition).
+const SOON_WINDOW_MS = 90 * 60 * 1000;
+
 function matchesDateFilter(scheduledAt, filterKey) {
   if (filterKey === 'anytime') return true;
   const date = new Date(scheduledAt);
@@ -63,6 +86,10 @@ function matchesDateFilter(scheduledAt, filterKey) {
 
   if (filterKey === 'now') {
     return date.getTime() >= now.getTime() - NOW_WINDOW_AFTER_MS && date.getTime() <= now.getTime() + NOW_WINDOW_BEFORE_MS;
+  }
+
+  if (filterKey === 'soon') {
+    return date.getTime() > now.getTime() && date.getTime() <= now.getTime() + SOON_WINDOW_MS;
   }
 
   const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -130,6 +157,12 @@ export default function GatheringsScreen({ navigation, route }) {
   // codebase can honestly classify -- a genuinely ambiguous category
   // (Sports, Music, etc.) is simply excluded from both, never guessed.
   const [environmentFilter, setEnvironmentFilter] = useState(null);
+  // Real, host-declared filters -- backed by gatherings.price_level/
+  // party_type (CLAUDE.md "Category/filter taxonomy pass"), not fabricated.
+  // null = any; a gathering whose host never set the field is simply
+  // excluded from a non-null filter, never guessed at.
+  const [priceFilter, setPriceFilter] = useState(null);
+  const [partyTypeFilter, setPartyTypeFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState(route?.params?.initialDateFilter ?? 'anytime');
   const [forYouActive, setForYouActive] = useState(false);
   const [trendingActive, setTrendingActive] = useState(false);
@@ -522,6 +555,8 @@ export default function GatheringsScreen({ navigation, route }) {
   const dateSummaryLabel = DATE_OPTIONS.find((d) => d.key === dateFilter)?.label ?? 'Anytime';
   const categorySummary = forYouActive ? 'For You' : (interestFilter || 'All Categories');
   const environmentSummary = environmentFilter === 'indoor' ? 'Indoor' : environmentFilter === 'outdoor' ? 'Outdoor' : 'Either';
+  const priceSummary = PRICE_FILTER_OPTIONS.find((o) => o.key === priceFilter)?.label ?? 'Any';
+  const partyTypeSummary = PARTY_TYPE_FILTER_OPTIONS.find((o) => o.key === partyTypeFilter)?.label ?? 'Any';
 
   // Real server-side search results (searchedNearby) once actively
   // searching (2+ characters — matches the debounced effect above), the
@@ -534,6 +569,8 @@ export default function GatheringsScreen({ navigation, route }) {
     .filter((g) => !trendingActive || trendingIds.includes(g.id))
     .filter((g) => matchesDateFilter(g.scheduled_at, dateFilter))
     .filter((g) => !environmentFilter || (environmentFilter === 'indoor' ? isIndoorCategory(g.interest_tag) : isOutdoorCategory(g.interest_tag)))
+    .filter((g) => !priceFilter || g.price_level === priceFilter)
+    .filter((g) => !partyTypeFilter || g.party_type === partyTypeFilter)
     .sort((a, b) => {
       if (!forYouActive) return 0;
       const aRank = topCategories.indexOf(a.interest_tag);
@@ -753,23 +790,30 @@ export default function GatheringsScreen({ navigation, route }) {
                 >
                   <Text style={[styles.forYouChipText, trendingActive && styles.forYouChipTextActive]}>🔥 Trending</Text>
                 </TouchableOpacity>
-                {INTEREST_OPTIONS.map((option) => {
-                  const active = interestFilter === option;
-                  const style = categoryStyleFor(option);
-                  return (
-                    <TouchableOpacity
-                      key={option}
-                      style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
-                      onPress={() => selectInterestFilter(option)}
-                      accessibilityLabel={`Filter by ${option}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active }}
-                    >
-                      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
               </View>
+              {CATEGORY_GROUPS.map((group) => (
+                <View key={group.key} style={{ marginTop: spacing.sm }}>
+                  <Text style={styles.groupCaption}>{group.icon} {group.label}</Text>
+                  <View style={styles.chipsWrapInline}>
+                    {group.tags.map((option) => {
+                      const active = interestFilter === option;
+                      const style = categoryStyleFor(option);
+                      return (
+                        <TouchableOpacity
+                          key={option}
+                          style={[styles.filterChip, active && { backgroundColor: style.color, borderColor: style.color }]}
+                          onPress={() => selectInterestFilter(option)}
+                          accessibilityLabel={`Filter by ${option}`}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                        >
+                          <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{style.icon} {option}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
             </View>
           )}
 
@@ -798,6 +842,80 @@ export default function GatheringsScreen({ navigation, route }) {
                       key={option.label}
                       style={[styles.dateChip, active && styles.dateChipActive]}
                       onPress={() => setEnvironmentFilter(option.key)}
+                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.accordionDivider} />
+
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('price')}
+            accessibilityLabel={`Price: ${priceSummary}, ${expandedFilterSection === 'price' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'price' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>💵 Price</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{priceSummary}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'price' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'price' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.chipsWrapInline}>
+                {PRICE_FILTER_OPTIONS.map((option) => {
+                  const active = priceFilter === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.label}
+                      style={[styles.dateChip, active && styles.dateChipActive]}
+                      onPress={() => setPriceFilter(option.key)}
+                      accessibilityLabel={`Filter by ${option.label}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.accordionDivider} />
+
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => toggleFilterSection('people')}
+            accessibilityLabel={`People: ${partyTypeSummary}, ${expandedFilterSection === 'people' ? 'tap to collapse' : 'tap to expand'}`}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandedFilterSection === 'people' }}
+          >
+            <Text style={styles.accordionHeaderLabel}>🙋 People</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{partyTypeSummary}</Text>
+              <Text style={styles.accordionChevron}>{expandedFilterSection === 'people' ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {expandedFilterSection === 'people' && (
+            <View style={styles.accordionBody}>
+              <View style={styles.chipsWrapInline}>
+                {PARTY_TYPE_FILTER_OPTIONS.map((option) => {
+                  const active = partyTypeFilter === option.key;
+                  return (
+                    <TouchableOpacity
+                      key={option.label}
+                      style={[styles.dateChip, active && styles.dateChipActive]}
+                      onPress={() => setPartyTypeFilter(option.key)}
                       accessibilityLabel={`Filter by ${option.label}`}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
@@ -1421,6 +1539,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
   accordionDivider: { height: 1, backgroundColor: colors.border },
   chipsWrapInline: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  groupCaption: { color: colors.textTertiary, fontSize: 12, fontWeight: '700', marginBottom: spacing.xs },
   radiusToggleRow: { flexDirection: 'row', gap: spacing.xs },
   radiusToggle: {
     flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full,
