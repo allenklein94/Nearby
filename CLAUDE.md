@@ -4,6 +4,140 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 24 2026 — Category/filter taxonomy pass (closes item 12 for real this time) — PLAN
+## LOCKED, executing below; check each piece's own status note for what's landed
+
+Direct follow-up to item 12 of the "14-item UX/product review response" above (originally
+"reviewed, real gaps named, no rebuild this pass" — only the Indoor/Outdoor filter was ever
+actually built out of that item). The user pasted a full external taxonomy proposal (6 Things-
+to-Do super-categories with leaf tags, plus When/Distance/Price/People/Environment/Availability
+filters) and asked directly for all of it to be built — plan first, then build, committing and
+updating this file incrementally. Written before implementation, same restart-safety convention
+as every other plan-first section in this file — check `git log`/each piece's own status note
+below for what's actually landed if a restart hits mid-build.
+
+**Checked the real current taxonomy before planning, not assumed from the external doc** (same
+standing rule as every other section in this file): gatherings already use a real 25-tag flat
+list (`INTEREST_OPTIONS` — Travel/Coffee/Hiking/Music/Movies/Foodie/Fitness/Reading/Art/Gaming/
+Photography/Yoga/Dancing/Cooking/Wine/Dogs/Cats/Outdoors/Sports/Concerts/Museums/Volunteering/
+Meditation/Running/Faith & Spirituality), duplicated **verbatim, independently, across 8 separate
+files** (`GatheringsScreen.js`, `CreateGatheringScreen.js` — missing Faith & Spirituality,
+already a known drift — `QuickPicksEditModal.js`, `AskBusinessScreen.js` as `CATEGORY_OPTIONS`,
+`BusinessDashboardScreen.js` as `AVAILABILITY_CATEGORY_OPTIONS`, `CreateCommunityScreen.js`,
+plus `ProfileScreen.js`/`CompleteProfileScreen.js` for personal interests). Neither
+`gatherings.interest_tag`, `communities.interest_tag`, nor `business_requests.category` has a
+database CHECK constraint — the "canonical list" has only ever been a client-side convention,
+independently drifting in 3+ places already (the Faith & Spirituality gap being the one this file
+already caught once). This pass fixes the root duplication, not just adds to it.
+
+### Locked decisions
+
+1. **A new shared `src/constants/gatheringCategories.js`** becomes the single source of truth —
+   `INTEREST_OPTIONS` (the flat list, now 26 tags — see #2) and `CATEGORY_GROUPS` (the 6 named
+   super-groups, each an ordered list of existing tags). `GatheringsScreen.js`,
+   `CreateGatheringScreen.js`, `QuickPicksEditModal.js`, `AskBusinessScreen.js`,
+   `CreateCommunityScreen.js`, and `BusinessDashboardScreen.js` all import from it instead of
+   keeping their own copy — closes the real, already-documented drift risk, not just this pass's
+   own new "Dating" tag. **`ProfileScreen.js`/`CompleteProfileScreen.js` are deliberately left
+   alone** — personal interest selection ("what are you into") is a different semantic than "what
+   kind of event is this," and "Dating" reads oddly as a personal interest tag next to Coffee/
+   Hiking; not consolidated, not given the new tag.
+2. **One new canonical tag, not the external doc's full ~20-tag leaf list: `Dating`.** The doc
+   proposed roughly 20 brand-new leaf tags across its 6 groups (Cycling, Water activities,
+   Trivia, Networking, Comedy, Theater, Beauty, Workshops, Cleanups, Date ideas, Singles events,
+   Romantic dining, Activities for two, etc.). Building all of them properly means a real icon +
+   color + (ideally) a verified curated cover photo per tag, matching the bar every existing tag
+   already has (see `gatheringCoverPhotos.js`'s own "real, verified image URLs only" convention)
+   — a much larger content-curation task than a filter/taxonomy pass, and rushing it would mean
+   either unverified stock icons or a visibly incomplete tier next to the polished existing 25.
+   **`Dating` is the one exception, built for real**: it's the one whole group with *zero*
+   existing coverage today, despite Dating being one of this app's two core matching systems —
+   a real, structural gap, not a nice-to-have. Every other proposed leaf tag maps reasonably onto
+   an existing tag (Cycling/Water activities/Outdoor recreation → the existing Outdoors/Hiking/
+   Running/Fitness/Sports cluster; Bars/Restaurants → the existing Foodie/Wine cluster; Games →
+   the existing Gaming tag; etc.) — nothing real is lost by not adding a same-meaning tag twice.
+   Flagged here so a future session doesn't have to rediscover this reasoning; the group
+   structure (#3) is fully built and ready to receive more tags later if genuinely wanted.
+3. **The 6 groups, and the real mapping of all 26 tags into them** (every tag in exactly one
+   group, none left ungrouped, none duplicated):
+   - **💪 Active**: Fitness, Sports, Running, Hiking, Outdoors, Yoga
+   - **🎉 Social**: Coffee, Foodie, Wine, Gaming, Dancing
+   - **🎭 Entertainment**: Music, Movies, Concerts, Museums, Photography, Art
+   - **🌿 Lifestyle**: Reading, Cooking, Travel, Meditation, Dogs, Cats
+   - **🤝 Community**: Volunteering, Faith & Spirituality
+   - **💗 Dating**: Dating
+   `categoryStyleFor()` gains a real `Dating` entry (💗 icon, an existing palette color — no new
+   palette color invented). `Dating` is deliberately **not** added to `CATEGORY_INDOOR_OUTDOOR`
+   (a date can honestly be either — matches that map's own existing "genuinely ambiguous, not
+   guessed" convention for Sports/Music/Travel/etc.) and **not** added to
+   `gatheringCoverPhotos.js` (no verified real image sourced for it this pass — falls back to the
+   existing icon/color block, same honest fallback `Faith & Spirituality` already uses).
+4. **Price — a real new schema field, not a fabricated filter.** Gatherings have no cost/price
+   concept anywhere in the schema today — a Free/$/$$/$$$ filter with nothing behind it would be
+   fake. New nullable `gatherings.price_level` (`'free'|'$'|'$$'|'$$$'`, `null` = not specified,
+   matching this schema's own established "null means honestly unknown, never a guessed value"
+   convention), set optionally by the host at creation time, filterable on Gatherings. Matches
+   the visual convention Google Places' own `priceLevelLabel()` already established elsewhere in
+   this app (Free/$/$$/$$$/$$$$) without reusing that function directly — it expects a Google
+   0-4 integer, this is a host-declared enum, a genuinely different input shape.
+5. **People — a real new schema field too, framed as "who this is best for," not a fabricated
+   inference.** Nullable `gatherings.party_type` (`'solo'|'friends'|'groups'|'date'`), host-
+   declared at creation, optional. Deliberately **not** derived/guessed from unrelated existing
+   fields (`group_size_feel`, `capacity`) — those measure something different (a felt "vibe,"
+   and a hard cap), and fabricating a Solo/Friends/Groups/Date label from them would misrepresent
+   real data. UI label: "Who's this for?" (🧍 Solo-Friendly / 👥 Bring Friends / 👨‍👩‍👧‍👦 Big Group /
+   💕 A Date Idea) — friendlier than the raw stored values, matching this app's established
+   "stored key ≠ displayed label" convention used throughout (e.g. `visibility`/`party_type`).
+6. **Availability (Open now/Starting soon) — folded into the existing "When" filter, not a
+   second near-duplicate section.** Checked `matchesDateFilter()`'s real `'now'` window first
+   ([-30min, +2h] of the current time) — it already *is* an honest "Open now." Building a
+   separate "Availability" accordion with its own "Open Now" chip would just be the identical
+   check under a second label in a second place, the exact kind of duplicate-job-under-a-new-
+   name this file's own product-coherence passes have repeatedly corrected elsewhere. Instead:
+   one new `DATE_OPTIONS` value, **"Starting Soon"** (a real, narrower window — starts in the
+   next 90 minutes, hasn't started yet — genuinely distinct from "Right Now"'s symmetric ±window),
+   added to the same "When" accordion `GatheringsScreen.js` already has. "Open now" itself is not
+   rebuilt under a new name — "Right Now" already is that, verbatim.
+7. **Scope boundary: `GatheringsScreen.js` stays the one deep-filter surface.** `DiscoverHubScreen.js`'s
+   own type-filter row (All/Gatherings/Communities/Places/Perks) is intentionally lighter and
+   stays that way — Price/People/Environment/the regrouped category picker are not duplicated
+   onto Discover's own simpler surface, matching this app's existing "Discover browses, Gatherings
+   is the full filter surface" split (its own "See all in Gatherings →" links already point here
+   for exactly this reason).
+
+### Build order, each its own commit
+
+1. Migration: `gatherings.price_level`/`party_type`, both nullable with a real CHECK constraint,
+   applied to production and verified live with real disposable test data (a value outside the
+   allowed set rejected, a real value round-trips) before being called done, plus a from-scratch
+   migration replay — matching this file's own migration-discipline rule.
+2. `services/gatherings.js`: both new columns added to `SAFE_GATHERING_FIELDS` (so every existing
+   query — `getNearbyGatherings`/`searchGatherings`/`getGatheringById`/etc. — starts returning
+   them for free, no per-call-site change needed) and to `createGathering()`'s params.
+3. New `src/constants/gatheringCategories.js`; all 6 in-scope files repointed to import from it
+   instead of keeping their own copy; `categoryStyleFor()` gains the `Dating` entry.
+4. `GatheringsScreen.js`: the Category accordion's flat chip list becomes grouped (a small caption
+   per group, its tags below it — no new accordion level, same chip-wrap layout); two new
+   accordion sections, Price and People, matching the existing Distance/When/Category/Environment
+   pattern exactly; "Starting Soon" added to the When accordion's chip row; both new filters
+   folded into the existing `filteredNearby`/search filter chain.
+5. `CreateGatheringScreen.js`: the What step's category picker becomes grouped the same way; a
+   new Price chip row and People chip row added to the existing collapsible "More options"
+   section (optional, both default to unset — zero behavior change for a host who ignores them);
+   both threaded through `submit()`'s `createGathering()` call; both get a real preview row on
+   the Publish step, shown only when actually set (matching `capacity`/`womenOnly`'s own "only
+   show what's real" convention on that same preview card).
+
+**Verification convention for this whole pass, matching every other schema-touching section in
+this file**: the one schema change (step 1) verified live against production with real
+disposable test data plus a from-scratch Docker replay before being considered done; every client
+change verified via a direct `@babel/core` parse and a full `npx expo export --platform ios`.
+**Standing limitation, same as everywhere else in this file**: no manual simulator/device
+run-through is possible from this sandbox — flagged per-piece as it lands, not silently assumed
+clean.
+
+**Status: plan locked, executing below — check the next section for what's landed.**
+
 ## Aug 24 2026 — real, pre-existing bug: Messages/Matches stuck on skeleton loading
 ## forever the instant a gathering- or friendship-sourced match existed — DONE
 
