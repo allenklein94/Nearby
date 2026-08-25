@@ -18,6 +18,7 @@ import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl
 import { getCommunityMemberCount } from '../services/communities';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { businessAttributeLabel, cuisineLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -199,6 +200,21 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
         {partner.description ? <Text style={styles.description}>{partner.description}</Text> : null}
 
+        {((partner.attributes ?? []).length > 0 || partner.cuisine) && (
+          <View style={styles.attributeChipRow}>
+            {partner.cuisine && (
+              <View style={styles.attributeChip}>
+                <Text style={styles.attributeChipText}>{cuisineLabel(partner.cuisine)}</Text>
+              </View>
+            )}
+            {(partner.attributes ?? []).map((key) => (
+              <View key={key} style={styles.attributeChip}>
+                <Text style={styles.attributeChipText}>{businessAttributeLabel(key)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.followButton, following && styles.followingButton]}
@@ -345,6 +361,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
   reliabilityLine: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
+  attributeChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg, marginTop: -spacing.sm },
+  attributeChip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  attributeChipText: { ...typography.small, color: colors.textSecondary },
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   followButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', ...shadow.button },
   followingButton: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },

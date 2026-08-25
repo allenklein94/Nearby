@@ -566,7 +566,7 @@ export async function updateBusinessAddress(partnerId, address) {
   if (error) throw error;
 }
 
-export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category }) {
+export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine }) {
   const current = await getBusinessProfile(partnerId);
   let latitude = current?.latitude ?? null;
   let longitude = current?.longitude ?? null;
@@ -589,6 +589,13 @@ export async function updateBusinessProfile(partnerId, { name, description, addr
     longitude_param: longitude,
     logo_url_param: logoUrl ?? null,
     category_param: category ?? null,
+    // The RPC's own contract: attributes_param non-null is what tells it
+    // "the caller genuinely means to set both fields, including clearing
+    // cuisine" -- always pass a real array (never omit it) so cuisine
+    // clears correctly when the caller unsets it, matching what the Edit
+    // Profile modal's own picker state actually represents.
+    attributes_param: attributes ?? [],
+    cuisine_param: cuisine ?? null,
   });
   if (error) throw error;
 }

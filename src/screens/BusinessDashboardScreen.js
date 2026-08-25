@@ -17,6 +17,7 @@ import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } f
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel } from '../constants/businessAttributes';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -83,6 +84,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [editDescriptionInput, setEditDescriptionInput] = useState('');
   const [editLogoUrlInput, setEditLogoUrlInput] = useState('');
   const [editCategoryInput, setEditCategoryInput] = useState(null);
+  const [editAttributesInput, setEditAttributesInput] = useState([]);
+  const [editCuisineInput, setEditCuisineInput] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -325,6 +328,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         address: selectedPartner.address ?? null,
         logoUrl: editLogoUrlInput.trim() || null,
         category: editCategoryInput,
+        attributes: editAttributesInput,
+        cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
       });
       setSelectedPartner((prev) => ({
         ...prev,
@@ -332,6 +337,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         description: editDescriptionInput.trim() || null,
         logo_url: editLogoUrlInput.trim() || null,
         category: editCategoryInput,
+        attributes: editAttributesInput,
+        cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
       }));
       setEditProfileModalVisible(false);
       Alert.alert('Saved', 'Your business profile has been updated.');
@@ -1790,6 +1797,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setEditDescriptionInput(selectedPartner?.description ?? '');
                       setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
                       setEditCategoryInput(selectedPartner?.category ?? null);
+                      setEditAttributesInput(selectedPartner?.attributes ?? []);
+                      setEditCuisineInput(selectedPartner?.cuisine ?? null);
                       setEditProfileModalVisible(true);
                     }}
                     style={{ marginTop: spacing.sm }}
@@ -2175,6 +2184,43 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Attributes</Text>
+              <View style={styles.chipRow}>
+                {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                  const selected = editAttributesInput.includes(a.key);
+                  return (
+                    <TouchableOpacity
+                      key={a.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setEditAttributesInput((prev) => (selected ? prev.filter((k) => k !== a.key) : [...prev, a.key]))}
+                      accessibilityRole="button"
+                      accessibilityLabel={a.label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {a.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {editCategoryInput === 'food_drink' && (
+                <>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Cuisine</Text>
+                  <View style={styles.chipRow}>
+                    {CUISINE_OPTIONS.map((c) => (
+                      <TouchableOpacity
+                        key={c.key}
+                        style={[styles.chip, editCuisineInput === c.key && styles.chipSelected]}
+                        onPress={() => setEditCuisineInput(editCuisineInput === c.key ? null : c.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={c.label}
+                        accessibilityState={{ selected: editCuisineInput === c.key }}
+                      >
+                        <Text style={[styles.chipText, editCuisineInput === c.key && styles.chipTextSelected]}>{c.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSaveProfile}

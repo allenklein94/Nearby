@@ -232,6 +232,11 @@ async function resolveBusinessAvailability(category, location) {
         description: row.description,
         offerType: row.offer_type,
         price: row.price,
+        // Taxonomy audit Phase 2 (CLAUDE.md, Aug 25 2026): informational
+        // only, same as the rest of this banner -- lets the "already
+        // available" banner honestly show what the posting itself carries.
+        attributes: row.attributes ?? [],
+        cuisine: row.cuisine ?? null,
       },
       score,
     };

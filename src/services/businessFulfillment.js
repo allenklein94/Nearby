@@ -38,6 +38,12 @@ export async function submitBusinessRequest({
   // instead of only ever re-deriving a match from scratch. Absent for every
   // other entry point into this screen, stays honestly null there.
   preferredAvailabilityId = null,
+  // Taxonomy audit Phase 2 (CLAUDE.md, Aug 25 2026): the consumer's own
+  // optional attribute/cuisine preferences, solo mode only on
+  // AskBusinessScreen -- never inferred, always honestly null unless the
+  // caller explicitly picked something.
+  attributes = null,
+  cuisine = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -59,6 +65,8 @@ export async function submitBusinessRequest({
     radius_miles_param: radiusMiles,
     submission_id_param: submissionId,
     preferred_availability_id_param: preferredAvailabilityId,
+    attributes_param: attributes,
+    cuisine_param: cuisine,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };

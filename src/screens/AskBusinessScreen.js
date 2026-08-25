@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel } from '../constants/businessAttributes';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -140,6 +141,12 @@ export default function AskBusinessScreen({ navigation, route }) {
   const submissionId = route.params?.prefillSubmissionId ?? null;
   const [extraNotes, setExtraNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Taxonomy audit Phase 2 (CLAUDE.md, Aug 25 2026): optional, solo mode
+  // only -- matching where party size/budget are already solo-only inputs
+  // on this screen, same isSoloMode gate.
+  const [attributesInput, setAttributesInput] = useState([]);
+  const [cuisineInput, setCuisineInput] = useState(null);
+  const isSoloMode = !gatheringId && !matchId && !communityId;
 
   // Per the locked design (CLAUDE.md, Aug 24 2026): every field genuinely
   // rendered as an editable input in this mode is required -- fields
@@ -219,6 +226,8 @@ export default function AskBusinessScreen({ navigation, route }) {
           radiusMiles,
           submissionId,
           preferredAvailabilityId: matchedAvailability?.availabilityId ?? null,
+          attributes: attributesInput.length > 0 ? attributesInput : null,
+          cuisine: category === 'Foodie' ? cuisineInput : null,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so
@@ -265,6 +274,8 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
     if (budgetMax.trim()) recapParts.push(`up to $${budgetMax.trim()}`);
+    if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
+    if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     recapParts.push(`within ${radiusMiles} mi`);
   }
 
@@ -303,6 +314,14 @@ export default function AskBusinessScreen({ navigation, route }) {
               {matchedAvailability.description ? (
                 <Text style={styles.matchedAvailabilityDescription}>{matchedAvailability.description}</Text>
               ) : null}
+              {((matchedAvailability.attributes ?? []).length > 0 || matchedAvailability.cuisine) && (
+                <Text style={styles.matchedAvailabilityDescription}>
+                  {[
+                    matchedAvailability.cuisine ? cuisineLabel(matchedAvailability.cuisine) : null,
+                    ...((matchedAvailability.attributes ?? []).map(businessAttributeLabel)),
+                  ].filter(Boolean).join(' · ')}
+                </Text>
+              )}
             </View>
           )}
 
@@ -379,6 +398,48 @@ export default function AskBusinessScreen({ navigation, route }) {
               />
             </View>
           </View>
+
+          {isSoloMode && (
+            <>
+              <Text style={styles.label}>Preferences (optional)</Text>
+              <View style={styles.chipRow}>
+                {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                  const selected = attributesInput.includes(a.key);
+                  return (
+                    <TouchableOpacity
+                      key={a.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setAttributesInput((prev) => (selected ? prev.filter((k) => k !== a.key) : [...prev, a.key]))}
+                      accessibilityLabel={a.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {a.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {category === 'Foodie' && (
+                <>
+                  <Text style={styles.label}>Cuisine (optional)</Text>
+                  <View style={styles.chipRow}>
+                    {CUISINE_OPTIONS.map((c) => (
+                      <TouchableOpacity
+                        key={c.key}
+                        style={[styles.chip, cuisineInput === c.key && styles.chipSelected]}
+                        onPress={() => setCuisineInput(cuisineInput === c.key ? null : c.key)}
+                        accessibilityLabel={c.label}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: cuisineInput === c.key }}
+                      >
+                        <Text style={[styles.chipText, cuisineInput === c.key && styles.chipTextSelected]}>{c.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
+            </>
+          )}
 
           <Text style={styles.label}>Anything else? (optional)</Text>
           <TextInput
