@@ -16,6 +16,7 @@ import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEven
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
+import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion, getBusinessAttributeSuggestions, setBusinessPrioritySignal, clearBusinessPrioritySignal, getActiveBusinessPrioritySignals } from '../services/businessIntelligence';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -112,11 +113,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // TabHeaderActions' own first-open hint elsewhere in this app.
   const [categorySuggestion, setCategorySuggestion] = useState(null);
   const [savingCategorySuggestion, setSavingCategorySuggestion] = useState(false);
+  // Business Intelligence & Opportunity Engine, Phase 1 -- the durable,
+  // cross-device provenance record for this same suggestion (the
+  // AsyncStorage dismiss key above still governs "never re-nag on this
+  // device"; this id is what respond_to_business_attribute_suggestion
+  // actually approves/rejects, closing the real audit trail). Null when
+  // the record call itself failed -- callers must not call respond-to
+  // with a null id.
+  const [categorySuggestionId, setCategorySuggestionId] = useState(null);
   // Same addendum -- "Teach Nearby." Never auto-applies -- the extracted
   // chips are always shown for explicit confirm/edit/discard first.
   const [teachNearbyInput, setTeachNearbyInput] = useState('');
   const [teachNearbyExtracted, setTeachNearbyExtracted] = useState(null);
   const [savingTeachNearby, setSavingTeachNearby] = useState(false);
+  // Business Intelligence & Opportunity Engine, Phase 1 -- one suggestion
+  // id per currently-extracted attribute, keyed by attribute name, so
+  // removing/confirming/discarding a specific chip can mark that exact
+  // suggestion's own provenance row, not a blanket batch action.
+  const [teachNearbySuggestionIds, setTeachNearbySuggestionIds] = useState({});
+  // Real, durable AI Suggestion / Audit log (Phase 1) -- the last 10
+  // suggestion attempts for this business, whatever their source/status.
+  const [recentSuggestions, setRecentSuggestions] = useState([]);
+  // Business Priority Engine (Phase 1) -- a real, time-bounded "want more
+  // of X right now" layer, additive to (never replacing) the permanent
+  // priority_attributes/priority_time_windows chips above.
+  const [activePrioritySignals, setActivePrioritySignals] = useState([]);
+  const [boostCategoryInput, setBoostCategoryInput] = useState(null);
+  const [boostDurationInput, setBoostDurationInput] = useState('today');
+  const [savingBoost, setSavingBoost] = useState(false);
   // Phase 6 -- Signature Experiences.
   const [experiences, setExperiences] = useState([]);
   const [loadingExperiences, setLoadingExperiences] = useState(false);
@@ -260,11 +284,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }, []);
 
   async function loadMyPartner() {
+    let loadedPartnerId = null;
     try {
       const partner = await getMyManagedPartner();
       setSelectedPartner(partner);
       setLoadError(false);
       if (partner) {
+        loadedPartnerId = partner.id;
         setPriorityAttributesInput(partner.priority_attributes ?? []);
         setPriorityTimeWindowsInput(partner.priority_time_windows ?? []);
         setPulseNoteInput(partner.availability_pulse_note ?? '');
@@ -284,7 +310,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         if (suggestion && suggestion.category !== partner.category) {
           const dismissKey = `business_category_suggestion_dismissed_${partner.id}_${suggestion.category}`;
           const dismissed = await AsyncStorage.getItem(dismissKey);
-          if (!dismissed) setCategorySuggestion(suggestion);
+          if (!dismissed) {
+            setCategorySuggestion(suggestion);
+            // Business Intelligence & Opportunity Engine, Phase 1 -- log
+            // this real suggestion into the durable, cross-device
+            // provenance table, alongside (not instead of) the local
+            // dismiss key above. Fire-and-forget, non-blocking -- a
+            // failed log must never stop the banner itself from showing.
+            recordBusinessAttributeSuggestion(
+              partner.id,
+              'category',
+              suggestion.category,
+              'ai_inferred',
+              suggestion.matchedKeywords?.length ? `Matched: ${suggestion.matchedKeywords.join(', ')}` : null
+            ).then(setCategorySuggestionId);
+          }
         }
       }
     } catch (e) {
@@ -306,6 +346,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setReservationProviderStatus(status);
     } catch (e) {
       console.error('loadMyReservationProviderStatus failed', e);
+    }
+    // Business Intelligence & Opportunity Engine, Phase 1 -- same
+    // non-fatal secondary-loader convention as Stripe/reservation-provider
+    // status above.
+    if (loadedPartnerId) {
+      try {
+        setRecentSuggestions(await getBusinessAttributeSuggestions(loadedPartnerId));
+      } catch (e) {
+        console.error('getBusinessAttributeSuggestions failed', e);
+      }
+      try {
+        setActivePrioritySignals(await getActiveBusinessPrioritySignals(loadedPartnerId));
+      } catch (e) {
+        console.error('getActiveBusinessPrioritySignals failed', e);
+      }
     }
   }
 
@@ -444,6 +499,57 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingPriorityAttributes(false);
   }
 
+  // Business Intelligence & Opportunity Engine, Phase 1 -- the Business
+  // Priority Engine. A real, time-bounded "want more of X right now"
+  // signal, additive to the permanent priority_attributes/
+  // priority_time_windows above -- never replaces them, never edits them.
+  function boostExpiryFor(duration) {
+    const now = new Date();
+    if (duration === 'today') {
+      const end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      return end;
+    }
+    if (duration === 'weekend') {
+      const end = new Date(now);
+      const daysUntilSunday = (7 - end.getDay()) % 7 || 7;
+      end.setDate(end.getDate() + daysUntilSunday);
+      end.setHours(23, 59, 59, 999);
+      return end;
+    }
+    // '1week'
+    const end = new Date(now);
+    end.setDate(end.getDate() + 7);
+    return end;
+  }
+
+  async function handleSetBoost() {
+    if (!selectedPartner || !boostCategoryInput) return;
+    setSavingBoost(true);
+    try {
+      await setBusinessPrioritySignal(
+        selectedPartner.id,
+        boostCategoryInput,
+        1.0,
+        boostExpiryFor(boostDurationInput).toISOString()
+      );
+      setActivePrioritySignals(await getActiveBusinessPrioritySignals(selectedPartner.id));
+      setBoostCategoryInput(null);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingBoost(false);
+  }
+
+  async function handleClearBoost(signalId) {
+    try {
+      await clearBusinessPrioritySignal(signalId);
+      setActivePrioritySignals((prev) => prev.filter((s) => s.id !== signalId));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
   // "Business Profile Phase 1" addendum -- "What You Can Accommodate."
   async function handleSaveAccommodations() {
     if (!selectedPartner) return;
@@ -476,6 +582,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       });
       setSelectedPartner((prev) => ({ ...prev, category: categorySuggestion.category }));
       setCategorySuggestion(null);
+      // Business Intelligence & Opportunity Engine, Phase 1 -- close out
+      // the real provenance record for this suggestion (fire-and-forget:
+      // the canonical category write above already succeeded, this is
+      // only the durable audit trail catching up).
+      if (categorySuggestionId) {
+        respondToBusinessAttributeSuggestion(categorySuggestionId, true).catch((err) =>
+          console.error('respondToBusinessAttributeSuggestion failed', err)
+        );
+        setCategorySuggestionId(null);
+      }
+      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -487,6 +604,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const dismissKey = `business_category_suggestion_dismissed_${selectedPartner.id}_${categorySuggestion.category}`;
     await AsyncStorage.setItem(dismissKey, 'true');
     setCategorySuggestion(null);
+    if (categorySuggestionId) {
+      respondToBusinessAttributeSuggestion(categorySuggestionId, false).catch((err) =>
+        console.error('respondToBusinessAttributeSuggestion failed', err)
+      );
+      setCategorySuggestionId(null);
+      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
+    }
   }
 
   // Same addendum -- "Teach Nearby." Never auto-applies: extraction is
@@ -495,14 +619,51 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   function handleInterpretTeachNearby() {
     const extracted = extractAttributesFromText(teachNearbyInput);
     setTeachNearbyExtracted(extracted);
+    // Business Intelligence & Opportunity Engine, Phase 1 -- log each real
+    // extracted attribute into the durable provenance table, fire-and-
+    // forget, non-blocking. One suggestion row per attribute, matching
+    // this flow's own per-chip confirm/edit/discard shape.
+    if (selectedPartner) {
+      extracted.forEach((attribute) => {
+        recordBusinessAttributeSuggestion(
+          selectedPartner.id,
+          'attribute',
+          attribute,
+          'ai_inferred',
+          'Extracted from what you typed via Teach Nearby.'
+        ).then((id) => {
+          if (id) setTeachNearbySuggestionIds((prev) => ({ ...prev, [attribute]: id }));
+        });
+      });
+    }
   }
 
   function handleDiscardTeachNearby() {
+    Object.values(teachNearbySuggestionIds).forEach((id) => {
+      respondToBusinessAttributeSuggestion(id, false).catch((err) =>
+        console.error('respondToBusinessAttributeSuggestion failed', err)
+      );
+    });
+    setTeachNearbySuggestionIds({});
     setTeachNearbyInput('');
     setTeachNearbyExtracted(null);
+    if (selectedPartner) {
+      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
+    }
   }
 
   function handleRemoveTeachNearbyChip(attribute) {
+    const id = teachNearbySuggestionIds[attribute];
+    if (id) {
+      respondToBusinessAttributeSuggestion(id, false).catch((err) =>
+        console.error('respondToBusinessAttributeSuggestion failed', err)
+      );
+      setTeachNearbySuggestionIds((prev) => {
+        const next = { ...prev };
+        delete next[attribute];
+        return next;
+      });
+    }
     setTeachNearbyExtracted((prev) => (prev ?? []).filter((a) => a !== attribute));
   }
 
@@ -527,8 +688,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         differentiator: selectedPartner.differentiator,
       });
       setSelectedPartner((prev) => ({ ...prev, attributes: merged }));
+      // Business Intelligence & Opportunity Engine, Phase 1 -- close out
+      // the real provenance record for every attribute that survived to
+      // this confirm (any explicitly removed chip was already rejected in
+      // handleRemoveTeachNearbyChip). Fire-and-forget -- the canonical
+      // merge write above already succeeded.
+      teachNearbyExtracted.forEach((attribute) => {
+        const id = teachNearbySuggestionIds[attribute];
+        if (id) {
+          respondToBusinessAttributeSuggestion(id, true).catch((err) =>
+            console.error('respondToBusinessAttributeSuggestion failed', err)
+          );
+        }
+      });
+      setTeachNearbySuggestionIds({});
       setTeachNearbyInput('');
       setTeachNearbyExtracted(null);
+      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
       Alert.alert('Added to your profile', 'These now show up under "Why People Choose Us."');
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -2420,6 +2596,90 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   )}
                 </TouchableOpacity>
 
+                {/* Business Intelligence & Opportunity Engine, Phase 1 --
+                    the Business Priority Engine: a real, time-bounded
+                    "want more of X right now" signal, additive to the
+                    permanent chips above -- never edits them, expires on
+                    its own real deadline (swept hourly by the same cron
+                    job that already expires business_requests/
+                    business_availability). */}
+                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>
+                  ⏳ Temporary boost (optional)
+                </Text>
+                <Text style={styles.helperText}>
+                  Want more of one specific category this week, without changing what you're
+                  generally looking for above? Set a real deadline and it clears itself.
+                </Text>
+                {activePrioritySignals.length > 0 && (
+                  <View style={{ marginTop: spacing.xs, marginBottom: spacing.xs }}>
+                    {activePrioritySignals.map((s) => (
+                      <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
+                        <Text style={styles.breakdownText}>
+                          🎯 {s.category} — until {new Date(s.expires_at).toLocaleDateString()}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => handleClearBoost(s.id)}
+                          accessibilityLabel={`Clear boost for ${s.category}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.messageMemberLink}>Clear</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {INTEREST_OPTIONS.map((c) => {
+                    const selected = boostCategoryInput === c;
+                    return (
+                      <TouchableOpacity
+                        key={c}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setBoostCategoryInput(selected ? null : c)}
+                        accessibilityRole="button"
+                        accessibilityLabel={c}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {boostCategoryInput && (
+                  <>
+                    <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                      {[
+                        { key: 'today', label: 'Today' },
+                        { key: 'weekend', label: 'This Weekend' },
+                        { key: '1week', label: '1 Week' },
+                      ].map((d) => {
+                        const selected = boostDurationInput === d.key;
+                        return (
+                          <TouchableOpacity
+                            key={d.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => setBoostDurationInput(d.key)}
+                            accessibilityRole="button"
+                            accessibilityLabel={d.label}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{d.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                      onPress={handleSetBoost}
+                      disabled={savingBoost}
+                      accessibilityLabel="Save temporary boost"
+                      accessibilityRole="button"
+                    >
+                      {savingBoost ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>Boost This Category</Text>}
+                    </TouchableOpacity>
+                  </>
+                )}
+
                 {/* Phase 3 -- Availability Pulse: one tap sets and saves. */}
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>How's Business Right Now?</Text>
                 <View style={styles.chipRow}>
@@ -2646,6 +2906,35 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       </TouchableOpacity>
                     </View>
                   </View>
+                )}
+
+                {/* Business Intelligence & Opportunity Engine, Phase 1 --
+                    the real AI Suggestion / Audit log: every category-
+                    classification and Teach Nearby suggestion this
+                    business has ever seen, whatever it was resolved to.
+                    Read-only -- act on a real suggestion via the category
+                    banner or Teach Nearby above, not from here. */}
+                {recentSuggestions.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>🕓 Recent AI Suggestions</Text>
+                    <Text style={styles.helperText}>
+                      Every real, deterministic suggestion Nearby has made for this business, and
+                      what happened to it.
+                    </Text>
+                    {recentSuggestions.map((s) => (
+                      <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
+                        <Text style={styles.breakdownText}>
+                          {s.attribute_key === 'category'
+                            ? `Category: ${BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value}`
+                            : `Attribute: ${businessAttributeLabel(s.attribute_value) ?? s.attribute_value}`}
+                        </Text>
+                        <Text style={[styles.helperText, { marginTop: 2 }]}>
+                          {s.status === 'confirmed' ? '✅ Added' : s.status === 'rejected' ? '✕ Kept as-is' : '⏳ Awaiting your review'}
+                          {s.reason ? ` — ${s.reason}` : ''}
+                        </Text>
+                      </View>
+                    ))}
+                  </>
                 )}
 
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>

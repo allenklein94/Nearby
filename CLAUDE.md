@@ -99,7 +99,118 @@ full `npx expo export --platform ios`. Each phase is its own commit, pushed indi
 lands — not batched at the end — with this section's own status notes updated before moving to
 the next phase, so a mid-session restart never loses more than one phase's worth of work.
 
-### Status: Phase 1 — see status note below, appended once built and verified.
+### Status: Phase 1 — DONE, build-wise. All Phase 2-8 pieces remain locked plan only, not started.
+
+Both new Phase 1 pieces (Attribute Provenance/AI Suggestion log, Business Priority Signals) are
+built, applied to production, verified live under genuine `SET ROLE authenticated`, and replayed
+clean from a truly empty database.
+
+**`business_attribute_suggestions`** — one unified table serving as both the AI suggestion queue
+and the durable audit/provenance record (a suggestion's own status transition IS the audit
+entry, per this plan's own item-43 discipline against duplicated tables). `attribute_key`
+constrained to `category|attribute|differentiator|cuisine`; `source` to `business_confirmed|
+business_entered|ai_inferred|consumer_observed|system_observed`; `confidence` nullable and left
+`null` for both real detectors this app has today (`classifyBusinessCategory`/
+`extractAttributesFromText` are deterministic keyword match/no-match, never a scored
+probability — never fabricated to look more precise than the underlying computation actually
+is). Two SECURITY DEFINER RPCs: `record_business_attribute_suggestion()` (owner-only insert,
+idempotent via a partial unique index on open suggestions — a repeated dashboard load re-running
+the same deterministic classifier can't spam duplicate rows) and
+`respond_to_business_attribute_suggestion()` (owner-only, double-review guarded, and — on
+approval — atomically applies the canonical write for the two shapes this app actually knows how
+to apply today: `category` overwrite, `attribute` append-with-dedup re-validated against the
+real 8-value attribute vocabulary; any other key just flips status, never silently mis-applied).
+
+**`business_priority_signals`** — the real, time-bounded "Business Priority Engine" (spec item
+25): additive to (never replacing) the existing *permanent* `priority_attributes`/
+`priority_time_windows`. `category` reuses the exact real, current 26-tag `INTEREST_OPTIONS`
+vocabulary — **caught and fixed a real staleness bug before shipping**: the migration was
+originally written against `business_requests`' *original* 24-tag category CHECK, but a later
+migration (`20260902_widen_business_category_checks.sql`) had already widened that table's own
+constraint to the full 26-tag list (adding `Faith & Spirituality`/`Dating`) — checked the live
+current constraint directly rather than trusting the table's own original `CREATE TABLE`
+migration, which is exactly the kind of staleness this file's own conventions exist to catch.
+Fixed in the migration file and re-applied to production before this pass was ever committed.
+Two RPCs: `set_business_priority_signal()` (owner-only, upserts on `(partner_id, category) where
+active` so re-boosting the same category refreshes it rather than duplicating, rejects a
+past/immediate expiry) and `clear_business_priority_signal()` (owner-only, soft-deactivates,
+matching this schema's general "keep history, don't hard-delete" posture). `expire_stale_
+business_requests()` — the existing hourly cron sweep — was extended with one new statement
+(pulled the **live** function body fresh via the Management API first, reproduced byte-for-byte,
+every other line unchanged) so a priority signal past its own real deadline goes inactive on the
+same schedule `business_requests`/`business_availability`/group-plan rows already do, not a
+second cron job.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied, using the real
+`Coastal Coffee` partner and its real owner (`Allen`): a non-owner's suggestion-record attempt
+correctly rejected; the real owner's record succeeded and is idempotent (a repeat identical call
+returns the same suggestion id, not a duplicate row); RLS confirmed a non-owner gets 0 rows
+selecting the suggestion directly while the owner sees it; a non-owner's approve/reject attempt
+correctly rejected; the owner's approve of a `category` suggestion correctly, atomically wrote
+`brand_partners.category` and flipped the suggestion to `confirmed`; a second approve attempt on
+the same now-reviewed suggestion correctly rejected (double-review guard); a real `attribute`
+suggestion rejected via reject correctly left `brand_partners.attributes` untouched; a real
+`attribute` suggestion approved correctly appended into the array with no duplicate; approving an
+invalid attribute value was correctly rejected by the RPC's own vocabulary check, and — proven,
+not assumed — the whole failed call's earlier status-update rolled back with it (the suggestion
+stayed `suggested`, not stuck half-applied), confirming Postgres's implicit-transaction-per-call
+semantics hold here with no exception handler swallowing it. For priority signals: a real boost
+set, re-set (upsert refreshes strength/expiry, confirmed via row count staying at 1), a
+past-expiry set rejected, a non-owner clear rejected, the owner's clear correctly soft-deactivated
+it; a real disposable row with an already-past `expires_at` was correctly flipped inactive by
+calling the extended `expire_stale_business_requests()` sweep directly. All test rows deleted and
+`Coastal Coffee`'s `category`/`attributes` reverted to their exact pre-test values afterward —
+confirmed production back to its exact pre-test baseline.
+
+**Verified via two real from-scratch migration replays** (the second one required after the
+category-vocabulary fix above changed the migration file after the first replay already ran) —
+pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated a
+truly empty `public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, then ran the full, now-94-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file,
+both times** — both new tables and all 4 new functions confirmed to exist in the freshly-rebuilt
+database, with the corrected 26-tag category constraint confirmed present on the second run.
+Containers removed afterward.
+
+**Client**: new `src/services/businessIntelligence.js` (thin RPC wrappers — `recordBusinessAttributeSuggestion`/
+`respondToBusinessAttributeSuggestion`/`getBusinessAttributeSuggestions`/
+`setBusinessPrioritySignal`/`clearBusinessPrioritySignal`/`getActiveBusinessPrioritySignals`).
+`BusinessDashboardScreen.js` wired both real, already-existing AI flows to write through the new
+provenance log **additively** — the existing AsyncStorage dismiss key and the existing canonical
+write paths (`updateBusinessProfile`) are completely unchanged, the new suggestion-table calls
+are fire-and-forget secondary writes layered on top, matching this codebase's established
+"non-fatal secondary write" convention:
+- The AI Category Classification banner now logs a real `record_business_attribute_suggestion`
+  call (source `ai_inferred`, reason = the classifier's own real matched-keyword list) the moment
+  it's shown, and closes it out (`respond_to_...`) on both "Looks right" and "Keep as {current}".
+- Teach Nearby now logs one real suggestion per extracted attribute the moment extraction
+  happens, closes each one out individually when its own chip is removed, and closes out every
+  surviving chip on both Add-to-Profile (approved) and Discard (rejected).
+- A new "🕓 Recent AI Suggestions" read-only list (Dashboard's Business Profile section) shows the
+  last 10 real suggestion rows for this business — attribute/category, real status, real reason —
+  the actual AI audit log (spec item 28) made visible, not just a backend table nothing shows.
+- A new "⏳ Temporary boost (optional)" sub-section under the existing "What You're Looking For"
+  card — a real category chip picker (the full `INTEREST_OPTIONS` 26-tag vocabulary) + a
+  Today/This Weekend/1 Week duration picker, calling `set_business_priority_signal` — plus a list
+  of the business's own currently-active boosts with a real Clear action per row. Deliberately a
+  small, secondary sub-section, not a competing card — the permanent "What You're Looking For"
+  chips above it are unchanged and remain the primary mechanism.
+
+Verified via a direct `@babel/core` parse of both touched/new files (clean), the full Jest suite
+(unchanged, still 95/95 — no pure-logic file was touched this pass), and a full `npx expo export
+--platform ios` (clean, no bundling errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the category-suggestion banner and Teach Nearby flow
+still behave exactly as before (this pass only added fire-and-forget side effects, no change to
+their own visible behavior), that the new "Recent AI Suggestions" list renders correctly against
+real suggestion history, and that the new Temporary Boost picker renders/saves/clears correctly
+end-to-end in the running app.
+
+**Phases 2-8 of this plan remain exactly as locked above — nothing built, nothing started.** Pick
+up Phase 2 (Opportunity: a persisted `opportunity_score` + `match_reasons` on the existing
+`business_requests`/`business_request_offers` rows, reframing the dashboard's Opportunities inbox
+and Match Radar's existing `get_aggregated_demand_for_partner()` UI around it) next.
 
 
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section
