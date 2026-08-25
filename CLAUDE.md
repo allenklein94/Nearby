@@ -4,7 +4,104 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Aug 25 2026 — "Business Profile Phase 1" addendum — closes the real gaps found when checking
+## Aug 25 2026 — "Business Intelligence & Opportunity Engine" (external architecture spec: the
+## missing business-side machinery) — PLAN LOCKED, Phase 1 executing now
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and this
+section's own status note (appended once each piece lands) for what's actually built vs. still
+just this plan.
+
+### Context, and the real instruction behind it
+
+The user pasted a second, much larger external doc — not a feature list this time, a 48-item,
+8-phase architecture spec arguing Nearby's business side needs a genuine "Business Intelligence +
+Opportunity Layer" sitting *on top of* the existing consumer-intent/matching engine, never a
+second competing one. Its own closing instruction was explicit and is treated as binding on this
+whole pass: **audit every proposed engine against the real codebase first** — EXISTING / REUSE /
+EXTEND / NEW, with real table/function citations — then build phase by phase with verification
+after each, never blindly create the doc's own conceptual tables. That audit is section one below,
+done directly against the real, current schema/code (not accepted at face value, matching this
+file's own standing rule for every external doc) before writing a single migration.
+
+### The audit — every engine the spec names, checked against the real codebase, not assumed
+
+| Engine (spec item #) | Verdict | Real tables/functions today |
+|---|---|---|
+| Business capabilities (5) | **EXISTS** | `brand_partners.category`/`attributes`/`cuisine`/`accommodates_party_types` — real supply-side facts, already the exact capability/preference split the spec itself asks for |
+| Business "want more of" — permanent (6) | **EXISTS** | `brand_partners.priority_attributes`/`priority_time_windows` (Business Story Phase 2/Aug 25 addendum) |
+| Business "want more of" — temporary/expiring (25) | **MISSING** | nothing time-bounded exists — permanent arrays only. **Built this pass**, see Phase 1 below |
+| Attribute provenance / trust ladder (2) | **MISSING** | every AI-derived signal today (category classifier, Teach Nearby) only ever records a local `AsyncStorage` dismiss key — real for UX, not a durable/queryable/cross-device record. **Built this pass**, see Phase 1 below |
+| AI knowledge pipeline / "Teach Nearby" (3, 4) | **EXISTS, deterministic** | `businessCategoryClassifier.js`/`businessAttributeExtraction.js` (keyword-match, no LLM) + the dashboard's real confirm-before-apply UI — exactly the spec's own "suggest, never auto-mutate" pipeline, just not logged durably yet. **Extended this pass** to write through Phase 1's new provenance log |
+| Business rules engine (9) | **PARTIALLY EXISTS, narrower than the spec's ask** | `business_fulfillment_policies` (party-size bounds, active hours, auto-accept threshold, min spend, max discount, deposit, cancellation window) is a real, deterministic rule set for the one real use case this app has today. A generic IF/THEN condition→action DSL (the spec's literal ask) has no second real use case yet — **deferred**, not built, until a real rule shape emerges that `business_fulfillment_policies` genuinely can't express |
+| Weather-aware availability (10) | **Provider exists, wiring doesn't** | the weather signals engine (`outdoor_favorable`/`rain_risk`/`heat_risk`/`cold_risk`, Aug 22) is real and live but wired to zero business decisions — **deferred to Phase 7**, matching the spec's own "don't build until a weather provider exists" instruction, now inverted (provider exists, wiring is the real remaining work) |
+| Availability resolver (8) | **EXISTS, no gap** | `intentResolver.js`'s tier 4 (`resolveBusinessAvailability`, confirmed 🟢) + tier "policy-only" (`resolvePolicyOnlyBusinesses`, 🟡, correctly never outranks a confirmed posting on the shared score axis) + `availability_pulse`/`isAvailabilityPulseFresh()` (coarse whole-business state with an honest staleness cutoff) already implement exactly what this item asks for. **Nothing built this pass** — a real "already done" verdict, not silently skipped |
+| Business moments — temporary capacity/space/event postings (7) | **EXISTS, under a different, real, already-load-bearing name** | `business_availability` (time-boxed capacity, category, price, radius, auto-matched against open `business_requests` both directions — the exact "business moment → demand matching"/"Fill a Spot" flow items 23-24 ask for). **Real naming collision, flagged**: `stories.partner_id` (Aug 22, "business moments" in this file's own prior commit history) is a *completely different* feature (photo/video posts with a 24h expiry) — nothing here reuses or renames that table. No new table built for this item |
+| Opportunity engine — request/score/reasons/status (11-14) | **PARTIALLY EXISTS** | `business_requests`/`business_request_offers` rows already ARE the opportunity object, shown on the dashboard's "Business Opportunities" inbox; the 🎯 "Matches what you're looking for" badge (Business Story Phase 4) is already a real, client-computed match-reason mini-system. A persisted numeric `opportunity_score` + itemized `match_reasons` array is genuinely missing — **Phase 2** |
+| Match Radar (13) | **EXISTS** | `get_aggregated_demand_for_partner()` (category/party-size/dominant-time-window rollup + `unmet_intent_count` softening, Aug 15 + Aug 23) already is Match Radar. Reuse verbatim in Phase 2's UI reframe, no new schema |
+| Missed-match engine (15-16) | **MISSING** | no exclusion-reason instrumentation exists anywhere in `_business_request_fanout`/`_match_request_to_availability`/`_match_request_to_policy` — a candidate that's filtered out today just silently never appears. **Phase 4** |
+| Offer recommendation engine (20) | **MISSING** | `submit_business_offer` is manual-only, no suggested-offer generation exists. **Phase 3**, built deterministically (no LLM, no invented prices) over the existing real signals below |
+| Offer templates (21-22) | **EXISTS, under a different real name** | `business_experiences` ("Signature Experiences," Business Story Phase 6) already is a real, owner-editable, AI-suggestible (deterministic `deriveSignatureExperienceSuggestions()`) offer-template system — title/description/attributes/`price_level`/`party_type`/`active`/`ai_suggested` provenance flag. Reuse verbatim as the real `offer_templates` table — no second one |
+| AI trust / automation levels (26-27) | **Level 0 only, correctly** | the classifier/Teach-Nearby pattern (suggest, never auto-apply, owner must explicitly confirm) already is Level 0. Levels 1-3 (assisted/routine/autopilot) are **not built and not recommended without a real go-ahead** — matches the spec's own hard "never let AI act independently" constraint |
+| AI audit log (28) | **MISSING** | no durable record of an AI suggestion's own lifecycle exists — only the local dismiss key. **Built this pass**, see Phase 1 |
+| Business Brief (29) | **EXISTS** | the Nearby Brief single-suggestion chain (Business Story Phase 5) already generates a real, evidence-backed daily suggestion from real data, one at a time, deterministic — matches this item's own spirit exactly. Extend with new signals as later phases land; no second daily-summary surface |
+| Demand insights (30) | **EXISTS** | `get_aggregated_demand_for_partner()`'s own category/party-size/time-window breakdown already is this. Reuse |
+| Outcome learning / business × experience performance (17-19) | **EXISTS, real depth, already sample-gated** | `business_offer_outcomes` (satisfaction/`would_repeat`) + `get_partner_offer_reputation()` + `get_partner_avg_response_time()` + `get_marketplace_reliability_rankings()` + `get_my_positive_experience_signals()` — all real, all gated on genuine sample-size thresholds (5+ opportunities / 3+ ratings) before ever surfacing a percentage, matching this item's own "don't publish until statistically meaningful" rule already, built well before this doc existed |
+| Business analytics (34-35) | **EXISTS** | `get_business_dashboard_stats`/`get_business_discovery_stats`/`get_business_acquisition_funnel_stats`/`business_profile_views` — all real counts, no fabrication |
+| Demand-gap detection / business recommendation engine (36-37) | **MISSING** | no cross-business "underserved demand" comparison exists. **Phase 5** |
+| Reservation/payment seam (already built elsewhere) | **EXISTS** | `business_reservations`/`business_payments`/Stripe Connect scaffolding (Aug 17/27) — unrelated to this pass, not touched |
+| Monetization / entitlements (38-39) | **Bare column only** | `brand_partners.tier` (`basic`/`growth`/`brand`, Aug 17) exists with zero enforcement anywhere. Building real entitlements needs an actual pricing/product decision — **Phase 8, deferred**, matching this file's own long-standing "needs the user present" posture on billing |
+| Feature flags (40) | **Not adopted** | this app has no gradual-rollout infrastructure anywhere else in its whole build history — every feature here ships directly once verified. Inventing a flag system for this pass alone would be new, unused infra, not a real current need — **not built, not recommended** |
+
+### Corrections to the pasted spec, locked, not to be re-litigated
+
+- **No second "business_moments" table, ever, under that name** — it already means something else in this codebase (real photo/video posts). The spec's own concept (temporary capacity/space postings) is `business_availability`, already built and already doing exactly the "moment → demand matching" flow the spec describes in items 7/23/24.
+- **No second offer-template table, no second daily-brief surface, no second Match Radar RPC.** Each already exists under a real name (`business_experiences`, the Nearby Brief chain, `get_aggregated_demand_for_partner`) and is reused as-is.
+- **The generic rules engine (item 9) is deliberately not built.** `business_fulfillment_policies` already covers the one real deterministic rule shape this app needs; a speculative condition/action DSL with no second real use case would be exactly the kind of "looks more complete than it is" infrastructure this file's own history has repeatedly avoided.
+- **Weather-rule wiring (item 10) is real, bounded, and deferred to Phase 7** — the provider isn't the missing piece anymore (it shipped Aug 22), the *wiring* is.
+- **Monetization (items 38-39) and AI automation levels 1-3 (items 26-27) are both deliberately not attempted this pass** — both need a real decision (pricing model; how much independent action to actually trust an AI with) that isn't this session's to make unilaterally, matching this file's own repeated "flag, don't silently build partial" convention for exactly this shape of open question.
+- **Feature flags (item 40) are not adopted** — no real current need, and this app has never used them anywhere else.
+
+### Locked phase order — adapted from the doc's own 8 phases to the real audit above (phases
+### collapse where the work already exists, only expand where it genuinely doesn't)
+
+1. **Foundation** (this pass) — Attribute Provenance/Trust Ladder + a real AI Suggestion/Audit
+   log (genuinely new, one unified table rather than three separate ones per the spec's own
+   item 43 "prefer extending, only create new tables when the concept genuinely doesn't exist");
+   Business Priority Signals — a real, time-bounded "want more of X until a real deadline" layer,
+   additive to (never replacing) the existing permanent `priority_attributes`/`priority_time_windows`.
+2. **Opportunity** — a persisted `opportunity_score` + itemized `match_reasons` computed once per
+   eligible `business_requests` row per partner (extends the existing fan-out, never a second
+   matching engine — reuses the same shared `SCORE_*` weight convention `homeRecommendations.js`/
+   `intentResolverScoring.js` already established); reframe the dashboard's Opportunities inbox
+   and Match Radar's existing UI around it.
+3. **Transactions** — a deterministic (non-LLM) offer-recommendation ranking over the existing
+   `business_experiences` templates + fulfillment policy + real historical acceptance rate.
+4. **Learning** — missed-match instrumentation (new: logs a real exclusion reason inside the
+   existing fan-out/matching functions, aggregated view only, never a raw per-event dump); a
+   business × category outcome breakdown extending the existing outcome RPCs.
+5. **Intelligence** — demand-gap detection + a real "you have demand for something you don't
+   offer" recommendation, extending the existing aggregated-demand RPC and Nearby Brief chain.
+6. **Automation** — AI trust levels 1-3, only if and when a real, explicit go-ahead exists; not
+   scheduled by default.
+7. **Context** — wire the already-existing weather signals into a real rule (patio availability
+   drops when `rain_risk` is high), extending `business_fulfillment_policies`' own shape rather
+   than building a second rules concept.
+8. **Monetization** — real entitlements over the existing bare `tier` column; needs a real
+   pricing decision from the user first, not something to build speculatively.
+
+### Verification convention, matching every other schema-touching plan in this file
+
+Every schema change applied to production and verified live with real disposable test data under
+genuine `SET ROLE authenticated` (not just a table-owner bypass), plus a from-scratch migration
+replay before being considered done. Every client change verified via the full Jest suite plus a
+full `npx expo export --platform ios`. Each phase is its own commit, pushed individually as it
+lands — not batched at the end — with this section's own status notes updated before moving to
+the next phase, so a mid-session restart never loses more than one phase's worth of work.
+
+### Status: Phase 1 — see status note below, appended once built and verified.
+
+
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section
 ## immediately below this one) — PLAN LOCKED, executing now
 
