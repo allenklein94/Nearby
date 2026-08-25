@@ -246,6 +246,28 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </>
         )}
 
+        {/* "Business Profile Phase 1" addendum (CLAUDE.md) -- the public
+            half of "What You Can Accommodate." Deliberately shows only
+            accommodates_party_types here, not outdoor_seating too -- that
+            already renders one section up, in "Why People Choose Us,"
+            and repeating it here would just be visual duplication on a
+            screen a real consumer actually sees. Group size stays
+            owner-dashboard-only (business_fulfillment_policies is
+            deliberately owner-only-SELECT, not something this pass
+            widens). */}
+        {(partner.accommodates_party_types ?? []).length > 0 && (
+          <>
+            <Text style={styles.attributeSectionHeader}>What This Business Can Accommodate</Text>
+            <View style={styles.attributeChipRow}>
+              {partner.accommodates_party_types.map((key) => (
+                <View key={key} style={styles.attributeChip}>
+                  <Text style={styles.attributeChipText}>{experiencePartyTypeLabel(key)}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.followButton, following && styles.followingButton]}

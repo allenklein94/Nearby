@@ -629,6 +629,29 @@ export async function setBusinessPriorityAttributes(partnerId, priorityAttribute
   if (error) throw error;
 }
 
+// "Business Profile Phase 1" addendum (see CLAUDE.md) -- "What You Can
+// Accommodate." Reuses the exact same 'solo'/'friends'/'groups'/'date'
+// party_type vocabulary gatherings/business_experiences already use --
+// no second taxonomy. Same narrow-RPC shape as setBusinessPriorityAttributes.
+export async function setBusinessAccommodations(partnerId, partyTypes) {
+  const { error } = await supabase.rpc('set_business_accommodations', {
+    partner_id_param: partnerId,
+    party_types_param: partyTypes ?? [],
+  });
+  if (error) throw error;
+}
+
+// Same addendum -- the "Timing" half of "What You Want More Of." Reuses
+// the exact 'morning'/'afternoon'/'evening'/'weekend' vocabulary
+// utils/timeContext.js's getTimePeriod() already establishes client-side.
+export async function setBusinessPriorityTimeWindows(partnerId, timeWindows) {
+  const { error } = await supabase.rpc('set_business_priority_time_windows', {
+    partner_id_param: partnerId,
+    time_windows_param: timeWindows ?? [],
+  });
+  if (error) throw error;
+}
+
 // "Business Story" plan, Phase 3 -- a real, coarse, self-reported
 // "how's business right now" signal (open/limited/full), deliberately
 // not the deeper capacity-rules business_fulfillment_policies mechanism.

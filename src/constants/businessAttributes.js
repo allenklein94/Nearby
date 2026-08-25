@@ -97,3 +97,27 @@ export function experiencePriceLabel(key) {
 export function experiencePartyTypeLabel(key) {
   return EXPERIENCE_PARTY_TYPE_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }
+
+// "Business Profile Phase 1" addendum (CLAUDE.md) -- "What You Can
+// Accommodate"'s Experiences & Uses picker reuses EXPERIENCE_PARTY_TYPE_OPTIONS'
+// own exact 4-value vocabulary/labels above (no second party-type list) --
+// this export is just a convenience alias so the Accommodate card's own
+// code reads clearly for what it's actually doing, not a new taxonomy.
+export const ACCOMMODATE_PARTY_TYPE_OPTIONS = EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key !== null);
+
+// Same addendum -- the "Timing" half of "What You Want More Of." Reuses
+// the exact 'morning'/'afternoon'/'evening'/'weekend' vocabulary
+// utils/timeContext.js's getTimePeriod() already establishes client-side
+// -- new, business-context-specific display labels only (Home's own
+// greeting copy, e.g. "Tonight", doesn't fit a "when do you want more
+// customers" framing).
+export const PRIORITY_TIME_WINDOW_OPTIONS = [
+  { key: 'morning', label: '🌅 Mornings' },
+  { key: 'afternoon', label: '☀️ Afternoons' },
+  { key: 'evening', label: '🌆 Evenings' },
+  { key: 'weekend', label: '📅 Weekends' },
+];
+
+export function priorityTimeWindowLabel(key) {
+  return PRIORITY_TIME_WINDOW_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}

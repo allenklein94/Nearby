@@ -160,8 +160,115 @@ judgment call above); a real LLM call anywhere in this addendum (both "AI" piece
 classification and Teach Nearby — are deterministic keyword derivation, matching this file's
 now-repeated "no new classification service, reuse the pure-function pattern" convention).
 
-**Status: plan locked, build proceeding now — check the status note appended after this line
-(added once it lands) for what's actually built.**
+**Status: DONE, build-wise — all 6 pieces built, applied, and verified.**
+
+**Schema/RPC** (`20260903_v3_business_accommodate_and_timing.sql`): two new `brand_partners`
+columns (`accommodates_party_types`, `priority_time_windows`, both `text[] not null default
+'{}'`) and two new SECURITY DEFINER RPCs (`set_business_accommodations`, `set_business_priority_time_windows`),
+mirroring `set_business_priority_attributes()`'s exact shape. Applied to production
+(`enmosvippabmuqslzrox`). **Verified live end-to-end**, not just applied, under genuine `SET
+ROLE authenticated`, using the real `Coastal Coffee` partner: the owner's (`Allen`) real set
+calls for both fields succeeded and round-tripped exactly; a non-owner's (`Claude`) identical
+calls were both correctly rejected (`You do not manage this business`); an invalid party type
+and an invalid time window were both correctly rejected by each RPC's own vocabulary check
+(`Invalid party type`/`Invalid time window`); a raw `anon`-role call to either RPC was rejected
+outright at the grant level (`permission denied for function`); a genuine stranger (`Google
+voice`) confirmed both new columns are publicly SELECT-able via `brand_partners`' own existing
+"active partners are public" policy (same posture `priority_attributes` already has — readable
+at the row level, just never rendered on the public screen by client choice). Also independently
+re-verified the two *reused* `update_business_profile` call shapes my new client handlers depend
+on (the category-confirm path and the Teach-Nearby attribute-merge path) — both round-tripped
+correctly against the real `Coastal Coffee` row. All test writes reverted; production confirmed
+back to its exact pre-test baseline (`accommodates_party_types: [], priority_time_windows: []`,
+every other real field — `name`/`description`/`category`/`attributes`/`cuisine`/`differentiator`
+— byte-for-byte its original value). **Verified via a real from-scratch migration replay**:
+pulled the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated a
+truly empty `public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` cleanly as
+`supabase_admin`, then ran the full 92-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, both new columns and both new functions
+confirmed to exist in the freshly-rebuilt database. Container removed afterward.
+
+**Client — two new pure-function constants files**, same "no I/O, fully testable" shape as
+`businessExperienceSuggestions.js`: `src/constants/businessCategoryClassifier.js`
+(`classifyBusinessCategory({name, description})` — real keyword lists per the 6-value
+`BUSINESS_CATEGORIES` vocabulary, returns `null` on no match or a genuine tie between two
+equally-matched categories, never guesses) and `src/constants/businessAttributeExtraction.js`
+(`extractAttributesFromText(text)` — real keyword lists per the 8-value `BUSINESS_ATTRIBUTE_OPTIONS`
+vocabulary, the "Teach Nearby" parser). 13 new unit tests across both files covering the
+empty-input case, no-match case, real single/multi-attribute extraction, case-insensitivity, and
+(for the classifier) the real tie-break logic. Full suite now **95/95 passing** (82 pre-existing
++ 13 new).
+
+**`BusinessDashboardScreen.js`** gained all five owner-facing pieces:
+- **AI Category Classification banner** — shown only when `classifyBusinessCategory()`'s real
+  suggestion genuinely differs from the stored category; "Looks right" writes the suggestion
+  through the existing `update_business_profile` RPC (every other field carried forward
+  unchanged); "Keep as {current}" persists a local (`AsyncStorage`, keyed by partner id +
+  the specific suggested category) dismissal so the same suggestion never re-nags.
+- **"👥 What You Can Accommodate" card** — group size is a read-only reflection of the
+  already-loaded `fulfillmentPolicy.party_size_min/max` (zero new query), with "Edit" jumping
+  straight to the existing Fulfillment Policy modal (`openPolicyModal`) rather than a second
+  capacity system; a real, saved "Experiences & Uses" chip picker over
+  `accommodates_party_types` (the exact `party_type` vocabulary, reusing
+  `EXPERIENCE_PARTY_TYPE_OPTIONS`' own labels via the new `ACCOMMODATE_PARTY_TYPE_OPTIONS`
+  alias); a read-only "Space" line reflecting `outdoor_seating` from the existing `attributes`
+  array, linking to the existing attribute picker — Wi-Fi/pet-friendly/private-room are
+  deliberately **not** built (no real taxonomy anywhere backs them, confirmed before designing
+  this, not silently guessed).
+- **"What You're Looking For" gained a real "When" chip row** (`priority_time_windows`, the
+  `morning`/`afternoon`/`evening`/`weekend` vocabulary), saved together with the existing
+  customer/intent chips via one shared Save button (`handleSavePriorityAttributes` now calls
+  both `setBusinessPriorityAttributes`/`setBusinessPriorityTimeWindows` in a `Promise.all`) —
+  one card, one action, two RPCs underneath.
+- **"✨ Teach Nearby" card** — a free-text input, a real "Nearby understood: [chips]" step
+  (each chip individually removable before confirming) sourced from `extractAttributesFromText()`,
+  with Add-to-Profile (merges into the real `attributes` array via `update_business_profile`,
+  union — never a duplicate, never dropping an already-confirmed attribute) / Discard actions.
+  Never auto-applies; nothing is written until the owner explicitly confirms.
+- **The existing "Today at {business}" Nearby Brief single-suggestion chain (Phase 5) extended**
+  with two new real checks — empty `attributes` and empty accommodate signal (`accommodates_party_types`
+  empty **and** no fulfillment policy set) — inserted into the same fixed priority order,
+  **not** built as a second, competing multi-item checklist card. This was a real, disclosed
+  judgment call: the spec's own mockup shows several recommendations listed together, but this
+  app's own established design principle (stated verbatim in the Nearby Brief's own code
+  comment) is "one concrete, deterministic suggestion, never an LLM call" — extending the
+  existing single-suggestion mechanism avoids the exact duplicate-mechanism-answering-the-same-
+  question problem this file's own convergence passes have repeatedly caught elsewhere. New
+  jump targets reuse the exact same `setSection('business')` pattern the existing pulse
+  suggestion already uses.
+
+**`BusinessProfileScreen.js`** (public, consumer-facing) gained a narrower "What This Business
+Can Accommodate" section, showing only `accommodates_party_types` chips — **deliberately not**
+also repeating `outdoor_seating` here, since that's already visible one section up in "Why
+People Choose Us" and duplicating it would be pure visual redundancy on a screen a real consumer
+actually sees (a refinement made while building, not literally what the plan text said — noted
+here rather than silently done). Group size stays owner-dashboard-only, matching
+`priority_attributes`' own established "owner-facing only" precedent — `business_fulfillment_policies`
+is deliberately owner-only-SELECT by its own Phase 2 design, not widened here.
+
+Verified via a direct `@babel/core` parse of every touched/new file (clean), the full Jest
+suite (95/95), and a full `npx expo export --platform ios` (clean, no bundling errors, **2260
+modules** — two more than the 2258 baseline, the two new constants files entering the bundle
+graph; every other touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of this addendum's new UI — next session should confirm on a real device: the
+category-suggestion banner renders and dismisses/confirms correctly (worth constructing a real
+business whose name/description genuinely mismatches its stored category to exercise the banner
+at all, since a well-matched business like the real `Coastal Coffee` never shows one); the
+Accommodate card's group-size read-only reflection, chip picker, and Space line all render and
+save correctly; the "When" chip row saves correctly alongside the existing customer/intent
+chips; the Teach Nearby flow's extract → confirm/edit/discard cycle behaves correctly end-to-end
+including the per-chip remove action; the extended Nearby Brief chain surfaces the two new
+checks at the right priority position for an account missing those signals; and the public
+profile's new Accommodate section renders correctly (and correctly renders nothing when the
+array is empty).
+
+Per the addendum's own explicitly-out-of-scope list, nothing here wires `accommodates_party_types`/
+`priority_time_windows` into the intent resolver or `_business_request_fanout()`'s own ordering —
+that remains a real, separate, future piece, matching every prior phase's own "surfaced, not yet
+matched" scope boundary.
 
 ## Aug 25 2026 — "Business Story" — the business profile stops being a form and starts being
 ## the supply-side counterpart to consumer intent — PLAN LOCKED, Phases 1-6 all DONE — see each

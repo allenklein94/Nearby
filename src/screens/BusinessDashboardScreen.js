@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, deleteBusinessExperience } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -17,8 +17,10 @@ import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } f
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
+import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
+import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -92,11 +94,29 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
   // of"), a lightweight signal distinct from the full Edit Profile form.
   const [priorityAttributesInput, setPriorityAttributesInput] = useState([]);
+  // "Business Profile Phase 1" addendum -- the Timing half of "What You
+  // Want More Of," saved together with priorityAttributesInput via the
+  // same Save button (one card, one action, two RPCs underneath).
+  const [priorityTimeWindowsInput, setPriorityTimeWindowsInput] = useState([]);
   const [savingPriorityAttributes, setSavingPriorityAttributes] = useState(false);
   // Phase 3 -- Availability Pulse, a real self-reported "how's business
   // right now" signal.
   const [pulseNoteInput, setPulseNoteInput] = useState('');
   const [savingPulse, setSavingPulse] = useState(false);
+  // "Business Profile Phase 1" addendum -- "What You Can Accommodate."
+  const [accommodatePartyTypesInput, setAccommodatePartyTypesInput] = useState([]);
+  const [savingAccommodations, setSavingAccommodations] = useState(false);
+  // Same addendum -- the AI Category Classification banner. Dismissal is
+  // local-device-only (AsyncStorage), keyed by partner id + the specific
+  // suggested category, same "have you seen this nudge" convention as
+  // TabHeaderActions' own first-open hint elsewhere in this app.
+  const [categorySuggestion, setCategorySuggestion] = useState(null);
+  const [savingCategorySuggestion, setSavingCategorySuggestion] = useState(false);
+  // Same addendum -- "Teach Nearby." Never auto-applies -- the extracted
+  // chips are always shown for explicit confirm/edit/discard first.
+  const [teachNearbyInput, setTeachNearbyInput] = useState('');
+  const [teachNearbyExtracted, setTeachNearbyExtracted] = useState(null);
+  const [savingTeachNearby, setSavingTeachNearby] = useState(false);
   // Phase 6 -- Signature Experiences.
   const [experiences, setExperiences] = useState([]);
   const [loadingExperiences, setLoadingExperiences] = useState(false);
@@ -246,11 +266,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setLoadError(false);
       if (partner) {
         setPriorityAttributesInput(partner.priority_attributes ?? []);
+        setPriorityTimeWindowsInput(partner.priority_time_windows ?? []);
         setPulseNoteInput(partner.availability_pulse_note ?? '');
+        setAccommodatePartyTypesInput(partner.accommodates_party_types ?? []);
         logBusinessAcquisitionEvent(sessionId, 'dashboard_viewed', { partnerId: partner.id });
         const seenKey = `business_dashboard_welcome_seen_${partner.id}`;
         const seen = await AsyncStorage.getItem(seenKey);
         if (!seen) setShowWelcomeCard(true);
+
+        // "Business Profile Phase 1" addendum -- AI Category
+        // Classification, computed purely from the real, already-loaded
+        // name/description, never a new fetch. Only shown when it
+        // genuinely differs from the stored category (nothing to confirm
+        // otherwise) and hasn't already been dismissed for this exact
+        // suggestion on this device.
+        const suggestion = classifyBusinessCategory({ name: partner.name, description: partner.description });
+        if (suggestion && suggestion.category !== partner.category) {
+          const dismissKey = `business_category_suggestion_dismissed_${partner.id}_${suggestion.category}`;
+          const dismissed = await AsyncStorage.getItem(dismissKey);
+          if (!dismissed) setCategorySuggestion(suggestion);
+        }
       }
     } catch (e) {
       setLoadError(true);
@@ -384,18 +419,121 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   // "Business Story" plan, Phase 2 -- a real, small, dedicated save,
   // distinct from the full Edit Profile form since this is meant to be
-  // revisited often, not part of an identity edit.
+  // revisited often, not part of an identity edit. "Business Profile
+  // Phase 1" addendum: also saves priorityTimeWindowsInput in the same
+  // tap -- one card, one Save button, two RPCs underneath (the two
+  // fields live in separate columns/RPCs since "customers you want" and
+  // "when you want them" are genuinely different vocabularies).
   async function handleSavePriorityAttributes() {
     if (!selectedPartner) return;
     setSavingPriorityAttributes(true);
     try {
-      await setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput);
-      setSelectedPartner((prev) => ({ ...prev, priority_attributes: priorityAttributesInput }));
+      await Promise.all([
+        setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput),
+        setBusinessPriorityTimeWindows(selectedPartner.id, priorityTimeWindowsInput),
+      ]);
+      setSelectedPartner((prev) => ({
+        ...prev,
+        priority_attributes: priorityAttributesInput,
+        priority_time_windows: priorityTimeWindowsInput,
+      }));
       Alert.alert('Saved', "We'll flag opportunities that match what you're looking for.");
     } catch (e) {
       Alert.alert('Error', e.message);
     }
     setSavingPriorityAttributes(false);
+  }
+
+  // "Business Profile Phase 1" addendum -- "What You Can Accommodate."
+  async function handleSaveAccommodations() {
+    if (!selectedPartner) return;
+    setSavingAccommodations(true);
+    try {
+      await setBusinessAccommodations(selectedPartner.id, accommodatePartyTypesInput);
+      setSelectedPartner((prev) => ({ ...prev, accommodates_party_types: accommodatePartyTypesInput }));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingAccommodations(false);
+  }
+
+  // Same addendum -- AI Category Classification. "Looks right" writes the
+  // suggested category through the existing update_business_profile RPC,
+  // carrying every other field forward unchanged -- never a partial patch.
+  async function handleConfirmCategorySuggestion() {
+    if (!selectedPartner || !categorySuggestion) return;
+    setSavingCategorySuggestion(true);
+    try {
+      await updateBusinessProfile(selectedPartner.id, {
+        name: selectedPartner.name,
+        description: selectedPartner.description,
+        address: selectedPartner.address,
+        logoUrl: selectedPartner.logo_url,
+        category: categorySuggestion.category,
+        attributes: selectedPartner.attributes ?? [],
+        cuisine: selectedPartner.cuisine,
+        differentiator: selectedPartner.differentiator,
+      });
+      setSelectedPartner((prev) => ({ ...prev, category: categorySuggestion.category }));
+      setCategorySuggestion(null);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingCategorySuggestion(false);
+  }
+
+  async function handleDismissCategorySuggestion() {
+    if (!selectedPartner || !categorySuggestion) return;
+    const dismissKey = `business_category_suggestion_dismissed_${selectedPartner.id}_${categorySuggestion.category}`;
+    await AsyncStorage.setItem(dismissKey, 'true');
+    setCategorySuggestion(null);
+  }
+
+  // Same addendum -- "Teach Nearby." Never auto-applies: extraction is
+  // purely local, and nothing writes anywhere until the owner explicitly
+  // confirms the real extracted chips.
+  function handleInterpretTeachNearby() {
+    const extracted = extractAttributesFromText(teachNearbyInput);
+    setTeachNearbyExtracted(extracted);
+  }
+
+  function handleDiscardTeachNearby() {
+    setTeachNearbyInput('');
+    setTeachNearbyExtracted(null);
+  }
+
+  function handleRemoveTeachNearbyChip(attribute) {
+    setTeachNearbyExtracted((prev) => (prev ?? []).filter((a) => a !== attribute));
+  }
+
+  // Confirming merges the extracted attributes into the business's own
+  // real attributes array (union, never a duplicate, never removing an
+  // attribute already confirmed elsewhere) and writes through the same
+  // real update_business_profile RPC every other profile edit already
+  // uses -- this never invents a new write path for attributes.
+  async function handleConfirmTeachNearby() {
+    if (!selectedPartner || !teachNearbyExtracted || teachNearbyExtracted.length === 0) return;
+    setSavingTeachNearby(true);
+    try {
+      const merged = Array.from(new Set([...(selectedPartner.attributes ?? []), ...teachNearbyExtracted]));
+      await updateBusinessProfile(selectedPartner.id, {
+        name: selectedPartner.name,
+        description: selectedPartner.description,
+        address: selectedPartner.address,
+        logoUrl: selectedPartner.logo_url,
+        category: selectedPartner.category,
+        attributes: merged,
+        cuisine: selectedPartner.cuisine,
+        differentiator: selectedPartner.differentiator,
+      });
+      setSelectedPartner((prev) => ({ ...prev, attributes: merged }));
+      setTeachNearbyInput('');
+      setTeachNearbyExtracted(null);
+      Alert.alert('Added to your profile', 'These now show up under "Why People Choose Us."');
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingTeachNearby(false);
   }
 
   // Phase 3 -- one tap sets and saves the pulse (matches the vision doc's
@@ -1339,6 +1477,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   let suggestion = null;
                   if (!selectedPartner.differentiator) {
                     suggestion = { text: "Add what makes you different — it's one of the strongest signals people use to pick you.", onPress: () => setEditProfileModalVisible(true) };
+                  } else if ((selectedPartner.attributes ?? []).length === 0) {
+                    // "Business Profile Phase 1" addendum -- a real, empty
+                    // "Why People Choose Us" is genuinely worth flagging
+                    // before the softer signals below it.
+                    suggestion = { text: "Tell us why people choose you — it shows up on your public profile.", onPress: () => setEditProfileModalVisible(true) };
+                  } else if ((selectedPartner.accommodates_party_types ?? []).length === 0 && !fulfillmentPolicy) {
+                    suggestion = { text: "Tell Nearby what you can accommodate so we send you requests that actually fit.", onPress: () => setSection('business') };
                   } else if (!isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)) {
                     suggestion = { text: "Set your availability so people know you're open right now.", onPress: () => setSection('business') };
                   } else if (pendingCount > 0) {
@@ -2096,6 +2241,124 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
 
+                {/* "Business Profile Phase 1" addendum -- AI Category
+                    Classification. A real, deterministic keyword match
+                    against the business's own real name/description, never
+                    an LLM call -- only shown when it genuinely differs from
+                    what's already stored, since there's nothing to confirm
+                    when it already matches. */}
+                {categorySuggestion && (
+                  <View style={[styles.gatheringRow, { marginTop: spacing.md }]}>
+                    <Text style={styles.breakdownText}>
+                      We think {selectedPartner?.name} might be:
+                    </Text>
+                    <Text style={styles.offerTitle}>
+                      {BUSINESS_CATEGORIES.find((c) => c.key === categorySuggestion.category)?.label ?? categorySuggestion.category}
+                    </Text>
+                    <View style={{ flexDirection: 'row', marginTop: spacing.sm, gap: spacing.sm }}>
+                      <TouchableOpacity
+                        style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                        onPress={handleConfirmCategorySuggestion}
+                        disabled={savingCategorySuggestion}
+                        accessibilityLabel="Looks right, update my category"
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.smallActionButtonText}>{savingCategorySuggestion ? 'Saving...' : 'Looks right'}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                        onPress={handleDismissCategorySuggestion}
+                        accessibilityLabel={`Keep as ${selectedPartner?.category ? BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label : 'current'}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>
+                          Keep as {selectedPartner?.category ? BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category : 'unset'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* "Business Profile Phase 1" addendum -- "What You Can
+                    Accommodate." Group size is read-only here (reflecting
+                    the real business_fulfillment_policies row already
+                    loaded above -- no second capacity system), Experiences
+                    & Uses is a real, saved chip picker over the same
+                    party_type vocabulary gatherings/business_experiences
+                    already use, and Space reflects the one real amenity
+                    signal this schema actually has (outdoor_seating) --
+                    Wi-Fi/pet-friendly/private-room have no real taxonomy
+                    anywhere in this app and are deliberately not fabricated
+                    here. */}
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>👥 What You Can Accommodate</Text>
+                <Text style={styles.helperText}>
+                  Help Nearby send you requests that actually fit your business.
+                </Text>
+                <View style={styles.gatheringRow}>
+                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Group size</Text>
+                  <Text style={styles.breakdownText}>
+                    {fulfillmentPolicy?.party_size_min != null || fulfillmentPolicy?.party_size_max != null
+                      ? `Groups of ${fulfillmentPolicy.party_size_min ?? '1'}-${fulfillmentPolicy.party_size_max ?? '∞'}`
+                      : 'Not set yet.'}
+                  </Text>
+                  <TouchableOpacity onPress={openPolicyModal} accessibilityLabel="Edit group size" accessibilityRole="button">
+                    <Text style={styles.messageMemberLink}>✏️ {fulfillmentPolicy ? 'Edit' : 'Set your group size'}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
+                  <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>Experiences & uses</Text>
+                  <View style={styles.chipRow}>
+                    {ACCOMMODATE_PARTY_TYPE_OPTIONS.map((p) => {
+                      const selected = accommodatePartyTypesInput.includes(p.key);
+                      return (
+                        <TouchableOpacity
+                          key={p.key}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                          onPress={() => setAccommodatePartyTypesInput((prev) => (selected ? prev.filter((k) => k !== p.key) : [...prev, p.key]))}
+                          accessibilityRole="button"
+                          accessibilityLabel={p.label}
+                          accessibilityState={{ selected }}
+                        >
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{p.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                    onPress={handleSaveAccommodations}
+                    disabled={savingAccommodations}
+                    accessibilityLabel="Save what you can accommodate"
+                    accessibilityRole="button"
+                  >
+                    {savingAccommodations ? <ActivityIndicator color="#fff" /> : <Text style={styles.postUpdateButtonText}>Save</Text>}
+                  </TouchableOpacity>
+                </View>
+                <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
+                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>Space</Text>
+                  <Text style={styles.breakdownText}>
+                    {(selectedPartner?.attributes ?? []).includes('outdoor_seating')
+                      ? '🌤️ Outdoor seating'
+                      : 'Not currently listed.'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditNameInput(selectedPartner?.name ?? '');
+                      setEditDescriptionInput(selectedPartner?.description ?? '');
+                      setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
+                      setEditCategoryInput(selectedPartner?.category ?? null);
+                      setEditAttributesInput(selectedPartner?.attributes ?? []);
+                      setEditCuisineInput(selectedPartner?.cuisine ?? null);
+                      setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
+                      setEditProfileModalVisible(true);
+                    }}
+                    accessibilityLabel="Edit space and amenities"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.messageMemberLink}>✏️ Edit under "Why People Choose Us"</Text>
+                  </TouchableOpacity>
+                </View>
+
                 {/* "Business Story" plan, Phase 2 -- Business Goals. A real,
                     small, dedicated save distinct from the full profile
                     edit above -- meant to be revisited often. */}
@@ -2117,6 +2380,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {a.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {/* "Business Profile Phase 1" addendum -- the Timing half
+                    of Want More Of. Real, separate vocabulary from the
+                    customer/intent chips above (see CLAUDE.md), saved
+                    together via the same Save button below. */}
+                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>When</Text>
+                <View style={styles.chipRow}>
+                  {PRIORITY_TIME_WINDOW_OPTIONS.map((w) => {
+                    const selected = priorityTimeWindowsInput.includes(w.key);
+                    return (
+                      <TouchableOpacity
+                        key={w.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setPriorityTimeWindowsInput((prev) => (selected ? prev.filter((k) => k !== w.key) : [...prev, w.key]))}
+                        accessibilityRole="button"
+                        accessibilityLabel={w.label}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{w.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -2283,6 +2568,84 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       </View>
                     </View>
                   ))
+                )}
+
+                {/* "Business Profile Phase 1" addendum -- "Teach Nearby."
+                    A real, deterministic keyword extraction against the
+                    existing attributes vocabulary, never an LLM call and
+                    never auto-applied -- the extracted chips are always
+                    shown for an explicit confirm/edit/discard first. */}
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>✨ Teach Nearby</Text>
+                <Text style={styles.helperText}>Anything else we should know about your business?</Text>
+                {!teachNearbyExtracted ? (
+                  <>
+                    <TextInput
+                      style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
+                      placeholder={'"Our rooftop patio is our most popular feature and we\'re especially good for first dates."'}
+                      placeholderTextColor={colors.textTertiary}
+                      value={teachNearbyInput}
+                      onChangeText={setTeachNearbyInput}
+                      multiline
+                      maxLength={300}
+                      accessibilityLabel="Tell Nearby about your business"
+                    />
+                    <TouchableOpacity
+                      style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                      onPress={handleInterpretTeachNearby}
+                      disabled={!teachNearbyInput.trim()}
+                      accessibilityLabel="Submit"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.postUpdateButtonText}>Submit</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <View style={styles.gatheringRow}>
+                    {teachNearbyExtracted.length === 0 ? (
+                      <Text style={styles.emptyText}>
+                        Nearby didn't recognize anything specific in that -- try mentioning something
+                        concrete, like your patio, your atmosphere, or who you're great for.
+                      </Text>
+                    ) : (
+                      <>
+                        <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>Nearby understood:</Text>
+                        <View style={styles.chipRow}>
+                          {teachNearbyExtracted.map((attribute) => (
+                            <TouchableOpacity
+                              key={attribute}
+                              style={styles.chip}
+                              onPress={() => handleRemoveTeachNearbyChip(attribute)}
+                              accessibilityLabel={`Remove ${businessAttributeLabel(attribute)}`}
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.chipText}>{businessAttributeLabel(attribute)} ✕</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </>
+                    )}
+                    <View style={{ flexDirection: 'row', marginTop: spacing.sm, gap: spacing.sm }}>
+                      {teachNearbyExtracted.length > 0 && (
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                          onPress={handleConfirmTeachNearby}
+                          disabled={savingTeachNearby}
+                          accessibilityLabel="Add to profile"
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.smallActionButtonText}>{savingTeachNearby ? 'Adding...' : 'Add to Profile'}</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                        onPress={handleDiscardTeachNearby}
+                        accessibilityLabel="Discard"
+                        accessibilityRole="button"
+                      >
+                        <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Discard</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 )}
 
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>
