@@ -4,6 +4,163 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 25 2026 — building the taxonomy audit's real recommendations (Dating Preferences
+## consolidation, Business Attributes, Friends filters, structured price/party intent) —
+## PLAN LOCKED, executing below; check each phase's own status note for what's landed
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and each
+phase's own status note for what's actually landed vs. still just this plan.
+
+**Direct follow-up to the taxonomy audit fix pass immediately below** (the 3 genuine bugs, DONE).
+The user explicitly reviewed both the audit and a second AI's own reaction to it, and gave a
+direct instruction: build the real recommendations now, not "hold off" — specifically overriding
+this file's own earlier caution that recommendations #2/#4-#7 needed "a real product decision"
+before being built. The user's own message, and the second AI's reaction they endorsed, together
+resolve those product decisions explicitly — this section is that resolution, locked as a real
+plan, not another round of "flag and defer."
+
+**One item is explicitly still not being built, by agreement of both the user and the second
+AI's own review** — a full user-availability/weekly-schedule preference system (audit
+recommendation #7). Both reviews independently concluded this doesn't fit Nearby's real-time
+"what's happening nearby now" framing and risks turning the app into a scheduling product. Not
+touched in this pass — this is the one place "don't build it" is the actual locked decision, not
+a deferral.
+
+**Scope, mapped from the second AI's own 4-phase sequence (which the user endorsed) onto real,
+concrete engineering — verified against the live code/database before designing anything, not
+assumed from either review's own framing**:
+
+### Phase 1 — Dating Preferences consolidation
+
+Two real, distinct findings from the audit, both closed here:
+
+1. **`relationship_intention` vs. `basics.relationship_goals`** — checked live: `relationship_intention`
+   is a real `text[]` column (multi-select, not single-select as the audit's own prose implied),
+   already a genuine, live Discovery filter (`DiscoveryScreen.js`'s `intentionFilter`). `basics.
+   relationship_goals` is one of 39 fields inside the `basics` jsonb blob, labeled "Looking For" —
+   the *identical* label Settings' real intention section already uses — read only by
+   `compatibility.js`'s post-match narrative, never a filter. Two fields, two vocabularies, one
+   job, never reconciled. **Fix**: remove `relationship_goals` from `BASICS_FIELDS` outright (no
+   schema change needed — it's a jsonb key, not a column; existing legacy values simply stop
+   being written to or asked about going forward, matching this schema's own "don't delete legacy
+   data, just stop asking" convention). `compatibility.js`'s comparison logic is extended to treat
+   the real `relationship_intention` array as a comparable "topic" alongside the actual `basics`
+   fields (a synthetic merge for comparison purposes only, never written into `basics` itself),
+   and `FIELD_LABELS`/`BIG_TOPIC_KEYS`/`FRICTION_CATEGORIES` are repointed at `relationship_intention`
+   instead of the now-retired `relationship_goals` key. `MatchesScreen.js`/`ActivityScreen.js`'s
+   own profile selects (previously `interests, basics` only) are widened to also fetch
+   `relationship_intention`, matching `proximity.js`/`DiscoveryScreen.js`/`ViewProfileScreen.js`,
+   which already select it — without this, the compatibility narrative on those two screens
+   couldn't compare it at all.
+2. **Two generations of gender infrastructure, no UI cross-link** — legacy single-select
+   `discovery_gender`/`show_me` (Settings) vs. new multi-select `gender_identity`/
+   `interested_in_genders` (Profile's already-built "About You" section). The matching fallback
+   (`passesGenderMatch()`) is already correct; the UX is what's fragmented. **Fix, not a rebuild**:
+   a one-time, real data backfill (SQL, applied to production) — for any profile whose new fields
+   are still empty, translate their existing legacy value into the new fields' real equivalent
+   (`'Men'→['Man']`, `'Women'→['Woman']`, `'Other'→['Other']`, `'Prefer not to say'→['Prefer not
+   to say']` for `gender_identity`; `'Men'→['Man']`, `'Women'→['Woman']`, `'Everyone'→` all 9
+   `GENDER_IDENTITY_OPTIONS` values for `interested_in_genders` — a literal translation of what
+   "Everyone" already meant, not an invented preference). Once backfilled, Settings' own legacy
+   `discovery_gender`/`show_me` chip pickers are removed from the UI outright — replaced with a
+   short "Gender identity & who you're interested in are managed on your Profile →" link straight
+   to Profile's already-built, already-correct editing section — so there's exactly one place to
+   edit gender preferences, not two. Settings' "Looking For" (`relationship_intention`) and
+   "Discovery Preferences" (now just age range + ethnicity preferences, gender fields moved out)
+   are visually merged into one "❤️ Dating Preferences" card so the two headers stop reading as
+   two disconnected systems. `DatingPreferencesPromptModal.js` (the first-open prompt on
+   `DiscoveryScreen.js`) is left completely untouched — it already only asks for the new fields.
+
+### Phase 2 — Business Attributes (the audit's single largest structural gap, and its own top
+### recommendation)
+
+Checked live: `brand_partners` has one category-shaped column (the 6-value industry enum) and
+zero attribute dimensions; `business_requests`/`business_availability` share a completely
+separate 26-tag *activity* category vocabulary (Coffee/Foodie/etc. — confirmed these never
+compare against `brand_partners.category` anywhere in the matching SQL, a genuinely different,
+deliberate axis, not a bug). Built exactly to the audit's own sized-down recommendation — a
+small curated tag set, not a general free-text system:
+
+- **Schema**: `brand_partners.attributes text[]` (default `'{}'`, CHECK-constrained to a curated
+  8-value vocabulary: `outdoor_seating`, `date_friendly`, `group_friendly`, `live_music`,
+  `kid_friendly`, `quiet`, `casual`, `upscale` — mirroring `party_type`/`price_level`'s own
+  established "small curated CHECK-constrained enum" convention) and `brand_partners.cuisine
+  text` (nullable, CHECK-constrained to a curated cuisine list, meaningful only for `food_drink`
+  businesses — enforced client-side by only showing the picker there, not a DB-level cross-column
+  constraint, matching `basicsFields.js`'s own precedent for a conditionally-relevant field).
+  `business_requests` gets the identical two columns (both nullable, both optional) — the
+  consumer's own explicit ask, never inferred from free text.
+- **Where this reaches matching, and where it deliberately doesn't**: `update_business_profile()`
+  gains `attributes_param`/`cuisine_param`. `create_business_request()` (the solo-ask RPC behind
+  `AskBusinessScreen`'s base mode) gains the same two params, stored on the new row.
+  `_business_request_fanout()` — the notify-and-rank-who-gets-asked-first function, **not** an
+  auto-accept/eligibility function — gains a new, additive ordering tier: a real attribute/cuisine
+  overlap count between the request and each eligible partner, computed via `array(select unnest(a)
+  intersect select unnest(b))`, inserted as the *first* sort key (established-reliability and
+  distance stay exactly as they already were as the tiebreak below it). Deliberately **not**
+  touched: `_match_request_to_availability()`/`_match_request_to_policy()` (the two auto-accept
+  RPCs) — these stay governed purely by category/date/time/party-size/radius, unchanged. Adding a
+  hard attribute filter to an auto-accept path is real, live, concurrency-sensitive code this
+  file's own history treats with extra care (`FOR UPDATE` locks, the reliability-weighting
+  precedent) — scope stayed to the one safe, already-precedented touchpoint (Aug 15's own
+  reliability-weighting fix touched this exact function the same way). `search_active_business_
+  availability()` also returns each posting's real `attributes`/`cuisine` (informational only —
+  read-only function, zero risk) so `AskBusinessScreen`'s "already available" banner and Home's
+  intent-box result can honestly display them.
+- **Client**: new `src/constants/businessAttributes.js` (`BUSINESS_ATTRIBUTE_OPTIONS`,
+  `CUISINE_OPTIONS`, both with real display labels). `BusinessDashboardScreen.js`'s Edit Profile
+  modal gains an attribute chip picker (always shown) and a cuisine chip picker (shown only when
+  `category === 'food_drink'`). `BusinessProfileScreen.js` (public profile) renders both as real
+  chips when set. `AskBusinessScreen.js` gains the same two pickers, **solo mode only** (matching
+  where party size/budget are already solo-only inputs, same existing `!gatheringId && !matchId
+  && !communityId` gate) — not added to gathering/match/community modes this pass, since those
+  three submit through RPCs this pass deliberately doesn't touch; adding a picker with no real
+  effect there would be dishonest UI, so it's scoped out rather than half-built.
+
+### Phase 3 — Friends: lightweight filters, no schema change
+
+Checked live: `get_friend_discovery_candidates()` already returns each candidate's real
+`interests` array and a real 3-value `distance_bucket` ('Nearby'/'A few miles away'/'In the wider
+area') — both already fetched, just never exposed as a filter. **Fix, purely client-side, no RPC
+change**: `FriendDiscoveryScreen.js` gains a real Interests chip row (over `PERSONAL_INTEREST_OPTIONS`,
+multi-select) and a Distance chip row (the exact 3 real bucket values, single-select) filtering
+the already-fetched 20-candidate batch before it reaches the swipe deck. An honest empty state
+("No one nearby matches these filters right now — try widening them.") when a filter combination
+returns nothing, rather than a silent empty deck. **Deliberately not built**: a "Social style"
+filter (Casual/Active/Groups) — both reviews' own mockup included one, but there is no real
+backing signal anywhere in the schema for it (unlike Interests/Distance, which map directly to
+data that already exists) — inventing one would be exactly the kind of fabricated-signal problem
+already avoided for full Availability. Flagged, not built.
+
+### Phase 4 — structured price/party intent (closes recommendation #2, now judged buildable)
+
+The earlier fix pass explicitly declined this, reasoning that wiring `price_level`/`party_type`
+into the resolver needed a new free-text inference mechanism the audit's own "no new schema
+needed" framing had understated. Both reviews independently proposed the same real answer: extend
+`create-assistant`'s existing best-effort classification (it already extracts `partySize`/
+`budgetMax`/`dateWindow` from free text this same honest way) with `priceLevel` (null/free/$/$$/
+$$$) and `partyType` (null/solo/friends/groups/date) — real values, matched against `gatherings.
+price_level`/`party_type`'s own live CHECK-constraint values, not invented. **Found and fixed a
+real, related bug while touching this exact function**: `create-assistant`'s own `VALID_CATEGORIES`
+list is the *old* 24-tag list — missing "Faith & Spirituality" and "Dating," the identical class
+of drift this whole taxonomy audit exists to catch, just never checked in this one deployed Edge
+Function since it's not a client file. Fixed alongside the price/party extension. `intentResolver.js`'s
+`resolveGatherings()` gains a new, additive scoring bonus (a new pure `priceAndPartyBonus()` in
+`intentResolverScoring.js`, matching `titleMentionBonus()`'s own shape and weight) — a gathering
+whose real `price_level`/`party_type` matches the classified intent earns the same bonus weight
+already used elsewhere for a real signal match, never a fabricated one when nothing was implied.
+
+**Verification convention for this whole pass, matching every other schema-touching plan in this
+file**: the one migration applied to production and verified live with real disposable test data,
+plus a from-scratch Docker migration replay, before being considered done. The Edge Function
+change deployed and confirmed `verify_jwt: true` explicitly (not assumed from the CLI default).
+Every client change verified via a direct `@babel/core` parse, the full Jest suite, and a full
+`npx expo export --platform ios`. Each phase gets its own commit, pushed individually — not
+batched at the end. **Standing limitation, same as everywhere else in this file**: no manual
+simulator/device run-through is possible in this sandbox — flagged per phase, not silently
+assumed clean.
+
 ## Aug 25 2026 — fixed the 3 real bugs found by the taxonomy audit — DONE
 
 Direct follow-up to the taxonomy audit immediately below (all 5 phases DONE, consolidated into
