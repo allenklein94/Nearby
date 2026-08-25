@@ -5,8 +5,8 @@ This file captures known outstanding work as of early August 2026, so a fresh Cl
 session has the same context as the chat session that built most of this.
 
 ## Aug 25 2026 — "Business Story" — the business profile stops being a form and starts being
-## the supply-side counterpart to consumer intent — PLAN LOCKED, Phases 1-5 DONE, Phase 6
-## (Signature Experiences) explicitly deferred — see each phase's own status note below
+## the supply-side counterpart to consumer intent — PLAN LOCKED, Phases 1-6 all DONE — see each
+## phase's own status note below
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` and each
@@ -125,18 +125,58 @@ literal build of the doc's own words.
    pulse," or "N requests are waiting for a reply," whichever applies, checked in a fixed
    priority order. Zero new queries — this phase is presentational reorganization of data the
    screen already loads.
-6. **Signature Experiences (points 150-152) — explicitly NOT built this pass, real and flagged
-   for a future pass, not silently dropped.** This is the single largest net-new concept in the
-   whole doc — a real `business_experiences` table (curated bundles: title, description,
-   attributes, price_level/party_type, tied to the business), an "AI creates your first 4 for
-   you" onboarding moment, and eventual wiring into the intent resolver's own price/party
-   matching (Aug 25 Phase 4). Doing it honestly needs its own scoping pass — specifically,
-   deciding how an "AI-suggested" experience is actually derived from real data (a rule-based
-   default from category+attributes+cuisine is the only honest option, matching this plan's own
-   discipline elsewhere, and that rule set itself needs real design, not a rushed guess) — not
-   something to build in the same pass as five other phases. Flagged here exactly the way this
-   file flags every other deliberately-deferred large item, so a future session doesn't have to
-   rediscover it.
+6. **Signature Experiences (points 150-152) — locked and built, per direct instruction, after
+   Phases 1-5 landed.** The single largest net-new concept in the whole doc — real, curated
+   bundles a business shows off ("Sunset Coffee Date," "Friends on the Patio"), not another
+   generic offer. Locked design, resolving the exact open question the original deferral named
+   (how an "AI-suggested" experience is honestly derived from real data, not fabricated):
+   - **Schema**: a new `business_experiences` table — `title`, `description`, `icon`,
+     `attributes` (a real subset of the *same* 8-value vocabulary attributes/priority_attributes
+     already use — no third taxonomy), `price_level`/`party_type` (the *exact* CHECK values
+     `gatherings.price_level`/`party_type` already use — `free|$|$$|$$$` and
+     `solo|friends|groups|date` — so a signature experience is expressed in the identical
+     vocabulary the intent resolver's own `priceAndPartyBonus()` already scores against, even
+     though wiring an actual resolver match is explicitly not attempted this pass, see below),
+     `active`, `ai_suggested` (a real provenance flag — true only for a suggestion the owner
+     kept without editing, never presented as evidence of anything beyond "this one came from a
+     rule, not the owner typing from scratch").
+   - **"AI creates your first 4 for you" — built as a real, deterministic, rule-based
+     derivation, never an LLM call and never a fabricated claim.** A new pure function,
+     `deriveSignatureExperienceSuggestions({category, attributes, cuisine})`
+     (`src/constants/businessExperienceSuggestions.js`, same "pure function, no I/O, fully
+     testable" shape as `gatheringIndoorOutdoor.js`/`intentPatterns.js`) — one candidate
+     experience per attribute the *owner has already confirmed on their own profile* (Phase 1's
+     "Why People Choose Us" picker), each mapped to a real, honest title/description/`party_type`
+     (`date_friendly → "A Date Here"`, `group_friendly → "Friends Get-Together"`, etc. — the
+     full 8-attribute mapping is in the constants file itself), cuisine-flavored when the
+     business is `food_drink` with a real cuisine set (e.g. "Italian Date Night" instead of the
+     generic "A Date Here"). **`price_level` is never guessed** — every suggestion leaves it
+     unset, since there is no real signal anywhere on this schema for what a business actually
+     charges; the owner sets it explicitly if they want to, same as every other place this
+     codebase refuses to invent a number. A business with zero real attributes confirmed gets
+     zero suggestions — an honest empty state, not a fallback to generic content.
+   - **Owner flow — "We created N experiences for you," Keep / Edit / Remove**, shown only
+     once, only when the business has zero saved experiences yet *and* has at least one real
+     confirmed attribute to derive from — matches the vision's own "don't make them start from a
+     blank page" framing (point 151) without inventing anything not already true. Keep saves the
+     suggestion via a real RPC (`ai_suggested: true`); Edit opens the same create/edit form
+     pre-filled, ready to change before saving; Remove discards that one suggestion locally,
+     nothing written. Below it, a real "Your Signature Experiences" CRUD list (create/edit/
+     delete/activate-deactivate) for whatever the owner has actually saved, plus a manual
+     "+ Add Experience" entry point independent of the suggestion flow.
+   - **Public display**: `BusinessProfileScreen.js` gains a real "Signature Experiences" section
+     showing every active experience (icon, title, description, and real price/party badges when
+     set) — the actual consumer-facing payoff the vision doc names directly (point 150: "I'd make
+     this a major feature").
+   - **Explicitly not attempted this pass, named rather than silently rushed in**: wiring
+     signature experiences into the intent resolver's own price/party scoring
+     (`priceAndPartyBonus()`) so a matching experience can actually surface a business as a
+     ranked candidate for a real consumer ask. The schema is deliberately built in the identical
+     vocabulary that would make this possible later, but actually doing the match (deciding how
+     an experience-level match should be weighted against the resolver's existing gathering-level
+     `price_level`/`party_type` bonus, and whether/how it should surface in `HomeScreen.js`'s
+     ranked results) is real, separate resolver work — flagged as a genuine future phase, not
+     folded into this one under time pressure.
 
 ### Explicitly out of scope, named so nothing here reads as silently dropped
 
@@ -301,8 +341,89 @@ overlap the business's own priorities; and the "Nearby Brief" card's three state
 demand yet / real demand with a best-opportunity callout / each of the three suggestion
 branches) all render correctly against real data.
 
-Phase 6 (Signature Experiences) remains explicitly deferred, per this plan's own scope section
-above — not started this pass.
+**Status, Phase 6: DONE, build-wise — picked up cleanly after a codespace restart interrupted
+the session mid-build.** On resume, `git status` showed the migration
+(`20260903_v2_business_signature_experiences.sql`), the new
+`src/constants/businessExperienceSuggestions.js`, and every client-side edit
+(`businessAttributes.js`'s new price/party-type label constants, `brandOffers.js`'s CRUD
+wrappers, `BusinessDashboardScreen.js`'s full suggestion-review + CRUD UI, and
+`BusinessProfileScreen.js`'s public display section) already present and, on inspection, already
+matching this plan's own locked design exactly — read every file directly before trusting any of
+it, not assumed correct from its own presence. **One real gap found and fixed while verifying**:
+`BusinessProfileScreen.js`'s new "Signature Experiences" section referenced four style keys
+(`experienceCard`/`experienceTitle`/`experienceDescription`/`experienceMeta`) that were never
+actually defined in the file's `StyleSheet` — the section would have rendered with zero visual
+treatment (no card border/padding/distinct type sizes) instead of matching the existing
+`offerCard` treatment its siblings use. Added the four missing style rules, mirroring
+`offerCard`'s own shape exactly (border, radius, spacing) rather than inventing a new visual
+language for this one section.
+
+**Schema/RPC — already live in production from before the restart, independently
+re-verified rather than trusted from its own presence.** Pulled every real object
+(`business_experiences`' full column list, all 7 CHECK/FK/PK constraints, the one RLS policy,
+the partner_id index, and all three functions' argument counts) directly via the Management API
+and confirmed each is byte-for-byte what the committed migration specifies — no drift. **Verified
+live end-to-end against production** (`enmosvippabmuqslzrox`), not just read: using the real
+`Coastal Coffee` partner (`attributes: ['outdoor_seating', 'date_friendly']`, real owner
+`Allen`) and three other real profiles under genuine `SET ROLE authenticated` +
+`request.jwt.claims` (not the Management API's own table-owner bypass): the real owner's
+`create_business_experience` call succeeded with real params; a non-owner's identical call was
+correctly rejected (`You do not manage this business`); an invalid attribute and an invalid
+price level were both correctly rejected by the RPC's own checks (not just the table's CHECK
+constraint); the owner's `update_business_experience` call correctly dropped `ai_suggested` to
+`false` and correctly toggled `active` to `false`; a non-owner's update and delete attempts were
+both correctly rejected; with the row `active = false`, a genuine stranger's SELECT correctly
+returned 0 rows while the owner's own SELECT correctly still saw it (owner sees all, including
+inactive); reactivating it made the stranger's SELECT correctly see it again; a raw `anon`-role
+call to `create_business_experience` was rejected outright at the grant level (no `EXECUTE`
+grant — only `authenticated`/`postgres`/`service_role`). The owner's final `delete_business_experience`
+call cleaned up the one test row; production confirmed back to its exact pre-test baseline (0
+rows in `business_experiences`). **Verified via a real from-scratch migration replay**: pulled
+the already-cached `supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly
+empty `public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` cleanly as
+`supabase_admin` with no workaround needed this run, then ran the full 91-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**,
+`business_experiences` and all three functions confirmed to exist in the freshly-rebuilt
+database. Container removed afterward.
+
+**Client-side**: every piece from the locked design is built as specified — the owner-facing
+"We created N experiences for you" review card (Keep/Edit/Remove per suggestion, disappearing
+once every real suggestion for a confirmed attribute has been addressed), the full "Your
+Signature Experiences" CRUD list (create/edit/delete/activate-deactivate) with its own "+ Add
+Experience" entry point, and the public `BusinessProfileScreen.js` section showing every active
+experience with its real icon/title/description/price-and-party badges. `deriveSignatureExperienceSuggestions()`
+is genuinely deterministic and rule-based — no LLM call, `price_level` never guessed on any
+suggestion — confirmed by reading the pure function directly, not just by its own header
+comment. **New**: 9 real unit tests added (`src/constants/businessExperienceSuggestions.test.js`,
+same "pure function, no I/O" convention as `gatheringIndoorOutdoor.test.js`/
+`intentPatterns.test.js`) — covering the empty-attributes case, an unrecognized attribute being
+correctly dropped rather than producing a fallback suggestion, `priceLevel` staying `null` across
+every real attribute, the real priority ordering + 4-suggestion cap, and all four
+cuisine-flavoring branches (flavored only for `food_drink` + a set cuisine + one of the two
+eligible attributes; unflavored for every other combination). Full suite now **82/82 passing**
+(73 pre-existing + 9 new).
+
+Verified via a direct `@babel/core` parse of every touched/new file (clean), the full Jest suite
+(82/82), and a full `npx expo export --platform ios` (clean, no bundling errors, **2258
+modules** — one more than the 2257 baseline, the one new `businessExperienceSuggestions.js`
+entering the bundle graph; every other touched file was an edit, and the new `.test.js` file is
+correctly excluded from the Metro bundle).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of Phase 6's new UI — next session should confirm on a real device: the "We
+created N experiences for you" review card renders and its Keep/Edit/Remove actions behave
+correctly for a business with real confirmed attributes, that a business with zero confirmed
+attributes sees no suggestion card at all (the honest empty state), that the manual "+ Add
+Experience" flow and the full CRUD list (edit/delete/hide/show) all work end-to-end, and that
+the public profile's new "Signature Experiences" section renders correctly with the newly-added
+card styling.
+
+All 6 phases of the "Business Story" plan are now DONE, build-wise. The one explicitly-named
+future scope item — wiring signature experiences into the intent resolver's own price/party
+scoring (`priceAndPartyBonus()`) so a matching experience can surface a business as a ranked
+candidate for a real consumer ask — remains deliberately unattempted, per this plan's own
+locked scope boundary above.
 
 ## Aug 25 2026 — post-implementation coherence audit for the taxonomy pass's 4 phases, plus a
 ## full Taxonomy → Preference → Filter → Matching → Ranking → Discovery end-to-end trace —

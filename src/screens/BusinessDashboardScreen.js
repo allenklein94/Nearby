@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, deleteBusinessExperience } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -17,7 +17,8 @@ import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } f
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
+import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -96,6 +97,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // right now" signal.
   const [pulseNoteInput, setPulseNoteInput] = useState('');
   const [savingPulse, setSavingPulse] = useState(false);
+  // Phase 6 -- Signature Experiences.
+  const [experiences, setExperiences] = useState([]);
+  const [loadingExperiences, setLoadingExperiences] = useState(false);
+  // Suggestion attributes explicitly addressed this session (kept via
+  // Edit, or explicitly Removed) -- keeps a multi-item "review all 4"
+  // flow correct without a new persisted flag: once every real
+  // suggestion for a confirmed attribute has either become a real saved
+  // experience or been explicitly dismissed, the whole review card
+  // disappears on its own.
+  const [dismissedSuggestionAttrs, setDismissedSuggestionAttrs] = useState([]);
+  const [experienceModalVisible, setExperienceModalVisible] = useState(false);
+  const [editingExperienceId, setEditingExperienceId] = useState(null);
+  const [expTitleInput, setExpTitleInput] = useState('');
+  const [expDescriptionInput, setExpDescriptionInput] = useState('');
+  const [expIconInput, setExpIconInput] = useState('');
+  const [expAttributesInput, setExpAttributesInput] = useState([]);
+  const [expPriceLevelInput, setExpPriceLevelInput] = useState(null);
+  const [expPartyTypeInput, setExpPartyTypeInput] = useState(null);
+  const [savingExperience, setSavingExperience] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -398,6 +418,113 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingPulse(false);
   }
 
+  // "Business Story" plan, Phase 6 -- Signature Experiences. existing =
+  // null means "creating brand new"; passing a real row means editing it
+  // (id set) or, from a suggestion, pre-filling a not-yet-saved draft
+  // (id left null so Save creates rather than updates).
+  function openExperienceModal(existing = null, { fromSuggestionId = null } = {}) {
+    setEditingExperienceId(existing?.id ?? null);
+    setExpTitleInput(existing?.title ?? '');
+    setExpDescriptionInput(existing?.description ?? '');
+    setExpIconInput(existing?.icon ?? '');
+    setExpAttributesInput(existing?.attributes ?? []);
+    setExpPriceLevelInput(existing?.price_level ?? existing?.priceLevel ?? null);
+    setExpPartyTypeInput(existing?.party_type ?? existing?.partyType ?? null);
+    if (fromSuggestionId) {
+      // Editing a suggestion is itself how it gets "addressed" -- whatever
+      // ends up saved, this specific suggestion shouldn't linger in the
+      // review list waiting for a second decision.
+      setDismissedSuggestionAttrs((prev) => [...prev, fromSuggestionId]);
+    }
+    setExperienceModalVisible(true);
+  }
+
+  async function handleSaveExperience() {
+    if (!selectedPartner || !expTitleInput.trim()) return;
+    setSavingExperience(true);
+    try {
+      const payload = {
+        title: expTitleInput.trim(),
+        description: expDescriptionInput.trim() || null,
+        icon: expIconInput.trim() || null,
+        attributes: expAttributesInput,
+        priceLevel: expPriceLevelInput,
+        partyType: expPartyTypeInput,
+      };
+      if (editingExperienceId) {
+        await updateBusinessExperience(editingExperienceId, { ...payload, active: true });
+      } else {
+        await createBusinessExperience(selectedPartner.id, { ...payload, aiSuggested: false });
+      }
+      await loadExperiences(selectedPartner.id);
+      setExperienceModalVisible(false);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingExperience(false);
+  }
+
+  // Keep saves the suggestion exactly as derived, real ai_suggested
+  // provenance -- no modal, matches the vision's own "the business simply
+  // confirms" framing (point 149) for a suggestion the owner doesn't want
+  // to change at all.
+  async function handleKeepSuggestion(suggestion) {
+    if (!selectedPartner) return;
+    try {
+      await createBusinessExperience(selectedPartner.id, {
+        title: suggestion.title,
+        description: suggestion.description,
+        icon: suggestion.icon,
+        attributes: suggestion.attributes,
+        priceLevel: suggestion.priceLevel,
+        partyType: suggestion.partyType,
+        aiSuggested: true,
+      });
+      await loadExperiences(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  function handleRemoveSuggestion(suggestion) {
+    setDismissedSuggestionAttrs((prev) => [...prev, suggestion.attribute]);
+  }
+
+  async function handleToggleExperienceActive(experience) {
+    try {
+      await updateBusinessExperience(experience.id, {
+        title: experience.title,
+        description: experience.description,
+        icon: experience.icon,
+        attributes: experience.attributes,
+        priceLevel: experience.price_level,
+        partyType: experience.party_type,
+        active: !experience.active,
+      });
+      await loadExperiences(selectedPartner.id);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  function handleDeleteExperience(experience) {
+    Alert.alert('Remove this experience?', `"${experience.title}" will be permanently removed.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteBusinessExperience(experience.id);
+            await loadExperiences(selectedPartner.id);
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
+  }
+
   // Business Partner acquisition experience, Milestone 3 (see CLAUDE.md): same
   // Share.share + nearby:// deep link pattern GatheringConfirmationScreen.js's
   // "Share Gathering" already established, reused verbatim rather than a second
@@ -435,9 +562,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadAggregatedDemand(selectedPartner.id);
         loadMyAvailability(selectedPartner.id);
         loadFulfillmentPolicy(selectedPartner.id);
+        loadExperiences(selectedPartner.id);
       }
     }, [selectedPartner])
   );
+
+  // "Business Story" plan, Phase 6 -- Signature Experiences.
+  async function loadExperiences(partnerId) {
+    setLoadingExperiences(true);
+    try {
+      const results = await getBusinessExperiences(partnerId);
+      setExperiences(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+      console.error('loadExperiences failed', e);
+    }
+    setLoadingExperiences(false);
+  }
 
   async function loadPartnershipRequests(partnerId) {
     try {
@@ -2031,6 +2172,119 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </Text>
                 )}
 
+                {/* "Business Story" plan, Phase 6 -- Signature Experiences.
+                    Suggestions are derived purely from attributes the
+                    owner has already confirmed (Phase 1) -- never an LLM
+                    call, never fabricated. A suggestion drops out of this
+                    review list the moment it's addressed (kept, edited +
+                    saved, or explicitly removed) -- see
+                    dismissedSuggestionAttrs. */}
+                {(() => {
+                  const suggestions = deriveSignatureExperienceSuggestions({
+                    category: selectedPartner?.category,
+                    attributes: selectedPartner?.attributes ?? [],
+                    cuisine: selectedPartner?.cuisine,
+                    cuisineLabel: selectedPartner?.cuisine ? cuisineLabel(selectedPartner.cuisine) : null,
+                  });
+                  const covered = new Set([
+                    ...experiences.flatMap((e) => e.attributes ?? []),
+                    ...dismissedSuggestionAttrs,
+                  ]);
+                  const pending = suggestions.filter((s) => !covered.has(s.attribute));
+                  if (pending.length === 0) return null;
+                  return (
+                    <>
+                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>We Created {pending.length} Experience{pending.length === 1 ? '' : 's'} For You</Text>
+                      <Text style={styles.helperText}>
+                        Based on what you told us makes people choose you. Keep the ones you like,
+                        edit any of them, or remove what doesn't fit.
+                      </Text>
+                      {pending.map((s) => (
+                        <View key={s.attribute} style={styles.gatheringRow}>
+                          <Text style={styles.offerTitle}>{s.icon} {s.title}</Text>
+                          <Text style={styles.breakdownText}>{s.description}</Text>
+                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>
+                            Based on: {businessAttributeLabel(s.attribute)}
+                          </Text>
+                          <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                              onPress={() => handleKeepSuggestion(s)}
+                              accessibilityLabel={`Keep ${s.title}`}
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.smallActionButtonText}>Keep</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                              onPress={() => openExperienceModal(s, { fromSuggestionId: s.attribute })}
+                              accessibilityLabel={`Edit ${s.title}`}
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Edit</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                              onPress={() => handleRemoveSuggestion(s)}
+                              accessibilityLabel={`Remove ${s.title}`}
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Remove</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </>
+                  );
+                })()}
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xl }}>
+                  <Text style={styles.sectionHeader}>Your Signature Experiences</Text>
+                  <TouchableOpacity
+                    style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                    onPress={() => openExperienceModal(null)}
+                    accessibilityLabel="Add a signature experience"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.smallActionButtonText}>+ Add</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.helperText}>
+                  Real, curated things people can come to you for -- shown on your public profile.
+                </Text>
+                {loadingExperiences ? (
+                  <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
+                ) : experiences.length === 0 ? (
+                  <Text style={styles.emptyText}>No signature experiences yet.</Text>
+                ) : (
+                  experiences.map((exp) => (
+                    <View key={exp.id} style={[styles.gatheringRow, !exp.active && { opacity: 0.5 }]}>
+                      <Text style={styles.offerTitle}>
+                        {exp.icon ? `${exp.icon} ` : ''}{exp.title}{exp.ai_suggested ? ' ✨' : ''}
+                      </Text>
+                      {exp.description ? <Text style={styles.breakdownText}>{exp.description}</Text> : null}
+                      <Text style={styles.breakdownText}>
+                        {[
+                          exp.price_level ? experiencePriceLabel(exp.price_level) : null,
+                          exp.party_type ? experiencePartyTypeLabel(exp.party_type) : null,
+                          !exp.active ? 'Hidden from your public profile' : null,
+                        ].filter(Boolean).join(' · ') || 'No price or party details set'}
+                      </Text>
+                      <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
+                        <TouchableOpacity onPress={() => openExperienceModal(exp)} accessibilityLabel={`Edit ${exp.title}`} accessibilityRole="button">
+                          <Text style={styles.messageMemberLink}>✏️ Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleToggleExperienceActive(exp)} accessibilityLabel={exp.active ? `Hide ${exp.title}` : `Show ${exp.title}`} accessibilityRole="button">
+                          <Text style={styles.messageMemberLink}>{exp.active ? '🙈 Hide' : '👀 Show'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDeleteExperience(exp)} accessibilityLabel={`Remove ${exp.title}`} accessibilityRole="button">
+                          <Text style={[styles.messageMemberLink, { color: colors.danger }]}>🗑️ Remove</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
+
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>
                 <View style={styles.gatheringRow}>
                   {!isStripeConfigured() ? (
@@ -2478,6 +2732,110 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* "Business Story" plan, Phase 6 -- create/edit a Signature
+          Experience. Same modal shape as Edit Profile above (KeyboardAvoidingView
+          + TouchableWithoutFeedback-to-dismiss, chip-row pickers). */}
+      <Modal visible={experienceModalVisible} animationType="slide" transparent onRequestClose={() => setExperienceModalVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>{editingExperienceId ? 'Edit Experience' : 'New Signature Experience'}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Title (e.g. Sunset Coffee Date)"
+                placeholderTextColor={colors.textTertiary}
+                value={expTitleInput}
+                onChangeText={setExpTitleInput}
+                maxLength={80}
+                accessibilityLabel="Experience title"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
+                placeholder="Description (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={expDescriptionInput}
+                onChangeText={setExpDescriptionInput}
+                multiline
+                maxLength={200}
+                accessibilityLabel="Experience description"
+              />
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm }]}
+                placeholder="Emoji icon (optional, e.g. ❤️)"
+                placeholderTextColor={colors.textTertiary}
+                value={expIconInput}
+                onChangeText={setExpIconInput}
+                maxLength={4}
+                accessibilityLabel="Experience icon"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Tags</Text>
+              <View style={styles.chipRow}>
+                {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                  const selected = expAttributesInput.includes(a.key);
+                  return (
+                    <TouchableOpacity
+                      key={a.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setExpAttributesInput((prev) => (selected ? prev.filter((k) => k !== a.key) : [...prev, a.key]))}
+                      accessibilityRole="button"
+                      accessibilityLabel={a.label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {a.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Price</Text>
+              <View style={styles.chipRow}>
+                {EXPERIENCE_PRICE_OPTIONS.map((p) => (
+                  <TouchableOpacity
+                    key={p.key ?? 'none'}
+                    style={[styles.chip, expPriceLevelInput === p.key && styles.chipSelected]}
+                    onPress={() => setExpPriceLevelInput(p.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={p.label}
+                    accessibilityState={{ selected: expPriceLevelInput === p.key }}
+                  >
+                    <Text style={[styles.chipText, expPriceLevelInput === p.key && styles.chipTextSelected]}>{p.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Who's this for?</Text>
+              <View style={styles.chipRow}>
+                {EXPERIENCE_PARTY_TYPE_OPTIONS.map((p) => (
+                  <TouchableOpacity
+                    key={p.key ?? 'none'}
+                    style={[styles.chip, expPartyTypeInput === p.key && styles.chipSelected]}
+                    onPress={() => setExpPartyTypeInput(p.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={p.label}
+                    accessibilityState={{ selected: expPartyTypeInput === p.key }}
+                  >
+                    <Text style={[styles.chipText, expPartyTypeInput === p.key && styles.chipTextSelected]}>{p.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSaveExperience}
+                disabled={savingExperience || !expTitleInput.trim()}
+                accessibilityLabel={savingExperience ? 'Saving' : 'Save experience'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{savingExperience ? 'Saving...' : 'Save'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setExperienceModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <Modal visible={qrModalVisible} animationType="slide" transparent onRequestClose={() => setQrModalVisible(false)}>
         <View style={styles.overlay}>
           <View style={[styles.sheet, { alignItems: 'center' }]}>

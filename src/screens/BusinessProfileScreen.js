@@ -13,12 +13,13 @@ import {
   redeemOffer,
   getMyManagedPartner,
   logBusinessProfileView,
+  getBusinessExperiences,
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh } from '../constants/businessAttributes';
+import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -51,6 +52,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
   // attend-again reputation, a different signal entirely).
   const [fulfillmentReputation, setFulfillmentReputation] = useState(null);
   const [fulfillmentResponseTime, setFulfillmentResponseTime] = useState(null);
+  // "Business Story" plan, Phase 6 -- Signature Experiences.
+  const [experiences, setExperiences] = useState([]);
   // Business Partner acquisition experience, Milestone 4 (see CLAUDE.md): log at most one real
   // view per screen visit (this ref is scoped to this one mounted instance -- a fresh push of
   // this screen is a fresh instance, a re-focus of the same instance, e.g. returning from
@@ -60,7 +63,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
   const load = useCallback(async () => {
     try {
-      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime, myPartner] = await Promise.all([
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
         getBusinessProfile(partnerId),
         getBusinessFollowerCount(partnerId),
         isFollowingBusiness(partnerId),
@@ -71,6 +74,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
         getPartnerOfferReputation(partnerId),
         getPartnerAvgResponseTime(partnerId),
         getMyManagedPartner(),
+        // "Business Story" plan, Phase 6 -- real RLS already filters this
+        // to active experiences only for a non-owner viewer (see
+        // getBusinessExperiences' own comment).
+        getBusinessExperiences(partnerId),
       ]);
 
       if (!hasLoggedView.current && myPartner?.id !== partnerId) {
@@ -87,6 +94,11 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setReputation(rep);
       setFulfillmentReputation(fulfillRep);
       setFulfillmentResponseTime(fulfillResponseTime);
+      // Filtered client-side too, on top of RLS -- so the business's own
+      // owner previewing "View Public Profile" always sees exactly what a
+      // real stranger would see, never an inactive experience they've
+      // hidden (RLS alone would show it to them since they're the owner).
+      setExperiences((signatureExperiences ?? []).filter((e) => e.active));
       setLoadError(false);
 
       if (activeOffers.length > 0) {
@@ -275,6 +287,31 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <Text style={styles.planHereButtonText}>📅 Make a Plan Here</Text>
         </TouchableOpacity>
 
+        {/* "Business Story" plan, Phase 6 -- the actual consumer-facing
+            payoff: real, curated things this business can be come to for,
+            not a generic offer or a plain description. */}
+        {experiences.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>Signature Experiences</Text>
+            {experiences.map((exp) => (
+              <View key={exp.id} style={styles.experienceCard}>
+                <Text style={styles.experienceTitle}>
+                  {exp.icon ? `${exp.icon} ` : ''}{exp.title}
+                </Text>
+                {exp.description ? <Text style={styles.experienceDescription}>{exp.description}</Text> : null}
+                {(exp.price_level || exp.party_type) && (
+                  <Text style={styles.experienceMeta}>
+                    {[
+                      exp.price_level ? experiencePriceLabel(exp.price_level) : null,
+                      exp.party_type ? experiencePartyTypeLabel(exp.party_type) : null,
+                    ].filter(Boolean).join(' · ')}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
         {reputation && reputation.feedbackCount > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>What People Say</Text>
@@ -403,6 +440,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   offerCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   offerTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   offerDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  experienceCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
+  experienceTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  experienceDescription: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  experienceMeta: { color: colors.textTertiary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   scarcityText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   redeemButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },

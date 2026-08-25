@@ -643,6 +643,63 @@ export async function setBusinessAvailabilityPulse(partnerId, pulse, note = null
   if (error) throw error;
 }
 
+// "Business Story" plan, Phase 6 -- Signature Experiences. One shared
+// select, no separate "public" variant needed: business_experiences'
+// own RLS policy already does the real work (active=true rows visible
+// to anyone, inactive rows visible only to the owner) -- the dashboard
+// calling this as the real owner naturally gets every experience
+// (including inactive, so they can manage/reactivate them); the public
+// BusinessProfileScreen calling this as any other viewer naturally only
+// gets the active ones. Same "RLS is the actual enforcement, this is a
+// thin wrapper" posture as everywhere else in this file.
+export async function getBusinessExperiences(partnerId) {
+  const { data, error } = await supabase
+    .from('business_experiences')
+    .select('*')
+    .eq('partner_id', partnerId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createBusinessExperience(partnerId, { title, description, icon, attributes, priceLevel, partyType, aiSuggested = false }) {
+  const { data, error } = await supabase.rpc('create_business_experience', {
+    partner_id_param: partnerId,
+    title_param: title,
+    description_param: description ?? null,
+    icon_param: icon ?? null,
+    attributes_param: attributes ?? [],
+    price_level_param: priceLevel ?? null,
+    party_type_param: partyType ?? null,
+    ai_suggested_param: aiSuggested,
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Editing (as opposed to creating) always drops ai_suggested to false
+// server-side, inside the RPC itself -- matches the table's own real
+// provenance rule (a kept-unmodified suggestion stays flagged, an edited
+// one no longer honestly qualifies).
+export async function updateBusinessExperience(experienceId, { title, description, icon, attributes, priceLevel, partyType, active = true }) {
+  const { error } = await supabase.rpc('update_business_experience', {
+    experience_id_param: experienceId,
+    title_param: title,
+    description_param: description ?? null,
+    icon_param: icon ?? null,
+    attributes_param: attributes ?? [],
+    price_level_param: priceLevel ?? null,
+    party_type_param: partyType ?? null,
+    active_param: active,
+  });
+  if (error) throw error;
+}
+
+export async function deleteBusinessExperience(experienceId) {
+  const { error } = await supabase.rpc('delete_business_experience', { experience_id_param: experienceId });
+  if (error) throw error;
+}
+
 export async function getBusinessFollowerCount(partnerId) {
   // Deliberately calls the narrow get_business_follower_count() RPC, not
   // get_business_dashboard_stats — that one now checks the caller actually

@@ -67,3 +67,33 @@ export function isAvailabilityPulseFresh(updatedAt) {
   if (!updatedAt) return false;
   return Date.now() - new Date(updatedAt).getTime() < AVAILABILITY_PULSE_STALE_MS;
 }
+
+// "Business Story" plan, Phase 6 -- Signature Experiences. Mirrors
+// CreateGatheringScreen.js's own PRICE_OPTIONS/PARTY_TYPE_OPTIONS labels
+// verbatim (same host-declared 'free'/'$'/'$$'/'$$$' and
+// 'solo'/'friends'/'groups'/'date' vocabulary business_experiences.
+// price_level/party_type's own CHECK constraints use) -- one visual
+// language for the same real values, not a second invented convention.
+export const EXPERIENCE_PRICE_OPTIONS = [
+  { key: null, label: 'Not specified' },
+  { key: 'free', label: 'Free' },
+  { key: '$', label: '$' },
+  { key: '$$', label: '$$' },
+  { key: '$$$', label: '$$$' },
+];
+
+export const EXPERIENCE_PARTY_TYPE_OPTIONS = [
+  { key: null, label: 'Not specified' },
+  { key: 'solo', label: '🧍 Solo-Friendly' },
+  { key: 'friends', label: '👥 Bring Friends' },
+  { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
+  { key: 'date', label: '💕 A Date Idea' },
+];
+
+export function experiencePriceLabel(key) {
+  return EXPERIENCE_PRICE_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}
+
+export function experiencePartyTypeLabel(key) {
+  return EXPERIENCE_PARTY_TYPE_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}
