@@ -4,6 +4,165 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 25 2026 — "Business Profile Phase 1" addendum — closes the real gaps found when checking
+## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section
+## immediately below this one) — PLAN LOCKED, executing now
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and this
+section's own status note (appended once it lands) for what's actually built vs. still just this
+plan. Direct follow-up to a pasted external "Nearby Business Profile — Phase 1 Build
+Specification" doc — checked section-by-section against the real current code (not accepted at
+face value, matching this file's own standing rule for every external doc) before writing
+anything. Full verdict, given directly to the user first: **5 of the doc's real "questions" are
+already live** (Right Now/availability pulse, Why People Choose Us, Signature Experiences, and
+half of Want More Of), **3 are genuinely missing** (§2 AI Category Classification, §3 What You
+Can Accommodate, §9 Teach Nearby), and 2 are partial (§5's Timing dimension, §11 Improve My
+Profile). This section closes the real gaps — the ones already built are untouched.
+
+### Architecture inspection, done first per the doc's own §14 rule, not skipped
+
+- **§2 (AI category)**: no existing classification service to reuse, and the doc explicitly says
+  not to build a new one. `services/places.js` already has a Google-`types`-to-`BUSINESS_CATEGORIES`
+  heuristic, but it only ever runs once, at apply time, against a place search result — there's no
+  persisted "was this category inferred or explicitly confirmed" signal on `brand_partners` to
+  gate a later prompt on, and adding one would be exactly the kind of fabricated-uncertainty flag
+  this file's conventions warn against for an already-established real business. **Locked design**:
+  a pure, deterministic, client-side keyword classifier (same "no I/O, fully testable" shape as
+  `businessExperienceSuggestions.js`/`gatheringIndoorOutdoor.js`) — no schema change, no new
+  service, no LLM call — comparing the business's own real `name`/`description` text against the
+  same 6-value `BUSINESS_CATEGORIES` vocabulary. Shown only when the classifier's real, keyword-
+  matched suggestion differs from the business's currently-stored category (if they already
+  match, there's nothing to confirm). Dismissal ("keep as-is") persists locally
+  (`AsyncStorage`, keyed by partner id + the specific suggested category, matching the established
+  "have you seen this nudge" convention elsewhere in this app) so it never re-nags for the same
+  suggestion twice; "Looks right" writes the suggested category through the existing
+  `update_business_profile` RPC, carrying every other field forward unchanged.
+- **§3 (Accommodate)**: checked every sub-field against real taxonomy before designing anything.
+  - **Group size** — `business_fulfillment_policies.party_size_min/max` already exists (Offer
+    System Phase 2), already fetched on every dashboard load (`fulfillmentPolicy` state), already
+    has a real editor (`openPolicyModal`). Per the doc's own explicit "use the existing capacity
+    field if one already exists... do NOT create a second competing capacity system" — this is
+    read-only-reflected in the new Accommodate card, with its own "Edit" jumping straight to the
+    already-existing Fulfillment Policy editor. No new field.
+  - **Experiences/uses** — the doc's own illustrative examples (Dates/Friends/Gatherings/Work-
+    Study/Events) don't map onto any single existing taxonomy value-for-value, but the **exact**
+    real `party_type` vocabulary (`solo`/`friends`/`groups`/`date`) already used by
+    `gatherings.party_type`/`business_experiences.party_type` — and already labeled for a
+    business-facing context via `EXPERIENCE_PARTY_TYPE_OPTIONS` (🧍 Solo-Friendly / 👥 Bring
+    Friends / 👨‍👩‍👧‍👦 Big Group / 💕 A Date Idea) — is the real, closest-fit reuse. New
+    `brand_partners.accommodates_party_types text[]`, CHECK-constrained to those same 4 values —
+    the smallest possible new field, reusing an existing vocabulary rather than inventing
+    "Work/Study"/"Events" as new taxonomy the rest of the schema has no concept of.
+  - **Space/amenities** — checked directly: only `outdoor_seating` (already in the 8-value
+    `attributes` vocabulary) has any real backing anywhere in this schema. Wi-Fi/pet-friendly/
+    private-room have **zero** real signal anywhere — building a picker for them would mean
+    fabricating a taxonomy this app has never collected, directly against the doc's own "Only
+    display options already supported by the existing taxonomy" instruction. **Locked**: the
+    Accommodate card reflects `outdoor_seating` from the existing `attributes` array (read-only,
+    with a link to the existing attribute picker to change it) and explicitly does not add a
+    Wi-Fi/pet-friendly/private-room picker — flagged here, not silently built with invented
+    values.
+- **§5 (Timing half of Want More Of)** — the existing `dominant_period` bucketing
+  (`get_aggregated_demand_for_partner`, Phase A) only covers time-of-day (`morning`/`afternoon`/
+  `evening`), no day-of-week distinction exists anywhere server-side. But `utils/timeContext.js`'s
+  `getTimePeriod()` — already used pervasively client-side (Home's greeting/Quick Picks) — has a
+  real 4th value, `'weekend'` (a real `day === 0 || day === 6` check), giving the closest honest
+  match to the doc's own "weekday mornings/afternoons/weekends" framing without inventing a new
+  day-of-week split nothing else in this schema tracks. **Locked**: new
+  `brand_partners.priority_time_windows text[]`, CHECK-constrained to `morning`/`afternoon`/
+  `evening`/`weekend` — the exact same real vocabulary, new business-facing display labels only
+  (not the Home greeting's own copy, which is context-specific).
+- **§9 (Teach Nearby)** — no existing mechanism parses free text into this app's own attribute
+  vocabulary (`create-assistant` classifies gathering-shaped text into a *different*, 26-tag
+  taxonomy; `business-ai-assistant` is a stats Q&A chat, not an attribute extractor). Per the
+  doc's own explicit fallback instruction ("if no existing mechanism supports this, leave the
+  interaction as a clearly marked Phase 2 hook rather than building a second classifier") — but a
+  real, honest middle ground exists: the same deterministic, no-LLM keyword-derivation shape
+  already proven twice in this codebase (`businessExperienceSuggestions.js`,
+  the new category classifier above) applied to the **existing** 8-value `attributes` vocabulary.
+  This is not "a second classifier" in the doc's own sense (no new LLM pipeline, no new service) —
+  it's the same pure-function pattern this app already uses, pointed at one more field. Writes
+  only through the existing `update_business_profile` RPC's `attributes_param`, never auto-applies
+  without the owner's explicit confirm.
+- **§11 (Improve My Profile)** — checked the dashboard's real "Today at {business}" Nearby Brief
+  card (Phase 5) directly: it already has exactly this shape — one real, deterministic, priority-
+  ordered suggestion (`{text, onPress}`), checked in a fixed order, currently 3 branches
+  (differentiator → availability pulse → pending opportunities). Building a **second**, separate
+  multi-item checklist card answering the identical "what should I do next" question would be
+  precisely the kind of duplicate-mechanism problem this file's own convergence passes have
+  repeatedly found and fixed elsewhere (two surfaces independently answering the same question).
+  **Locked, a real judgment call, stated plainly rather than silently made**: extend the
+  *existing* single-suggestion chain with the new real gaps (empty attributes, empty
+  accommodate/priority-attribute signals) inserted into the same priority order, rather than
+  building a competing checklist UI — matches this app's own repeated, explicit "one concrete
+  suggestion, never an overwhelming list" design principle (stated verbatim in Phase 5's own
+  comment) more closely than the doc's own multi-bullet mockup. New jump targets reuse the exact
+  same `setSection('business')` pattern the existing pulse suggestion already uses (line-precise
+  scroll-to was considered and rejected as unnecessary complexity for a dashboard where every
+  target already lives on the one Business tab).
+
+### Locked build order
+
+1. **Migration** — two new `brand_partners` columns (`accommodates_party_types`,
+   `priority_time_windows`), both nullable-array-default-`{}`, both CHECK-constrained to a real,
+   already-established vocabulary (`party_type`'s 4 values; `getTimePeriod()`'s 4 values). Two
+   new SECURITY DEFINER RPCs (`set_business_accommodations`, `set_business_priority_time_windows`),
+   mirroring `set_business_priority_attributes()`'s exact shape (owner-only, real vocabulary
+   check, no other side effects) — this is the *only* schema change this whole addendum needs;
+   every other piece (category classifier, Teach Nearby, Improve My Profile) is pure client logic
+   reusing already-existing fields/RPCs.
+2. **Client constants** — `src/constants/businessCategoryClassifier.js`
+   (`classifyBusinessCategory({name, description})`, real keyword lists per `BUSINESS_CATEGORIES`
+   value) and `src/constants/businessAttributeExtraction.js`
+   (`extractAttributesFromText(text)`, real keyword lists per `BUSINESS_ATTRIBUTE_OPTIONS` value)
+   — both pure, no-I/O, same testable shape as every other derivation function in this codebase.
+3. **`services/brandOffers.js`** — `setBusinessAccommodations()`/`setBusinessPriorityTimeWindows()`
+   thin RPC wrappers.
+4. **`BusinessDashboardScreen.js`**:
+   - A dismissible "We think {business} is: {category}" banner (Looks right / Keep as {current}),
+     shown only when the classifier's real suggestion differs from the stored category.
+   - A new "👥 What You Can Accommodate" card — group size (read-only reflection of
+     `fulfillmentPolicy`, Edit jumps to the existing policy modal), an "Experiences & Uses" chip
+     picker (`accommodates_party_types`, the real `party_type` vocabulary), a read-only "Space"
+     line reflecting `outdoor_seating` from `attributes` with a link to the existing attribute
+     picker.
+   - "What You're Looking For" gains a real "When" chip row (`priority_time_windows`), same real
+     4-value vocabulary, alongside its existing customer/intent chips.
+   - A new "✨ Teach Nearby" card — free-text input, a real "Nearby understood: [chips]" confirm
+     step (Add to profile / Edit / Discard) sourced from `extractAttributesFromText()`, writing
+     only to the existing `attributes` field via `update_business_profile` once confirmed.
+   - The existing Nearby Brief suggestion chain extended with 2 new real checks (empty
+     attributes, empty accommodate signal) at the priority positions decided above.
+5. **`BusinessProfileScreen.js`** (public, consumer-facing) — a narrower "What This Business Can
+   Accommodate" section showing `accommodates_party_types` + `outdoor_seating` only (both already
+   publicly readable via `brand_partners`' existing "active partners are public" RLS) — **not**
+   group size, which stays owner-dashboard-only since `business_fulfillment_policies` is
+   deliberately owner-only-SELECT by its own Phase 2 design, not something this pass widens
+   without a real reason to. `priority_time_windows`/the category-classifier banner/Teach Nearby
+   stay owner-only, matching `priority_attributes`' own established "owner-facing only" precedent.
+6. Two new pure-function test files, matching the established convention.
+7. Verification: apply the migration to production and verify live with real disposable test
+   data under genuine `SET ROLE authenticated` (owner set succeeds, non-owner rejected, invalid
+   vocabulary value rejected) — clean up afterward; a real from-scratch Docker migration replay;
+   the full Jest suite; a full `npx expo export --platform ios`.
+
+### Explicitly not built, restated so nothing here reads as silently dropped
+
+Wi-Fi/pet-friendly/private-room amenities (no real taxonomy anywhere to back them — flagged, not
+fabricated); a day-of-week-specific (as opposed to weekend-vs-not) timing split (no real data
+anywhere tracks this); wiring `accommodates_party_types`/`priority_time_windows` into the actual
+consumer-facing intent resolver or `_business_request_fanout()`'s own ordering (matches every
+prior phase's own explicit "surfaced, not yet wired into matching" scope boundary — a real,
+separate future piece, not silently attempted here); a standalone multi-item "Improve My Profile"
+checklist UI (folded into the existing Nearby Brief single-suggestion mechanism instead, per the
+judgment call above); a real LLM call anywhere in this addendum (both "AI" pieces — category
+classification and Teach Nearby — are deterministic keyword derivation, matching this file's
+now-repeated "no new classification service, reuse the pure-function pattern" convention).
+
+**Status: plan locked, build proceeding now — check the status note appended after this line
+(added once it lands) for what's actually built.**
+
 ## Aug 25 2026 — "Business Story" — the business profile stops being a form and starts being
 ## the supply-side counterpart to consumer intent — PLAN LOCKED, Phases 1-6 all DONE — see each
 ## phase's own status note below
