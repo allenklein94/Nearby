@@ -4,8 +4,8 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
-## Aug 24 2026 — Nearby Universal Taxonomy, Filters & Matching Audit — PLAN LOCKED, executing
-## below; read-only, no application code changes; check each phase's own status note for
+## Aug 24 2026 — Nearby Universal Taxonomy, Filters & Matching Audit — DONE, all 5 phases
+## complete; read-only, no application code changes; check each phase's own status note for
 ## what's landed
 
 Written before execution, same restart-safety convention as every other plan-first section in
