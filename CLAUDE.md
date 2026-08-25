@@ -167,10 +167,64 @@ throughout this whole file — no manual simulator/device run-through is possibl
 applies here too; flag it per-section rather than silently assume a chain that *should* work on a
 real device actually does.
 
-**Status: plan locked, not yet executed. Pick this up in a fresh session (after the next
-codespace restart, per direct instruction) rather than continuing in the same session that just
-finished the 4 build phases** — check this section's own status notes for what's landed if a
-restart interrupts the audit itself partway through.
+**Status: DONE — the full audit (Sections A-E) is complete.** Picked up cleanly after the
+codespace restart interrupted the session mid-way through Section B's live verification (the
+crashed session's own test data had already been cleaned up or never committed — production
+was found back at its exact baseline on resume, nothing to recover). Full findings, with
+file/line citations and verdicts (🟢 CONNECTED / 🔴 GAP / 🟡 NOT VERIFIABLE), are in
+`PRODUCT_AUDIT/TAXONOMY_POST_IMPLEMENTATION_AUDIT_2026-08-25.md` — read that file, not this
+summary, for the complete record. Headline results, so this file's own history carries the
+result without needing to open that file:
+
+- **4 real, concrete gaps found**, one significant: `DatingPreferencesPromptModal.js` (the
+  actual first-open prompt a brand-new user sees on Dating) still writes to the **legacy**
+  `discovery_gender`/`show_me` columns and still shows "Show Me"/"My Gender" labels — never
+  touching the new canonical `gender_identity`/`interested_in_genders` fields Phase 1 was
+  built to consolidate onto. This directly contradicts this file's own earlier claim (Phase 1's
+  status note, above) that the modal "already only asks for the new fields" — that claim was
+  wrong, corrected here rather than left standing. **Not fixed this pass, per the audit's own
+  read-only scope** — flagged as a real, ready-to-build fix for a future session.
+- Two more real gaps in Business Attributes: the "Business Opportunities" inbox
+  (`getBusinessOpportunities()`) never selects or shows a request's structured
+  `attributes`/`cuisine` to the business deciding how to respond, even though that same data
+  genuinely (and provenly, via a live test) ranks who gets contacted first; and the consumer-
+  facing resolver's ranking of a business's own *already-posted* standing availability
+  (`resolveBusinessAvailability()`) doesn't score attribute/cuisine overlap at all — display-
+  only on that one surface, matching Phase 2's own original scope for it, not a regression.
+- **Two of the hardest claims in the whole pass — attribute-based fan-out ranking and
+  price/party ranking — were directly proven with live, executed evidence**, not just read
+  from the code: a real disposable test showed an attribute-matching business partner
+  physically inserted before a non-matching one in `_business_request_fanout()`'s real output
+  (both partners at identical coordinates, identical reliability history, so only the
+  attribute term could explain the ordering); and `priceAndPartyBonus()`/
+  `scoreGatheringForResolver()` were executed directly (via Node, importing the real
+  production `intentResolverScoring.js` unmodified) to show a price/party match concretely
+  changes a gathering's final rank score (4 vs. 2), with no double-counting when both fields
+  match.
+- **Section D's real classifier test could not be completed** — created a real disposable
+  authenticated session (public signup + SQL email-confirm + password sign-in, no service-role
+  key needed) and called the deployed `create-assistant` function with both of the audit's own
+  worked examples; both failed with the same generic error, at the same code location, that
+  matches the already-disclosed Aug 11 2026 Anthropic account credit-balance issue (the
+  `ANTHROPIC_API_KEY` secret is confirmed unchanged since before that diagnosis). Fell back to
+  reading the live deployed prompt text directly and reasoning through both examples, per the
+  audit's own permitted fallback — and found a real, disclosed prompt-design gap doing so: the
+  prompt's price-tier guidance explicitly anchors "cheap" and "fancy" but never anchors "nice"
+  (the audit's own test word), leaving over-commitment risk on genuinely ambiguous adjectives
+  to unconstrained model judgment rather than an explicit safeguard.
+- **The full Section E signal-by-signal trace, plus the control-group signal
+  (`interest_tag`), came back genuinely connected** end-to-end for `relationship_intention`,
+  Friend Discovery's `interests`/`distance_bucket`, and the control group itself — confirming
+  the audit's own method finds real gaps (the 4 above) rather than phantom ones.
+- All live test data (2 disposable auth users/profiles, 2 disposable business partners, 1
+  disposable business request/offer pair, a temporary write to the real `Coastal Coffee`
+  partner) was cleaned up/reverted; production confirmed back to its exact pre-audit baseline
+  after every check.
+
+**Per this whole pass's own locked scope: nothing above has been fixed.** All 4 findings —
+the `DatingPreferencesPromptModal.js` legacy-field bug most of all — are real, concrete,
+ready-to-build recommendations for a future, separately-authorized pass, not something acted
+on unilaterally here.
 
 ## Aug 25 2026 — building the taxonomy audit's real recommendations (Dating Preferences
 ## consolidation, Business Attributes, Friends filters, structured price/party intent) —
