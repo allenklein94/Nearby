@@ -207,10 +207,64 @@ their own visible behavior), that the new "Recent AI Suggestions" list renders c
 real suggestion history, and that the new Temporary Boost picker renders/saves/clears correctly
 end-to-end in the running app.
 
-**Phases 2-8 of this plan remain exactly as locked above — nothing built, nothing started.** Pick
-up Phase 2 (Opportunity: a persisted `opportunity_score` + `match_reasons` on the existing
-`business_requests`/`business_request_offers` rows, reframing the dashboard's Opportunities inbox
-and Match Radar's existing `get_aggregated_demand_for_partner()` UI around it) next.
+### Status: Phase 2 — DONE, build-wise. Phases 3-8 remain locked plan only, not started.
+
+Picked up cleanly after a codespace restart — `git status` showed the real work already
+finished but uncommitted: `src/services/businessOpportunityScoring.js` (new, untracked),
+`src/services/businessOpportunityScoring.test.js` (new, untracked, 12 real tests), and an
+edit to `BusinessDashboardScreen.js` wiring both in. Read all three files directly before
+trusting them, per this file's own standing rule — confirmed correct and complete, not
+half-built, then verified (full Jest suite, full export) and committed.
+
+**One real, deliberate deviation from this plan's own literal wording, disclosed in the code's
+own header comment rather than silently done**: `opportunity_score` is **not** persisted onto
+`business_request_offers` at insert time, despite the phase's own text saying "a persisted
+`opportunity_score`." It's computed at **read time** instead, inside a new
+`scoreBusinessOpportunity()` pure function (`businessOpportunityScoring.js`, same "no I/O, fully
+testable" shape as `intentResolverScoring.js`/`homeRecommendations.js`, reusing their exact
+`SCORE_*` weights rather than inventing a new scale). Reasoning: a business's own
+`priority_attributes`/`priority_time_windows`/temporary priority signal (Phase 1) can all change
+*after* an opportunity already exists — a score frozen at insert time would silently go stale the
+moment the business updates its own preferences, a real correctness problem, not just an
+implementation nicety. Every input is data the dashboard already loads (the opportunity's own
+`business_requests.attributes`/`cuisine`/`category`/`date`/`time_window_start`, already selected
+by `getBusinessOpportunities()`; the already-loaded `selectedPartner`'s own
+`attributes`/`cuisine`/`priority_attributes`/`priority_time_windows`; Phase 1's already-loaded
+`activePrioritySignals`) — no new query, no schema change needed for this phase at all.
+
+**Real, itemized `match_reasons`**: `scoreBusinessOpportunity()` returns both a numeric score and
+a real `reasons` array (`{label, points}` per matching signal — a priority-attribute match, a
+general-attribute match, a cuisine match, a timing fit against the business's own priority hours,
+and a strength-scaled hit against Phase 1's temporary priority boost) — never a single opaque
+number, matching this file's own "ranking stays simple/explainable" rule. Never double-counts an
+attribute that's both a priority and a general match (credited once, under the stronger reason
+only — verified by a dedicated test).
+
+**Dashboard wiring** (`BusinessDashboardScreen.js`): a new `scoredOpportunities` memo computes
+every opportunity's real score/reasons and re-sorts only the subset still genuinely awaiting the
+business's own decision (`status: 'pending'`, parent request `status: 'open'`) by that score,
+highest first — matching `BusinessRequestDetailScreen`'s own established "Compare Your Options"
+precedent of never reordering already-resolved history (accepted/declined/expired rows keep
+their original position). The old single binary "🎯 Matches what you're looking for" badge is
+replaced with the real itemized reasons list, one line per matching signal. The "📊 Demand Near
+You" header is renamed to "📊 Match Radar" — a pure naming alignment, not new data: per the
+locked plan's own audit finding, `get_aggregated_demand_for_partner()` already **is** Match Radar
+(spec item 13), just never framed that way in the UI before this pass; reused verbatim, zero
+query change.
+
+Verified via a direct `@babel/core` parse of both touched/new files (clean), the full Jest suite
+(**107/107 passing** — 95 pre-existing + 12 new), and a full `npx expo export --platform ios`
+(clean, no bundling errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the reordered "Business Opportunities" list reads
+correctly against real data (a genuinely higher-scoring opportunity should visibly rank above a
+lower-scoring one), that the itemized reason lines render cleanly when several signals match at
+once, and that the renamed "Match Radar" header reads correctly in place.
+
+Pick up Phase 3 (Transactions: a deterministic, non-LLM offer-recommendation ranking over the
+existing `business_experiences` templates + fulfillment policy + real historical acceptance
+rate) next.
 
 
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section

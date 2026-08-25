@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -17,6 +17,7 @@ import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } f
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion, getBusinessAttributeSuggestions, setBusinessPrioritySignal, clearBusinessPrioritySignal, getActiveBusinessPrioritySignals } from '../services/businessIntelligence';
+import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -190,6 +191,38 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [partnershipRequests, setPartnershipRequests] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
+  // Business Intelligence & Opportunity Engine, Phase 2 -- a real,
+  // itemized opportunity_score computed at READ time (not frozen at
+  // insert time -- see businessOpportunityScoring.js's own header comment
+  // for why), reusing only data already fetched (opportunities' own
+  // business_requests.attributes/cuisine/category/date/time_window_start,
+  // the already-loaded selectedPartner, and Phase 1's already-loaded
+  // activePrioritySignals). Only reorders the subset still genuinely
+  // awaiting the business's own decision (pending offer, open request) --
+  // matches BusinessRequestDetailScreen's own "Compare Your Options"
+  // precedent of never reordering already-resolved history.
+  const scoredOpportunities = useMemo(() => {
+    const withScores = opportunities.map((o) => {
+      const req = o.business_requests ?? {};
+      const { score, reasons } = scoreBusinessOpportunity({
+        requestAttributes: req.attributes ?? [],
+        requestCuisine: req.cuisine ?? null,
+        requestCategory: req.category ?? null,
+        requestDate: req.date ?? null,
+        requestTimeWindowStart: req.time_window_start ?? null,
+        businessAttributes: selectedPartner?.attributes ?? [],
+        businessCuisine: selectedPartner?.cuisine ?? null,
+        businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
+        businessPriorityTimeWindows: selectedPartner?.priority_time_windows ?? [],
+        activePrioritySignals,
+      });
+      return { ...o, opportunityScore: score, opportunityReasons: reasons };
+    });
+    const isAwaitingDecision = (o) => o.status === 'pending' && o.business_requests?.status === 'open';
+    const awaiting = withScores.filter(isAwaitingDecision).sort((a, b) => b.opportunityScore - a.opportunityScore);
+    const resolved = withScores.filter((o) => !isAwaitingDecision(o));
+    return [...awaiting, ...resolved];
+  }, [opportunities, selectedPartner, activePrioritySignals]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   const [myAvailability, setMyAvailability] = useState([]);
@@ -1999,7 +2032,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </View>
                 )}
 
-                <Text style={styles.sectionHeader}>📊 Demand Near You</Text>
+                {/* Business Intelligence & Opportunity Engine, Phase 2 --
+                    "Match Radar" (spec item 13) reframe: get_aggregated_
+                    demand_for_partner() already IS Match Radar (locked
+                    plan's own audit finding) -- this is a real naming
+                    alignment only, no new data, no new query. */}
+                <Text style={styles.sectionHeader}>📊 Match Radar</Text>
                 <Text style={styles.helperText}>
                   Real open requests within reach of your business right now, grouped by
                   category -- a quantified early signal, not a review score. Categories marked
@@ -2068,25 +2106,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   Real customers asking for something nearby -- respond with a real offer, or let
                   a low-fit one pass.
                 </Text>
-                {opportunities.length === 0 ? (
+                {scoredOpportunities.length === 0 ? (
                   <Text style={styles.emptyText}>No requests yet.</Text>
                 ) : (
-                  opportunities.map((o) => {
+                  scoredOpportunities.map((o) => {
                     // "Business Story" plan, Phase 4: closes the real,
                     // already-flagged gap (see CLAUDE.md) -- this row's
                     // own request.attributes/cuisine are now selected (see
-                    // getBusinessOpportunities) and shown here for the
-                    // first time. matchesPriority is a plain client-side
-                    // overlap check against Phase 2's own priority_
-                    // attributes -- no new query, no fabricated signal.
+                    // getBusinessOpportunities) and shown here.
+                    // Business Intelligence & Opportunity Engine, Phase 2:
+                    // o.opportunityReasons is the real, itemized "why this
+                    // matches" list (computed in scoredOpportunities
+                    // above), replacing the old single binary badge --
+                    // still-open opportunities are already sorted by this
+                    // same real score, highest first.
                     const reqAttrs = o.business_requests?.attributes ?? [];
-                    const matchesPriority = reqAttrs.some((a) => (selectedPartner?.priority_attributes ?? []).includes(a));
                     return (
                     <View key={o.id} style={styles.gatheringRow}>
-                      {matchesPriority && (
-                        <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '600' }]}>
-                          🎯 Matches what you're looking for
-                        </Text>
+                      {o.opportunityReasons.length > 0 && (
+                        <View style={{ marginBottom: spacing.xs }}>
+                          {o.opportunityReasons.map((r) => (
+                            <Text key={r.label} style={[styles.breakdownText, { color: colors.primary, fontWeight: '600' }]}>
+                              🎯 {r.label}
+                            </Text>
+                          ))}
+                        </View>
                       )}
                       <Text style={styles.offerTitle}>{o.business_requests?.raw_text}</Text>
                       <Text style={styles.breakdownText}>
