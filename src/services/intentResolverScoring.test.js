@@ -7,6 +7,7 @@ const {
   matchesDateWindow,
   dateWindowToDateRange,
   scoreGatheringForResolver,
+  priceAndPartyBonus,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
@@ -42,6 +43,32 @@ describe('titleMentionBonus', () => {
   it('awards nothing with no meaningful words or no title', () => {
     expect(titleMentionBonus('Coffee Chat', [])).toBe(0);
     expect(titleMentionBonus(null, ['coffee'])).toBe(0);
+  });
+});
+
+describe('priceAndPartyBonus', () => {
+  it('awards the bonus when price_level matches', () => {
+    expect(priceAndPartyBonus({ price_level: '$$', party_type: null }, '$$', null)).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards the bonus when party_type matches', () => {
+    expect(priceAndPartyBonus({ price_level: null, party_type: 'solo' }, null, 'solo')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('does not double-count when both match', () => {
+    expect(priceAndPartyBonus({ price_level: '$', party_type: 'date' }, '$', 'date')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when nothing was implied by the ask', () => {
+    expect(priceAndPartyBonus({ price_level: '$', party_type: 'solo' }, null, null)).toBe(0);
+  });
+
+  it('awards nothing for a real mismatch, never a fabricated match', () => {
+    expect(priceAndPartyBonus({ price_level: '$$$', party_type: 'groups' }, '$', 'date')).toBe(0);
+  });
+
+  it('awards nothing when the gathering itself never set a value', () => {
+    expect(priceAndPartyBonus({ price_level: null, party_type: null }, '$', 'solo')).toBe(0);
   });
 });
 

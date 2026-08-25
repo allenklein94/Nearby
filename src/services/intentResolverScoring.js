@@ -62,6 +62,21 @@ export function titleMentionBonus(title, meaningfulWords) {
   return meaningfulWords.some((w) => lowerTitle.includes(w)) ? SCORE_HAPPENING_NOW : 0;
 }
 
+// Taxonomy audit Phase 4 (CLAUDE.md, Aug 25 2026): closes recommendation
+// #2 -- create-assistant's own best-effort classification now extracts
+// priceLevel/partyType, real values matched against gatherings.price_level/
+// party_type's own live CHECK-constraint values, never invented. Matches
+// titleMentionBonus()'s own shape and weight exactly -- a real signal
+// match earns the same flat SCORE_HAPPENING_NOW bonus already used
+// elsewhere for a real (not fabricated) match, never when nothing was
+// implied (both params null/undefined -- the common case for most asks).
+export function priceAndPartyBonus(gathering, priceLevel, partyType) {
+  if (!priceLevel && !partyType) return 0;
+  const priceMatches = !!priceLevel && !!gathering.price_level && gathering.price_level === priceLevel;
+  const partyMatches = !!partyType && !!gathering.party_type && gathering.party_type === partyType;
+  return priceMatches || partyMatches ? SCORE_HAPPENING_NOW : 0;
+}
+
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

@@ -13,15 +13,27 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 // safety net, never surfaced or marketed as a limit.
 const DAILY_AI_LIMIT = 150;
 
-// Hardcoded copy of CreateGatheringScreen.js's real INTEREST_OPTIONS list --
-// the model's returned category is re-validated against this server-side so
-// a hallucinated/invented tag never reaches the client.
+// Hardcoded copy of the shared canonical 26-tag gatheringCategories.js list
+// (src/constants/gatheringCategories.js's INTEREST_OPTIONS) -- the model's
+// returned category is re-validated against this server-side so a
+// hallucinated/invented tag never reaches the client.
+//
+// Taxonomy audit Phase 4 (CLAUDE.md, Aug 25 2026): this list was found to
+// be stale -- the *old* 24-tag list, missing "Faith & Spirituality" and
+// "Dating" -- the identical class of drift the whole taxonomy audit exists
+// to catch, just never checked in this one deployed Edge Function since
+// it's not a client file. Fixed alongside the price/party extension below.
 const VALID_CATEGORIES = [
   'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
   'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
   'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
+  'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality', 'Dating',
 ];
+
+// Taxonomy audit Phase 4: real values matching gatherings.price_level/
+// party_type's own live CHECK constraints exactly -- never invented.
+const VALID_PRICE_LEVELS = ['free', '$', '$$', '$$$'];
+const VALID_PARTY_TYPES = ['solo', 'friends', 'groups', 'date'];
 
 // Intent Layer plan (CLAUDE.md), Phase 1b -- a coarse date-window bucket,
 // the same vocabulary GatheringsScreen.js's own date-filter chips already
@@ -82,8 +94,10 @@ Regardless of intent, also extract these when the text gives a real clue (used o
 - partySize: a whole number of people, if mentioned (e.g. "my girlfriend and I" is 2, "8 of us" is 8), or null.
 - dateWindow: one of ${JSON.stringify(VALID_DATE_WINDOWS)} — pick the closest match to what they wrote (e.g. "tonight"/"right now" is "tonight", "this weekend" is "weekend"), or "flexible" if no timing was mentioned at all. Never guess a specific date, day of week, or clock time — only pick from this exact list.
 - budgetMax: a whole-number dollar amount if a spending limit was mentioned (e.g. "under $100" is 100), or null.
+- priceLevel: one of ${JSON.stringify(VALID_PRICE_LEVELS)} if the text implies a real price preference (e.g. "cheap"/"free" is "free", "fancy"/"upscale" is "$$$"), or null if no price signal was mentioned at all. Never guess -- only pick one when the text genuinely implies it.
+- partyType: one of ${JSON.stringify(VALID_PARTY_TYPES)} if the text implies who this is for (e.g. "just me"/"solo" is "solo", "me and my friends" is "friends", "a big group" is "groups", "a date"/"with my partner" is "date"), or null if no such signal was mentioned at all. Never guess.
 
-Reply with ONLY valid JSON in this exact shape, nothing else: {"intent":"gathering"|"community"|"business_partner"|"unclear","title":<string or null>,"category":<string or null>,"businessName":<string or null>,"partySize":<integer or null>,"dateWindow":<string or null>,"budgetMax":<integer or null>}`;
+Reply with ONLY valid JSON in this exact shape, nothing else: {"intent":"gathering"|"community"|"business_partner"|"unclear","title":<string or null>,"category":<string or null>,"businessName":<string or null>,"partySize":<integer or null>,"dateWindow":<string or null>,"budgetMax":<integer or null>,"priceLevel":<string or null>,"partyType":<string or null>}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -129,9 +143,11 @@ Reply with ONLY valid JSON in this exact shape, nothing else: {"intent":"gatheri
     const budgetMax = Number.isInteger(parsed?.budgetMax) && parsed.budgetMax > 0 && parsed.budgetMax <= 100000
       ? parsed.budgetMax
       : null;
+    const priceLevel = VALID_PRICE_LEVELS.includes(parsed?.priceLevel) ? parsed.priceLevel : null;
+    const partyType = VALID_PARTY_TYPES.includes(parsed?.partyType) ? parsed.partyType : null;
 
     return new Response(
-      JSON.stringify({ intent, title, category, businessName, partySize, dateWindow, budgetMax }),
+      JSON.stringify({ intent, title, category, businessName, partySize, dateWindow, budgetMax, priceLevel, partyType }),
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (err) {

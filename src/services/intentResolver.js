@@ -18,11 +18,12 @@ import {
   matchesDateWindow,
   dateWindowToDateRange,
   scoreGatheringForResolver,
+  priceAndPartyBonus,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
 
-async function resolveGatherings(category, dateWindow, rawText) {
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType) {
   const nearby = await getNearbyGatherings('wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
@@ -36,7 +37,9 @@ async function resolveGatherings(category, dateWindow, rawText) {
       id: gathering.id,
       title: gathering.title,
       subtitle: reasons[0] ?? null,
-      score: scoreGatheringForResolver(gathering) + titleMentionBonus(gathering.title, meaningfulWords),
+      score: scoreGatheringForResolver(gathering)
+        + titleMentionBonus(gathering.title, meaningfulWords)
+        + priceAndPartyBonus(gathering, priceLevel, partyType),
     };
   });
 }
@@ -289,7 +292,7 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
 // own best-effort classification, already collected upstream, never a new
 // fetch) -- only used to bound the weaker policy-only tier's own eligibility
 // check against a real business's stated party-size range.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
@@ -330,7 +333,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   }
 
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
