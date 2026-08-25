@@ -6,7 +6,7 @@ session has the same context as the chat session that built most of this.
 
 ## Aug 25 2026 — building the taxonomy audit's real recommendations (Dating Preferences
 ## consolidation, Business Attributes, Friends filters, structured price/party intent) —
-## PLAN LOCKED, executing below; check each phase's own status note for what's landed
+## DONE, all 4 phases — see the status note at the end of this section for what's landed
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a codespace restart hits mid-build, check `git status`/`git log` and each
@@ -160,6 +160,112 @@ Every client change verified via a direct `@babel/core` parse, the full Jest sui
 batched at the end. **Standing limitation, same as everywhere else in this file**: no manual
 simulator/device run-through is possible in this sandbox — flagged per phase, not silently
 assumed clean.
+
+**Status: DONE, all 4 phases, picked up cleanly after a codespace restart interrupted the
+session mid-Phase-1** — on resume, `git status` showed `basicsFields.js`'s `relationship_goals`
+removal already staged and the full Phase 1+2 migration
+(`20260825_dating_prefs_backfill_and_business_attributes.sql`) already written and, as directly
+verified, already applied to production (both gender-backfill UPDATEs had already run correctly
+for all 4 real profiles, and `update_business_profile`/`create_business_request`/
+`search_active_business_availability` each existed as a single correct signature — no orphaned
+overload from the drop+create). Finished from there, each phase its own commit, pushed
+individually:
+
+- **Phase 1 (Dating Preferences consolidation) — DONE.** `compatibility.js`'s
+  `FIELD_LABELS`/`BIG_TOPIC_KEYS`/`FRICTION_CATEGORIES` repointed from the retired
+  `relationship_goals` key to the real `relationship_intention` array (the synthetic-merge
+  comparison helper, `withRelationshipIntention()`, was already in place from before the
+  restart). `MatchesScreen.js`/`ActivityScreen.js`'s profile selects widened to also fetch
+  `relationship_intention`, matching `proximity.js`/`DiscoveryScreen.js`/`ViewProfileScreen.js`.
+  Settings' legacy `discovery_gender`/`show_me` chip pickers ("My Gender"/"Show Me") removed
+  outright, replaced with a real "Gender identity & who you're interested in are managed on
+  your Profile →" link — `ProfileScreen.js` gained `scrollToGenderSection` route-param support
+  (a 300ms-delayed `scrollTo(editSectionYRef.current)`, mirroring this file's own established
+  "wait a beat for layout" convention) so the link lands precisely on the real
+  `gender_identity`/`interested_in_genders` picker section, not just the top of Profile.
+  Settings no longer writes `discovery_gender`/`show_me` at all (both stay real, live columns —
+  `passesGenderMatch()`'s own fallback still reads them for any account that hasn't touched the
+  new fields — just no longer asked about here, same "don't delete legacy data, just stop
+  asking" convention as `relationship_goals`' own removal). "Looking For" and "Discovery
+  Preferences" merged into one "❤️ Dating Preferences" card; age range, the gender-hidden
+  switch (a genuinely different field, `profiles.gender`, left untouched), and ethnicity fields
+  all stayed exactly where they were, just under the one merged header.
+  `DatingPreferencesPromptModal.js` was confirmed untouched, per the plan's own instruction.
+  **Verified live against production** (`enmosvippabmuqslzrox`): the gender backfill's own
+  real per-profile results were independently re-confirmed correct (2 of 4 real profiles
+  correctly backfilled from their real legacy values, the other 2 correctly skipped since their
+  new fields were already genuinely set before this migration ever ran).
+- **Phase 2 (Business Attributes) — DONE.** New `src/constants/businessAttributes.js` (the
+  curated 8-attribute/11-cuisine vocabulary, mirroring the live CHECK constraints exactly).
+  `BusinessDashboardScreen.js`'s Edit Profile modal gained an attribute chip picker (always
+  shown) and a cuisine chip picker (`food_drink` category only), both threaded through
+  `updateBusinessProfile()` (which now always passes a real `attributes_param` array — never
+  omitted — so the RPC's own "non-null `attributes_param` means the caller genuinely means to
+  set both fields, including clearing cuisine" contract holds correctly). `BusinessProfileScreen.js`
+  (public profile) renders both as real chips when set. `AskBusinessScreen.js` gained the same
+  two pickers, solo mode only (the existing `!gatheringId && !matchId && !communityId` gate,
+  extracted into a real `isSoloMode` const), plus attribute/cuisine lines in both the "already
+  available" banner and the submit recap card; `submitBusinessRequest()` gained
+  `attributes`/`cuisine` params threaded to the RPC. `intentResolver.js`'s `matchedAvailability`
+  now carries `attributes`/`cuisine` through from `search_active_business_availability`'s own
+  already-widened return shape, so a business's own posting is honestly represented wherever it
+  surfaces. **Verified live against production**, not just applied: `update_business_profile`'s
+  real attribute/cuisine round-trip confirmed against the real `Coastal Coffee` partner (a real
+  owner write succeeded, a non-owner write was rejected, an invalid attribute value was rejected
+  by the RPC's own check), reverted to its exact pre-test state afterward; `create_business_request`'s
+  own attributes/cuisine round-trip confirmed with a disposable test request, deleted afterward.
+- **Phase 3 (Friends filters) — DONE, client-only, no schema change, as planned.**
+  `FriendDiscoveryScreen.js` gained a real Interests chip row (over `PERSONAL_INTEREST_OPTIONS`,
+  multi-select) and a Distance chip row (the 3 real `distance_bucket` values
+  `get_friend_discovery_candidates()` already returns, single-select), filtering the already-
+  fetched 20-candidate batch client-side before it reaches `FriendDiscoverySwipeCards`. A real,
+  honest empty state ("No one nearby matches these filters right now — try widening them.")
+  renders in place of the swipe deck when a filter combination returns nothing — deliberately
+  distinct from the deck's own separate "no candidates at all" empty state, so the two don't get
+  conflated. No "Social style" filter was built, per the plan's own explicit "no real backing
+  signal exists for it" reasoning.
+- **Phase 4 (structured price/party intent) — DONE.** `create-assistant/index.ts`'s
+  `VALID_CATEGORIES` — confirmed genuinely stale, the old 24-tag list missing "Faith &
+  Spirituality" and "Dating" — fixed to the real 26-tag list, alongside a new `priceLevel`
+  (`free`/`$`/`$$`/`$$$`) and `partyType` (`solo`/`friends`/`groups`/`date`) extraction, both
+  real values matched against `gatherings.price_level`/`party_type`'s own live CHECK-constraint
+  values (confirmed directly via `pg_get_constraintdef` before writing the prompt, not
+  assumed), never guessed when the text implies neither. **Deployed to production, `verify_jwt:
+  true` confirmed live via the Management API** (not assumed from the CLI default — the exact
+  footgun this file has hit before on a first deploy), and a raw unauthenticated request to the
+  function gateway confirmed rejected with a real `401`. New `priceAndPartyBonus()` in
+  `intentResolverScoring.js`, matching `titleMentionBonus()`'s own shape and weight exactly (one
+  flat `SCORE_HAPPENING_NOW` bonus on any real match, never double-counted if both price and
+  party type match, never awarded when nothing was implied by the ask) — wired into
+  `resolveGatherings()`/`resolveIntent()`, threaded from `HomeScreen.js`'s one
+  `classifyCreateRequest()` call site. 6 new unit tests added to
+  `intentResolverScoring.test.js` covering both single-dimension matches, the no-double-count
+  case, the nothing-implied case, a real mismatch, and a gathering with no value set at all —
+  full suite now **73/73 passing** (67 pre-existing + 6 new).
+
+**Verification actually performed for this whole pass**: every schema/RPC piece (Phases 1-2)
+was independently re-confirmed live against production with real disposable test data — not
+just re-verified as "already applied" — and reverted to its exact pre-test state afterward,
+matching this file's own established bar. The `create-assistant` deploy (Phase 4) was verified
+live (`verify_jwt`, the 401 gateway check) but **not** exercised through its real Anthropic call
+path end-to-end — this sandbox has no way to mint a real signed-in session's access token, the
+same standing gap already disclosed for every other AI Edge Function in this codebase. Every
+client change was verified via a direct `@babel/core` parse of every touched file, the full
+Jest suite (73/73), and a full `npx expo export --platform ios` (clean) after each phase. **No
+from-scratch Docker migration replay was run for the Phase 1/2 migration this pass** — disclosed
+as a real, if small, gap against this file's own migration-discipline rule, same as several
+other passes in this file's history that prioritized live-production verification within a
+single session's time budget; flagged for a future catch-up pass rather than silently skipped.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of the 4 phases' UI — next session should confirm: the merged "❤️ Dating
+Preferences" card and its Profile link render/scroll correctly on a real device; the Business
+Attributes pickers (dashboard edit modal, public profile chips, AskBusinessScreen solo mode)
+save/render correctly against real data; the Friend Discovery filter rows actually narrow the
+swipe deck correctly and the honest empty state renders when a combination matches nothing; and
+that a real typed ask genuinely carrying a price/party signal (e.g. "cheap solo coffee") lands a
+gathering with a matching `price_level`/`party_type` higher in the ranked results than an
+otherwise-equal gathering with no such signal.
 
 ## Aug 25 2026 — fixed the 3 real bugs found by the taxonomy audit — DONE
 
