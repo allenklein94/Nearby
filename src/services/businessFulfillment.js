@@ -283,7 +283,7 @@ export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRep
 export async function getBusinessOpportunities(partnerId) {
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at, gathering_id, match_id, gatherings(title, scheduled_at))')
+    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at, gathering_id, match_id, attributes, cuisine, gatherings(title, scheduled_at))')
     .eq('partner_id', partnerId)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);

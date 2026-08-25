@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -17,7 +17,7 @@ import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } f
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh } from '../constants/businessAttributes';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -86,7 +86,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [editCategoryInput, setEditCategoryInput] = useState(null);
   const [editAttributesInput, setEditAttributesInput] = useState([]);
   const [editCuisineInput, setEditCuisineInput] = useState(null);
+  const [editDifferentiatorInput, setEditDifferentiatorInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
+  // of"), a lightweight signal distinct from the full Edit Profile form.
+  const [priorityAttributesInput, setPriorityAttributesInput] = useState([]);
+  const [savingPriorityAttributes, setSavingPriorityAttributes] = useState(false);
+  // Phase 3 -- Availability Pulse, a real self-reported "how's business
+  // right now" signal.
+  const [pulseNoteInput, setPulseNoteInput] = useState('');
+  const [savingPulse, setSavingPulse] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -216,6 +225,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setSelectedPartner(partner);
       setLoadError(false);
       if (partner) {
+        setPriorityAttributesInput(partner.priority_attributes ?? []);
+        setPulseNoteInput(partner.availability_pulse_note ?? '');
         logBusinessAcquisitionEvent(sessionId, 'dashboard_viewed', { partnerId: partner.id });
         const seenKey = `business_dashboard_welcome_seen_${partner.id}`;
         const seen = await AsyncStorage.getItem(seenKey);
@@ -330,6 +341,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         category: editCategoryInput,
         attributes: editAttributesInput,
         cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
+        differentiator: editDifferentiatorInput.trim() || null,
       });
       setSelectedPartner((prev) => ({
         ...prev,
@@ -339,6 +351,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         category: editCategoryInput,
         attributes: editAttributesInput,
         cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
+        differentiator: editDifferentiatorInput.trim() || null,
       }));
       setEditProfileModalVisible(false);
       Alert.alert('Saved', 'Your business profile has been updated.');
@@ -347,6 +360,42 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setSavingProfile(false);
+  }
+
+  // "Business Story" plan, Phase 2 -- a real, small, dedicated save,
+  // distinct from the full Edit Profile form since this is meant to be
+  // revisited often, not part of an identity edit.
+  async function handleSavePriorityAttributes() {
+    if (!selectedPartner) return;
+    setSavingPriorityAttributes(true);
+    try {
+      await setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput);
+      setSelectedPartner((prev) => ({ ...prev, priority_attributes: priorityAttributesInput }));
+      Alert.alert('Saved', "We'll flag opportunities that match what you're looking for.");
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingPriorityAttributes(false);
+  }
+
+  // Phase 3 -- one tap sets and saves the pulse (matches the vision doc's
+  // own "that's it" simplicity) using whatever note is currently typed.
+  async function handleSavePulse(pulse) {
+    if (!selectedPartner) return;
+    setSavingPulse(true);
+    try {
+      const note = pulseNoteInput.trim() || null;
+      await setBusinessAvailabilityPulse(selectedPartner.id, pulse, note);
+      setSelectedPartner((prev) => ({
+        ...prev,
+        availability_pulse: pulse,
+        availability_pulse_note: note,
+        availability_pulse_updated_at: new Date().toISOString(),
+      }));
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingPulse(false);
   }
 
   // Business Partner acquisition experience, Milestone 3 (see CLAUDE.md): same
@@ -1136,6 +1185,53 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.discoveryTeaserChevron}>›</Text>
                   </TouchableOpacity>
                 )}
+                {/* "Business Story" plan, Phase 5 -- "Nearby Brief": no new
+                    queries, purely a reorganization of aggregatedDemand/
+                    opportunities/selectedPartner, all already fetched by
+                    this point on every dashboard load. Every number here
+                    is real; the one suggestion is a fixed, deterministic
+                    priority order, never an LLM call. */}
+                {selectedPartner && (() => {
+                  const pendingCount = opportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length;
+                  const totalDemand = aggregatedDemand.reduce((sum, d) => sum + (Number(d.request_count) || 0), 0);
+                  const bestDemand = [...aggregatedDemand].sort((a, b) => (Number(b.request_count) || 0) - (Number(a.request_count) || 0))[0];
+                  let suggestion = null;
+                  if (!selectedPartner.differentiator) {
+                    suggestion = { text: "Add what makes you different — it's one of the strongest signals people use to pick you.", onPress: () => setEditProfileModalVisible(true) };
+                  } else if (!isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)) {
+                    suggestion = { text: "Set your availability so people know you're open right now.", onPress: () => setSection('business') };
+                  } else if (pendingCount > 0) {
+                    suggestion = { text: `${pendingCount} request${pendingCount === 1 ? ' is' : 's are'} waiting for a reply.`, onPress: () => setSection('requests') };
+                  }
+                  return (
+                    <View style={styles.briefCard}>
+                      <Text style={styles.sectionHeader}>Today at {selectedPartner.name}</Text>
+                      {(totalDemand > 0 || pendingCount > 0) ? (
+                        <>
+                          {totalDemand > 0 && (
+                            <Text style={styles.offerDescription}>
+                              {totalDemand} {totalDemand === 1 ? 'person is' : 'people are'} looking for something nearby that you offer.
+                            </Text>
+                          )}
+                          {bestDemand && bestDemand.request_count > 0 && (
+                            <TouchableOpacity onPress={() => setSection('requests')} accessibilityLabel="View your best opportunity" accessibilityRole="button">
+                              <Text style={styles.briefBestOpportunity}>
+                                🎯 Your best opportunity: {bestDemand.category} ({bestDemand.request_count} {Number(bestDemand.request_count) === 1 ? 'request' : 'requests'})
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </>
+                      ) : (
+                        <Text style={styles.offerDescription}>No real demand nearby yet — this fills in as people ask for things you offer.</Text>
+                      )}
+                      {suggestion && (
+                        <TouchableOpacity onPress={suggestion.onPress} style={{ marginTop: spacing.sm }} accessibilityLabel={suggestion.text} accessibilityRole="button">
+                          <Text style={styles.briefSuggestion}>💡 {suggestion.text}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })()}
                 {stats ? (
                 <>
                   <Text style={styles.sectionHeader}>Community Health</Text>
@@ -1513,8 +1609,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {opportunities.length === 0 ? (
                   <Text style={styles.emptyText}>No requests yet.</Text>
                 ) : (
-                  opportunities.map((o) => (
+                  opportunities.map((o) => {
+                    // "Business Story" plan, Phase 4: closes the real,
+                    // already-flagged gap (see CLAUDE.md) -- this row's
+                    // own request.attributes/cuisine are now selected (see
+                    // getBusinessOpportunities) and shown here for the
+                    // first time. matchesPriority is a plain client-side
+                    // overlap check against Phase 2's own priority_
+                    // attributes -- no new query, no fabricated signal.
+                    const reqAttrs = o.business_requests?.attributes ?? [];
+                    const matchesPriority = reqAttrs.some((a) => (selectedPartner?.priority_attributes ?? []).includes(a));
+                    return (
                     <View key={o.id} style={styles.gatheringRow}>
+                      {matchesPriority && (
+                        <Text style={[styles.breakdownText, { color: colors.primary, fontWeight: '600' }]}>
+                          🎯 Matches what you're looking for
+                        </Text>
+                      )}
                       <Text style={styles.offerTitle}>{o.business_requests?.raw_text}</Text>
                       <Text style={styles.breakdownText}>
                         {[
@@ -1523,6 +1634,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
                         ].filter(Boolean).join(' · ') || 'No further details given'}
                       </Text>
+                      {(reqAttrs.length > 0 || o.business_requests?.cuisine) && (
+                        <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                          {o.business_requests?.cuisine && (
+                            <View style={styles.chip}>
+                              <Text style={styles.chipText}>{cuisineLabel(o.business_requests.cuisine)}</Text>
+                            </View>
+                          )}
+                          {reqAttrs.map((key) => (
+                            <View key={key} style={styles.chip}>
+                              <Text style={styles.chipText}>{businessAttributeLabel(key)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
                       {o.status === 'pending' && o.business_requests?.status === 'open' && (
                         <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
                           <TouchableOpacity
@@ -1551,7 +1676,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         </Text>
                       )}
                     </View>
-                  ))
+                    );
+                  })
                 )}
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
@@ -1791,6 +1917,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   ) : (
                     <Text style={styles.offerDescription}>No description yet.</Text>
                   )}
+                  {selectedPartner?.differentiator ? (
+                    <Text style={[styles.offerDescription, { fontStyle: 'italic', marginTop: spacing.xs }]}>
+                      "{selectedPartner.differentiator}"
+                    </Text>
+                  ) : null}
+                  {(selectedPartner?.attributes ?? []).length > 0 || selectedPartner?.cuisine ? (
+                    <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                      {selectedPartner?.cuisine && (
+                        <View style={styles.chip}>
+                          <Text style={styles.chipText}>{cuisineLabel(selectedPartner.cuisine)}</Text>
+                        </View>
+                      )}
+                      {(selectedPartner?.attributes ?? []).map((key) => (
+                        <View key={key} style={styles.chip}>
+                          <Text style={styles.chipText}>{businessAttributeLabel(key)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
                   <TouchableOpacity
                     onPress={() => {
                       setEditNameInput(selectedPartner?.name ?? '');
@@ -1799,6 +1944,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setEditCategoryInput(selectedPartner?.category ?? null);
                       setEditAttributesInput(selectedPartner?.attributes ?? []);
                       setEditCuisineInput(selectedPartner?.cuisine ?? null);
+                      setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
                       setEditProfileModalVisible(true);
                     }}
                     style={{ marginTop: spacing.sm }}
@@ -1808,6 +1954,82 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.messageMemberLink}>✏️ Edit Profile</Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* "Business Story" plan, Phase 2 -- Business Goals. A real,
+                    small, dedicated save distinct from the full profile
+                    edit above -- meant to be revisited often. */}
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>What You're Looking For</Text>
+                <Text style={styles.helperText}>
+                  What would you most like Nearby to send you more of right now? We'll flag
+                  matching opportunities in your inbox.
+                </Text>
+                <View style={styles.chipRow}>
+                  {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+                    const selected = priorityAttributesInput.includes(a.key);
+                    return (
+                      <TouchableOpacity
+                        key={a.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setPriorityAttributesInput((prev) => (selected ? prev.filter((k) => k !== a.key) : [...prev, a.key]))}
+                        accessibilityRole="button"
+                        accessibilityLabel={a.label}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{a.icon} {a.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <TouchableOpacity
+                  style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                  onPress={handleSavePriorityAttributes}
+                  disabled={savingPriorityAttributes}
+                  accessibilityLabel="Save what you're looking for"
+                  accessibilityRole="button"
+                >
+                  {savingPriorityAttributes ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.postUpdateButtonText}>Save</Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Phase 3 -- Availability Pulse: one tap sets and saves. */}
+                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>How's Business Right Now?</Text>
+                <View style={styles.chipRow}>
+                  {AVAILABILITY_PULSE_OPTIONS.map((p) => {
+                    const selected = selectedPartner?.availability_pulse === p.key;
+                    return (
+                      <TouchableOpacity
+                        key={p.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleSavePulse(p.key)}
+                        disabled={savingPulse}
+                        accessibilityRole="button"
+                        accessibilityLabel={p.label}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{p.icon} {p.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <TextInput
+                  style={[styles.input, { marginTop: spacing.sm }]}
+                  placeholder={'Optional note — e.g. "Patio’s full, indoor seats open"'}
+                  placeholderTextColor={colors.textTertiary}
+                  value={pulseNoteInput}
+                  onChangeText={setPulseNoteInput}
+                  maxLength={140}
+                  accessibilityLabel="Availability note"
+                />
+                {selectedPartner?.availability_pulse && (
+                  <Text style={styles.helperText}>
+                    {isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)
+                      ? `Set to "${availabilityPulseLabel(selectedPartner.availability_pulse)}" -- customers see this on your public profile.`
+                      : 'This is more than a day old -- customers no longer see it. Tap a status above to refresh it.'}
+                  </Text>
+                )}
 
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>
                 <View style={styles.gatheringRow}>
@@ -2184,7 +2406,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Attributes</Text>
+              {/* "Business Story" plan: reframed from a plain "Attributes"
+                  checkbox list to "Why People Choose Us" -- same real
+                  vocabulary/RPC, just named for what it actually is. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Why People Choose Us</Text>
               <View style={styles.chipRow}>
                 {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
                   const selected = editAttributesInput.includes(a.key);
@@ -2202,6 +2427,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   );
                 })}
               </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What Makes You Different?</Text>
+              <Text style={styles.helperText}>
+                One real sentence, in your own words -- e.g. "We're the only coffee shop in the
+                area with a rooftop patio."
+              </Text>
+              <TextInput
+                style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
+                placeholder="What makes you different? (optional)"
+                placeholderTextColor={colors.textTertiary}
+                value={editDifferentiatorInput}
+                onChangeText={setEditDifferentiatorInput}
+                multiline
+                maxLength={280}
+                accessibilityLabel="What makes you different"
+              />
               {editCategoryInput === 'food_drink' && (
                 <>
                   <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Cuisine</Text>
@@ -2688,6 +2928,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   discoveryTeaserText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13, flex: 1 },
   discoveryTeaserChevron: { color: colors.textTertiary, fontSize: 20 },
+  briefCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.lg, marginBottom: spacing.lg,
+  },
+  briefBestOpportunity: { color: colors.primary, fontWeight: '700', fontSize: 14, marginTop: spacing.sm },
+  briefSuggestion: { color: colors.textSecondary, fontSize: 13, fontStyle: 'italic' },
   welcomeCardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   welcomeCardTitle: { ...typography.headline, color: colors.textPrimary },
   welcomeCardClose: { color: colors.textTertiary, fontSize: 16, fontWeight: '700', paddingLeft: spacing.sm },

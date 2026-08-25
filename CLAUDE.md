@@ -4,6 +4,306 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 25 2026 — "Business Story" — the business profile stops being a form and starts being
+## the supply-side counterpart to consumer intent — PLAN LOCKED, Phases 1-5 DONE, Phase 6
+## (Signature Experiences) explicitly deferred — see each phase's own status note below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and each
+phase's own status note for what's actually landed vs. still just this plan.
+
+### Context and the real scoping call
+
+The user pasted a long external vision doc (221 numbered points) arguing that a business
+profile shouldn't be `Name → category → description → hours → photos` — it should be the
+supply-side mirror of the consumer intent system this app has spent the last several weeks
+building: who you are, what you're great at, who you're great for, what you can accommodate
+right now, and what you want more of. The doc's own worked example (Coastal Coffee: patio,
+date-friendly, "why people choose us," signature experiences, a daily "Nearby Brief," a
+"Match Radar," missed-match reporting, offer templates, weather-aware offers, a trust ladder for
+AI automation, a full monetization tier system) is genuinely coherent as a *direction*, but it's
+not a spec — it's an unstructured brainstorm, and building all 221 points literally would mean
+inventing several new subsystems (a real missed-match instrumentation layer, an AI-generated
+offer-recommendation engine, a weather-automation rule engine, a Trust-AI automation-level
+control, a full pricing-tier paywall) in one pass, several of which would either fabricate a
+signal this schema has no real data behind, or duplicate machinery that already exists under a
+different name.
+
+**Checked directly against the real, current schema/screens before writing any of this — not
+accepted at face value, matching this file's own standing rule for every external doc**:
+
+- **Attributes/cuisine (Taxonomy Phase 2, Aug 25, same day) already IS a real, curated "why
+  people choose us" vocabulary** — `brand_partners.attributes` (8 curated values: outdoor
+  seating, date-friendly, group-friendly, live music, kid-friendly, quiet, casual, upscale) +
+  `cuisine` — just framed today as a plain checkbox picker inside a generic "Edit Profile"
+  modal, not surfaced as "your strengths." The vision doc's "confirm these" AI-suggestion flow
+  (points 148-149) was **not** built as literal AI suggestions — this app has never fabricated a
+  signal with no real backing data, and there's no honest way to *infer* "you're date-friendly"
+  from a category alone without guessing. What's real and buildable instead: a free-text
+  **differentiator** field (the owner's own words, "what makes you different" — real, owner-
+  authored, not AI-invented) and reframing the existing attribute picker's copy/header as "Why
+  People Choose Us" rather than a generic checkbox list. The already-real "What People Say"
+  section (`getBusinessLovedTags()`/`getBusinessReputation()`, built in the Aug 7-9 Business
+  Profile pass, aggregating real `gathering_feedback.great_because` tags for gatherings hosted
+  at that business) is the *actual* honest version of the vision's "what people loved" idea
+  (point 182) — already shipped, not rebuilt here.
+- **The request → offer → accept → reservation → payment → completion state machine (points
+  167-169, 199-201, 204-205) already IS the "opportunity" system** — `business_requests`/
+  `business_request_offers`, the Business Opportunities inbox on the Requests tab, real
+  `offer_type` shapes (standard/discount/perk/upgrade/alt_time, never hard-coded to discount).
+  Nothing here needed rebuilding.
+- **`get_aggregated_demand_for_partner()` (Aug 15-23) already IS "Demand Near You" / a rough
+  Match Radar (points 171-172, 196-197)** — real category/party-size/soonest-date rollups within
+  a business's own real fan-out radius, plus the Aug 23 "unmet intent" 🟡 softer signal. Already
+  shipped, rendered on the Requests tab.
+- **`business_fulfillment_policies` (Offer System Phase 2, Aug 17) already IS a real "what we
+  can accommodate" standing-rules mechanism** — party size bounds, active hours, auto-accept
+  threshold. Not the same shape as the vision's "availability confidence" traffic light (points
+  155-156) — that's a *coarser*, faster, self-reported daily signal, genuinely missing, see
+  Phase 3 below — but the deeper capacity-rules mechanism itself already exists and isn't
+  touched by this plan.
+- **`get_partner_offer_reputation()`/`get_marketplace_reliability_rankings()`/
+  `business_offer_outcomes` (Aug 15-23) already IS real outcome tracking** — response rate,
+  acceptance rate, completion rate, satisfaction. The vision's "Nearby Health" dashboard (point
+  161) already exists in substance, just not under that one combined heading — not rebuilt here.
+- **A real, previously-flagged, still-open gap confirmed by re-reading the code just now**:
+  `getBusinessOpportunities()` (`services/businessFulfillment.js`) selects `business_requests`'
+  `raw_text/category/party_size/budget_min/budget_max/date/time_window_start/time_window_end/
+  status/expires_at/gathering_id/match_id/gatherings(...)` — **never `attributes`/`cuisine`**,
+  even though `business_requests` has carried both columns since the same Aug 25 Taxonomy Phase
+  2 migration that added them to `brand_partners`. This is the exact gap the taxonomy audit
+  named two commits ago ("the Business Opportunities inbox never selects or shows a request's
+  structured attributes/cuisine to the business deciding how to respond, even though that same
+  data genuinely ranks who gets contacted first") — still open, closed in Phase 4 below.
+- **`business-ai-assistant` (a real, deployed, owner-gated Edge Function, built Aug 9)** already
+  answers the vision's "Ask Nearby" conversational idea (points 158, 188-189) in substance —
+  not re-built or expanded here; this plan stays out of that function's scope entirely.
+
+### Locked scope — 5 real, buildable phases; one (Signature Experiences) explicitly deferred;
+### everything else in the 221-point doc named explicitly as out of scope, not silently dropped
+
+Every phase below is additive, reuses an existing vocabulary/table where one already exists, and
+never fabricates a signal — matching this file's oldest, most-repeated rule. No phase invents a
+new "AI suggests, business confirms" mechanism with nothing real behind the suggestion; where the
+vision doc asks for one, the honest substitute (a real aggregate, a real self-report, a rule-
+based/deterministic default) is used instead, and named as a deliberate substitution, not a
+literal build of the doc's own words.
+
+1. **Business DNA** — a real `differentiator` free-text field (owner's own words, ≤280 chars,
+   "what makes you different") plus reframing the existing attribute/cuisine picker as "Why
+   People Choose Us" (copy/header only — same real vocabulary, same RPC, no new taxonomy).
+   Displayed prominently on both the owner's own Business tab and the public
+   `BusinessProfileScreen`.
+2. **Business Goals ("What we want more of")** — a new `priority_attributes text[]` column
+   (a real subset of the *same* 8-value attribute vocabulary attributes already uses — no second
+   taxonomy invented), a small dedicated RPC, and a lightweight owner-facing card distinct from
+   the full Edit Profile modal (matches the vision's own "set it once" framing, point 174, and
+   its instinct not to call this "ranking," point 152). Owner-facing only this pass — not shown
+   on the public profile, and not wired into `_business_request_fanout()`'s own ordering (that
+   function selects *which businesses* get notified for one request within a radius; priority
+   attributes are about what a business wants more of across many requests, a different axis —
+   see Phase 4 for where this signal is actually used this pass).
+3. **Availability Pulse** — a real, coarse, fast, self-reported three-state signal (Open /
+   Limited / Full, plus an optional note), the vision's own "availability confidence" idea
+   (points 155-156), deliberately *not* the deeper capacity-rules `business_fulfillment_
+   policies` mechanism (which stays untouched) — this is a same-day, "how's business right now"
+   toggle a real owner can update in one tap. Shown on both the dashboard and the public profile,
+   with an honest staleness cutoff (hidden once >24h old, so a forgotten pulse never reads as
+   real-time when it isn't).
+4. **Business Opportunities inbox shows request attributes/cuisine + a priority-match badge** —
+   closes the real, already-flagged gap above (`getBusinessOpportunities()`'s missing select
+   columns) and, using the exact same newly-selected data, adds a real "🎯 Matches what you're
+   looking for" badge on any opportunity whose `business_requests.attributes` overlaps the
+   business's own `priority_attributes` from Phase 2 — a genuine, client-side-computed use of the
+   Phase 2 signal, not a fabricated one.
+5. **"Nearby Brief"** — reorganizes the dashboard's existing Home tab (already fetches
+   `aggregatedDemand`/`opportunities`/`needsAttention`/`discoveryStats` on every load, per the
+   code just read) into the vision's own "what can Nearby do for me today" framing (points
+   171, 196) — a real "N opportunities near you" count, a real "your best opportunity" callout
+   (the top category by request count from the data already fetched), and one concrete, honest,
+   deterministic suggestion (never an LLM call) — "add a differentiator," "set your availability
+   pulse," or "N requests are waiting for a reply," whichever applies, checked in a fixed
+   priority order. Zero new queries — this phase is presentational reorganization of data the
+   screen already loads.
+6. **Signature Experiences (points 150-152) — explicitly NOT built this pass, real and flagged
+   for a future pass, not silently dropped.** This is the single largest net-new concept in the
+   whole doc — a real `business_experiences` table (curated bundles: title, description,
+   attributes, price_level/party_type, tied to the business), an "AI creates your first 4 for
+   you" onboarding moment, and eventual wiring into the intent resolver's own price/party
+   matching (Aug 25 Phase 4). Doing it honestly needs its own scoping pass — specifically,
+   deciding how an "AI-suggested" experience is actually derived from real data (a rule-based
+   default from category+attributes+cuisine is the only honest option, matching this plan's own
+   discipline elsewhere, and that rule set itself needs real design, not a rushed guess) — not
+   something to build in the same pass as five other phases. Flagged here exactly the way this
+   file flags every other deliberately-deferred large item, so a future session doesn't have to
+   rediscover it.
+
+### Explicitly out of scope, named so nothing here reads as silently dropped
+
+Missed-match reporting (point 157 — needs new instrumentation of *why* a candidate was excluded
+from fanout, a real logging layer that doesn't exist); decline-reason capture feeding automated
+learning (points 173-174 — reason capture alone would be small, but "Nearby learns" implies a
+real preference-inference system, out of scope); offer templates (207-209, a UI convenience over
+the already-real offer system, not attempted); weather-aware offer automation (210-211, needs a
+real rule engine tied to the existing weather RPC, not attempted); "Fill a Spot"/demand-matching
+for a business's own ad hoc availability beyond what `business_availability`/
+`business_fulfillment_policies` already do (212-214); a "Trust AI" automation-level control
+(186 — Suggest/Assist/Automate); a searchable "Business Knowledge Base" screen (187-189, `business-
+ai-assistant` already answers this conversationally); a formal confidence-ladder/tiered-trust
+data model (164-165, an internal design idea with no concrete UI ask); a monetization tier system
+(179, real pricing/paywall decision, needs the user present per this file's own standing Stripe/
+billing posture); the outcome→auto-profile-optimization feedback loop (181-184, real but needs
+its own design pass once Phase 1-5's new signals have real usage data to learn from); reservation/
+payment integration into experiences (none exist yet, moot until Phase 6).
+
+### Build order, verification convention, and phase-by-phase status
+
+Each phase gets its own schema/RPC piece (if any) applied to production
+(`enmosvippabmuqslzrox`) and verified live with real disposable test data before the client side
+is considered done, matching this file's own established bar; each phase is its own commit,
+pushed individually, with this section's own status notes updated as each lands — not batched at
+the end. Given time, a full from-scratch Docker migration replay was not run for this pass' one
+migration — disclosed as a real, if small, gap against this file's own migration-discipline rule,
+matching several other same-day passes in this file's own history that prioritized live-
+production verification within a single session's time budget.
+
+**Status: Phases 1-5 are all DONE, build-wise — one migration, applied and verified live against
+production, plus full client wiring across `BusinessDashboardScreen.js` (owner side) and
+`BusinessProfileScreen.js` (public side).**
+
+### Schema/RPC (`20260903_business_dna_goals_pulse.sql`)
+
+`brand_partners` gained 5 new nullable/default-`{}` columns: `differentiator` (text, ≤280 chars,
+owner's own free text), `priority_attributes` (text[], default `'{}'`, a real subset of the
+*same* 8-value attribute vocabulary `attributes` already uses — no second taxonomy), and
+`availability_pulse`/`availability_pulse_note`/`availability_pulse_updated_at` (the pulse
+constrained to `'open'|'limited'|'full'`, the note ≤140 chars). Every existing row backfills to
+null/`{}` — zero behavior change for anything that predates this pass.
+
+`update_business_profile()` gained one new trailing param, `differentiator_param` — pulled the
+**live** function body fresh via the Management API first (confirmed byte-identical to the
+committed migration before editing, matching this schema's own established discipline), then the
+usual explicit `drop function` of the old 10-arg signature before `create function` with the new
+11-arg one (an added param changes the signature; a bare `CREATE OR REPLACE` would have left an
+orphaned second overload rather than truly replacing the original — the exact class of bug this
+schema's own history has caught and fixed more than once).
+
+Two new small, dedicated SECURITY DEFINER RPCs, deliberately **not** folded into
+`update_business_profile()` — both are meant to be revisited often (a quick toggle), not part of
+a full identity-edit form, matching the vision doc's own "set it once" framing and this schema's
+precedent of giving a fast-changing signal its own narrow RPC (`upsert_business_fulfillment_
+policy` vs. the slower-changing profile itself):
+- **`set_business_priority_attributes(partner_id, priority_attributes)`** — owner-only, real
+  vocabulary check, no other side effects.
+- **`set_business_availability_pulse(partner_id, pulse, note)`** — owner-only, real enum check,
+  `updated_at` always stamped server-side (never client-supplied), so a business can't forge
+  freshness.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — every check run
+against the real `Coastal Coffee` partner (the only real business in production) under genuine
+`set role authenticated` + `request.jwt.claims`, not a table-owner bypass: a genuine non-owner
+(`Google voice`) attempting `set_business_priority_attributes` on `Coastal Coffee` was correctly
+rejected (`You do not manage this business`); the real owner's (`Allen`) call correctly succeeded
+and round-tripped; an invalid attribute value was correctly rejected by the RPC's own check; the
+real owner's `set_business_availability_pulse` call correctly succeeded and round-tripped,
+including the note; an invalid pulse value was correctly rejected; `update_business_profile`'s
+new `differentiator_param` correctly round-tripped a real string, and a 281-character string was
+correctly rejected (`Differentiator is too long`). All test writes reverted afterward — the real
+`Coastal Coffee` row confirmed back to its exact pre-test state (`differentiator: null,
+priority_attributes: [], availability_pulse: null`), matching this file's own established
+"revert real business data after testing, don't leave placeholder content attributed to a real
+owner" convention.
+
+**Not done, disclosed rather than silently skipped**: no from-scratch Docker migration replay for
+this one migration this pass — a real, small gap against this file's own migration-discipline
+rule, matching several other same-day passes in this file's history that prioritized live-
+production verification within a single session's time budget.
+
+### Client — Phase 1 (Business DNA)
+
+`BusinessDashboardScreen.js`'s Edit Profile modal gained a "What Makes You Different?" text field
+(≤280 chars, optional) right after the attribute picker, whose section header was reframed from
+plain "Attributes" to **"Why People Choose Us"** — same real vocabulary/RPC, just named for what
+it actually is, per this plan's own explicit rejection of a fabricated AI-suggestion flow. The
+Business Profile summary card on the dashboard's own Business tab now shows the differentiator
+(italicized, quoted) and the real attribute/cuisine chips inline, not just inside the edit modal.
+`BusinessProfileScreen.js` (the public profile) shows the same differentiator line and a
+`"Why People Choose Us"` header above its existing attribute chip row (previously headerless).
+
+### Client — Phase 2 (Business Goals)
+
+A new "What You're Looking For" card on the dashboard's Business tab — the same 8-attribute chip
+picker, now selecting `priority_attributes` via `set_business_priority_attributes`, with its own
+Save button, seeded from the real `selectedPartner.priority_attributes` on load. Deliberately
+**owner-facing only this pass** — not shown on the public profile, not wired into
+`_business_request_fanout()`'s own ordering (that function selects *which businesses* get
+notified for one request within a radius; priority attributes are about what one business wants
+more of across many requests, a genuinely different axis) — see Phase 4 for where this signal is
+actually consumed this pass.
+
+### Client — Phase 3 (Availability Pulse)
+
+A new "How's Business Right Now?" card on the dashboard's Business tab — three tap-to-set-and-
+save chips (🟢 Open / 🟡 A bit busy / 🔴 Full, via the new `AVAILABILITY_PULSE_OPTIONS` constant)
+plus an optional note field, one tap = pick + save (matching the vision doc's own "that's it"
+simplicity, point 175). A helper line states plainly whether the current pulse is genuinely fresh
+or has gone stale (>24h, via the new `isAvailabilityPulseFresh()` helper). `BusinessProfileScreen.js`
+shows the pulse (icon + label + note) right under the reliability line — but **only when fresh**;
+a stale pulse renders nothing at all rather than showing outdated information as if it were
+current, matching this app's oldest, most-repeated "never imply more than what's real" rule.
+
+### Client — Phase 4 (Business Opportunities inbox shows attributes/cuisine + priority-match
+badge) — closes the real, already-flagged gap named in the Aug 25 taxonomy audit
+
+`getBusinessOpportunities()` (`services/businessFulfillment.js`) now also selects `business_requests.
+attributes`/`cuisine` — confirmed via direct re-read that this select had never included either
+column since the day `business_requests` gained them (the Taxonomy Phase 2 migration, same day),
+even though that same data genuinely ranks who gets contacted first in `_business_request_fanout()`.
+Each opportunity row on the dashboard's Requests tab now renders the request's real attribute/
+cuisine chips, and — a genuine, additive use of Phase 2's own signal, computed entirely client-
+side from data already in scope, no new query — a real "🎯 Matches what you're looking for" badge
+whenever the request's own `attributes` overlap the business's own `priority_attributes`.
+
+### Client — Phase 5 ("Nearby Brief")
+
+The dashboard's Home tab gained a real "Today at {business name}" card, inserted right after the
+existing welcome-card/discovery-teaser cluster and before the Community Health stats grid —
+**zero new queries**: `aggregatedDemand`/`opportunities`/`selectedPartner` are all already
+fetched on every dashboard load, this phase is purely a reorganization of that already-real data
+into the vision doc's own "what can Nearby do for me today" framing (points 171, 196). Shows a
+real total-demand count (summed from `aggregatedDemand`), a real "your best opportunity" callout
+(the top category by request count), and one concrete, deterministic suggestion — never an LLM
+call — checked in a fixed priority order: no differentiator set → suggest adding one; no fresh
+availability pulse → suggest setting one; real pending opportunities waiting → surface the real
+count. An honest "no real demand nearby yet" message renders when there's genuinely nothing to
+show, matching this dashboard's own established no-fabricated-numbers convention throughout.
+
+### Verification (client-side)
+
+All 5 touched/edited files (`brandOffers.js`, `businessFulfillment.js`, `businessAttributes.js`,
+`BusinessDashboardScreen.js`, `BusinessProfileScreen.js`) verified via a direct `@babel/core`
+parse (clean — one real JSX-attribute escaping bug was caught and fixed this way, a double-quoted
+placeholder string containing an escaped `\"` inside a JSX attribute literal, which JSX doesn't
+support the way a JS string does — fixed by wrapping it as a real JS expression instead). The
+full Jest suite passes unchanged (73/73). A full `npx expo export --platform ios` built clean, no
+bundling errors, **2257 modules** — unchanged from the pre-existing baseline, since this whole
+pass only edited existing files, no new client files were added.
+
+### Not done, same standing gap as everywhere else in this file
+
+No manual simulator/device run-through of any of the 5 phases' new UI — next session should
+confirm on a real device: the reframed "Why People Choose Us" section and the new differentiator
+field save/render correctly in both the Edit Profile modal and the public profile; the "What
+You're Looking For" chip picker saves and reloads correctly; the Availability Pulse chips
+save/render correctly and the staleness cutoff genuinely hides a >24h-old pulse on the public
+profile; the priority-match badge renders correctly on a real opportunity whose attributes
+overlap the business's own priorities; and the "Nearby Brief" card's three states (no real
+demand yet / real demand with a best-opportunity callout / each of the three suggestion
+branches) all render correctly against real data.
+
+Phase 6 (Signature Experiences) remains explicitly deferred, per this plan's own scope section
+above — not started this pass.
+
 ## Aug 25 2026 — post-implementation coherence audit for the taxonomy pass's 4 phases, plus a
 ## full Taxonomy → Preference → Filter → Matching → Ranking → Discovery end-to-end trace —
 ## PLAN LOCKED, READ-ONLY, not yet executed — pick this up after the next codespace restart

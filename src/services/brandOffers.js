@@ -566,7 +566,7 @@ export async function updateBusinessAddress(partnerId, address) {
   if (error) throw error;
 }
 
-export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine }) {
+export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine, differentiator }) {
   const current = await getBusinessProfile(partnerId);
   let latitude = current?.latitude ?? null;
   let longitude = current?.longitude ?? null;
@@ -596,6 +596,12 @@ export async function updateBusinessProfile(partnerId, { name, description, addr
     // Profile modal's own picker state actually represents.
     attributes_param: attributes ?? [],
     cuisine_param: cuisine ?? null,
+    // Business DNA (see CLAUDE.md's "Business Story" plan) -- the
+    // owner's own real free text, "what makes you different." coalesce()
+    // on the server side, same shape as attributes -- omitting it here
+    // (null) means "leave whatever's already there," never silently
+    // wipes it.
+    differentiator_param: differentiator ?? null,
   });
   if (error) throw error;
 }
@@ -607,6 +613,34 @@ export async function getBusinessProfile(partnerId) {
     return null;
   }
   return data;
+}
+
+// "Business Story" plan, Phase 2 -- Business Goals ("what we want more
+// of"). A real, small, dedicated RPC distinct from updateBusinessProfile
+// -- this is meant to be a lightweight, frequently-revisited toggle, not
+// part of a full identity-edit form. priorityAttributes is a subset of
+// the same curated BUSINESS_ATTRIBUTE_OPTIONS vocabulary -- no second
+// taxonomy.
+export async function setBusinessPriorityAttributes(partnerId, priorityAttributes) {
+  const { error } = await supabase.rpc('set_business_priority_attributes', {
+    partner_id_param: partnerId,
+    priority_attributes_param: priorityAttributes ?? [],
+  });
+  if (error) throw error;
+}
+
+// "Business Story" plan, Phase 3 -- a real, coarse, self-reported
+// "how's business right now" signal (open/limited/full), deliberately
+// not the deeper capacity-rules business_fulfillment_policies mechanism.
+// updated_at is stamped server-side inside the RPC, never client-
+// supplied, so a business can't forge freshness.
+export async function setBusinessAvailabilityPulse(partnerId, pulse, note = null) {
+  const { error } = await supabase.rpc('set_business_availability_pulse', {
+    partner_id_param: partnerId,
+    pulse_param: pulse,
+    note_param: note,
+  });
+  if (error) throw error;
 }
 
 export async function getBusinessFollowerCount(partnerId) {

@@ -18,7 +18,7 @@ import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl
 import { getCommunityMemberCount } from '../services/communities';
 import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { businessAttributeLabel, cuisineLabel } from '../constants/businessAttributes';
+import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -198,21 +198,40 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <Text style={styles.reliabilityLine}>{formatPartnerReliabilityLine(fulfillmentReputation, fulfillmentResponseTime)}</Text>
         )}
 
+        {/* "Business Story" plan, Phase 3 -- a real, self-reported
+            "how's business right now" signal, hidden once stale so it
+            never reads as real-time when it isn't (see CLAUDE.md). */}
+        {partner.availability_pulse && isAvailabilityPulseFresh(partner.availability_pulse_updated_at) && (
+          <Text style={styles.reliabilityLine}>
+            {availabilityPulseIcon(partner.availability_pulse)} {availabilityPulseLabel(partner.availability_pulse)}
+            {partner.availability_pulse_note ? ` — ${partner.availability_pulse_note}` : ''}
+          </Text>
+        )}
+
         {partner.description ? <Text style={styles.description}>{partner.description}</Text> : null}
 
+        {/* Phase 1 -- Business DNA: the owner's own real, free-text "what
+            makes you different" line. */}
+        {partner.differentiator ? (
+          <Text style={[styles.description, { fontStyle: 'italic' }]}>"{partner.differentiator}"</Text>
+        ) : null}
+
         {((partner.attributes ?? []).length > 0 || partner.cuisine) && (
-          <View style={styles.attributeChipRow}>
-            {partner.cuisine && (
-              <View style={styles.attributeChip}>
-                <Text style={styles.attributeChipText}>{cuisineLabel(partner.cuisine)}</Text>
-              </View>
-            )}
-            {(partner.attributes ?? []).map((key) => (
-              <View key={key} style={styles.attributeChip}>
-                <Text style={styles.attributeChipText}>{businessAttributeLabel(key)}</Text>
-              </View>
-            ))}
-          </View>
+          <>
+            <Text style={styles.attributeSectionHeader}>Why People Choose Us</Text>
+            <View style={styles.attributeChipRow}>
+              {partner.cuisine && (
+                <View style={styles.attributeChip}>
+                  <Text style={styles.attributeChipText}>{cuisineLabel(partner.cuisine)}</Text>
+                </View>
+              )}
+              {(partner.attributes ?? []).map((key) => (
+                <View key={key} style={styles.attributeChip}>
+                  <Text style={styles.attributeChipText}>{businessAttributeLabel(key)}</Text>
+                </View>
+              ))}
+            </View>
+          </>
         )}
 
         <View style={styles.actionRow}>
@@ -361,7 +380,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
   reliabilityLine: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
-  attributeChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg, marginTop: -spacing.sm },
+  attributeSectionHeader: { ...typography.small, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  attributeChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.lg },
   attributeChip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
   attributeChipText: { ...typography.small, color: colors.textSecondary },
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },

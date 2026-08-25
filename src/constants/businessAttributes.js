@@ -37,3 +37,33 @@ export function businessAttributeLabel(key) {
 export function cuisineLabel(key) {
   return CUISINE_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }
+
+// "Business Story" plan (CLAUDE.md, Aug 25 2026), Phase 3 -- a real,
+// coarse, self-reported "how's business right now" signal. Mirrors the
+// exact brand_partners_availability_pulse_check CHECK constraint (see
+// 20260903_business_dna_goals_pulse.sql) -- keep in sync with that
+// migration's own array if it ever changes.
+export const AVAILABILITY_PULSE_OPTIONS = [
+  { key: 'open', label: 'Open — taking guests', icon: '🟢' },
+  { key: 'limited', label: 'A bit busy', icon: '🟡' },
+  { key: 'full', label: 'Currently full', icon: '🔴' },
+];
+
+export function availabilityPulseLabel(key) {
+  return AVAILABILITY_PULSE_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}
+
+export function availabilityPulseIcon(key) {
+  return AVAILABILITY_PULSE_OPTIONS.find((o) => o.key === key)?.icon ?? '';
+}
+
+// A pulse older than this reads as stale, not real-time -- hidden rather
+// than shown as if it's still accurate. Matches this app's own "never
+// imply more than what's real" convention (see the weather-copy /
+// forecast-honesty precedent elsewhere in CLAUDE.md).
+export const AVAILABILITY_PULSE_STALE_MS = 24 * 60 * 60 * 1000;
+
+export function isAvailabilityPulseFresh(updatedAt) {
+  if (!updatedAt) return false;
+  return Date.now() - new Date(updatedAt).getTime() < AVAILABILITY_PULSE_STALE_MS;
+}
