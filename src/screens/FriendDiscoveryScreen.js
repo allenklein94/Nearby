@@ -11,8 +11,14 @@ import { getSignedPhotoUrl } from '../services/photos';
 import FriendDiscoverySwipeCards from '../components/FriendDiscoverySwipeCards';
 import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import LoadErrorState from '../components/LoadErrorState';
+import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+
+// Taxonomy audit Phase 3 (CLAUDE.md, Aug 25 2026): the 3 real distance
+// buckets get_friend_discovery_candidates() already returns -- never a
+// 4th invented value, matching the RPC's own vocabulary exactly.
+const DISTANCE_BUCKETS = ['Nearby', 'A few miles away', 'In the wider area'];
 
 // The one real entry point into Friend Discovery -- a completely separate
 // product surface from dating discovery (own opt-in gate, own matching
@@ -53,6 +59,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   const [photoUrls, setPhotoUrls] = useState({});
   const [matchModal, setMatchModal] = useState(null); // { theirName, theirPhotoUrl, matchId }
   const [togglingOn, setTogglingOn] = useState(false);
+  // Taxonomy audit Phase 3: purely client-side filters over the already-
+  // fetched 20-candidate batch, no RPC change -- both fields already come
+  // back on every candidate row, just never exposed as a filter before.
+  const [interestFilters, setInterestFilters] = useState([]);
+  const [distanceFilter, setDistanceFilter] = useState(null);
 
   // Wave 2B of the full-system acceptance audit (see
   // PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found this had zero
@@ -144,6 +155,17 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     }
   }
 
+  function toggleInterestFilter(tag) {
+    setInterestFilters((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+  }
+
+  const filteredCandidates = candidates.filter((c) => {
+    const matchesInterest = interestFilters.length === 0 || (c.interests ?? []).some((i) => interestFilters.includes(i));
+    const matchesDistance = !distanceFilter || c.distance_bucket === distanceFilter;
+    return matchesInterest && matchesDistance;
+  });
+  const filtersActive = interestFilters.length > 0 || !!distanceFilter;
+
   // Reused identically across every render branch below so the screen
   // never again reads as blank -- the native header (headerTransparent,
   // matching Nearby's own registration) already supplies the back
@@ -228,7 +250,54 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     <Container style={styles.container}>
       <Header />
 
-      <FriendDiscoverySwipeCards data={candidates} photoUrls={photoUrls} onSwipe={handleSwipe} />
+      {candidates.length > 0 && (
+        <View style={styles.filterArea}>
+          <View style={styles.filterChipRow}>
+            {PERSONAL_INTEREST_OPTIONS.map((tag) => {
+              const selected = interestFilters.includes(tag);
+              return (
+                <TouchableOpacity
+                  key={tag}
+                  style={[styles.filterChip, selected && styles.filterChipActive]}
+                  onPress={() => toggleInterestFilter(tag)}
+                  accessibilityLabel={tag}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <View style={styles.filterChipRow}>
+            {DISTANCE_BUCKETS.map((bucket) => {
+              const selected = distanceFilter === bucket;
+              return (
+                <TouchableOpacity
+                  key={bucket}
+                  style={[styles.filterChip, selected && styles.filterChipActive]}
+                  onPress={() => setDistanceFilter(selected ? null : bucket)}
+                  accessibilityLabel={bucket}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {filtersActive && filteredCandidates.length === 0 ? (
+        <View style={styles.centered}>
+          <Text style={styles.explainerBody}>
+            No one nearby matches these filters right now — try widening them.
+          </Text>
+        </View>
+      ) : (
+        <FriendDiscoverySwipeCards data={filteredCandidates} photoUrls={photoUrls} onSwipe={handleSwipe} />
+      )}
 
       <FriendMatchCelebrationModal
         visible={!!matchModal}
@@ -257,6 +326,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
+  filterArea: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  filterChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
+  filterChip: { borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  filterChipText: { ...typography.small, color: colors.textSecondary },
+  filterChipTextActive: { color: colors.primary, fontWeight: '600' },
   explainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
   explainerEmoji: { fontSize: 48, marginBottom: spacing.md },
   explainerTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.sm },
