@@ -28,6 +28,20 @@ export const INTEREST_OPTIONS = [
   'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality', 'Dating',
 ];
 
+// The single shared list for "what am I into" (personal interests, edited
+// on Profile/CompleteProfile) — deliberately distinct from INTEREST_OPTIONS
+// above per this file's own documented reasoning (a different semantic
+// than "what kind of event is this," and "Dating" reads oddly as a
+// personal interest next to Coffee/Hiking), but it's still ONE shared list,
+// not two independently-typed copies. ProfileScreen.js and
+// CompleteProfileScreen.js used to each keep their own hand-typed 24-tag
+// copy of this — both were independently missing "Faith & Spirituality"
+// (the taxonomy audit, 2026-08-24, found this as a real live bug: a user
+// could not select it as a personal interest anywhere in the app, even
+// though it's a fully real tag everywhere else). Fixed by deriving this
+// from the canonical list once, here, so the two can never drift again.
+export const PERSONAL_INTEREST_OPTIONS = INTEREST_OPTIONS.filter((tag) => tag !== 'Dating');
+
 // Every one of the 26 tags above lives in exactly one group -- none left
 // ungrouped, none duplicated. A real, defensible grouping of what already
 // exists, not a from-scratch taxonomy replacement.

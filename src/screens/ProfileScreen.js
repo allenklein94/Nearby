@@ -12,6 +12,7 @@ import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
+import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
 
@@ -23,13 +24,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const MAX_EXTRA_PHOTOS = 6;
 const MAX_PROMPTS = 3;
-
-const INTEREST_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
-];
 
 const PROFILE_COMPLETENESS_ITEMS = [
   { key: 'photo', label: 'Add a main photo' },

@@ -4,6 +4,74 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 25 2026 — fixed the 3 real bugs found by the taxonomy audit — DONE
+
+Direct follow-up to the taxonomy audit immediately below (all 5 phases DONE, consolidated into
+one file the same session). Per the audit's own executive summary, only one finding was ever
+framed as an actual live bug producing a visibly wrong result for a real user — everything else
+in that audit is a real, honest finding/recommendation for a future, separately-scoped pass, not
+a defect. Fixed exactly the items that are genuinely bugs, per the audit's own framing, and left
+everything the audit itself called "a real product decision"/"needs its own scoped build pass"
+untouched, matching this file's own standing discipline against silently building a recommendation
+without explicit authorization.
+
+1. **Personal-interest list duplication — the one real, live, user-facing bug the audit found.**
+   `ProfileScreen.js` and `CompleteProfileScreen.js` each kept their own independently-typed,
+   byte-identical 24-tag `INTEREST_OPTIONS` copy, both missing "Faith & Spirituality" — a user
+   could not select it as a personal interest anywhere in the app, even though it's a fully real
+   tag everywhere else (gathering category, community category, business-request category).
+   Fixed exactly as the audit itself recommended: a new shared `PERSONAL_INTEREST_OPTIONS`
+   export on `src/constants/gatheringCategories.js` (the canonical 26-tag list minus `Dating`,
+   25 tags — matching this file's own documented reasoning for why Dating reads oddly as a
+   personal-interest tag), imported by both screens in place of their own local copy. Both
+   screens' one real usage site (`INTEREST_OPTIONS.map(...)`) needed no further change — imported
+   under the same local name via `import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS }`.
+2. **Missing "Dating" quick-pick icon — real, small, current drift, closed.**
+   `QUICK_PICK_ICON_BY_CATEGORY` (`src/constants/quickPickIcons.js`) had 25 of the 26 canonical
+   tags mapped to a real Ionicons name; Dating (added in an earlier same-day pass) had none, so
+   it silently fell back to the generic `star-outline` default. Added a real
+   `Dating: 'heart-circle-outline'` entry — deliberately distinct from Volunteering's plain
+   `heart-outline`, so the two don't visually collapse into "the same icon" at chip size on
+   Home's Quick Picks row.
+3. **`gatheringIndoorOutdoor.js`'s stale header comment — trivial, closed.** The comment said "a
+   real categorization of the 25 canonical interest_tag values" — stale since an earlier
+   same-day pass brought the canonical list to 26 (Dating). Fixed to say 26, and to explicitly
+   name Dating as deliberately left unclassified (same "genuinely ambiguous, not guessed"
+   reasoning already stated there for the 7 other unclassified tags — a date can honestly be
+   either indoor or outdoor). Not a functional bug — `Dating` was never actually in
+   `CATEGORY_INDOOR_OUTDOOR`'s map, so the map itself was already correct — only the comment's
+   own count was wrong.
+
+**Deliberately not built, per the audit's own framing, not silently attempted**: recommendation
+#2 from the audit's own ranked list (wiring `price_level`/`party_type` into `intentResolver.js`'s
+gathering-scoring branch) turned out, on closer inspection while fixing the above, to need more
+than the audit's own "no new schema needed" framing suggested — there is no existing signal
+anywhere (from `create-assistant`'s classification or otherwise) representing "the user's typed
+ask implies a price or party-size preference." Wiring this for real would mean inventing a new
+free-text-to-price/party-type inference heuristic (e.g. keyword-matching "cheap"/"solo"/"date"
+against `price_level`/`party_type`) — a genuine new mechanism and a real product-judgment call
+about how aggressively to infer someone's price/party preference from typed text, not a
+mechanical wire-up of two things that already both exist. Left as a recommendation for a future,
+explicitly-scoped pass. Recommendations #4 (a real business-attribute schema layer), #5 (Friend
+Discovery filter control), #6 (reconciling `relationship_intention`/`basics.relationship_goals`
+and the legacy/new gender-field pairs), and #7 (whether an Availability preference is worth
+building at all) are each explicitly framed by the audit itself as "a real product decision" or
+"needs its own scoped build pass" — none were touched, matching the audit's own scope boundary.
+
+**Verified**: a direct `@babel/core` parse of all 5 touched files (clean), the full Jest suite
+(67/67 passing, unaffected — no test asserts on either constants file's exact string content),
+and a full `npx expo export --platform ios` (clean, no bundling errors, 2256 modules — unchanged,
+every touched file was an edit, no new files this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm "Faith & Spirituality" now renders correctly as a
+selectable chip on both Profile's and CompleteProfile's interest steps, and that Home's Quick
+Picks row shows the new Dating icon correctly instead of the old generic-star fallback.
+
+The audit deliverable itself (`PRODUCT_AUDIT/TAXONOMY_FILTERS_MATCHING_AUDIT_2026-08-24.md`) was
+updated in the same pass — its executive summary, Part 1 taxonomy table, Person A persona trace,
+and ranked-recommendations list all now mark these 3 items as fixed rather than open findings.
+
 ## Aug 24 2026 — Nearby Universal Taxonomy, Filters & Matching Audit — DONE, all 5 phases
 ## complete; read-only, no application code changes; check each phase's own status note for
 ## what's landed

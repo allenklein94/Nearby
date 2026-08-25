@@ -9,6 +9,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { typography, spacing, radius } from '../theme';
 
 const MIN_AGE = 18;
@@ -29,13 +30,6 @@ const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
 function wizardDraftKey(userId) {
   return `complete_profile_wizard_draft:${userId}`;
 }
-
-const INTEREST_OPTIONS = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running',
-];
 
 // One decision per screen, matching the same "required fields, split
 // across deliberate steps" philosophy Create 2.0 already proved out for

@@ -2,11 +2,13 @@
 // Quick Picks chip row — matches the nav bar's own line-icon style instead
 // of the mixed-style Unicode emoji QUICK_PROMPTS_BY_PERIOD's `icon` field
 // carries (that field stays as-is; it's also read by StartSomethingModal's
-// FAB flow, which this pass doesn't touch). Covers the same 25 canonical
-// tags categoryStyleFor() does, so any real personalized category can
-// still resolve to something. Faith & Spirituality deliberately gets a
-// neutral icon, not a religious-specific glyph — same reasoning already
+// FAB flow, which this pass doesn't touch). Covers all 26 canonical tags
+// categoryStyleFor() does, so any real personalized category can still
+// resolve to something. Faith & Spirituality deliberately gets a neutral
+// icon, not a religious-specific glyph — same reasoning already
 // established for that category's cover photo (see gatheringCoverPhotos.js).
+// Dating uses a distinct heart glyph from Volunteering's plain heart, so
+// the two don't visually collapse into "the same icon" at chip size.
 export const QUICK_PICK_ICON_BY_CATEGORY = {
   Travel: 'airplane-outline',
   Coffee: 'cafe-outline',
@@ -33,6 +35,7 @@ export const QUICK_PICK_ICON_BY_CATEGORY = {
   Meditation: 'flower-outline',
   Running: 'walk-outline',
   'Faith & Spirituality': 'sparkles-outline',
+  Dating: 'heart-circle-outline',
 };
 
 const DEFAULT_ICON = 'star-outline';

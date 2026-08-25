@@ -1,5 +1,5 @@
-// A real categorization of the 25 canonical interest_tag values (the same
-// list QuickPicksEditModal.js/CreateGatheringScreen.js already use as the
+// A real categorization of the 26 canonical interest_tag values (the same
+// list gatheringCategories.js's INTEREST_OPTIONS already exports as the
 // single source of truth for every category tag in this app) into
 // indoor/outdoor/ambiguous — built for the weather card's "here are N
 // indoor gatherings" suggestion (IA restructure round 3, Phase 7), same
@@ -12,7 +12,9 @@
 // never recommends something that might actually be outdoors. A false
 // negative (a real indoor gathering not surfaced) is a much smaller
 // problem than a false positive (an outdoor gathering suggested as an
-// indoor escape from bad weather).
+// indoor escape from bad weather). Dating is also deliberately left
+// unclassified here, same reasoning as the 7 ambiguous tags below — a
+// date can honestly be either indoor or outdoor.
 export const CATEGORY_INDOOR_OUTDOOR = {
   Coffee: 'indoor',
   Foodie: 'indoor',

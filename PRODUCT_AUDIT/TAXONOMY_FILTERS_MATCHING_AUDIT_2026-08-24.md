@@ -28,11 +28,13 @@ consolidated across 6+ screens as of a same-day pass that fixed exactly this kin
 already. But the audit found **real, live, previously-uncaught instances of the exact problem
 it was designed to find**, and one large structural absence:
 
-1. **A real, live product bug**: `ProfileScreen.js` and `CompleteProfileScreen.js` each keep
-   their own independently-typed 24-tag personal-interest list, and *both* are missing "Faith &
-   Spirituality" — the identical value already found and fixed once today for a different
-   screen's own copy of a related list. A user cannot select this as a personal interest
-   anywhere in the app, even though it's a fully real tag everywhere else.
+1. **A real, live product bug — ✅ FIXED 2026-08-25** (see the Ranked recommendations section):
+   `ProfileScreen.js` and `CompleteProfileScreen.js` each kept their own independently-typed
+   24-tag personal-interest list, and *both* were missing "Faith & Spirituality" — the identical
+   value already found and fixed once the same day for a different screen's own copy of a
+   related list. A user could not select this as a personal interest anywhere in the app, even
+   though it's a fully real tag everywhere else. Both screens now import a single shared
+   `PERSONAL_INTEREST_OPTIONS` constant instead of keeping their own copy.
 2. **Two full generations of gender-identity infrastructure coexist**, collected on two
    different screens, with a correct-but-silent matching-layer fallback and no UI connecting
    them for the user.
@@ -52,11 +54,12 @@ it was designed to find**, and one large structural absence:
 7. **No "when am I available" preference exists anywhere** — every time-shaped signal in this
    app describes an event, never the user's own free time.
 
-None of these are catastrophic — nothing is broken for a real user today in a way that produces
-a visibly wrong result (the one exception is the missing "Faith & Spirituality" personal-interest
-option, which is a genuine, user-facing capability gap). Most of what's below is exactly what the
-requesting message asked for: a map of where the taxonomy/preference/filter/matching language is
-already unified, where it's quietly forked, and where a real signal exists but goes nowhere.
+None of these were catastrophic — nothing was broken for a real user in a way that produced a
+visibly wrong result, with one exception: the missing "Faith & Spirituality" personal-interest
+option was a genuine, user-facing capability gap, and it's now fixed (item 1 above). Most of
+what's below is exactly what the requesting message asked for: a map of where the taxonomy/
+preference/filter/matching language is already unified, where it's quietly forked, and where a
+real signal exists but goes nowhere.
 
 ---
 
@@ -71,9 +74,9 @@ distinct from its neighbors or accidentally drifting from one.
 | `CATEGORY_GROUPS` — 6 super-groups over the 26 tags | `gatheringCategories.js:34` | Active, Social, Entertainment, Lifestyle, Community, Dating | Same screens as above | **Canonical, clean.** |
 | `CATEGORY_STYLES` — icon+color per tag | `gatheringCategoryStyles.js:14` | Same 26 keys | Every category chip/badge via `categoryStyleFor()` | **Canonical, clean**, in lockstep with `INTEREST_OPTIONS`. |
 | `CATEGORY_COVER_PHOTOS` | `gatheringCoverPhotos.js:178` | 23 of 26 tags | Gathering hero images | **Intentional partial coverage**, explicitly documented, honest icon/color fallback for the 3 missing. |
-| `QUICK_PICK_ICON_BY_CATEGORY` | `quickPickIcons.js:565` | 25 of 26 tags — **missing Dating** | `HomeScreen` Quick Picks | **Real, small, current drift.** Dating silently falls back to a generic star icon. Low severity, real fallback exists, but is the newest instance of the "new tag added, one of several per-tag lookup maps not updated" pattern. |
-| `CATEGORY_INDOOR_OUTDOOR` | `gatheringIndoorOutdoor.js:14` | 14 indoor + 4 outdoor + 8 deliberately unclassified (of the pre-Dating 25) | `HomeScreen` weather card, `GatheringsScreen` Environment filter | **Intentional partial coverage, but a stale header comment** — says "25 canonical," should say 26 with Dating named as deliberately excluded. |
-| Personal-interest picker (2 independent copies) | `ProfileScreen.js:27-32` **and** `CompleteProfileScreen.js:33-38` | Both: 24 tags, **missing Faith & Spirituality**, correctly missing Dating | `ProfileScreen`'s and `CompleteProfileScreen`'s own interest steps | **REAL LIVE BUG.** Two byte-identical, independently-typed copies of what should be one list — neither imports from `gatheringCategories.js`. The *decision* to keep personal interests semantically separate from gathering categories is correct and documented; having two hand-maintained copies of even that separate list is the exact drift the taxonomy pass already fixed once, recurring uncaught. **A user cannot select "Faith & Spirituality" as a personal interest anywhere in the app.** |
+| `QUICK_PICK_ICON_BY_CATEGORY` | `quickPickIcons.js:565` | 26 of 26 tags | `HomeScreen` Quick Picks | **✅ FIXED 2026-08-25.** Was missing Dating (silently fell back to a generic star icon) — now has a real `heart-circle-outline` entry. |
+| `CATEGORY_INDOOR_OUTDOOR` | `gatheringIndoorOutdoor.js:14` | 14 indoor + 4 outdoor + 7 deliberately unclassified + Dating (also deliberately unclassified, called out separately) | `HomeScreen` weather card, `GatheringsScreen` Environment filter | **✅ FIXED 2026-08-25.** Header comment now says 26 (was stale at "25 canonical") and explicitly names Dating as deliberately excluded. |
+| Personal-interest picker (was 2 independent copies) | `gatheringCategories.js`'s new `PERSONAL_INTEREST_OPTIONS`, imported by `ProfileScreen.js` and `CompleteProfileScreen.js` | 25 tags (26 canonical minus Dating), **now includes Faith & Spirituality** | `ProfileScreen`'s and `CompleteProfileScreen`'s own interest steps | **✅ FIXED 2026-08-25 — was a REAL LIVE BUG.** Used to be two byte-identical, independently-typed copies, neither importing from `gatheringCategories.js`, both missing "Faith & Spirituality." The *decision* to keep personal interests semantically separate from gathering categories is correct and documented; having two hand-maintained copies of even that separate list was the exact drift the taxonomy pass already fixed once elsewhere, recurring uncaught here. Now one shared constant, imported by both screens — a user can select "Faith & Spirituality" as a personal interest on both. |
 | `BUSINESS_CATEGORIES` | `BusinessPartnerApplyScreen.js` | 6: food_drink, fitness_wellness, retail_shopping, arts_entertainment, professional_services, other | Business apply/edit/filter screens | **Intentional & distinct** — a genuinely different granularity. See Part 4 for the real gap this creates. |
 | `PLACE_CATEGORIES` | `DiscoverHubScreen.js:35` | 4: coffee, restaurants, parks, hubs | Discover's Places section (Google Places `type` param) | **Intentional & distinct** — a thin wrapper over Google's own API, not this app's vocabulary. |
 | `DISCOVERY_GENDER_OPTIONS` / `SHOW_ME_OPTIONS` | `discoveryOptions.js:9-10` | 4 / 3 (legacy single-select) | `SettingsScreen`, `DatingPreferencesPromptModal` | **Parallel-system finding** — see Part 2, Finding G1. |
@@ -320,8 +323,8 @@ anything collected but never used; does this read as one product.
 
 ### Person A — wants friends
 
-`ProfileScreen`/`CompleteProfileScreen` (personal interests — hits the missing-Faith-&-
-Spirituality bug from Part 1) → Discover tab → People mode → Friends toggle →
+`ProfileScreen`/`CompleteProfileScreen` (personal interests — used to hit the missing-Faith-&-
+Spirituality bug from Part 1, now fixed) → Discover tab → People mode → Friends toggle →
 `FriendDiscoveryScreen` (zero filters, a real but opaque server-side score) → swipe → match →
 Messages.
 
@@ -381,22 +384,45 @@ reaches a consumer no matter how precisely the consumer describes what they want
 
 ## Ranked recommendations
 
-Findings only — nothing here was built or fixed in this pass. Ordered by a rough
-impact-to-effort read, not by phase number.
+Findings-only when this audit was first written. **Follow-up, same day**: items 1 and 3 below —
+the two genuine, unambiguous bugs this audit found (the audit's own executive summary already
+singled out item 1 as "the one exception" that's a real, user-facing capability gap; item 3 is a
+trivial, low-risk drift fix) — have since been fixed; see each item's own status note. Items 2 and
+4-7 remain findings/recommendations only, deliberately not acted on — each is either a real
+product decision or real schema/scoped-build work, per this audit's own original framing for
+each, not a bug with an unambiguous fix. Ordered by a rough impact-to-effort read, not by phase
+number.
 
-1. **Fix the personal-interest list duplication** (Part 1) — the smallest, highest-certainty fix
-   in this whole audit. One new shared `PERSONAL_INTEREST_OPTIONS` constant (25 tags, the
-   canonical 26 minus Dating), imported by both `ProfileScreen.js` and `CompleteProfileScreen.js`
-   instead of each keeping its own copy. Closes a real, live capability gap (users can't pick
-   "Faith & Spirituality" as a personal interest) using the exact fix shape already proven out
-   for `AskBusinessScreen.js` earlier the same day.
+1. **✅ FIXED (2026-08-25). Fix the personal-interest list duplication** (Part 1) — the smallest,
+   highest-certainty fix in this whole audit, and the one item the executive summary itself
+   called out as a genuine bug, not just a finding. Built exactly as recommended: a new shared
+   `PERSONAL_INTEREST_OPTIONS` constant (`src/constants/gatheringCategories.js`, derived from the
+   canonical 26-tag list minus `Dating` — 25 tags), imported by both `ProfileScreen.js` and
+   `CompleteProfileScreen.js` in place of each screen's own independently-typed local copy. A
+   user can now select "Faith & Spirituality" as a personal interest on both screens. Verified via
+   a direct `@babel/core` parse of all 5 touched files (clean), the full Jest suite (67/67
+   passing, unaffected), and a full `npx expo export --platform ios` (clean, no bundling errors,
+   2256 modules — unchanged, every touched file was an edit, no new files).
 2. **Wire `price_level`/`party_type` into `intentResolver.js`'s gathering-scoring branch** (Parts
-   2, 4, 5) — the fields, the filter UI, and the scoring axis they'd plug into all already exist;
-   this closes the freshest instance of the "filter with no matching-engine equivalent" pattern
-   with no new schema needed.
-3. **Add the missing "Dating" icon to `QUICK_PICK_ICON_BY_CATEGORY`** and **update
-   `gatheringIndoorOutdoor.js`'s stale header comment** (Part 1) — trivial, low-risk, closes two
-   small current-drift items.
+   2, 4, 5) — **deliberately not built**, on closer inspection. The original framing ("no new
+   schema needed") undersold what this actually requires: `resolveGatherings()`'s scoring only
+   ever has the caller's typed `rawText`/`category`/`dateWindow` to work with — there is no
+   existing signal anywhere (from `create-assistant`'s classification or otherwise) representing
+   "the user's ask implies a price or party-size preference." Wiring this for real would mean
+   inventing a new free-text-to-price/party-type inference heuristic (e.g. keyword-matching
+   "cheap"/"solo"/"date" against `price_level`/`party_type`) — a genuine new mechanism and a real
+   product-judgment call about how aggressively to infer someone's price/party preference from
+   what they typed, not a mechanical wire-up of two things that already both exist. Left as a
+   recommendation for a future, explicitly-scoped pass, not silently built as a guess.
+3. **✅ FIXED (2026-08-25). Add the missing "Dating" icon to `QUICK_PICK_ICON_BY_CATEGORY`** and
+   **update `gatheringIndoorOutdoor.js`'s stale header comment** (Part 1) — both trivial,
+   low-risk drift fixes, both closed. `QUICK_PICK_ICON_BY_CATEGORY` gained a real
+   `Dating: 'heart-circle-outline'` entry (distinct from Volunteering's plain `heart-outline`, so
+   the two don't visually collapse at chip size) — Home's Quick Picks row no longer falls back to
+   the generic star icon for a Dating-categorized pick. `gatheringIndoorOutdoor.js`'s header
+   comment now correctly says "26 canonical tags" (was "25") and explicitly names Dating as
+   deliberately left unclassified, same reasoning as the 7 genuinely-ambiguous tags already
+   listed there. Verified via the same parse/test/export pass as item 1.
 4. **Design a real, small business-attribute layer** (Part 6) — the largest structural gap
    found. Sized deliberately small (a curated tag set + a `food_drink`-only cuisine sub-category,
    not a general attribute system for all 6 industries), but this is real schema/RPC work, not a
