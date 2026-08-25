@@ -9,7 +9,6 @@ import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
-import { DISCOVERY_GENDER_OPTIONS, SHOW_ME_OPTIONS } from '../constants/discoveryOptions';
 import { typography, spacing, radius } from '../theme';
 
 function toE164(rawInput) {
@@ -60,8 +59,6 @@ export default function SettingsScreen({ navigation }) {
   const { t, language, setLanguage } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
-  const [discoveryGender, setDiscoveryGender] = useState('Prefer not to say');
-  const [showMe, setShowMe] = useState('Everyone');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
   const [genderHidden, setGenderHidden] = useState(false);
@@ -113,8 +110,6 @@ export default function SettingsScreen({ navigation }) {
 
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
-      setDiscoveryGender(data.discovery_gender || 'Prefer not to say');
-      setShowMe(data.show_me || 'Everyone');
       setMinAge(String(data.preferred_min_age ?? 18));
       setMaxAge(String(data.preferred_max_age ?? 99));
       setNotifyMatches(data.notify_matches ?? true);
@@ -161,8 +156,6 @@ export default function SettingsScreen({ navigation }) {
     const { error } = await supabase
       .from('profiles')
       .update({
-        discovery_gender: discoveryGender,
-        show_me: showMe,
         preferred_min_age: minAgeNum,
         preferred_max_age: maxAgeNum,
         ethnicity: myEthnicity,
@@ -407,8 +400,22 @@ export default function SettingsScreen({ navigation }) {
 
         <Text style={styles.groupHeader} accessibilityRole="header">Preferences</Text>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">Looking For</Text>
+        {/* Taxonomy audit Phase 1: "Looking For" and "Discovery Preferences"
+            merged into one card so the two headers stop reading as two
+            disconnected systems (CLAUDE.md, Aug 25 2026). The legacy
+            discovery_gender/show_me chip pickers are gone from this screen
+            outright -- gender identity & who you're interested in are now
+            edited exactly one place, Profile's own gender_identity/
+            interested_in_genders section -- linked below, not duplicated
+            here. discovery_gender/show_me stay real, live columns
+            (passesGenderMatch()'s own fallback still reads them for any
+            account that hasn't touched the new fields yet), just no longer
+            asked about or editable from this screen -- same "don't delete
+            legacy data, just stop asking" convention as relationship_goals'
+            own removal from basicsFields.js. */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">❤️ Dating Preferences</Text>
         <View style={styles.card}>
+          <Text style={styles.label}>Looking For</Text>
           <View style={styles.chipsWrap}>
             {INTENTION_OPTIONS.map((option) => {
               const selected = (Array.isArray(relationshipIntention) ? relationshipIntention : []).includes(option.value);
@@ -432,28 +439,17 @@ export default function SettingsScreen({ navigation }) {
           <Text style={styles.helperText}>
             Select as many as apply. Shown on your profile. How often you change this is visible too — it's meant to keep expectations honest, for you and everyone you match with.
           </Text>
-        </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.discoveryPreferences')}</Text>
-        <View style={styles.card}>
-          <Text style={styles.label}>{t('settings.showMe')}</Text>
-          <View style={styles.chipsWrap}>
-            {SHOW_ME_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, showMe === option && styles.chipSelected]}
-                onPress={() => setShowMe(option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: showMe === option }}
-              >
-                <Text style={[styles.chipText, showMe === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <TouchableOpacity
+            style={{ marginTop: spacing.md }}
+            onPress={() => navigation.navigate('Profile', { scrollToGenderSection: true })}
+            accessibilityLabel="Gender identity and who you're interested in are managed on your Profile"
+            accessibilityRole="button"
+          >
+            <Text style={styles.linkText}>Gender identity & who you're interested in are managed on your Profile →</Text>
+          </TouchableOpacity>
 
-          <Text style={styles.label}>{t('settings.ageRange')}</Text>
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ageRange')}</Text>
           <View style={styles.ageRow}>
             <TextInput
               style={[styles.input, styles.ageInput]}
@@ -473,26 +469,6 @@ export default function SettingsScreen({ navigation }) {
               accessibilityLabel="Maximum age"
             />
           </View>
-
-          <Text style={styles.label}>{t('settings.myGender')}</Text>
-          <View style={styles.chipsWrap}>
-            {DISCOVERY_GENDER_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, discoveryGender === option && styles.chipSelected]}
-                onPress={() => setDiscoveryGender(option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: discoveryGender === option }}
-              >
-                <Text style={[styles.chipText, discoveryGender === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.helperText}>
-            This is separate from the "Gender" field on your profile — it's only used to match against other people's "Show Me" preference.
-          </Text>
 
           <View style={[styles.settingRow, { marginTop: spacing.md }]}>
             <View style={{ flex: 1 }}>
@@ -1040,6 +1016,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   ageInput: { flex: 1, textAlign: 'center' },
   ageDash: { color: colors.textTertiary },
   helperText: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm, lineHeight: 16 },
+  linkText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },

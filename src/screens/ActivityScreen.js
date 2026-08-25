@@ -106,7 +106,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     if (myId) {
       supabase.from('profiles').update({ last_activity_check: new Date().toISOString() }).eq('id', myId);
     }
-    const { data: myProfile } = await supabase.from('profiles').select('interests, basics').eq('id', myId).single();
+    const { data: myProfile } = await supabase.from('profiles').select('interests, basics, relationship_intention').eq('id', myId).single();
 
     const { data: existingMatches } = await supabase
       .from('matches')
@@ -129,7 +129,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     // no "load more" UI exists or is demanded today for this feed.
     const { data: noticesData } = await supabase
       .from('notices')
-      .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics)')
+      .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics, relationship_intention)')
       .eq('to_user', myId)
       .order('created_at', { ascending: false })
       .limit(200);

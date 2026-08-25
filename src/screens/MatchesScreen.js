@@ -64,12 +64,12 @@ export default function MatchesScreen({ navigation }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
 
-    const { data: mine } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
+    const { data: mine } = await supabase.from('profiles').select('interests, basics, relationship_intention, favorite_tracks').eq('id', myId).single();
     setMyProfile(mine);
 
     const { data, error } = await supabase
       .from('matches')
-      .select('id, user_a, user_b, matched_at, source_gathering_id, source_friendship_id, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics)')
+      .select('id, user_a, user_b, matched_at, source_gathering_id, source_friendship_id, gatherings(title), a:profiles!matches_user_a_fkey(id, display_name, photo_url, interests, basics, relationship_intention), b:profiles!matches_user_b_fkey(id, display_name, photo_url, interests, basics, relationship_intention)')
       .order('matched_at', { ascending: false });
 
     if (!error) {

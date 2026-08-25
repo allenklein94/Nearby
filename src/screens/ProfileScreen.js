@@ -86,7 +86,7 @@ const getAccordionStyles = (colors) => StyleSheet.create({
   body: { paddingBottom: spacing.md },
 });
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
@@ -134,6 +134,21 @@ export default function ProfileScreen({ navigation }) {
       if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
     };
   }, []);
+
+  // Taxonomy audit Phase 1: Settings' "Gender identity & who you're
+  // interested in are managed on your Profile ->" link lands here.
+  // editSectionYRef isn't measured until the About You section actually
+  // lays out, so this waits a beat for that -- same short-delay convention
+  // this codebase already uses elsewhere for "wait for layout before
+  // scrolling" (e.g. RootNavigator's pending-navigation consume).
+  useEffect(() => {
+    if (route?.params?.scrollToGenderSection) {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: editSectionYRef.current, animated: true });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.scrollToGenderSection]);
 
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();

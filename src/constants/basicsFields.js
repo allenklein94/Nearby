@@ -1,3 +1,16 @@
+// Taxonomy audit, 2026-08-24/25 (see CLAUDE.md): 'relationship_goals' used
+// to be a 40th field here, labeled "Looking For" -- the identical label
+// Settings' real relationship_intention filter already uses, asking the
+// same underlying question twice in two unrelated vocabularies, never
+// reconciled. Removed outright rather than left duplicated -- Settings'
+// relationship_intention (a real, live, multi-select Discovery filter) is
+// now the one canonical place this question is asked. Any pre-existing
+// user's own already-answered basics.relationship_goals value is left
+// untouched in the database (never deleted), just no longer asked about
+// or editable here -- matches this schema's own "don't delete legacy
+// data, just stop asking" convention. compatibility.js's own post-match
+// narrative now derives its "what are you both looking for" comparison
+// from relationship_intention directly instead.
 export const BASICS_FIELDS = [
   { key: 'height', label: 'Height', icon: '📏', type: 'text', placeholder: "e.g. 5'10\"" },
   { key: 'living_in', label: 'Living In', icon: '📍', type: 'text', placeholder: 'e.g. Delray Beach' },
@@ -7,7 +20,6 @@ export const BASICS_FIELDS = [
   { key: 'eye_color', label: 'Eye Color', icon: '👁️', type: 'select', options: ['Brown', 'Blue', 'Green', 'Hazel', 'Gray', 'Other'] },
   { key: 'diet', label: 'Diet', icon: '🍽️', type: 'select', options: ['Omnivore', 'Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher', 'Other'] },
   { key: 'languages_spoken', label: 'Languages I Speak', icon: '🗣️', type: 'text', placeholder: 'e.g. English, Spanish' },
-  { key: 'relationship_goals', label: 'Looking For', icon: '💘', type: 'select', options: ['Long-term partner', 'Long-term, open to short', 'Short-term fun', 'New friends', 'Still figuring it out'] },
   { key: 'relationship_type', label: 'Relationship Type', icon: '💑', type: 'select', options: ['Monogamy', 'Non-monogamy', 'Figuring out'] },
   { key: 'religion', label: 'Religion', icon: '🕊️', type: 'select', options: ['Agnostic', 'Atheist', 'Buddhist', 'Catholic', 'Christian', 'Hindu', 'Jewish', 'Muslim', 'Spiritual', 'Sikh', 'Other', 'Prefer not to say'] },
   { key: 'zodiac', label: 'Zodiac', icon: '🔮', type: 'select', options: ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'] },

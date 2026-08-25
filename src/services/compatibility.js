@@ -3,11 +3,30 @@ export function calculateCompatibility(myProfile, theirProfile) {
   return report.score;
 }
 
+// Taxonomy audit, 2026-08-24/25 (see CLAUDE.md): basics.relationship_goals
+// used to be a real, separately-answered field here, labeled "Looking
+// For" -- the identical label relationship_intention's own Discovery
+// filter already uses, asking the same question twice in two unrelated
+// vocabularies. relationship_goals is now removed from BASICS_FIELDS
+// entirely (basicsFields.js), so this narrative is the one place that
+// still needs a "what are you both looking for" comparison -- it's
+// derived from the real relationship_intention array instead, merged
+// into a local copy of each side's basics purely for this comparison
+// (never written back into the real basics jsonb). A profile's own
+// relationship_intention is a multi-select array; comparing two arrays
+// for "matching" only makes sense as set equality, so both sides are
+// sorted and joined into one comparable string.
+function withRelationshipIntention(basics, profile) {
+  const intention = Array.isArray(profile?.relationship_intention) ? profile.relationship_intention : [];
+  if (intention.length === 0) return basics;
+  return { ...basics, relationship_intention: [...intention].sort().join(',') };
+}
+
 export function generateCompatibilityReport(myProfile, theirProfile) {
   const myInterests = myProfile?.interests ?? [];
   const theirInterests = theirProfile?.interests ?? [];
-  const myBasics = myProfile?.basics ?? {};
-  const theirBasics = theirProfile?.basics ?? {};
+  const myBasics = withRelationshipIntention(myProfile?.basics ?? {}, myProfile);
+  const theirBasics = withRelationshipIntention(theirProfile?.basics ?? {}, theirProfile);
 
   const sharedInterests = myInterests.filter((i) => theirInterests.includes(i));
 
@@ -77,7 +96,7 @@ export function generateCompatibilityReport(myProfile, theirProfile) {
 // profiles) so it can be called from anywhere that already has one,
 // including directly inside the modal that displays it.
 const FIELD_LABELS = {
-  relationship_goals: 'Relationship goals', family_plans: 'Family plans', financial_priority: 'Financial priorities',
+  relationship_intention: 'Relationship goals', family_plans: 'Family plans', financial_priority: 'Financial priorities',
   relocation_openness: 'Openness to relocating', communication_style: 'Communication style', love_style: 'Love language',
   independence_preference: 'Independence needs', social_energy: 'Social energy', weekend_style: 'Weekend style',
   workout: 'Fitness habits', drinking: 'Drinking', smoking: 'Smoking', cannabis: 'Cannabis use',
@@ -89,7 +108,7 @@ function labelFor(key) {
   return FIELD_LABELS[key] || key.replace(/_/g, ' ');
 }
 
-const BIG_TOPIC_KEYS = ['relationship_goals', 'family_plans', 'financial_priority', 'relocation_openness', 'relationship_type'];
+const BIG_TOPIC_KEYS = ['relationship_intention', 'family_plans', 'financial_priority', 'relocation_openness', 'relationship_type'];
 const COMMUNICATION_TOPIC_KEYS = ['communication_style', 'love_style', 'independence_preference', 'social_energy'];
 
 export function generateCompatibilityCompass(report) {
@@ -122,7 +141,7 @@ const FRICTION_CATEGORIES = [
   { label: 'Independence & space', keys: ['independence_preference', 'social_energy'] },
   { label: 'Money & financial priorities', keys: ['financial_priority'] },
   { label: 'Definitions of romance', keys: ['love_style'] },
-  { label: 'Family & long-term plans', keys: ['family_plans', 'family_closeness', 'relationship_goals'] },
+  { label: 'Family & long-term plans', keys: ['family_plans', 'family_closeness', 'relationship_intention'] },
   { label: 'Lifestyle & daily rhythm', keys: ['weekend_style', 'morning_person', 'cooking_habits', 'workout'] },
   { label: 'Location & relocation', keys: ['relocation_openness'] },
 ];
