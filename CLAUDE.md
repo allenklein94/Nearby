@@ -130,10 +130,11 @@ more than one phase's worth of research.
 **Status: Phases 1-4 DONE (research only, real findings, nothing built/fixed). Phase 5
 (synthesis + final deliverable) executing next.** Forking turned out to be unavailable inside
 this session's own execution context this pass, so all 4 phases were run directly, sequentially,
-rather than as parallel forks — same rigor, no shortcuts taken. Each phase produced its own
-scoped file under `PRODUCT_AUDIT/` (`TAXONOMY_AUDIT_phase1_taxonomy_attributes.md` through
-`_phase4_business_attributes.md`) — read those for full file/line detail; headline findings only,
-summarized here:
+rather than as parallel forks — same rigor, no shortcuts taken. Each phase initially produced its
+own scoped file under `PRODUCT_AUDIT/` (`TAXONOMY_AUDIT_phase1_taxonomy_attributes.md` through
+`_phase4_business_attributes.md`) — those 4 files were later folded into, and removed in favor
+of, the single consolidated deliverable (see Phase 5's own status note below); headline findings
+only, summarized here:
 
 - **Phase 1 (Taxonomy + Attributes)**: the canonical 26-tag gathering/community/business-request
   list (`gatheringCategories.js`) is genuinely clean and consolidated, as of today's own taxonomy
@@ -189,9 +190,9 @@ categories.
 — is self-contained (no other context needed) and was handed directly to the user for external
 (ChatGPT) review.** It contains an executive summary, all 4 phases' Master Taxonomy/Attributes/
 Preferences/Filters tables plus the Matching Matrix, the Business Attribute Audit, the 4-persona
-walkthrough, and a ranked recommendations list. The 4 individual phase working files stay
-committed alongside it for anyone who wants the fuller file:line-level detail behind any single
-finding.
+walkthrough, and a ranked recommendations list. **Follow-up, same day**: the 4 individual phase
+working files were folded into this one file (their real findings and file:line detail carried
+over, nothing lost) and deleted — this is now the single file for the whole audit, not one of 5.
 
 **Per this whole audit's own locked scope boundary: nothing above has been built, fixed, or
 changed in application code.** Every item in the ranked recommendations list — the personal-

@@ -141,6 +141,12 @@ Availability.
 | Relationship preferences | Ethnicity preferences | `profiles.ethnicity_preferences` | Settings | — |
 | **Availability** | — | **none found anywhere** | — | — |
 
+**Minor labeling note**: Settings' "Preferences" group conflates two genuinely different kinds
+of preference under one header — "Looking For"/"Discovery Preferences" (both dating-specific
+matching signals) sit directly next to "Appearance"/"Language" (pure app-behavior settings, not
+about matching at all). Not wrong, just means "Preferences" means two different things depending
+on which card is open — a minor UX note, not a functional finding.
+
 ### Finding G1 — two generations of gender infrastructure, no UI cross-link
 
 Legacy single-select pair (`discovery_gender`/`show_me`, Settings + the dating-prefs first-open
@@ -204,6 +210,14 @@ never round-trips into anything scored. **`price_level`/`party_type` are the fre
 of this pattern** — new, filterable, and currently invisible to the one resolver
 (`intentResolver.js`) that already scores every other gathering-side signal for the exact same
 candidate rows.
+
+**Also worth noting**: `GatheringsScreen.js`'s "For You"/"Trending" toggles are a real, separate
+signal axis from the 6-section filter accordion — `forYouActive` re-sorts by the caller's own
+derived category history (`getMyTopGatheringCategories()`), `trendingActive` filters by a real
+`get_trending_gathering_ids` RPC. Neither is persisted as a standing user preference — both reset
+to `false` on remount, a deliberate session-scoped design, not a bug, but it means "For You" can
+never become a durable "always show me my favorite categories first" setting without a schema
+change.
 
 ---
 
@@ -403,6 +417,7 @@ impact-to-effort read, not by phase number.
 
 ---
 
-*End of consolidated audit. Individual phase working files (with additional file:line detail)
-are committed alongside this one at `PRODUCT_AUDIT/TAXONOMY_AUDIT_phase1_taxonomy_attributes.md`
-through `_phase4_business_attributes.md`. This file is the one intended for external review.*
+*End of consolidated audit. This is the single, self-contained file — the 4 separate per-phase
+working files this was originally assembled from have been folded in and removed; every real
+finding from all 4 phases is captured above, with file:line detail preserved. This file is the
+one intended for external review.*
