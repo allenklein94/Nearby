@@ -4,6 +4,174 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 25 2026 — post-implementation coherence audit for the taxonomy pass's 4 phases, plus a
+## full Taxonomy → Preference → Filter → Matching → Ranking → Discovery end-to-end trace —
+## PLAN LOCKED, READ-ONLY, not yet executed — pick this up after the next codespace restart
+
+Written before execution, same restart-safety convention as every other plan-first section in
+this file — if a codespace restart hits mid-audit, check this section's own status notes (updated
+as each piece lands, not batched at the end) for what's actually been produced vs. still just
+this plan. **Hard boundary, stated once so it isn't re-litigated per section: this whole pass is
+read-only.** No schema change, no RPC change, no client edit, for any reason — every finding goes
+into the deliverable, not into a diff, matching this file's own established precedent for exactly
+this shape of request (the Aug 23 2026 Product Coherence Audit, the Aug 24 2026 Universal
+Taxonomy Audit, both explicitly read-only).
+
+**Direct context, the user's own reasoning, preserved rather than restated**: right after the 4
+taxonomy-recommendation phases (Dating Preferences consolidation, Business Attributes, Friends
+filters, structured price/party intent — all DONE, see the section immediately below this one)
+finished, the user reviewed the build summary and gave a direct, explicit instruction: **don't
+redo any of those four areas, and don't start a new feature batch** — the next step is a
+post-implementation *verification* audit, specifically checking whether the four things just
+built are actually coherent across the whole Nearby experience, not merely technically
+implemented. The user's own closing line, worth keeping verbatim since it's the actual thesis of
+this whole pass: *"73/73 tests passing... is evidence that the implementation is in good
+technical shape, not that the entire product experience has been validated."* The distinction the
+user draws explicitly, also worth preserving: *"adding chips is not the same as making the
+matching system understand them."*
+
+### Scope — 4 targeted sub-audits (A-D) plus one larger end-to-end trace (E), in that order
+
+**A. Dating Preferences.** Is there now truly one canonical user-facing preference experience?
+Are the old gender/relationship fields still exposed anywhere else the consolidation pass might
+have missed? Does changing the new preference (`gender_identity`/`interested_in_genders`/
+`relationship_intention`) actually flow through and affect `generateCompatibilityReport()`'s real
+output, not just render on a settings screen? Are Dating, Friends, Profile, and Settings using
+consistent terminology for the same underlying concept, or did the merge leave a stray label
+somewhere (e.g. a screen still saying "Show Me" or "My Gender" that this pass's grep didn't
+catch)?
+
+**B. Business Attributes.** Can a business owner actually select/edit attributes and cuisine end
+to end in the running flow (not just "the RPC round-trips when called directly," which this
+session already verified — a materially weaker claim than "the UI actually saves it")? Do they
+persist and reload correctly? Do they render correctly on the public `BusinessProfileScreen`?
+**The one question to scrutinize hardest, per the user's own explicit framing**: are attributes
+actually *consumed* anywhere beyond display — does Discover's ranking, the intent resolver, or
+`_business_request_fanout()`'s own attribute-overlap sort key (built in the same migration, see
+the Phase 2 SQL) genuinely change search/ranking order when a real overlap exists, or do
+attributes currently only ever render as inert chips nobody's matching logic reads? Can a real
+business request/offer actually carry attributes through its full lifecycle (this session
+verified the RPC accepts and stores `attributes_param`/`cuisine_param` — but never checked
+whether an *offer* responding to that request can see or act on them)? Is the `cuisine` field
+(food-specific) meaningfully kept separate from general `attributes` everywhere it's read, or
+does some call site conflate the two?
+
+**C. Friends.** Do the new Interest + Distance filter chips (`FriendDiscoveryScreen.js`) actually
+change which candidates render in the swipe deck, verified against real filtered vs. unfiltered
+counts — not just "the filter logic compiles"? Does the honest empty state ("No one nearby
+matches these filters right now") correctly explain *why* results are empty, as opposed to a
+generic "nothing here" that reads the same as the deck's own separate zero-candidates state? Does
+Friend Discovery, now that it has its own filter row, still read as part of the same People/
+Discover system, or does it start to feel like its own separate mini-app now that it has UI
+Dating's own Browse/Crossed Paths toggle doesn't have? Are `PERSONAL_INTEREST_OPTIONS`'s tags the
+same canonical category vocabulary used everywhere else in the app, or did this pass introduce a
+naming/casing mismatch anywhere?
+
+**D. Structured price/party intent — the one to scrutinize hardest, per the user's own explicit
+instruction.** This is a semantics check, not a "does the code run" check. The real question:
+does `create-assistant`'s classifier extract `priceLevel`/`partyType` *only* when the text
+genuinely implies them, never as a keyword-triggered guess? Concretely, trace (via real,
+disposable test calls to the deployed Edge Function, not just reading the prompt text) both of
+the user's own worked examples:
+- **"Find something cheap to do with two friends tonight."** — should produce something close to
+  `priceLevel: 'free'` or `'$'`, `partyType: 'friends'`, `dateWindow: 'tonight'`, `partySize: 2`
+  (or close) — a real, coherent structured intent, not a partial extraction.
+- **"Find a nice Italian restaurant."** — should **not** infer `partyType` at all (nothing in the
+  text implies who this is for), and "nice" is genuinely ambiguous between `'$$'`/`'$$$'` — check
+  whether the classifier over-commits to a specific price tier from one adjective, or correctly
+  leaves it more conservative/null when the signal is weak. This is exactly the "useful
+  structured-intent system vs. a keyword hack" distinction the user named directly — the audit's
+  job is to find out which one was actually built, with real evidence, not to assume the prompt
+  text alone settles it.
+- Separately, confirm `priceAndPartyBonus()`'s own scoring actually reaches a real ranked result
+  list in `resolveGatherings()`'s output — this session verified the pure function's own logic
+  via unit tests, but never ran a real end-to-end ask against real gathering data with a real
+  `price_level`/`party_type` match to confirm the bonus genuinely reorders results, not just that
+  the function returns the right number in isolation.
+
+**E. The larger end-to-end trace — Taxonomy → Preference → Filter → Matching → Ranking →
+Discovery, for every important signal this pass touched (and, where useful, one or two signals
+it didn't, as a sanity check that the method itself is sound).** Per the user's own framing, the
+purpose is *not* to find more features — it's to trace real information all the way through the
+product, collection to final recommendation, for each signal:
+
+```
+Where is it collected?
+  ↓
+Where is it stored?
+  ↓
+Where is it displayed?
+  ↓
+Where is it filtered?
+  ↓
+Where is it used for matching?
+  ↓
+Where is it used for ranking?
+  ↓
+Where does it affect the final recommendation?
+```
+
+The user's own worked example, preserved verbatim as the model for how each trace should read:
+*"Business selects Outdoor seating → database → business profile → Things to Do → user selects
+Outdoor → resolver → ranking → outdoor businesses appear higher."* If a link in that chain is
+missing — the user's own example finding: *"Outdoor is stored and displayed, but doesn't affect
+ranking"* — that's a real, concrete gap, named with a file/line citation, not a vague "could be
+better." **Signals to trace, at minimum** (drawn directly from what this pass and its own
+predecessors actually built, not invented fresh): `brand_partners.attributes`/`cuisine` (Phase
+2's own real subject, and the user's own worked example), `relationship_intention` (Phase 1),
+`gender_identity`/`interested_in_genders` (Phase 1), the Friend Discovery `interests`/
+`distance_bucket` filters (Phase 3), `gatherings.price_level`/`party_type` (Phase 4, plus the
+earlier category/filter taxonomy pass that originally added these columns) — and, as a control
+group confirming the method finds real gaps and not just phantom ones, 1-2 signals from *before*
+this taxonomy pass that were already known-good (e.g. `interest_tag`'s own already-verified
+resolver path) to make sure a genuinely complete chain doesn't get flagged as broken by mistake.
+
+### Method — real code/data tracing, no simulator, matching this file's own established audit
+### discipline
+
+Every claim traced by reading the real, current source (screen JSX, service functions, RPC
+bodies pulled fresh via the Management API where a migration file might be stale relative to a
+later `CREATE OR REPLACE`) and, wherever a chain's own correctness hinges on real data behavior
+rather than just code shape (sections B/D/E above especially), verified with real disposable test
+data against production (`enmosvippabmuqslzrox`) — insert a real test row, run the real query/RPC
+a real screen would run, confirm the actual result, clean up afterward — the same bar this
+session already held Phases 1-2's own schema/RPC verification to, extended here to the
+*consumption* side (ranking/matching) that the build pass itself didn't check. For D's
+classifier-semantics check specifically, this needs a small number of real calls to the deployed
+`create-assistant` function — same standing limitation this file has flagged repeatedly: no
+stored real user session/credentials exist in this sandbox, so exercising the function through
+its real bearer-token-authenticated path may not be directly possible; if so, disclose that
+plainly rather than skip the check silently, and fall back to the closest available proxy (e.g.
+constructing the exact prompt text the function would send and reasoning about it directly,
+clearly labeled as a weaker substitute, not presented as equivalent to a real call).
+
+### Deliverable
+
+One real, self-contained file, matching this file's own established `PRODUCT_AUDIT/` convention
+for a findings-only pass —
+`PRODUCT_AUDIT/TAXONOMY_POST_IMPLEMENTATION_AUDIT_2026-08-25.md` — sections A through E as scoped
+above, each finding tagged with a real file/line citation and a verdict (connected / gap / not
+verifiable from this sandbox), never a vague impression. Where B or D's own findings turn out to
+need one of the deeper "is this actually consumed by matching" checks E already covers, don't
+duplicate the finding — cross-reference it. Handed to the user directly once done, per this
+file's own established practice for exactly this kind of deliverable.
+
+### Explicitly out of scope for this pass
+
+No code changes of any kind, even a fix that looks trivially safe mid-audit — matches the hard
+boundary stated at the top of this section. No new feature batch, no re-litigating any of the 4
+already-built phases' own design decisions (e.g. whether the merged "❤️ Dating Preferences" card
+is the right layout) — this pass is about whether what was built actually connects end-to-end,
+not whether it should have been built differently. The one standing limitation repeated
+throughout this whole file — no manual simulator/device run-through is possible in this sandbox —
+applies here too; flag it per-section rather than silently assume a chain that *should* work on a
+real device actually does.
+
+**Status: plan locked, not yet executed. Pick this up in a fresh session (after the next
+codespace restart, per direct instruction) rather than continuing in the same session that just
+finished the 4 build phases** — check this section's own status notes for what's landed if a
+restart interrupts the audit itself partway through.
+
 ## Aug 25 2026 — building the taxonomy audit's real recommendations (Dating Preferences
 ## consolidation, Business Attributes, Friends filters, structured price/party intent) —
 ## DONE, all 4 phases — see the status note at the end of this section for what's landed
