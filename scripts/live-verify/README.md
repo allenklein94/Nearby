@@ -351,6 +351,28 @@ CI-runnable as-is (just supply the token as a secret).
   personal story (no `partner_id`) is completely unaffected; and the
   admin-only dev tier switch rejects a non-admin and an invalid tier
   value.
+- **`ai-trust-engine.js`** — Business Intelligence Phase 6 (see CLAUDE.md,
+  Steps 2-3), the real AI Trust Engine sitting on top of Phase 8's
+  entitlements. Proves: `set_business_ai_trust_level()` is owner-only and
+  genuinely entitlement-checked (Level 2 rejected at basic, granted at
+  growth; Level 3 rejected at growth, granted at brand); the central
+  `_ai_authorize_action()` gate implements the real fixed 4-tier risk
+  taxonomy (critical is *never* authorized regardless of trust level;
+  low/medium/high scale with the real trust level); Level 1 auto-applies
+  a genuinely fresh `ai_inferred` attribute/category suggestion the
+  instant it's created once opted in, logs a real `ai_actions` row, and
+  `undo_ai_action()` genuinely reverses it (restores the real pre-change
+  value, re-opens the suggestion, rejects a repeat undo) — while a
+  `business_confirmed` suggestion or a business still at the default
+  trust_level=0 never auto-applies at all; a real, named Level 2
+  `business_ai_policies` row only ever auto-responds within its own
+  explicit conditions, sourcing its offer's real terms from an
+  already-approved `business_experiences` template (never an invented
+  price), logs a real `medium`-risk `auto_applied` row on a match and a
+  real, deduped `blocked` row with the specific reason on a near-miss;
+  and the pre-existing, untouched `business_fulfillment_policies`
+  auto-accept engine keeps firing exactly as before for a business that
+  never touches any of this.
 
 ## What's not covered
 

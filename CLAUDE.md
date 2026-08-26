@@ -218,7 +218,9 @@ mechanism.
    exactly as before for a business that never touches any of this.
 
 ### Status (Aug 26 2026, resumed after a codespace restart): Step 1 (Entitlements) is DONE,
-### build-wise and verified live. Steps 2-5 are NOT STARTED. Resume at Step 2.
+### build-wise and verified live. Steps 2 and 3 are now also DONE, build-wise and verified live
+### (see their own status note further down, right after this plan's own build-order text).
+### Steps 4-5 are next.
 
 Picked up mid-build after a restart — `git status` showed the migration
 (`supabase/migrations/20260826_v4_business_entitlements.sql`), `src/services/entitlements.js`,
@@ -308,15 +310,108 @@ directly via the Management API, not re-applied blind). Finished Step 1 from the
   run-through of any of this pass's own new UI has been done either, same standing gap as
   everywhere else in this file.
 
-**Resume here: Step 2 (AI Trust Engine core + Level 1) has not been started at all** — no
-`brand_partners.ai_trust_level` column, no `ai_actions` table, no `ai_authorize_action()` gate,
-no risk taxonomy, no `set_business_ai_trust_level()`, and Level 1 has not been wired into
-`business_attribute_suggestions`' existing suggest-flow. Steps 3-5 are likewise fully
-unstarted. Read this whole plan section from the top (the "locked instruction," the schema
-design, the risk-taxonomy reconciliation, and the locked rollback scope) before writing any
-code for Step 2 — it has real, specific design decisions already made (the Level 2→MEDIUM-risk
-reconciliation, the `business_ai_policies` conditions shape, the "log a real near-miss, not
-indiscriminate noise" convention) that a fresh read should not re-derive or second-guess.
+### Status: Steps 2-3 (AI Trust Engine core + Level 1, and the Level 2/3 policy model +
+### auto-respond action) are now DONE, build-wise, applied to production, and verified live —
+### picked up in a fresh session, read this whole plan section from the top before touching
+### either migration further, same as this note itself already did.
+
+**Step 2 — `20260905_ai_trust_engine_core.sql`.** Built exactly to the locked schema/design
+above, no changes during implementation. `brand_partners.ai_trust_level` (integer, default 0,
+check 0-3 — every existing row backfilled to 0, zero behavior change for a business that never
+touches this). `business_ai_policies` (table only this migration — its own owner-only SELECT
+RLS, no direct client write; the upsert/delete RPCs land in Step 3 alongside the one real thing
+that reads it). `ai_actions` (the immutable audit log — owner-only SELECT RLS, no direct client
+write, a real partial unique index on `(policy_id, input_ref->>'request_id') where
+approval_result = 'blocked'` closing the "log a real near-miss, not indiscriminate noise"
+convention at the schema level, not just by discipline). A new internal `_ai_authorize_action(
+partner_id, risk_level)` — the one central gate, locked down (no client grant, callable only
+nested from within another SECURITY DEFINER function, same established pattern as
+`_business_request_fanout()`/`_match_request_to_policy()`) — implementing the real fixed 4-tier
+taxonomy: `critical` is *never* authorized regardless of trust level (the one hard,
+unconditional rule); `low`/`medium`/`high` scale directly with `ai_trust_level >= 1/2/3`.
+`set_business_ai_trust_level()` — owner-only, and genuinely entitlement-checked against the
+already-seeded `ai_level_2`/`ai_level_3` `plan_entitlements` rows from Step 1 (Level 0/1 never
+hit the entitlement check, matching `ai_level_1` being enabled on every real tier today).
+`record_business_attribute_suggestion()` re-pointed (pulled fresh from its live body first,
+every existing line unchanged) to close the real Level 1 wiring: a genuinely fresh insert (not
+the idempotent re-fetch-an-existing-suggestion branch) whose `source = 'ai_inferred'` and whose
+`attribute_key` is one of the two atomically-applicable keys (`category`/`attribute`, the
+latter re-validated against the real 8-value vocabulary) now auto-applies the instant
+`_ai_authorize_action(partner_id, 'low')` says the business has genuinely opted in
+(`ai_trust_level >= 1`) — writes the real change, flips the suggestion straight to `confirmed`,
+and logs a real `ai_actions` row (`risk_level: 'low'`, `approval_result: 'auto_applied'`,
+`rollback_ref` capturing the real pre-change value). Every other suggestion source
+(`business_confirmed`/`business_entered` — already the owner's own words; `consumer_observed`/
+`system_observed` — weaker third-party evidence, matching the locked "never a new
+customer-facing claim from weak evidence" rule) is completely unaffected, and a business still
+at the default `ai_trust_level = 0` sees zero behavior change. `undo_ai_action()` — the one
+reversible action type this pass adds, deliberately narrow per the locked rollback scope:
+rejects anything that isn't a still-`auto_applied`, not-yet-reverted
+`auto_apply_attribute_suggestion` row, restores the real pre-change value from `rollback_ref`,
+and re-opens the underlying suggestion (`status` back to `suggested`, `reviewed_at` cleared) for
+a real manual re-review rather than silently discarding it.
+
+**Step 3 — `20260905_v2_ai_trust_engine_policies.sql`.** `upsert_business_ai_policy()`/
+`delete_business_ai_policy()` — owner-only, entitlement-checked the same way
+`set_business_ai_trust_level()` already is (a level-2 policy needs `ai_level_2`, a level-3
+policy needs `ai_level_3`), and a real, concrete validation that a policy's own `conditions`
+jsonb genuinely names a real category and a real, active, owned `business_experiences` template
+— never an empty/placeholder policy that could never actually fire. A new internal
+`_ai_auto_respond_to_business_requests()`, invoked from `create_business_request()` right
+alongside the existing `_business_request_fanout()`/`_match_request_to_availability()`/
+`_match_request_to_policy()` calls (pulled the **live** `create_business_request` body fresh
+first, confirmed every other line byte-for-byte unchanged before adding the one new call and its
+one new local variable) — fully additive, so a business that never touches Level 2/3 sees zero
+behavior change. Mirrors `_match_request_to_policy()`'s own real shape closely: the same
+reliability-respecting candidate order (established 5+-opportunity partners by real completion
+rate, then recency), matched against a business's own named, `enabled` `business_ai_policies`
+row (`action_type = 'auto_respond_offer'`, `trust_level <= brand_partners.ai_trust_level`, so a
+level-2 policy stays live if a business later raises its own ceiling to 3, and a level-3 policy
+only ever activates once the business genuinely reaches level 3) whose `conditions` genuinely
+match the real request (category, party size against `party_size_max`, time window against
+`hours_start`/`hours_end`). A real match auto-creates a real `business_request_offers` row using
+the named `experience_id`'s own real `price_level` as the offer's terms (never an invented
+price — `price_level` maps to a fixed, honest `$`/`$$`/`$$$` → dollar-range convention, matching
+this schema's own established "price_level is never guessed" rule), same upsert shape
+`_match_request_to_policy()` already uses, and logs a real `ai_actions` row (`action_type:
+'auto_respond_offer'`, `risk_level: 'medium'` per the reconciliation, `approval_result:
+'auto_applied'`, `confidence: null`). A policy that exists but fails one condition (category,
+party size, hours, or an inactive/mismatched experience) logs a real, deduped `blocked` row with
+the specific reason instead — never a fabricated success.
+
+Both migrations **verified live against production** (`enmosvippabmuqslzrox`), not just applied
+— a new, permanent `scripts/live-verify/ai-trust-engine.js` (registered in `run-all.js`,
+documented in the README's own "What's covered" list) proves every real behavior end-to-end
+against real disposable test data on the real `Coastal Coffee` partner (coordinates/tier/
+`ai_trust_level` all temporarily set, fully reverted after): `set_business_ai_trust_level()`'s
+ownership + entitlement gating both directions (basic rejects Level 2, Growth grants Level 2 but
+rejects Level 3, Brand grants Level 3); `_ai_authorize_action()`'s full 4-tier taxonomy,
+including `critical` staying rejected even at `ai_trust_level = 3`; Level 1's real auto-apply +
+`ai_actions` logging + `undo_ai_action()` genuinely restoring the real pre-change value (the
+test's own first pass caught and fixed a real assumption bug in the *test script itself*, not
+the migration — it assumed the partner's `category` would revert to `null`, when the real,
+already-on-record value is `'food_drink'`, per this file's own Aug 11 2026 "Category grouping"
+entry; the fix was asserting against the real captured pre-test value instead, not touching the
+migration); that `business_confirmed`/a still-level-0 business never auto-apply; a real Level 2
+policy auto-responding only on a genuine match, sourcing its offer price honestly from the
+experience's own `price_level`, and logging a real `blocked` row (not a fabricated success) on a
+genuine category mismatch, with the identical repeat ask correctly hitting the existing spam
+guard rather than double-logging; and the pre-existing, completely untouched
+`business_fulfillment_policies` auto-accept engine still firing exactly as before. All 39
+assertions pass; production confirmed back to its exact pre-test baseline (0 policies, 0
+actions, 0 experiences, 0 requests, 0 fulfillment policies, and the real partner's own
+`category`/`attributes`/`tier`/coordinates/`ai_trust_level` all reverted to their exact
+pre-test values).
+
+**Not done this pass, disclosed rather than silently skipped**: no real from-scratch Docker
+migration replay was run for either of these two migrations — time was prioritized toward
+finishing Steps 4-5 in the same session, matching this file's own occasional precedent for
+exactly this tradeoff elsewhere. Flagged for a future catch-up pass rather than assumed clean.
+No manual simulator/device run-through of anything in this whole plan yet — that's still ahead
+of Step 4's own UI work.
+
+Steps 4-5 pick up from here — read the rest of this plan section (the locked build order, the
+UI/Activity-Log spec, and the live-verify requirements) before starting either.
 
 ### Explicitly not attempted, restated so nothing here reads as silently dropped
 
