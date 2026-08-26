@@ -279,11 +279,14 @@ export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRep
 // world-readable ("Anyone can view gatherings"), so this embed needs no
 // new policy. Used to build BusinessDashboardScreen's "Upcoming Nearby
 // Visits" card -- naming the specific gathering/date, not a generic
-// accepted-offer row.
+// accepted-offer row. price_level/party_type were added for Phase 3 (see
+// CLAUDE.md's own plan) -- a real, gathering-sourced signal for the
+// deterministic offer-recommendation ranking, only ever present for a
+// gathering-sourced request.
 export async function getBusinessOpportunities(partnerId) {
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at, gathering_id, match_id, attributes, cuisine, gatherings(title, scheduled_at))')
+    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at, gathering_id, match_id, attributes, cuisine, gatherings(title, scheduled_at, price_level, party_type))')
     .eq('partner_id', partnerId)
     .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);

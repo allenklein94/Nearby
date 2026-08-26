@@ -262,9 +262,85 @@ correctly against real data (a genuinely higher-scoring opportunity should visib
 lower-scoring one), that the itemized reason lines render cleanly when several signals match at
 once, and that the renamed "Match Radar" header reads correctly in place.
 
-Pick up Phase 3 (Transactions: a deterministic, non-LLM offer-recommendation ranking over the
-existing `business_experiences` templates + fulfillment policy + real historical acceptance
-rate) next.
+### Status: Phase 3 — DONE, build-wise. Phases 4-8 remain locked plan only, not started.
+
+Built exactly per the locked design — a deterministic, non-LLM offer-recommendation ranking, no
+new schema/RPC needed at all (confirmed before building: every input already lives in data
+`BusinessDashboardScreen.js` already loads — this partner's own full opportunity history in
+`opportunities`, its own active Signature Experiences in `experiences`, and its own fulfillment
+policy — matching Phase 2's own "computed at read time, no new query" precedent exactly).
+
+**New `src/services/businessOfferRecommendation.js`** — two real, independent scoring pieces,
+both pure functions, no I/O:
+- **`computeOfferTypeAcceptanceRates(allOffers)`** — this one partner's own real, per-offer-type
+  (`standard|discount|perk|upgrade|alt_time`) acceptance rate, computed from their own past
+  `business_request_offers` rows only counting real responded offers, gated on a real 3+
+  minimum sample per type (matches `formatPartnerReliabilityLine()`'s own established `rated_count
+  >= 3` minimum for a comparably narrow slice of history) — a type with too few real responses
+  is silently absent, never a fabricated 1-of-1 100%. **`bestAcceptedOfferType()`** picks the
+  single real highest-rate type, or `null` when nothing has enough history yet.
+- **`rankExperiencesForOpportunity()`** — ranks the business's own real, active Signature
+  Experiences against one open opportunity by real attribute overlap (`SCORE_INTEREST_MATCH`,
+  reused not invented), a real party-type match against the opportunity's own gathering-sourced
+  `party_type` (`SCORE_INTEREST_MATCH`), a real price-level match against the gathering's own
+  `price_level` (`SCORE_HAPPENING_NOW`), and a real fulfillment-policy party-size fit
+  (`SCORE_CLOSE_DISTANCE`) — every weight reused verbatim from `intentResolverScoring.js`'s
+  shared `SCORE_*` convention, matching Phase 2's own explicit "no invented scale" rule. Only
+  ever returns an experience that genuinely scored above zero — a business with no matching
+  experience gets an honest empty list, never a padded "here are all your experiences again"
+  fallback, capped at `MAX_OFFER_SUGGESTIONS` (3). **Deliberately never invents a dollar price**:
+  an experience's own `price_level` is used only for matching, never converted into a fabricated
+  numeric `offer_price` — the owner always types their own real price, matching this schema's own
+  established "price_level is never guessed" rule from the Signature Experiences design itself.
+
+**One real, small schema-adjacent gap closed to make the party-type/price-level matching
+honest**: `getBusinessOpportunities()`'s existing `gatherings(title, scheduled_at)` embed (built
+for Gap 3 of the merged gathering/date business UX) widened to also select `price_level`/
+`party_type` — both real, already-existing columns on `gatherings` (from the Aug 24 2026
+category/filter taxonomy pass), just never previously selected here. Purely additive to an
+already-existing embed, no new query, no migration.
+
+**Client wiring, `BusinessDashboardScreen.js`**: the "Make an Offer" modal's sheet was converted
+from a plain `View` to a `ScrollView` (`keyboardShouldPersistTaps="handled"`, matching the
+Fulfillment Policy modal's own established precedent for a sheet with more content than fits one
+screen) to make room for a new suggestions section, rendered above the existing offer-type chip
+row: when the currently-open opportunity has 1+ real ranked Signature Experience matches, each
+renders as a real tappable card (title + its own itemized 🎯 reasons, same visual language the
+Opportunities list's own reason lines already use) — tapping one prefills the description
+(`"{title} -- {description}"`) and, when a real best-performing offer type exists, the offer-type
+chip too, never auto-submitting. When no experience matches (or the business has none), a single
+real "🏆 based on your own history, {type} offers get accepted N% of the time" card renders
+instead, sourced from `bestAcceptedOfferType()` — genuinely absent (not a placeholder) when the
+business has no real per-type history yet. `offerModalRequest`/`offerSuggestions`/
+`offerTypeAcceptance`/`suggestedOfferType` are all `useMemo`s reading only already-loaded state
+(placed after `fulfillmentPolicy`'s own `useState`, not before it — an earlier draft placed them
+before that declaration and hit a real `ReferenceError` from referencing it inside a dependency
+array ahead of its own initialization, caught and fixed before this was ever run).
+
+**3 new unit tests for `computeOfferTypeAcceptanceRates`/`bestAcceptedOfferType`, 10 for
+`rankExperiencesForOpportunity`** (`src/services/businessOfferRecommendation.test.js`, same "pure
+function, no I/O" convention as `businessOpportunityScoring.test.js`) — covering the below-
+minimum-sample suppression, a real accepted/responded percentage, ignoring not-yet-responded
+offers, picking the real highest-rate type, the empty-list-not-a-fallback case, each of the three
+scoring dimensions individually and stacked together, the real "outside the policy range earns
+nothing" negative case, excluding an inactive experience, and the sort-plus-cap behavior. Full
+suite now **120/120 passing** (107 pre-existing + 13 new).
+
+Verified via a direct `@babel/core` parse of all three touched/new files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, 2263 modules — one more than the
+2262 baseline, the one new `businessOfferRecommendation.js`; the new `.test.js` file is correctly
+excluded from the Metro bundle).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the suggestions section renders correctly on a real
+device for a business with real Signature Experiences and real opportunity history (both the
+experience-match branch and the offer-type-only fallback branch), that tapping a suggestion
+correctly prefills the description/offer-type without touching price, and that the modal still
+scrolls and submits correctly now that it's a `ScrollView` rather than a plain `View`.
+
+Pick up Phase 4 (Learning: missed-match instrumentation — a new exclusion-reason log inside the
+existing fan-out/matching functions, aggregated view only, never a raw per-event dump; a business
+× category outcome breakdown extending the existing outcome RPCs) next.
 
 
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section

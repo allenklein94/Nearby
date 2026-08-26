@@ -18,6 +18,7 @@ import { getMyReservationProviderStatus, updateReservationProvider } from '../se
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion, getBusinessAttributeSuggestions, setBusinessPrioritySignal, clearBusinessPrioritySignal, getActiveBusinessPrioritySignals } from '../services/businessIntelligence';
 import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring';
+import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
@@ -223,6 +224,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
   }, [opportunities, selectedPartner, activePrioritySignals]);
+  // Business Intelligence & Opportunity Engine, Phase 3 -- a real,
+  // deterministic offer-recommendation ranking, entirely client-side over
+  // data this screen already has loaded (this partner's own full
+  // opportunity history in `opportunities`, its own active Signature
+  // Experiences in `experiences`, its own fulfillment policy) -- no new
+  // query, matching Phase 2's own "computed at read time" precedent.
+  const offerTypeAcceptance = useMemo(() => computeOfferTypeAcceptanceRates(opportunities), [opportunities]);
+  const suggestedOfferType = useMemo(() => bestAcceptedOfferType(offerTypeAcceptance), [offerTypeAcceptance]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   const [myAvailability, setMyAvailability] = useState([]);
@@ -240,6 +249,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // standing fulfillment policy the owner sets once, instead of a
   // one-time availability posting.
   const [fulfillmentPolicy, setFulfillmentPolicy] = useState(null);
+  // The request the "Make an Offer" modal is currently open for --
+  // looked up from the already-loaded `opportunities` list, not a second
+  // fetch. Business Intelligence & Opportunity Engine, Phase 3 (see
+  // CLAUDE.md's own plan).
+  const offerModalRequest = useMemo(
+    () => opportunities.find((o) => o.request_id === offerModalRequestId)?.business_requests ?? null,
+    [opportunities, offerModalRequestId]
+  );
+  const offerSuggestions = useMemo(() => {
+    if (!offerModalRequest) return [];
+    return rankExperiencesForOpportunity({
+      requestAttributes: offerModalRequest.attributes ?? [],
+      requestPartyType: offerModalRequest.gatherings?.party_type ?? null,
+      requestPriceLevel: offerModalRequest.gatherings?.price_level ?? null,
+      requestPartySize: offerModalRequest.party_size ?? null,
+      experiences,
+      fulfillmentPolicy,
+    });
+  }, [offerModalRequest, experiences, fulfillmentPolicy]);
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
   const [policyPartySizeMinInput, setPolicyPartySizeMinInput] = useState('');
   const [policyPartySizeMaxInput, setPolicyPartySizeMaxInput] = useState('');
@@ -967,6 +995,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferPriceInput('');
     setOfferProposedTime(null);
     setShowOfferTimePicker(false);
+  }
+
+  // Business Intelligence & Opportunity Engine, Phase 3: tapping a real
+  // suggestion (either a ranked Signature Experience, or the best-
+  // performing real offer type from this partner's own history) prefills
+  // the form -- never auto-sends. Price is deliberately never touched: an
+  // experience's own price_level is a real signal, never a fabricated
+  // dollar amount, so the owner always types their own real price.
+  function applyExperienceSuggestion(suggestion) {
+    setOfferDescriptionInput(
+      suggestion.description ? `${suggestion.title} -- ${suggestion.description}` : suggestion.title
+    );
+    if (suggestedOfferType) {
+      if (suggestedOfferType.offerType !== 'alt_time') setOfferProposedTime(null);
+      setOfferTypeInput(suggestedOfferType.offerType);
+    }
+  }
+
+  function applySuggestedOfferType() {
+    if (!suggestedOfferType) return;
+    if (suggestedOfferType.offerType !== 'alt_time') setOfferProposedTime(null);
+    setOfferTypeInput(suggestedOfferType.offerType);
   }
 
   async function handleSubmitOffer() {
@@ -3603,12 +3653,48 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
-            <View style={styles.sheet}>
+            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>Make an Offer</Text>
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
                 Never just a discount -- offer whatever fits: your normal price, a discount, a
                 perk, an upgrade, or a different time that works better.
               </Text>
+              {offerSuggestions.length > 0 && (
+                <View style={{ marginBottom: spacing.md }}>
+                  <Text style={styles.notesLabel}>💡 Suggested from your Signature Experiences</Text>
+                  {offerSuggestions.map((s) => (
+                    <TouchableOpacity
+                      key={s.experienceId}
+                      style={styles.offerCard}
+                      onPress={() => applyExperienceSuggestion(s)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Use suggestion: ${s.title}`}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.offerTitle}>{s.title}</Text>
+                        {s.reasons.map((r) => (
+                          <Text key={r.label} style={[styles.breakdownText, { color: colors.primary, fontWeight: '600' }]}>
+                            🎯 {r.label}
+                          </Text>
+                        ))}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {offerSuggestions.length === 0 && suggestedOfferType && (
+                <TouchableOpacity
+                  style={[styles.offerCard, { marginBottom: spacing.md }]}
+                  onPress={applySuggestedOfferType}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use your best-performing offer type: ${suggestedOfferType.offerType}`}
+                >
+                  <Text style={styles.offerDescription}>
+                    🏆 Based on your own history, {OFFER_TYPE_OPTIONS.find((o) => o.key === suggestedOfferType.offerType)?.label ?? suggestedOfferType.offerType} offers
+                    get accepted {suggestedOfferType.rate}% of the time -- tap to use it
+                  </Text>
+                </TouchableOpacity>
+              )}
               <View style={styles.chipRow}>
                 {OFFER_TYPE_OPTIONS.map((o) => (
                   <TouchableOpacity
@@ -3691,7 +3777,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
-            </View>
+            </ScrollView>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
