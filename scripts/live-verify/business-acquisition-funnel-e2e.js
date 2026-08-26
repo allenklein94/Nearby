@@ -32,6 +32,22 @@ async function main() {
   const [beforeOwner] = await runSql(`select managed_partner_id from profiles where id = '${OWNER_ID}';`);
   assert(beforeOwner?.managed_partner_id === null, 'baseline: the test owner does not already manage a business');
 
+  // Captured once, before this run does anything -- business_acquisition_events is a real,
+  // shared, admin-facing table other live-verify scripts (and real anonymous docs/business.html
+  // traffic) also write to over time. A hardcoded absolute baseline here goes stale the moment
+  // anything else legitimately adds a row -- found live, 2026-08-26: this exact assertion (a
+  // hardcoded "back to 2 rows") started failing not because of a leak, but because real
+  // first_consumer_interaction/dashboard_viewed rows had genuinely accumulated against the real,
+  // permanent Coastal Coffee partner across many earlier, unrelated live-verify runs (each one's
+  // own cleanup deletes the business_profile_views row it inserted, which un-satisfies the
+  // trigger's own "NOT EXISTS a prior view" condition and lets the next unrelated test re-fire
+  // "first ever" ‑ a real, disclosed cross-script side effect, not organic traffic and not this
+  // run's own leftover). Comparing against a captured "before" snapshot instead of a magic number
+  // makes this script correct regardless of how much real history already exists.
+  const [globalBaselineBefore] = await runSql(
+    `select count(*) filter (where event = 'first_consumer_interaction')::int as fci, count(*)::int as total from business_acquisition_events;`
+  );
+
   const applySessionId = crypto.randomUUID();
   const dashboardSessionId = crypto.randomUUID();
   const businessName = 'live-verify: e2e test bakery ' + Date.now();
@@ -150,17 +166,19 @@ async function main() {
     assert(stats?.apply_approved >= 1, `funnel stats: apply_approved counted (${stats?.apply_approved})`);
     assert(stats?.published >= 1, `funnel stats: published counted (${stats?.published})`);
     assert(stats?.first_offer_created >= 1, `funnel stats: first_offer_created counted (${stats?.first_offer_created})`);
-    assert(stats?.first_consumer_interaction === 1, `funnel stats: first_consumer_interaction counted exactly once (${stats?.first_consumer_interaction})`);
+    assert(
+      stats?.first_consumer_interaction === globalBaselineBefore.fci + 1,
+      `funnel stats: first_consumer_interaction rose by exactly 1 from this run's own real trigger firing (before: ${globalBaselineBefore.fci}, after: ${stats?.first_consumer_interaction})`
+    );
     assert(typeof stats?.pct_submitted_to_approved === 'number', 'funnel stats: a real conversion percentage was computed, not null');
 
-    // Disclosed, real gap in the RPC itself (not this script) -- get_business_acquisition_funnel_stats()
-    // rolls up 12 of the 14 real CHECK-constraint event values but never reads profile_completed or
-    // dashboard_viewed at all, even though this run genuinely fired both. Confirmed directly (the keys
-    // are truly absent from the returned jsonb, not just falsy) rather than assumed.
-    assert(
-      stats?.profile_completed === undefined && stats?.dashboard_viewed === undefined,
-      'confirmed (not just assumed): get_business_acquisition_funnel_stats() does not roll up profile_completed/dashboard_viewed -- a real, disclosed gap in the RPC, not a bug in this test'
-    );
+    // A previously-disclosed gap in the RPC (get_business_acquisition_funnel_stats() not rolling
+    // up profile_completed/dashboard_viewed) has since been closed -- confirmed live 2026-08-26
+    // that the RPC now returns both real counts. This assertion was flipped from checking they
+    // were absent to checking they're genuinely counted, matching every other funnel-stat check
+    // above (>= 1, tolerant of real accumulated history rather than a fragile exact match).
+    assert(stats?.profile_completed >= 1, `funnel stats: profile_completed counted (${stats?.profile_completed})`);
+    assert(stats?.dashboard_viewed >= 1, `funnel stats: dashboard_viewed counted (${stats?.dashboard_viewed})`);
 
     // --- Milestone 4: the real owner-gated discovery stats reflect the real view(s) ---
     const [discovery] = await runSqlAsRls(OWNER_ID, `select get_business_discovery_stats('${partnerId}') as stats;`);
@@ -190,7 +208,10 @@ async function main() {
     assert(afterOwner?.managed_partner_id === null, 'cleanup confirmed: the test owner no longer manages any business');
 
     const [remaining] = await runSql(`select count(*)::int as n from business_acquisition_events;`);
-    assert(remaining?.n === 2, `cleanup confirmed: business_acquisition_events is back to its real 2-row pre-existing baseline (got ${remaining?.n})`);
+    assert(
+      remaining?.n === globalBaselineBefore.total,
+      `cleanup confirmed: business_acquisition_events is back to its exact real pre-test baseline (before: ${globalBaselineBefore.total}, after: ${remaining?.n})`
+    );
   }
 
   summarize('business-acquisition-funnel-e2e');
