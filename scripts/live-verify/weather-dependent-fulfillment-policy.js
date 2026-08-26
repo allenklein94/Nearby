@@ -1,4 +1,4 @@
-const { runSql, runSqlAs, assert, summarize } = require('../scripts/live-verify/lib/db.js');
+const { runSql, runSqlAs, assert, summarize } = require('./lib/db.js');
 
 const PARTNER_ID = '67dd3d6d-f36b-4b20-8a80-ac980baecc30'; // Coastal Coffee
 const OWNER_ID = 'ee74f1a9-9996-465d-a674-c60bc63fbfca'; // Allen

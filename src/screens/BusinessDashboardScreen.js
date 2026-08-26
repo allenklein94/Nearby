@@ -15,6 +15,7 @@ import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
+import { getBusinessEntitlements, hasEntitlement, entitlementLimit, checkLimit, parseEntitlementError, tierDisplayLabel, ENTITLEMENT_FEATURE_LABELS } from '../services/entitlements';
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion, getBusinessAttributeSuggestions, setBusinessPrioritySignal, clearBusinessPrioritySignal, getActiveBusinessPrioritySignals } from '../services/businessIntelligence';
 import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring';
@@ -177,7 +178,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // (see CLAUDE.md's own plan). Both real, aggregated-only over data
   // this screen fetches once per selectedPartner, not per render.
   const [missedMatchSummary, setMissedMatchSummary] = useState([]);
+  const [missedMatchLocked, setMissedMatchLocked] = useState(false);
   const [categoryOutcomes, setCategoryOutcomes] = useState([]);
+  const [categoryOutcomesLocked, setCategoryOutcomesLocked] = useState(false);
+  const [entitlements, setEntitlements] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [updateTitle, setUpdateTitle] = useState('');
@@ -804,6 +808,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // (id set) or, from a suggestion, pre-filling a not-yet-saved draft
   // (id left null so Save creates rather than updates).
   function openExperienceModal(existing = null, { fromSuggestionId = null } = {}) {
+    // Business Intelligence Phase 8: a real, honest pre-check before
+    // opening the form -- create_business_experience() is the real
+    // server-side gate either way (a stale/unfetched entitlements value
+    // never bypasses it), this just avoids someone filling out a whole
+    // new experience only to have it rejected at the very end. Only
+    // applies to creating a genuinely new row -- editing an existing one
+    // never counts against the cap.
+    if (!existing && entitlements) {
+      const { atLimit, limit } = checkLimit(entitlements, 'signature_experiences', experiences.length);
+      if (atLimit) {
+        Alert.alert(
+          `Upgrade for More Signature Experiences`,
+          `Your current plan is capped at ${limit} Signature Experience${limit === 1 ? '' : 's'}. Real plan upgrades aren’t available yet -- we’ll let you know the moment pricing is live.`
+        );
+        return;
+      }
+    }
     setEditingExperienceId(existing?.id ?? null);
     setExpTitleInput(existing?.title ?? '');
     setExpDescriptionInput(existing?.description ?? '');
@@ -840,7 +861,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await loadExperiences(selectedPartner.id);
       setExperienceModalVisible(false);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      // Real, server-side defense-in-depth: openExperienceModal()'s own
+      // pre-check reads a possibly-stale `entitlements` snapshot, so the
+      // actual RPC-level cap is what genuinely enforces this -- if it
+      // fires anyway, show the same honest upgrade copy instead of the
+      // raw ENTITLEMENT_LIMIT: error string.
+      const entitlementError = parseEntitlementError(e);
+      if (entitlementError?.kind === 'limit') {
+        showUpgradePlaceholder(entitlementError.feature);
+      } else {
+        Alert.alert('Error', e.message);
+      }
     }
     setSavingExperience(false);
   }
@@ -863,7 +894,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       });
       await loadExperiences(selectedPartner.id);
     } catch (e) {
-      Alert.alert('Error', e.message);
+      const entitlementError = parseEntitlementError(e);
+      if (entitlementError?.kind === 'limit') {
+        showUpgradePlaceholder(entitlementError.feature);
+      } else {
+        Alert.alert('Error', e.message);
+      }
     }
   }
 
@@ -946,9 +982,49 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadMyAvailability(selectedPartner.id);
         loadFulfillmentPolicy(selectedPartner.id);
         loadExperiences(selectedPartner.id);
+        loadEntitlements(selectedPartner.id);
       }
     }, [selectedPartner])
   );
+
+  // Business Intelligence Phase 8 (see CLAUDE.md) -- the real, owner-
+  // scoped plan read backing every tier-gated preview on this screen.
+  // Non-fatal: a failed fetch just means every gated section falls back
+  // to its own locked-preview state rather than the dashboard breaking.
+  async function loadEntitlements(partnerId) {
+    try {
+      const result = await getBusinessEntitlements(partnerId);
+      setEntitlements(result);
+    } catch (e) {
+      console.error('loadEntitlements failed', e);
+    }
+  }
+
+  function showUpgradePlaceholder(feature) {
+    const label = ENTITLEMENT_FEATURE_LABELS[feature] ?? feature;
+    Alert.alert(
+      `Upgrade for ${label}`,
+      'Real plan upgrades aren’t available yet -- we’ll let you know the moment pricing is live.'
+    );
+  }
+
+  // Business Intelligence Phase 8 -- one shared locked-preview treatment
+  // reused everywhere a gated feature has real UI on this screen (never a
+  // silent absence -- per the locked plan's own "client-side hiding is
+  // not security" note, this is purely a UX preview, the real gate is
+  // always the server-side check inside the RPC/trigger itself). `tier`
+  // is the currently-loaded entitlements.tier when known, so the copy
+  // can honestly name what the caller would need to move to next.
+  function renderLockedFeature(feature, description) {
+    const label = ENTITLEMENT_FEATURE_LABELS[feature] ?? feature;
+    return (
+      <TouchableOpacity style={styles.lockedFeatureCard} onPress={() => showUpgradePlaceholder(feature)} activeOpacity={0.8}>
+        <Text style={styles.lockedFeatureTitle}>🔒 {label}</Text>
+        {description ? <Text style={styles.lockedFeatureDescription}>{description}</Text> : null}
+        <Text style={styles.lockedFeatureCta}>See what you get →</Text>
+      </TouchableOpacity>
+    );
+  }
 
   // "Business Story" plan, Phase 6 -- Signature Experiences.
   async function loadExperiences(partnerId) {
@@ -1447,8 +1523,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const result = await getMissedMatchSummary(partnerId);
       setMissedMatchSummary(result);
+      setMissedMatchLocked(false);
     } catch (e) {
-      console.error('loadMissedMatchSummary failed', e);
+      const entitlementError = parseEntitlementError(e);
+      if (entitlementError?.kind === 'required') {
+        setMissedMatchLocked(true);
+      } else {
+        console.error('loadMissedMatchSummary failed', e);
+      }
     }
   }
 
@@ -1456,8 +1538,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const result = await getPartnerCategoryOutcomes(partnerId);
       setCategoryOutcomes(result);
+      setCategoryOutcomesLocked(false);
     } catch (e) {
-      console.error('loadCategoryOutcomes failed', e);
+      const entitlementError = parseEntitlementError(e);
+      if (entitlementError?.kind === 'required') {
+        setCategoryOutcomesLocked(true);
+      } else {
+        console.error('loadCategoryOutcomes failed', e);
+      }
     }
   }
 
@@ -1520,6 +1608,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // app doesn't have. Surfaces in Discover's "Happening Nearby" row.
   async function handlePostMoment() {
     if (!selectedPartner) return;
+    // Business Intelligence Phase 8: check the already-loaded entitlement
+    // before ever opening the camera -- a real, honest upgrade prompt
+    // instead of letting someone go through the whole capture flow only
+    // to have the server's enforce_business_moment_entitlement() trigger
+    // reject it at the very end. The trigger stays the real gate either
+    // way (a stale/unfetched `entitlements` never bypasses it).
+    if (entitlements && !hasEntitlement(entitlements, 'business_moments')) {
+      showUpgradePlaceholder('business_moments');
+      return;
+    }
     try {
       const media = await captureStoryMedia();
       if (!media) return;
@@ -1530,7 +1628,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await uploadBusinessMoment(myUserId, selectedPartner.id, media.uri, media.type);
       Alert.alert('Posted', 'Your moment is live for the next 24 hours — people nearby will see it under "Happening Nearby" on Discover.');
     } catch (e) {
-      Alert.alert('Error', e.message);
+      const entitlementError = parseEntitlementError(e);
+      if (entitlementError) {
+        showUpgradePlaceholder(entitlementError.feature);
+      } else {
+        Alert.alert('Error', e.message);
+      }
     }
     setPostingMoment(false);
   }
@@ -1915,6 +2018,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   >
                     {postingMoment ? (
                       <ActivityIndicator color={colors.primary} />
+                    ) : entitlements && !hasEntitlement(entitlements, 'business_moments') ? (
+                      <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔒 Post a Moment — Growth feature</Text>
                     ) : (
                       <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔴 Post a Moment (visible 24h)</Text>
                     )}
@@ -2157,6 +2262,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   Reads near-zero until there's real volume nearby, which is expected this early
                   on.
                 </Text>
+                {entitlements && !hasEntitlement(entitlements, 'advanced_match_radar') && (
+                  renderLockedFeature('advanced_match_radar', "Unlock the 🟡 unmet-intent signal and 🆕 demand-gap detection above -- see real searches nearby that found nothing, and categories you don't currently offer but people are asking for.")
+                )}
                 {aggregatedDemand.length === 0 ? (
                   <Text style={styles.emptyText}>No aggregated demand nearby yet.</Text>
                 ) : (
@@ -2469,7 +2577,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   posting didn't auto-match a nearby request. Honestly
                   absent when there's genuinely nothing to report. */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Why You Might Be Missing Requests</Text>
-              {missedMatchSummary.length === 0 ? (
+              {missedMatchLocked ? (
+                renderLockedFeature('missed_match_reporting', "See exactly why nearby requests slipped past your fulfillment policy or availability postings -- party size out of range, hours mismatch, category mismatch, and more.")
+              ) : missedMatchSummary.length === 0 ? (
                 <Text style={styles.emptyText}>Nothing missed in the last 30 days.</Text>
               ) : (
                 missedMatchSummary.map((m) => {
@@ -2492,6 +2602,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   get_partner_offer_reputation already computes across
                   every category at once, gated at the same real 5+
                   minimum sample per category. */}
+              {categoryOutcomesLocked && (
+                <>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Performance by Category</Text>
+                  {renderLockedFeature('category_outcomes', 'A real breakdown of your own acceptance/completion rate and satisfaction, per category, once you have enough history in each.')}
+                </>
+              )}
               {categoryOutcomes.length > 0 && (
                 <>
                   <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Performance by Category</Text>
@@ -3022,6 +3138,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Real, curated things people can come to you for -- shown on your public profile.
                 </Text>
+                {entitlements && entitlementLimit(entitlements, 'signature_experiences') !== null && (
+                  <Text style={[styles.helperText, checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit && { color: colors.primary, fontWeight: '700' }]}>
+                    {experiences.length} of {entitlementLimit(entitlements, 'signature_experiences')} used
+                    {checkLimit(entitlements, 'signature_experiences', experiences.length).atLimit ? ' -- upgrade for unlimited' : ''}
+                  </Text>
+                )}
                 {loadingExperiences ? (
                   <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
                 ) : experiences.length === 0 ? (
@@ -3790,6 +3912,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 Never just a discount -- offer whatever fits: your normal price, a discount, a
                 perk, an upgrade, or a different time that works better.
               </Text>
+              {/* Business Intelligence Phase 8: unlike missed-match/category-outcomes,
+                  this suggestion is computed entirely client-side over data the business
+                  already owns (its own experiences/opportunities) -- no server RPC boundary
+                  exists to enforce this at, so the entitlement gate is purely a rendering
+                  decision here, matching the feature's own real "convenience, not access to
+                  someone else's data" shape. */}
+              {entitlements && !hasEntitlement(entitlements, 'ai_offer_recommendations') ? (
+                <View style={{ marginBottom: spacing.md }}>
+                  {renderLockedFeature('ai_offer_recommendations', 'Get a suggested offer straight from your own Signature Experiences and your own past acceptance history -- never a guessed price.')}
+                </View>
+              ) : (
+              <>
               {offerSuggestions.length > 0 && (
                 <View style={{ marginBottom: spacing.md }}>
                   <Text style={styles.notesLabel}>💡 Suggested from your Signature Experiences</Text>
@@ -3825,6 +3959,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     get accepted {suggestedOfferType.rate}% of the time -- tap to use it
                   </Text>
                 </TouchableOpacity>
+              )}
+              </>
               )}
               <View style={styles.chipRow}>
                 {OFFER_TYPE_OPTIONS.map((o) => (
@@ -4259,6 +4395,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
     borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm,
   },
+  // Business Intelligence Phase 8 -- shared locked-preview treatment,
+  // reusing the same primaryMuted/primary-border "hero" language this
+  // app's own Home intent box and Best Pick card already established for
+  // "this matters, pay attention" -- not a new color language.
+  lockedFeatureCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.sm,
+  },
+  lockedFeatureTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
+  lockedFeatureDescription: { color: colors.textSecondary, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  lockedFeatureCta: { color: colors.primary, fontSize: 13, fontWeight: '700', marginTop: spacing.sm },
   offerTitle: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14 },
   offerDescription: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   offerRedemptionCount: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginTop: 4 },

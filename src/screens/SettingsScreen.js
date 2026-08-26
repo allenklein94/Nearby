@@ -885,6 +885,20 @@ export default function SettingsScreen({ navigation }) {
               <Text style={styles.rowButtonText}>Market Validation (Admin)</Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
+
+            {/* Business Intelligence Phase 8: dev/admin-only tier switch --
+                real plan-entitlement changes, no billing, never shown to a
+                real business anywhere else in the app. */}
+            <TouchableOpacity
+              style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('AdminBusinessTier')}
+              activeOpacity={0.85}
+              accessibilityLabel="Business tier switch, admin, development tooling"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Business Tier Switch (Admin, Dev)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
           </>
         )}
 

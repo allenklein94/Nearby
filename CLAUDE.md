@@ -217,6 +217,107 @@ mechanism.
    matching policy and never invents terms; the untouched fulfillment-policy engine keeps working
    exactly as before for a business that never touches any of this.
 
+### Status (Aug 26 2026, resumed after a codespace restart): Step 1 (Entitlements) is DONE,
+### build-wise and verified live. Steps 2-5 are NOT STARTED. Resume at Step 2.
+
+Picked up mid-build after a restart — `git status` showed the migration
+(`supabase/migrations/20260826_v4_business_entitlements.sql`), `src/services/entitlements.js`,
+and the new live-verify script all already written but uncommitted, plus partial wiring in
+`BusinessDashboardScreen.js` (entitlements fetch + `missedMatchLocked`/`categoryOutcomesLocked`
+state, but no actual locked-preview UI rendering yet, and no dev/admin tier-switch screen).
+Confirmed the migration was already live in production from before the restart (checked
+directly via the Management API, not re-applied blind). Finished Step 1 from there:
+
+- **A real, previously-undetected redaction leak found and fixed, live-verified**: a category
+  that exists *only* via unmet-intent data (zero real open requests) still survived
+  `get_aggregated_demand_for_partner()`'s full outer join for a non-advanced caller, surfacing a
+  confusing "🟡 0 recent searches" row that leaked the mere existence of hidden signal even
+  though its value was correctly zeroed. Fixed with a `where v_advanced or coalesce(rd.req_count,
+  0) > 0` filter — a non-advanced caller now simply never sees that category at all. Re-applied
+  to production directly (the migration file hadn't been committed yet, so it was edited in
+  place rather than left inconsistent with what's live) and covered with two new real assertions
+  in `business-entitlements.js` (basic tier sees nothing; upgrading to growth reveals the real
+  row) — both pass live.
+- **A second real bug found and fixed while building the dev/admin tier list**: the new
+  `admin_list_businesses()` RPC's `returns table(id uuid, ...)` creates an implicit `id`
+  OUT-parameter in scope for the whole function body, colliding with a bare `id` inside its own
+  `not exists (select 1 from profiles where id = auth.uid() ...)` ownership check — raised a real
+  "column reference is ambiguous" error on every call. Fixed by qualifying `profiles p ... p.id`.
+  Re-applied to production, re-verified live (admin sees the real test partner by name search,
+  a non-admin is rejected) — both pass.
+- **Tier-gated preview UI, built for every gated feature this dashboard has real UI for**: a
+  shared `renderLockedFeature()` helper (reusing the same `primaryMuted`/`primary`-border "hero"
+  card language Home's own intent box/Best Pick already established, not a new color language)
+  wired into: Missed-Match Reporting and Performance by Category (both show a real locked card
+  instead of silently rendering nothing when `ENTITLEMENT_REQUIRED` comes back); Match Radar's
+  advanced signal (a locked teaser explaining what's hidden, shown whenever `advanced_match_
+  radar` isn't entitled — the underlying 🟡/🆕 markers already can't leak real data either way
+  since the server redacts them to false/0, this is purely the "advertise what you'd get"
+  half); AI offer recommendations in the Make-an-Offer modal (gated client-side only, by
+  design — this feature has no server RPC boundary to enforce at, since it's pure client
+  computation over data the business already owns); Post a Moment (checks the already-loaded
+  entitlement before ever opening the camera, plus a defense-in-depth catch on the real
+  `enforce_business_moment_entitlement` trigger error); and Signature Experiences (a real "N of
+  3 used" indicator, a pre-check in `openExperienceModal()` before the form even opens, and
+  defense-in-depth `ENTITLEMENT_LIMIT` parsing in both `handleSaveExperience`/
+  `handleKeepSuggestion`'s catch blocks).
+- **The dev/admin tier-switch screen — DONE.** New `admin_list_businesses(search_param)` RPC
+  (admin-gated, sees inactive businesses RLS would otherwise hide from a raw client query) +
+  `admin_set_business_tier()` (already existed from before the restart) both wrapped in new
+  client wrappers (`adminListBusinesses`/`adminSetBusinessTier` in `services/entitlements.js`).
+  New `src/screens/AdminBusinessTierScreen.js` + `AdminBusinessTier` route
+  (`RootNavigator.js`) — a real search box + a per-business tier chip row (Core/Growth/Brand,
+  matching the locked "Core" display-label rename), a visible "🛠 Development tooling" banner,
+  and an `inactive` badge when relevant. Reachable from a new "Business Tier Switch (Admin,
+  Dev)" row in Settings' existing admin-only "Business (Admin)" cluster.
+- **Verified live against production, exhaustively — 25 real assertions, all passing**,
+  including the two new bugs found above: entitlement reads/rejections, the real 3-experience
+  cap and its rejection message, the redaction fix (both the original `is_demand_gap` case and
+  the new leaked-row case), the `ENTITLEMENT_REQUIRED` gate on missed-match/category-outcomes
+  (and that it lifts immediately on upgrade), the `business_moments` INSERT trigger (rejects at
+  basic, succeeds at growth, a plain personal story is completely unaffected), `admin_set_
+  business_tier`'s admin-only + invalid-tier checks, and `admin_list_businesses`' admin-only +
+  real-search-match checks. All test data cleaned up after every run — production confirmed
+  back to its exact pre-test baseline (`tier: basic, experiences: 0, moments: 0, requests: 0`)
+  every time.
+- **Client verified**: every touched/new file parses clean via a direct `@babel/core` transform;
+  a full `npx expo export --platform ios` built clean, no bundling errors, 2265 modules (one
+  more than the prior baseline — the one new `AdminBusinessTierScreen.js`); the full Jest suite
+  is unchanged, still 120/120 (no pure-logic file was touched this pass).
+- **A real, unrelated pre-existing bug found and fixed while running the full `scripts/
+  live-verify/run-all.js` regression suite** (not caused by this pass — from an earlier
+  session's Business Intelligence Phase 7 commit, `f6768250`): `weather-dependent-fulfillment-
+  policy.js` required `'../scripts/live-verify/lib/db.js'` instead of `'./lib/db.js'` — since
+  the script itself already lives inside `scripts/live-verify/`, that path resolved to a
+  doubly-nested, nonexistent `scripts/scripts/live-verify/lib/db.js` and crashed with
+  `MODULE_NOT_FOUND` before ever reaching its own `main()`. Fixed as a one-line path correction;
+  re-run standalone afterward — all 17 of its own assertions pass, cleanup confirmed back to
+  baseline (`requests: 0, offers: 0, exclusions: 0, policies: 0, queue: 0, lat: null`).
+- **Not done, disclosed rather than silently skipped**: the full 22-script `run-all.js`
+  regression suite was **not** re-run end-to-end after the `weather-dependent-fulfillment-
+  policy.js` fix — a session interruption (approaching a usage limit) landed exactly as that run
+  was being kicked off. Every individual script touched or newly added this pass
+  (`business-entitlements.js`, `weather-dependent-fulfillment-policy.js`) has been independently
+  verified standalone and passes clean with production confirmed back to baseline after each —
+  but the full sequential suite (all 22 scripts, ~6s spacing between each to avoid the
+  documented Management-API throttle) has not been confirmed to pass end-to-end since this
+  pass's changes landed. **Next session should run it first**, before doing anything else:
+  `export SUPABASE_ACCESS_TOKEN=<the token in .claude/mcp.json> SUPABASE_PROJECT_REF=enmosvippabmuqslzrox && node scripts/live-verify/run-all.js`
+  (it takes several minutes — run it in the background and check the output file rather than a
+  foreground timeout). If it passes clean, move on to Step 2. No manual simulator/device
+  run-through of any of this pass's own new UI has been done either, same standing gap as
+  everywhere else in this file.
+
+**Resume here: Step 2 (AI Trust Engine core + Level 1) has not been started at all** — no
+`brand_partners.ai_trust_level` column, no `ai_actions` table, no `ai_authorize_action()` gate,
+no risk taxonomy, no `set_business_ai_trust_level()`, and Level 1 has not been wired into
+`business_attribute_suggestions`' existing suggest-flow. Steps 3-5 are likewise fully
+unstarted. Read this whole plan section from the top (the "locked instruction," the schema
+design, the risk-taxonomy reconciliation, and the locked rollback scope) before writing any
+code for Step 2 — it has real, specific design decisions already made (the Level 2→MEDIUM-risk
+reconciliation, the `business_ai_policies` conditions shape, the "log a real near-miss, not
+indiscriminate noise" convention) that a fresh read should not re-derive or second-guess.
+
 ### Explicitly not attempted, restated so nothing here reads as silently dropped
 
 No real Stripe subscription integration, no new Stripe account, no change to the existing

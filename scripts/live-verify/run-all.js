@@ -29,6 +29,7 @@ const SCRIPTS = [
   'match-contacts-rate-limit.js',
   'group-plan-remove-participant.js',
   'weather-dependent-fulfillment-policy.js',
+  'business-entitlements.js',
 ];
 
 // A real, empirically-hit gotcha, not a guess: running the full suite back-to-back with no

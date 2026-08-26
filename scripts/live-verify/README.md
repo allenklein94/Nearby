@@ -331,6 +331,26 @@ CI-runnable as-is (just supply the token as a secret).
   repeat apply with nothing pending is a no-op, and a genuinely timed-out
   pending row is discarded after 10 minutes without ever touching the
   cached signal.
+- **`business-entitlements.js`** — Business Intelligence Phase 8 (see
+  CLAUDE.md), real server-enforced feature entitlements over the
+  existing `brand_partners.tier`. Proves the config-driven `plan_
+  entitlements` matrix end to end: a non-owner is rejected reading a
+  business's own entitlements; `create_business_experience()` genuinely
+  caps a basic-tier business at 3 (the real reconciled "Signature
+  Experiences == Offer Templates" cap) and rejects a 4th with a real,
+  client-recognizable error; `get_aggregated_demand_for_partner()`
+  genuinely *redacts* `is_demand_gap`/`unmet_intent_count` to false/0 for
+  a basic-tier business even when the real underlying data would
+  otherwise show them true/nonzero, and the identical row shows the real
+  values the instant the tier is upgraded (proving real redaction, not a
+  coincidence); `get_missed_match_summary()`/`get_partner_category_
+  outcomes()` both reject a basic-tier call with a real `ENTITLEMENT_
+  REQUIRED:` error and succeed the moment the tier is upgraded; the new
+  `stories.partner_id` INSERT trigger rejects a basic-tier business
+  moment and accepts the identical insert once upgraded, while a plain
+  personal story (no `partner_id`) is completely unaffected; and the
+  admin-only dev tier switch rejects a non-admin and an invalid tier
+  value.
 
 ## What's not covered
 
