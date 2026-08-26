@@ -462,9 +462,81 @@ real device once real missed-match/category-outcome data exists, and that the ho
 ("Nothing missed in the last 30 days") renders correctly for an account with no real exclusions
 yet (the common case today, given this app's real near-zero production request volume).
 
-Pick up Phase 5 (Intelligence: demand-gap detection — a real "you have demand for something you
-don't offer" recommendation, extending the existing aggregated-demand RPC and Nearby Brief chain)
-next.
+### Status: Phase 5 — DONE, build-wise. Phases 6-8 remain locked plan only, not started.
+
+Closes the real gap named in this plan's own audit table: `_business_request_fanout()` (read
+fresh, not assumed) notifies every eligible active partner within radius on distance/reputation
+alone, with **zero category filter** — confirmed directly in the fanout's live SQL before
+designing this phase. That means `get_aggregated_demand_for_partner()`'s per-category rollup can
+genuinely include a category this partner has never actually served (e.g. a coffee shop can see
+real "Wine" demand purely because fan-out reached them on distance, never on category fit), with
+no signal distinguishing "your best opportunity" (any category, served or not) from "a category
+you've never touched at all." This phase adds that signal, honestly, from real data only.
+
+**Schema, extending the existing RPC rather than building a second one, per this whole plan's own
+locked design** (`20260826_v2_demand_gap_detection.sql`, `drop`+`create` since the return shape
+changed): a new `is_demand_gap boolean` output column. "Served" is defined narrowly from two real
+signals only, never a guessed capability — (a) the partner has ever posted a real
+`business_availability` row in that exact category (any status, even expired — real evidence they
+once offered it), or (b) the partner has ever had a real `business_request_offers` row for that
+category reach `accepted`/`completed`. **Deliberately not** "has any offer row at all" — fan-out
+creates an auto-generated `pending` row for nearly every eligible partner regardless of category
+match, so that alone would be a false positive for "serves this category," the exact trap this
+phase exists to avoid.
+
+**Client**: `BusinessDashboardScreen.js`'s Nearby Brief single-suggestion chain (Phase 5 of the
+"Business Story" plan) gains a new, lowest-priority branch — a real demand-gap category (real
+signal, `is_demand_gap = true`), ranked by combined `request_count + unmet_intent_count`, honest
+copy distinguishing a real open-request count from a softer unmet-intent-only count, tapping
+straight into the already-real, already-verified "+ Post Availability" modal pre-filled with that
+category (`openPostAvailabilityModal()`, reused verbatim, not a new mechanism). Match Radar's own
+per-category rows gain a real "🆕 You don't currently offer this" line, kept deliberately separate
+from the existing 🟡 unmet-intent marker — the two are genuinely different concepts (signal
+confidence vs. whether the partner has ever served the category at all), and conflating them would
+misrepresent a category with a real open request as unconfirmed just because it's also unserved.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real disposable
+test data against the real `Coastal Coffee` partner (coordinates temporarily set, reverted after):
+a real open "Wine" request correctly returned `is_demand_gap: true` (never served) with
+`request_count: 1`; posting a real `business_availability` row in "Wine" correctly flipped it to
+`false` — the availability-posting half of "served" proven, not assumed. A second real open
+"Sports" request correctly returned `is_demand_gap: true` before any offer existed; inserting a
+real `accepted` `business_request_offers` row for it correctly flipped it to `false` — the
+accepted-offer half of "served" proven independently. A genuine non-owner's call correctly
+returned zero rows. All test rows deleted and `Coastal Coffee`'s coordinates reverted to `null`
+afterward — confirmed production back to its exact pre-test baseline (0 `business_requests`, 0
+`business_request_offers`, 0 `business_availability`).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public` schema,
+patched the two known image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the
+test container only, then ran the full 96-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, the widened function (with the new
+`is_demand_gap` column, confirmed as the *only* signature) present in the freshly-rebuilt
+database. Container removed afterward.
+
+Verified via a direct `@babel/core` parse of the one touched file (clean), the full Jest suite
+(unchanged, still 120/120 — no pure-logic file was touched this phase), and a full `npx expo
+export --platform ios` (clean, no bundling errors — edit to one existing file only, no new client
+files this phase).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm both the new Nearby Brief demand-gap suggestion and
+Match Radar's new "🆕 You don't currently offer this" line render correctly on a real device once
+real gap-shaped demand exists nearby a real business.
+
+**Explicitly out of scope for this phase, per its own locked framing** — restated so a future
+session doesn't silently expand it: this is a per-partner, own-dashboard-only signal. The broader
+"cross-business underserved demand" framing from this plan's own original audit table (spec items
+36-37 — e.g. recommending to Nearby ops which categories of business to recruit as partners, or
+surfacing a market-wide gap to a consumer) was **not** attempted — that's a genuinely different,
+larger feature (aggregating across every partner in an area, not one partner's own real capability
+signal) and wasn't named in this phase's own locked design text.
+
+Pick up Phase 6 (Automation: AI trust levels 1-3, only if and when a real, explicit go-ahead
+exists — not scheduled by default, per this plan's own locked framing) next. Per that framing,
+Phase 6 is **not** expected to be picked up autonomously; if reached without a real go-ahead
+already on record, flag that explicitly rather than building it.
 
 
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section

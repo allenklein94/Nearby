@@ -1761,6 +1761,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   const pendingCount = opportunities.filter((o) => o.status === 'pending' && o.business_requests?.status === 'open').length;
                   const totalDemand = aggregatedDemand.reduce((sum, d) => sum + (Number(d.request_count) || 0), 0);
                   const bestDemand = [...aggregatedDemand].sort((a, b) => (Number(b.request_count) || 0) - (Number(a.request_count) || 0))[0];
+                  // Business Intelligence Phase 5 (Intelligence): a real
+                  // demand-gap category -- real nearby signal (either a
+                  // real open request or real unmet intent) in a category
+                  // this partner has never actually served, per
+                  // get_aggregated_demand_for_partner()'s own new
+                  // is_demand_gap column. Ranked by combined real signal
+                  // (request_count + unmet_intent_count), never blended
+                  // into totalDemand/bestDemand above -- those still
+                  // reflect every category regardless of served status.
+                  const demandGaps = aggregatedDemand.filter(
+                    (d) => d.is_demand_gap && (Number(d.request_count) > 0 || Number(d.unmet_intent_count) > 0)
+                  );
+                  const bestGap = [...demandGaps].sort(
+                    (a, b) => (Number(b.request_count) + Number(b.unmet_intent_count)) - (Number(a.request_count) + Number(a.unmet_intent_count))
+                  )[0];
                   let suggestion = null;
                   if (!selectedPartner.differentiator) {
                     suggestion = { text: "Add what makes you different — it's one of the strongest signals people use to pick you.", onPress: () => setEditProfileModalVisible(true) };
@@ -1775,6 +1790,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     suggestion = { text: "Set your availability so people know you're open right now.", onPress: () => setSection('business') };
                   } else if (pendingCount > 0) {
                     suggestion = { text: `${pendingCount} request${pendingCount === 1 ? ' is' : 's are'} waiting for a reply.`, onPress: () => setSection('requests') };
+                  } else if (bestGap) {
+                    const realCount = Number(bestGap.request_count);
+                    const gapText = realCount > 0
+                      ? `${realCount} ${realCount === 1 ? 'person' : 'people'} nearby wanted ${bestGap.category} — something you don't currently offer.`
+                      : `${bestGap.unmet_intent_count} recent ${Number(bestGap.unmet_intent_count) === 1 ? 'search' : 'searches'} nearby for ${bestGap.category} — something you don't currently offer.`;
+                    suggestion = { text: gapText, onPress: () => openPostAvailabilityModal({ category: bestGap.category, dominantPeriod: bestGap.dominant_period }) };
                   }
                   return (
                     <View style={styles.briefCard}>
@@ -2120,8 +2141,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   Real open requests within reach of your business right now, grouped by
                   category -- a quantified early signal, not a review score. Categories marked
                   🟡 are a softer signal: real recent searches nearby that found nothing, not a
-                  confirmed request. Reads near-zero until there's real volume nearby, which is
-                  expected this early on.
+                  confirmed request. A 🆕 marker means real demand exists in a category you've
+                  never actually offered (no availability posted, no offer ever accepted there).
+                  Reads near-zero until there's real volume nearby, which is expected this early
+                  on.
                 </Text>
                 {aggregatedDemand.length === 0 ? (
                   <Text style={styles.emptyText}>No aggregated demand nearby yet.</Text>
@@ -2141,6 +2164,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <Text style={styles.offerTitle}>
                           🟡 {d.unmet_intent_count} recent {d.unmet_intent_count === 1 ? 'search' : 'searches'} near you for {d.category} found nothing
                         </Text>
+                      )}
+                      {d.is_demand_gap && (
+                        // Business Intelligence Phase 5 (Intelligence): a
+                        // genuinely different concept from the 🟡 marker
+                        // above -- that one is about confidence of the
+                        // signal itself, this one is about whether the
+                        // partner has ever actually served this category
+                        // at all. Kept as its own line so the two never
+                        // conflate.
+                        <Text style={styles.helperText}>🆕 You don't currently offer this</Text>
                       )}
                       {d.request_count > 0 && (
                         <Text style={styles.breakdownText}>
