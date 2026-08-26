@@ -10,7 +10,7 @@ import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusin
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS } from '../services/businessFulfillment';
 import { checkTextModeration } from '../services/textModeration';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
@@ -173,6 +173,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const [gatherings, setGatherings] = useState([]);
   const [insights, setInsights] = useState(null);
+  // Business Intelligence & Opportunity Engine, Phase 4 -- "Learning"
+  // (see CLAUDE.md's own plan). Both real, aggregated-only over data
+  // this screen fetches once per selectedPartner, not per render.
+  const [missedMatchSummary, setMissedMatchSummary] = useState([]);
+  const [categoryOutcomes, setCategoryOutcomes] = useState([]);
   const [communities, setCommunities] = useState([]);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [updateTitle, setUpdateTitle] = useState('');
@@ -923,6 +928,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadOffers(selectedPartner.id);
         loadGatherings(selectedPartner.id);
         loadInsights(selectedPartner.id);
+        loadMissedMatchSummary(selectedPartner.id);
+        loadCategoryOutcomes(selectedPartner.id);
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
         // Fetches conversations once and feeds the same result to both
@@ -1419,6 +1426,27 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
       console.error('loadInsights failed', e);
+    }
+  }
+
+  // Business Intelligence & Opportunity Engine, Phase 4 -- "Learning."
+  // Both real, non-fatal secondary loads, matching this screen's own
+  // established convention.
+  async function loadMissedMatchSummary(partnerId) {
+    try {
+      const result = await getMissedMatchSummary(partnerId);
+      setMissedMatchSummary(result);
+    } catch (e) {
+      console.error('loadMissedMatchSummary failed', e);
+    }
+  }
+
+  async function loadCategoryOutcomes(partnerId) {
+    try {
+      const result = await getPartnerCategoryOutcomes(partnerId);
+      setCategoryOutcomes(result);
+    } catch (e) {
+      console.error('loadCategoryOutcomes failed', e);
     }
   }
 
@@ -2382,6 +2410,58 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               ) : (
                 <Text style={styles.emptyText}>Not enough activity yet to show real insights.</Text>
               )}
+
+              {/* Business Intelligence & Opportunity Engine, Phase 4 --
+                  "Learning" (see CLAUDE.md's own plan). A real,
+                  aggregated-only view -- never a raw per-request dump --
+                  of why a real active fulfillment policy/availability
+                  posting didn't auto-match a nearby request. Honestly
+                  absent when there's genuinely nothing to report. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Why You Might Be Missing Requests</Text>
+              {missedMatchSummary.length === 0 ? (
+                <Text style={styles.emptyText}>Nothing missed in the last 30 days.</Text>
+              ) : (
+                missedMatchSummary.map((m) => {
+                  const info = MISSED_MATCH_REASON_LABELS[m.reason] ?? { label: m.reason, hint: null };
+                  return (
+                    <View key={`${m.source}-${m.reason}`} style={styles.offerCard}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.offerTitle}>
+                          {info.label} · {m.exclusion_count}x
+                        </Text>
+                        {info.hint && <Text style={styles.offerDescription}>{info.hint}</Text>}
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+
+              {/* The other real half of Phase 4 -- a business x category
+                  breakdown of the same funnel/satisfaction numbers
+                  get_partner_offer_reputation already computes across
+                  every category at once, gated at the same real 5+
+                  minimum sample per category. */}
+              {categoryOutcomes.length > 0 && (
+                <>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Performance by Category</Text>
+                  {categoryOutcomes.map((c) => (
+                    <View key={c.category} style={styles.offerCard}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.offerTitle}>{c.category}</Text>
+                        <Text style={styles.offerDescription}>
+                          {c.total_opportunities} opportunit{c.total_opportunities === 1 ? 'y' : 'ies'} · {c.acceptance_rate ?? 0}% accepted · {c.completion_rate ?? 0}% completed
+                        </Text>
+                        {c.rated_count >= 3 && (
+                          <Text style={styles.offerDescription}>
+                            ⭐ {c.pct_satisfied ?? 0}% satisfied · {c.pct_would_repeat ?? 0}% would repeat
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
+
               <TouchableOpacity
                 style={[styles.createOfferButton, { marginTop: spacing.lg }]}
                 onPress={() => navigation.navigate('BusinessAIAssistant', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}

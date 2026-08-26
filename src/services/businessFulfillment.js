@@ -501,6 +501,61 @@ export async function getPartnerOfferReputation(partnerId) {
   return data?.[0] ?? null;
 }
 
+// Business Intelligence & Opportunity Engine, Phase 4 -- "Learning" (see
+// CLAUDE.md's own plan). A real, aggregated-only view over
+// business_match_exclusions -- never a raw per-event dump, only counts
+// grouped by source/reason over a real recent window. Owner-gated
+// server-side; a non-owner call returns an empty array, matching this
+// schema's established "just don't show it" posture.
+export async function getMissedMatchSummary(partnerId, daysBack = 30) {
+  const { data, error } = await supabase.rpc('get_missed_match_summary', {
+    partner_id_param: partnerId,
+    days_back_param: daysBack,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// The other real half of Phase 4 -- extends get_partner_offer_reputation's
+// own exact funnel-stat shape, grouped by the real business_requests
+// category this partner actually got opportunities in, gated at the same
+// real 5+ minimum sample per category.
+export async function getPartnerCategoryOutcomes(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_category_outcomes', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// Real, human-readable labels for the fixed exclusion-reason vocabulary --
+// shared so the UI never has to re-derive them, and so a business owner
+// reading "no_auto_accept" never has to guess what it actually means.
+export const MISSED_MATCH_REASON_LABELS = {
+  no_auto_accept: {
+    label: "Your fulfillment policy doesn't auto-accept any party size yet",
+    hint: 'Set an auto-accept party size in your Fulfillment Policy to catch requests like these automatically.',
+  },
+  party_size_out_of_range: {
+    label: 'Party size outside your policy',
+    hint: 'Consider raising your auto-accept party size or your policy’s party-size range.',
+  },
+  hours_mismatch: {
+    label: "Requested time was outside your policy's active hours",
+    hint: 'Widen your Fulfillment Policy’s active hours if you’re actually open then.',
+  },
+  category_mismatch: {
+    label: "A posting's category didn't match what was asked for",
+    hint: 'Post availability under the category people are actually asking for.',
+  },
+  zero_capacity: {
+    label: 'A posting had no remaining capacity',
+    hint: 'Post fresh availability once you have real capacity again.',
+  },
+  date_or_time_mismatch: {
+    label: "A posting's date/time didn't overlap what was asked for",
+    hint: 'Post availability for the real dates/times people are actually asking about.',
+  },
+};
+
 // Shared formatting so BusinessRequestDetailScreen and BusinessProfileScreen
 // never drift onto two different renderings of the same underlying
 // numbers. Only speaks once there's genuinely enough history to say

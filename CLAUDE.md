@@ -338,9 +338,133 @@ experience-match branch and the offer-type-only fallback branch), that tapping a
 correctly prefills the description/offer-type without touching price, and that the modal still
 scrolls and submits correctly now that it's a `ScrollView` rather than a plain `View`.
 
-Pick up Phase 4 (Learning: missed-match instrumentation — a new exclusion-reason log inside the
-existing fan-out/matching functions, aggregated view only, never a raw per-event dump; a business
-× category outcome breakdown extending the existing outcome RPCs) next.
+### Status: Phase 4 — DONE, build-wise. Phases 5-8 remain locked plan only, not started.
+
+Both real pieces built, applied to production, and verified live (including two real bugs caught
+by live testing, not assumed correct from reading the SQL — see below) before this file was
+updated.
+
+**Locked scope decision, made while designing this phase, not silently expanded past what the
+plan asked for**: only `_match_request_to_policy()` and `_match_request_to_availability()` are
+instrumented — `_business_request_fanout()` deliberately is not. The fan-out is plain distance/
+reputation ranking over every active partner; there's no business-side "eligibility setting" a
+partner can genuinely fail there, so logging "too far" for every partner within some radius on
+every request would be indiscriminate noise, not an actionable signal. The policy/availability
+matchers are different: a business explicitly opted in (an active fulfillment policy or
+availability posting) and can genuinely act on why it didn't auto-match. A second, related scope
+boundary: only candidates genuinely within the request's own real search radius are ever
+evaluated (the same distance bound the matchers already use), so `out_of_radius` was dropped
+entirely as a possible logged reason — nothing outside radius is ever a "near miss" worth
+logging, which also keeps row growth bounded to genuinely nearby, genuinely relevant candidates.
+A policy/posting that satisfies every real predicate but simply lost to the existing `limit 5`
+ranking cutoff (6+ equally-eligible candidates for one request) is **not** logged as an
+exclusion this pass — real, but far rarer at this app's actual production volume than the direct
+predicate failures — flagged here rather than silently built.
+
+**Schema** (`20260826_missed_match_and_category_outcomes.sql`): new `business_match_exclusions`
+table (`request_id`, `partner_id`, `source` `policy|availability`, `reason` — a fixed 6-value
+vocabulary, `no_auto_accept|party_size_out_of_range|hours_mismatch` for policy,
+`category_mismatch|zero_capacity|date_or_time_mismatch` for availability — `availability_id`
+nullable) — owner-only SELECT RLS, no INSERT/UPDATE policy at all, matching this schema's
+established "log table written only by its own SECURITY DEFINER function" convention.
+
+**A real design bug found and fixed by live testing, not assumed correct from the SQL text**:
+the first draft deduped on `(request_id, partner_id, source)` alone — correct for a fulfillment
+policy (naturally one per partner, matching `business_fulfillment_policies`' own real
+`unique(partner_id)`), but wrong for availability, where a business can have several real active
+postings at once. Live-testing against a real partner with 3 active postings (a category
+mismatch, a zero-capacity one, and a date-mismatched one) proved this directly: only one
+arbitrary posting's reason ever got logged, and it wasn't reliably the most relevant one — Wine's
+`category_mismatch` was logged for every request regardless of which of the 3 postings was
+actually the closer near-miss. Fixed by adding a real `availability_id` column and replacing the
+single combined unique constraint with two separate partial unique indexes —
+`(request_id, partner_id) where source = 'policy'` and
+`(request_id, partner_id, availability_id) where source = 'availability'` — matching this
+schema's own established partial-unique-index convention (e.g.
+`business_request_offers_one_winner_idx`), not a constraint-column addition alone, since NULL
+never equals NULL for uniqueness purposes and would have silently defeated deduping the policy
+case if `availability_id` had just been folded into one shared constraint.
+
+`_match_request_to_policy()`/`_match_request_to_availability()` were both re-pointed (pulled
+fresh via the Management API before editing, confirmed byte-identical to the last committed
+migration — every line of the real matching loop, the actual offer insert, and the push
+notification is unchanged; only one new `INSERT ... SELECT` was added at the end of each,
+re-evaluating the exact same real predicates the matching loop itself already uses, split apart
+into individual pass/fail checks, with a deterministic priority-ordered `CASE` picking one real
+reason per excluded candidate). New `get_missed_match_summary(partner_id, days_back default 30)`
+— the real aggregated-only surface (source/reason/count, never a raw row) — and
+`get_partner_category_outcomes(partner_id)` — extends `get_partner_offer_reputation()`'s own
+exact funnel-stat shape (response/acceptance/completion rate) plus outcome-capture satisfaction
+(`business_offer_outcomes`), grouped by real `business_requests.category` instead of collapsed
+across every category at once, gated at the same real 5+ minimum sample per category this schema
+already established for the whole-partner version. Deliberately owner-gated (unlike
+`get_partner_offer_reputation`, which is public-safe for a consumer deciding whether to trust one
+offer) — this is a per-category breakdown of a business's own performance, positioned as an
+internal Insights-tab tool, matching `get_business_insights`' own owner-only posture, not a
+second public reputation surface.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real disposable
+test partners/policies/postings/requests, exercised directly (these two matching functions are
+internal helpers with zero grants to `authenticated`/`anon`, called only via a nested SECURITY
+DEFINER call from `create_business_request()` — called directly here the same way this file's own
+established verification technique already does for this exact class of function): a real policy
+with `auto_accept_party_size_max: 4` correctly logged `party_size_out_of_range` for a 10-person
+request and `hours_mismatch` for an out-of-window request, while a genuinely matching 3-person
+request correctly produced a real offer with **no** exclusion row for that same partner — a
+partner that matched is never also logged as excluded. A second policy with
+`auto_accept_party_size_max: null` correctly logged `no_auto_accept` across every request,
+independent of the first partner's own real match/exclude outcome on the identical requests
+(proving per-partner independence, not a shared verdict). A real partner with 3 active
+availability postings correctly produced 3 distinct exclusion rows for one request — `Wine` →
+`category_mismatch`, a zero-capacity `Coffee` posting → `zero_capacity`, a future-dated `Coffee`
+posting → `date_or_time_mismatch` — and, once a genuinely matching posting existed, correctly
+produced a real offer for that one specific posting while the other two postings' own exclusion
+reasons stayed correctly logged for the same request. Re-running the identical matching call a
+second time produced **zero** new exclusion rows (proven idempotent, not just assumed from the
+`ON CONFLICT` clause's presence). `get_missed_match_summary()` returned real, hand-checked counts
+for the real owner (temporarily set via `trusted_update`, reverted after) and correctly zero rows
+for a genuine non-owner — both the RPC's own check and real RLS on the underlying table
+independently confirmed (a raw `SELECT` as the non-owner also returned 0 rows). `get_partner_
+category_outcomes()` returned real, hand-checked funnel/satisfaction numbers
+(`total_opportunities: 5, acceptance_rate: 40.0, completion_rate: 50.0, rated_count: 1,
+pct_satisfied: 100.0, pct_would_repeat: 100.0`) for a real 5-offer `Coffee` dataset, correctly
+omitted a real `Wine` category with only 1 opportunity (under the 5+ threshold), and correctly
+returned zero rows for a non-owner. All test rows (partners, policies, postings, requests,
+offers, outcomes) deleted and the temporarily-touched profile's `managed_partner_id` reverted to
+`null` afterward — confirmed production back to its exact pre-test baseline.
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public` schema,
+patched the two known image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the
+test container only, then ran the full, now-109-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, `business_match_exclusions` (with both
+partial unique indexes) and all 4 new/changed functions confirmed to exist in the freshly-rebuilt
+database. Container removed afterward.
+
+**Client**: `getMissedMatchSummary()`/`getPartnerCategoryOutcomes()`/`MISSED_MATCH_REASON_LABELS`
+(a real, human-readable label + actionable hint per fixed reason value) added to
+`businessFulfillment.js`. `BusinessDashboardScreen.js`'s Insights tab gained two new sections,
+both non-fatal secondary loads fetched alongside the existing `loadInsights()` call — "Why You
+Might Be Missing Requests" (each real reason + its real count + its hint, honestly absent when
+nothing was missed in the real 30-day window) and "Performance by Category" (each real category
+above the 5+ threshold, its real acceptance/completion rate, and — gated at the same real 3+
+minimum sample `formatPartnerReliabilityLine()` already established — its real satisfaction
+numbers when enough ratings exist).
+
+Verified via a direct `@babel/core` parse of both touched files (clean), the full Jest suite
+(unchanged, still 120/120 — no pure-logic file was touched this phase), and a full `npx expo
+export --platform ios` (clean, no bundling errors, 2263 modules, unchanged from Phase 3's own
+baseline — every file touched this phase was an edit, no new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm both new Insights-tab sections render correctly on a
+real device once real missed-match/category-outcome data exists, and that the honest empty state
+("Nothing missed in the last 30 days") renders correctly for an account with no real exclusions
+yet (the common case today, given this app's real near-zero production request volume).
+
+Pick up Phase 5 (Intelligence: demand-gap detection — a real "you have demand for something you
+don't offer" recommendation, extending the existing aggregated-demand RPC and Nearby Brief chain)
+next.
 
 
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section
