@@ -404,6 +404,7 @@ export async function upsertBusinessFulfillmentPolicy(partnerId, {
   depositAmount = null,
   cancellationWindowHours = null,
   active = true,
+  weatherDependent = false,
 }) {
   const { data, error } = await supabase.rpc('upsert_business_fulfillment_policy', {
     partner_id_param: partnerId,
@@ -417,6 +418,7 @@ export async function upsertBusinessFulfillmentPolicy(partnerId, {
     deposit_amount_param: depositAmount,
     cancellation_window_hours_param: cancellationWindowHours,
     active_param: active,
+    weather_dependent_param: weatherDependent,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -553,6 +555,10 @@ export const MISSED_MATCH_REASON_LABELS = {
   date_or_time_mismatch: {
     label: "A posting's date/time didn't overlap what was asked for",
     hint: 'Post availability for the real dates/times people are actually asking about.',
+  },
+  weather_unfavorable: {
+    label: 'Your weather-dependent policy paused itself for real rain/storms',
+    hint: 'This only fires when you’ve turned on "Weather-Dependent" and our last hourly check found real rain or storms at your location -- it clears again once conditions improve.',
   },
 };
 

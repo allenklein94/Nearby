@@ -284,6 +284,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [policyDepositInput, setPolicyDepositInput] = useState('');
   const [policyCancellationWindowInput, setPolicyCancellationWindowInput] = useState('');
   const [policyActiveInput, setPolicyActiveInput] = useState(true);
+  const [policyWeatherDependentInput, setPolicyWeatherDependentInput] = useState(false);
   const [savingPolicy, setSavingPolicy] = useState(false);
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
@@ -1097,6 +1098,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setPolicyDepositInput(fulfillmentPolicy?.deposit_amount != null ? String(fulfillmentPolicy.deposit_amount) : '');
     setPolicyCancellationWindowInput(fulfillmentPolicy?.cancellation_window_hours != null ? String(fulfillmentPolicy.cancellation_window_hours) : '');
     setPolicyActiveInput(fulfillmentPolicy?.active ?? true);
+    setPolicyWeatherDependentInput(fulfillmentPolicy?.weather_dependent ?? false);
     setPolicyModalVisible(true);
   }
 
@@ -1107,6 +1109,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   function parsePolicyNum(text) {
     const n = parseFloat(text.trim());
     return Number.isFinite(n) ? n : null;
+  }
+  function formatWeatherCheckAge(checkedAtIso) {
+    if (!checkedAtIso) return 'not checked yet';
+    const minutes = Math.max(0, Math.round((Date.now() - new Date(checkedAtIso).getTime()) / 60000));
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.round(minutes / 60);
+    return `${hours}h ago`;
   }
   function normalizeTimeInput(text) {
     // Accepts "HH:MM" (24h) only -- kept deliberately simple, matching
@@ -1131,6 +1141,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         depositAmount: parsePolicyNum(policyDepositInput),
         cancellationWindowHours: parsePolicyInt(policyCancellationWindowInput),
         active: policyActiveInput,
+        weatherDependent: policyWeatherDependentInput,
       });
       setPolicyModalVisible(false);
       await loadFulfillmentPolicy(selectedPartner.id);
@@ -2374,6 +2385,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         ? `Auto-accepts parties of ${fulfillmentPolicy.auto_accept_party_size_max} or fewer`
                         : 'Auto-accept off -- every request needs your own manual review'}
                     </Text>
+                    {fulfillmentPolicy.weather_dependent && (
+                      <Text style={styles.breakdownText}>
+                        {fulfillmentPolicy.last_rain_risk === 'high'
+                          ? `🌧️ Weather-dependent -- paused right now for real rain/storms (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`
+                          : `☀️ Weather-dependent -- conditions look fine (checked ${formatWeatherCheckAge(fulfillmentPolicy.last_weather_checked_at)})`}
+                      </Text>
+                    )}
                     {(fulfillmentPolicy.min_spend_per_person != null || fulfillmentPolicy.max_discount_pct != null || fulfillmentPolicy.deposit_amount != null || fulfillmentPolicy.cancellation_window_hours != null) && (
                       <Text style={styles.breakdownText}>
                         {[
@@ -4103,6 +4121,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 keyboardType="number-pad"
                 accessibilityLabel="Cancellation window in hours"
               />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Weather-Dependent</Text>
+              <Text style={styles.helperText}>
+                For outdoor/patio-only capacity. When on, auto-accept pauses itself during real
+                rain or storms at your location (checked hourly) and picks back up once
+                conditions clear -- no separate posting needed.
+              </Text>
+              <View style={styles.chipRow}>
+                <TouchableOpacity
+                  style={[styles.chip, policyWeatherDependentInput && styles.chipSelected]}
+                  onPress={() => setPolicyWeatherDependentInput(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Weather-dependent on"
+                  accessibilityState={{ selected: policyWeatherDependentInput }}
+                >
+                  <Text style={[styles.chipText, policyWeatherDependentInput && styles.chipTextSelected]}>On</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, !policyWeatherDependentInput && styles.chipSelected]}
+                  onPress={() => setPolicyWeatherDependentInput(false)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Weather-dependent off"
+                  accessibilityState={{ selected: !policyWeatherDependentInput }}
+                >
+                  <Text style={[styles.chipText, !policyWeatherDependentInput && styles.chipTextSelected]}>Off</Text>
+                </TouchableOpacity>
+              </View>
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Status</Text>
               <View style={styles.chipRow}>
                 <TouchableOpacity

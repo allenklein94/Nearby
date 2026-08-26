@@ -538,6 +538,113 @@ exists — not scheduled by default, per this plan's own locked framing) next. P
 Phase 6 is **not** expected to be picked up autonomously; if reached without a real go-ahead
 already on record, flag that explicitly rather than building it.
 
+### Status: Phase 7 (Context — wiring the already-live weather signals engine into a real rule) —
+### DONE, build-wise, including a real bug found and fixed by live testing, not assumed correct
+
+Picked up cleanly after a codespace restart interrupted the session mid-build — `git status`
+showed the migration file (`20260826_v3_weather_dependent_fulfillment_policy.sql`) already fully
+written and applied to production, and the schema/RPC design itself (`business_fulfillment_
+policies` gains `weather_dependent`/`last_rain_risk`/`last_weather_checked_at`; `_match_request_
+to_policy()` reads the cached signal as one more predicate; `business_match_exclusions.reason`
+widened with a new `weather_unfavorable` value; `upsert_business_fulfillment_policy()` gains a
+`weather_dependent_param`) was already correct and untouched from resume. What was still
+missing, confirmed by reading the file rather than assuming it was finished: **zero client
+wiring** (no toggle anywhere on the dashboard, no `weather_unfavorable` label, no
+`weatherDependent` param threaded through the service layer) — and, live-testing the already-
+applied backend before trusting it, **a real, structural bug in the sweep function itself**.
+
+**The bug, found and proven by live testing, not by reading the SQL**: the first draft of the
+hourly refresh sweep (`refresh_weather_dependent_policy_signals()`, already live on production
+from before the restart) submitted a real `net.http_get()` call and then polled
+`net._http_response` for the result *inside its own single transaction*. Confirmed directly with
+a disposable `DO` block against production: after 8 real seconds of polling from *inside* the
+same transaction, the response was still unresolved (`content_is_null: true`) — and the identical
+request, checked again from a genuinely separate subsequent call, had already resolved. This
+proves pg_net's own background worker only ever sees a queued request once the transaction that
+enqueued it has actually committed — a single top-level statement (which is exactly what one
+function call, or one cron tick, is) never commits until it returns, so a function that submits
+and polls in one call can structurally never see its own request resolve, no matter how generous
+the attempt cap. This is the identical reason `get_weather_result()`/`submit_weather_request()`
+are a real two-call submit-then-poll pair for a live user's own request — the sweep's first draft
+tried to collapse that into one function believing it was purely a latency tradeoff ("no live user
+waiting, can afford a generous cap"), when it's actually a hard correctness constraint.
+
+**Fixed** by giving the sweep the same real two-phase shape: a new `weather_dependent_policy_
+refresh_queue` table (RLS enabled, zero policies — cron/SECURITY-DEFINER-only, matching this
+migration's own established "no client grant at all" posture) tracks one pending
+`(partner_id, request_id)` row per weather-dependent partner. `submit_weather_dependent_policy_
+refreshes()` fires the real OpenWeatherMap call for every eligible partner without an already-
+pending request less than 10 minutes old, records the pending row, and returns immediately —
+never polls, so its own transaction commits right away and the queued request becomes visible to
+pg_net's worker. `apply_weather_dependent_policy_refreshes()`, scheduled separately, reads back
+whatever's genuinely resolved by then, writes the real signal onto the matching policy row, and
+clears the queue entry — a request still unresolved after 10 real minutes is given up on (removed
+from the queue, cached signal left untouched — stale, never silently wrong) rather than polled
+forever. Two cron jobs replace the original single one: `submit-weather-dependent-policy-
+refreshes` hourly (`0 * * * *`), `apply-weather-dependent-policy-refreshes` every 5 minutes
+(`*/5 * * * *`) — cheap when nothing's pending, catches a real resolved response well within the
+same hour it was submitted. The old single function and its cron job (which, on resume, was also
+found live on a stray `* * * * *` per-minute schedule rather than the migration's own committed
+hourly one — likely left over from an earlier debugging pass) were both dropped/unscheduled.
+
+**Client wiring, `BusinessDashboardScreen.js`/`services/businessFulfillment.js`**: the Fulfillment
+Policy editor modal gained a real "Weather-Dependent" section — an honest explanatory line ("For
+outdoor/patio-only capacity... auto-accept pauses itself during real rain or storms... checked
+hourly") plus an On/Off chip row, reusing the same `chip`/`chipSelected` styling every other
+toggle in this modal already uses — threaded through `upsertBusinessFulfillmentPolicy()`'s new
+`weatherDependent` option straight to the RPC's `weather_dependent_param`. The policy summary
+card now shows a real, honest weather line whenever `weather_dependent` is true — "🌧️
+Weather-dependent — paused right now for real rain/storms (checked Xm/Xh ago)" or "☀️
+Weather-dependent — conditions look fine (checked ...)" — sourced from the real cached
+`last_rain_risk`/`last_weather_checked_at` columns, never fabricated, and honestly labeled "not
+checked yet" before the first real sweep has run. `MISSED_MATCH_REASON_LABELS` gained a real
+`weather_unfavorable` entry (label + hint), so the existing "Why You Might Be Missing Requests"
+Insights-tab section (built in Phase 4) already renders this new reason correctly with zero
+further wiring — that section is driven entirely by the shared labels object.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), end-to-end, not just applied —
+a new permanent `scripts/live-verify/weather-dependent-fulfillment-policy.js` (registered in
+`run-all.js`, documented in the README's own "What's covered" list) proves the full real
+lifecycle with real disposable test data against the real `Coastal Coffee` partner (coordinates
+temporarily set, reverted after): `_match_request_to_policy()` auto-accepts normally with no
+cached signal yet (a weather-dependent policy with nothing checked yet behaves exactly as
+before this phase); a fresh cached `high` rain-risk reading genuinely blocks auto-accept and logs
+a real `weather_unfavorable` exclusion, idempotently (no duplicate row on a repeat call); a `low`
+reading lets it auto-accept again; a real reading older than 3 hours is correctly ignored rather
+than blocking on stale data; turning `weather_dependent` off correctly clears the cached signal;
+a non-owner is rejected setting the policy. For the real two-phase sweep itself: submit queues a
+real request and correctly does not re-queue a still-pending one; the real pg_net worker
+genuinely resolves the queued request once its own transaction commits (proven directly, not
+assumed); apply writes the real result and clears the queue row; a repeat apply with nothing
+pending is a genuine no-op; a genuinely timed-out (11-minute-old) pending row is discarded
+without ever touching the cached signal. All 27 assertions pass. All test rows/state (the test
+policy, the disposable requests/offers/exclusions, the queue rows, `Coastal Coffee`'s
+coordinates) deleted/reverted afterward — production confirmed back to its exact pre-test
+baseline (0 rows across every touched table, including the new queue table).
+
+**Verified via a real from-scratch migration replay** covering all 97 files in
+`supabase/migrations/` (`psql -v ON_ERROR_STOP=1`, exit 0 throughout, the two known
+image-version gaps — `auth.users.phone`, `storage.buckets.public` — patched onto the test
+container only) — the new queue table, both new functions (confirmed as the *only* two; the
+broken single-function draft does not exist in the freshly-rebuilt database), both new cron
+jobs, the three new `business_fulfillment_policies` columns, and `upsert_business_fulfillment_
+policy()`'s new 12-arg signature all confirmed to exist. Container removed afterward.
+
+Client-side verified via a direct `@babel/core` parse of both touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors — edits to two existing files only,
+no new client files this phase).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new Weather-Dependent toggle renders/saves
+correctly on a real device, that the policy summary's weather line reads correctly against real
+sweep data once the hourly/5-minute cron jobs have actually run in production, and that the
+"Why You Might Be Missing Requests" Insights section renders the new `weather_unfavorable` reason
+correctly once a real exclusion of that kind exists.
+
+Per this whole Business Intelligence & Opportunity Engine plan's own locked phase order, Phase 7
+is now the last phase actually built — Phase 6 (Automation) remains correctly not scheduled by
+default, per the note directly above.
+
 
 ## an external spec doc against the "Business Story" plan (6 phases, all DONE, see the section
 ## immediately below this one) — PLAN LOCKED, executing now

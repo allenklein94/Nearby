@@ -306,6 +306,31 @@ CI-runnable as-is (just supply the token as a secret).
   accepted participant right now without the proposal itself leaving
   `pending`, a repeat removal of an already-left participant is rejected,
   and removal is rejected once the proposal is no longer pending.
+- **`weather-dependent-fulfillment-policy.js`** — the Business Intelligence
+  plan's Phase 7 (see CLAUDE.md), and the real bug found and fixed while
+  building it: a first-draft single function that both submitted a
+  `net.http_get()` call and polled `net._http_response` for the result in
+  its own transaction can never actually resolve, since pg_net's
+  background worker only sees a queued request once the enqueuing
+  transaction commits — proven directly (a disposable `DO` block still
+  showed an unresolved response after 8 real seconds *inside* its own
+  transaction, then resolved the instant a separate call checked it
+  again). Fixed with a real two-phase submit/apply split, mirroring
+  `submit_weather_request()`/`get_weather_result()`'s own established
+  shape. This script proves the full real lifecycle: `_match_request_to_
+  policy()` auto-accepts normally with no cached signal yet, a fresh
+  cached HIGH rain-risk reading genuinely blocks auto-accept and logs a
+  real `weather_unfavorable` exclusion (idempotently, no duplicate row on
+  a repeat call), a LOW reading lets it auto-accept again, a >3h-stale
+  HIGH reading is correctly ignored rather than blocking on stale data,
+  turning `weather_dependent` off clears the cached signal, a non-owner
+  is rejected setting the policy, and the real two-phase sweep itself —
+  submit queues a real request and doesn't re-queue a still-pending one,
+  the real pg_net worker genuinely resolves it once its own transaction
+  commits, apply writes the real result and clears the queue row, a
+  repeat apply with nothing pending is a no-op, and a genuinely timed-out
+  pending row is discarded after 10 minutes without ever touching the
+  cached signal.
 
 ## What's not covered
 
