@@ -4,6 +4,229 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 26 2026 (cont'd) — Business Intelligence Phase 6 + Phase 8: AI Trust Engine (Levels 1-3)
+## + real Business Entitlements — PLAN LOCKED, executing now
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and each
+phase's own status note (appended once it lands) for what's actually built vs. still just this
+plan. Direct follow-up to the Business Intelligence & Opportunity Engine plan immediately below
+this section — its own Phase 6 (Automation) and Phase 8 (Monetization) were both deliberately
+left unscheduled, pending a real go-ahead from the user on exactly the two questions that plan's
+own text named: how much independent action to trust an AI with, and what the tier matrix
+actually gates. **Both are now resolved, given directly and in full — restated here verbatim as
+the locked instruction, not paraphrased, since it explicitly says "do not stop and ask me to
+decide the above."**
+
+### The locked instruction
+
+Build **both** now: real AI automation Levels 1-3, and real business entitlement gating.
+**Not** authorized yet: unrestricted AI autonomy, or real subscription billing (a real Stripe
+account for *business subscriptions* — a second, separate money flow from the already-built
+Stripe Connect **consumer→business payment** scaffolding, Offer System Phase 1/Decision 2,
+which stays completely untouched by this pass).
+
+**AI, locked ceiling** — Level 0 (Suggest, unchanged) stays exactly as it is. Levels 1-3 are
+progressively reduced *friction*, never unrestricted authority:
+- **Level 1 — Assisted.** Auto-apply LOW-risk, reversible, non-financial housekeeping when a
+  trusted signal clears a confidence bar and the business has opted in. Never: offers, prices,
+  availability that creates a customer commitment, capacity, hours, reservations, business
+  preferences, or a new customer-facing commercial claim from weak evidence.
+- **Level 2 — Routine Automation.** AI may act *inside explicit owner-defined rules* — select
+  from an existing approved offer template and send an offer automatically, but only from a
+  fixed menu the owner already approved (category/hours/party-size/template), never inventing
+  new terms. Anything outside the configured rule stops and routes to owner approval.
+- **Level 3 — Controlled Autopilot.** Built now, off by default. Not "AI decides" — "the
+  business decides what AI is allowed to do, and AI executes it," inside a named, explicit,
+  owner-created Automation Policy scoped to one real scenario. Same action shape as Level 2,
+  narrower/named policy object, stronger enable-confirmation UX.
+- Never, at any level: change prices, create financial commitments, charge customers, create/
+  cancel reservations, change core business identity, override business rules, or act outside a
+  pre-authorized boundary. Critical actions (payment, refunds, price changes, contracts) stay
+  human-authorized, full stop — not something this pass revisits.
+- A central authorization gate, not scattered `if tier >= ...` checks. A fixed 4-tier risk
+  taxonomy (low/medium/high/critical). A named, reusable business policy model. An immutable
+  audit log every AI action writes to, with real Undo for reversible actions (never for an
+  external financial/reservation action).
+
+**Entitlements, locked ceiling** — reuse `brand_partners.tier` (already `basic|growth|brand`,
+already a bare column with zero enforcement) as the one canonical plan column, never a second
+tier concept. A real plan→feature→limit config table, not hardcoded checks in UI. Real
+server-side enforcement everywhere a client-side hide could be bypassed by a direct RPC call —
+client-side hiding is explicitly not treated as security. Locked, PLACEHOLDER-only tier matrix
+(feature entitlements now, no prices, no billing):
+- **Basic** — everything already free today, unchanged (profile, DNA, Accommodate, Right Now,
+  What You Want More Of, matching, incoming requests, offers, Match Radar's base rollup, Level
+  0+1 AI, base insights) — nothing here is newly restricted. Capped: up to 3 Signature
+  Experiences.
+- **Growth** — everything in Basic, plus: unlimited Signature Experiences, Match Radar's
+  demand-gap/unmet-intent signal, missed-match reporting, category-outcome analytics, AI offer
+  recommendations, business moments, Level 2 AI, a longer analytics-history window.
+- **Brand** — everything in Growth, plus: Level 3 AI, an expanded analytics-history window.
+  (Multi-location and "brand-level analytics" from the original ask are not built — no
+  multi-location concept exists anywhere in this schema, and inventing one now would be
+  fabricating architecture nothing else in the app supports; flagged rather than faked.)
+- Consumer-facing ranking must never change based on a business's own paid tier — entitlements
+  unlock business *tools*, never consumer favoritism. Nothing in this pass touches any resolver/
+  ranking weight.
+- User-facing copy, per direct instruction, does **not** say "Basic" — locked wording is
+  **Core → Growth → Brand**. `tier = 'basic'` stays the real internal/DB value (unchanged, no
+  migration needed for this) — only the display label changes.
+- A dev/admin-only tier switch (no Stripe, clearly marked as development tooling, never exposed
+  to a real business).
+
+### Audit against the real, live schema — done before writing a single migration, per this
+### plan's own instruction to extend rather than duplicate
+
+Checked directly (not assumed) before designing anything:
+- `brand_partners.tier` — real, `check (tier in ('basic','growth','brand'))`, zero enforcement
+  anywhere. The one canonical plan column — reused as-is, not duplicated.
+- **"Signature Experiences" and "Offer Templates" are the same real object, not two features.**
+  The Business Story plan's own Phase 6 (further down this file) already settled this: `business_
+  experiences` **is** the real offer-template table, reused verbatim, no second one built. The
+  pasted tier matrix's "up to 3 Signature Experiences" and "up to 5 active Offer Templates" would
+  cap the identical rows under two different names — a real, caught contradiction, resolved by
+  collapsing to **one** cap (`signature_experiences`, Basic=3, Growth/Brand=unlimited), not two
+  competing limits on the same table. Flagged here rather than silently building a second,
+  fictional cap.
+- `business_attribute_suggestions` already **is** a real Level-0 suggest-then-confirm audit/
+  provenance record (attribute_key/source/confidence/status, owner-only, `respond_to_business_
+  attribute_suggestion()` applies atomically on approve) — the exact shape Level 1 needs to
+  extend, not replace. It stays exactly as-is for every business that hasn't opted into Level 1;
+  Level 1 only ever changes what happens *after* a suggestion already exists.
+- `business_fulfillment_policies`/`_match_request_to_policy()` (Offer System Phase 2, weather-
+  wired in Phase 7 above) is a real, live, **deterministic, non-AI** auto-accept rule engine —
+  already running in production for real requests today. **Locked decision, made explicitly
+  rather than silently assumed**: this pass does **not** retrofit the new AI trust gate onto it.
+  Doing so would mean every business with an already-active fulfillment policy silently stops
+  auto-accepting the moment this migration ships (nobody has an `ai_trust_level` set yet,
+  everyone defaults to 0) — a real, serious regression this file's own conventions exist to
+  prevent. The fulfillment-policy engine keeps its own real identity, untouched; the new AI Trust
+  Engine governs a **new, separate, additive** action surface instead (below), so a business that
+  never touches Level 2/3 sees zero behavior change anywhere.
+- `business_experiences.price_level`/`party_type`/`attributes` already give a real, structured
+  "menu of pre-approved offer shapes" per business — exactly what Level 2/3's "select from an
+  existing approved template" needs, no new template concept required.
+- `get_aggregated_demand_for_partner()`'s `is_demand_gap`/`unmet_intent_count` columns (Business
+  Intelligence Phase 2/5) and `get_missed_match_summary()`/`get_partner_category_outcomes()`
+  (Phase 4) are the real, concrete Growth-tier analytics features named in the matrix above — no
+  new RPC needed for the underlying data, only a new entitlement check inside each.
+- `profiles.is_admin`/`check_is_admin()` already gate every existing admin-only surface — reused
+  verbatim for the new dev tier switch, no new admin concept.
+
+### Reconciling one real internal contradiction in the pasted spec, not silently picked either way
+
+The spec's own generic risk-authorization table says Level 2 = "LOW + approved MEDIUM only,"
+implying HIGH-risk actions (which its own taxonomy lists "sending offers" under) need Level 3.
+But the Level 2 section's own worked example explicitly describes Level 2 auto-*sending* a
+pre-approved offer ("Then Level 2 may automatically respond to a matching request"). **Resolved,
+not left ambiguous**: a fully pre-templated offer — every term (price, party size, category,
+hours) already fixed by the owner's own named policy, zero AI judgment or free parameter — is
+reclassified from HIGH to **MEDIUM** risk for the specific case of "send an offer using an
+already-owner-approved, fully-specified template" (matching the spec's own CRITICAL-tier
+reasoning that a genuine *price change* is what's dangerous, not applying an already-fixed
+price). This is what makes Level 2's own worked example consistent with the generic table rather
+than contradicting it. Level 3's real, distinct difference from Level 2 isn't a different action
+set — it's requiring a **named, narrowly-scoped** `business_ai_policies` row (one real automation
+policy per real scenario, e.g. "Coffee Date Requests") rather than one broad, business-wide
+Level-2 setting, plus a stronger enable-confirmation step. One shared table, one shared
+authorization gate, two real usage shapes.
+
+### Locked schema
+
+- **`plan_entitlements`** — `tier` (basic|growth|brand), `feature` (text key), `enabled`
+  (boolean), `limit_value` (integer, nullable — null means unlimited/not a capped feature),
+  `unique(tier, feature)`. Seeded with the real matrix above. Public-readable (a plan matrix is
+  not sensitive) — but the *enforcement* never trusts a client read of this table; every
+  mutating RPC re-checks server-side via a shared internal function.
+- **`brand_partners.ai_trust_level`** — integer, `default 0`, `check (ai_trust_level between 0
+  and 3)`. The one real "current ceiling" number Part 16's radio selector reads/writes. Every
+  existing row backfills to 0 — zero behavior change for any business that doesn't touch this.
+- **`business_ai_policies`** — `id`, `partner_id`, `name`, `enabled`, `trust_level` (2 or 3 —
+  Level 1 needs no named policy, it's a blanket housekeeping setting), `action_type` (fixed
+  vocabulary, starting with `'auto_respond_offer'`), `conditions` (jsonb: `category`,
+  `party_size_max`, `hours_start`, `hours_end`, `experience_id` — the real, concrete shape this
+  pass needs, not a speculative open-ended rules DSL, matching this file's own repeated
+  "no generic condition/action engine without a second real use case" rule), `created_at`,
+  `updated_at`. Owner-only, no direct client write — `upsert_business_ai_policy()`/
+  `delete_business_ai_policy()` RPCs only.
+- **`ai_actions`** — the immutable audit log. `id`, `partner_id`, `action_type`, `trust_level`,
+  `risk_level` (low|medium|high|critical), `policy_id` (nullable FK), `input_ref` (jsonb),
+  `proposed_action`/`actual_action` (jsonb), `confidence` (numeric, nullable — null for every
+  deterministic, non-probabilistic action this pass builds, matching this schema's own
+  established "never fabricate a precision the underlying computation doesn't have" rule),
+  `requires_approval` (boolean), `approval_result` (`auto_applied|blocked`), `outcome`
+  (nullable), `reverted_at`/`rollback_ref` (nullable), `created_at`. Owner-only SELECT, no direct
+  client write. **Deliberately does not log every non-match** — only a real action taken, or a
+  real policy that was matched-but-blocked by one specific failed condition (mirroring
+  `business_match_exclusions`' own established "log a real near-miss, not indiscriminate noise"
+  convention), never a row for every unrelated request that never touched any policy at all.
+
+### Locked mechanism for Level 2/3's one real new automatable action
+
+A new internal `_ai_auto_respond_to_business_requests()`, invoked from `create_business_request()`
+right alongside the existing `_business_request_fanout()`/`_match_request_to_availability()`/
+`_match_request_to_policy()` calls — fully additive, none of those three touched. For every
+business with `ai_trust_level >= 2` and an `enabled` `business_ai_policies` row whose
+`action_type = 'auto_respond_offer'` and `conditions` match the real request (category, party
+size, time window against `hours_start`/`hours_end`), auto-creates a real `business_request_
+offers` row using the named `experience_id`'s own real `price_level`/`party_type` as the offer's
+terms — same insert shape `_match_request_to_policy()` already uses, same reliability-respecting
+candidate order. Logs a real `ai_actions` row (`action_type: 'auto_respond_offer'`, `risk_level:
+'medium'` per the reconciliation above, `approval_result: 'auto_applied'`, `confidence: null`).
+When a policy exists but one condition fails (party size, hours, category), logs a real `blocked`
+row with the specific reason instead — same "log a real near-miss" discipline as `business_
+match_exclusions`. Level 3 uses the exact same function and table — the only difference is which
+`trust_level` a business has set and how narrowly it scopes its own named policy.
+
+### Locked rollback scope
+
+`undo_ai_action(action_id)` only ever supports the one reversible action type this pass adds —
+a Level 1 auto-applied attribute/category suggestion (restores the pre-change value stored in
+`rollback_ref` at write time). `auto_respond_offer` is explicitly **not** undoable via this RPC,
+per the spec's own "never auto-rollback an external financial/reservation action" rule — the
+real mitigation path for a bad auto-response is the already-existing, already-built `withdraw_
+business_offer()` RPC, surfaced from the AI Activity Log's own UI instead of a fake second undo
+mechanism.
+
+### Locked build order — each phase its own commit, verified before moving on
+
+1. **Entitlements** — `plan_entitlements` schema + seed, `get_business_entitlements()`/`check_
+   business_entitlement()` RPCs, client `services/entitlements.js`, server-side enforcement
+   wired into `create_business_experience()` (the real signature_experiences cap) and into
+   `get_aggregated_demand_for_partner()`/`get_missed_match_summary()`/`get_partner_category_
+   outcomes()` (redact/reject for a non-entitled tier), a real BEFORE INSERT trigger gating
+   `stories.partner_id` moments on the `business_moments` entitlement, tier-gated preview UI on
+   the dashboard for each gated feature, and the dev/admin tier-switch screen.
+2. **AI Trust Engine core + Level 1** — `brand_partners.ai_trust_level`, `ai_actions`, the
+   central `ai_authorize_action()` gate + risk taxonomy, `set_business_ai_trust_level()`
+   (entitlement-checked), Level 1 wired into `business_attribute_suggestions`' existing suggest-
+   flow as a real opt-in auto-apply path with logging + undo.
+3. **Level 2/3 policy model + auto-respond action** — `business_ai_policies` schema/RPCs, `_ai_
+   auto_respond_to_business_requests()` wired into `create_business_request()`, blocked-row
+   logging.
+4. **Business AI Automation screen + Activity Log UI** — the Part 16/17 settings surface (level
+   radio, entitlement-locked options, safety confirmations, named-policy editor, real activity
+   log with Undo where applicable).
+5. **Live-verify tests + full regression pass** — real, permanent `scripts/live-verify/*.js`
+   scripts (this codebase's actual testing convention, not a fictional Jest-against-a-live-
+   database suite) proving: entitlement gating blocks a non-entitled tier both client-side and
+   via a direct RPC call; a tier change immediately changes what's entitled; the AI gate blocks
+   every trust level correctly including CRITICAL always blocked; Level 1 auto-applies only
+   LOW-risk reversible changes and logs+undoes correctly; Level 2/3 only fires within an explicit
+   matching policy and never invents terms; the untouched fulfillment-policy engine keeps working
+   exactly as before for a business that never touches any of this.
+
+### Explicitly not attempted, restated so nothing here reads as silently dropped
+
+No real Stripe subscription integration, no new Stripe account, no change to the existing
+Offer-System payment flow, per the explicit instruction. No unrestricted AI action outside a
+named, owner-created policy boundary, ever. No multi-location business concept (nothing in this
+schema supports it). No change to consumer-facing ranking/matching weight based on tier, at all.
+Feature flags remain not adopted (this file's own long-standing "no real current need"
+conclusion, restated for this pass too — `plan_entitlements` is a real config table for a real,
+already-decided tier matrix, not a generic flip-a-flag-in-prod system).
+
 ## Aug 25 2026 — "Business Intelligence & Opportunity Engine" (external architecture spec: the
 ## missing business-side machinery) — PLAN LOCKED, Phase 1 executing now
 
