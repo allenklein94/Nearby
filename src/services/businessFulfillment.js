@@ -224,6 +224,19 @@ export async function acceptBusinessOffer(offerId) {
   return data;
 }
 
+// Offer System Phase 1's own withdraw_business_offer() RPC -- real and
+// already live, but never had a client wrapper until the AI Trust
+// Engine's own Activity Log needed it: the real mitigation path for a
+// bad Level 2/3 auto-sent offer (never a fake second "undo," since
+// auto_respond_offer is explicitly not reversible via undo_ai_action()).
+// Only succeeds while the offer is still genuinely 'offered' -- rejected
+// once it's been accepted, matching the RPC's own guard.
+export async function withdrawBusinessOffer(offerId) {
+  const { data, error } = await supabase.rpc('withdraw_business_offer', { offer_id_param: offerId });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // Offer System Phase 3 (see CLAUDE.md's own plan): a real, honest read
 // receipt -- fired the moment the requester's own session actually opens
 // this specific offer on BusinessRequestDetailScreen. The RPC itself is

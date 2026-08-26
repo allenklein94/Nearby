@@ -410,8 +410,76 @@ exactly this tradeoff elsewhere. Flagged for a future catch-up pass rather than 
 No manual simulator/device run-through of anything in this whole plan yet — that's still ahead
 of Step 4's own UI work.
 
-Steps 4-5 pick up from here — read the rest of this plan section (the locked build order, the
-UI/Activity-Log spec, and the live-verify requirements) before starting either.
+### Status: Step 4 (Business AI Automation screen + Activity Log UI) is now DONE, build-wise.
+
+New `src/screens/BusinessAIAutomationScreen.js` + `BusinessAIAutomation` route
+(`RootNavigator.js`) — a dedicated screen, not more inline UI folded into the already very
+large `BusinessDashboardScreen.js` (4,400+ lines even before this pass — the exact large-file
+refactor this file's own history has repeatedly deferred), matching the precedent
+`BusinessAIAssistantScreen` already set. Reached from a new "🤖 AI Automation Settings" button
+on the Dashboard's Insights tab, right under the existing "✨ Ask the AI Assistant" button — two
+genuinely different features, kept visually distinct (a plain outlined button, not the primary
+coral CTA).
+
+**Level selector**: 4 real radio cards (Level 0-3), each showing the exact locked-spec copy —
+Level 0/1 are always selectable (no entitlement gate, matching `ai_level_1` being enabled on
+every real tier); Level 2/3 show a real 🔒 lock + "Upgrade to unlock this level →" whenever
+`entitlements` (fetched via the existing `getBusinessEntitlements()`) says the current tier
+doesn't include `ai_level_2`/`ai_level_3` — the same `renderLockedFeature`-style UX preview
+convention already established elsewhere, never the real gate (that's always the server-side
+check inside `set_business_ai_trust_level()`). Raising the level shows a real confirmation
+`Alert` restating what that level actually does before calling the RPC; Level 3 specifically
+gets the "stronger enable-confirmation UX" the locked plan calls for — a longer, more explicit
+warning and a distinctly-labeled `destructive`-styled confirm button ("Yes, Enable Controlled
+Autopilot") rather than a plain "Enable." Lowering the level never needs confirmation (strictly
+safer).
+
+**Named-policy editor**, shown only once `ai_trust_level >= 2`: a real list of the business's own
+`business_ai_policies` rows (name, level, category, party-size/hours summary, which real
+Signature Experience it sends, ON/OFF, Edit/Delete) plus a "+ New Policy" modal — name, a
+Level 2/3 chip, a category chip row over the same canonical `INTEREST_OPTIONS` vocabulary every
+other category picker in this app already uses, a picker over the business's own real *active*
+Signature Experiences (fetched via the already-existing `getBusinessExperiences()` — reused, not
+duplicated), optional party-size-max and hours-start/hours-end fields (same simple `HH:MM`
+text-input parsing convention the Fulfillment Policy editor already established, not a new native
+picker), and an Enabled switch. Save routes through `upsert_business_ai_policy()`, which does the
+real validation (a real category and a real, active, owned experience are both required) — the
+client-side checks here are the same UX-preview posture as everywhere else, not the real gate.
+
+**Real Activity Log**, spec item 28 made genuinely visible: every `ai_actions` row for this
+partner, newest first, each rendered with an honest description built from its own real
+`proposed_action`/`actual_action`/`outcome` fields (never a generic "AI did something" line) —
+a Level 1 row says exactly which category/attribute it set; a Level 2/3 row names the real
+experience it sent; a blocked row shows the real, specific reason via a new
+`AI_BLOCKED_REASON_LABELS` map (same established `MISSED_MATCH_REASON_LABELS`-style convention).
+**A real, previously-unwired RPC found and closed while building this**: `withdraw_business_offer()`
+has existed live in production since the Offer System's own Phase 1 (Aug 17 2026) but never had a
+client wrapper or any caller anywhere in `src/` — confirmed via grep before assuming it needed
+building fresh. Added the one real wrapper it was missing
+(`withdrawBusinessOffer()` in `services/businessFulfillment.js`) and wired it into this screen as
+the real mitigation path for a bad Level 2/3 auto-sent offer, exactly per the locked rollback
+scope (`undo_ai_action()` never covers `auto_respond_offer`, on purpose). Since `ai_actions` has
+no `offer_id` column (the schema's own locked jsonb-only shape), `getAiActivityLog()` resolves
+each `auto_respond_offer` row's real, current offer status via one batched follow-up query on
+`(request_id, partner_id)` — the same real uniqueness the underlying upsert already relies on —
+so "Withdraw Offer" only ever shows while the offer is genuinely still `offered`, never once it's
+been accepted/expired/already withdrawn. A Level 1 row still `auto_applied` and not yet
+`reverted_at` gets a real "Undo" button calling `undo_ai_action()` instead.
+
+Verified via a direct `@babel/core` parse of every touched/new file (clean), a full `npx expo
+export --platform ios` (clean, no bundling errors, **2267 modules** — two more than the prior
+2265 baseline, the two new files `aiTrustEngine.js`/`BusinessAIAutomationScreen.js`; every other
+touched file was an edit), and the full Jest suite (unchanged, still 120/120 — no pure-logic file
+was touched this step).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of this screen's own new UI — next session should confirm the level selector,
+the confirmation alerts (especially Level 3's stronger one), the policy editor's full create/
+edit/delete cycle, and the Activity Log's Undo/Withdraw actions all render and behave correctly
+on a real device, using a real account raised to Growth/Brand tier so Level 2/3 are genuinely
+reachable rather than locked.
+
+Step 5 (live-verify tests + full regression pass) picks up from here.
 
 ### Explicitly not attempted, restated so nothing here reads as silently dropped
 

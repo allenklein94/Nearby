@@ -2637,6 +2637,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               >
                 <Text style={styles.createOfferButtonText}>✨ Ask the AI Assistant</Text>
               </TouchableOpacity>
+
+              {/* Business Intelligence Phase 6 -- the real AI Trust Engine
+                  settings surface (level selector, named policies, the
+                  real Activity Log). A dedicated screen, not more inline
+                  UI here, matching this exact "AI Assistant" button's own
+                  precedent. */}
+              <TouchableOpacity
+                style={[styles.createOfferButton, { marginTop: spacing.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border }]}
+                onPress={() => navigation.navigate('BusinessAIAutomation', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
+                accessibilityLabel="Manage AI automation for your business"
+                accessibilityRole="button"
+              >
+                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>🤖 AI Automation Settings</Text>
+              </TouchableOpacity>
               </>
             )}
 
