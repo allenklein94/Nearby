@@ -555,6 +555,28 @@ const result = await response.json();
         </View>
         <Text style={styles.subtitle}>Your story, your stats, your circle.</Text>
 
+        {/* Aug 27 2026 plan (CLAUDE.md), Decision 7: a real, distinct
+            "Preferences ->" entry point, separate from the generic Settings
+            gear above -- lands scrolled straight to Settings' own
+            Preferences group instead of the top of the screen, reusing the
+            same scroll-target route-param pattern this file's own
+            scrollToGenderSection consume already established. The plain
+            Settings gear is untouched -- this is additive, not a
+            replacement. */}
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Settings', { scrollToPreferences: true })}
+          activeOpacity={0.85}
+          accessibilityLabel="Preferences, control who and what Nearby shows you"
+          accessibilityRole="button"
+        >
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>🎛️ Preferences</Text>
+            <Text style={styles.timelineLinkSubtitle}>Control who and what Nearby shows you</Text>
+          </View>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
+
         {/* Aug 23 2026 IA pass (CLAUDE.md): a real "who am I" snapshot,
             first thing on the screen — direct feedback was that this
             screen dropped straight into numbers (stat tiles) with no

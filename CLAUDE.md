@@ -251,7 +251,33 @@ full `npx expo export --platform ios`, and the full Jest suite. Same standing li
 everywhere else in this file: no manual simulator/device run-through is possible in this
 sandboxed environment — flag it per phase rather than silently assume clean.
 
-**Status: plan locked, nothing built yet. Pick up Decision 7 first when this is picked up.**
+**Status: Decision 7 is DONE, build-wise. Decision 5 is next, per the locked build order.**
+
+Built exactly to the locked design above, no changes during implementation. `ProfileScreen.js`
+gained a new "🎛️ Preferences" row (same `timelineLink` style every other Profile quick-link row
+already uses — title + one-line subtitle + chevron), placed directly under the header/subtitle,
+right near the existing Settings gear icon it's paired with — "Control who and what Nearby shows
+you," navigating to `navigation.navigate('Settings', { scrollToPreferences: true })`. The plain
+Settings gear icon is completely unchanged, still lands at the top of Settings exactly as before
+— this is additive, not a replacement, per the locked design's own explicit requirement.
+`SettingsScreen.js` gained the receiving half: a `scrollRef` on its `ScrollView` (didn't have one
+before), a `preferencesYRef` capturing the real y-position of the existing "Preferences" group
+header via `onLayout`, and a `useEffect` that scrolls there 300ms after mount whenever
+`route.params.scrollToPreferences` is true — byte-for-byte the same "wait a beat for layout, then
+scroll" pattern `ProfileScreen.js`'s own `scrollToGenderSection` consume already established
+(Aug 25 2026, Dating Preferences consolidation pass), reused rather than reinvented. `SettingsScreen`
+now also destructures a `route` prop it didn't take before (React Navigation already passes it to
+every registered screen, so this needed no `RootNavigator.js` change).
+
+Verified via a direct `@babel/core` parse of both touched files (clean), a full `npx expo export
+--platform ios` (clean, no bundling errors — edits to two existing files only, no new files, so
+no module-count change), and the full Jest suite (120/120 passing, unaffected — no pure-logic
+file was touched).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new Preferences row renders correctly on Profile,
+and that tapping it lands on Settings genuinely scrolled to the Preferences group (not just the
+top of the screen), on a real device where the scroll/layout timing can actually be observed.
 
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,

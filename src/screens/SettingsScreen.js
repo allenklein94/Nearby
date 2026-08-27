@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
@@ -53,7 +53,7 @@ function toE164(rawInput) {
 // an *earlier*, contextual first ask inside DiscoveryScreen.js for a user
 // who opens Dating before ever visiting Settings; it didn't remove
 // anything from this screen.
-export default function SettingsScreen({ navigation }) {
+export default function SettingsScreen({ navigation, route }) {
   const { isAdmin } = useAuth();
   const { colors, shadow, isDark, toggleTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
@@ -83,6 +83,8 @@ export default function SettingsScreen({ navigation }) {
   const [e164NewPhone, setE164NewPhone] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const scrollRef = useRef(null);
+  const preferencesYRef = useRef(0);
 
   useEffect(() => {
     load();
@@ -93,6 +95,19 @@ export default function SettingsScreen({ navigation }) {
     });
     return () => subscription.remove();
   }, []);
+
+  // Aug 27 2026 plan (CLAUDE.md), Decision 7: Profile's new "Preferences ->"
+  // row lands here, scrolled straight to the Preferences group instead of
+  // the top of Settings -- same "wait a beat for layout, then scroll"
+  // pattern ProfileScreen's own scrollToGenderSection already established.
+  useEffect(() => {
+    if (route?.params?.scrollToPreferences) {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: preferencesYRef.current, animated: true });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.scrollToPreferences]);
 
   async function checkOsPermission() {
     const { status } = await Notifications.getPermissionsAsync();
@@ -276,7 +291,7 @@ export default function SettingsScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header} accessibilityRole="header">{t('settings.title')}</Text>
 
         {osNotifPermission !== 'granted' && (
@@ -398,7 +413,13 @@ export default function SettingsScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.groupHeader} accessibilityRole="header">Preferences</Text>
+        <Text
+          style={styles.groupHeader}
+          accessibilityRole="header"
+          onLayout={(e) => { preferencesYRef.current = e.nativeEvent.layout.y; }}
+        >
+          Preferences
+        </Text>
 
         {/* Taxonomy audit Phase 1: "Looking For" and "Discovery Preferences"
             merged into one card so the two headers stop reading as two
