@@ -253,6 +253,353 @@ sandboxed environment — flag it per phase rather than silently assume clean.
 
 **Status: plan locked, nothing built yet. Pick up Decision 7 first when this is picked up.**
 
+## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
+## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,
+## none of it built; this is vision/principle capture, not a fourth locked decision
+
+Same restart-safety convention as every other plan-first section in this file, and the same
+"capture, don't silently build" posture this file already established for the Aug 15 2026
+"Nearby 2.0 Vision" and "V3/V4 strategic vision" sections — this is a long external strategic
+reply the user pasted directly, given no instruction to build any of it now, only to fold it
+into this file's own plan record so it isn't lost. **Nothing in this whole section has been
+built.** Where it bears directly on Decisions 5-7 above, that's flagged inline; everything else
+is recorded as standing product doctrine to weigh against future builds, not a queued task list.
+
+### The core rule this whole reply keeps returning to: Nearby should never produce a dead end
+
+Every major screen should answer "what can I do next?" — Home (something interesting → View/
+Join/Start), Discover (nothing found → Create Something), Create (described what you want →
+Find/Invite/Request), Matches (someone responds → Connect/Plan), a business offer (responds →
+Accept/Compare), a confirmed reservation (→ Add to plan/Directions/Share). Directly relevant to
+Decision 5 above (Discover's "create it" completion CTA) — the user's own framing here is the
+general form of the same principle Decision 5 already locks for one specific surface.
+
+### A navigation/naming idea, explicitly floated, not decided
+
+"Create" might read better to a consumer as **"Start Something"** — "Create" sounds like
+authoring content, "Start Something" sounds like making something happen, which is closer to
+what the tab is actually for. Proposed bottom nav: **Home | Discover | Start | Matches |
+Profile**, with "create" staying the internal/backend term. Given directly as an idea to weigh,
+not a locked rename — no code implication until explicitly picked up.
+
+### Home reduced to four blocks (a stronger version of the target Decision 7 already touches)
+
+"What do you want to do?" (the intent box) → Your Plans (already committed to) → For You
+(Nearby's own picks) → This Weekend (timely opportunities) — and only where the app's own
+no-stranger-discovery architecture allows it, "People You Know Are Into This." The user's own
+words: "You don't need 15 competing banners." This is a materially more aggressive
+simplification than anything currently scheduled on Home — not adopted, just recorded as the
+standard to measure any future Home change against.
+
+### Discover vs. Home: two different jobs, not two copies of the same box
+
+Home = personal + action-oriented ("what should I do?"). Discover = exploration-oriented
+("what's out there?") — categories (Things to do / Food / Fitness / Events / Groups /
+Businesses) plus the same universal search box, but framed as browsing, not asking.
+
+### Discover's completion state should branch into two different fallbacks, not one
+
+A precise, unmet request ("private room for 12 people Friday") shouldn't just say "no
+results" — it should recognize the request-shape and offer **"Ask Businesses"**, distinct from
+**"Start Something."** The user's own distinction: "Start Something" is for when the user wants
+to *organize* something that doesn't exist yet (an event/gathering); "Ask Businesses" is for
+when the user has a *commercial need* a business could fulfill and isn't necessarily trying to
+organize anything social at all. **Directly bears on Decision 5 above** — that decision already
+locks one completion CTA routing through `classifyCreateRequest()` into
+`CreateGathering`/`CreateCommunity`/`RequestBusinessPartner`; this reply's framing suggests the
+real shape may need to be two distinct completion states (Start Something vs. Ask Businesses),
+not one CTA with three possible destinations. Flagged for reconciliation whenever Decision 5 is
+actually picked up for build — not silently resolved here either way.
+
+### Create as a routing layer, not a form — one front door, several engines underneath
+
+The user shouldn't need to know which internal object type their request becomes. "I need a
+photographer Saturday" → a business request. "I want a beach volleyball game Saturday" → a
+gathering. "I want to meet someone who likes hiking" → people/friend matching. "I want a date
+night" → dating + business. This app's own `classifyCreateRequest()`/`create-assistant`
+Edge Function already does a version of this narrowly (gathering/community/business_partner/
+unclear) — the reply's ask is a broader, more general version of the same pattern, not a new
+concept.
+
+### Dating and Friends should be able to route into the same business-request engine
+
+A dating match or a pair of friends deciding to "plan something together" could use the exact
+same demand → business-matching machinery this app's Business Fulfillment system already
+builds for solo/gathering-sourced requests — the reply calls this **"Plan With Me"**: combine
+both people's preferences + availability + location + group size into a short list of ideas,
+falling through to "Ask Businesses" when nothing fits. This app already has a real, narrower
+version of exactly this shape — Offer System Phase 5 (`date_proposals` → `create_business_
+request_for_match()`) and Business Fulfillment Phase 3 (`create_business_request_for_gathering()`)
+— the reply's ask is extending that same mechanism to a *pair* of people's combined preferences
+rather than one person's, which this codebase doesn't do today. Not scheduled; recorded as a
+real, coherent future direction building on what already exists, not a from-scratch feature.
+
+### Aggregated business demand, and a locked idea for a 4-tier intent-visibility model
+
+Businesses should eventually see real aggregated local demand ("37 requests for pickleball this
+weekend") without ever seeing individual identities unless a user explicitly sends a request to
+that specific business — this app's own `get_aggregated_demand_for_partner()` (Business
+Intelligence Phase 1-2, already built and live) already does exactly this: real category/party-
+size/time-window rollups, zero individual identity ever exposed. The reply's real, not-yet-
+built addition is a formal visibility taxonomy for intent itself:
+- **🔒 Private** — used only for personalization, never shared.
+- **👥 Social** — explicitly shared with selected friends/matches/groups.
+- **🏢 Business** — explicitly sent to a business for an offer.
+- **🌎 Public** (maybe eventually) — the user intentionally posts it publicly.
+The user's own reasoning for why this matters: a sensitive ask ("I want a therapist") must never
+silently become business-visible demand just because the underlying `intent_submissions`/
+`business_requests` machinery exists — only an explicit "Ask Businesses" action should ever
+create business-visible demand from a private ask. Checked against the real current schema:
+`profiles.intent_visibility` (Aug 15 2026, "10/10 roadmap" Part 6) already implements a real,
+narrower 2-value version of this (`friends_and_matches|nobody`) gating Tier 2 of the resolver —
+this reply's ask is a genuine generalization of that already-locked mechanism to a real 3-4
+value enum, not a new idea. Flagged as a real, coherent extension worth a future migration, not
+attempted here.
+
+### Notifications should be framed around real state changes, not generic pings
+
+"A business responded" / "Your friend accepted" / "Your reservation is confirmed for 7:30 PM" /
+"Something you wanted became available" — this app's push-notification system already does a
+real version of nearly all of these (`business_offer_received`, `group_plan_*`, `business_
+reservations` confirmation pushes, `aggregated_demand_growing`/`group_intent_signal`) — the
+reply's ask is a copy/framing standard to hold future notification copy to, not a new mechanism.
+
+### Business dashboard should lead with "what customers are asking for right now"
+
+Not analytics-first, not profile-editing-first — the primary screen should open on real pending
+requests/offers/reservations. This app's dashboard already substantially does this (the
+"Business Opportunities" inbox, "Demand Near You"/"Match Radar" cards, the Aug 26 2026 first-run
+welcome card's "See real demand near you" step) — recorded as confirmation the current direction
+already matches this principle, not a new build item.
+
+### The business landing page should demonstrate the demand→offer→accept loop, not just list features
+
+A short animated narrative (customer asks → Nearby matches → business responds → customer
+accepts → business gets the reservation) told in ~10 seconds. `docs/business.html` (built Aug
+17 2026) already has real hero/value-props/demo/pricing/how-it-works/FAQ sections matching this
+app's real mechanics honestly — this specific animated-loop treatment is not built and is
+recorded as a real future enhancement to that page, not attempted here.
+
+### Trust & Safety should be built into business onboarding and every offer, and never client-decided
+
+The client can only ever *display* a state ("Offer pending review") — the authoritative safety/
+eligibility decision must always be server-side, matching every other authoritative decision
+this app already keeps server-side (permissions, RLS, entitlements, reservation state, business
+verification). **Directly is Decision 6 above, restated as a general principle** — Decision 6's
+own locked design (a 4-tier LOW/MEDIUM/HIGH/UNCERTAIN risk model, "AI is a screening signal,
+never the final legal authority," every mutating RPC re-checking server-side) already implements
+this exact posture; nothing new to add to Decision 6's own plan text from this reply.
+
+### A ranking-order principle for the eventual matching/ranking layer: safety and relevance gate before money
+
+The user's own ordering: **eligibility gate → safety gate → relevance → quality → commercial
+ranking.** Money should never override an eligibility/safety/relevance failure — a business
+"paying more" should never surface irrelevant or unscreened content ahead of a genuinely better
+match. Sponsored placement, if it exists at all, must be clearly and honestly labeled as such,
+never blended silently into organic ranking. This app has no ranking/bidding system today to
+apply this to yet (no business pays for placement anywhere in this schema) — recorded as a
+locked principle for whenever monetization/ranking is eventually built, directly extending this
+file's own already-standing "consumer-facing ranking must never change based on a business's own
+paid tier" rule (Business Intelligence Phase 6/8) to the more general case of any future paid
+placement.
+
+### A proposed internal "Trust Contract" — provenance metadata on every marketplace object
+
+Not user-facing. Every marketplace object (an offer, a business profile field, a gathering, a
+request) should carry: owner, source, status, visibility, safety_state, created/updated
+timestamps, version, and an audit trail of what changed and why. For AI-derived fields
+specifically: not just `category = nightlife`, but `category = nightlife, source = AI
+classification, confidence = X, model/version = X, generated_at = X, human_verified = false`.
+This app already does a real, narrower version of exactly this for two systems — Business
+Intelligence's `business_attribute_suggestions` table (attribute_key/source/confidence/status,
+a real suggest-then-confirm audit record) and the AI Trust Engine's `ai_actions` table
+(action_type/risk_level/confidence/proposed_action/actual_action/outcome, an immutable audit
+log) — both already match this reply's own "Trust Contract" shape closely. The reply's ask is
+generalizing that same shape across *every* marketplace object, not building it from scratch.
+Recorded as a real architectural target to measure future schema design against, not a
+migration to write now.
+
+### Universal matching primitives, configured differently per mode, rather than N separate engines
+
+Core primitives — Intent, Location, Time, Availability, Preferences, Compatibility, Capacity,
+Trust, Context — with each experience (Dating, Friends, Fitness, Gathering, Business) just
+weighting them differently rather than being a fully separate matching system. This app's own
+`intentResolverScoring.js` shared `SCORE_*` weight constants (reused verbatim across the
+gathering/community/friend-request/perk/business-availability resolver branches, per this file's
+own repeatedly-stated "one shared scoring axis, never a second invented scale" rule) is already
+a real, working instance of exactly this principle — recorded as validation of an already-
+adopted approach, not a new design.
+
+### A four-layer personalization stack: preferences (stable) vs. intent (temporary) vs. context (why) vs. outcome (what happened)
+
+The user's own framing: "current intent > generic profile preference when there's a conflict" —
+someone who generally prefers upscale restaurants but asks for "a cheap casual dinner tonight"
+should get the cheap casual dinner, not a preference-driven override toward what they usually
+like. This app doesn't currently have an explicit conflict-resolution rule stated anywhere for
+this exact case (its resolver scoring blends historical signal and current-ask signal together
+rather than having a documented "current intent wins" precedence rule) — flagged as a real,
+useful principle to check against if this kind of conflict is ever observed in practice, not
+something broken today (this app's real intent volume is still near-zero, so this conflict has
+likely never actually occurred in production).
+
+### Intent-lifecycle analytics — the funnel this app should be measuring itself against
+
+Intent Created → Understood → Match Produced → Match Engaged → Plan Created → Connection Made →
+Action Taken → Outcome. This app already tracks a substantial, real version of this — `intent_
+submissions`/`intent_outcomes` (Aug 15 2026, "10/10 roadmap" Parts 1-2), `get_intent_funnel_
+stats()` (submission → any-result → business-fallback → selected → outcome → 30-day repeat), and
+this file's own already-named north-star candidate metric (repeat intent rate, Aug 15 2026
+Feature Freeze section). The reply's own suggested event list (`intent_created`/`intent_
+classified`/`intent_refined`/`match_generated`/`match_viewed`/`match_selected`/`request_sent`/
+`offer_received`/`offer_accepted`/`reservation_created`/`plan_completed`/`feedback_submitted`) is
+a more granular version of the same funnel already instrumented — recorded as a real refinement
+worth considering for the Market Validation dashboard, not a rebuild.
+
+### Clarification UX rules: ask only for what Nearby can't infer, never re-ask what it already knows
+
+If a user says "dinner Friday for 6 people," don't ask "what are you looking for?" — ask only
+what's genuinely missing (e.g. area), and only if it can't be reasonably inferred/defaulted.
+Matches this file's own long-standing "AI never infers a specific date/time from free text, but
+should never re-ask for something the user already stated" convention, already the working
+practice in `create-assistant`'s best-effort `dateWindow`/`partySize`/`budgetMax` extraction.
+
+### Business-side request/response should be structured and lightweight, not a 25-field intake form
+
+A business should receive a short, structured "Nearby Request" card (what/date/group size/
+location/preferences/budget) and respond with a category-appropriate lightweight template
+(Available / Available with conditions / Not available, plus optional fields like table time/
+minimum spend/private room/special offer for a restaurant, or class/private-session/group-rate
+for a fitness business) rather than a generic freeform form. This app's real `offer_type` enum
+(`standard|discount|perk|upgrade|alt_time`, Offer System Phase 1) is a narrower, real version of
+"category-appropriate response shapes" — the reply's ask (business-category-specific response
+templates) is a genuine future refinement, not built today.
+
+### A structured business-capability model to power that request/response flow
+
+Capability, Capacity, Availability, Location, Pricing, Constraints, Preferences — stored as real
+structured fields a business defines once, so Nearby can route only relevant requests to it
+(a restaurant that only serves 20-person groups shouldn't get one-person-lunch requests). This
+app has real pieces of this already (`business_fulfillment_policies`' party-size/hours/auto-
+accept bounds, `business_experiences`' price_level/party_type, `brand_partners.category`/
+`attributes`/`cuisine`) but no single unified "capability model" object tying them together —
+recorded as a real, coherent future consolidation, not attempted here.
+
+### Businesses proactively creating supply from known slow periods
+
+A restaurant that knows Thursday 5-7pm is slow could post a real time-boxed offer targeted only
+at relevant demand. This app already builds exactly this — `business_availability`/`post_
+business_availability()` (Business Fulfillment Phase 4, "proactive business availability, two-
+way matching," already DONE and verified live) — recorded as confirmation this is already real,
+not a gap.
+
+### Anti-spam guardrails on business-initiated promotion, explicitly named as a requirement, not yet built
+
+Frequency limits, relevance thresholds, user controls, business reputation weighting, reporting,
+automatic suppression — none of this exists yet for the business-availability/offer-posting
+paths this app already has live. Flagged as a real, currently-unenforced risk once real business
+volume exists (today's real production business-partner count is 1, so this hasn't bitten
+anyone yet) — not built, not scheduled, a genuine open gap worth a future pass once real usage
+exists to size the actual risk against.
+
+### Three independent feedback systems, not one collapsed rating — and a caution against premature star ratings
+
+**Recommendation feedback** ("not for me," improves matching) vs. **experience feedback** ("how
+did it actually go," improves quality/ranking) vs. **safety feedback** ("something's wrong,"
+triggers Trust & Safety) should stay three separate systems, never merged. This app already
+keeps these genuinely separate in practice — `gathering_feedback`/`business_offer_outcomes`
+(experience) vs. `AdminReportsScreen`'s block/report flow (safety) — though there's no explicit
+lightweight "Not for me" recommendation-only signal on any resolver result today (only the
+explicit accept/decline/complete actions exist). The reply also cautions against collapsing
+everything into a single ⭐ aggregate score, preferring itemized real attributes (Reliable/Good
+value/Easy to book/Matched description/Great for groups for a business; Fun/Beginner-friendly/
+Worth the price for an activity) — this matches this file's own already-repeatedly-stated
+"ranking stays simple/explainable, itemized real reasons, never a single blended opaque score"
+rule (explicitly reaffirmed as recently as the Aug 15 2026 vision-doc responses rejecting a
+single "Nearby Score" percentage) almost verbatim. Recorded as validation, not a new rule.
+
+### Anti-gaming guard for manufactured demand, flagged as a future need
+
+A business shouldn't be able to fabricate demand signal via fake accounts/coordinated activity
+to inflate its own ranking/reviews. No detection of this kind exists in this app today (there's
+essentially no real usage volume yet for this to be exploitable at). Flagged as a real future
+need once real scale exists, not built, not scheduled.
+
+### A prioritized roadmap the user proposed, for reference — not this app's own locked priority order
+
+Given as the reply's own suggested sequencing, not adopted as this file's own priority list
+(which remains whatever the "Locked build order" sections elsewhere in this file already say):
+- **P0** — Trust & Safety foundation (business verification, content/offer screening, reporting,
+  quarantine, suspension, audit trail — this app's own Decision 6 above is already exactly this);
+  a structurally clean intent → match → action lifecycle; no dead ends from Discover into
+  Start Something (this app's own Decision 5 above is already exactly this).
+- **P1** — structured business capabilities; a Create flow that preserves context across search
+  → create; simpler business-request/response UX; explainable "why this?" matching (this app
+  already has real itemized fit-reason surfaces in several places — `getGatheringFitReasons()`,
+  `formatPartnerReliabilityLine()` — matching this ask already).
+- **P2** — "Plan With Me" (combined two-person preference matching); demand-intelligence
+  surfaces for businesses (this app's `get_aggregated_demand_for_partner()`/Match Radar already
+  covers a real version of this); outcome-based feedback loops (this app's `business_offer_
+  outcomes`/`gathering_feedback` already covers a real version of this).
+- **P3** — predictive matching; proactive business supply responding to demand patterns (this
+  app's `business_availability` already covers a real version of the second half); dynamic
+  demand↔supply optimization.
+
+### A navigation reconsideration, floated alongside the "Start Something" rename above
+
+**Home | Discover | Start | Matches | Profile**, with Settings/preferences/help folded under
+Profile rather than being their own tab — matching this file's own already-existing, already-
+locked target IA from earlier sections (five bottom tabs, Settings reached via Profile's gear
+icon, not its own tab) almost exactly. Recorded as reinforcement of an already-adopted model,
+not a new direction.
+
+### Anti-feature-sprawl doctrine: Nearby as one coherent system, not a bundle of five apps
+
+The user's own framing, worth preserving directly: think of modes (Dating/Friends/Fitness) as a
+**lens over one shared intent/matching engine**, not separate self-contained worlds — a mode
+changes *defaults and suggested phrasing*, never the underlying mechanics. Preferences should be
+editable, not permanent identity labels fixed at onboarding — a user's real usage should be
+allowed to drift across modes over time without re-onboarding. This directly reaffirms this
+file's own already-standing, repeatedly-enforced convention (Dating and Friends deliberately
+kept as two separate matching engines under one shared "People Nearby" entry model, per the Aug
+16 2026 Friend Discovery section, and the general "converge identical user jobs, preserve
+genuinely different ones" rule from the Aug 24 2026 Stories-placement decision) — not a new
+instruction, a restatement of an already-adopted one.
+
+### A proposed lightweight "Your Nearby" personalization-transparency panel on Profile
+
+A plain-language summary of what Nearby has inferred about the user's interests ("You seem to
+enjoy: Outdoors, Racquet sports, Casual dining, Live music... You often look for: Weekend
+activities, Small groups, Nearby options"), plus an explicit "Use my activity to improve
+recommendations" toggle and a "Manage what Nearby knows" link. No such transparency panel exists
+anywhere in this app today (personalization signals — `getMyTopGatheringCategories()`,
+`intent_submissions` patterns, etc. — are all used internally, never surfaced back to the user
+as a readable summary). Flagged as a real, coherent future feature; not built, not scheduled.
+
+### The closing north star: optimize for outcomes, not engagement
+
+The user's own words, worth preserving directly since it's the thesis holding the whole reply
+together: **"Nearby should optimize for outcomes, not engagement... If someone opens Nearby for
+45 seconds, finds exactly what they wanted, books it, and leaves: that's a successful session.
+We shouldn't try to make them stay for two hours."** The proposed north-star metric —
+**Successful Intent Outcomes** (intent → meaningful match → action completed) — is essentially
+the same metric this file already named as its own candidate north star (repeat intent rate,
+Aug 15 2026 Feature Freeze section), just framed around single-session completion rather than
+cross-session return. Both point at the same underlying thing: does asking Nearby for something
+actually work, not merely does the user keep opening the app.
+
+### Explicitly flagged as the real next step by the reply itself, not done in this pass
+
+The reply's own closing line: once this much product architecture has been discussed, the
+biggest real risk isn't "are we missing another feature" — it's "does the actual codebase behave
+like this coherent system." Its own suggested next move is a real audit of the current
+implementation against these principles specifically (dead-end check per major screen, whether
+intent/matching really is one shared engine vs. several disguised ones, whether Trust & Safety
+is genuinely server-authoritative everywhere, whether ranking anywhere already lets money
+override relevance/safety). **Not performed in this pass** — this whole section is capture only,
+per the instruction that opened it. A future session picking this up should treat that
+"principles audit" as the real next deliverable this reply is asking for, separate from and
+prior to building any individual item named above.
+
 ## Aug 27 2026 — three user-reported bugs (Business Dashboard dead Save button, Home FAB
 ## overlapping "Continue Browsing", Chemistry Diary note field hidden behind the keyboard) — DONE
 
