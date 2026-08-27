@@ -4,6 +4,255 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — three locked decisions from a pasted external-AI reply (Discover's "create it"
+## completion CTA, a real Business Trust & Safety screening layer, Preferences staying in
+## Settings) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file — **nothing in this section has been built.** The user pasted a second
+AI's reply to three open product questions and gave a direct instruction: lock all three
+decisions exactly as reasoned there, with one explicit refinement on the third, and write the
+plan into this file — not build yet. The reasoning/wording below is preserved close to how it
+was given, per this file's own established practice for exactly this kind of locked decision
+(see the Group Plans Phase D section, the Business Fulfillment decisions, etc., all of which
+quote the user's own given rules verbatim rather than paraphrasing them away).
+
+**Audit against the real, current code, done before writing any schema/build steps below, not
+accepted at face value** — same standing rule as every other plan-first section in this file:
+
+### Decision 5 — Discover gains a "Don't see what you're looking for? Create it →" completion CTA
+
+Checked `DiscoverHubScreen.js` directly: each of the three searchable sections (Gatherings/
+Communities/Perks) already has its own real, honest empty state when a search matches nothing
+(`"No gatherings match "{searchQuery}"."`, etc., `DiscoverHubScreen.js:719/765/846`) — but there
+is no unified "nothing anywhere matched, here's what to do next" completion state tying the
+whole search together, and no path from an empty Discover search into Create carrying the typed
+term forward. This is a real, confirmed gap, not already covered under a different name.
+
+The mechanism this needs already exists and doesn't need to be invented: `CreateGatheringScreen.js`
+already accepts `quickStartTitle`/`quickStartCategory` route params (used today by Home's own
+Quick Picks and its "None of these? Create it yourself" fallback,
+`HomeScreen.js:477-483`) and skips straight past the What step when both are present
+(`fromQuickPick`, `CreateGatheringScreen.js:108`). `CreateCommunityScreen.js` accepts the
+identical two params. `classifyCreateRequest()` (the real, already-deployed `create-assistant`
+Edge Function behind Home's intent box and Create's "Something Else" tile — see the "Create
+Consolidation" section further down this file) already classifies free text into
+`gathering|community|business_partner|unclear` with a best-effort title/category — exactly the
+same real signal Home's own intent-box fallback already routes through
+(`HomeScreen.js:867-868`'s `prefillText`/`prefillCategory` shape). Nothing new needs designing
+here; this is wiring an existing, already-proven pattern onto one more entry point.
+
+**Locked design**: once every one of Discover's three sections has returned a genuine zero-match
+result for the active search term (not just one section — a real "nothing anywhere" state, so a
+user who searched "coffee" and got 2 gathering matches never sees a "create it" prompt that
+implies total failure), render a real completion card at the bottom of the results —
+"Don't see what you're looking for? · Tell Nearby what you want to do. · [Create it →]" — that
+routes the typed search term through the same `classifyCreateRequest()` call Home's own intent
+box already uses, then navigates to whichever of `CreateGathering`/`CreateCommunity`/
+`RequestBusinessPartner` the classification returns, with the term carried forward as
+`quickStartTitle`/`prefillText` (matching whichever param name that target screen already
+expects) — never auto-submitted, the user still reviews/edits before publishing, same "AI
+suggests, never silently commits" convention this whole codebase already holds to everywhere
+else. An `unclear` classification falls through to `CreateGathering` with the raw typed text as
+a literal title, matching Home's own existing fallback behavior for the identical case
+(`HomeScreen.js`'s "Something Else" flow) rather than a dead end.
+
+### Decision 6 — a real Business Trust & Safety content-screening layer, before scaling the
+### business/marketplace side any further
+
+**The user's own framing, preserved rather than softened, since it states the actual thesis this
+whole decision rests on**: "Nearby is becoming a two-sided marketplace. Once businesses can
+publish profiles, offers and respond to consumer requests, trust & safety becomes part of the
+core product architecture, not a feature we bolt on after launch." The concrete risk named
+directly, not a hypothetical: TikTok's Aug 21 2026 reporting on drug-promoting advertiser
+accounts, and the separate Done Global prosecution — real evidence that a platform hosting
+business-authored content can be exploited for illegal-substance promotion if nothing is
+actively screening for it, and that the danger isn't only "a bad actor signs up" — it's equally
+"a legitimate, approved business later edits its own description/offer into something
+prohibited," which nothing in this app currently re-checks for.
+
+**Real audit of what already exists vs. what's actually missing — checked directly, field by
+field, not assumed either way**:
+
+- **What's real and already covers part of this**: RLS/ownership checks on every business RPC
+  (the Aug 7 2026 "Business RPC ownership check" pass), the admin-gated business-apply review
+  flow (`business_partner_requests` → `AdminBusinessRequestsScreen.js`, onboarding-time only),
+  `checkTextModeration()` (`services/textModeration.js`, calling a real deployed `moderate-text`
+  Edge Function) already wired into several individual business-content write paths — business
+  name at apply time (`BusinessPartnerApplyScreen.js:145`, `MyBusinessApplicationScreen.js:88`),
+  an offer's own response description when a business replies to a specific customer request
+  (`handleSubmitOffer()`, `BusinessDashboardScreen.js:1115` — this is exactly the "user-request-
+  responses" field the user named, and it's already covered), an availability posting's title
+  (`:1256`), a broadcast update's title (`:1645`), a standing offer's title (`:1666`). The AI
+  Trust Engine's own locked principles (Business Intelligence Phase 6/8, further down this file)
+  already establish the right posture for AI-authored/AI-assisted content generally — confirmable
+  rather than silently auto-published, AI never directly mutates canonical data unreviewed,
+  a real immutable audit log, progressively-gated automation levels — but that system governs a
+  *different* surface (AI-suggested attribute edits and auto-responding to requests on a
+  business's own explicit behalf), not content-policy risk screening of what a business itself
+  writes. `AdminReportsScreen.js` (content-moderation/safety-complaint review, referenced in the
+  "Community Leaders" section further down this file) is real reactive reporting/blocking, not
+  proactive screening.
+- **Real, confirmed gaps — checked field-by-field against every real business-content write
+  path, not guessed**:
+  - `handleSaveProfile()` (Edit Business Profile — name/description/logoUrl/category/attributes/
+    cuisine/differentiator, `BusinessDashboardScreen.js:513`) calls `checkTextModeration()`
+    **zero times**, on any of its 7 fields — including `description` and `differentiator`
+    ("what makes you different"), both real free text rendered directly on the public
+    `BusinessProfileScreen` every consumer sees. This is the single largest concrete gap found —
+    a business's own core public-facing description is completely unscreened today.
+  - `handlePostUpdate()` (the broadcast-to-followers "business update," `:1645`) checks
+    `updateTitle` but never `updateBody` — the actual message content that reaches every
+    follower is unscreened.
+  - `handleCreateOffer()` (`:1666`) and `handleSaveExperience()` (Signature Experiences title/
+    description, `:844`) both check only a bare title (or nothing at all, in
+    `handleSaveExperience()`'s case — zero `checkTextModeration` calls anywhere in that
+    function) — a standing offer's/experience's own descriptive body text is unscreened.
+  - Even everywhere `checkTextModeration()` *is* wired, it's a single generic safe/unsafe binary
+    check built for personal messages/bios/reflections — not a business-listing-specific risk
+    classifier with real policy categories or risk tiers. A "safe" result from that function was
+    never designed to mean "not promoting a controlled substance in a defensible marketplace-
+    trust sense" — it's a narrower, differently-scoped check.
+  - **No continuous/ongoing monitoring exists at all.** Every check above, where it exists, only
+    ever fires client-side, optionally, at the moment of a single write. `update_business_profile`
+    and every other business-content RPC have zero moderation hook at the database/RPC layer —
+    screening is 100% client-triggered and inconsistent field-by-field. There is no mechanism
+    anywhere that re-screens already-published content after the fact, which is exactly the
+    "approved business later edits into something prohibited" scenario the user named directly
+    as the real danger, not a hypothetical edge case.
+  - **No risk-tier storage, no review queue, no quarantine mechanism, no image screening**
+    exist anywhere in this schema. A business's `logo_url` and any business-linked images
+    (gathering cover photos on a business-hosted gathering, Business Moments) have zero content
+    screening of any kind, text or otherwise.
+
+**Locked design — real schema/mechanism, not yet built, sequenced as its own multi-phase plan
+given its size**, matching this file's own established pattern for a plan this consequential
+(see the AI Trust Engine section further down for the same "Locked schema" / "Locked mechanism"
+/ "Locked build order" shape):
+
+- **Locked risk model, exactly as given, not to be softened**: a fixed, named policy-category
+  vocabulary — illegal drugs/controlled substances, weapons, explosives, fraud/scams,
+  counterfeit goods, sexual exploitation, illegal gambling, dangerous services, hate/extremist
+  activity, human trafficking, unregulated medical/health claims, financial scams/investment
+  fraud, and impersonation of another real business — checked against every real business-
+  authored field, not just the business name. A fixed 4-tier outcome, exactly as given: **LOW →
+  publish automatically** (the honest default for the overwhelming majority of real, legitimate
+  businesses — this must never become a de facto approval bottleneck for normal content);
+  **MEDIUM → real human review before publishing**; **HIGH → block/quarantine outright, never
+  published, the attempt logged**; **UNCERTAIN → held for review, same as MEDIUM, never
+  auto-published on an ambiguous signal.** Locked, explicit design principle, stated directly by
+  the user and matching this codebase's own already-established "AI suggests, never silently
+  commits" posture elsewhere: **AI is a screening/risk signal, never the final legal authority**
+  — every MEDIUM/HIGH/UNCERTAIN outcome routes to a real human, never auto-enforced past that.
+- **New table, real immutable audit trail** (name TBD at build time, e.g.
+  `business_content_screening_results`) — one row per screened submission: `target_type`
+  (`business_profile|offer|experience|availability|update|offer_response`), `target_id`,
+  a real snapshot of what was actually screened (not just a pointer to a row that can later
+  change out from under the audit record), `risk_tier` (`low|medium|high|uncertain`),
+  `matched_categories` (a real array over the fixed vocabulary above, empty for a clean LOW
+  result), `model_reasoning` (real free text from the classifier, never fabricated after the
+  fact), `reviewed_by`/`reviewed_at`/`review_outcome` (nullable until a human review actually
+  happens), `created_at`. Matches this schema's own established "immutable audit log" convention
+  (e.g. `ai_actions` from the AI Trust Engine) rather than a mutable status column that erases
+  its own history.
+- **Real integration points, every one named, not just the business name**: business profile
+  (name/description/differentiator — the confirmed gap above), Signature Experiences (title/
+  description — the confirmed gap above), standing offers (title/description — the confirmed
+  gap above), availability postings (title/description), broadcast updates (title **and** body —
+  the confirmed gap above), and offer responses to a specific customer request (already
+  text-moderation-covered today — upgraded to real policy classification, not left as the
+  weaker generic check once this lands). Every one of these already funnels through a real,
+  identifiable client function (`updateBusinessProfile`/`createBusinessExperience`/
+  `updateBusinessExperience`/`createBusinessOffer`/`postBusinessAvailability`/
+  `postBusinessUpdate`/`submitBusinessOfferResponse`) — the natural, already-established call
+  sites this new screening step attaches to, not a rewrite of any of them.
+- **Images — a real, separate, explicitly-flagged sub-phase, not silently folded into the text
+  classifier.** `logo_url` and any business-linked image content need a genuinely different
+  capability (vision-model classification, not the existing text-only `moderate-text` function)
+  — named here as its own phase so it isn't quietly skipped by assuming the text-classifier phase
+  covers it.
+- **Enforcement mechanism, locked**: a LOW result publishes immediately, matching today's real
+  behavior for a clean business — this must stay true, or the whole system becomes a bottleneck
+  nobody asked for. A MEDIUM/UNCERTAIN result saves the content but gates it from public
+  visibility (a new `pending_review`-shaped gate wherever that content is publicly read, e.g.
+  `BusinessProfileScreen`/offer listings) until a real admin decision. A HIGH result is rejected
+  outright at write time — never saved, never published, the attempt itself still logged for a
+  real audit trail.
+- **New admin surface**: extends the existing admin cluster (`AdminReportsScreen`/
+  `AdminBusinessRequestsScreen`, already gated on `profiles.is_admin`) with a real "Content
+  Review Queue" screen listing every MEDIUM/UNCERTAIN row awaiting a human decision, reusing the
+  same approve/deny RPC-mediated pattern already established for business-apply review.
+- **Continuous monitoring, locked, closing the specific gap the user named**: real-time
+  screening on every write (the integration points above) closes the "bad content published"
+  case; a separate, periodic re-sweep (matching this schema's own established `pg_cron`
+  convention — see the many scheduled jobs already running, e.g. `expire-stale-business-
+  requests`) re-screens currently-published business content on a real schedule, closing the
+  "legitimate business later edits into something prohibited" case *and* the "policy vocabulary
+  itself was updated, should retroactively re-flag old content" case — a genuine defense-in-depth
+  layer, not assumed redundant with the real-time hooks.
+- **Explicitly not decided at plan time, flagged rather than guessed**: which real classifier
+  model/provider powers the risk-tier decision (this codebase's own established Claude Haiku
+  pattern is the natural default, matching every other AI-classification feature already built,
+  but not locked here since it wasn't specified); the exact re-sweep cadence; whether MEDIUM-tier
+  content is fully hidden or shown with a "pending review" label to the business owner
+  themselves while awaiting a decision (a real UX call, not resolved by this plan).
+
+### Decision 7 — Preferences stays in Settings, not folded into Profile; Profile gets one small,
+### currently-missing prominent link into it
+
+Checked directly, not assumed: this decision is **already substantially built**. Settings has a
+real, already-existing "Preferences" group header (`SettingsScreen.js:401`) containing Dating
+Preferences, Discovery Preferences, Appearance, and Language — exactly matching the user's own
+"Matching preferences / Discovery preferences / Distance / Categories/interests" framing, built
+during the "IA restructure round 3" Phase 6 pass documented further down this file. Profile
+answers "who am I" (photo/name/bio/interests/activity/plans/business identity), matching the
+user's own framing exactly, with **zero** full preferences UI duplicated into it — nothing to
+undo or move here.
+
+**The one real, confirmed gap**: Profile's only path into Settings is one generic, unlabeled
+gear-style row (`ProfileScreen.js:548`, `navigation.navigate('Settings')`) — there is no
+dedicated, prominently-labeled "Preferences →" entry point distinct from the general "Settings"
+link, and no honest one-line description ("Control who/what Nearby shows you") the way the
+user's own mockup shows it. **Locked design**: add a second, distinct row on Profile — visually
+near the existing Settings row but separately labeled "Preferences →" with that same honest
+description — that deep-links straight into Settings already scrolled/focused to its own
+Preferences group, reusing the established "land precisely on the right section, not just the
+top of the screen" pattern this codebase already has a real precedent for (`ProfileScreen.js`'s
+own `scrollToGenderSection` route-param handling, Aug 25 2026's Dating Preferences consolidation
+pass) — adapted here as a new route param `SettingsScreen` reads to scroll itself to its
+Preferences group, not a new mechanism invented from scratch. The existing plain "Settings" row
+stays exactly as it is, landing at the top of Settings as it already does — this is additive, not
+a replacement.
+
+### Locked build order — three independent decisions, sequenced smallest/most-isolated first,
+### each its own phase/commit once picked up, not batched together
+
+1. **Decision 7** (smallest, one new Profile row + one new Settings scroll-target param) —
+   lowest risk, fastest to verify, no schema change.
+2. **Decision 5** (Discover completion CTA) — client-only, reuses three already-proven
+   mechanisms (`quickStartTitle`/`quickStartCategory` prefill, `classifyCreateRequest()`, the
+   existing per-section empty states) — no schema change, no new Edge Function.
+3. **Decision 6** (Business Trust & Safety layer) — the largest, real schema + a new/extended
+   classification Edge Function + enforcement gates on multiple existing write paths + a new
+   admin review screen + a new scheduled re-sweep job. Given its size and the fact that it
+   touches every business-content write path across `BusinessDashboardScreen.js`, this should be
+   built as its own dedicated multi-step pass (its own schema migration verified live against
+   production with real disposable test data plus a from-scratch migration replay, per this
+   file's own established migration-discipline rule, then the enforcement/UI layers on top) —
+   not attempted in the same sitting as 5/7 above.
+
+**Verification convention for whenever each phase is picked up, matching every other plan-first
+section in this file**: schema changes applied to production and verified live with real
+disposable test data (for Decision 6 specifically: a real LOW-tier submission publishes
+immediately, a real MEDIUM/HIGH/UNCERTAIN submission is correctly gated/blocked, a real edit to
+already-published content correctly re-triggers screening) plus a from-scratch migration replay
+before being considered done; every client change verified via a direct `@babel/core` parse, a
+full `npx expo export --platform ios`, and the full Jest suite. Same standing limitation as
+everywhere else in this file: no manual simulator/device run-through is possible in this
+sandboxed environment — flag it per phase rather than silently assume clean.
+
+**Status: plan locked, nothing built yet. Pick up Decision 7 first when this is picked up.**
+
 ## Aug 27 2026 — three user-reported bugs (Business Dashboard dead Save button, Home FAB
 ## overlapping "Continue Browsing", Chemistry Diary note field hidden behind the keyboard) — DONE
 
