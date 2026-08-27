@@ -4,6 +4,61 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — three user-reported bugs (Business Dashboard dead Save button, Home FAB
+## overlapping "Continue Browsing", Chemistry Diary note field hidden behind the keyboard) — DONE
+
+Reported directly by the user while checking on the brand-mark work above (not a code audit).
+All three traced to a real, confirmed root cause and fixed:
+
+1. **Business Dashboard's Edit Profile "Save" button read as dead — real bug, found and
+   fixed.** `handleSaveProfile()` guards on `if (!editNameInput.trim()) return;` and the Save
+   button itself is `disabled={savingProfile || !editNameInput.trim()}` — both correct, *if*
+   `editNameInput` is ever actually populated. Two of the three places that open the Edit
+   Profile modal correctly prefill all 7 edit-input states
+   (`setEditNameInput(selectedPartner?.name ?? '')`, etc.) right before opening it — but the
+   first-run "👋 Welcome to your dashboard" card's own "✏️ Complete your profile →" step (a
+   real, very-likely-first entry point for a new business owner) opened the same modal with
+   none of that prefill, leaving `editNameInput` at its initial `''`. Net effect: the name
+   field showed blank and the Save button was silently disabled — exactly "a dead save button
+   with no save actually taking place." Fixed by giving that third entry point the identical
+   7-line prefill the other two already had, not a new mechanism.
+2. **Home's "+ Start Something" FAB overlapped the tail end of "Continue Browsing" — real,
+   confirmed layout bug, fixed.** The FAB is `position: 'absolute', bottom: spacing.lg`
+   (pinned to the screen's bottom-right regardless of scroll position); "Continue Browsing" is
+   the last item inside the `ScrollView`, followed only by `paddingBottom: spacing.xxl * 2`
+   (72px) of reserved space. Worked out the actual footprint: the FAB occupies roughly the
+   18–62px band up from the screen's bottom edge; at only 72px of reserved padding, "Continue
+   Browsing" 's own bottom edge (with its own height + `marginTop`) lands well inside that same
+   band once scrolled all the way down — a real, calculable overlap, not a guess. Fixed by
+   bumping the reserved padding to `spacing.xxl * 3` (108px), with a comment explaining why the
+   value can't just be shrunk back down later.
+3. **Chemistry Diary's note field (and the Save button right after it) could end up hidden
+   behind the keyboard — real gap, fixed.** `ChemistryDiaryEntryScreen.js` already uses the
+   exact same `KeyboardAvoidingView` + `ScrollView`, `behavior: 'padding'`-on-iOS pattern a
+   dozen other form screens in this codebase share — that part isn't broken. What's specific to
+   this screen: 5 full signal-toggle rows render *above* the note `TextInput`, pushing it (and
+   Save) far enough down that `KeyboardAvoidingView`'s padding behavior — which only resizes the
+   container, it never auto-scrolls a focused child of a nested `ScrollView` into view — wasn't
+   enough on its own. Fixed by giving the `ScrollView` a ref and scrolling it to the end
+   (`scrollToEnd`, on the `TextInput`'s `onFocus`, after a short delay so it happens once the
+   keyboard's actually starting to animate up) — since the note field and Save button are
+   genuinely the last two things on the screen, "scroll to end" is exactly correct here, not a
+   partial fix. Also added `keyboardShouldPersistTaps="handled"` to the same `ScrollView`,
+   matching the convention already used elsewhere in this codebase for a scroll view that sits
+   under a text input.
+
+Verified via a direct `@babel/core` parse of all three touched files (clean), a full
+`npx expo export --platform ios` (clean, no bundling errors), and the full Jest suite
+(120/120, unaffected — no pure-logic file was touched by any of the three fixes).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of the three fixes — next session should confirm on a real device: the
+Welcome card's "Complete your profile" step now opens Edit Profile with the real current
+name/description/etc. already filled in and Save genuinely persists a change; the FAB no
+longer visually overlaps "Continue Browsing" once scrolled all the way down on a real screen
+size; and focusing Chemistry Diary's note field genuinely scrolls the field and Save button
+above the keyboard rather than leaving them hidden.
+
 ## Aug 27 2026 — real brand mark rollout: app icon/notification/splash/adaptive-icon now built
 ## from the actual provided artwork, not a crude redraw; in-app SVG mark + the business landing
 ## page's inline copy both re-measured to match — DONE, build-wise; native rebuild NOT done

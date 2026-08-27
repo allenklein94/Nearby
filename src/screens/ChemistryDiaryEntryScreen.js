@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { submitChemistryEntry } from '../services/chemistryDiary';
 import { checkTextModeration } from '../services/textModeration';
@@ -25,6 +25,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
   const [signals, setSignals] = useState({});
   const [noteText, setNoteText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const scrollRef = useRef(null);
 
   function toggleSignal(key) {
     setSignals((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -54,7 +55,7 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
           <Text style={styles.headerTitle} accessibilityRole="header">{t('chemistryDiary.howDidItFeel')}</Text>
           <Text style={styles.headerSubtitle}>
             About time with {aboutDisplayName || 'them'} — completely private. Just your own honest answers, nothing analyzed or shown to anyone.
@@ -90,6 +91,15 @@ export default function ChemistryDiaryEntryScreen({ route, navigation }) {
             value={noteText}
             onChangeText={setNoteText}
             multiline
+            // The 5 signal rows above push this note field (and the Save
+            // button right after it) far enough down that the keyboard
+            // covered both once focused, with nothing scrolling them back
+            // into view -- KeyboardAvoidingView's "padding" behavior only
+            // resizes the container, it doesn't auto-scroll a nested
+            // ScrollView's focused child. Since this input and Save are
+            // the last two things on the screen, scrolling to the very
+            // end on focus is exactly the fix.
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80)}
             accessibilityLabel="Additional note"
           />
 

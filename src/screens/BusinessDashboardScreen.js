@@ -1839,7 +1839,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.welcomeCardStep}
-                      onPress={() => setEditProfileModalVisible(true)}
+                      onPress={() => {
+                        setEditNameInput(selectedPartner?.name ?? '');
+                        setEditDescriptionInput(selectedPartner?.description ?? '');
+                        setEditLogoUrlInput(selectedPartner?.logo_url ?? '');
+                        setEditCategoryInput(selectedPartner?.category ?? null);
+                        setEditAttributesInput(selectedPartner?.attributes ?? []);
+                        setEditCuisineInput(selectedPartner?.cuisine ?? null);
+                        setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
+                        setEditProfileModalVisible(true);
+                      }}
                       accessibilityLabel="Complete your business profile"
                       accessibilityRole="button"
                     >

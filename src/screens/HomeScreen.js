@@ -917,7 +917,11 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 2 }}
+        // paddingBottom must clear the fixed "+ Start Something" FAB below
+        // (position: absolute, pinned bottom-right) -- at xxl*2 the FAB
+        // overlapped the tail end of the "Continue Browsing" button once
+        // scrolled all the way down; xxl*3 leaves real breathing room.
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 3 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <View style={styles.headerRow}>
