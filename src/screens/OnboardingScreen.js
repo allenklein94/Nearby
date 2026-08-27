@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import NearbyMark from '../components/brand/NearbyMark';
 
 // Deliberately sells the outcome, not the features — "your next
 // favorite memory" rather than a feature-by-feature carousel
@@ -16,7 +17,7 @@ export default function OnboardingScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.emoji}>✨</Text>
+        <NearbyMark size={88} style={styles.mark} />
         <Text style={styles.headline}>Your next favorite memory could start today.</Text>
         <Text style={styles.subtext}>Meet people, discover gatherings, and create experiences together.</Text>
       </View>
@@ -47,7 +48,7 @@ export default function OnboardingScreen({ navigation }) {
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
-  emoji: { fontSize: 64, marginBottom: spacing.xl },
+  mark: { marginBottom: spacing.xl },
   headline: { ...typography.display, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.md },
   subtext: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg, gap: spacing.sm },

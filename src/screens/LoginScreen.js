@@ -4,6 +4,7 @@ import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import NearbyMark from '../components/brand/NearbyMark';
 
 const REVIEWER_PHONE_DIGITS = '5555550199';
 
@@ -100,6 +101,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <NearbyMark size={48} style={styles.mark} />
       <Text style={styles.icon}>{otpSent ? '💬' : '📱'}</Text>
       <Text style={styles.title} accessibilityRole="header">{otpSent ? t('login.enterCode') : t('login.signIn')}</Text>
 
@@ -166,6 +168,7 @@ export default function LoginScreen() {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, justifyContent: 'center' },
+  mark: { alignSelf: 'center', marginBottom: spacing.lg },
   icon: { fontSize: 40, textAlign: 'center', marginBottom: spacing.md },
   title: { ...typography.title, color: colors.textPrimary, textAlign: 'center', marginBottom: spacing.sm },
   label: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },

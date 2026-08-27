@@ -8,7 +8,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#1a1a2e"
+      "image": "./assets/branding/splash-mark.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF6F0"
     },
     "ios": {
       "supportsTablet": false,
@@ -33,6 +35,10 @@
     },
     "android": {
       "package": "com.allenklein.nearby",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/branding/adaptive-icon-foreground.png",
+        "backgroundColor": "#FF5A5F"
+      },
       "config": {
         "googleMaps": {
           "apiKey": "$GOOGLE_MAPS_API_KEY"
@@ -64,7 +70,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#e94560"
+          "color": "#FF5A5F"
         }
       ],
       "@sentry/react-native/expo",

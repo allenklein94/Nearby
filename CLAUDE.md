@@ -4,6 +4,91 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 27 2026 — real brand mark rollout: app icon/notification/splash/adaptive-icon now built
+## from the actual provided artwork, not a crude redraw; in-app SVG mark + the business landing
+## page's inline copy both re-measured to match — DONE, build-wise; native rebuild NOT done
+
+User-reported: "why icon.png and notification-icon.png still there? the latest icon I gave you
+is supposed to be the new app icon." Picked up mid-flight, uncommitted work from an earlier
+session already sitting in the tree (`app.json`, `assets/icon.png`, `assets/notification-icon.png`,
+`docs/business.html` modified; `assets/branding/`, `scripts/generate-brand-assets.py`,
+`src/components/brand/` untracked) — the real problem, confirmed by reading the actual source
+image, was that `scripts/generate-brand-assets.py` never used the user's provided brand-identity
+sheet (`assets/branding/nearby-brand-final.png` — a real "N Connection" mark: two rounded
+person-shaped uprights joined by a diagonal band, coral→peach gradient) at all. It instead
+hand-drew a crude approximation from scratch with plain PIL line-strokes and mismatched circle
+sizes — thin, asymmetric, visually nothing like the reference.
+
+**Fix 1 — the four raster brand assets now come from the real artwork, not a redraw.**
+Rewrote `scripts/generate-brand-assets.py`: it now loads the real source sheet, keys out its
+near-black background via a measured luminance threshold (background sampled at ~(1,3,15),
+glyph always >240 on some channel — clean separation, no fuzzy edge cases), crops tight to the
+real glyph's alpha bounding box, and reuses that one real RGBA glyph asset (`get_glyph_rgba()`)
+to build every output — nothing about the shape is invented past that one extraction step, only
+background color/padding/fill vary per target:
+- `assets/icon.png` — the real gradient glyph on the sheet's own dark background, matching the
+  sheet's own "APP ICON PREVIEW" mockup exactly (not the coral-background "SINGLE COLOR" variant
+  a first read might have guessed at).
+- `assets/notification-icon.png` — the real glyph's true alpha silhouette, filled solid white,
+  transparent background (Android's flat-white-shape requirement).
+- `assets/branding/splash-mark.png` — the real gradient glyph alone, transparent background, for
+  `app.json`'s `splash.image` (paired with `splash.backgroundColor: '#FFF6F0'`, the sheet's own
+  cream).
+- `assets/branding/adaptive-icon-foreground.png` — the real glyph, flat cream-white fill,
+  generously padded (30%) transparent background, for Android's adaptive icon foreground layer
+  (paired with the already-set `android.adaptiveIcon.backgroundColor: '#FF5A5F'`, the sheet's own
+  coral).
+`app.json` itself needed no further changes — it was already pointing at the right filenames from
+the earlier in-flight session; those files just needed to actually contain the right pixels.
+
+**Fix 2 — the in-app SVG mark (`NearbyMark.js`/`markGeometry.js`) redrawn from measured geometry,
+not eyeballed.** Per direct follow-up ask. The component (used on `LoginScreen.js`/
+`OnboardingScreen.js` via `NearbyWordmark`) is a real, resolution-independent, tintable
+(white/black/gradient variants) `react-native-svg` component — deliberately not swapped for a
+raster image, since raster can't do the flat-white/flat-black variants or stay crisp at arbitrary
+sizes. Instead, re-measured the real mark directly off the source image's pixels (head-circle
+bounding boxes, each upright's stable capsule width/x-range, and a linear fit of the diagonal
+band's own centerline — not guessed) and converted those measurements onto the existing 0–100
+unit design grid in `markGeometry.js`. Real, checkable deltas from the old hand-drawn version:
+stroke width nearly doubled (11 → 20.09 — the old mark was much thinner than the real one); the
+two head circles are now the same size and the same height (was `r: 8.5`/`cy: 13` vs.
+`r: 6.5`/`cy: 29` — mismatched on both axes before); the diagonal is now its own measured stroke
+(from a fitted centerline, not just `LEFT_TOP → RIGHT_TOP`) spanning the full height and drawn
+*last* so it visibly crosses over both uprights, matching the source's woven/interlace look,
+where the old version stopped the diagonal partway down the right side. Verified by rendering the
+exact same coordinates/gradient the component uses through a PIL proxy and comparing side-by-side
+against the source crop before committing to the numbers — closely matches now.
+
+**Fix 3 — a third, previously-unknown copy of the same crude geometry found and fixed.**
+`docs/business.html` (the business-partner landing page, already `M` in the tree from the earlier
+session) had its own hand-copied inline `<svg>` of the mark in its header brand lockup, using the
+exact same stale numbers (`stroke-width="11"`, the same mismatched circles) — a third, independent
+copy nothing in this file had previously documented. Grepped the whole repo for the same
+telltale coordinates to confirm it was the only other copy, then updated it to the same
+re-measured numbers as `markGeometry.js` so the landing page and the app read as the same mark.
+
+**Verified**: a direct HTML well-formedness parse of `docs/business.html` (clean, no
+unclosed/mismatched tags); a full `npx expo export --platform ios` after each meaningful
+increment (clean, no bundling errors — no new files entered the bundle graph beyond the two
+already-untracked `NearbyMark.js`/`markGeometry.js`, since the icon-generation script and its
+source PNG aren't bundled at all); every new coordinate in `markGeometry.js` was rendered through
+a throwaway PIL proxy using the same math the SVG uses and visually compared against the source
+crop before being written into the file, not just computed and trusted blind.
+
+**Not done — the actual point of the original question, restated plainly so it isn't missed**:
+none of this reaches the phone. This app is distributed via **TestFlight** (confirmed with the
+user directly) — app icons are baked into the native binary at build time, so editing
+`assets/icon.png` has zero effect on an already-installed TestFlight build. Getting the new icon
+onto a real device needs a new `eas build --platform ios --profile production` (bumping the
+build number, since `production.autoIncrement: true`) followed by `eas submit` (or
+`--auto-submit`) to push it through TestFlight, then updating the TestFlight app on-device to that
+new build. `eas-cli` is already authenticated in this environment (`allenklein94@gmail.com`,
+project `bcd5120e-57e9-4c3f-8ee9-4812ade060ba` already linked) so a build is possible from a future
+session — **explicitly not run this pass, the user said "not now"** when asked. Also not done, same
+standing gap as everywhere else in this file: no manual simulator/device run-through of the
+`NearbyMark` redraw on `LoginScreen`/`OnboardingScreen` themselves (verified via a math-accurate
+static proxy render, not the actual running RN component).
+
 ## Aug 26 2026 (cont'd) — Business Intelligence Phase 6 + Phase 8: AI Trust Engine (Levels 1-3)
 ## + real Business Entitlements — PLAN LOCKED, executing now
 
