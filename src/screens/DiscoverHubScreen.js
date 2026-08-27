@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from 
 import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { getSocialForecast } from '../services/homeDashboard';
+import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -166,6 +167,9 @@ export default function DiscoverHubScreen({ navigation }) {
   const [searchedCommunities, setSearchedCommunities] = useState([]);
   const [searchedOffers, setSearchedOffers] = useState([]);
   const [loadingSearch, setLoadingSearch] = useState(false);
+  // Decision 5 (CLAUDE.md, Aug 27 2026): the "create it" completion CTA's
+  // own in-flight state, while classifyCreateRequest() runs.
+  const [creatingFromSearch, setCreatingFromSearch] = useState(false);
   const searchRequestId = useRef(0);
   const joinedCommunityIdsRef = useRef(new Set());
 
@@ -416,6 +420,28 @@ export default function DiscoverHubScreen({ navigation }) {
   const communitiesToShow = isAll ? filteredCommunities.slice(0, PREVIEW_COUNT) : filteredCommunities;
   const offersToShow = isAll ? filteredOffers.slice(0, PREVIEW_COUNT) : filteredOffers;
   const placesToShow = isAll ? places.slice(0, PREVIEW_COUNT) : places;
+
+  // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
+  // state, checked against all three real searchable sections regardless of
+  // the active type filter -- a user filtered to just Communities but who
+  // would have gotten a real Gatherings match never sees a "create it"
+  // prompt implying total failure. Places is deliberately excluded (a
+  // Google-Places-backed browse, not a create-it candidate).
+  const nothingMatchedAnywhere = isSearching && !loadingSearch
+    && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0;
+
+  async function handleCreateItFromSearch() {
+    const typedText = searchQuery.trim();
+    if (!typedText) return;
+    setCreatingFromSearch(true);
+    try {
+      const result = await classifyCreateRequest(typedText);
+      routeClassifiedIntentToCreation(navigation, result, typedText);
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setCreatingFromSearch(false);
+  }
 
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
   const mapBusinesses = showPerks ? businesses : [];
@@ -868,6 +894,33 @@ export default function DiscoverHubScreen({ navigation }) {
             </>
           )}
 
+          {/* Decision 5 (CLAUDE.md, Aug 27 2026): once every one of the
+              three searchable sections above has genuinely come back empty
+              for this term, offer the one thing Discover couldn't --
+              routes the typed term through the same classifyCreateRequest()
+              call Home's own intent box already uses, then lands on
+              whichever real creation screen it returns, term carried
+              forward as a real, editable prefill. Never auto-submitted. */}
+          {nothingMatchedAnywhere && (
+            <View style={styles.createItCard}>
+              <Text style={styles.createItTitle}>Don't see what you're looking for?</Text>
+              <Text style={styles.createItSubtitle}>Tell Nearby what you want to do.</Text>
+              <TouchableOpacity
+                style={styles.createItButton}
+                onPress={handleCreateItFromSearch}
+                disabled={creatingFromSearch}
+                accessibilityLabel="Create it"
+                accessibilityRole="button"
+              >
+                {creatingFromSearch ? (
+                  <ActivityIndicator color={colors.surface} />
+                ) : (
+                  <Text style={styles.createItButtonText}>Create it →</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
           {isAll && happeningNearby.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>🔴 Happening Nearby</Text>
@@ -1003,6 +1056,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.md,
   },
   weatherBannerText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  // Decision 5 (CLAUDE.md, Aug 27 2026): reuses the exact weatherBanner
+  // color language (primaryMuted bg, primary border) -- a real, honest
+  // "primary" hero treatment already established on this screen, not a
+  // new color introduced for one card.
+  createItCard: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1.5,
+    borderColor: colors.primary, padding: spacing.lg, marginTop: spacing.lg, alignItems: 'center',
+  },
+  createItTitle: { ...typography.headline, color: colors.textPrimary, textAlign: 'center' },
+  createItSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },
+  createItButton: {
+    backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg, marginTop: spacing.md, minWidth: 120, alignItems: 'center',
+  },
+  createItButtonText: { color: colors.surface, fontWeight: '700', fontSize: 14 },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
     borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

@@ -38,3 +38,24 @@ export async function classifyCreateRequest(text) {
   }
   return result;
 }
+
+// Routes a classifyCreateRequest() result to its matching creation screen,
+// carrying the caller's own typed text/category forward as a real prefill --
+// never auto-submitted, the user always reviews/edits before publishing.
+// Factored out here (Aug 27 2026 plan, Decision 5) so Home's own intent-box
+// fallback and Discover's "Don't see what you're looking for? Create it ->"
+// completion CTA share one routing rule instead of two that could drift.
+// An `unclear` classification falls through to CreateGathering with the raw
+// typed text as a literal title, matching this app's existing "never a dead
+// end" convention for the identical case.
+export function routeClassifiedIntentToCreation(navigation, result, typedText) {
+  if (result.intent === 'gathering') {
+    navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
+  } else if (result.intent === 'community') {
+    navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
+  } else if (result.intent === 'business_partner') {
+    navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
+  } else {
+    navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
+  }
+}

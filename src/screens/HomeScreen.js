@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals } from '../services/gatherings';
-import { classifyCreateRequest } from '../services/createAssistant';
+import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals } from '../services/businessFulfillment';
@@ -473,15 +473,7 @@ export default function HomeScreen({ navigation }) {
   // intents, which the resolver doesn't apply to, or (b) once Phase 1b's
   // resolver has already checked Tiers 1/3 and genuinely found nothing.
   function proceedToCreation(result, typedText, submissionId) {
-    if (result.intent === 'gathering') {
-      navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });
-    } else if (result.intent === 'community') {
-      navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
-    } else if (result.intent === 'business_partner') {
-      navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
-    } else {
-      navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
-    }
+    routeClassifiedIntentToCreation(navigation, result, typedText);
     // Only a real "no existing supply matched, I'm creating something new"
     // moment counts as a trackable intent outcome -- a business_partner
     // proposal has no existing-supply concept to have checked against, so

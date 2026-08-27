@@ -251,7 +251,54 @@ full `npx expo export --platform ios`, and the full Jest suite. Same standing li
 everywhere else in this file: no manual simulator/device run-through is possible in this
 sandboxed environment — flag it per phase rather than silently assume clean.
 
-**Status: Decision 7 is DONE, build-wise. Decision 5 is next, per the locked build order.**
+**Status: Decisions 7 and 5 are both DONE, build-wise. Decision 6 (Business Trust & Safety) is
+next, per the locked build order — the largest phase, not yet started.**
+
+**Decision 5 — DONE.** Built exactly to the locked design above, no schema change, no new Edge
+Function — reused the three already-proven mechanisms named in the plan. Factored a new,
+shared `routeClassifiedIntentToCreation(navigation, result, typedText)` out of `services/
+createAssistant.js` (alongside `classifyCreateRequest`, which it's tightly coupled to) — the
+exact routing logic `HomeScreen.js`'s own `proceedToCreation()` already had (gathering →
+`CreateGathering`, community → `CreateCommunity`, business_partner → `RequestBusinessPartner`,
+unclear → `CreateGathering` with the raw typed text as a literal title), pulled out so Home's
+intent box and this new completion CTA can never drift onto two different routing rules.
+`HomeScreen.js`'s `proceedToCreation()` now calls the shared function for its own navigation
+step, keeping its `recordIntentSelection()` analytics logging wrapped around it — zero behavior
+change there, confirmed via a like-for-like diff.
+
+`DiscoverHubScreen.js` gained a real `nothingMatchedAnywhere` check —
+`isSearching && !loadingSearch && filteredGatherings.length === 0 && filteredCommunities.length
+=== 0 && filteredOffers.length === 0` — computed against all three real searchable sections
+regardless of the active type filter (so a user filtered to just Communities who would have
+gotten a real Gatherings match never sees the prompt; Places is deliberately excluded, matching
+the locked design's own scope — a Google-Places-backed browse, not a create-it candidate). When
+true, a real completion card renders at the bottom of the results (after Perks, before
+"Happening Nearby") — "Don't see what you're looking for? · Tell Nearby what you want to do. ·
+[Create it →]" — reusing the exact `weatherBanner` color language (primaryMuted background,
+1.5px primary border) already established on this same screen, not a new color introduced.
+Tapping it calls a new `handleCreateItFromSearch()`, which runs the caller's own typed
+`searchQuery` through `classifyCreateRequest()` (the same real, already-deployed function Home's
+intent box uses) and routes via the shared function — never auto-submitted, the classification
+result only ever prefills the target screen's own real fields (`quickStartTitle`/
+`quickStartCategory`/`initialBusinessQuery`), matching this codebase's "AI suggests, never
+silently commits" convention everywhere else. A classification failure shows the same
+`Alert.alert('Something went wrong', e.message)` Home's own intent box already uses on the
+identical failure, not a new error pattern.
+
+Verified via a direct `@babel/core` parse of all three touched files (clean), a full `npx expo
+export --platform ios` (clean, no bundling errors — edits to three existing files only, no new
+files, so no module-count change), and the full Jest suite (120/120 passing, unaffected — no
+pure-logic file was touched).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through, and no live re-run against real data (this sandbox can't mint a real signed-in
+session to call `create-assistant`) — next session should confirm: searching a term with
+genuinely zero matches across gatherings/communities/perks shows the completion card; a term
+that matches even one of the three does not; tapping "Create it →" on a real device correctly
+classifies and lands on the right prefilled creation screen for each of the four intents
+(gathering/community/business_partner/unclear); and that Home's own intent box still behaves
+exactly as before this refactor (the shared-function extraction was designed to be a pure,
+zero-behavior-change refactor, not re-verified live here beyond the Jest suite + export).
 
 Built exactly to the locked design above, no changes during implementation. `ProfileScreen.js`
 gained a new "🎛️ Preferences" row (same `timelineLink` style every other Profile quick-link row
