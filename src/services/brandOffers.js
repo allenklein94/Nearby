@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 import Constants from 'expo-constants';
 
 export async function getEstimatedAmountOwed(partnerId) {
@@ -604,6 +604,58 @@ export async function updateBusinessProfile(partnerId, { name, description, addr
     differentiator_param: differentiator ?? null,
   });
   if (error) throw error;
+}
+
+// Decision 6, Phase 1 (CLAUDE.md's Aug 27 2026 plan) -- the real content-
+// screening path for the one confirmed gap: handleSaveProfile()'s own
+// name/description/differentiator free text, previously never checked at
+// all. Deliberately NOT used by the other two update_business_profile()
+// call sites (the AI category-suggestion confirm, the Teach Nearby
+// confirm) -- neither of those introduces new free text, both only ever
+// carry an already-published name/description/differentiator forward
+// unchanged alongside a category/attribute value drawn from a fixed
+// vocabulary, so there's nothing new to screen there.
+//
+// Address/lat/lng are deliberately not sent here at all -- this path never
+// edits location (handleSaveProfile() itself always carries the current
+// address through unchanged), so the Edge Function reads the real current
+// row's own values server-side rather than trusting anything the client
+// might claim.
+//
+// Returns the Edge Function's real response shape ({riskTier, published,
+// blocked, screeningId, matchedCategories?, error?}) -- the caller decides
+// what to say to the owner per tier, this never throws for an honest
+// medium/uncertain/high result (those are real, expected outcomes, not
+// failures) -- it only throws for a genuine network/auth/server error.
+export async function submitBusinessProfileForScreening(partnerId, { name, description, logoUrl, category, attributes, cuisine, differentiator }) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      partnerId,
+      targetType: 'business_profile',
+      name,
+      description: description ?? null,
+      logoUrl: logoUrl ?? null,
+      category: category ?? null,
+      attributes: attributes ?? [],
+      cuisine: cuisine ?? null,
+      differentiator: differentiator ?? null,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) {
+    throw new Error(result?.error || 'Could not save your changes right now.');
+  }
+  return result;
 }
 
 export async function getBusinessProfile(partnerId) {

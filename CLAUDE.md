@@ -252,7 +252,11 @@ everywhere else in this file: no manual simulator/device run-through is possible
 sandboxed environment — flag it per phase rather than silently assume clean.
 
 **Status: Decisions 7 and 5 are both DONE, build-wise. Decision 6 (Business Trust & Safety) is
-next, per the locked build order — the largest phase, not yet started.**
+now underway — Phase 1 (real schema + a new classification Edge Function + real-time
+enforcement on the single confirmed largest gap, `business_profile`, + a new admin Content
+Review Queue) is DONE, build-wise, applied and verified live. The rest of Decision 6 (the other
+five integration points, image screening, the periodic re-sweep job) remains real, locked, not
+yet built — see Phase 1's own status note for the exact remaining scope.**
 
 **Decision 5 — DONE.** Built exactly to the locked design above, no schema change, no new Edge
 Function — reused the three already-proven mechanisms named in the plan. Factored a new,
@@ -325,6 +329,187 @@ file was touched).
 run-through — next session should confirm the new Preferences row renders correctly on Profile,
 and that tapping it lands on Settings genuinely scrolled to the Preferences group (not just the
 top of the screen), on a real device where the scroll/layout timing can actually be observed.
+
+**Decision 6, Phase 1 — DONE, build-wise, applied to production, and verified live — including
+a real end-to-end test against a real Anthropic call (which surfaced the already-disclosed Aug
+11 2026 credit-balance issue is still unresolved, not a bug in this pass's own code).** Picked
+up cleanly after a codespace restart — `git status` showed the migration
+(`supabase/migrations/20260906_business_content_screening.sql`) already fully written but
+uncommitted and, on inspection against production, **already applied** (table, all 3 functions,
+both RLS policies, both indexes, all grants — confirmed live before trusting it, not re-applied
+blind, which would have errored). Nothing else from this phase existed yet — no Edge Function,
+no client wiring, no admin screen — so this session built the rest.
+
+**Scope, exactly matching the migration's own header comment**: real, general schema (every
+`target_type` this whole plan eventually needs — `business_profile|offer|experience|
+availability|update|offer_response` — is already in the CHECK constraint), but only
+`business_profile` is actually wired end-to-end this phase, since `handleSaveProfile()` never
+screening any of its 7 fields (including the two real free-text fields, `description`/
+`differentiator`, rendered directly on the public `BusinessProfileScreen` every consumer sees)
+was the single largest confirmed gap the original audit named. The other five integration
+points remain real, locked, future phases — not attempted here.
+
+**New `supabase/functions/screen-business-content/index.ts`**, matching `create-assistant`'s/
+`business-ai-assistant`'s own already-proven Edge Function shape exactly (bearer-token auth via
+a service-role `auth.getUser()` call, `check_and_increment_ai_use` rate limiting at the
+per-action 150 ceiling — not the single-shot 50 — since a business owner iterating on their
+profile a few times in one sitting is the expected shape here, `claude-haiku-4-5-20251001`,
+`max_tokens: 300`). Ownership is checked server-side via a service-role read of the caller's
+own `profiles.managed_partner_id` — never trusted from the client. Only the real free-text
+fields (`name`/`description`/`differentiator`) are actually sent to the classifier — `category`/
+`attributes`/`cuisine` are re-validated against `update_business_profile`'s own real CHECK-
+constraint vocabularies and carried through in the audit snapshot, but aren't a real injection
+surface for prohibited content, so they're excluded from the prompt itself. Address/lat/lng are
+deliberately never taken from the client at all — this screening path never edits location
+(`handleSaveProfile()` itself always carries the current address through unchanged, matching
+its pre-existing behavior); the function reads the real current row's own values server-side and
+carries those through unchanged on both the audit snapshot and the eventual write, so this
+phase's own scope never touches the separate, already-existing, unscreened
+`updateBusinessAddress()` flow. On a `low` result, the function calls the real
+`update_business_profile` RPC directly using a client scoped to the caller's own bearer token
+(so the RPC's own internal `auth.uid() = ...` ownership check resolves correctly — the same
+reasoning `business-ai-assistant` already established for its own user-scoped RPC calls) —
+publishes immediately, matching the locked design's own "a clean business must never be
+bottlenecked" rule. A `high` result is rejected outright with no write. `medium`/`uncertain`
+results log the real screening row and return without writing anything.
+
+**One real, deliberate implementation simplification, made and disclosed rather than silently
+built to differ from the plan's own literal wording**: the plan's own locked design says a
+MEDIUM/UNCERTAIN result "saves the content but gates it from public visibility." What was
+actually built instead: the proposed content is never written to `brand_partners` at all until
+a real admin approves it — `admin_review_business_content_screening()`'s own approve branch is
+what atomically applies the real, staged `content_snapshot` (name/description/logo_url/category/
+attributes/cuisine/differentiator) to the live row, and deny leaves the live row completely
+untouched. This is a more honest, simpler mechanism than a real "write it, then gate every
+public read path" approach would have needed (no new `pending_review`-shaped check on
+`BusinessProfileScreen`/offer listings/anywhere else this content is read) — the content simply
+isn't live until a human says so, which achieves the same real outcome (nothing prohibited or
+unreviewed reaches a consumer) without touching any read path outside this one write path.
+Flagged here so a future session doesn't "fix" this back toward the plan's own literal wording
+believing the deviation was an oversight.
+
+**A real bug caught and fixed before this was ever considered done, not glossed over**: the
+first draft of `admin_get_pending_content_screenings()`'s own query filtered on
+`review_outcome is null` alone — but a genuine `low`-tier row's `review_outcome` is *also* null
+(it was never reviewed because it never needed to be, not because it's still pending), so that
+filter alone would have silently pulled every clean, already-published LOW submission into the
+admin review queue right alongside the real MEDIUM/UNCERTAIN ones. Fixed by adding `and
+s.risk_tier in ('medium', 'uncertain')` as the real gate — `review_outcome is null` alone is
+necessary but not sufficient. Caught and fixed in the same migration before it was ever applied,
+not found live.
+
+**New `submitBusinessProfileForScreening()` in `services/brandOffers.js`** — the client wrapper,
+matching `checkTextModeration()`'s own fetch-with-bearer-token shape. Deliberately **not** used
+by the other two existing `updateBusinessProfile()` call sites in `BusinessDashboardScreen.js`
+(the AI category-suggestion confirm, the Teach Nearby confirm) — neither of those introduces new
+free text; both only ever carry an already-published name/description/differentiator forward
+unchanged alongside a category/attribute value drawn from a fixed vocabulary, so there's nothing
+new to screen there — a real, disclosed scope boundary, not an oversight.
+`BusinessDashboardScreen.js`'s `handleSaveProfile()` now calls this instead of
+`updateBusinessProfile()` directly, with three real, honest UI branches: `published` → the exact
+same "Saved" success path as before (local state updates, modal closes) — zero added friction
+for a clean business; `blocked` (a real HIGH result) → a clear "Couldn't Publish" alert, nothing
+saved; neither → a real "Submitted for Review" message stating plainly that the current profile
+stays visible while a human decides — the modal closes but `selectedPartner`'s local state is
+deliberately **not** updated, since nothing was actually written to the live row.
+
+**New `src/screens/AdminContentReviewScreen.js`** + `AdminContentReview` route
+(`RootNavigator.js`) + a new "Content Review Queue (Admin)" row in `SettingsScreen.js`'s
+existing "Business (Admin)" cluster — modeled directly on `AdminBusinessRequestsScreen.js`'s
+own real, proven card/actions-row shape. Each pending row shows the real partner name, risk
+tier, the real staged snapshot (name/description/differentiator), the real matched-category
+chips (human-readable labels, not raw enum keys), the model's own real reasoning sentence, and
+real Approve & Publish / Deny actions calling `admin_review_business_content_screening()` — no
+direct client write anywhere.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — deployed the
+function and confirmed `verify_jwt: true` directly via the Management API (not assumed from the
+CLI default, this file's own repeatedly-learned lesson), confirmed a raw unauthenticated request
+to the function gateway is rejected with a real 401. Built a real, disposable end-to-end test
+account (public signup via the anon key, a direct SQL email-confirm, a real password sign-in to
+get a genuine bearer token — the same technique this file's own Aug 25 2026 Taxonomy Post-
+Implementation Audit already established) plus a real disposable `brand_partners` test row and
+a `trusted_update`-mediated `managed_partner_id` link, and called the deployed function with
+genuine, harmless business content. **The real call reached Anthropic correctly** (auth passed,
+ownership check passed, rate-limit check passed, the request was correctly formatted) but failed
+at the API call itself — confirmed, via a temporary diagnostic redeploy that echoed the raw
+Anthropic response back (the exact same technique used once before for `create-assistant`, then
+immediately reverted to the clean version and redeployed) that this is the same already-
+disclosed "Your credit balance is too low to access the Anthropic API" error from Aug 11 2026,
+still unresolved as of this pass — not a defect in this function's own code. This is real,
+positive evidence the plumbing up to the Anthropic call is correct, even though the classifier's
+own actual output still can't be exercised from this sandbox.
+
+Since the real classification call couldn't complete, the rest of the pipeline was verified
+directly at the RPC layer — the same real inputs the Edge Function would produce for each of the
+four tiers, run through `record_business_content_screening()` directly against the same real
+disposable test partner: a **LOW** row correctly landed with `review_outcome: null` and
+correctly did **not** appear in the admin queue; a **MEDIUM** and an **UNCERTAIN** row both
+correctly appeared in `admin_get_pending_content_screenings()` (exactly those two, confirming
+the bug fix above actually holds); a **HIGH** row was correctly auto-set to
+`review_outcome: 'auto_blocked'` with a real `reviewed_at` at insert time, and correctly did
+**not** appear in the queue. The real admin (`Allen`) approving the MEDIUM row correctly and
+atomically wrote its exact staged snapshot onto the live `brand_partners` row (description and
+differentiator both changed to the proposed values); a genuine non-admin's identical approve
+attempt was correctly rejected; a second approve attempt on the same now-reviewed row was
+correctly rejected by the double-review guard. The real admin denying the UNCERTAIN row
+correctly left `brand_partners` completely untouched (still exactly the MEDIUM-approved values,
+not the UNCERTAIN row's own snapshot) and correctly flipped only that row's own
+`review_outcome` to `'denied'`. **RLS was independently re-confirmed under genuine `SET ROLE
+authenticated`** (not just a `request.jwt.claims` GUC against the Management API's own
+table-owner connection, this file's own repeatedly-learned "false-negative first pass" lesson):
+the real test business owner correctly saw all 4 of their own screening rows; a genuine,
+uninvolved stranger correctly saw 0; the real admin correctly saw all 4 via the admin-only
+policy; a raw `anon`-role query was rejected outright at the grant level (no `SELECT` grant at
+all — deny by default, matching the migration's own `revoke all ... from public, anon,
+authenticated; grant select ... to authenticated` posture). Separately confirmed a real
+authenticated user directly calling `record_business_content_screening()` (attempting to
+self-report a `low` risk tier for their own business) is rejected outright at the grant level —
+only `service_role` can ever write a screening result, confirming a client can never self-report
+its own safety. All test rows/state (4 screening rows, the disposable `brand_partners` row, the
+disposable `profiles` row, the disposable `auth.users` row) deleted afterward — confirmed
+production back to its exact pre-test baseline (0 screening rows, 1 real partner, 4 real
+profiles, 0 test auth users).
+
+**Verified via a real from-scratch migration replay covering the full, now-101-file
+`supabase/migrations/` folder**: pulled the already-cached `supabase/postgres:15.1.0.147` Docker
+image, waited for its own real `healthy` health-check status, dropped and recreated a truly
+empty `public` schema, patched the two known image-version gaps onto the test container only
+(`auth.users.phone`, `storage.buckets.public`), created `pg_cron`/`pg_trgm` as `supabase_admin`
+(the real superuser in this image — `postgres` itself isn't one here), then ran the full folder
+in filename order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, the new table, both
+RLS policies, and all 3 new functions all confirmed to exist in the freshly-rebuilt database
+afterward. Container removed.
+
+Client-side verified via a direct `@babel/core` parse of every touched/new file (clean), the
+full Jest suite (**120/120 passing, unaffected** — no pure-logic file was touched this pass),
+and a full `npx expo export --platform ios` (clean, no bundling errors, **2270 modules** — one
+more than the pre-existing baseline, the one new `AdminContentReviewScreen.js`; every other
+touched file was an edit, and the new Edge Function isn't part of the client bundle).
+
+**Explicitly not done this pass, restated so nothing here reads as silently dropped, matching
+the plan's own "Explicitly not decided at plan time" list**: the other five integration points
+(offer/experience/availability/update/offer_response) — real, separate future phases, not
+attempted. Image screening (`logo_url` and any business-linked images) — its own real, separate
+sub-phase per the locked design, needing a genuinely different vision-model capability, not
+started. The periodic re-sweep job (re-screening already-published content on a real schedule,
+matching this schema's own `pg_cron` convention) — not started; today's coverage is real-time-
+on-write only, so the "a legitimate business later edits its own content into something
+prohibited" case is only caught if that specific edit goes through `handleSaveProfile()` again,
+never retroactively. Whether a MEDIUM/UNCERTAIN result should show the business owner a real
+"pending review" label on their own dashboard while awaiting a decision — still genuinely
+undecided, per the plan's own explicit "a real UX call, not resolved by this plan" — today the
+owner sees only the one-time "Submitted for Review" alert, with no persistent state anywhere
+telling them a change is still pending once they navigate away. The classifier model/provider
+choice (Claude Haiku) was not explicitly locked by the plan but matches its own stated "natural
+default" — used here, consistent with every other AI-classification feature already built.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device once the Anthropic account is
+funded: the full save-profile flow genuinely publishes a clean edit immediately, genuinely holds
+a flagged edit with the real "Submitted for Review" message and no local-state change, and that
+the new admin Content Review Queue screen renders and its Approve/Deny actions behave correctly
+end-to-end in the running app, not just via direct RPC calls.
 
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,

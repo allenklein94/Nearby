@@ -920,6 +920,22 @@ export default function SettingsScreen({ navigation, route }) {
               <Text style={styles.rowButtonText}>Business Tier Switch (Admin, Dev)</Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
+
+            {/* Decision 6, Phase 1 (CLAUDE.md's Aug 27 2026 plan) -- the
+                real Content Review Queue: every business_profile edit still
+                genuinely awaiting a human decision (medium/uncertain risk
+                tier). A HIGH result is auto-blocked and never reaches this
+                queue; a LOW result publishes immediately and never needs one. */}
+            <TouchableOpacity
+              style={styles.rowButtonCard}
+              onPress={() => navigation.navigate('AdminContentReview')}
+              activeOpacity={0.85}
+              accessibilityLabel="Content review queue, admin"
+              accessibilityRole="button"
+            >
+              <Text style={styles.rowButtonText}>Content Review Queue (Admin)</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
           </>
         )}
 

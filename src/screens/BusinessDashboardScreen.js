@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -510,33 +510,59 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingAddress(false);
   }
 
+  // Decision 6, Phase 1 (CLAUDE.md's Aug 27 2026 plan) -- this is the one
+  // confirmed gap the whole content-screening layer was built to close:
+  // this exact call used to go straight to update_business_profile() with
+  // zero screening on any of its 7 fields, including the two real
+  // free-text fields (description/differentiator) rendered directly on
+  // the public BusinessProfileScreen every consumer sees. Now routes
+  // through screen-business-content instead -- a LOW result still
+  // publishes immediately (same as before, zero added friction for the
+  // overwhelming majority of real businesses); MEDIUM/UNCERTAIN holds the
+  // change for a real admin decision, nothing published yet; HIGH is
+  // rejected outright, never saved. Only a genuinely published result
+  // updates the local, on-screen selectedPartner state -- a held/blocked
+  // result must never make the UI claim something changed that didn't.
   async function handleSaveProfile() {
     if (!editNameInput.trim()) return;
     setSavingProfile(true);
     try {
-      await updateBusinessProfile(selectedPartner.id, {
+      const result = await submitBusinessProfileForScreening(selectedPartner.id, {
         name: editNameInput.trim(),
         description: editDescriptionInput.trim() || null,
-        address: selectedPartner.address ?? null,
         logoUrl: editLogoUrlInput.trim() || null,
         category: editCategoryInput,
         attributes: editAttributesInput,
         cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
         differentiator: editDifferentiatorInput.trim() || null,
       });
-      setSelectedPartner((prev) => ({
-        ...prev,
-        name: editNameInput.trim(),
-        description: editDescriptionInput.trim() || null,
-        logo_url: editLogoUrlInput.trim() || null,
-        category: editCategoryInput,
-        attributes: editAttributesInput,
-        cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
-        differentiator: editDifferentiatorInput.trim() || null,
-      }));
-      setEditProfileModalVisible(false);
-      Alert.alert('Saved', 'Your business profile has been updated.');
-      logBusinessAcquisitionEvent(sessionId, 'profile_completed', { partnerId: selectedPartner.id });
+
+      if (result.published) {
+        setSelectedPartner((prev) => ({
+          ...prev,
+          name: editNameInput.trim(),
+          description: editDescriptionInput.trim() || null,
+          logo_url: editLogoUrlInput.trim() || null,
+          category: editCategoryInput,
+          attributes: editAttributesInput,
+          cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
+          differentiator: editDifferentiatorInput.trim() || null,
+        }));
+        setEditProfileModalVisible(false);
+        Alert.alert('Saved', 'Your business profile has been updated.');
+        logBusinessAcquisitionEvent(sessionId, 'profile_completed', { partnerId: selectedPartner.id });
+      } else if (result.blocked) {
+        Alert.alert(
+          "Couldn't Publish",
+          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        );
+      } else {
+        setEditProfileModalVisible(false);
+        Alert.alert(
+          'Submitted for Review',
+          "Your changes are being reviewed before they go live — this is usually quick. Your current profile stays visible in the meantime."
+        );
+      }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
