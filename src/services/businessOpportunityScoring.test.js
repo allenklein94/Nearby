@@ -103,6 +103,34 @@ describe('scoreBusinessOpportunity', () => {
     expect(result.score).toBe(0);
   });
 
+  // Universal Signal Remediation Pass, P1 item 5 (CLAUDE.md, Aug 28 2026).
+  it('scores a real budget_max proportionally, capped at SCORE_OWN_NETWORK', () => {
+    const atReference = scoreBusinessOpportunity({ requestBudgetMax: 150 });
+    expect(atReference.score).toBe(SCORE_OWN_NETWORK);
+
+    const half = scoreBusinessOpportunity({ requestBudgetMax: 75 });
+    expect(half.score).toBe(Math.round(0.5 * SCORE_OWN_NETWORK));
+
+    const overReference = scoreBusinessOpportunity({ requestBudgetMax: 500 });
+    expect(overReference.score).toBe(SCORE_OWN_NETWORK);
+
+    const low = scoreBusinessOpportunity({ requestBudgetMax: 30 });
+    expect(low.score).toBeGreaterThan(0);
+    expect(low.score).toBeLessThan(half.score);
+  });
+
+  it('a real, present budget always scores strictly higher than a smaller real budget -- never a hard filter', () => {
+    const small = scoreBusinessOpportunity({ requestBudgetMax: 20 });
+    const large = scoreBusinessOpportunity({ requestBudgetMax: 150 });
+    expect(small.score).toBeGreaterThan(0);
+    expect(large.score).toBeGreaterThan(small.score);
+  });
+
+  it('does not credit a null/zero budget', () => {
+    expect(scoreBusinessOpportunity({ requestBudgetMax: null }).score).toBe(0);
+    expect(scoreBusinessOpportunity({ requestBudgetMax: 0 }).score).toBe(0);
+  });
+
   it('combines several real, distinct signals additively, one reason per signal', () => {
     const result = scoreBusinessOpportunity({
       requestAttributes: ['date_friendly', 'outdoor_seating'],

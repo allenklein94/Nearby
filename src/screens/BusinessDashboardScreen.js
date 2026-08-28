@@ -219,6 +219,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         requestCategory: req.category ?? null,
         requestDate: req.date ?? null,
         requestTimeWindowStart: req.time_window_start ?? null,
+        requestBudgetMax: req.budget_max ?? null,
         businessAttributes: selectedPartner?.attributes ?? [],
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],

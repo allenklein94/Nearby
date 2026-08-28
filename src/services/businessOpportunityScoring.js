@@ -21,12 +21,24 @@
 import { SCORE_INTEREST_MATCH, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { getTimePeriod } from '../utils/timeContext';
 
+// Universal Signal Remediation Pass, P1 item 5 (CLAUDE.md, Aug 28 2026):
+// a real, monotonic, capped-not-fabricated reference point -- $150 was
+// picked as a plausible mid-range "the full existing SCORE_OWN_NETWORK
+// weight" ceiling, not derived from any real spend data (none exists yet
+// in this young app), and is explicitly disclosed as a placeholder a
+// future pass should re-tune once real business_requests.budget_max
+// volume exists to look at. Never a hard filter -- a low-budget request
+// still scores, just lower, per the user's own explicit "shouldn't
+// necessarily be excluded" instruction.
+const BUDGET_BONUS_REFERENCE = 150;
+
 export function scoreBusinessOpportunity({
   requestAttributes = [],
   requestCuisine = null,
   requestCategory = null,
   requestDate = null,
   requestTimeWindowStart = null,
+  requestBudgetMax = null,
   businessAttributes = [],
   businessCuisine = null,
   businessPriorityAttributes = [],
@@ -61,6 +73,19 @@ export function scoreBusinessOpportunity({
   if (requestCuisine && businessCuisine && requestCuisine === businessCuisine) {
     score += SCORE_INTEREST_MATCH;
     reasons.push({ label: 'Matches your cuisine', points: SCORE_INTEREST_MATCH });
+  }
+
+  // Finding 5 (audit): a real, explicitly-typed dollar amount that
+  // previously dead-ended at display -- collected, stored, shown to the
+  // business, never scored. A real bonus, never a hard filter -- proportional
+  // to the real amount, capped at the existing SCORE_OWN_NETWORK weight
+  // (this scale's own highest), never a fabricated new maximum.
+  if (requestBudgetMax != null && requestBudgetMax > 0) {
+    const budgetBonus = Math.min(SCORE_OWN_NETWORK, Math.round((requestBudgetMax / BUDGET_BONUS_REFERENCE) * SCORE_OWN_NETWORK));
+    if (budgetBonus > 0) {
+      score += budgetBonus;
+      reasons.push({ label: `Offers up to $${requestBudgetMax}`, points: budgetBonus });
+    }
   }
 
   // Timing fit -- reuses the exact same morning/afternoon/evening/weekend
