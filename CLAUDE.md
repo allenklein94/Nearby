@@ -135,6 +135,66 @@ existing **open** requests, if it does one at all) gets checked for the identica
 execution — if found, it gets the same fix; if it turns out to route through a shared helper or
 doesn't do a live scan, that will be stated plainly rather than assumed either way.
 
+**Status: DONE.** Confirmed live: `post_business_availability()` genuinely did have the same
+reverse-direction gap — its own scan over open `business_requests` had zero party-size-vs-
+capacity comparison, so a business posting "1 seat available" would have been auto-matched
+against an already-open request needing 8 people. All five functions fixed in one migration
+(`20260828_business_availability_party_size_feasibility.sql`): `search_active_business_availability()`
+and `_match_request_to_availability()` both gained a real `party_size_param` (both needed a real
+`drop function` + `create function` first, per this file's own "an added param creates a distinct
+orphaned overload" house rule — confirmed post-apply exactly one signature exists for each, not
+two); the three request-creation RPCs (`create_business_request`,
+`create_business_request_for_gathering`, `create_business_request_for_community`) were re-pointed
+to thread their own already-in-scope real party size through to `_match_request_to_availability`'s
+new param (same signature as before, a safe in-place `CREATE OR REPLACE`); `post_business_availability()`
+gained the identical capacity-vs-`br.party_size` check in its own reverse-scan WHERE clause (same
+signature, safe in-place replace). `business_match_exclusions.reason`'s CHECK constraint widened
+with a new, additive `insufficient_capacity` value — deliberately kept distinct from the existing
+`zero_capacity` value's meaning, not repurposed, matching this schema's "widen the CHECK, never
+repurpose a value" house rule; `MISSED_MATCH_REASON_LABELS` (`services/businessFulfillment.js`)
+gained the matching label/hint. Client-side: `searchActiveBusinessAvailability()` now sends
+`partySize` and the RPC returns real `remaining_capacity`; `resolveBusinessAvailability()`
+(`intentResolver.js`) threads `resolveIntent()`'s already-collected `partySize` param through
+(previously passed to the sibling `resolvePolicyOnlyBusinesses()` call one line below and simply
+unused here), and now also carries the real `remainingCapacity` onto the `matchedAvailability`
+banner object, never guessed.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — 7 real
+assertions against real disposable test data (a real 1-seat availability posting for the real
+`Coastal Coffee` partner, coordinates temporarily set and reverted after): a party-of-8 search
+correctly excludes a 1-seat posting; a party-of-1 search correctly includes it with
+`remaining_capacity: 1` genuinely returned; an omitted party size correctly still includes it
+(backward compat); a real end-to-end `create_business_request` call with `party_size: 8`
+correctly produces **no** offer against the 1-seat posting and correctly logs a real
+`insufficient_capacity` exclusion row; the identical call with `party_size: 1` correctly **does**
+get the offer; `post_business_availability()`'s own reverse scan correctly does **not** auto-match
+a fresh 1-seat posting against an already-open party-of-8 request; and, re-verified in a genuinely
+isolated follow-up scenario (the first combined attempt had a same-partner interference artifact
+from an earlier test step, not a bug in the fix — the app's own pre-existing "one offer per
+partner per request" constraint, unrelated to this change), the reverse scan correctly **does**
+auto-match a fresh 1-seat posting against an already-open party-of-1 request. All test rows
+deleted afterward; production confirmed back to its exact pre-test baseline (0 rows across every
+touched table). **Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a schema owned by `postgres`
+(not `supabase_admin` — this image's `postgres` role isn't a superuser and can't own a schema
+`supabase_admin` created, a real, previously-undocumented wrinkle in this exact replay method,
+worth flagging for a future session: create the schema *as* `postgres` — or grant it full
+privileges immediately after creation — before running any migration file as that role), created
+`pg_cron`/`pg_trgm` as `supabase_admin` first, patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`), then ran the full 105-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — exit 0 on every file, all
+three new/changed function signatures and the widened CHECK constraint confirmed to exist in the
+freshly-rebuilt database. Container removed afterward. Client-side verified via a direct
+`@babel/core` parse of both touched files (clean) and a full `npx expo export --platform ios`
+(clean, no bundling errors — edits to two existing files, one new migration, no new client
+files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm a real party-size-constrained ask on a real device
+correctly excludes an under-capacity posting from the ask-box results, and that a business's own
+Insights tab correctly shows the new "insufficient capacity" missed-match reason once real data
+exists to trigger it.
+
 ### P0 item 3 — confirmed-availability tier floor, locked design
 
 The audit's own two proposed fix shapes: (a) a real score floor structurally above policy-only's

@@ -521,12 +521,19 @@ export async function upsertBusinessFulfillmentPolicy(partnerId, {
 // empty. business_availability has owner-only SELECT RLS, so this goes
 // through the same narrow "RPC scoped to exactly what's needed" shape as
 // getConnectedOpenBusinessRequests above, not a broadened SELECT policy.
-export async function searchActiveBusinessAvailability({ category = null, latitude = null, longitude = null, radiusMiles = 15 } = {}) {
+// Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
+// partySize is a real hard feasibility constraint now, not just a display
+// value -- the RPC itself excludes any posting whose real remaining
+// capacity can't fit the requester's own real party size, and returns
+// that real remaining_capacity so a caller can show it honestly (never
+// guessed or displayed as if unlimited).
+export async function searchActiveBusinessAvailability({ category = null, latitude = null, longitude = null, radiusMiles = 15, partySize = null } = {}) {
   const { data, error } = await supabase.rpc('search_active_business_availability', {
     category_param: category,
     latitude_param: latitude,
     longitude_param: longitude,
     radius_miles_param: radiusMiles,
+    party_size_param: partySize,
   });
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -640,6 +647,10 @@ export const MISSED_MATCH_REASON_LABELS = {
   zero_capacity: {
     label: 'A posting had no remaining capacity',
     hint: 'Post fresh availability once you have real capacity again.',
+  },
+  insufficient_capacity: {
+    label: "A posting's remaining capacity was too small for the party size requested",
+    hint: 'Post availability with a real capacity that covers the group sizes you actually get asked about.',
   },
   date_or_time_mismatch: {
     label: "A posting's date/time didn't overlap what was asked for",

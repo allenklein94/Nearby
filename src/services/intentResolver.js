@@ -216,12 +216,20 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location, attributes, cuisine) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize) {
   if (!location) return [];
+  // Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
+  // a real hard feasibility filter now, not just relevance -- a posting
+  // whose real remaining capacity can't fit the requester's own real
+  // party size is excluded server-side entirely, never merely ranked
+  // lower. partySize is already resolved once at the top of
+  // resolveIntent() and passed to every branch that needs it, same as
+  // category/location.
   const rows = await searchActiveBusinessAvailability({
     category: category ?? null,
     latitude: location.latitude,
     longitude: location.longitude,
+    partySize: partySize ?? null,
   });
   return rows.map((row) => {
     let score = 0;
@@ -262,6 +270,10 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
         // available" banner honestly show what the posting itself carries.
         attributes: row.attributes ?? [],
         cuisine: row.cuisine ?? null,
+        // P0 item 2: now genuinely returned by the RPC -- honest, real
+        // remaining capacity, never guessed. null means "no fixed cap set,"
+        // matching this schema's own "null = unlimited" convention.
+        remainingCapacity: row.remaining_capacity ?? null,
       },
       score,
     };
@@ -359,7 +371,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize),
     resolvePolicyOnlyBusinesses(location, partySize),
   ]);
 
