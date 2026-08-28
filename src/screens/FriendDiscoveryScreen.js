@@ -64,6 +64,18 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   // back on every candidate row, just never exposed as a filter before.
   const [interestFilters, setInterestFilters] = useState([]);
   const [distanceFilter, setDistanceFilter] = useState(null);
+  // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
+  // 2026), item 4: the two chip rows below used to render always-visible,
+  // unlike Dating's own collapsible accordion sections
+  // (DiscoveryScreen.js's accordionContainer/accordionHeader/
+  // accordionChevron) -- a real UI inconsistency between two screens that
+  // now sit as siblings under the same People-mode segmented toggle. Fixed
+  // with a single collapsible "Filters" section reusing that same visual
+  // language, deliberately smaller than Dating's own multi-section
+  // accordion (one toggle, two labeled sub-rows, not two separate
+  // accordion headers) -- the filter *logic* below is completely
+  // unchanged, this is presentation only.
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Wave 2B of the full-system acceptance audit (see
   // PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found this had zero
@@ -166,6 +178,18 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   });
   const filtersActive = interestFilters.length > 0 || !!distanceFilter;
 
+  // Real values only, never an invented distance number -- distanceFilter
+  // is already one of DISTANCE_BUCKETS' own real strings ("Nearby", "A few
+  // miles away", "In the wider area"), matching this screen's own
+  // established honesty convention. Shown up to 2 interest tags plus a
+  // real "+N" count so the collapsed summary never grows unbounded.
+  const filterSummaryParts = [
+    ...interestFilters.slice(0, 2),
+    ...(interestFilters.length > 2 ? [`+${interestFilters.length - 2}`] : []),
+    ...(distanceFilter ? [distanceFilter] : []),
+  ];
+  const filterSummary = filterSummaryParts.length > 0 ? filterSummaryParts.join(' · ') : 'All';
+
   // Reused identically across every render branch below so the screen
   // never again reads as blank -- the native header (headerTransparent,
   // matching Nearby's own registration) already supplies the back
@@ -251,41 +275,60 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       <Header />
 
       {candidates.length > 0 && (
-        <View style={styles.filterArea}>
-          <View style={styles.filterChipRow}>
-            {PERSONAL_INTEREST_OPTIONS.map((tag) => {
-              const selected = interestFilters.includes(tag);
-              return (
-                <TouchableOpacity
-                  key={tag}
-                  style={[styles.filterChip, selected && styles.filterChipActive]}
-                  onPress={() => toggleInterestFilter(tag)}
-                  accessibilityLabel={tag}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <View style={styles.filterChipRow}>
-            {DISTANCE_BUCKETS.map((bucket) => {
-              const selected = distanceFilter === bucket;
-              return (
-                <TouchableOpacity
-                  key={bucket}
-                  style={[styles.filterChip, selected && styles.filterChipActive]}
-                  onPress={() => setDistanceFilter(selected ? null : bucket)}
-                  accessibilityLabel={bucket}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+        <View style={styles.accordionContainer}>
+          <TouchableOpacity
+            style={styles.accordionHeader}
+            onPress={() => setFiltersExpanded((prev) => !prev)}
+            accessibilityLabel="Filters"
+            accessibilityRole="button"
+            accessibilityState={{ expanded: filtersExpanded }}
+          >
+            <Text style={styles.accordionHeaderLabel}>Filters</Text>
+            <View style={styles.accordionHeaderRight}>
+              <Text style={styles.accordionHeaderValue}>{filterSummary}</Text>
+              <Text style={styles.accordionChevron}>{filtersExpanded ? '⌃' : '⌄'}</Text>
+            </View>
+          </TouchableOpacity>
+          {filtersExpanded && (
+            <View style={styles.accordionBody}>
+              <Text style={styles.accordionSubLabel}>Interests</Text>
+              <View style={styles.filterChipRow}>
+                {PERSONAL_INTEREST_OPTIONS.map((tag) => {
+                  const selected = interestFilters.includes(tag);
+                  return (
+                    <TouchableOpacity
+                      key={tag}
+                      style={[styles.filterChip, selected && styles.filterChipActive]}
+                      onPress={() => toggleInterestFilter(tag)}
+                      accessibilityLabel={tag}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={[styles.accordionSubLabel, { marginTop: spacing.sm }]}>Distance</Text>
+              <View style={styles.filterChipRow}>
+                {DISTANCE_BUCKETS.map((bucket) => {
+                  const selected = distanceFilter === bucket;
+                  return (
+                    <TouchableOpacity
+                      key={bucket}
+                      style={[styles.filterChip, selected && styles.filterChipActive]}
+                      onPress={() => setDistanceFilter(selected ? null : bucket)}
+                      accessibilityLabel={bucket}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
       )}
 
@@ -326,7 +369,28 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
-  filterArea: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
+  // 2026), item 4: values copied verbatim from DiscoveryScreen.js's own
+  // accordionContainer/accordionHeader/accordionHeaderLabel/
+  // accordionHeaderRight/accordionHeaderValue/accordionChevron/
+  // accordionBody -- the same visual language, not a new one invented for
+  // this screen. accordionSubLabel is new (Dating's own accordion never
+  // needed a label *inside* a section body since each of its sections is
+  // single-purpose; Friends' one section holds two, so it needs one).
+  accordionContainer: {
+    marginHorizontal: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
+  },
+  accordionHeaderLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  accordionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  accordionHeaderValue: { color: colors.textTertiary, fontSize: 13 },
+  accordionChevron: { color: colors.textTertiary, fontSize: 14 },
+  accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
+  accordionSubLabel: { ...typography.small, color: colors.textTertiary, fontWeight: '600', marginBottom: spacing.xs },
   filterChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
   filterChip: { borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },

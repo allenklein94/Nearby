@@ -4,6 +4,251 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 28 2026 — Taxonomy Post-Implementation Audit remediation pass — PLAN LOCKED, executing
+## below; check each item's own status note for what's landed
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a codespace restart hits mid-build, check `git status`/`git log` and each
+item's own status note below for what's actually landed vs. still just this plan. Direct
+follow-up to `PRODUCT_AUDIT/TAXONOMY_POST_IMPLEMENTATION_AUDIT_2026-08-25.md` (see this file's
+own Aug 25 2026 "post-implementation coherence audit" section) — the user forwarded a second
+AI's reaction to that audit, itself organized as a scored 6-item remediation list (3 real fixes,
+2 refinements, 1 infra-blocked verification item) plus a longer follow-up proposing a future
+"Universal Signal & Recommendation Audit." Per this file's own standing rule, every claim was
+re-verified against the real, current code before being treated as still open — several turned
+out to already be closed by later same-day work the second AI's own critique never saw.
+
+**Audit against the real, current code, done before writing any build steps below, not accepted
+at face value:**
+
+1. **`DatingPreferencesPromptModal.js` still writes the legacy `discovery_gender`/`show_me`
+   fields — confirmed real, this is a genuine bug.** Read the file directly: its "My Gender"/
+   "Show Me" sections write `discovery_gender`/`show_me` on save, never touching
+   `gender_identity`/`interested_in_genders` — the exact two fields `ProfileScreen.js`'s own
+   "I identify as"/"I'm interested in dating" pickers write, and the exact two fields
+   `passesGenderMatch()` (`services/proximity.js:163-181`) treats as canonical (mutual matching
+   whenever *both* parties have them set; falls back to the legacy fields only when either
+   party doesn't). Net effect confirmed by reading the fallback logic directly: a brand-new user
+   whose only interaction with dating preferences is this first-open modal populates
+   `discovery_gender`/`show_me` and leaves `gender_identity`/`interested_in_genders` permanently
+   empty — parked on the legacy fallback path forever unless they separately visit Profile. This
+   directly contradicts this file's own Aug 25 2026 "Dating Preferences consolidation" phase,
+   which retired `relationship_goals` and consolidated gender editing onto Profile specifically
+   so there'd be one canonical system, not two. **Real fix, not previously attempted.**
+2. **Business Opportunity card not showing requested attributes/cuisine — checked directly,
+   this is already fully built, contradicting the second AI's critique.** Read
+   `getBusinessOpportunities()` (`services/businessFulfillment.js:299-307`) — its select already
+   includes `business_requests(...,  attributes, cuisine, ...)`. Read
+   `BusinessDashboardScreen.js`'s Business Opportunities card (~line 2446-2492) — it already
+   renders a real itemized "🎯 {reason}" match-reasons list (`o.opportunityReasons`, the
+   Business Intelligence Phase 2 `scoreBusinessOpportunity()` output), the customer's own raw
+   text, the category/party-size/budget line, and real cuisine + attribute chips. This was
+   closed by the Aug 25 2026 "Business Story Phases 1-5" commit (`2f857ba6`), which landed the
+   same day as the audit the second AI is reacting to and explicitly closes this exact
+   previously-flagged gap. **No code change needed here — the second AI's critique is stale
+   relative to same-day work it never saw. Verified only, not rebuilt.**
+3. **`resolveBusinessAvailability()` doesn't score attribute/cuisine overlap — confirmed real.**
+   Read `intentResolver.js:204-247` directly: the function scores category match
+   (`SCORE_INTEREST_MATCH`), close distance (`SCORE_CLOSE_DISTANCE`), and a flat
+   "available right now" bonus (`SCORE_HAPPENING_NOW`) — `row.attributes`/`row.cuisine` (already
+   returned by `search_active_business_availability`, confirmed live via
+   `pg_get_functiondef` — `p.attributes, p.cuisine` off the posting's own `brand_partners` row)
+   are carried onto `matchedAvailability` for the informational "already available" banner only,
+   never folded into `score`. This is real, and — unlike a hypothetical fix that would need a
+   whole new NLP extraction dimension — genuinely closeable this pass: `create-assistant`
+   already extracts `priceLevel`/`partyType` from free text (Aug 25 2026 taxonomy pass) using
+   the exact same "never guess, only set a value when genuinely implied" discipline this fix
+   needs; extending it to also extract a best-effort `attributes` (subset of the real 8-key
+   `BUSINESS_ATTRIBUTE_OPTIONS` vocab) and `cuisine` (one of the real 11-key `CUISINE_OPTIONS`
+   vocab) is the same shape of addition, not a new mechanism. No new schema/RPC needed — the
+   attribute/cuisine data already flows through `search_active_business_availability`; this is
+   purely a new client-side scoring bonus over data already fetched.
+4. **Friends filter UI as always-visible chip rows vs. Dating's collapsible accordion —
+   confirmed real, cosmetic-only.** Read `FriendDiscoveryScreen.js` directly: `PERSONAL_INTEREST_OPTIONS`
+   (all 25 tags) render as an always-visible chip row plus a 3-value distance chip row, unlike
+   `DiscoveryScreen.js`'s real `accordionContainer`/`accordionHeader`/`accordionHeaderValue`/
+   `accordionChevron` collapsible sections (each with a summary line when collapsed). The
+   underlying filter logic itself (interest/distance narrowing the swipe deck, honest empty
+   states) is already correct and untouched by this fix — confirmed via the Aug 25 2026 taxonomy
+   audit's own live verification, not re-tested here. Per the user's own explicit instruction,
+   this gets a **smaller** version of Dating's pattern (one "Filters ▾" toggle, not two
+   accordion sections), not a copy of Dating's own complexity.
+5. **`create-assistant`'s price/party-size semantics are genuinely ambiguous — confirmed real.**
+   Read the live prompt text (`supabase/functions/create-assistant/index.ts`): the `priceLevel`
+   bullet's own example anchors `"cheap"/"free"` to the same `"free"` value — collapsing a real
+   distinction ("cheap" implies *some* cost, "free" implies none) into one bucket, and gives no
+   guidance for `"nice"` at all (a genuinely ambiguous adjective that shouldn't imply a specific
+   price tier). The `partySize` bullet's own examples never resolve whether "two friends" means
+   2 or 3 total people. Both are real prompt-text gaps, fixable the same way `dateWindow`'s own
+   "never guess a specific date" discipline was already written.
+6. **Anthropic account credit-balance issue — confirmed still blocking, not something this pass
+   can resolve.** Matches this file's own already-disclosed, repeatedly-reconfirmed finding
+   (most recently Decision 6 Phase 4/5's own diagnostic passes) — every real classifier call
+   still fails on `"Your credit balance is too low to access the Anthropic API."` This is an
+   account-billing issue, not a code defect. Per the second AI's own explicit instruction ("I
+   would not change the taxonomy architecture because of this"), this pass does **not** attempt
+   to work around it — the prompt-text fixes in item 5 are written and reasoned through
+   carefully (matching this file's own established "closest available proxy... clearly labeled
+   as a weaker substitute" fallback method from the original taxonomy audit), but the actual
+   model output cannot be observed from this sandbox. Flagged as a real, standing gap, not
+   silently glossed over — a real classifier test suite (the 8 example asks the second AI
+   proposed) should be run once the account is funded, not fabricated here.
+
+**Explicitly not attempted this pass, named so it isn't silently dropped**: the second AI's own
+larger follow-up proposal — a full "Universal Signal & Recommendation Audit" mapping every
+signal in the app (interest, category, gender, price, party size, cuisine, attributes, distance,
+time, weather, availability) across collection/storage/display/filter/match/rank/context, plus a
+new "context-aware ranking" layer (weather/time/day/social-context as ranking signals, not just
+copy) — is a genuinely large, separate, read-only audit pass, not a natural extension of this
+6-item remediation list. The second AI's own message explicitly frames it as the *next* thing
+to do, after this pass, not part of it ("I would not immediately tell Claude to build another
+feature... then STOP"). Not started here — flagged for a future, dedicated session.
+
+**Locked build order — 5 real code items, each its own commit, verified before moving on:**
+
+1. `DatingPreferencesPromptModal.js` → canonical `gender_identity`/`interested_in_genders`
+   fields, matching Profile's own copy/vocab exactly. Widen `DiscoveryScreen.js`'s profile
+   select to include both new columns so `initialValues` has something real to prefill from.
+2. *(No code change — item 2 above is already correctly built; this step is a no-op, recorded
+   for completeness only.)*
+3. Extend `create-assistant`'s extraction with best-effort `attributes`/`cuisine` (never guessed,
+   server-validated against the real vocab); add a new `attributeAndCuisineBonus()` pure
+   function to `intentResolverScoring.js` (mirroring `priceAndPartyBonus()`'s shape/tests
+   exactly, but additive across the two independently-meaningful dimensions rather than one
+   combined flat bonus, per the second AI's own explicit "cuisine match = meaningful bonus,
+   attribute overlap = meaningful bonus" framing); wire it into `resolveBusinessAvailability()`
+   and thread `attributes`/`cuisine` through `resolveIntent()`'s params from `HomeScreen.js`'s
+   call site. No new schema/RPC — the business's own `attributes`/`cuisine` already flow through
+   `search_active_business_availability`.
+4. `FriendDiscoveryScreen.js` → single collapsible "Filters ▾" section (Interests + Distance
+   sub-rows), reusing the same visual language `DiscoveryScreen.js`'s accordion already
+   established, with a real collapsed-state summary line. Filter *logic* stays completely
+   unchanged — this is presentation only.
+5. `create-assistant`'s prompt text → explicit price-tier semantics (free/cheap→$/moderate→$$/
+   expensive→$$$, "nice" alone never implies a price) and explicit party-size semantics
+   ("with N friends" → N+1 total, "for N people" → N total), both under the same "never guess
+   unless genuinely implied" discipline every other extracted field already uses.
+
+**Verification convention for this pass, matching every other section in this file**: item 3's
+new pure function gets real unit tests, same convention as `priceAndPartyBonus()`'s own test
+suite. Items 1/4 (client-only) verified via a direct `@babel/core` parse and a full `npx expo
+export --platform ios`. Item 3/5's Edge Function change gets deployed and re-confirmed
+`verify_jwt: true` live via the Management API (not assumed from the CLI default — this file's
+own repeatedly-learned lesson). No schema/migration is needed anywhere in this pass, so no
+live-production RLS verification or from-scratch replay applies here. **Standing limitation,
+same as everywhere else in this file**: no manual simulator/device run-through is possible from
+this sandbox, and the actual Anthropic classification output can't be exercised end-to-end
+(item 6) — both flagged per item below, not silently assumed clean.
+
+**Status: DONE, all 5 code items built, verified, and pushed. Item 2 confirmed already closed,
+no code change. Item 6 confirmed still blocked, disclosed rather than worked around.**
+
+1. **`DatingPreferencesPromptModal.js` — DONE.** Swapped the "Show Me"/"My Gender" single-select
+   sections for "I identify as"/"I'm interested in dating" — the same `GENDER_IDENTITY_OPTIONS`
+   multi-select chips, the same toggle logic, the same helper-text copy `ProfileScreen.js`'s own
+   pickers already use, verbatim. `finish()` now writes `gender_identity`/`interested_in_genders`
+   (plain arrays, matching `ProfileScreen.js`'s own save shape — never null-if-empty) instead of
+   `discovery_gender`/`show_me`. `DiscoveryScreen.js`'s profile select widened to also fetch both
+   new columns so `initialValues` has something real to prefill from (the legacy
+   `discovery_gender`/`show_me` columns are left in that same select, still read elsewhere on
+   this screen — this fix only changes what the *modal* writes, not what already exists).
+   `relationship_intention` and age range are completely unchanged. Net effect: a brand-new
+   user's very first Dating open now populates the exact same canonical fields Profile does, so
+   `passesGenderMatch()`'s real mutual-matching branch (not its legacy fallback) applies to them
+   from day one, closing the exact hole the audit found.
+2. **Business Opportunity attribute/cuisine visibility — confirmed already built, no change.**
+   Re-read `getBusinessOpportunities()` and `BusinessDashboardScreen.js`'s Business Opportunities
+   card directly: both already do exactly what was asked (a real itemized 🎯 match-reasons list,
+   the customer's raw text, category/party/budget, and real cuisine + attribute chips) — closed
+   by the Aug 25 2026 "Business Story Phases 1-5" commit the same day as the audit this pass is
+   responding to. The second AI's critique was reacting to the audit's own original finding text,
+   not the current code. Flagged here so a future session doesn't rebuild something that already
+   works.
+3. **Attribute/cuisine ranking bonus for `resolveBusinessAvailability()` — DONE.**
+   `create-assistant`'s extraction gained `attributes` (a real, server-validated subset of the 8
+   `BUSINESS_ATTRIBUTE_OPTIONS` keys, capped at 4, empty array the honest default) and `cuisine`
+   (one of the 11 real `CUISINE_OPTIONS` keys or `null`), under the identical "never guess, only
+   when genuinely implied" discipline every other extracted field already uses — no new
+   mechanism, the same shape as `priceLevel`/`partyType`'s own earlier addition. New
+   `attributeAndCuisineBonus(row, attributes, cuisine)` in `intentResolverScoring.js` — unlike
+   `priceAndPartyBonus()`'s one combined flat bonus, cuisine and attribute overlap are two
+   separately meaningful signals here (per the second AI's own explicit framing) and each earns
+   its own flat `SCORE_HAPPENING_NOW` bonus, additively, never scaled by how many attributes
+   overlap (stays simple/explainable, matching this file's own standing "no premature black-box
+   ranking" rule). Wired into `resolveBusinessAvailability()`'s existing score computation —
+   category/distance/happening-now are completely unchanged, this is a real additive bonus, never
+   a hard filter, so a relevant-but-slightly-farther business can now outrank a closer
+   non-matching one without ever hiding an eligible posting. No new schema/RPC — the business's
+   own real `attributes`/`cuisine` already flow through `search_active_business_availability`
+   (confirmed live via `pg_get_functiondef`: `p.attributes, p.cuisine` off the posting's own
+   `brand_partners` row) and were already being carried onto the informational banner, just never
+   scored. Threaded through `resolveIntent()`'s params and `HomeScreen.js`'s one call site. 7 new
+   unit tests added (`intentResolverScoring.test.js`), covering both dimensions independently,
+   both additively, the no-signal/no-overlap/mismatch/no-value cases, and no double-counting for
+   multiple overlapping attributes — full suite now **127/127 passing** (120 pre-existing + 7
+   new).
+4. **`FriendDiscoveryScreen.js` filter UI — DONE.** The two always-visible chip rows (all 25
+   `PERSONAL_INTEREST_OPTIONS` tags + 3 distance buckets) are now inside one collapsible
+   "Filters ▾" accordion — a single toggle, not two separate accordion headers like Dating's own
+   (per the user's own explicit "don't make Friends as complex as Dating... fewer controls"
+   instruction) — reusing `DiscoveryScreen.js`'s exact `accordionContainer`/`accordionHeader`/
+   `accordionHeaderLabel`/`accordionHeaderRight`/`accordionHeaderValue`/`accordionChevron`/
+   `accordionBody` style values verbatim, not a new visual language. A new `accordionSubLabel`
+   style labels the two sub-rows ("Interests"/"Distance") inside the one shared body. Collapsed
+   state shows a real, honest summary line (up to 2 selected interest tags + a real "+N" count +
+   the selected distance bucket's own real string — "All" when nothing is selected; never an
+   invented numeric distance like "5 mi," since `distanceFilter` only ever holds one of the RPC's
+   own 3 real bucket strings). The filter *logic* itself (`filteredCandidates`, the honest
+   "no one matches these filters" vs. "no candidates at all" empty-state distinction) is
+   completely unchanged — this was presentation only, matching the plan's own scope.
+5. **`create-assistant` price/party-size semantics — DONE, deployed and verified live.** The
+   `priceLevel` bullet now states an explicit mapping instead of collapsing "cheap" and "free"
+   into one bucket: free/no cost → `free`; cheap/inexpensive/budget-friendly → `$`; moderate/
+   reasonably priced → `$$`; expensive/upscale/fancy → `$$$`; and explicitly states that "nice"
+   alone never implies a price tier (it can mean clean/attractive/well-reviewed, not necessarily
+   expensive) — matching `dateWindow`'s own "never guess" discipline. The `partySize` bullet now
+   explicitly resolves the "two friends" ambiguity the audit found: "with N friends"/"me and N
+   friends" means N+1 total (the asker plus N named others); "for N people"/"me and one friend"
+   means N total — stated as an explicit rule, not left to the model's own guess. Deployed to
+   production (`enmosvippabmuqslzrox`) and verified: `verify_jwt: true` confirmed live via the
+   Management API (version bumped to 6, not assumed from the CLI default), a raw unauthenticated
+   request to the function gateway correctly 401s, and the deployed bundle's own fetched body
+   was confirmed via a string search to genuinely contain the new prompt text (`VALID_ATTRIBUTES`,
+   the real `budget-friendly`/"nice" sentence, 8 real hits), not just that the deploy command
+   reported success. Verified via a lenient `tsc --noEmit` syntax pass on the full file — zero
+   errors beyond the same expected unresolvable Deno-remote-import/global-`Deno` ones every prior
+   pass in this repo already has.
+6. **Anthropic account credit-balance issue — confirmed still blocking, disclosed, not worked
+   around.** Not re-diagnosed this pass (already exhaustively confirmed multiple times across
+   this file's own history, most recently in Decision 6's own Phase 4/5 diagnostics) — the actual
+   model output for either the refined price/party-size prompt or the new attribute/cuisine
+   extraction could not be observed end-to-end from this sandbox. The 8-example classifier test
+   suite the second AI proposed (a mix of price/party/date/category asks, checked for over-
+   inference) is real, valuable, and explicitly deferred to whenever the Anthropic account is
+   funded — not fabricated here.
+
+**Explicitly not attempted this pass, same as stated in the plan above**: the second AI's own
+proposed "Universal Signal & Recommendation Audit" (a full signal-matrix mapping every collected
+signal across collect/store/display/filter/match/rank/context, plus a new weather/time/social-
+context ranking layer) — a genuinely separate, larger, read-only audit pass, not part of this
+remediation list, flagged for a future dedicated session per the second AI's own explicit
+"then STOP" framing.
+
+Verified via a direct `@babel/core` parse of every touched client file (clean), the full Jest
+suite (**127/127 passing**), and a full `npx expo export --platform ios` (clean, no bundling
+errors, **2269 modules, unchanged** — every touched client file this pass was an edit, no new
+files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the Dating first-open modal renders
+the new gender pickers correctly and a fresh account's very first save round-trips
+`gender_identity`/`interested_in_genders` correctly; the Friends filter accordion opens/closes
+correctly and its collapsed summary reads correctly against real selections; and, once the
+Anthropic account is funded, run the real classifier test suite against both the refined price/
+party-size semantics and the new attribute/cuisine extraction — confirming no over-inference
+(especially "nice" never implying a price, and "two friends" resolving to 3) and that a real
+attribute/cuisine match genuinely reorders a business-availability result list on a real device.
+
 ## Aug 27 2026 — three locked decisions from a pasted external-AI reply (Discover's "create it"
 ## completion CTA, a real Business Trust & Safety screening layer, Preferences staying in
 ## Settings) — PLAN WRITTEN, per direct instruction NOT YET EXECUTED

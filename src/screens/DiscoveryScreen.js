@@ -148,7 +148,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set, gender_identity, interested_in_genders').eq('id', myId).single();
       if (mine?.quick_filter_order) setQuickFilterOrder(mine.quick_filter_order);
       if (mine?.quick_filter_visible) setQuickFilterVisible(mine.quick_filter_visible);
       setMyProfile(mine);

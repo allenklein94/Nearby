@@ -77,6 +77,31 @@ export function priceAndPartyBonus(gathering, priceLevel, partyType) {
   return priceMatches || partyMatches ? SCORE_HAPPENING_NOW : 0;
 }
 
+// Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28 2026),
+// item 3: an already-posted business_availability row already carries its
+// own real attributes/cuisine (the business's own, via brand_partners --
+// search_active_business_availability already returns them, previously
+// only ever shown on the informational "already available" banner, never
+// scored). create-assistant's own best-effort classification now extracts
+// a matching attributes/cuisine signal from the ask itself, real values
+// re-validated server-side against the same vocab. Unlike
+// priceAndPartyBonus() above (one combined flat bonus for two dimensions
+// of the same "what kind of gathering" ask), cuisine and attributes are
+// two genuinely separate, independently meaningful signals here -- a
+// restaurant matching on cuisine AND on a real named quality (e.g.
+// outdoor seating) is a stronger match than either alone, so each earns
+// its own flat SCORE_HAPPENING_NOW bonus rather than being collapsed into
+// one. Never awarded when nothing was implied (the common case).
+export function attributeAndCuisineBonus(row, attributes, cuisine) {
+  let bonus = 0;
+  if (cuisine && row.cuisine && row.cuisine === cuisine) bonus += SCORE_HAPPENING_NOW;
+  const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
+  if (Array.isArray(attributes) && attributes.length > 0 && rowAttributes.some((a) => attributes.includes(a))) {
+    bonus += SCORE_HAPPENING_NOW;
+  }
+  return bonus;
+}
+
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

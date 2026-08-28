@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, SafeAreaView } from 'react-native';
 import { supabase } from '../services/supabase';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
-import { DISCOVERY_GENDER_OPTIONS, SHOW_ME_OPTIONS } from '../constants/discoveryOptions';
+import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -14,34 +14,57 @@ import { typography, spacing, radius } from '../theme';
 // flag (added this same phase, the same "shown once, flip a flag" shape
 // DiscoveryScreen's own seen_browse_callout already uses). Deliberately
 // scoped to just the core matching preferences the plan itself names
-// (dating intent / show-me / age range / discovery gender) -- ethnicity
-// and its own hide toggles stay Settings-only, not duplicated here, per
-// the "ask only what's necessary up front" principle this whole phase is
-// built around. Every field stays fully editable from Settings afterward.
+// (dating intent / age range / gender) -- ethnicity and its own hide
+// toggles stay Settings-only, not duplicated here, per the "ask only what's
+// necessary up front" principle this whole phase is built around. Every
+// field stays fully editable from Settings/Profile afterward.
+//
+// Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28 2026):
+// this modal originally wrote the legacy discovery_gender/show_me fields --
+// a real bug, since passesGenderMatch() (services/proximity.js) treats
+// gender_identity/interested_in_genders as canonical and only falls back
+// to the legacy pair when either party hasn't set the new fields. A
+// brand-new user whose only interaction with dating preferences was this
+// modal was permanently parked on the legacy fallback. Fixed by using the
+// exact same fields/vocab/copy ProfileScreen.js's own "I identify as"/
+// "I'm interested in dating" pickers already use -- one canonical system,
+// not two, from a user's very first open of Dating.
 export default function DatingPreferencesPromptModal({ visible, userId, initialValues, onDone }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
   const [relationshipIntention, setRelationshipIntention] = useState([]);
-  const [showMe, setShowMe] = useState('Everyone');
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
-  const [discoveryGender, setDiscoveryGender] = useState('Prefer not to say');
+  const [genderIdentity, setGenderIdentity] = useState([]);
+  const [interestedInGenders, setInterestedInGenders] = useState([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setRelationshipIntention(Array.isArray(initialValues?.relationship_intention) ? initialValues.relationship_intention : []);
-      setShowMe(initialValues?.show_me || 'Everyone');
       setMinAge(String(initialValues?.preferred_min_age ?? 18));
       setMaxAge(String(initialValues?.preferred_max_age ?? 99));
-      setDiscoveryGender(initialValues?.discovery_gender || 'Prefer not to say');
+      setGenderIdentity(Array.isArray(initialValues?.gender_identity) ? initialValues.gender_identity : []);
+      setInterestedInGenders(Array.isArray(initialValues?.interested_in_genders) ? initialValues.interested_in_genders : []);
     }
   }, [visible, initialValues]);
 
   function toggleIntention(value) {
     setRelationshipIntention((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  }
+
+  function toggleGenderIdentity(option) {
+    setGenderIdentity((prev) =>
+      prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option]
+    );
+  }
+
+  function toggleInterestedInGender(option) {
+    setInterestedInGenders((prev) =>
+      prev.includes(option) ? prev.filter((g) => g !== option) : [...prev, option]
     );
   }
 
@@ -78,8 +101,8 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
 
     finish({
       relationship_intention: relationshipIntention.length > 0 ? relationshipIntention : null,
-      show_me: showMe,
-      discovery_gender: discoveryGender,
+      gender_identity: genderIdentity,
+      interested_in_genders: interestedInGenders,
       ...(validAge ? { preferred_min_age: minAgeNum, preferred_max_age: maxAgeNum } : {}),
     });
   }
@@ -116,23 +139,6 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
             })}
           </View>
 
-          <Text style={styles.label}>Show Me</Text>
-          <View style={styles.chipsWrap}>
-            {SHOW_ME_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, showMe === option && styles.chipSelected]}
-                onPress={() => setShowMe(option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: showMe === option }}
-              >
-                <Text style={[styles.chipText, showMe === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
           <Text style={styles.label}>Age Range</Text>
           <View style={styles.ageRow}>
             <TextInput
@@ -154,25 +160,49 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
             />
           </View>
 
-          <Text style={styles.label}>My Gender</Text>
+          <Text style={styles.label}>I identify as</Text>
           <View style={styles.chipsWrap}>
-            {DISCOVERY_GENDER_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, discoveryGender === option && styles.chipSelected]}
-                onPress={() => setDiscoveryGender(option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: discoveryGender === option }}
-              >
-                <Text style={[styles.chipText, discoveryGender === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
+            {GENDER_IDENTITY_OPTIONS.map((option) => {
+              const selected = genderIdentity.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleGenderIdentity(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>Select all that apply — this affects who you're matched with.</Text>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>I'm interested in dating</Text>
+          <View style={styles.chipsWrap}>
+            {GENDER_IDENTITY_OPTIONS.map((option) => {
+              const selected = interestedInGenders.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleInterestedInGender(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <Text style={styles.helperText}>
-            This is separate from the "Gender" field on your profile — it's only used to match
-            against other people's "Show Me" preference.
+            Select all that apply. Matching is mutual — you'll only see people whose preferences
+            also include you.
           </Text>
         </ScrollView>
 

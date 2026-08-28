@@ -19,6 +19,7 @@ import {
   dateWindowToDateRange,
   scoreGatheringForResolver,
   priceAndPartyBonus,
+  attributeAndCuisineBonus,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -201,7 +202,7 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine) {
   if (!location) return [];
   const rows = await searchActiveBusinessAvailability({
     category: category ?? null,
@@ -219,6 +220,13 @@ async function resolveBusinessAvailability(category, location) {
     // is, by construction, available right now -- a real "happening now"
     // signal, not a guess.
     score += SCORE_HAPPENING_NOW;
+    // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
+    // 2026), item 3: a real cuisine/attribute overlap between what the ask
+    // implies and this posting's own business is a meaningful ranking
+    // bonus, not a hard filter -- a relevant business can now outrank a
+    // less relevant but slightly closer one, without ever hiding an
+    // otherwise-eligible posting outright.
+    score += attributeAndCuisineBonus(row, attributes, cuisine);
     return {
       type: 'business_availability',
       id: row.id,
@@ -292,7 +300,7 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
 // own best-effort classification, already collected upstream, never a new
 // fetch) -- only used to bound the weaker policy-only tier's own eligibility
 // check against a real business's stated party-size range.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
@@ -337,7 +345,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location),
+    resolveBusinessAvailability(category, location, attributes, cuisine),
     resolvePolicyOnlyBusinesses(location, partySize),
   ]);
 

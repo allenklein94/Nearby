@@ -8,6 +8,7 @@ const {
   dateWindowToDateRange,
   scoreGatheringForResolver,
   priceAndPartyBonus,
+  attributeAndCuisineBonus,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
@@ -69,6 +70,38 @@ describe('priceAndPartyBonus', () => {
 
   it('awards nothing when the gathering itself never set a value', () => {
     expect(priceAndPartyBonus({ price_level: null, party_type: null }, '$', 'solo')).toBe(0);
+  });
+});
+
+// Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28 2026),
+// item 3.
+describe('attributeAndCuisineBonus', () => {
+  it('awards a bonus for a real cuisine match', () => {
+    expect(attributeAndCuisineBonus({ cuisine: 'italian', attributes: [] }, [], 'italian')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards a bonus for a real attribute overlap', () => {
+    expect(attributeAndCuisineBonus({ cuisine: null, attributes: ['outdoor_seating', 'quiet'] }, ['outdoor_seating'], null)).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards both bonuses additively when cuisine and attributes both match -- these are two separate signals, unlike priceAndPartyBonus', () => {
+    expect(attributeAndCuisineBonus({ cuisine: 'italian', attributes: ['date_friendly'] }, ['date_friendly'], 'italian')).toBe(SCORE_HAPPENING_NOW * 2);
+  });
+
+  it('awards nothing when nothing was implied by the ask', () => {
+    expect(attributeAndCuisineBonus({ cuisine: 'italian', attributes: ['date_friendly'] }, [], null)).toBe(0);
+  });
+
+  it('awards nothing for a real mismatch, never a fabricated match', () => {
+    expect(attributeAndCuisineBonus({ cuisine: 'mexican', attributes: ['upscale'] }, ['outdoor_seating'], 'italian')).toBe(0);
+  });
+
+  it('awards nothing when the business itself never set a value', () => {
+    expect(attributeAndCuisineBonus({ cuisine: null, attributes: [] }, ['outdoor_seating'], 'italian')).toBe(0);
+  });
+
+  it('does not award the attribute bonus twice for multiple overlapping attributes', () => {
+    expect(attributeAndCuisineBonus({ cuisine: null, attributes: ['outdoor_seating', 'quiet', 'casual'] }, ['outdoor_seating', 'quiet'], null)).toBe(SCORE_HAPPENING_NOW);
   });
 });
 
