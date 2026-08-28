@@ -118,6 +118,52 @@ exhaustively re-confirmed for Dating/Friends/People.
 
 ---
 
+## Scenario B trace, done directly — a real, structural gap found in `create-assistant`'s own
+## prompt AND in `AskBusinessScreen.js`'s UI: "Friday" (or any specific named weekday) is not
+## representable anywhere in the Ask Nearby Businesses flow
+
+Read `supabase/functions/create-assistant/index.ts`'s live prompt text directly (lines 80,
+95-145). Confirmed two real, independently-verified facts:
+
+1. **`VALID_DATE_WINDOWS = ['now', 'today', 'tonight', 'tomorrow', 'weekend', 'flexible']`**
+   (line 80) — the model's own instructions (line 128) explicitly say *"Never guess a specific
+   date, day of week, or clock time — only pick from this exact list."* There is no bucket
+   representing "a specific named weekday beyond tomorrow." An ask naming "Friday" (when today
+   isn't Thursday, and Friday doesn't fall on the weekend) has no honest classification
+   available — the model is boxed into either silently dropping the day name to `flexible`
+   (discarding a real, explicit signal the user gave) or, despite the instruction not to guess,
+   plausibly rounding "Friday" to the nearest available bucket (`weekend`), which is simply
+   wrong for a Friday-evening date plan most people wouldn't call "the weekend."
+2. **`AskBusinessScreen.js`'s `DATE_OPTIONS`** (lines 23-28) — the actual submission screen for
+   "ask nearby businesses" — has exactly four chips: Today / Tomorrow / This weekend / I'm
+   flexible. **Confirmed via grep: zero `DateTimePicker`/"Pick a Date" anywhere in this file.**
+   Unlike `CreateGatheringScreen.js`, which genuinely has a real native `DateTimePicker` behind
+   its own "🗓️ Pick a Date" preset (`utils/whenPresets.js:13`, `CreateGatheringScreen.js:3,12,484`),
+   there is **no way, anywhere in the Ask Nearby Businesses flow — neither AI-classified nor
+   manually picked — to represent a specific day of the week at all.**
+
+**Net effect, traced against the plan's own locked Scenario B verbatim** ("Find me a nice
+Italian place for a date Friday"): the app's own explicit design principle — "AI never infers a
+specific date; the user always explicitly picks date/time through deterministic UI" — breaks
+down here specifically, because the deterministic UI itself has no control that can express
+"Friday." A user asking for something on a specific day beyond tomorrow can neither have it
+correctly classified nor manually correct it on this one screen. The one partial mitigation:
+`raw_text` (the literal typed ask) is still sent to businesses, so a human business owner
+reading it would still see the word "Friday" — but the structured `date`/`dateWindow` field
+driving automated matching/fan-out timing would not honor it.
+
+**This is a real, structural, previously-undocumented gap, not a cosmetic one** — it's the exact
+question the plan's own Scenario B was written to test, and the honest answer, checked directly
+rather than assumed, is that Nearby cannot currently fulfill it correctly. Also a real
+"mini-app" inconsistency (Create's own gathering-creation "When" step has a genuine date picker;
+Ask Nearby Businesses does not, with no stated reason for the asymmetry).
+
+**Severity**: 🔴 P0 candidate — this isn't a ranking nuance, it's an entire class of extremely
+common real-world asks ("Friday," "next Tuesday," "the 15th") that the flow structurally cannot
+represent, silently degrading to either the wrong bucket or no date constraint at all.
+
+---
+
 ## "Right Now"/"Today"/"This Week" canonical window — re-verified, still consistently wired
 
 Confirmed live: `utils/rightNowWindow.js`'s `isWithinRightNowWindow()` is genuinely imported and
