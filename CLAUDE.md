@@ -4,6 +4,77 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 28 2026 — Universal Signal & Recommendation Audit — read-only, no application code
+## changes; check the status note at the bottom for what's landed
+
+Written before execution, same restart-safety convention as every other plan-first section in
+this file. Direct follow-up to the Taxonomy Post-Implementation Audit remediation pass
+immediately below this section — the second AI's own closing proposal, explicitly deferred
+there ("a genuinely separate, larger, read-only audit pass... flagged for a future dedicated
+session"), now picked up on its own. **Hard boundary, same as every other pass of this shape in
+this file's history (the Aug 23 2026 Product Coherence Audit, the Aug 24 2026 Universal
+Taxonomy Audit): read-only. No schema change, no RPC change, no client edit, for any reason,
+even a fix that looks trivially safe mid-audit — every finding goes into the deliverable, not
+into a diff.**
+
+**Scope, locked**: trace every meaningful signal Nearby collects — not just the four the
+taxonomy pass touched — across seven real stages: **Collected → Stored → Displayed → Filtered →
+Matched → Ranked → Context** (does this signal interact with or get modulated by another
+signal, e.g. weather bending a ranking that would otherwise ignore it), ending in **Final
+Recommendation**. Per the second AI's own framing, a blank cell isn't automatically a bug — it's
+a question ("should this be blank? if yes, intentional; if no, gap") — every blank gets an
+explicit verdict, not silence.
+
+**12 signals, split into two research passes (capped at 2 concurrent forks, matching this
+session's own established convention), plus a synthesis pass done directly, not delegated,
+since cross-referencing all 12 against each other and against the new "context" question can't
+be split cleanly**:
+
+- **Pass A — personal/social/discovery signals**: personal interest (`profiles.interests`),
+  gathering/community/business-request category (`interest_tag`), relationship intention,
+  gender (`gender_identity`/`interested_in_genders`, the canonical pair — plus a real check of
+  whether the legacy `discovery_gender`/`show_me` fallback still holds correctly post the Dating-
+  modal fix earlier today), and distance/proximity infrastructure (fuzzed coordinates,
+  `wide_area`, `precise_lat/lng` access rules, radius filters across Gatherings/Discover/Friend
+  Discovery/business fan-out) — distance underlies almost every other signal's own ranking, so
+  it's grounded here as its own first-class item rather than assumed. One quick control-group
+  recheck folded in: `interest_tag`'s own resolver path was already exhaustively traced live in
+  the Aug 24 2026 taxonomy audit — confirm it's still true post today's changes, don't re-derive
+  it from scratch.
+- **Pass B — commercial/context signals**: price (`gatherings.price_level`, business
+  experience/offer pricing, `business_requests.budget_min/max`), party size/type
+  (`gatherings.party_type`, `business_requests.party_size`, availability capacity), business
+  cuisine, business attributes (+ `priority_attributes`), availability/supply (`business_
+  availability`, fulfillment policies, gathering capacity/waitlist — "is this actually gettable
+  right now," not just "does it exist"), time/date-window (`scheduled_at`, `time_window_start/
+  end`, the `dateWindow` bucket, any "Right Now/Today/This Week" style filter), and weather
+  (`forecast_label`, `rain_risk`/`heat_risk`/`cold_risk`/`outdoor_favorable`) — confirmed by a
+  quick direct check before dispatching that weather already feeds `homeRecommendations.js`'s
+  own scoring (`weatherAdjustment()`) but not `intentResolver.js` (the ask-box resolver) at all;
+  Pass B verifies whether that's the only gap or one of several.
+
+**Deliverable, locked**: each pass writes its own real scoped file to
+`PRODUCT_AUDIT/UNIVERSAL_SIGNAL_AUDIT_partA.md`/`_partB.md` (table-row-per-signal-per-stage,
+real file/line citations, a verdict per cell — never essay-length per signal, matching this
+file's own established terse-but-grounded audit convention) — not a chat summary alone, so the
+findings survive independent of this conversation's own context. Once both are back, synthesis
+(done directly, not delegated) covers: the full 12-signal matrix assembled from both parts; a
+real "Context Layer" section naming every place a signal *does* modulate another surface's
+ranking today (e.g. weather → `homeRecommendations.js`) vs. every place the same class of
+modulation is conspicuously absent (e.g. weather → `intentResolver.js`); 3-4 real end-to-end
+persona traces in the same "read the actual code, no simulator" style every prior flow-trace in
+this file already uses; and a ranked, ungrouped list of concrete findings — ready-to-build
+recommendations, never something this pass builds itself. Once assembled, the two working files
+are folded into one final `PRODUCT_AUDIT/UNIVERSAL_SIGNAL_RECOMMENDATION_AUDIT_2026-08-28.md`
+and deleted, matching the Aug 24 2026 taxonomy audit's own established "fold the parts into one
+file, don't leave five" precedent.
+
+**Explicitly out of scope, restated so it isn't silently attempted mid-audit**: no code changes,
+no new signal invented to fill a real gap, no re-litigating the taxonomy remediation pass's own
+just-shipped decisions. The second AI's own broader "context-aware ranking layer" idea is
+evaluated and reported on here — real, present, or absent per surface — never built in the same
+pass as finding it, matching this file's oldest, most consistently enforced rule.
+
 ## Aug 28 2026 — Taxonomy Post-Implementation Audit remediation pass — PLAN LOCKED, executing
 ## below; check each item's own status note for what's landed
 
