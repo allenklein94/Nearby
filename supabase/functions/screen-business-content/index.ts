@@ -24,9 +24,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 // unscreened content, same reasoning Phase 1 used to exclude the AI
 // category-suggestion confirm/Teach Nearby confirm) and
 // handleToggleExperienceActive() (only flips `active`, carries the
-// already-published title/description forward unchanged). Standing
-// offers/availability/updates/offer responses remain real, separate,
-// unattempted future phases.
+// already-published title/description forward unchanged).
+// Phase 3 (Sep 8 2026): the remaining four real integration points --
+// standing offers (`offer`), availability postings (`availability`),
+// broadcast updates (`update`), and offer responses to a specific
+// customer request (`offer_response`) -- closes the locked design's own
+// "every one named" list. See admin_review_business_content_screening()'s
+// own header comment (20260908_business_content_screening_offer_
+// availability_update_response.sql) for the real per-target-type
+// mechanics this phase's MEDIUM/UNCERTAIN admin-approve path needed to
+// get right (availability's real-duration-not-stale-timing computation,
+// offer_response's real re-validation against a request that may have
+// gone stale during review).
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
@@ -61,6 +70,10 @@ const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american'
 // experience()'s own CHECK constraints already enforce.
 const PRICE_LEVEL_OPTIONS = ['free', '$', '$$', '$$$'];
 const PARTY_TYPE_OPTIONS = ['solo', 'friends', 'groups', 'date'];
+// Same real vocabulary business_request_offers/business_availability's
+// own offer_type CHECK constraints already enforce.
+const OFFER_TYPE_OPTIONS = ['standard', 'discount', 'perk', 'upgrade', 'alt_time'];
+const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response'];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -139,9 +152,7 @@ serve(async (req) => {
     const body = await req.json();
     const { partnerId, targetType } = body;
     if (!partnerId || typeof partnerId !== 'string') return json({ error: 'Missing partnerId' }, 400);
-    if (targetType !== 'business_profile' && targetType !== 'experience') {
-      // Every other target_type (offer/availability/update/offer_response)
-      // is real future-phase work, not attempted here.
+    if (!TARGET_TYPES.includes(targetType)) {
       return json({ error: 'This content type is not yet screened.' }, 400);
     }
 
@@ -263,51 +274,354 @@ What makes them different: ${differentiator || '(none)'}`;
       return json({ riskTier, published: false, blocked: false, screeningId });
     }
 
-    // targetType === 'experience' -- Signature Experiences (business_
-    // experiences). experienceId is null for a genuinely new experience,
-    // or a real existing row's id when editing one -- both cases route
-    // through the identical classify-then-enforce shape, the write just
-    // targets create_business_experience() vs. update_business_experience()
-    // respectively.
-    const experienceId = typeof body.experienceId === 'string' && body.experienceId ? body.experienceId : null;
-    const title = typeof body.title === 'string' ? body.title.trim().slice(0, 80) : '';
-    if (!title) return json({ error: 'Title cannot be empty' }, 400);
-    const description = typeof body.description === 'string' ? body.description.trim().slice(0, 200) : '';
-    const icon = typeof body.icon === 'string' && body.icon.trim() ? body.icon.trim().slice(0, 4) : null;
-    const attributes = Array.isArray(body.attributes) ? body.attributes.filter((a: unknown) => ATTRIBUTE_OPTIONS.includes(a as string)) : [];
-    const priceLevel = PRICE_LEVEL_OPTIONS.includes(body.priceLevel) ? body.priceLevel : null;
-    const partyType = PARTY_TYPE_OPTIONS.includes(body.partyType) ? body.partyType : null;
+    if (targetType === 'experience') {
+      // Signature Experiences (business_experiences). experienceId is null
+      // for a genuinely new experience, or a real existing row's id when
+      // editing one -- both cases route through the identical classify-
+      // then-enforce shape, the write just targets create_business_
+      // experience() vs. update_business_experience() respectively.
+      const experienceId = typeof body.experienceId === 'string' && body.experienceId ? body.experienceId : null;
+      const title = typeof body.title === 'string' ? body.title.trim().slice(0, 80) : '';
+      if (!title) return json({ error: 'Title cannot be empty' }, 400);
+      const description = typeof body.description === 'string' ? body.description.trim().slice(0, 200) : '';
+      const icon = typeof body.icon === 'string' && body.icon.trim() ? body.icon.trim().slice(0, 4) : null;
+      const attributes = Array.isArray(body.attributes) ? body.attributes.filter((a: unknown) => ATTRIBUTE_OPTIONS.includes(a as string)) : [];
+      const priceLevel = PRICE_LEVEL_OPTIONS.includes(body.priceLevel) ? body.priceLevel : null;
+      const partyType = PARTY_TYPE_OPTIONS.includes(body.partyType) ? body.partyType : null;
 
-    // Defense in depth for the edit case -- confirm the experience being
-    // edited genuinely belongs to this partner before ever screening or
-    // logging it, same ownership discipline update_business_experience()
-    // itself already enforces for the real write path.
-    if (experienceId) {
-      const { data: existing } = await admin.from('business_experiences').select('partner_id').eq('id', experienceId).single();
-      if (!existing || existing.partner_id !== partnerId) {
-        return json({ error: 'Experience not found' }, 404);
+      // Defense in depth for the edit case -- confirm the experience being
+      // edited genuinely belongs to this partner before ever screening or
+      // logging it, same ownership discipline update_business_experience()
+      // itself already enforces for the real write path.
+      if (experienceId) {
+        const { data: existing } = await admin.from('business_experiences').select('partner_id').eq('id', experienceId).single();
+        if (!existing || existing.partner_id !== partnerId) {
+          return json({ error: 'Experience not found' }, 404);
+        }
       }
+
+      // icon is a free-text-capped-at-4-characters emoji field, not a real
+      // injection surface for prohibited content -- carried through in the
+      // snapshot but not sent to the classifier, same treatment Phase 1 gave
+      // category/attributes/cuisine.
+      const contentBlock = `Title: ${title}
+Description: ${description || '(none)'}`;
+
+      const result = await classifyContent(contentBlock);
+      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      const { riskTier, matchedCategories, reasoning } = result;
+
+      const contentSnapshot = {
+        experienceId, title, description: description || null, icon, attributes, priceLevel, partyType,
+      };
+
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'experience',
+        target_id_param: experienceId,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return json({ error: 'Could not screen this content right now.' }, 500);
+      }
+
+      if (riskTier === 'low') {
+        if (experienceId) {
+          const { error: writeError } = await supabaseAsUser.rpc('update_business_experience', {
+            experience_id_param: experienceId,
+            title_param: title,
+            description_param: description || null,
+            icon_param: icon,
+            attributes_param: attributes,
+            price_level_param: priceLevel,
+            party_type_param: partyType,
+            active_param: true,
+          });
+          if (writeError) {
+            console.error('screen-business-content: low-tier experience update failed', writeError);
+            return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+          }
+          return json({ riskTier, published: true, blocked: false, screeningId, experienceId });
+        }
+
+        const { data: newId, error: writeError } = await supabaseAsUser.rpc('create_business_experience', {
+          partner_id_param: partnerId,
+          title_param: title,
+          description_param: description || null,
+          icon_param: icon,
+          attributes_param: attributes,
+          price_level_param: priceLevel,
+          party_type_param: partyType,
+          ai_suggested_param: false,
+        });
+        if (writeError) {
+          // The RPC's own real entitlement-cap error (ENTITLEMENT_LIMIT:
+          // signature_experiences) surfaces here un-mangled -- the client's
+          // existing parseEntitlementError() already recognizes this exact
+          // string, no new error shape introduced.
+          console.error('screen-business-content: low-tier experience create failed', writeError);
+          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+        }
+        return json({ riskTier, published: true, blocked: false, screeningId, experienceId: newId });
+      }
+
+      if (riskTier === 'high') {
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be published — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      // medium / uncertain -- held for a real human review, nothing written
+      // to business_experiences yet.
+      return json({ riskTier, published: false, blocked: false, screeningId });
     }
 
-    // icon is a free-text-capped-at-4-characters emoji field, not a real
-    // injection surface for prohibited content -- carried through in the
-    // snapshot but not sent to the classifier, same treatment Phase 1 gave
-    // category/attributes/cuisine.
-    const contentBlock = `Title: ${title}
+    if (targetType === 'offer') {
+      // Standing offers (brand_offers), created via createBusinessOffer() --
+      // a raw client insert, not a SECURITY DEFINER RPC, relying on
+      // brand_offers' own real owner-scoped INSERT RLS policy (confirmed
+      // live: managed_partner_id = auth.uid()) rather than an internal
+      // ownership check the way update_business_profile() has one. The
+      // LOW-tier path below does the identical raw insert via the
+      // caller's own bearer-token-scoped client for that reason.
+      const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : '';
+      if (!title) return json({ error: 'Title cannot be empty' }, 400);
+      const description = typeof body.description === 'string' ? body.description.trim().slice(0, 2000) : '';
+      const rewardType = typeof body.rewardType === 'string' && body.rewardType.trim() ? body.rewardType.trim() : 'discount';
+      const redemptionInstructions = typeof body.redemptionInstructions === 'string' && body.redemptionInstructions.trim() ? body.redemptionInstructions.trim().slice(0, 500) : null;
+      // Real, disclosed scope boundary, matching the plan's own literal
+      // field list ("standing offers (title/description)") -- redemption
+      // Instructions is also free text but stays outside this phase's
+      // screening scope, carried through in the snapshot unscreened.
+      const gatheringId = typeof body.gatheringId === 'string' && body.gatheringId ? body.gatheringId : null;
+      const redemptionLimit = Number.isFinite(body.redemptionLimit) ? body.redemptionLimit : null;
+      const targetInterestTag = typeof body.targetInterestTag === 'string' && body.targetInterestTag.trim() ? body.targetInterestTag.trim() : null;
+      const unlockScope = body.unlockScope === 'community' || body.unlockScope === 'gathering' ? body.unlockScope : null;
+      const unlockCommunityId = unlockScope === 'community' && typeof body.unlockCommunityId === 'string' ? body.unlockCommunityId : null;
+      const unlockMinMembers = unlockScope && Number.isFinite(body.unlockMinMembers) ? body.unlockMinMembers : null;
+
+      const contentBlock = `Title: ${title}
 Description: ${description || '(none)'}`;
+
+      const result = await classifyContent(contentBlock);
+      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      const { riskTier, matchedCategories, reasoning } = result;
+
+      const contentSnapshot = {
+        title, description: description || null, rewardType, redemptionInstructions,
+        gatheringId, redemptionLimit, targetInterestTag, unlockScope, unlockCommunityId, unlockMinMembers,
+      };
+
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'offer',
+        target_id_param: null,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return json({ error: 'Could not screen this content right now.' }, 500);
+      }
+
+      if (riskTier === 'low') {
+        // Real, absolute-time expiry -- gatheringId's own scheduled_at is
+        // a fixed external time, so reading it fresh right before this
+        // insert is safe and matches createBusinessOffer()'s own existing
+        // behavior exactly (it already reads the gathering fresh, never a
+        // client-supplied expiresAt).
+        let expiresAt: string | null = null;
+        if (gatheringId) {
+          const { data: gathering } = await admin.from('gatherings').select('scheduled_at').eq('id', gatheringId).single();
+          if (gathering?.scheduled_at) {
+            expiresAt = new Date(new Date(gathering.scheduled_at).getTime() + 48 * 60 * 60 * 1000).toISOString();
+          }
+        }
+        const { error: writeError } = await supabaseAsUser.from('brand_offers').insert({
+          partner_id: partnerId, title, description: description || null, reward_type: rewardType,
+          redemption_instructions: redemptionInstructions, active: true, gathering_id: gatheringId,
+          expires_at: expiresAt, redemption_limit: redemptionLimit, target_interest_tag: targetInterestTag,
+          unlock_scope: unlockScope, unlock_community_id: unlockScope === 'community' ? unlockCommunityId : null,
+          unlock_min_members: unlockScope ? unlockMinMembers : null,
+        });
+        if (writeError) {
+          console.error('screen-business-content: low-tier offer write failed', writeError);
+          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+        }
+        return json({ riskTier, published: true, blocked: false, screeningId });
+      }
+
+      if (riskTier === 'high') {
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be published — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      return json({ riskTier, published: false, blocked: false, screeningId });
+    }
+
+    if (targetType === 'availability') {
+      // Availability postings (business_availability), created via
+      // postBusinessAvailability() -> post_business_availability() -- a
+      // real SECURITY DEFINER RPC, reused unmodified for the LOW-tier
+      // path. Its starts_at/ends_at are relative to "now," not a fixed
+      // external time -- the client sends a real duration (durationHours,
+      // null meaning "rest of today"), and both this path and the
+      // admin-approve raw write compute starts_at/ends_at at the real
+      // moment of actual publish, never a submission-time value that
+      // would go stale during a MEDIUM/UNCERTAIN hold.
+      const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : '';
+      if (!title) return json({ error: 'Title cannot be empty' }, 400);
+      const description = typeof body.description === 'string' ? body.description.trim().slice(0, 2000) : '';
+      const category = typeof body.category === 'string' && body.category.trim() ? body.category.trim() : null;
+      const offerType = OFFER_TYPE_OPTIONS.includes(body.offerType) ? body.offerType : 'standard';
+      const price = Number.isFinite(body.price) ? body.price : null;
+      const capacity = Number.isFinite(body.capacity) ? body.capacity : null;
+      const durationHours = Number.isFinite(body.durationHours) ? body.durationHours : null;
+      const radiusMiles = Number.isFinite(body.radiusMiles) ? body.radiusMiles : 15;
+
+      const contentBlock = `Title: ${title}
+Description: ${description || '(none)'}`;
+
+      const result = await classifyContent(contentBlock);
+      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      const { riskTier, matchedCategories, reasoning } = result;
+
+      const contentSnapshot = { title, description: description || null, category, offerType, price, capacity, durationHours, radiusMiles };
+
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'availability',
+        target_id_param: null,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return json({ error: 'Could not screen this content right now.' }, 500);
+      }
+
+      if (riskTier === 'low') {
+        const startsAt = new Date();
+        const endsAt = durationHours != null
+          ? new Date(startsAt.getTime() + durationHours * 60 * 60 * 1000)
+          : new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate(), 23, 59, 59));
+        const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('post_business_availability', {
+          category_param: category, title_param: title, description_param: description || null,
+          offer_type_param: offerType, price_param: price, capacity_param: capacity,
+          starts_at_param: startsAt.toISOString(), ends_at_param: endsAt.toISOString(), radius_miles_param: radiusMiles,
+        });
+        if (writeError) {
+          console.error('screen-business-content: low-tier availability write failed', writeError);
+          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+        }
+        return json({ riskTier, published: true, blocked: false, screeningId, availabilityId: writeResult?.availabilityId, matchedCount: writeResult?.matchedCount });
+      }
+
+      if (riskTier === 'high') {
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be published — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      return json({ riskTier, published: false, blocked: false, screeningId });
+    }
+
+    if (targetType === 'update') {
+      // Broadcast updates to followers (business_updates), created via
+      // postBusinessUpdate() -- a raw client insert, same RLS-backed
+      // shape as `offer` above. Title AND body both screened -- the
+      // confirmed gap the locked design names directly (only the title
+      // was ever checked before this phase).
+      const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : '';
+      if (!title) return json({ error: 'Title cannot be empty' }, 400);
+      const updateBody = typeof body.body === 'string' ? body.body.trim().slice(0, 2000) : '';
+
+      const contentBlock = `Title: ${title}
+Body: ${updateBody || '(none)'}`;
+
+      const result = await classifyContent(contentBlock);
+      if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
+      const { riskTier, matchedCategories, reasoning } = result;
+
+      const contentSnapshot = { title, body: updateBody || null };
+
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'update',
+        target_id_param: null,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return json({ error: 'Could not screen this content right now.' }, 500);
+      }
+
+      if (riskTier === 'low') {
+        const { error: writeError } = await supabaseAsUser.from('business_updates').insert({
+          partner_id: partnerId, title, body: updateBody || null,
+        });
+        if (writeError) {
+          console.error('screen-business-content: low-tier update write failed', writeError);
+          return json({ error: writeError.message || 'Could not send your update.' }, 500);
+        }
+        return json({ riskTier, published: true, blocked: false, screeningId });
+      }
+
+      if (riskTier === 'high') {
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be sent — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      return json({ riskTier, published: false, blocked: false, screeningId });
+    }
+
+    // targetType === 'offer_response' -- a business's response to a
+    // specific customer request (business_request_offers), submitted via
+    // submitBusinessOfferResponse() -> submit_business_offer(). Already
+    // covered by the weaker generic checkTextModeration() before this
+    // phase, per the locked design's own text -- upgraded to real policy
+    // classification here, not left as the narrower check.
+    const requestId = typeof body.requestId === 'string' && body.requestId ? body.requestId : null;
+    if (!requestId) return json({ error: 'Missing requestId' }, 400);
+    const offerType = OFFER_TYPE_OPTIONS.includes(body.offerType) ? body.offerType : 'standard';
+    const offerDescription = typeof body.offerDescription === 'string' ? body.offerDescription.trim().slice(0, 1000) : '';
+    if (!offerDescription) return json({ error: 'Say what you can offer.' }, 400);
+    const offerPrice = Number.isFinite(body.offerPrice) ? body.offerPrice : null;
+    const proposedTime = typeof body.proposedTime === 'string' && body.proposedTime ? body.proposedTime : null;
+
+    const contentBlock = `Offer description: ${offerDescription}`;
 
     const result = await classifyContent(contentBlock);
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = {
-      experienceId, title, description: description || null, icon, attributes, priceLevel, partyType,
-    };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerPrice, proposedTime };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
-      target_type_param: 'experience',
-      target_id_param: experienceId,
+      target_type_param: 'offer_response',
+      target_id_param: null,
       submitted_by_param: myId,
       content_snapshot_param: contentSnapshot,
       risk_tier_param: riskTier,
@@ -320,54 +634,24 @@ Description: ${description || '(none)'}`;
     }
 
     if (riskTier === 'low') {
-      if (experienceId) {
-        const { error: writeError } = await supabaseAsUser.rpc('update_business_experience', {
-          experience_id_param: experienceId,
-          title_param: title,
-          description_param: description || null,
-          icon_param: icon,
-          attributes_param: attributes,
-          price_level_param: priceLevel,
-          party_type_param: partyType,
-          active_param: true,
-        });
-        if (writeError) {
-          console.error('screen-business-content: low-tier experience update failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
-        }
-        return json({ riskTier, published: true, blocked: false, screeningId, experienceId });
-      }
-
-      const { data: newId, error: writeError } = await supabaseAsUser.rpc('create_business_experience', {
-        partner_id_param: partnerId,
-        title_param: title,
-        description_param: description || null,
-        icon_param: icon,
-        attributes_param: attributes,
-        price_level_param: priceLevel,
-        party_type_param: partyType,
-        ai_suggested_param: false,
+      const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
+        request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
+        offer_price_param: offerPrice, proposed_time_param: proposedTime,
       });
       if (writeError) {
-        // The RPC's own real entitlement-cap error (ENTITLEMENT_LIMIT:
-        // signature_experiences) surfaces here un-mangled -- the client's
-        // existing parseEntitlementError() already recognizes this exact
-        // string, no new error shape introduced.
-        console.error('screen-business-content: low-tier experience create failed', writeError);
-        return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+        console.error('screen-business-content: low-tier offer_response write failed', writeError);
+        return json({ error: writeError.message || 'Could not send your response.' }, 500);
       }
-      return json({ riskTier, published: true, blocked: false, screeningId, experienceId: newId });
+      return json({ riskTier, published: true, blocked: false, screeningId, offerId: writeResult?.offerId });
     }
 
     if (riskTier === 'high') {
       return json({
         riskTier, published: false, blocked: true, matchedCategories, screeningId,
-        error: "This content couldn't be published — it was flagged during a routine content check.",
+        error: "This content couldn't be sent — it was flagged during a routine content check.",
       }, 200);
     }
 
-    // medium / uncertain -- held for a real human review, nothing written
-    // to business_experiences yet.
     return json({ riskTier, published: false, blocked: false, screeningId });
   } catch (err) {
     console.error('screen-business-content error:', err);

@@ -253,9 +253,12 @@ sandboxed environment — flag it per phase rather than silently assume clean.
 
 **Status: Decisions 7 and 5 are both DONE, build-wise. Decision 6 (Business Trust & Safety) is
 now underway — Phase 1 (`business_profile`) and Phase 2 (Signature Experiences) are both DONE,
-build-wise, applied and verified live. The rest of Decision 6 (offer/availability/update/
-offer_response, image screening, the periodic re-sweep job) remains real, locked, not yet
-built — see Phase 1's and Phase 2's own status notes for the exact remaining scope.**
+build-wise, applied and verified live. Phase 3 (offer/availability/update/offer_response) is
+IN PROGRESS — the schema/RPC and Edge Function halves are both DONE, applied to production, and
+verified live; client wiring (`BusinessDashboardScreen.js`'s 4 handlers still call the old
+direct-write functions) is the one piece not yet started — see Phase 3's own status note for the
+exact remaining scope. Image screening and the periodic re-sweep job remain real, locked, not
+yet built.**
 
 **Decision 5 — DONE.** Built exactly to the locked design above, no schema change, no new Edge
 Function — reused the three already-proven mechanisms named in the plan. Factored a new,
@@ -626,6 +629,139 @@ run-through — next session should confirm the Signature Experiences save flow'
 branches (published/blocked/submitted-for-review) all render correctly on a real device, and
 that the admin Content Review Queue correctly renders an `experience`-type row (including its
 new `(new)`/`(edit)` suffix and `snapshot.title` fallback) end-to-end in the running app.
+
+**Decision 6, Phase 3 — schema/RPC and Edge Function halves DONE, applied to production and
+verified live; client wiring NOT YET STARTED.** Written mid-build, same restart-safety
+convention as every other plan-first section — **if a codespace restart hits again, check
+`git status`/`git log` and this note for exactly what's landed.** Closes the remaining four real
+integration points from the locked design's own "every one named" list: standing offers
+(`offer`), availability postings (`availability`), broadcast updates (`update`), and offer
+responses to a specific customer request (`offer_response`).
+
+None of the four writers is the same shape as `update_business_profile()`/`create_business_
+experience()` — checked each live before writing anything, not assumed: `createBusinessOffer()`
+and `postBusinessUpdate()` are raw client inserts into `brand_offers`/`business_updates`, relying
+on those tables' own real owner-scoped INSERT RLS policies (confirmed live: `managed_partner_id
+= auth.uid()`) rather than a SECURITY DEFINER ownership check — so the LOW-tier immediate-
+publish path does the identical raw insert via the caller's own bearer-token-scoped client.
+`postBusinessAvailability()`/`submitBusinessOfferResponse()` **are** real SECURITY DEFINER RPCs
+(`post_business_availability()`/`submit_business_offer()`), reused unmodified for the LOW-tier
+path, but neither is a plain single-row insert:
+- `post_business_availability()` also runs a real backward-look match against every currently-
+  open `business_requests` row (haversine distance, a real push per match). **A real, deliberate,
+  disclosed simplification**: the admin-approve branch for a MEDIUM/UNCERTAIN posting only
+  inserts the `business_availability` row itself, it does **not** re-run that backward-match
+  sweep — a held-then-approved posting is still fully live and matchable going forward (any
+  *new* request created after approval matches it normally), only a request that was already
+  open before approval is missed. Flagged rather than silently built to differ from a
+  from-scratch reimplementation of that whole loop.
+- `submit_business_offer()` UPDATEs an already-existing `pending` `business_request_offers` row
+  (created by the original fan-out), it never INSERTs. The admin-approve branch re-validates
+  both the parent `business_requests.status` and the specific offer row's own status are still
+  viable at the real moment of approval — `expire_stale_business_requests()`'s own real hourly
+  sweep makes a held response going stale during review a genuinely expected case, not a
+  hypothetical, so a stale request now surfaces a clear error to the admin instead of silently
+  no-op'ing or corrupting state. On a genuine match it also replicates the real "New offer for
+  your request!" push `submit_business_offer()` already sends on its own fast path, so a
+  consumer's experience doesn't silently degrade just because their offer happened to be held.
+- Availability's own `starts_at`/`ends_at` are relative to "now," not a fixed external time the
+  way an offer's gathering-linked expiry is — publishing a MEDIUM/UNCERTAIN posting with the
+  *submission-time* window baked into the snapshot would silently publish an already-stale time
+  window once review actually happens. The client sends a real duration (`durationHours`, null
+  meaning "rest of today," matching `AVAILABILITY_DURATION_OPTIONS`' own real shape) and both the
+  LOW-tier path and the admin-approve branch compute `starts_at = now()` / `ends_at = now() +
+  duration` at the real moment of actual publish. One honest, disclosed limitation: "rest of
+  today" is computed in UTC server-side (no business-local timezone is stored anywhere in this
+  schema to compute a true local end-of-day from), a real, small departure from the original
+  unscreened client's own device-local end-of-day — applied consistently to both the LOW and
+  held-then-approved paths, not just one.
+- An offer's own `expires_at` (gathering-linked, 48h after the gathering's `scheduled_at`) is
+  read fresh at the real moment of write — both for the LOW-tier path and the admin-approve
+  branch — rather than trusting a submission-time value, matching `handleSaveProfile()`'s own
+  address/lat/lng carry-through precedent (a fixed *external* time is safe to recompute at any
+  point, unlike availability's own now-relative window).
+
+**Migration** (`20260908_business_content_screening_offer_availability_update_response.sql`) —
+pulled the **live** `admin_review_business_content_screening()` body fresh via the Management
+API before editing (every line of the existing `business_profile`/`experience` branches and the
+closing status update is byte-for-byte unchanged); added four new `if approve_param and
+v_row.target_type = '...'` blocks. No new table/column needed — `target_type`'s CHECK constraint
+already includes all four values from Phase 1's own general schema. Applied to production
+(`enmosvippabmuqslzrox`) and confirmed grants survived (`authenticated`/`service_role`/
+`postgres`, no `anon`).
+
+**Verified live against production with real disposable test data — 10 real assertions, all
+passing, cleaned up afterward**: a genuinely-new standing offer with no gathering link approved
+correctly (real `brand_offers` row, `expires_at: null`); a second offer linked to a real
+disposable test gathering (`scheduled_at: 2026-09-15 19:00:00+00`) correctly computed
+`expires_at` as exactly `scheduled_at + 48 hours`; a real availability posting approved while the
+test partner had no coordinates set was correctly rejected ("no longer has an address set"), and
+the rejected screening row correctly stayed un-reviewed (rolled back); a real 2-hour-duration
+availability posting's `starts_at` landed genuinely between a captured before/after `now()`
+bracket around the approve call (proving it's computed at real approval time, not a stale
+submission-time value) with `ends_at - starts_at` exactly `02:00:00`; the "rest of today"
+duration case correctly produced `ends_at` at `23:59:59` on the same UTC day as `starts_at`; a
+broadcast update correctly created a real `business_updates` row with both title and body
+intact; a real offer response against a genuinely `open` test request correctly UPDATEd the
+existing `pending` `business_request_offers` row to `offered` with the real description/price,
+**and a real new push (`net._http_response`, HTTP 200) was confirmed to fire**, proving the
+replicated notification actually sends, not just that the SQL doesn't error; a second offer
+response against a request already `fulfilled` (simulating review-delay staleness) was correctly
+rejected with the clear "no longer open" error, and the target offer row was confirmed genuinely
+untouched (`status: pending`, `offer_description: null`) — the exact re-validation-at-approval
+this phase's own design exists to prove. Every top-of-function guard (admin-only, double-review,
+RLS) was deliberately **not** re-tested per branch — those are the same shared code path already
+proven live by Phase 1/2 and untouched by this migration (confirmed by diff: only new `if`
+blocks were added). All test rows (1 `brand_partners`, 1 `gatherings`, 2 `business_requests`, 2
+`business_request_offers`, 2 `brand_offers`, 2 `business_availability`, 1 `business_updates`, 8
+`business_content_screening_results`) deleted afterward — confirmed production back to its exact
+pre-test baseline.
+
+**Edge Function** (`screen-business-content/index.ts`) — the `experience` branch was converted
+from an implicit fallthrough to an explicit `if (targetType === 'experience')` block (matching
+`business_profile`'s own shape), and four new branches added: `offer` (title/description
+screened; `redemptionInstructions` — also free text — is a real, disclosed scope boundary,
+matching the locked plan's own literal "title/description" field list, carried through
+unscreened), `availability` (title/description screened; category/offerType/price/capacity/
+duration/radius carried through, `offerType` re-validated against its real 5-value CHECK-
+constraint vocabulary), `update` (title AND body both screened — the confirmed gap the locked
+design names directly), and `offer_response` (the offer's own response description screened,
+upgrading the pre-existing generic `checkTextModeration()` check to real policy classification,
+per the locked design's own instruction). Deployed to production and **verified**: `verify_jwt:
+true` confirmed live (version 7), an unauthenticated request to the gateway correctly 401s, and
+the deployed bundle was confirmed (via a strings search on the fetched ESZIP body) to genuinely
+contain the new code (`durationHours`, `OFFER_TYPE_OPTIONS`, the real "offer response could not
+be published" error text), not just that the deploy command reported success. Also verified via
+a lenient `tsc --noEmit` syntax pass — zero errors beyond the expected unresolvable Deno-remote-
+import/global-`Deno` ones every prior pass in this repo already has.
+
+**Not yet started — the client wiring.** `BusinessDashboardScreen.js`'s four handlers
+(`handleCreateOffer`/`handlePostAvailability`/`handlePostUpdate`/`handleSubmitOffer`) still call
+`createBusinessOffer()`/`postBusinessAvailability()`/`postBusinessUpdate()`/
+`submitBusinessOfferResponse()` directly, each still gated by the old, weaker
+`checkTextModeration()` call this whole phase exists to replace — **production is not broken by
+this**, the schema/Edge Function additions are simply dormant from the client's own point of
+view until wired in, same as how Phase 1/2 were found mid-restart before. Real next steps, in
+order: (1) add `submitBusinessOfferForScreening()`/`submitBusinessAvailabilityForScreening()`/
+`submitBusinessUpdateForScreening()`/`submitBusinessOfferResponseForScreening()` client wrappers
+(same `fetch(functionUrl('screen-business-content'), ...)` shape `submitBusinessExperienceForScreening()`
+already established — `submitBusinessOfferForScreening()`/`submitBusinessUpdateForScreening()`
+belong in `services/brandOffers.js` alongside the functions they supersede;
+`submitBusinessAvailabilityForScreening()`/`submitBusinessOfferResponseForScreening()` belong in
+`services/businessFulfillment.js`, which will need a new `functionUrl` import added — it
+currently only imports `supabase`); (2) rewire all four `BusinessDashboardScreen.js` handlers to
+route through the new functions instead of the old direct writes, removing their now-redundant
+`checkTextModeration()` calls (and, once all four are gone, the now-unused `checkTextModeration`
+import itself — confirmed via grep these are the only 4 usages in the file); (3) give each
+handler the same three-branch UI shape `handleSaveExperience()` already established
+(published/blocked/submitted-for-review); (4) update `AdminContentReviewScreen.js`'s
+`TARGET_TYPE_LABELS` map to cover `offer`/`availability`/`update`/`offer_response`, and add
+per-target-type snapshot preview lines (title+description for offer/availability, title+body for
+update, the offer description for offer_response) alongside the existing `name`/`title`
+fallback; (5) a full `npx expo export --platform ios` to confirm the client bundles cleanly;
+(6) a real from-scratch Docker migration replay covering this migration, not yet run this pass;
+(7) commit and push the client changes as their own increment, then update this status note to
+DONE.
 
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,
