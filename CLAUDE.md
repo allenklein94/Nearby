@@ -4,6 +4,218 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 28 2026 — Universal Signal Remediation Pass (P0/P1/P2 build) — PLAN LOCKED, executing
+## below; check each item's own status note for what's landed
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **if a codespace restart hits mid-build, check `git status`/`git log` and each
+item's own status note below for what's actually landed vs. still just this plan.** Direct
+follow-up to the Universal Signal & Recommendation Audit (same day, section immediately below
+this one) — the user reviewed all 10 of the audit's own ranked findings directly and gave a
+real, ordered build authorization: fix the five 🔴 correctness findings first (re-grouped into
+P0/P1 by actual severity, not the audit's own listing order), then a P2 consolidation pass on
+the two 🟡 architecture-consistency findings (weather, "now"), with a P3 "Signal Contract"
+reference doc named as valuable but explicitly sequenced last. **Explicit instruction, restated
+so it isn't softened**: not "fix every red/yellow item" — a specific, bounded pass, exactly the
+order below, executed and committed incrementally so a restart never loses more than one item's
+worth of work.
+
+### Locked build order, exactly as authorized by the user
+
+**P0 — trust/correctness** (these three directly prevent Nearby from recommending something
+that structurally cannot work):
+1. Gathering fullness surfaced honestly on ask-box results, never silently ranked #1 as if open.
+2. Business availability capacity compared against the requester's real party size — a hard
+   feasibility constraint, not a ranking signal.
+3. Confirmed business availability given a real, structural floor above policy-only's real
+   ceiling, closing the documented cross-tier ranking violation.
+
+**P1 — ranking integrity**:
+4. Dating's `compatibilityScore` made to actually participate in Browse's sort order (Crossed
+   Paths' `last_seen_at` ordering is deliberately left alone — see its own locked design below).
+5. `business_requests.budget_max` becomes a real relevance signal in Business Opportunity
+   ranking.
+6. Business-request party size becomes a relevance signal wherever it isn't already a hard
+   constraint (folds into item 2's implementation).
+
+**P2 — universal context**:
+7. One shared weather-scoring primitive, replacing the three independent re-implementations,
+   threaded into the ask box and `GatheringsScreen.js`'s full browse/filter surface (the two
+   places the audit found missing it).
+8. One canonical "Right Now" / "Today" / "This Week" definition, replacing the two incompatible
+   meanings of "now" the audit found sharing the same English words across adjacent surfaces.
+
+**P3 — architecture cleanup**:
+9. A real Signal Contract reference doc (not code) — per-signal: meaning, collection point, null
+   semantics, hard-constraint vs. ranking-bonus vs. contextual, public-display status. Written
+   once P0-P2 land, since it should describe the *post-fix* state, not the pre-fix one.
+
+### P0 item 1 — gathering fullness, locked design
+
+Checked directly before writing any code: `getNearbyGatherings()` (the query `resolveGatherings()`
+in `intentResolver.js` already calls) already returns each gathering's real `capacity` (already
+in the shared `SAFE_GATHERING_FIELDS` select) and a real `approvedAttendees` array (already
+computed by `enrichGatheringsWithDistanceAndSort()`) — **this is a pure mapping omission, not a
+missing query**, matching the audit's own finding 3 exactly. `resolveGatherings()`'s mapped
+result object only ever returns `{type, id, title, subtitle, score}`; `capacity`/
+`approvedAttendees.length` never cross into it.
+
+The join/waitlist mechanic itself is already fully correct and live — pulled `join_gathering()`'s
+real deployed SQL body directly (not assumed from a local migration file) and confirmed it locks
+the gathering row, auto-waitlists at/over capacity regardless of public/host-approval, and
+`GatheringDetailScreen` already renders the right "🔒 Full" / "JOIN WAITLIST" state once you land
+there. So, per the user's own explicit preference ("I'd strongly prefer... show 'Full — Join
+Waitlist'... never silently rank a dead-end result #1"): **surface fullness on the result card
+itself, never hide the result.** A full gathering can still legitimately be the single best
+match — a waitlist spot can open, and hiding it would trade one dishonesty for another. The only
+missing piece is that the *result card*, shown before the tap, currently gives zero indication.
+
+Locked change: `resolveGatherings()` adds `capacity`, `attendeeCount` (`approvedAttendees.length`),
+and `isFull` (`capacity != null && attendeeCount >= capacity`) to its mapped result — no new
+query. `HomeScreen.js`'s ask-box result row shows a real "🔒 Full — Join Waitlist" subtitle
+override in place of the normal fit-reason line whenever `isFull` is true, so the honest state
+is visible before the tap.
+
+### P0 item 2 — business availability party-size feasibility, locked design
+
+Confirmed live (pulled the real, currently-deployed SQL via the Supabase Management API, not
+assumed from a local migration file, which can drift relative to a later `CREATE OR REPLACE`):
+
+- `search_active_business_availability()` — the RPC `resolveBusinessAvailability()` calls for
+  the ask box's live search — filters only on `remaining_capacity is null or remaining_capacity
+  > 0` (binary) and doesn't even return `remaining_capacity` in its output columns.
+- `_match_request_to_availability()` — the server-side function that auto-matches a **newly
+  created** request against existing availability postings, called from all three
+  request-creation RPCs (`create_business_request`, `create_business_request_for_gathering`,
+  `create_business_request_for_community`) — has the identical binary check, in three separate
+  places inside the same function (the preferred-availability branch, the main matching loop,
+  and the missed-match-exclusion insert). All three call sites already have the real requester
+  party size in scope (`party_size_param` / `v_party_size`) and simply never pass it through.
+
+Locked fix: both functions gain a real `party_size_param integer default null` parameter. The
+binary check becomes `(ba.remaining_capacity is null or party_size_param is null or
+ba.remaining_capacity >= party_size_param)` — a `null` capacity keeps meaning "effectively
+unlimited" (this schema's own established "null means honestly unknown/unlimited" convention,
+never zero); a `null` party size (the common case — `create-assistant`'s own classification is
+best-effort and often has nothing to extract) keeps today's exact behavior, a real regression-
+free default. `search_active_business_availability()` also starts returning `remaining_capacity`
+in its output row shape, and `resolveBusinessAvailability()` threads `partySize` through from
+`resolveIntent()`'s own param — already collected, already passed one line below to the sibling
+`resolvePolicyOnlyBusinesses()` call, simply unused here until now.
+
+`business_match_exclusions.reason`'s CHECK constraint gains a new, additive value,
+`insufficient_capacity` — deliberately **not** repurposing the existing `zero_capacity` value's
+meaning ("A posting had no remaining capacity" is a materially different, more actionable fact
+than "had capacity, just not enough for your party of 8"), matching this schema's own repeatedly-
+stated "widen the CHECK, never repurpose a value" house rule. `MISSED_MATCH_REASON_LABELS`
+(`services/businessFulfillment.js`) gains a matching label/hint.
+
+`post_business_availability()`'s own reverse-direction match (a **new** posting scanning
+existing **open** requests, if it does one at all) gets checked for the identical gap during
+execution — if found, it gets the same fix; if it turns out to route through a shared helper or
+doesn't do a live scan, that will be stated plainly rather than assumed either way.
+
+### P0 item 3 — confirmed-availability tier floor, locked design
+
+The audit's own two proposed fix shapes: (a) a real score floor structurally above policy-only's
+ceiling, or (b) an explicit confidence-tier field the sort keys on before score. The user's own
+reply prefers (b)'s framing ("two different dimensions... not by throwing another arbitrary
++1") — but a literal *global* tier field, where every `business_availability` candidate
+outranks every other candidate type regardless of relevance, would be a real regression against
+the exact thing the user's own message just praised as a strength (the shared cross-type score
+axis, where a strong gathering match can legitimately outrank a weak business match — the audit's
+own §2 explicitly calls this "genuinely the shape of thing a real context layer looks like").
+**Locked resolution, not silently picked either way**: implement (a), but structurally, not as
+"another +1" — a new, explicitly-named, explicitly-derived constant in
+`intentResolverScoring.js`:
+
+```js
+// Confirmed business availability is a genuinely different, stronger
+// confidence tier than "may be able to help" (business_policy_match),
+// not just another relevance signal on the same axis -- a business that
+// has actually confirmed a live slot must never lose to one that has
+// only stated a standing willingness, independent of either's relevance
+// score. Defined relative to SCORE_CLOSE_DISTANCE (policy-only's own real
+// maximum possible score, confirmed by reading resolvePolicyOnlyBusinesses
+// directly) rather than a bare number, so the invariant is structurally
+// guaranteed, not an assumption a future edit to either constant could
+// quietly break.
+export const SCORE_CONFIRMED_AVAILABILITY_FLOOR = SCORE_CLOSE_DISTANCE + 1;
+```
+
+`resolveBusinessAvailability()`'s existing "confirmed and available right now" baseline
+(previously plain `SCORE_HAPPENING_NOW`, shared with five other, unrelated bonuses per finding
+10 — a real naming/coupling risk this change also incidentally reduces) becomes
+`SCORE_CONFIRMED_AVAILABILITY_FLOOR`. This closes exactly the violation the audit names
+(confirmed's new minimum, 4, structurally exceeds policy-only's real maximum, 3) without
+changing confirmed-availability's relationship to gatherings/communities/perks/friend-requests
+at all — those were never part of the finding, and the user's own message explicitly wants
+distance/cuisine/attributes-style closed-loop signals left alone, not re-architected.
+`resolvePolicyOnlyBusinesses()` itself is untouched.
+
+### P1 item 4 — dating compatibility ranking, locked design
+
+Not yet read in detail (deferred to execution, matching this file's own "resolve open design
+questions once the actual code is read" convention) — `proximity.js`'s `getBrowseMatches()`/
+`calculateCompatibility()` and the Crossed Paths query need a direct read before locking the
+exact blend. Per the user's own framing (compatibility as the dominant signal, blended with
+recency/distance/activity, exact weights "tested rather than guessed" — i.e., not invented
+here either): Browse gets a real `ORDER BY` for the first time, built from `compatibilityScore`
+plus whatever distance/recency signal is already in scope, weighted so compatibility dominates
+but doesn't exclusively determine order. **Crossed Paths is left on `last_seen_at desc`,
+unchanged** — per the audit's own framing this is a real, separate product decision (recency-
+first is arguably intentional for a "you were physically near this person recently" surface, a
+genuinely different job than Browse's "here's who might be a good match") — conflating the two
+would silently overrule a design that was never actually broken; only Browse's total absence of
+an `ORDER BY` is the confirmed bug.
+
+### P1 item 5 — business budget as a relevance signal, locked design
+
+`businessOpportunityScoring.js`'s `scoreBusinessOpportunity()` gains a real `budget_max` term —
+a request offering more relative to what the business's own price signals suggest scores higher,
+as a bonus, never a hard filter (explicit per the user: "a $100 request shouldn't necessarily be
+excluded from a $75 business"). Exact mechanics resolved at execution time against the real
+function (the audit's own text says it "already receives an equivalent `requestPriceLevel` param"
+to extend from — read that file directly before finalizing the shape, not guessed here).
+
+### P1 item 6 — party size as a relevance signal (non-hard-constraint contexts)
+
+Folds into item 2's implementation: everywhere party size becomes a real hard constraint (P0 #2,
+business availability capacity), it's a filter; everywhere it's genuinely just "how good a fit,"
+it becomes a `party_type`/`party_size`-aware relevance bonus alongside the existing
+`priceAndPartyBonus()` — extended, not duplicated.
+
+### P2 items 7-8 — shared weather primitive, canonical "now"
+
+Both deferred to execution-time reads of `homeRecommendations.js`, `homeDashboard.js`,
+`DiscoverHubScreen.js` (weather) and `GatheringsScreen.js`/`create-assistant`'s `dateWindow`
+classification ("now") — per the audit's own §2 conclusion, these are consolidation passes over
+already-correct individual pieces, not new designs. Locked principle for both, stated now so it
+isn't re-decided piecemeal: one real shared function per signal, every existing call site
+repointed at it (verified via a diff that behavior is unchanged for callers that already had it
+right), then genuinely new call sites added only where the audit found a gap (the ask box for
+weather; `GatheringsScreen.js`'s "Right Now" chip's own narrow window adopted as the one real
+definition, per the audit's own recommendation, rather than the ask box's broad full-day bucket).
+
+### P3 item 9 — Signal Contract doc
+
+A new `PRODUCT_AUDIT/SIGNAL_CONTRACT.md`, built last, describing the real, post-fix state of
+every signal covered in the 12-signal matrix — not prescriptive/aspirational, a factual
+reference matching this repo's own established audit-doc convention.
+
+### Verification convention, matching every other schema-touching plan in this file
+
+Every SQL change applied to production and verified live with real disposable test data
+(created and deleted, production confirmed back to baseline) before being called done — not just
+applied. A from-scratch Docker migration replay for any new migration file, per this file's own
+migration-discipline rule. Every client change verified via a full `npx expo export --platform
+ios`. Each numbered item is its own commit, pushed individually as it lands — not batched at the
+end — so a mid-session restart never loses more than one item's worth of work, and this
+section's own status notes are updated inline as each lands.
+
+**Status: plan locked. Execution starts with P0 item 1 next — check each item's own status note
+above for what's actually landed.**
+
 ## Aug 28 2026 — Universal Signal & Recommendation Audit — read-only, no application code
 ## changes; check the status note at the bottom for what's landed
 
