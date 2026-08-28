@@ -309,12 +309,45 @@ excluded from a $75 business"). Exact mechanics resolved at execution time again
 function (the audit's own text says it "already receives an equivalent `requestPriceLevel` param"
 to extend from — read that file directly before finalizing the shape, not guessed here).
 
+**Status: DONE.** `scoreBusinessOpportunity()` gained a real `requestBudgetMax` param — a
+monotonic bonus proportional to the real dollar amount, capped at the existing
+`SCORE_OWN_NETWORK` weight (never a fabricated new maximum) via a disclosed placeholder
+reference constant (`BUDGET_BONUS_REFERENCE = 150`, explicitly not derived from real spend data
+since none exists yet — flagged in the code's own comment for a future re-tune once real
+`budget_max` volume exists to look at), never a hard filter — a low-budget request still scores,
+just lower. Wired through `BusinessDashboardScreen.js`'s already-selected
+`business_requests.budget_max` (zero new query — the select already carried it). 3 new unit
+tests (proportional scaling, strictly-higher-never-excluded, null/zero-credits-nothing).
+Verified via the full Jest suite (135/135 passing) and a clean `npx expo export --platform ios`.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "Offers up to $X" reason line renders
+correctly on a real device against a real request with a genuine budget set.
+
 ### P1 item 6 — party size as a relevance signal (non-hard-constraint contexts)
 
 Folds into item 2's implementation: everywhere party size becomes a real hard constraint (P0 #2,
 business availability capacity), it's a filter; everywhere it's genuinely just "how good a fit,"
 it becomes a `party_type`/`party_size`-aware relevance bonus alongside the existing
 `priceAndPartyBonus()` — extended, not duplicated.
+
+**Status: DONE.** Checked directly rather than assuming — party size is a hard constraint only
+in the consumer-facing resolver (P0 item 2); on the Business Opportunities dashboard (which
+request should a business look at first) it was never a constraint at all, just informational,
+matching this item's own "wherever it isn't already a hard constraint" framing exactly.
+`scoreBusinessOpportunity()` gained a real `requestPartySize`/`fulfillmentPolicy` pair, awarding
+`SCORE_CLOSE_DISTANCE` when the request's real party size falls inside the business's own real
+`business_fulfillment_policies.party_size_min/max` range — reusing the exact same signal and
+weight `businessOfferRecommendation.js`'s `rankExperiencesForOpportunity()` already established
+for the identical fit check, not a second invented one. Silent for a business with no
+fulfillment policy set. Zero new query — `business_requests.party_size` and the dashboard's own
+already-loaded `fulfillmentPolicy` state were both already in scope. 4 new unit tests. Verified
+via the full Jest suite (135/135 passing) and a clean `npx expo export --platform ios`.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "Within your usual party size range" reason
+line renders correctly on a real device once a real fulfillment policy and a real matching
+request both exist.
 
 ### P2 items 7-8 — shared weather primitive, canonical "now"
 
@@ -327,6 +360,79 @@ repointed at it (verified via a diff that behavior is unchanged for callers that
 right), then genuinely new call sites added only where the audit found a gap (the ask box for
 weather; `GatheringsScreen.js`'s "Right Now" chip's own narrow window adopted as the one real
 definition, per the audit's own recommendation, rather than the ask box's broad full-day bucket).
+
+**Status: item 7 (weather) is DONE. Item 8 (canonical "now") is NOT yet started — see below.**
+
+**Item 7 — DONE.** New `src/utils/weatherBias.js` (`isWeatherIndoorBiased()`/
+`isWeatherOutdoorBiased()`) replaces three independent re-implementations the audit found —
+`homeRecommendations.js`'s `weatherAdjustment()` (forecast-derived fields only: `rain_risk`/
+`heat_risk`/`cold_risk`/`outdoor_favorable`), `HomeScreen.js`'s weather-card `showIndoor`/
+`showOutdoor` (a union of `forecast_label` current-conditions **and** the forecast-derived
+fields), and `DiscoverHubScreen.js`'s `weatherIndoorBias`/`weatherOutdoorBias`
+(`forecast_label` current-conditions only). Read all three live before designing anything —
+`forecast_label` (Quiet/Excellent, current conditions) and `rain_risk`/`heat_risk`/`cold_risk`/
+`outdoor_favorable` (a real, independent forecast-derived lookahead, added later in the weather
+signals engine V1 pass) are genuinely distinct real signals, neither subsumes the other.
+`HomeScreen.js`'s own existing indoor-bias definition was already the most complete of the three
+(a real union of both signals) — adopted as canonical rather than either narrower single-signal
+version. The outdoor case is a symmetric extension of the identical union principle to the
+positive case, since neither prior single-signal version was any more "correct" than the other.
+Indoor bias always wins when both would technically apply, matching `HomeScreen.js`'s own
+existing precedence exactly.
+
+A real, disclosed behavior widening for the two callers that previously only checked one of the
+two signals (`homeRecommendations.js`: forecast fields only; `DiscoverHubScreen.js`:
+`forecast_label` only) — both already had the full real weather object in scope (the identical
+`getSocialForecast()` shape everywhere), so this closes a real coverage gap using data already
+present, not a new fetch for either.
+
+New call sites, closing the audit's own confirmed gap ("reaches neither the ask box...
+`intentResolver.js`, confirmed zero weather references... nor the full `GatheringsScreen.js`
+browse/filter screen at all"):
+- **`intentResolver.js`** — a real `getSocialForecast()` call kicked off in `resolveIntent()`
+  right alongside the other parallel resolver branches (`Promise.allSettled`), never awaited
+  sequentially before them — `resolveGatherings()` only awaits the already-in-flight promise
+  once it's done its own network work, so wiring weather into the ask box adds zero sequential
+  latency to a real submission. Applies the identical `SCORE_HAPPENING_NOW` bonus
+  `homeRecommendations.js` already uses, with the same real reason strings appended to the
+  candidate's existing fit-reasons array (surfaces as the subtitle only when no full-state
+  override and no stronger reason already exists).
+- **`GatheringsScreen.js`** — a new `weatherSignal` state, fetched fire-and-forget (same
+  pattern `DiscoverHubScreen.js` already established: after the main load resolves, never
+  awaited) using the screen's own already-resolved `userLocation`. Feeds a real tiebreak sort on
+  the main nearby/browse list (weather-favored gatherings first, within the already-applied
+  category/date/price/party-type filters) plus an honest banner ("🌧️ Weather coming in —
+  showing indoor options first" / "☀️ Great weather — showing outdoor options first") reusing
+  the existing `forYouHint` caption style, no new visual language. Deliberately only applied
+  when the existing "For You" priority sort isn't active, so the two ranking signals never
+  compete against each other.
+
+Verified via a direct `@babel/core` parse of all six touched/new files (clean), the full Jest
+suite (135/135 passing, unaffected — no existing test asserted on the old inline weather logic
+in a way this refactor would break), and a clean `npx expo export --platform ios`.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the ask box's weather-bonus reason lines render
+correctly against real weather data, that `GatheringsScreen.js`'s new banner and tiebreak sort
+behave correctly for both the indoor-bias and outdoor-bias cases, and that neither new call site
+introduces a visible delay (the ask box's own parallel-fetch design is meant to prevent this,
+but this hasn't been confirmed against a real device's real network timing).
+
+**Item 8 (canonical "now") — NOT yet started.** `GatheringsScreen.js`'s "Right Now" chip uses a
+real, narrow window (confirmed via `matchesDateFilter`'s own `'now'` branch, `[-30min, +2h]` of
+the current time — the exact window the audit's own text names as the one real definition to
+adopt). `create-assistant`'s `dateWindow` classification for `today`/`now`-shaped free text
+still uses a broad full-calendar-day match (`dateWindowToDateRange()` in
+`intentResolverScoring.js`, confirmed live — this hasn't been re-checked since the audit and may
+have drifted further; re-verify before building). Locked scope, not yet executed: extract
+`GatheringsScreen.js`'s own narrow window into one shared function, repoint
+`create-assistant`/`intentResolverScoring.js`'s `now`-shaped bucket at it (this needs care —
+`create-assistant` is a deployed Supabase Edge Function, not a client file, so this may mean
+either duplicating the narrow-window constant into that function's own source with an explicit
+comment linking it back to the canonical client-side definition, or accepting that a
+cross-runtime shared import isn't possible here and disclosing that as a real, structural
+limitation rather than silently declaring "done"). Not started — flagged here so a future
+session doesn't have to rediscover the exact locations again.
 
 ### P3 item 9 — Signal Contract doc
 
@@ -344,8 +450,10 @@ ios`. Each numbered item is its own commit, pushed individually as it lands — 
 end — so a mid-session restart never loses more than one item's worth of work, and this
 section's own status notes are updated inline as each lands.
 
-**Status: plan locked. Execution starts with P0 item 1 next — check each item's own status note
-above for what's actually landed.**
+**Status: P0 items 1-3, P1 items 4-6, and P2 item 7 are all DONE — check each item's own status
+note above for the full detail on each. P2 item 8 (canonical "now") and P3 item 9 (the Signal
+Contract doc) are NOT yet started — pick up from item 8's own "locked scope, not yet executed"
+note above.**
 
 ## Aug 28 2026 — Universal Signal & Recommendation Audit — read-only, no application code
 ## changes; check the status note at the bottom for what's landed
