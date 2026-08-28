@@ -14,10 +14,24 @@ import { spacing, radius, typography } from '../theme';
 // time, no human decision needed); a LOW result never appears here either
 // (published immediately, review_outcome stays null but risk_tier isn't
 // medium/uncertain).
+//
+// Decision 6, Phase 5 -- a `source: 'resweep'` row (an already-live
+// listing periodic re-checking flagged, as opposed to a brand-new
+// submission awaiting first publish) also shows up here now, including a
+// HIGH-tier one (never auto-blocked for a re-sweep, per the locked
+// design's own safety-motivated departure). Same underlying RPC call
+// either way -- only the badge and the two action buttons' displayed
+// copy differ, since a re-sweep row's approve/deny means something
+// genuinely different: "false alarm, dismiss" / "confirmed problem,
+// needs manual follow-up" rather than "publish this" / "reject this."
 
 const RISK_LABELS = {
   medium: 'Medium risk',
   uncertain: 'Uncertain',
+  // Only ever reaches this queue for a resweep-source row -- a
+  // submission-source HIGH is auto_blocked at write time and never gets
+  // here.
+  high: 'High risk',
 };
 
 // Decision 6, Phases 1-3 -- every real value in the schema's own CHECK
@@ -106,14 +120,27 @@ export default function AdminContentReviewScreen() {
         }
         renderItem={({ item }) => {
           const snapshot = item.content_snapshot ?? {};
+          const isResweep = item.source === 'resweep';
           return (
             <View style={styles.card}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.partnerName}>{item.partner_name}</Text>
-                <Text style={[styles.tierBadge, item.risk_tier === 'medium' ? styles.tierMedium : styles.tierUncertain]}>
+                <Text
+                  style={[
+                    styles.tierBadge,
+                    item.risk_tier === 'medium' ? styles.tierMedium
+                      : item.risk_tier === 'high' ? styles.tierHigh
+                      : styles.tierUncertain,
+                  ]}
+                >
                   {RISK_LABELS[item.risk_tier] ?? item.risk_tier}
                 </Text>
               </View>
+              {isResweep && (
+                <View style={styles.resweepBadge}>
+                  <Text style={styles.resweepBadgeText}>🔍 Routine re-check</Text>
+                </View>
+              )}
               <Text style={styles.targetType}>
                 {TARGET_TYPE_LABELS[item.target_type] ?? item.target_type}
                 {item.target_type === 'experience' ? (snapshot.experienceId ? ' (edit)' : ' (new)') : ''}
@@ -147,19 +174,27 @@ export default function AdminContentReviewScreen() {
                   style={styles.approveButton}
                   onPress={() => handleReview(item, true)}
                   disabled={processingIds[item.id]}
-                  accessibilityLabel={`Approve and publish ${item.partner_name}'s content`}
+                  accessibilityLabel={
+                    isResweep
+                      ? `No issue with ${item.partner_name}'s already-live content`
+                      : `Approve and publish ${item.partner_name}'s content`
+                  }
                   accessibilityRole="button"
                 >
-                  <Text style={styles.approveButtonText}>Approve & Publish</Text>
+                  <Text style={styles.approveButtonText}>{isResweep ? 'No Issue' : 'Approve & Publish'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.denyButton}
                   onPress={() => handleReview(item, false)}
                   disabled={processingIds[item.id]}
-                  accessibilityLabel={`Deny ${item.partner_name}'s content`}
+                  accessibilityLabel={
+                    isResweep
+                      ? `Flag ${item.partner_name}'s already-live content for follow-up`
+                      : `Deny ${item.partner_name}'s content`
+                  }
                   accessibilityRole="button"
                 >
-                  <Text style={styles.denyButtonText}>Deny</Text>
+                  <Text style={styles.denyButtonText}>{isResweep ? 'Flag for Follow-Up' : 'Deny'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -182,6 +217,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   tierBadge: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
   tierMedium: { color: colors.primary },
   tierUncertain: { color: colors.textSecondary },
+  tierHigh: { color: colors.danger },
+  resweepBadge: {
+    alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 2, marginTop: spacing.xs,
+  },
+  resweepBadgeText: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   targetType: { color: colors.textTertiary, fontSize: 12, marginTop: 2, marginBottom: spacing.sm },
   snapshotName: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 14, marginBottom: 2 },
   snapshotBody: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs, lineHeight: 18 },

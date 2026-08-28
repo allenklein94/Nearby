@@ -31,6 +31,7 @@ const SCRIPTS = [
   'weather-dependent-fulfillment-policy.js',
   'business-entitlements.js',
   'ai-trust-engine.js',
+  'business-content-resweep.js',
 ];
 
 // A real, empirically-hit gotcha, not a guess: running the full suite back-to-back with no

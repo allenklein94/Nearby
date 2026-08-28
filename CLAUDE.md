@@ -908,7 +908,9 @@ funded, that a real changed logo genuinely gets visually classified (not just th
 text), that an unchanged logo genuinely skips the vision call, and that a real bad/oversized/
 non-image URL produces the honest 400 rather than a generic error.
 
-### Decision 6, Phase 5 — the periodic re-sweep job — PLAN LOCKED, executing next
+### Decision 6, Phase 5 — the periodic re-sweep job — DONE, build-wise, applied to production,
+### verified live (including a real end-to-end pg_net round-trip through the deployed Edge
+### Function), and replayed clean from a truly empty database
 
 Closes the second of the two locked-but-unbuilt pieces. Closes the locked design's own explicit
 gap: "a legitimate business later edits its own description/offer into something prohibited...
@@ -1032,6 +1034,151 @@ confirmed queued, confirmed the request resolves and the queue clears) — the a
 vision/text call inside `resweep-business-content` itself can't be exercised end-to-end from this
 sandbox, same already-disclosed, still-unresolved credit-balance limitation as every other AI
 feature in this file. Full `npx expo export --platform ios` after the client change.
+
+**Status: DONE, build-wise — picked up mid-plan on 2026-08-28, built exactly to the locked
+design above, no changes during implementation.**
+
+**Schema** (`20260910_business_content_resweep.sql`): `business_content_screening_results`
+gained `source text not null default 'submission' check (source in ('submission','resweep'))` —
+every existing row backfilled correctly, zero behavior change for anything already screened.
+`record_business_content_screening()` gained `source_param text default 'submission'` (old
+8-arg signature explicitly `drop function`ed first, matching this schema's own repeatedly-
+learned "an added param creates a distinct orphaned overload" lesson, not a bare
+`create or replace`) — only auto-sets `review_outcome = 'auto_blocked'` on a HIGH result when
+`source_param = 'submission'`, exactly as locked (a re-sweep HIGH stays genuinely un-auto-
+resolved). `admin_get_pending_content_screenings()` likewise drop-then-recreated (its own
+return shape changed, adding a real `source` output column) with the widened filter —
+`risk_tier in ('medium','uncertain') or (risk_tier = 'high' and source = 'resweep')`.
+`admin_review_business_content_screening()` — pulled the **live** body fresh via the Management
+API first, confirmed byte-identical to the committed Phase 3 migration before editing — kept its
+same 2-arg signature (`create or replace` genuinely replaces it, no drop needed) and gained the
+real short-circuit at the top: when `v_row.source = 'resweep'`, every target-type-specific write
+branch is skipped entirely regardless of `approve_param`, only the review outcome is recorded.
+
+New `business_content_resweep_queue` table (same real shape/posture as the already-proven
+`weather_dependent_policy_refresh_queue` — RLS enabled, zero policies, cron/SECURITY-DEFINER-only).
+Two new cron-only SECURITY DEFINER functions, mirroring the weather job's own proven two-phase
+submit/apply shape: `submit_business_content_resweeps()` selects the real due batch (a
+`business_profile`/`experience`/`offer`/`availability` candidate whose most recent screening row
+of either source is more than 30 real days old, or doesn't exist at all, prioritized first, real
+25-row cap; a candidate already sitting un-resolved in the queue is skipped so a normal run can't
+duplicate an in-flight request), fires one real `net.http_post` per row to the new
+`resweep-business-content` Edge Function (the real `service_role_key` vault secret as the Bearer
+token, same pattern `notify_video_call_started()` already established), records the pending
+request, returns immediately. `apply_business_content_resweeps()` polls `net._http_response` for
+each pending row — the real classify-and-log write already happens inside the Edge Function
+itself, so this only needs to know a request resolved (any response, success or failure) to
+clear the queue entry; a genuinely stale (>10 real minutes) pending row is discarded without
+further action, same "stale, never silently wrong" convention as the weather job. Scheduled
+`submit-business-content-resweeps` daily (`0 4 * * *`) and `apply-business-content-resweeps`
+every 5 minutes (`*/5 * * * *`, matching the weather job's own apply cadence).
+
+**New `supabase/functions/_shared/contentClassifier.ts`** — `classifyContent()` and the shared
+13-category `RISK_CATEGORIES` vocabulary, factored out of `screen-business-content/index.ts`
+(re-pointed to import from here instead of its own local copy — verified as a genuinely pure
+refactor via a direct line-by-line diff before trusting it: the only differences are the `export`
+keyword and the log-prefix string, nothing behavioral) so the real-time screening path and the
+new re-sweep path can never drift onto two different classification prompts. Deliberately does
+**not** include `classifyImage()`/`worseTier()` — the re-sweep job only ever re-checks text, per
+the locked design's own scope; those stay local to `screen-business-content/index.ts`, the one
+real surface that still needs them.
+
+**New `supabase/functions/resweep-business-content/index.ts`** — `verify_jwt: false` (confirmed
+live via the Management API after deploy, not assumed from the CLI default), authenticated by
+comparing the caller's own `Authorization: Bearer <token>` directly against
+`Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')`, matching the established `stripe-connect-webhook`/
+`revenuecat-webhook` "verify_jwt: false, do your own internal check" precedent, simplified to a
+direct secret-equality check since the real caller here is this app's own SQL function, not a
+third-party webhook needing cryptographic signature verification. Given
+`{targetType, targetId, partnerId}`, reads the real *current* live content for that target
+(name/description/differentiator for `business_profile`; title/description for the other three),
+builds the identical content-block shape the real-time path already uses, classifies via the
+shared module, and writes a real audit row via `record_business_content_screening(...,
+source_param: 'resweep')` — `content_snapshot` captures the real content actually re-checked,
+`submitted_by` stays honestly null. A target/partner that no longer exists or has been
+reassigned (a real, honest race — e.g. deleted between the due-batch query and the async call
+actually resolving) returns a real `{noop: true, reason: ...}` rather than a fabricated
+screening result — this was directly, empirically observed during live verification (see below),
+not just a theoretical code path.
+
+**Deployed both `resweep-business-content` (new) and a redeploy of `screen-business-content`**
+(to keep the live bundle in sync with its own refactored source), both confirmed live via the
+Management API: `resweep-business-content` genuinely `verify_jwt: false`, a raw unauthenticated
+request correctly still reaches this function's own code (not gateway-blocked) and is rejected
+by its own internal check; `screen-business-content` still correctly `verify_jwt: true`,
+unaffected by the refactor.
+
+**Client**: `AdminContentReviewScreen.js` gained the real "🔍 Routine re-check" badge and the
+contextual "No Issue"/"Flag for Follow-Up" button relabeling exactly as planned, plus a new
+`tierHigh` badge style (a resweep-source HIGH row is the one real new case that can now reach
+this screen at all, previously impossible).
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — a new,
+permanent `scripts/live-verify/business-content-resweep.js` (registered in `run-all.js`,
+documented in the README's own "What's covered" list) proves every real behavior end to end
+with real disposable test data: `record_business_content_screening()`'s new `source_param`
+defaults correctly and the HIGH-auto-block logic is genuinely source-gated (a submission-source
+HIGH still auto-blocks, unchanged; a resweep-source HIGH stays un-auto-resolved); an invalid
+`source` value is rejected by the real CHECK constraint; a raw `authenticated`-role call to
+`record_business_content_screening()` is rejected at the grant level (proven under **genuine
+`SET ROLE authenticated`**, not just the `request.jwt.claims` GUC — the exact "false-negative
+first pass" gotcha this file has hit before, caught and fixed in this same verification pass,
+not silently glossed over); the widened admin-queue filter correctly surfaces a resweep-source
+HIGH row and a resweep-source MEDIUM row while still correctly excluding the already-auto-
+blocked submission-source HIGH; a non-admin is rejected calling the queue RPC; approving *and*
+denying a real resweep row both correctly leave the live `brand_partners` row completely
+untouched (name/description unchanged) while still correctly flipping `review_outcome`, and a
+second review attempt on the same row is rejected; the real due-batch query correctly queues
+three genuinely never-screened `experience`/`offer`/`availability` candidates while correctly
+excluding a `business_profile` screened only seconds earlier (well inside the real 30-day
+window); a repeat submit call doesn't re-queue an already-pending target; the real pg_net worker
+genuinely resolves all three queued requests through the actually-deployed Edge Function, `apply`
+correctly clears the queue once resolved (and a repeat apply with nothing new pending is a real
+no-op); and a genuinely stale (>10-minute) pending row is discarded without ever needing a real
+response. All test rows deleted afterward via a real before/after row-id snapshot (not just
+this script's own tracked ids) — matching `business-acquisition-funnel-e2e.js`'s own established
+"capture a real before snapshot, clean up against it" convention, since `submit_business_content_
+resweeps()` legitimately reaches into every real active business in the database, not just a
+test partner's own rows — confirmed production back to its exact pre-test baseline (0 leftover
+test partners, 0 queue rows, 0 screening rows).
+
+**A real, disclosed observation from this live-verification pass, not glossed over**: mid-run, a
+straggling response from an *earlier, interrupted* verification attempt (before the
+`runSqlAs`→`runSqlAsRls` fix above was made) resolved after that earlier attempt's own cleanup
+had already deleted its test rows — the Edge Function correctly returned an honest
+`{noop: true, reason: "target no longer exists or partner mismatch"}` rather than crashing or
+fabricating a result, and `apply_business_content_resweeps()` correctly cleared the queue entry
+regardless. This is real, live proof the defense-in-depth "confirm the row still exists and still
+belongs to this partner" check earns its keep under a genuine race, not just a hypothetical.
+
+**Verified via a real from-scratch migration replay** covering the full, now-104-file
+`supabase/migrations/` folder: pulled the already-cached `supabase/postgres:15.1.0.147` Docker
+image, waited for its own real `healthy` health-check status, dropped and recreated a truly
+empty `public` schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin` (the real superuser in this image — `postgres` itself is not one here), then ran
+the full folder in filename order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, the
+new `source` column, all 5 new/changed functions (confirmed as the *only* signature for each —
+no orphaned overload), the new queue table, and both new cron jobs all confirmed to exist in the
+freshly-rebuilt database afterward. Container removed.
+
+Client-side verified via a direct `@babel/core` parse of the one touched file (clean), the lenient
+`tsc --noEmit` syntax pass on both new/touched Edge Function files (zero errors beyond the same
+expected unresolvable Deno-remote-import/global-`Deno` ones every prior pass in this repo already
+has), and a full `npx expo export --platform ios` (clean, no bundling errors, **2270 modules,
+unchanged** — this pass only edited one existing client file; the new Edge Function/migration
+files aren't part of the Metro bundle).
+
+**Decision 6 is now fully closed — all 5 phases (schema/RPC, Signature Experiences, offer/
+availability/update/offer_response, image screening, and now the periodic re-sweep job) are DONE,
+build-wise and verified live.**
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device once the Anthropic account is
+funded: a real re-sweep genuinely re-classifies already-live content on its own daily schedule,
+a real resweep-source flagged row renders correctly with the new "🔍 Routine re-check" badge and
+the contextually-relabeled "No Issue"/"Flag for Follow-Up" buttons in the running admin app (not
+just via direct RPC calls), and that tapping either button behaves correctly end-to-end.
 
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,

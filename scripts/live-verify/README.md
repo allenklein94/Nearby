@@ -373,6 +373,32 @@ CI-runnable as-is (just supply the token as a secret).
   and the pre-existing, untouched `business_fulfillment_policies`
   auto-accept engine keeps firing exactly as before for a business that
   never touches any of this.
+- **`business-content-resweep.js`** — Decision 6, Phase 5 (see CLAUDE.md),
+  the periodic re-sweep job on top of the real Trust & Safety content-
+  screening layer (Phases 1-3). Proves: `record_business_content_
+  screening()`'s new `source_param` defaults to `submission` (unchanged
+  regression check — a submission-source HIGH still auto-blocks), while a
+  real `resweep`-source HIGH stays genuinely un-auto-resolved so it
+  reaches the admin queue instead; the widened `admin_get_pending_
+  content_screenings()` filter surfaces a resweep-source HIGH row while
+  still correctly excluding a submission-source one; the resweep-row
+  review short-circuit in `admin_review_business_content_screening()` —
+  approving OR denying a resweep row never writes its staged snapshot to
+  the live business row, only flips `review_outcome`; the real due-batch
+  selection in `submit_business_content_resweeps()` correctly queues
+  genuinely never-screened `experience`/`offer`/`availability` candidates
+  while excluding a `business_profile` screened moments earlier (inside
+  the real 30-day window); a repeat submit call doesn't re-queue an
+  already-pending target; and the real two-phase pg_net round-trip end to
+  end through the actually-deployed `resweep-business-content` Edge
+  Function — the queue genuinely clears once each request resolves, a
+  repeat apply with nothing pending is a no-op, and a genuinely stale
+  (>10 minute) pending row is discarded without ever needing a real
+  response. Same standing, already-disclosed Anthropic account credit-
+  balance limitation as every other AI feature in this codebase: the
+  real classify call inside the Edge Function itself can fail with a
+  real 500, which this script reports honestly rather than assumes away —
+  the queue/plumbing around it is still proven correct either way.
 
 ## What's not covered
 
