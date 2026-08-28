@@ -246,8 +246,12 @@ device sizes" ask — this sandbox has never had simulator/device access; where 
 needs a real device to verify, say so plainly (🟡 NOT VERIFIABLE FROM THIS SANDBOX, matching the
 verdict vocabulary the Aug 24 2026 Taxonomy audit already established) rather than guessing.
 
-### Status: PLAN LOCKED. Nothing executed. Pick up at Pass A once given an explicit go-ahead —
-### do not start autonomously from this plan alone.
+### Status: EXECUTING — explicit go-ahead given directly by the user Aug 28 2026 (a later
+### session). Pass A (systems 1-4) and Pass B (systems 5-7) dispatched as two capped concurrent
+### forks. Check `PRODUCT_AUDIT/` for `FULL_AUDIT_PASS_A_2026-08-28.md`/`_PASS_B_2026-08-28.md`
+### (working files, folded into and deleted once the final deliverable lands, matching this
+### file's own established "one file, not five" convention) and this note's own next update for
+### progress if a restart hits mid-audit.
 
 ## Aug 28 2026 — Universal Signal Remediation Pass (P0/P1/P2 build) — PLAN LOCKED, executing
 ## below; check each item's own status note for what's landed
