@@ -4,6 +4,251 @@ Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supab
 This file captures known outstanding work as of early August 2026, so a fresh Claude Code
 session has the same context as the chat session that built most of this.
 
+## Aug 28 2026 — Nearby Full End-to-End Product Coherence Audit — PLAN LOCKED, READ-ONLY,
+## NOT YET EXECUTED — pick this up next, starting with Pass A below
+
+Written before execution, same restart-safety convention as every other plan-first section in
+this file — **if a codespace restart hits mid-audit, check this section's own status note
+(updated as work lands, not batched at the end) and `PRODUCT_AUDIT/` for what's actually been
+produced vs. still just this plan.** Given directly by the user, immediately after the Universal
+Signal Remediation Pass (all 9 items, directly above this section) finished — **this is a
+planning-only request. Nothing in this section has been executed. Do not start Pass A (or any
+part of this audit) without a fresh, explicit go-ahead, matching this file's own established
+"write the plan, stop, let the user review before building" precedent** (see the Aug 23 2026
+Product Coherence Audit and the Aug 24 2026 Universal Taxonomy Audit, both of which were planned
+in one turn and executed in a later one).
+
+### Context, and the real question this audit exists to answer
+
+The user's own framing, preserved rather than paraphrased, since it's the actual thesis this
+whole audit is organized around: *"Can a user move through Nearby from intent → discovery →
+people/businesses → gathering → conversation → action without encountering conflicting
+terminology, duplicated systems, dead ends, or different versions of the same logic?"*
+
+This is explicitly framed as **broader** than the taxonomy audit (Aug 24 2026) and the Universal
+Signal & Recommendation Audit (Aug 28 2026, directly above) — those traced individual signals
+and individual fix items; this one tests whether the *whole* system now reads as one coherent
+product after all of that work landed. The user's own closing reasoning, worth keeping verbatim
+since it states directly why this is the right next move rather than more feature building:
+
+> If we keep adding individual features now, we risk optimizing individual pieces while missing
+> the experience as a whole... The next question isn't "What else can Nearby do?" It's "Does
+> everything Nearby already does work together as one intelligent experience?"
+
+**This audit should build on, not re-derive, everything already found and fixed** — re-verify
+whether a prior audit's own findings still hold post-fix (the same "don't assume, re-check
+against current code" discipline every audit in this file already follows), rather than
+rediscovering the same ground from scratch. In particular: the Universal Signal Remediation
+Pass's own two explicitly-still-open findings (Finding 8, `accommodates_party_types` never
+reaching consumer-facing ranking; Finding 9, `gender_identity`/`interested_in_genders` never
+displayed to a profile viewer — both restated in `PRODUCT_AUDIT/SIGNAL_CONTRACT.md`) are real,
+known, still-open items this audit should account for, not re-discover as if new. Likewise the
+Aug 23/24 2026 Product Coherence and Universal Taxonomy audits' own still-open P2/DEFERRED items
+(see those sections further down this file) are real prior art, not to be silently ignored.
+
+### Hard boundary — restated so it isn't softened by a future session
+
+**Read-only. No schema change, no RPC change, no client edit, for any reason, even a fix that
+looks trivially safe mid-audit — every finding goes into the deliverable, not into a diff.**
+Matches this file's own established precedent for exactly this shape of request (the Aug 23 2026
+Product Coherence Audit, the Aug 24 2026 Universal Taxonomy Audit, the Aug 28 2026 Universal
+Signal & Recommendation Audit — all explicitly read-only). Given directly, twice, by the user for
+this specific pass: *"stop changing individual features for a moment"* and *"DON'T let Claude
+'fix' everything automatically... I want the output divided into [severity buckets]."*
+
+### The 10 systems to audit together — each its own checklist, given directly by the user
+
+1. **Home.** Ask Nearby / the intent box, Quick Picks, Your Plans, weather, Right Now/Today/This
+   Week, recommendations, CTA hierarchy, banners, gatherings, people, businesses. **Question**:
+   does Home actually function as the intelligent starting point for everything Nearby can do?
+2. **Discover, both modes (People / Things to Do).** Stories, filters, categories, Right
+   Now/Today/This Week, weather, businesses, gatherings, people, recommendations, ranking, empty
+   states. **Specifically verify**: does switching between People and Things to Do feel like
+   entering a different application, or the same one with a different focus?
+3. **Dating.** First-open experience, canonical preferences, gender, interested-in, relationship
+   intentions, compatibility, compatibility ranking, filters, cards, mutual interest, Matches,
+   messaging. **Most important question**: does the compatibility number actually correspond to
+   why someone is being shown?
+4. **Friends.** Same visual language as Dating, simplified filters, interests, distance,
+   ranking, empty states, circles, messages, friend discovery. **Specifically test**: can a user
+   discover a person → connect → organize them into a circle → use that relationship elsewhere
+   in Nearby?
+5. **Gatherings — a major audit.** Trace: discover a gathering → view → join → capacity →
+   messages → business connection → request → business offer → confirmation. **Make sure a full
+   gathering can never create a dead-end recommendation.**
+6. **Business side — the entire loop.** Business onboarding → profile → categories → cuisine →
+   attributes → availability → opportunities → consumer request → match explanation → offer →
+   acceptance → reservation/action. **Critical question**: does the business understand *why*
+   Nearby sent a particular customer/request to them?
+7. **Messaging — its own audit, given the issues already seen this session.** Matches, friends,
+   circles, gathering chats, business conversations, chat titles, bubble sizing, keyboard
+   behavior, navigation, back behavior, unread states, attachments, media, empty states — **and
+   test against actual device sizes** (this app's own repeatedly-disclosed standing gap — no
+   session has ever had simulator/device access; flag this explicitly per-finding rather than
+   silently assume a code read settles a device-behavior question).
+8. **Profile / Settings.** Profile completeness → missing fields → CTA → completion →
+   preferences → privacy → notification settings → Dating preferences → Friends preferences →
+   business-related settings where applicable. **The important principle, given directly**: if
+   Nearby tells a user something is incomplete, it must say *what* is missing and let them fix it
+   immediately.
+9. **Universal ranking audit — the technical heart.** A real table, Signal × Surface, every cell
+   marked **USED**, **NOT APPLICABLE**, or **GAP** — locked shape below.
+10. **"Would a normal person understand this?" — the most important UX audit.** Given directly:
+    *"This should be done without looking at the code first."* Pose each scenario the way a real
+    user would type it, reason first from a plain "what should happen" reading, **then** verify
+    against the actual current code to give a real, grounded verdict — matching this file's own
+    established "read the actual code, no simulator" method (the scenario framing comes first so
+    the code-reading doesn't quietly substitute the audit's own judgment for a normal user's),
+    not skipping the code-trace once the intuitive read is done.
+
+### 9's locked shape — the Universal Ranking Audit table
+
+One real table, Signal (rows) × Surface (columns), exactly as given:
+
+```
+Signal        Home   Discover   Gatherings   People   Dating   Business   Ask Nearby
+Category
+Interests
+Distance
+Price
+Party type
+Party size
+Cuisine
+Attributes
+Compatibility
+Weather
+Time
+Availability
+Capacity
+Recency
+```
+
+Every cell gets a real verdict — **USED** / **NOT APPLICABLE** / **GAP** — with a file/line
+citation backing it, matching every other audit table in this file's own history. This is how a
+future session (or this one, next time) checks whether the system is fragmenting again before it
+does, not a one-time snapshot to file away.
+
+### 10's locked scenarios, and the "mini-app" transition test — both given verbatim, not to be
+### paraphrased away
+
+**Six real scenarios, each traced through the actual code for a real, grounded verdict — not an
+intuition-only answer**:
+
+- **Scenario A** — *"I want something fun to do tonight with two friends."* Can Nearby
+  understand it, determine party size, determine party type, determine time, find appropriate
+  activities, rank them, show available options, and let the user act?
+- **Scenario B** — *"Find me a nice Italian place for a date Friday."* Can Nearby understand
+  dating, understand two people, understand Italian, understand Friday, avoid incorrectly
+  interpreting "nice" as expensive, find businesses, rank relevant ones, request an offer, and
+  show the business *why* it matched?
+- **Scenario C** — *"It's raining. What can I do right now?"* Do weather, time, availability,
+  and category actually change the results, or just the copy?
+- **Scenario D** — *"I want to meet new people who like tennis."* Can Nearby identify Friends
+  intent, use Tennis, apply distance, rank people, connect them, and allow organization into
+  circles?
+- **Scenario E** — *"Find something for 8 people Saturday."* Does Nearby reject `capacity = 4`
+  and prioritize `capacity ≥ 8`?
+- **Scenario F** — *"I'm looking for something cheap tonight."* Does Nearby distinguish `free`
+  from `cheap`, and avoid assuming a party type from a price-only ask?
+
+**The "mini-app" test, directly related to the user's own opening framing from earlier in this
+project's history** — for every one of these 11 transitions, ask: *"Does this feel like Nearby,
+or does this feel like I just opened another app inside Nearby?"* — Home → Discover, Discover →
+People, Discover → Things To Do, People → Dating, People → Friends, Friends → Circles, Gathering
+→ Chat, Business → Opportunity, Opportunity → Offer, Match → Chat, Profile → Preferences. For
+each: does navigation, terminology, card language, buttons, colors, spacing, filters, headers, or
+the interaction model change **without a strong reason**? If so, flag it — but a difference *with*
+a strong reason is exactly what the ⚪ Intentional-difference bucket below exists for, not
+something to flatten away.
+
+### Severity classification — locked, five buckets, not the file's usual 🔴/🟡 two-bucket shape
+
+Every finding across this whole audit gets exactly one of these, given directly by the user:
+
+- **🔴 P0 — Broken / misleading.** Must fix.
+- **🟠 P1 — Inconsistent.** Should fix.
+- **🟡 P2 — UX improvement.** Worth considering.
+- **🟢 P3 — Future opportunity.** Do not build now.
+- **⚪ Intentional difference.** Leave alone.
+
+**The ⚪ bucket is important, restated in the user's own words rather than softened**:
+*"Consistency doesn't mean everything has to look identical. Dating should still feel different
+from Friends. Business should still feel different from a consumer profile. Gatherings should
+still feel different from an individual match. But they should all feel like Nearby."* A finding
+belongs in ⚪, not 🟠, when the difference is serving a real, distinct job (matching this file's
+own long-since-locked "converge identical user jobs, preserve genuinely different ones" rule —
+see the Aug 24 2026 Stories-placement decision for the same principle applied once already).
+
+### The final deliverable — locked shape, not another giant recommendation list
+
+**Not** a list of recommendations as the primary output. The user's own explicit ask:
+
+**NEARBY PRODUCT COHERENCE SCORECARD** — 10 real, honestly-scored metrics, each `X/10`:
+1. Navigation consistency
+2. Visual consistency
+3. Taxonomy consistency
+4. Preference consistency
+5. Filter consistency
+6. Matching consistency
+7. Ranking consistency
+8. Context awareness
+9. Business ↔ consumer integration
+10. End-to-end actionability
+
+Then, **exactly two ranked top-10 lists, nothing more**:
+- **Top 10 actual problems preventing Nearby from feeling like one product** — ranked, each with
+  its severity bucket and a real file/line citation, matching this file's own established
+  terse-but-grounded citation convention.
+- **Top 10 things that are already working and should NOT be disturbed** — the same discipline
+  this file's own prior audits already use (e.g. the Aug 24 2026 Taxonomy audit's own "10
+  strongest things that already make Nearby feel like one integrated product" list, the Aug 28
+  2026 Universal Signal audit's own "real positive controls, not just gaps" section) — this exists
+  specifically so a future simplification pass doesn't accidentally break something that was
+  never actually broken.
+
+Full per-system findings (the 10 checklists, the ranking table, the 6 scenario traces, the
+11-transition mini-app test) all still get written up in full, with real citations — the scorecard
+and the two top-10 lists are the **headline**, not a replacement for the underlying detail.
+
+### Locked execution structure — 2 capped research passes + a real, larger direct synthesis,
+### matching this file's own established convention for an audit this size
+
+1. **Pass A (fork)** — systems 1-4: **Home, Discover (both modes), Dating, Friends** — the
+   consumer discovery/intent "front door" of the app.
+2. **Pass B (fork)** — systems 5-7: **Gatherings, Business side, Messaging** — the commitment/
+   transaction/communication surfaces, where a discovered intent actually turns into something
+   real.
+3. **Direct synthesis, not delegated** (matching this file's own repeated reasoning for why a
+   cross-cutting pass can't be split cleanly across forks — see the Universal Signal Audit's own
+   synthesis-pass note): system 8 (Profile/Settings — real, but scoped enough to fold in
+   directly rather than needing its own fork), system 9 (the Universal Ranking Audit table —
+   inherently spans every system Passes A/B already covered, so building it before both are back
+   would mean guessing at cells this exercise exists to answer honestly), system 10 (the six
+   scenarios, traced through the real code once Passes A/B's own findings already exist to trace
+   against) plus the 11-transition mini-app test, severity classification of every finding from
+   every phase, and the final scorecard + two top-10 lists.
+
+Same "cap agents at 2 concurrent" convention this file has used for every audit of comparable
+scope (the Aug 28 2026 Universal Signal Audit's own Pass A/Pass B split, the Aug 24 2026 Universal
+Taxonomy Audit's 4-phase research split). Deliverable: one real, self-contained file —
+`PRODUCT_AUDIT/FULL_END_TO_END_PRODUCT_COHERENCE_AUDIT_2026-08-28.md` — matching this repo's own
+established audit-doc convention (real file/line citations throughout, a verdict per cell/finding,
+never essay-length padding), not a chat summary alone.
+
+### Explicitly out of scope, restated so nothing here is silently attempted mid-audit
+
+No code changes of any kind, even a fix that looks trivially safe mid-audit. No new feature
+building, no re-litigating any already-locked product decision this file's own history already
+settled (e.g. Dating and Friends staying two separate matching engines — that's exactly the shape
+of thing the ⚪ Intentional-difference bucket exists to correctly *not* flag, not something to
+re-open). No fabricated device-behavior claims for the Messaging system's own "test on actual
+device sizes" ask — this sandbox has never had simulator/device access; where a finding genuinely
+needs a real device to verify, say so plainly (🟡 NOT VERIFIABLE FROM THIS SANDBOX, matching the
+verdict vocabulary the Aug 24 2026 Taxonomy audit already established) rather than guessing.
+
+### Status: PLAN LOCKED. Nothing executed. Pick up at Pass A once given an explicit go-ahead —
+### do not start autonomously from this plan alone.
+
 ## Aug 28 2026 — Universal Signal Remediation Pass (P0/P1/P2 build) — PLAN LOCKED, executing
 ## below; check each item's own status note for what's landed
 
