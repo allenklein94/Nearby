@@ -75,6 +75,55 @@ just-shipped decisions. The second AI's own broader "context-aware ranking layer
 evaluated and reported on here — real, present, or absent per surface — never built in the same
 pass as finding it, matching this file's oldest, most consistently enforced rule.
 
+**Status: DONE.** Both research passes completed and were folded into one deliverable,
+`PRODUCT_AUDIT/UNIVERSAL_SIGNAL_RECOMMENDATION_AUDIT_2026-08-28.md` (the two working files,
+`_partA.md`/`_partB.md`, were deleted after folding — same "one file, not five" precedent as the
+Aug 24 2026 taxonomy audit). Full 12-signal matrix, a real "Context Layer" verdict, 4 code-traced
+persona flows, and a 10-item ranked findings list are all in that file — read it directly, not
+this summary. Headline results, so this file's own history carries them without needing to open
+that file:
+
+- **The single most severe finding, independently re-verified (not taken on the research pass's
+  word alone) by directly reading `intentResolver.js`'s full sort/dedup block**: a real,
+  falsifiable cross-tier ranking violation — `resolveBusinessAvailability()`'s minimum possible
+  score (2) is lower than `resolvePolicyOnlyBusinesses()`'s maximum possible score (3), and the
+  final sort has no type-priority tiebreak, so an unconfirmed "may be able to help" business can
+  genuinely outrank a confirmed, live availability posting from a different business — directly
+  contradicting `resolvePolicyOnlyBusinesses()`'s own header comment, which is only true for the
+  same-business dedup case, not the general one.
+- **The single most user-visible finding**: Dating's own real, computed `compatibilityScore` is
+  shown as a badge and usable as an optional filter, but never orders either Crossed Paths
+  (recency-sorted) or Browse (confirmed to have **no `ORDER BY` clause at all**) — the identical
+  class of signal, on the structurally analogous sibling surface (Friend Discovery), genuinely
+  does order results via a real live `ORDER BY` in `get_friend_discovery_candidates()`. Same root
+  cause also flattens the Relationship Intention signal's own "Ranked" stage.
+- **Two more real, independently-verified correctness gaps in the ask box's own ranked results**:
+  a fully-waitlisted gathering's own `capacity` field is fetched but silently dropped before it
+  reaches the resolver's mapped candidate object, so a full gathering can rank #1 with zero
+  indication; and a confirmed business-availability posting's real remaining capacity is never
+  compared against the requester's own party size (and isn't even returned by the underlying RPC),
+  so a party of 8 and a party of 1 see an identical result for a posting with one seat left.
+- **`business_requests.budget_max`** — a real number a consumer explicitly types — is the
+  cleanest "collected → stored → displayed → dead end" example found: shown to the business,
+  never filters, matches, or ranks anything.
+- **The "Context Layer" verdict, not a clean yes or no**: real, shared scoring primitives exist
+  (the `SCORE_*` constants reused verbatim across every bonus function) and are genuinely
+  load-bearing — but *coverage* of any one context signal across every surface that should honor
+  it is inconsistent. Weather reaches Home and Discover via **three independent
+  re-implementations** of the same indoor/outdoor rule, and reaches neither the ask box
+  (`intentResolver.js`, confirmed zero weather references) nor the full `GatheringsScreen.js`
+  browse/filter screen at all. Two real, internally-consistent, mutually-inconsistent definitions
+  of "now" (a narrow ±30min/+2h window vs. a broad full-calendar-day match) share the same
+  English words across adjacent surfaces.
+- **Real positive controls, not just gaps**: distance/proximity (Pass A) and cuisine + business
+  attributes (Pass B) are all fully closed-loop across all seven stages, live-verified, with zero
+  real gaps found — confirming the audit's own method finds real gaps because real gaps exist,
+  not because it's calibrated to find something regardless of the code.
+
+**Per this pass's own hard boundary: nothing above has been built.** All 10 ranked findings in
+the deliverable's own §4 are real, ready-to-build recommendations for a future, separately-
+authorized pass — not acted on here.
+
 ## Aug 28 2026 — Taxonomy Post-Implementation Audit remediation pass — PLAN LOCKED, executing
 ## below; check each item's own status note for what's landed
 
