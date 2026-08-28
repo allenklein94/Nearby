@@ -4,10 +4,15 @@
 // in that file's own I/O-touching imports (expo-location, supabase, etc.)
 // -- importing intentResolver.js itself in a plain Jest/Node environment
 // would transitively import several native modules that throw outside a
-// real React Native runtime. This file has zero external imports on
-// purpose, matching timeContext.js's own "pure, no I/O" precedent.
+// real React Native runtime. This file otherwise has zero external
+// imports on purpose, matching timeContext.js's own "pure, no I/O"
+// precedent -- the one exception, isWithinRightNowWindow below, is
+// itself a pure, screen-independent utility (utils/rightNowWindow.js,
+// same shape as utils/weatherBias.js), not a dependency on any screen,
+// so it doesn't violate that precedent.
 // intentResolver.js imports every export here instead of defining its own
 // copies -- same values, same logic, just factored out.
+import { isWithinRightNowWindow } from '../utils/rightNowWindow';
 
 // Shared relevance weights, kept on the same scale
 // getGatheringFitReasons() already established (interest match = 5, close
@@ -127,22 +132,35 @@ export function startOfDay(d) {
 // Same coarse date-window vocabulary GatheringsScreen.js's own date-filter
 // chips already use (today/tomorrow/weekend) — kept as a small,
 // self-contained equivalent here rather than importing from a screen file,
-// so this new service has no dependency on any screen. "tonight"/"now"
-// both fold into "today" for matching purposes — no time-of-day precision
-// beyond that. This is intentional: it matches this codebase's standing
-// "AI never infers a specific date/time" rule (see CLAUDE.md's Create 2.0
-// section) — dateWindow is a coarse bucket for filtering *existing*
-// results, never a specific date or clock time used to create/publish
-// anything.
+// so this new service has no dependency on any screen. "tonight" folds
+// into "today" for matching purposes — no time-of-day precision beyond
+// that; a user asking for "something tonight" gets the whole rest of the
+// day, which is honest to what "tonight" actually means (this app has no
+// real signal for what time someone considers "evening" to start). This
+// is intentional: it matches this codebase's standing "AI never infers a
+// specific date/time" rule (see CLAUDE.md's Create 2.0 section) —
+// dateWindow is a coarse bucket for filtering *existing* results, never a
+// specific date or clock time used to create/publish anything.
+//
+// "now" is the one real exception, closing a genuine gap the Universal
+// Signal Remediation Pass found (CLAUDE.md, P2 item 8): "right now" and
+// "tonight" are real, different asks that create-assistant's own prompt
+// used to conflate into one bucket ('tonight', full-day) -- "now" is a
+// distinct value in its vocabulary today specifically so a user asking
+// for something *immediately* gets Nearby's one real, canonical narrow
+// "Right Now" window (utils/rightNowWindow.js -- the same definition
+// GatheringsScreen.js's own "Right Now" filter chip already used),
+// instead of the same broad match a plain "today"/"tonight" ask gets.
 export function matchesDateWindow(scheduledAt, dateWindow) {
   if (!dateWindow || dateWindow === 'flexible') return true;
+  if (dateWindow === 'now') return isWithinRightNowWindow(scheduledAt);
   const date = new Date(scheduledAt);
   const now = new Date();
   const todayStart = startOfDay(now);
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
-  if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') {
+  if (dateWindow === 'today' || dateWindow === 'tonight') {
     return date >= todayStart && date < tomorrowStart;
   }
   if (dateWindow === 'tomorrow') {
@@ -175,6 +193,13 @@ export function matchesDateWindow(scheduledAt, dateWindow) {
 // {start: null, end: null} for 'flexible'/unset, meaning "don't filter by
 // date" — matches the RPC's own (date_start_param is null or ...)
 // passthrough.
+//
+// "now" deliberately stays grouped with "today"/"tonight" here, unlike
+// matchesDateWindow() above -- business_requests.date is a plain calendar
+// date with no time-of-day component at all, so there's no honest way to
+// represent a narrower-than-a-day window against it; collapsing "now" to
+// today's date is the truthful answer this column can actually support,
+// not a missed narrowing.
 export function dateWindowToDateRange(dateWindow) {
   if (!dateWindow || dateWindow === 'flexible') return { start: null, end: null };
   const now = new Date();

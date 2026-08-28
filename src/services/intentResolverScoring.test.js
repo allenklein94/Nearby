@@ -14,6 +14,7 @@ const {
   SCORE_CLOSE_DISTANCE,
   SCORE_CONFIRMED_AVAILABILITY_FLOOR,
 } = require('./intentResolverScoring');
+const { RIGHT_NOW_WINDOW_PAST_MS, RIGHT_NOW_WINDOW_FUTURE_MS } = require('../utils/rightNowWindow');
 
 describe('extractMeaningfulWords', () => {
   it('keeps 4+ character words and drops stopwords', () => {
@@ -135,6 +136,37 @@ describe('matchesDateWindow', () => {
       jest.useRealTimers();
     }
   });
+
+  // Universal Signal Remediation Pass, P2 item 8 (CLAUDE.md, Aug 28 2026):
+  // "now" gets Nearby's one real canonical narrow window
+  // (utils/rightNowWindow.js), not the same full-day match "today"/
+  // "tonight" get -- anchored to a known instant so this is deterministic.
+  it('matches "now" only within the real, narrow [-30min, +2h] window, not the full day', () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-12T12:00:00Z'));
+    try {
+      const justStarted = new Date('2026-08-12T11:45:00Z').toISOString(); // 15 min ago
+      const startingSoon = new Date('2026-08-12T13:30:00Z').toISOString(); // 1.5h from now
+      const tooLongAgo = new Date('2026-08-12T11:00:00Z').toISOString(); // 1h ago -- outside the 30min past bound
+      const tooFarAhead = new Date('2026-08-12T15:00:00Z').toISOString(); // 3h from now -- outside the 2h future bound
+      const laterTonight = new Date('2026-08-12T20:00:00Z').toISOString(); // same calendar day, but well outside the narrow window
+
+      expect(matchesDateWindow(justStarted, 'now')).toBe(true);
+      expect(matchesDateWindow(startingSoon, 'now')).toBe(true);
+      expect(matchesDateWindow(tooLongAgo, 'now')).toBe(false);
+      expect(matchesDateWindow(tooFarAhead, 'now')).toBe(false);
+      // The real behavioral difference from "today"/"tonight": something
+      // later the same calendar day matches those, but not "now".
+      expect(matchesDateWindow(laterTonight, 'today')).toBe(true);
+      expect(matchesDateWindow(laterTonight, 'now')).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('the exported window constants match the real [-30min, +2h] shape', () => {
+    expect(RIGHT_NOW_WINDOW_PAST_MS).toBe(30 * 60 * 1000);
+    expect(RIGHT_NOW_WINDOW_FUTURE_MS).toBe(2 * 60 * 60 * 1000);
+  });
 });
 
 describe('dateWindowToDateRange', () => {
@@ -147,6 +179,14 @@ describe('dateWindowToDateRange', () => {
     const { start, end } = dateWindowToDateRange('today');
     expect(start).toBe(end);
     expect(start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  // "now" deliberately stays grouped with "today" here (unlike
+  // matchesDateWindow's own real narrow window) -- business_requests.date
+  // has no time-of-day component to narrow against, so today's date is
+  // the honest answer this column can support.
+  it('returns the same single-day range for "now" as for "today"', () => {
+    expect(dateWindowToDateRange('now')).toEqual(dateWindowToDateRange('today'));
   });
 
   it('returns a genuine Saturday-through-Sunday range for "weekend", never just Saturday', () => {

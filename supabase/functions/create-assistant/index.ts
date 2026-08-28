@@ -61,7 +61,23 @@ const VALID_CUISINES = [
 // date or time from free text. This bucket only ever filters which
 // *existing* gatherings/perks to surface first; it's never written to a
 // gathering being created or published.
-const VALID_DATE_WINDOWS = ['today', 'tonight', 'tomorrow', 'weekend', 'flexible'];
+//
+// Universal Signal Remediation Pass, P2 item 8 (CLAUDE.md, Aug 28 2026):
+// "now" is a real, distinct value here, closing a genuine gap the
+// Universal Signal audit found -- this prompt used to instruct the model
+// to collapse "tonight" and "right now" into the same single bucket
+// ('tonight', matched client-side as a full-day window), so a user
+// asking for something *immediately* got the same broad match as someone
+// asking for "sometime tonight." "now" and "tonight" are real, different
+// asks -- src/services/intentResolverScoring.js's matchesDateWindow()
+// gives "now" Nearby's one real canonical narrow "Right Now" window
+// (utils/rightNowWindow.js, the same [-30min, +2h] definition
+// GatheringsScreen.js's own "Right Now" filter chip already used) while
+// "tonight" still gets the honest full-day match "today" gets. This file
+// never computes that window's numeric math itself -- it only needs to
+// emit the right categorical value; the actual arithmetic lives entirely
+// client-side.
+const VALID_DATE_WINDOWS = ['now', 'today', 'tonight', 'tomorrow', 'weekend', 'flexible'];
 
 serve(async (req) => {
   try {
@@ -109,7 +125,7 @@ If intent is "gathering" or "community", also extract a short best-effort title 
 
 Regardless of intent, also extract these when the text gives a real clue (used only to help find something that already exists — never to create or publish anything):
 - partySize: a whole number of people, always including the person asking, if mentioned. "My girlfriend and I" is 2. "8 of us" is 8. "For two people" or "me and one friend" is 2. "With two friends" or "me and two friends" means the asker plus two others, so it's 3 -- when the text names a number of *other* people (friends, guests) without saying that count is the total, add 1 for the asker. Only set a number when the text gives a real clue; otherwise null.
-- dateWindow: one of ${JSON.stringify(VALID_DATE_WINDOWS)} — pick the closest match to what they wrote (e.g. "tonight"/"right now" is "tonight", "this weekend" is "weekend"), or "flexible" if no timing was mentioned at all. Never guess a specific date, day of week, or clock time — only pick from this exact list.
+- dateWindow: one of ${JSON.stringify(VALID_DATE_WINDOWS)} — pick the closest match to what they wrote, using this exact mapping: "right now"/"immediately"/"right away"/"as soon as possible" is "now" (they mean *this specific moment*, not just sometime today). "tonight"/"this evening" is "tonight". Plain "today" with no urgency implied is "today". "this weekend" is "weekend". "now" and "tonight" are genuinely different asks — never pick "now" just because "tonight" would also be a reasonable guess, and never pick "tonight" for something that clearly means immediately. "flexible" if no timing was mentioned at all. Never guess a specific date, day of week, or clock time — only pick from this exact list.
 - budgetMax: a whole-number dollar amount if a spending limit was mentioned (e.g. "under $100" is 100), or null.
 - priceLevel: one of ${JSON.stringify(VALID_PRICE_LEVELS)}, using this exact mapping and nothing looser: "free"/"no cost" -> "free". "cheap"/"inexpensive"/"budget-friendly" -> "$". "moderate"/"reasonably priced" -> "$$". "expensive"/"upscale"/"fancy" -> "$$$". A word like "nice" on its own does NOT imply a price level -- "nice" can mean clean, attractive, or well-reviewed, not necessarily expensive -- so leave priceLevel null unless something else in the text also implies a real price tier. Never guess -- only pick one when the text genuinely and unambiguously implies it.
 - partyType: one of ${JSON.stringify(VALID_PARTY_TYPES)} if the text implies who this is for (e.g. "just me"/"solo" is "solo", "me and my friends" is "friends", "a big group" is "groups", "a date"/"with my partner" is "date"), or null if no such signal was mentioned at all. Never guess.

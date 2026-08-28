@@ -361,7 +361,7 @@ right), then genuinely new call sites added only where the audit found a gap (th
 weather; `GatheringsScreen.js`'s "Right Now" chip's own narrow window adopted as the one real
 definition, per the audit's own recommendation, rather than the ask box's broad full-day bucket).
 
-**Status: item 7 (weather) is DONE. Item 8 (canonical "now") is NOT yet started — see below.**
+**Status: item 7 (weather) is DONE. Item 8 (canonical "now") is now also DONE — see below.**
 
 **Item 7 — DONE.** New `src/utils/weatherBias.js` (`isWeatherIndoorBiased()`/
 `isWeatherOutdoorBiased()`) replaces three independent re-implementations the audit found —
@@ -418,21 +418,112 @@ behave correctly for both the indoor-bias and outdoor-bias cases, and that neith
 introduces a visible delay (the ask box's own parallel-fetch design is meant to prevent this,
 but this hasn't been confirmed against a real device's real network timing).
 
-**Item 8 (canonical "now") — NOT yet started.** `GatheringsScreen.js`'s "Right Now" chip uses a
-real, narrow window (confirmed via `matchesDateFilter`'s own `'now'` branch, `[-30min, +2h]` of
-the current time — the exact window the audit's own text names as the one real definition to
-adopt). `create-assistant`'s `dateWindow` classification for `today`/`now`-shaped free text
-still uses a broad full-calendar-day match (`dateWindowToDateRange()` in
-`intentResolverScoring.js`, confirmed live — this hasn't been re-checked since the audit and may
-have drifted further; re-verify before building). Locked scope, not yet executed: extract
-`GatheringsScreen.js`'s own narrow window into one shared function, repoint
-`create-assistant`/`intentResolverScoring.js`'s `now`-shaped bucket at it (this needs care —
-`create-assistant` is a deployed Supabase Edge Function, not a client file, so this may mean
-either duplicating the narrow-window constant into that function's own source with an explicit
-comment linking it back to the canonical client-side definition, or accepting that a
-cross-runtime shared import isn't possible here and disclosing that as a real, structural
-limitation rather than silently declaring "done"). Not started — flagged here so a future
-session doesn't have to rediscover the exact locations again.
+**Item 8 (canonical "now") — DONE.** Re-verified before building, per this item's own "may have
+drifted further; re-verify before building" note: `GatheringsScreen.js`'s "Right Now" chip still
+uses a real, narrow window (`matchesDateFilter`'s own `'now'` branch — literally `[now - 30min,
+now + 2h]`, i.e. recently started or starting soon), and `create-assistant`'s real, live,
+deployed vocabulary (pulled fresh via the Management API's function-body endpoint and confirmed
+byte-identical to the local repo file — no drift) is `VALID_DATE_WINDOWS = ['today', 'tonight',
+'tomorrow', 'weekend', 'flexible']` — there was never a literal `'now'` value in create-assistant's
+real vocabulary at all; the bucket its own prompt actually routed "right now" phrasing into was
+`'tonight'` (its prompt explicitly said "'tonight'/'right now' is 'tonight'"), which
+`intentResolverScoring.js`'s `matchesDateWindow()`/`dateWindowToDateRange()` both then matched as
+a full-calendar-day range, same as plain `'today'`. `'now'` only existed as dead, defensively-
+handled code in those two client functions (and in `AskBusinessScreen.js`'s `toDateParam()`/
+`normalizedPrefillDateWindow`) — never actually produced by anything.
+
+**One real, additional finding surfaced while re-verifying, disclosed rather than silently
+folded into the fix**: `homeDashboard.js`'s own, differently-named `happeningNow` signal (Home's
+"Happening Near You" row) uses the *same two numbers* (30min/2h) as `GatheringsScreen.js`'s
+"Right Now" chip, but applied to opposite sides of the window —
+`GatheringsScreen.js`'s chip is `[now - 30min, now + 2h]` (mostly forward-looking: recently
+started, or starting soon), while `homeDashboard.js`'s `happeningNow` is `[now - 2h, now +
+30min]` (mostly backward-looking: already in progress, or about to start) — genuinely the mirror
+image of each other, confirmed by plugging in a concrete timestamp on both, not assumed from the
+matching variable names. `GatheringsScreen.js`'s own pre-existing comment claimed the two windows
+were "the same," which this pass found to be factually wrong. **Not fixed** — out of this item's
+own locked scope (extracting `GatheringsScreen.js`'s window and repointing create-assistant/
+`intentResolverScoring.js`'s "now" bucket at it, nothing about `homeDashboard.js`), and
+reconciling it needs its own explicit product decision (which framing is actually correct for
+"Happening Near You": mostly-past or mostly-future) — flagged here, not silently changed.
+
+**Built**: new `src/utils/rightNowWindow.js` — the one real canonical source of the narrow
+window's numeric definition (`RIGHT_NOW_WINDOW_PAST_MS`/`RIGHT_NOW_WINDOW_FUTURE_MS`,
+`isWithinRightNowWindow(scheduledAt, now)`), a pure, screen-independent utility matching the
+already-established `utils/weatherBias.js` precedent (one shared file, imported by both a screen
+and a resolver service, rather than each keeping its own copy). `GatheringsScreen.js`'s own
+`matchesDateFilter()` now calls it instead of its own local `NOW_WINDOW_AFTER_MS`/
+`NOW_WINDOW_BEFORE_MS` constants — a pure extraction, zero behavior change for this screen's own
+chip. `intentResolverScoring.js` — whose own header comment explicitly says it has "zero external
+imports on purpose... so this new service has no dependency on any screen" — gained its first-ever
+import, but not a screen dependency: `rightNowWindow.js` is exactly the kind of pure,
+screen-independent utility that convention was never meant to exclude (the same reasoning
+`intentResolver.js` already relies on for `utils/weatherBias.js`).
+
+The real fix needed more than a mechanical "repoint" once actually traced through: since
+create-assistant never had a genuine "now"-shaped bucket at all (only `'tonight'`, which the
+prompt explicitly conflated with "right now" *and* with "this evening" — two real, different
+asks), blindly narrowing the existing `'tonight'` bucket would have been a real regression for
+anyone asking for something later in the evening, not urgently. Given the actual division of
+labor traced directly — create-assistant only ever emits a categorical string, all the real
+time-window arithmetic already lives client-side in `matchesDateWindow()`, never in the Edge
+Function itself — the "needs care… duplicate the narrow-window constant into that function's own
+source" caveat from this plan's own earlier text turned out not to apply: there's no numeric
+constant to cross the runtime boundary at all, only a new categorical value. So `create-assistant`
+gained a real, distinct `'now'` value in `VALID_DATE_WINDOWS` (`['now', 'today', 'tonight',
+'tomorrow', 'weekend', 'flexible']`), with its own prompt instruction now explicitly
+distinguishing "right now"/"immediately"/"right away"/"as soon as possible" (→ `'now'`) from
+"tonight"/"this evening" (→ `'tonight'`, still a full-day match, unchanged) and from plain
+"today" with no urgency (→ `'today'`, also unchanged) — matching this same function's own
+established "never guess unless genuinely implied" discipline already used for its price-level/
+party-type extraction, not a new pattern invented for this.
+`intentResolverScoring.js`'s `matchesDateWindow()` gained a real `'now'` branch using the new
+narrow-window utility, kept genuinely separate from the unchanged `'today'`/`'tonight'` full-day
+branch. `dateWindowToDateRange()` (used only against `business_requests.date`, a plain calendar
+date with no time-of-day component at all) deliberately keeps `'now'` grouped with `'today'`/
+`'tonight'` — there's no honest way to narrow further than "today" against a column with no time
+granularity, so collapsing there is the truthful answer, not a missed narrowing; a comment now
+states this explicitly so a future session doesn't "fix" it into a false narrowing.
+`AskBusinessScreen.js`'s `toDateParam()`/`normalizedPrefillDateWindow` already defensively handled
+`'now'` (it was already anticipated as a possible incoming value, even before it was real) — no
+code change needed there beyond correcting one comment that had prematurely claimed `'now'` was
+already a real create-assistant value.
+
+**Deployed to production and verified live**, not assumed: `npx supabase functions deploy
+create-assistant --project-ref enmosvippabmuqslzrox` succeeded; confirmed `verify_jwt: true`
+directly via the Management API (not the CLI's own default — this file's own repeatedly-learned
+lesson), version bumped to 8; confirmed a raw unauthenticated request to the function gateway
+still correctly 401s; fetched the deployed function's own real ESZIP body and confirmed via a
+`strings` search that it genuinely contains the new vocabulary and prompt text (`VALID_DATE_WINDOWS
+= ['now', 'today', ...]`, the real "immediately"/"right away" prompt sentence — real hits, not
+zero), not just that the deploy command reported success. Verified via a lenient `tsc --noEmit`
+syntax pass on the full file — zero errors beyond the same expected unresolvable Deno-remote-
+import/global-`Deno` ones every prior pass in this repo already has.
+
+7 new unit tests added to `intentResolverScoring.test.js` (a real `'now'`-vs-`'today'` boundary
+test anchored to a known instant, proving something later the same calendar day matches `'today'`
+but correctly not `'now'`; a constants sanity check; a `dateWindowToDateRange('now') ===
+dateWindowToDateRange('today')` equivalence check) plus a new, dedicated
+`src/utils/rightNowWindow.test.js` (6 tests: both inclusive boundaries, both exclusions just past
+each boundary, both inclusions just under each boundary, and the real-current-time default).
+Full Jest suite now **144/144 passing** (was 135 before P2 item 7, +9 across both test files —
+this session's own run confirmed 144/144, 12 suites). Verified via a full `npx expo export
+--platform ios` — clean, no bundling errors, **2271 modules** (one more than the prior baseline —
+the one new client-bundled file, `rightNowWindow.js`; its own `.test.js` file is correctly
+excluded from the Metro bundle, matching every other test file in this repo).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: typing "something right now" into
+Home's ask box genuinely narrows results to the real `[-30min, +2h]` window (not the old full-day
+match), typing "something tonight" still correctly gets the broader full-day match unchanged, and
+`GatheringsScreen.js`'s own "Right Now" chip still behaves exactly as before this pass (a pure
+refactor, but worth reconfirming against a real device once, same as every other pass in this
+file). The real Anthropic classification output for the new "now" vs. "tonight" distinction
+specifically has not been observed — this sandbox still has no way to mint a real signed-in
+session's access token, the same standing limitation as every other AI-classification feature in
+this file; a future session with real device/account access should specifically test a genuine
+"right now" phrasing and a genuine "tonight, not urgent" phrasing side by side to confirm the
+model actually respects the new distinction rather than defaulting to one or the other.
 
 ### P3 item 9 — Signal Contract doc
 
@@ -450,10 +541,9 @@ ios`. Each numbered item is its own commit, pushed individually as it lands — 
 end — so a mid-session restart never loses more than one item's worth of work, and this
 section's own status notes are updated inline as each lands.
 
-**Status: P0 items 1-3, P1 items 4-6, and P2 item 7 are all DONE — check each item's own status
-note above for the full detail on each. P2 item 8 (canonical "now") and P3 item 9 (the Signal
-Contract doc) are NOT yet started — pick up from item 8's own "locked scope, not yet executed"
-note above.**
+**Status: P0 items 1-3, P1 items 4-6, and P2 items 7-8 are all DONE — check each item's own
+status note above for the full detail on each. P3 item 9 (the Signal Contract doc) is the one
+remaining piece — pick up from its own locked scope note below.**
 
 ## Aug 28 2026 — Universal Signal & Recommendation Audit — read-only, no application code
 ## changes; check the status note at the bottom for what's landed

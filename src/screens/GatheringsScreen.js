@@ -33,6 +33,7 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { isWithinRightNowWindow } from '../utils/rightNowWindow';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -48,11 +49,13 @@ const DATE_OPTIONS = [
   { key: 'week', label: 'This Week' },
 ];
 
-// Same [-30min, +2h] "happening now" window homeDashboard.js's own
-// happeningNow signal already established (see CLAUDE.md, 14-item UX
-// review item 4) -- reused here, not a new invented threshold.
-const NOW_WINDOW_AFTER_MS = 30 * 60 * 1000;
-const NOW_WINDOW_BEFORE_MS = 2 * 60 * 60 * 1000;
+// Universal Signal Remediation Pass, P2 item 8 (CLAUDE.md, Aug 28 2026):
+// this "Right Now" window is now the one real canonical definition of
+// "now" across the app -- see utils/rightNowWindow.js's own header
+// comment for the full story, including a real, disclosed mismatch this
+// pass found (and deliberately left unfixed, out of scope) between this
+// window and homeDashboard.js's differently-named `happeningNow` signal,
+// which this comment used to (inaccurately) call "the same."
 
 // Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
 // mirrors CreateGatheringScreen's own PRICE_OPTIONS chip labels.
@@ -87,7 +90,7 @@ function matchesDateFilter(scheduledAt, filterKey) {
   const now = new Date();
 
   if (filterKey === 'now') {
-    return date.getTime() >= now.getTime() - NOW_WINDOW_AFTER_MS && date.getTime() <= now.getTime() + NOW_WINDOW_BEFORE_MS;
+    return isWithinRightNowWindow(scheduledAt, now);
   }
 
   if (filterKey === 'soon') {

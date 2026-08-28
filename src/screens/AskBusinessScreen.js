@@ -42,13 +42,18 @@ function startOfDay(d) {
 function toDateParam(dateWindow) {
   const now = new Date();
   const todayStart = startOfDay(now);
-  // 'tonight'/'now' are real values create-assistant can return
-  // (VALID_DATE_WINDOWS includes 'tonight') but previously had no branch
-  // here at all -- fell through to the final `return null`, silently
-  // dropping the "same day" signal from a submitted business request. Bug
-  // found during Aug 15 2026 stabilization-pass bug hunt; matches
-  // intentResolverScoring.js's own matchesDateWindow(), which already
-  // treats today/tonight/now as equivalent.
+  // 'tonight'/'now' are both real values create-assistant can return
+  // (VALID_DATE_WINDOWS includes both, since the Universal Signal
+  // Remediation Pass's P2 item 8 gave "now" its own real, distinct
+  // vocabulary value -- CLAUDE.md) but previously had no branch here at
+  // all -- fell through to the final `return null`, silently dropping the
+  // "same day" signal from a submitted business request. Bug found during
+  // Aug 15 2026 stabilization-pass bug hunt. Both still collapse to
+  // today's date here, unlike intentResolverScoring.js's own
+  // matchesDateWindow() (which gives "now" a real, narrower window) --
+  // business_requests.date is a plain calendar date with no time-of-day
+  // component, so there's no honest way to narrow further than "today"
+  // against it.
   if (dateWindow === 'today' || dateWindow === 'tonight' || dateWindow === 'now') return todayStart.toISOString().slice(0, 10);
   if (dateWindow === 'tomorrow') {
     const d = new Date(todayStart);
