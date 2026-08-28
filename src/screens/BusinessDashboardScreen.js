@@ -220,11 +220,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         requestDate: req.date ?? null,
         requestTimeWindowStart: req.time_window_start ?? null,
         requestBudgetMax: req.budget_max ?? null,
+        requestPartySize: req.party_size ?? null,
         businessAttributes: selectedPartner?.attributes ?? [],
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
         businessPriorityTimeWindows: selectedPartner?.priority_time_windows ?? [],
         activePrioritySignals,
+        fulfillmentPolicy,
       });
       return { ...o, opportunityScore: score, opportunityReasons: reasons };
     });
@@ -232,7 +234,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const awaiting = withScores.filter(isAwaitingDecision).sort((a, b) => b.opportunityScore - a.opportunityScore);
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
-  }, [opportunities, selectedPartner, activePrioritySignals]);
+  }, [opportunities, selectedPartner, activePrioritySignals, fulfillmentPolicy]);
   // Business Intelligence & Opportunity Engine, Phase 3 -- a real,
   // deterministic offer-recommendation ranking, entirely client-side over
   // data this screen already has loaded (this partner's own full

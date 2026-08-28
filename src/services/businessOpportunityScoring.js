@@ -18,7 +18,7 @@
 // category/date/time_window_start via getBusinessOpportunities; the
 // business's own already-loaded attributes/cuisine/priority_attributes/
 // priority_time_windows; Phase 1's activePrioritySignals) -- no new query.
-import { SCORE_INTEREST_MATCH, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
+import { SCORE_INTEREST_MATCH, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK, SCORE_CLOSE_DISTANCE } from './intentResolverScoring';
 import { getTimePeriod } from '../utils/timeContext';
 
 // Universal Signal Remediation Pass, P1 item 5 (CLAUDE.md, Aug 28 2026):
@@ -39,11 +39,13 @@ export function scoreBusinessOpportunity({
   requestDate = null,
   requestTimeWindowStart = null,
   requestBudgetMax = null,
+  requestPartySize = null,
   businessAttributes = [],
   businessCuisine = null,
   businessPriorityAttributes = [],
   businessPriorityTimeWindows = [],
   activePrioritySignals = [],
+  fulfillmentPolicy = null,
 } = {}) {
   const reasons = [];
   let score = 0;
@@ -86,6 +88,28 @@ export function scoreBusinessOpportunity({
       score += budgetBonus;
       reasons.push({ label: `Offers up to $${requestBudgetMax}`, points: budgetBonus });
     }
+  }
+
+  // P1 item 6 (folds into P0 item 2's own implementation, per the plan):
+  // party size becomes a real relevance signal here specifically because
+  // this screen (which request should I look at first) never treats it
+  // as a hard constraint the way the consumer-facing resolver's capacity
+  // check already does -- every open request shows up regardless of
+  // size. Reuses the exact same real fulfillment-policy party-size range
+  // and SCORE_CLOSE_DISTANCE weight businessOfferRecommendation.js's own
+  // rankExperiencesForOpportunity() already established, so a business
+  // that's set a real "usual party size" range on its standing policy
+  // sees a request that fits it ranked up -- never a fabricated fit
+  // signal for a business with no policy set.
+  if (
+    requestPartySize != null &&
+    fulfillmentPolicy?.party_size_min != null &&
+    fulfillmentPolicy?.party_size_max != null &&
+    requestPartySize >= fulfillmentPolicy.party_size_min &&
+    requestPartySize <= fulfillmentPolicy.party_size_max
+  ) {
+    score += SCORE_CLOSE_DISTANCE;
+    reasons.push({ label: 'Within your usual party size range', points: SCORE_CLOSE_DISTANCE });
   }
 
   // Timing fit -- reuses the exact same morning/afternoon/evening/weekend

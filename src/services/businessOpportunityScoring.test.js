@@ -1,5 +1,5 @@
 import { scoreBusinessOpportunity } from './businessOpportunityScoring';
-import { SCORE_INTEREST_MATCH, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
+import { SCORE_INTEREST_MATCH, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK, SCORE_CLOSE_DISTANCE } from './intentResolverScoring';
 
 describe('scoreBusinessOpportunity', () => {
   it('returns 0 and no reasons when nothing overlaps', () => {
@@ -129,6 +129,40 @@ describe('scoreBusinessOpportunity', () => {
   it('does not credit a null/zero budget', () => {
     expect(scoreBusinessOpportunity({ requestBudgetMax: null }).score).toBe(0);
     expect(scoreBusinessOpportunity({ requestBudgetMax: 0 }).score).toBe(0);
+  });
+
+  // Universal Signal Remediation Pass, P1 item 6 (CLAUDE.md, Aug 28 2026).
+  it('scores a real party-size fit against the fulfillment policy range at SCORE_CLOSE_DISTANCE', () => {
+    const result = scoreBusinessOpportunity({
+      requestPartySize: 4,
+      fulfillmentPolicy: { party_size_min: 2, party_size_max: 6 },
+    });
+    expect(result.score).toBe(SCORE_CLOSE_DISTANCE);
+    expect(result.reasons).toEqual([
+      { label: 'Within your usual party size range', points: SCORE_CLOSE_DISTANCE },
+    ]);
+  });
+
+  it('does not credit party size outside the fulfillment policy range', () => {
+    expect(
+      scoreBusinessOpportunity({
+        requestPartySize: 10,
+        fulfillmentPolicy: { party_size_min: 2, party_size_max: 6 },
+      }).score
+    ).toBe(0);
+  });
+
+  it('does not attempt a party-size score when the business has no fulfillment policy', () => {
+    expect(scoreBusinessOpportunity({ requestPartySize: 4, fulfillmentPolicy: null }).score).toBe(0);
+  });
+
+  it('does not attempt a party-size score when the request has no party size at all', () => {
+    expect(
+      scoreBusinessOpportunity({
+        requestPartySize: null,
+        fulfillmentPolicy: { party_size_min: 2, party_size_max: 6 },
+      }).score
+    ).toBe(0);
   });
 
   it('combines several real, distinct signals additively, one reason per signal', () => {
