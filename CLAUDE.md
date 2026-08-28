@@ -531,6 +531,37 @@ A new `PRODUCT_AUDIT/SIGNAL_CONTRACT.md`, built last, describing the real, post-
 every signal covered in the 12-signal matrix — not prescriptive/aspirational, a factual
 reference matching this repo's own established audit-doc convention.
 
+**Status: DONE.** `PRODUCT_AUDIT/SIGNAL_CONTRACT.md` built once P0-P2 (items 1-8) had actually
+landed, matching this item's own "should describe the post-fix state, not the pre-fix one"
+requirement. Per-signal, for all 12 signals from the original audit's own matrix: meaning,
+collection point, null semantics, classification (hard-constraint / ranking-bonus / contextual —
+several signals genuinely are more than one of these depending on which surface reads them, and
+the doc says so explicitly rather than picking one label), and public-display status — plus a
+quick-reference table at the top. Every claim re-verified by a direct read of the real, current
+source specifically for this doc (not taken on the original audit's word alone, even though most
+of the untouched signals — personal interest, category, relationship intention, distance,
+cuisine, business attributes — matched exactly what that same-day audit already found): re-read
+`resolveGatherings()`'s mapped candidate object, `resolveBusinessAvailability()`/
+`resolvePolicyOnlyBusinesses()`'s current bodies, `scoreBusinessOpportunity()`'s real param list,
+`getBrowseMatches()`'s real sort clause, `passesGenderMatch()`'s real mutual-matching branch, and
+the live `party_size_param`/`remaining_capacity` SQL from the P0 item 2 migration — every
+file/line citation in the doc was checked against the actual current line numbers, not
+approximated (one citation was corrected after re-checking, since it had shifted by a few lines
+from this very session's own earlier edit to the same file).
+
+The doc also explicitly restates, rather than silently omits, the two real findings from the
+original audit that were **never in the authorized P0-P2 build order** and remain open: Finding
+8 (`accommodates_party_types` never reaches consumer-facing ranking) and Finding 9
+(`gender_identity`/`interested_in_genders` never displayed to a profile viewer, with no stated
+deliberate decision anywhere in this codebase's history on whether that's intentional) — both
+flagged again explicitly at the end of the doc as real, still-open items needing a human
+decision, not silently resolved either way by writing the doc.
+
+**Not done, same standing gap as everywhere else in this file**: this is a pure documentation
+deliverable, so there's no client/schema change to verify live or via a device pass — the one
+real "verification" this item needed was re-grounding every claim in the current code, which was
+done directly (see above), not skipped.
+
 ### Verification convention, matching every other schema-touching plan in this file
 
 Every SQL change applied to production and verified live with real disposable test data
@@ -541,9 +572,15 @@ ios`. Each numbered item is its own commit, pushed individually as it lands — 
 end — so a mid-session restart never loses more than one item's worth of work, and this
 section's own status notes are updated inline as each lands.
 
-**Status: P0 items 1-3, P1 items 4-6, and P2 items 7-8 are all DONE — check each item's own
-status note above for the full detail on each. P3 item 9 (the Signal Contract doc) is the one
-remaining piece — pick up from its own locked scope note below.**
+**Status: all 9 items (P0 1-3, P1 4-6, P2 7-8, P3 9) are now DONE — check each item's own status
+note above for the full detail on each.** This closes out the whole Universal Signal Remediation
+Pass, exactly per the user's own explicit build authorization at the top of this section — no
+further items were built past what was authorized (Findings 8 and 9 from the original audit
+remain deliberately, explicitly open, restated one more time in item 9's own Signal Contract doc
+rather than silently resolved). Same standing gap repeated throughout this whole pass and this
+whole file: no manual simulator/device run-through of anything built in items 1-8 has happened
+yet — a future session with real device access should work through each item's own "not done"
+note above.
 
 ## Aug 28 2026 — Universal Signal & Recommendation Audit — read-only, no application code
 ## changes; check the status note at the bottom for what's landed
