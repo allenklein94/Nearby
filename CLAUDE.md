@@ -76,6 +76,26 @@ query. `HomeScreen.js`'s ask-box result row shows a real "🔒 Full — Join Wai
 override in place of the normal fit-reason line whenever `isFull` is true, so the honest state
 is visible before the tap.
 
+**Status: DONE.** `resolveGatherings()` (`intentResolver.js`) now returns `capacity`/
+`attendeeCount`/`isFull` on every mapped gathering candidate — zero new query, both fields were
+already fetched by `getNearbyGatherings()`. A full gathering's subtitle now reads
+`"🔒 Full — Join Waitlist (N/M spots taken)"` verbatim matching `GatheringDetailScreen`'s own
+established fullness copy, never a new phrasing invented for this. `HomeScreen.js`'s
+`renderIntentResultItem()` renders that subtitle in `colors.danger` (theme-aware — confirmed
+this screen already uses `useTheme()`, not a static `colors` import, so this doesn't reintroduce
+the dark-mode bug this file has caught once before) instead of the normal muted subtitle color,
+so a full result reads as a real warning, not an ordinary fit-reason line. The result is never
+hidden — a full gathering can still legitimately be the single best match, and tapping it still
+correctly lands on `GatheringDetailScreen`'s own already-correct "🔒 Full"/"JOIN WAITLIST" state,
+per the locked design's own reasoning. Verified via a direct `@babel/core` parse of both touched
+files (clean) and a full `npx expo export --platform ios` (clean, no bundling errors — edits to
+two existing files only, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm a genuinely full gathering surfaced as an ask-box
+result renders the danger-colored "Full — Join Waitlist" subtitle correctly on a real device,
+and that tapping it still lands cleanly on `GatheringDetailScreen`'s own waitlist-join flow.
+
 ### P0 item 2 — business availability party-size feasibility, locked design
 
 Confirmed live (pulled the real, currently-deployed SQL via the Supabase Management API, not

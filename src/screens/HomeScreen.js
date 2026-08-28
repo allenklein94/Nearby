@@ -689,7 +689,14 @@ export default function HomeScreen({ navigation }) {
         />
         <View style={styles.intentResultTextCol}>
           <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
-          {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+          {item.subtitle ? (
+            <Text
+              style={[styles.intentResultSubtitle, item.isFull && { color: colors.danger }]}
+              numberOfLines={1}
+            >
+              {item.subtitle}
+            </Text>
+          ) : null}
         </View>
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </TouchableOpacity>

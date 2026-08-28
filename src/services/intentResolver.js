@@ -33,11 +33,25 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
   const meaningfulWords = extractMeaningfulWords(rawText);
   return relevant.map((gathering) => {
     const { reasons } = getGatheringFitReasons(gathering);
+    // Universal Signal Remediation Pass, P0 item 1 (CLAUDE.md, Aug 28 2026):
+    // capacity/approvedAttendees are already fetched by getNearbyGatherings()
+    // -- this was a pure mapping omission, not a missing query. A full
+    // gathering is never hidden (it can still be the single best match, and
+    // a waitlist spot can open), but the caller can now render an honest
+    // "Full -- Join Waitlist" state on the result card itself instead of
+    // only discovering it one screen later on GatheringDetailScreen.
+    const attendeeCount = gathering.approvedAttendees?.length ?? 0;
+    const isFull = gathering.capacity != null && attendeeCount >= gathering.capacity;
     return {
       type: 'gathering',
       id: gathering.id,
       title: gathering.title,
-      subtitle: reasons[0] ?? null,
+      // Matches GatheringDetailScreen's own established "🔒 Full —
+      // N/M spots taken" copy, not a new visual language invented here.
+      subtitle: isFull ? `🔒 Full — Join Waitlist (${attendeeCount}/${gathering.capacity} spots taken)` : (reasons[0] ?? null),
+      capacity: gathering.capacity ?? null,
+      attendeeCount,
+      isFull,
       score: scoreGatheringForResolver(gathering)
         + titleMentionBonus(gathering.title, meaningfulWords)
         + priceAndPartyBonus(gathering, priceLevel, partyType),
