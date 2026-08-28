@@ -12,6 +12,7 @@ const {
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
+  SCORE_CONFIRMED_AVAILABILITY_FLOOR,
 } = require('./intentResolverScoring');
 
 describe('extractMeaningfulWords', () => {
@@ -173,5 +174,18 @@ describe('scoreGatheringForResolver', () => {
   it('does not add distance points at exactly the 2-mile boundary', () => {
     const gathering = { matchesYourInterests: false, distanceMiles: 2, scheduled_at: '2020-01-01T00:00:00Z' };
     expect(scoreGatheringForResolver(gathering)).toBe(0);
+  });
+});
+
+// Universal Signal Remediation Pass, P0 item 3 (CLAUDE.md, Aug 28 2026):
+// a real regression guard for the cross-tier ranking invariant this
+// constant exists to protect -- resolvePolicyOnlyBusinesses() (the
+// "may be able to help" tier) never awards more than SCORE_CLOSE_DISTANCE,
+// so a confirmed business_availability candidate's own minimum possible
+// score must always exceed it. This test fails loudly if a future edit
+// to either constant quietly reopens the exact bug this floor closed.
+describe('SCORE_CONFIRMED_AVAILABILITY_FLOOR', () => {
+  it('structurally exceeds policy-only businesses\' own real maximum possible score (SCORE_CLOSE_DISTANCE)', () => {
+    expect(SCORE_CONFIRMED_AVAILABILITY_FLOOR).toBeGreaterThan(SCORE_CLOSE_DISTANCE);
   });
 });

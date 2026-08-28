@@ -233,6 +233,27 @@ at all — those were never part of the finding, and the user's own message expl
 distance/cuisine/attributes-style closed-loop signals left alone, not re-architected.
 `resolvePolicyOnlyBusinesses()` itself is untouched.
 
+**Status: DONE.** `SCORE_CONFIRMED_AVAILABILITY_FLOOR` added to `intentResolverScoring.js`
+exactly as designed above (`SCORE_CLOSE_DISTANCE + 1` — a real, derived, self-documenting
+invariant, not a bare magic number). `resolveBusinessAvailability()`'s baseline "confirmed and
+available right now" bonus (previously plain `SCORE_HAPPENING_NOW`, now dropped as an unused
+import from `intentResolver.js` once nothing else in that file referenced it) now awards this new
+floor instead — `resolvePolicyOnlyBusinesses()` itself is completely untouched, matching the
+locked design's own explicit scope boundary. A real regression-guard unit test was added to
+`intentResolverScoring.test.js` (`SCORE_CONFIRMED_AVAILABILITY_FLOOR` must exceed
+`SCORE_CLOSE_DISTANCE`) — this fails loudly if a future edit to either constant ever quietly
+reopens the exact cross-tier violation this floor exists to close, rather than relying on someone
+noticing by inspection. No schema/RPC change needed for this item — pure client-side scoring
+logic, so no live-production verification applies here (nothing server-side changed); verified
+via the full Jest suite (**128/128 passing** — 127 pre-existing + 1 new) and a full `npx expo
+export --platform ios` (clean, no bundling errors — edits to two existing files, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device, that a real scenario with both a
+confirmed-available business and a policy-only business nearby (uncommon at today's real
+production volume — worth constructing a real two-candidate scenario to check) now correctly
+shows the confirmed one first in the ask-box's ranked results.
+
 ### P1 item 4 — dating compatibility ranking, locked design
 
 Not yet read in detail (deferred to execution, matching this file's own "resolve open design

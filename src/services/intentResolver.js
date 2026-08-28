@@ -11,8 +11,8 @@ import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, sea
 import {
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
-  SCORE_HAPPENING_NOW,
   SCORE_OWN_NETWORK,
+  SCORE_CONFIRMED_AVAILABILITY_FLOOR,
   extractMeaningfulWords,
   titleMentionBonus,
   matchesDateWindow,
@@ -238,10 +238,15 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // being null isn't a genuine signal, same reasoning as perks above.
     if (category && row.category && row.category === category) score += SCORE_INTEREST_MATCH;
     if (row.distance_miles != null && row.distance_miles < 2) score += SCORE_CLOSE_DISTANCE;
-    // Eligibility already guarantees ends_at > now(), so any result here
-    // is, by construction, available right now -- a real "happening now"
-    // signal, not a guess.
-    score += SCORE_HAPPENING_NOW;
+    // P0 item 3 (CLAUDE.md, Aug 28 2026): a structural confidence floor,
+    // not a relevance bonus -- eligibility already guarantees ends_at >
+    // now(), so any result here is, by construction, both available right
+    // now AND confirmed (unlike business_policy_match's own "may be able
+    // to help"). Previously plain SCORE_HAPPENING_NOW, whose real minimum
+    // (2) could lose to policy-only's real maximum (SCORE_CLOSE_DISTANCE,
+    // 3) -- a documented cross-tier ranking violation. This floor
+    // structurally exceeds that maximum, closing it for good.
+    score += SCORE_CONFIRMED_AVAILABILITY_FLOOR;
     // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
     // 2026), item 3: a real cuisine/attribute overlap between what the ask
     // implies and this posting's own business is a meaningful ranking

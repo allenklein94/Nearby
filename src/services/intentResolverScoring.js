@@ -30,6 +30,24 @@ export const SCORE_HAPPENING_NOW = 2;
 // present signal -- not a fabricated score.
 export const SCORE_OWN_NETWORK = 6;
 
+// Universal Signal Remediation Pass, P0 item 3 (CLAUDE.md, Aug 28 2026):
+// confirmed business availability is a genuinely different, stronger
+// confidence tier than "may be able to help" (business_policy_match), not
+// just another relevance signal on the same axis -- a business that has
+// actually confirmed a live slot must never lose to one that has only
+// stated a standing willingness, independent of either's relevance score.
+// Defined relative to SCORE_CLOSE_DISTANCE (policy-only's own real
+// maximum possible score, confirmed by reading resolvePolicyOnlyBusinesses
+// directly -- it only ever awards 0 or SCORE_CLOSE_DISTANCE) rather than a
+// bare number, so the invariant is structurally guaranteed, not an
+// assumption a future edit to either constant could quietly break.
+// Deliberately does NOT change confirmed-availability's relationship to
+// gatherings/communities/perks/friend-requests -- those were never part
+// of the cross-tier violation this constant closes, and this resolver's
+// own shared-score-axis design (a strong gathering match legitimately
+// outranking a weak business match) is left completely intact.
+export const SCORE_CONFIRMED_AVAILABILITY_FLOOR = SCORE_CLOSE_DISTANCE + 1;
+
 // Finding 6 (PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md): the
 // 24-tag category system is the resolver's real precision ceiling --
 // "pickleball" collapses to "Sports" with no narrowing anywhere. Expanding
