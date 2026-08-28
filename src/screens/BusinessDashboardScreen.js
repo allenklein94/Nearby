@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
+import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
@@ -867,31 +867,55 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setExperienceModalVisible(true);
   }
 
+  // Decision 6, Phase 2 (CLAUDE.md's Aug 27 2026 plan) -- this is the real
+  // confirmed gap that phase exists to close: this exact save used to go
+  // straight to create/update_business_experience() with zero screening
+  // on title/description. Now routes through screen-business-content
+  // instead -- a LOW result still calls the real underlying RPC (so the
+  // real entitlement cap still applies exactly as before), MEDIUM/
+  // UNCERTAIN holds the change for a real admin decision (nothing
+  // published, the modal closes without reloading the list -- a new
+  // experience genuinely doesn't exist yet, and an edited one's live
+  // version stays exactly as it was), HIGH is rejected outright.
   async function handleSaveExperience() {
     if (!selectedPartner || !expTitleInput.trim()) return;
     setSavingExperience(true);
     try {
-      const payload = {
+      const result = await submitBusinessExperienceForScreening(selectedPartner.id, {
+        experienceId: editingExperienceId ?? null,
         title: expTitleInput.trim(),
         description: expDescriptionInput.trim() || null,
         icon: expIconInput.trim() || null,
         attributes: expAttributesInput,
         priceLevel: expPriceLevelInput,
         partyType: expPartyTypeInput,
-      };
-      if (editingExperienceId) {
-        await updateBusinessExperience(editingExperienceId, { ...payload, active: true });
+      });
+
+      if (result.published) {
+        await loadExperiences(selectedPartner.id);
+        setExperienceModalVisible(false);
+      } else if (result.blocked) {
+        Alert.alert(
+          "Couldn't Publish",
+          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        );
       } else {
-        await createBusinessExperience(selectedPartner.id, { ...payload, aiSuggested: false });
+        setExperienceModalVisible(false);
+        Alert.alert(
+          'Submitted for Review',
+          editingExperienceId
+            ? "Your changes are being reviewed before they go live — this is usually quick. The current version stays visible in the meantime."
+            : "This experience is being reviewed before it goes live — this is usually quick."
+        );
       }
-      await loadExperiences(selectedPartner.id);
-      setExperienceModalVisible(false);
     } catch (e) {
       // Real, server-side defense-in-depth: openExperienceModal()'s own
       // pre-check reads a possibly-stale `entitlements` snapshot, so the
-      // actual RPC-level cap is what genuinely enforces this -- if it
-      // fires anyway, show the same honest upgrade copy instead of the
-      // raw ENTITLEMENT_LIMIT: error string.
+      // actual RPC-level cap (still enforced on the LOW-tier direct write,
+      // and re-checked again at admin-approval time for a held
+      // submission) is what genuinely enforces this -- if it fires
+      // anyway, show the same honest upgrade copy instead of the raw
+      // ENTITLEMENT_LIMIT: error string.
       const entitlementError = parseEntitlementError(e);
       if (entitlementError?.kind === 'limit') {
         showUpgradePlaceholder(entitlementError.feature);

@@ -20,6 +20,16 @@ const RISK_LABELS = {
   uncertain: 'Uncertain',
 };
 
+// Decision 6, Phase 2 -- Signature Experiences join business_profile as a
+// real screened target_type. Every other value in the schema's own CHECK
+// constraint (offer/availability/update/offer_response) is still a real,
+// unattempted future phase -- falls back to the raw value, matching this
+// screen's own pre-existing fallback for an unrecognized value.
+const TARGET_TYPE_LABELS = {
+  business_profile: 'Business profile edit',
+  experience: 'Signature Experience',
+};
+
 const CATEGORY_LABELS = {
   illegal_drugs: 'Illegal drugs',
   weapons: 'Weapons',
@@ -101,9 +111,12 @@ export default function AdminContentReviewScreen() {
                   {RISK_LABELS[item.risk_tier] ?? item.risk_tier}
                 </Text>
               </View>
-              <Text style={styles.targetType}>{item.target_type === 'business_profile' ? 'Business profile edit' : item.target_type}</Text>
+              <Text style={styles.targetType}>
+                {TARGET_TYPE_LABELS[item.target_type] ?? item.target_type}
+                {item.target_type === 'experience' ? (snapshot.experienceId ? ' (edit)' : ' (new)') : ''}
+              </Text>
 
-              {snapshot.name ? <Text style={styles.snapshotName}>{snapshot.name}</Text> : null}
+              {(snapshot.name || snapshot.title) ? <Text style={styles.snapshotName}>{snapshot.name ?? snapshot.title}</Text> : null}
               {snapshot.description ? <Text style={styles.snapshotBody}>{snapshot.description}</Text> : null}
               {snapshot.differentiator ? <Text style={styles.snapshotBody}>"{snapshot.differentiator}"</Text> : null}
 

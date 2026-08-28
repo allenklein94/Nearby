@@ -658,6 +658,52 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
   return result;
 }
 
+// Decision 6, Phase 2 (CLAUDE.md's Aug 27 2026 plan) -- the same real
+// content-screening path, applied to Signature Experiences.
+// experienceId: null when creating a genuinely new experience, or the
+// real existing row's id when editing one -- both route through the
+// identical shape, the write just targets create_business_experience()
+// vs. update_business_experience() server-side depending on which.
+// Deliberately NOT used by handleKeepSuggestion() (a kept suggestion's
+// title/description are deterministically derived, never owner-typed
+// free text) or handleToggleExperienceActive() (only flips `active`,
+// carries the already-published fields forward unchanged) -- neither
+// introduces new unscreened content.
+export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType }) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      partnerId,
+      targetType: 'experience',
+      experienceId: experienceId ?? null,
+      title,
+      description: description ?? null,
+      icon: icon ?? null,
+      attributes: attributes ?? [],
+      priceLevel: priceLevel ?? null,
+      partyType: partyType ?? null,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) {
+    // The real ENTITLEMENT_LIMIT:signature_experiences string (when the
+    // RPC's own cap check fires on a LOW-tier direct write) surfaces here
+    // un-mangled -- parseEntitlementError() already recognizes it, no new
+    // error shape introduced by routing through screening.
+    throw new Error(result?.error || 'Could not save your changes right now.');
+  }
+  return result;
+}
+
 export async function getBusinessProfile(partnerId) {
   const { data, error } = await supabase.from('brand_partners').select('*').eq('id', partnerId).single();
   if (error) {

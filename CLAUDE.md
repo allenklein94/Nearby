@@ -252,11 +252,10 @@ everywhere else in this file: no manual simulator/device run-through is possible
 sandboxed environment — flag it per phase rather than silently assume clean.
 
 **Status: Decisions 7 and 5 are both DONE, build-wise. Decision 6 (Business Trust & Safety) is
-now underway — Phase 1 (real schema + a new classification Edge Function + real-time
-enforcement on the single confirmed largest gap, `business_profile`, + a new admin Content
-Review Queue) is DONE, build-wise, applied and verified live. The rest of Decision 6 (the other
-five integration points, image screening, the periodic re-sweep job) remains real, locked, not
-yet built — see Phase 1's own status note for the exact remaining scope.**
+now underway — Phase 1 (`business_profile`) and Phase 2 (Signature Experiences) are both DONE,
+build-wise, applied and verified live. The rest of Decision 6 (offer/availability/update/
+offer_response, image screening, the periodic re-sweep job) remains real, locked, not yet
+built — see Phase 1's and Phase 2's own status notes for the exact remaining scope.**
 
 **Decision 5 — DONE.** Built exactly to the locked design above, no schema change, no new Edge
 Function — reused the three already-proven mechanisms named in the plan. Factored a new,
@@ -510,6 +509,123 @@ funded: the full save-profile flow genuinely publishes a clean edit immediately,
 a flagged edit with the real "Submitted for Review" message and no local-state change, and that
 the new admin Content Review Queue screen renders and its Approve/Deny actions behave correctly
 end-to-end in the running app, not just via direct RPC calls.
+
+**Decision 6, Phase 2 — DONE, build-wise, applied to production, and verified live.** Closes
+one of the five real integration points Phase 1 explicitly left open: Signature Experiences
+(`business_experiences`) — `handleSaveExperience()` (title/description) had zero
+`checkTextModeration` calls anywhere, the exact same shape of gap `business_profile` had before
+Phase 1. Picked up after a codespace restart interrupted the session mid-verification — on
+resume, `git status` showed the migration (`20260907_business_content_screening_experience.sql`)
+and all four client/Edge Function edits already fully written and uncommitted, and the migration
+and the Edge Function deploy were both already confirmed live in production (checked directly,
+not re-applied/re-deployed blind) — only the live-verification pass and its own test-data
+cleanup were still in flight when the restart hit. Found and deleted the leftover fixtures from
+that interrupted pass (2 disposable `brand_partners` rows, 1 disposable `profiles` row, 1
+disposable `auth.users` row — no `business_experiences`/`business_content_screening_results`
+rows were left behind, so that half of cleanup had already finished before the restart) before
+doing anything else.
+
+**No new table/column needed** — `business_content_screening_results.target_type`'s CHECK
+constraint already included `'experience'` from Phase 1's own general schema (confirmed live:
+`CHECK ((target_type = ANY (ARRAY['business_profile'::text, 'offer'::text, 'experience'::text,
+'availability'::text, 'update'::text, 'offer_response'::text])))`), and `target_id` (nullable
+uuid) already fits an experience row's own id perfectly (null for a genuinely new experience,
+real for an edit). `admin_review_business_content_screening()` gained one new
+`target_type = 'experience'` branch (pulled the **live** function body fresh via the Management
+API before editing — every line of the existing `business_profile` branch and the closing
+status update is byte-for-byte unchanged) — a raw table write on approve, same reasoning
+`business_profile`'s own branch already established: at review time the caller is the *admin*,
+not the business owner, so `create_business_experience()`/`update_business_experience()`'s own
+internal `auth.uid() = managed_partner_id` ownership check would incorrectly reject the admin;
+admin authority is already established once, at the top of the function, via `check_is_admin()`,
+and the raw write relies on `business_experiences`' own real CHECK constraints as the same
+schema-level backstop `business_profile`'s raw write already relies on `brand_partners`' CHECK
+constraints for. **One real gap Phase 1 didn't have to worry about, closed here**:
+`create_business_experience()` enforces a real, live entitlement cap (`signature_experiences`,
+Business Intelligence Phase 8) on every direct LOW-tier create — a raw `INSERT` at admin-approval
+time would otherwise silently bypass that cap for a MEDIUM/UNCERTAIN submission. Re-checked here
+too, for a genuinely new experience only (`experienceId` null) — editing an existing one never
+changes the count, so no re-check is needed there.
+
+The `screen-business-content` Edge Function was refactored to share one `classifyContent()`
+helper across both target types (the real Anthropic call + parse/re-validate step, unchanged in
+substance from Phase 1, just no longer duplicated) and gained a real `experience` branch: title
+(80 chars)/description (200 chars) are the real free text sent to the classifier — `icon` (a
+plain 4-character-capped emoji field) and `attributes`/`priceLevel`/`partyType` (constrained-
+vocabulary chip picks, re-validated against the same real CHECK-constraint vocabularies
+`create_business_experience()`/`update_business_experience()` already enforce) are carried
+through in the audit snapshot but not sent to the model, matching Phase 1's own category/
+attributes/cuisine treatment exactly. `experienceId` null routes a LOW result through
+`create_business_experience()` (so the real entitlement cap still applies exactly as before);
+`experienceId` set routes it through `update_business_experience()`, with a defense-in-depth
+ownership check reading the target experience's own real `partner_id` first and rejecting a
+mismatch with a 404 before ever screening or logging it.
+
+**Client**: new `submitBusinessExperienceForScreening()` in `services/brandOffers.js`, same
+bearer-token-fetch shape `submitBusinessProfileForScreening()` already established.
+`BusinessDashboardScreen.js`'s `handleSaveExperience()` now routes through it instead of calling
+`create_business_experience()`/`update_business_experience()` directly — three real, honest UI
+branches matching `handleSaveProfile()`'s own established pattern: `published` → the same save
+UX as before (list reloads, modal closes); `blocked` (HIGH) → a clear "Couldn't Publish" alert,
+nothing saved; neither → "Submitted for Review," the modal closes without reloading the
+experiences list (a new experience genuinely doesn't exist yet; an edited one's live version
+stays exactly as it was). **Deliberately not used by `handleKeepSuggestion()`** (a kept
+suggestion's title/description are deterministically derived from a pure function, never
+owner-typed free text — no new unscreened content, same reasoning Phase 1 used to exclude the AI
+category-suggestion confirm and Teach Nearby confirm) **or `handleToggleExperienceActive()`**
+(only flips `active`, carries the already-published fields forward unchanged). `AdminContentReviewScreen.js`
+gained a `TARGET_TYPE_LABELS` map (every other real value — offer/availability/update/
+offer_response — is still a real, unattempted future phase, falling back to the raw value,
+matching this screen's own pre-existing fallback) plus a `(new)`/`(edit)` suffix on an experience
+row and a `snapshot.title` fallback alongside the existing `snapshot.name` for the preview line.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), with 7 real assertions against
+real disposable test data (two test partners, both `basic` tier — this session's own pass, not
+inferred from the leftover fixtures), not just re-confirmed as already applied: a genuinely-new
+experience approved via `admin_review_business_content_screening()` correctly created a real
+`business_experiences` row with every field intact; a follow-up edit (a second screening row
+naming the same real `experienceId`) correctly **updated** that same row rather than creating a
+second one (row count stayed at 1, title/attributes changed); a deliberately mismatched screening
+row (`partner_id` = Partner B, but `content_snapshot.experienceId` pointing at Partner A's real
+experience — simulating the "hypothetical data-integrity mismatch" the migration's own comment
+names) correctly **did not raise and did not mutate** Partner A's row, proving the defense-in-depth
+`WHERE ... and partner_id = v_row.partner_id` guard silently closes the gap rather than erroring
+or corrupting data, and the screening row still correctly flipped to `approved`; bringing a real
+test partner to its exact `basic`-tier cap of 3 experiences and then approving a genuinely-new one
+correctly **raised `ENTITLEMENT_LIMIT:signature_experiences`**, and the whole transaction rolled
+back cleanly (the screening row's `review_outcome` stayed `null`, no 4th experience was created) —
+the real gap this phase's own migration exists to close, proven, not just present in the SQL text;
+the double-review guard correctly rejected re-approving an already-reviewed row; a genuine
+non-admin (`Claude`) was correctly rejected reviewing anything at all; and
+`admin_get_pending_content_screenings()` (the existing, unmodified Phase 1 admin-queue RPC)
+correctly surfaced exactly the one still-pending `experience`-type row and none of the
+already-approved ones, confirming Phase 2 integrates cleanly with Phase 1's own admin queue with
+zero changes needed there. All test rows (2 `brand_partners`, 3 `business_experiences`, 4
+`business_content_screening_results`) deleted afterward — confirmed production back to its exact
+pre-test baseline (1 real partner, 4 real profiles, 0 experiences, 0 screening rows).
+
+**Verified via a real from-scratch migration replay** covering the full, now-102-file
+`supabase/migrations/` folder: pulled the already-cached `supabase/postgres:15.1.0.147` Docker
+image, waited for its own real `healthy` health-check status, dropped and recreated a truly empty
+`public` schema, patched the two known image-version gaps onto the test container only
+(`auth.users.phone`, `storage.buckets.public`), created `pg_cron`/`pg_trgm` as `supabase_admin`,
+then ran the full folder in filename order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every
+file**, `admin_review_business_content_screening()`'s new `experience` branch confirmed present
+in the freshly-rebuilt database. Container removed.
+
+Client-side verified via a full `npx expo export --platform ios` (clean, no bundling errors —
+edits to four existing files, no new client files this phase).
+
+**Explicitly not done this phase, restated so nothing here reads as silently dropped**: the
+remaining four integration points (offer/availability/update/offer_response) — real, separate
+future phases, not attempted. Image screening and the periodic re-sweep job — unchanged from
+Phase 1's own disclosure, still not started.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the Signature Experiences save flow's three UI
+branches (published/blocked/submitted-for-review) all render correctly on a real device, and
+that the admin Content Review Queue correctly renders an `experience`-type row (including its
+new `(new)`/`(edit)` suffix and `snapshot.title` fallback) end-to-end in the running app.
 
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,
