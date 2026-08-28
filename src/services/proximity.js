@@ -404,5 +404,24 @@ export async function getBrowseMatches(offset = 0) {
         sharedInterests,
         compatibilityScore,
       };
-    });
+    })
+    // Universal Signal Remediation Pass, P1 item 4 (CLAUDE.md, Aug 28
+    // 2026): compatibilityScore is real, already computed for every
+    // candidate above, already shown as a badge, already usable as an
+    // optional filter -- but this query previously had no ORDER BY at
+    // all, so it never actually influenced who a user saw first. Sorted
+    // here (within this fetched page, descending) rather than the
+    // fuller compatibility+recency+distance+activity blend discussed --
+    // this function's own real, fetched row shape has no recency/
+    // distance/activity signal to blend in today (confirmed: `profiles`
+    // has no last-active/last-seen column at all, and Browse is
+    // deliberately not proximity-bound, see this function's own header
+    // comment), so blending in a fabricated one would violate this
+    // app's own standing "no invented numbers" convention. Compatibility
+    // alone is the one real signal genuinely available here, and now
+    // genuinely drives order -- closing the actual bug the audit found.
+    // A real multi-signal blend, if ever built, needs new data this
+    // query doesn't collect yet, and real weights "tested rather than
+    // guessed" per the user's own words -- not invented in this pass.
+    .sort((a, b) => (b.compatibilityScore ?? 0) - (a.compatibilityScore ?? 0));
 }

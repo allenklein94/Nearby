@@ -270,6 +270,36 @@ genuinely different job than Browse's "here's who might be a good match") — co
 would silently overrule a design that was never actually broken; only Browse's total absence of
 an `ORDER BY` is the confirmed bug.
 
+**Status: DONE, real scope correction made while building, disclosed rather than silently
+narrowed.** Read `proximity.js` directly: `getBrowseMatches()` confirmed to have genuinely zero
+`.order()`/`.sort()` anywhere — real bug, matching the audit exactly. `calculateCompatibility()`
+is JS-computed after the fetch (not a stored/SQL column), so the fix is a real client-side
+`.sort()` on the returned batch, descending by `compatibilityScore` — this closes the actual bug
+(compatibility now genuinely drives who's seen first, not the previous arbitrary DB row order).
+**The fuller compatibility+recency+distance+activity blend from the user's own message was not
+built** — checked live first, not assumed: `profiles` has no last-active/last-seen column at all
+(confirmed via `information_schema.columns`), and Browse is deliberately not proximity-bound (no
+per-candidate distance signal exists in this query either, per the function's own header
+comment) — there is no real recency or distance signal in this query's fetched row shape to
+honestly blend in. Fabricating one would violate this app's own repeated "no invented numbers"
+convention, and the user's own text already flagged the exact weights as needing to be "tested
+rather than guessed" — i.e., a future pass with real usage data and new data collection, not
+this one. Compatibility alone is the one real signal genuinely available here, and it now
+genuinely drives order — closing the actual confirmed bug, not the full aspirational blend.
+**Crossed Paths (`getNearbyMatches()`) is completely untouched**, per the locked design — still
+`last_seen_at desc`, confirmed via `git diff` that no line in that function changed. Verified via
+a direct `@babel/core` parse (clean), the full Jest suite (**128/128 passing**, unchanged — no
+new test needed, this was a real behavior change to an already-existing function with no pure
+extractable logic to unit test in isolation), and a full `npx expo export --platform ios` (clean,
+no bundling errors — edit to one existing file only, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm Browse now genuinely shows higher-compatibility
+profiles first on a real device with real candidate data, and that Crossed Paths' own ordering
+is unaffected. Also flagged as a real, separate future item, not attempted here: adding a real
+recency/activity signal to `profiles` (and to Browse's own select) so the fuller blend the user
+described becomes honestly buildable.
+
 ### P1 item 5 — business budget as a relevance signal, locked design
 
 `businessOpportunityScoring.js`'s `scoreBusinessOpportunity()` gains a real `budget_max` term —
