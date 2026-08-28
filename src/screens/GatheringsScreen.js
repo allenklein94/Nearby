@@ -31,6 +31,8 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { getSocialForecast } from '../services/homeDashboard';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -182,6 +184,13 @@ export default function GatheringsScreen({ navigation, route }) {
   const [loadingGatheringSearch, setLoadingGatheringSearch] = useState(false);
   const gatheringSearchRequestId = useRef(0);
   const [userLocation, setUserLocation] = useState(null);
+  // P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
+  // closes the audit's own confirmed gap -- weather never reached this
+  // screen's full browse/filter surface at all. Fire-and-forget, never
+  // awaited, matching DiscoverHubScreen.js's own established pattern
+  // exactly (supplementary ranking context, never something the rest of
+  // the screen should wait on).
+  const [weatherSignal, setWeatherSignal] = useState(null);
   const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const [mapDeals, setMapDeals] = useState([]);
   const [mapStories, setMapStories] = useState([]);
@@ -282,7 +291,9 @@ export default function GatheringsScreen({ navigation, route }) {
     if (status === 'granted') {
       const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
       if (location) {
-        setUserLocation({ latitude: location.coords.latitude, longitude: location.coords.longitude });
+        const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
+        setUserLocation(coords);
+        getSocialForecast(coords.latitude, coords.longitude).then(setWeatherSignal).catch(() => {});
       }
     }
 
@@ -564,6 +575,28 @@ export default function GatheringsScreen({ navigation, route }) {
   // trending, date) still apply on top either way — search only replaces
   // the old client-side title/description text match, not the whole funnel.
   const isSearchingGatherings = searchQuery.trim().length >= 2;
+  // P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
+  // real, disclosed weather-aware tiebreak for this screen's main browse
+  // list -- closes the audit's own confirmed gap ("reaches neither...
+  // the full GatheringsScreen.js browse/filter screen at all"). Reuses
+  // the one shared isWeatherIndoorBiased/isWeatherOutdoorBiased
+  // definition (utils/weatherBias.js), not a third invented rule.
+  // Deliberately only a tiebreak within the already-filtered set, and
+  // only when the For You priority sort below isn't already active, so
+  // the two ranking signals never compete against each other.
+  const weatherFits = (g) => {
+    if (!weatherSignal) return false;
+    if (isWeatherIndoorBiased(weatherSignal)) return isIndoorCategory(g.interest_tag);
+    if (isWeatherOutdoorBiased(weatherSignal)) return isOutdoorCategory(g.interest_tag);
+    return false;
+  };
+  const weatherBanner = !forYouActive && weatherSignal
+    ? (isWeatherIndoorBiased(weatherSignal)
+        ? '🌧️ Weather coming in — showing indoor options first'
+        : isWeatherOutdoorBiased(weatherSignal)
+          ? '☀️ Great weather — showing outdoor options first'
+          : null)
+    : null;
   const filteredNearby = (isSearchingGatherings ? searchedNearby : nearby)
     .filter((g) => forYouActive ? topCategories.includes(g.interest_tag) : (!interestFilter || g.interest_tag === interestFilter))
     .filter((g) => !trendingActive || trendingIds.includes(g.id))
@@ -572,10 +605,12 @@ export default function GatheringsScreen({ navigation, route }) {
     .filter((g) => !priceFilter || g.price_level === priceFilter)
     .filter((g) => !partyTypeFilter || g.party_type === partyTypeFilter)
     .sort((a, b) => {
-      if (!forYouActive) return 0;
-      const aRank = topCategories.indexOf(a.interest_tag);
-      const bRank = topCategories.indexOf(b.interest_tag);
-      return aRank - bRank;
+      if (forYouActive) {
+        const aRank = topCategories.indexOf(a.interest_tag);
+        const bRank = topCategories.indexOf(b.interest_tag);
+        return aRank - bRank;
+      }
+      return Number(weatherFits(b)) - Number(weatherFits(a));
     });
 
   return (
@@ -984,6 +1019,8 @@ export default function GatheringsScreen({ navigation, route }) {
           ListHeaderComponent={
             forYouActive ? (
               <Text style={styles.forYouHint}>Based on gatherings you've attended or shown interest in before.</Text>
+            ) : weatherBanner ? (
+              <Text style={styles.forYouHint}>{weatherBanner}</Text>
             ) : null
           }
           ListEmptyComponent={

@@ -3,6 +3,9 @@ import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers } from './brandOffers';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses } from './businessFulfillment';
+import { getSocialForecast } from './homeDashboard';
+import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 // 10/10 roadmap Part 8: these five pure helpers used to be defined
 // locally in this file -- moved verbatim (no behavior change) to
 // intentResolverScoring.js so they're directly unit-testable without
@@ -12,6 +15,7 @@ import {
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
   SCORE_OWN_NETWORK,
+  SCORE_HAPPENING_NOW,
   SCORE_CONFIRMED_AVAILABILITY_FLOOR,
   extractMeaningfulWords,
   titleMentionBonus,
@@ -24,13 +28,26 @@ import {
 
 const RESULT_CAP = 4;
 
-async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType) {
+// P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
+// weatherPromise is a real, already-in-flight promise (kicked off by
+// resolveIntent right after location resolves, in parallel with this
+// function's own getNearbyGatherings() call and every other resolver
+// branch) -- never awaited before this function starts its own work, so
+// wiring weather into the ask box doesn't add sequential latency to
+// every submission. Closes the audit's own confirmed gap ("reaches
+// neither the ask box... at all") using the one shared
+// isWeatherIndoorBiased/isWeatherOutdoorBiased definition
+// (utils/weatherBias.js) -- the identical real signal and weight
+// (SCORE_HAPPENING_NOW) homeRecommendations.js's own weatherAdjustment()
+// already uses, not a second invented rule.
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null) {
   const nearby = await getNearbyGatherings('wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
     return matchesDateWindow(g.scheduled_at, dateWindow);
   });
   const meaningfulWords = extractMeaningfulWords(rawText);
+  const weather = weatherPromise ? await weatherPromise : null;
   return relevant.map((gathering) => {
     const { reasons } = getGatheringFitReasons(gathering);
     // Universal Signal Remediation Pass, P0 item 1 (CLAUDE.md, Aug 28 2026):
@@ -42,6 +59,16 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     // only discovering it one screen later on GatheringDetailScreen.
     const attendeeCount = gathering.approvedAttendees?.length ?? 0;
     const isFull = gathering.capacity != null && attendeeCount >= gathering.capacity;
+    let weatherBonus = 0;
+    if (weather) {
+      if (isWeatherIndoorBiased(weather) && isIndoorCategory(gathering.interest_tag)) {
+        weatherBonus = SCORE_HAPPENING_NOW;
+        reasons.push('A good indoor option with weather coming in');
+      } else if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(gathering.interest_tag)) {
+        weatherBonus = SCORE_HAPPENING_NOW;
+        reasons.push('Great weather for this');
+      }
+    }
     return {
       type: 'gathering',
       id: gathering.id,
@@ -54,7 +81,8 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       isFull,
       score: scoreGatheringForResolver(gathering)
         + titleMentionBonus(gathering.title, meaningfulWords)
-        + priceAndPartyBonus(gathering, priceLevel, partyType),
+        + priceAndPartyBonus(gathering, priceLevel, partyType)
+        + weatherBonus,
     };
   });
 }
@@ -371,8 +399,20 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     console.error('resolveIntent location error', e);
   }
 
+  // Kicked off here, right alongside the parallel resolver branches below
+  // -- never awaited on its own before they start, so a real weather
+  // fetch (getSocialForecast's own ~2s round trip) never adds sequential
+  // latency to an ask-box submission. resolveGatherings awaits this
+  // itself, only once it's already done its own network work, by which
+  // point the weather fetch has had the same real head start as every
+  // other branch. A failed/absent fetch degrades to no weather signal,
+  // never a broken submission.
+  const weatherPromise = location
+    ? getSocialForecast(location.latitude, location.longitude).catch(() => null)
+    : Promise.resolve(null);
+
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),

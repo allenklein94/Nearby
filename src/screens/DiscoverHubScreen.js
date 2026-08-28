@@ -14,6 +14,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -365,16 +366,26 @@ export default function DiscoverHubScreen({ navigation }) {
   const filteredOffers = isSearching ? searchedOffers : offers;
 
   // Weather-aware re-ranking (CLAUDE.md, 14-item UX review item 9) --
-  // reuses the exact same real forecast_label bucketing and
-  // isIndoorCategory/isOutdoorCategory map Home's own weather card
-  // already established, applied here as a real scoring bonus (not just
-  // a caption) using WEATHER_BONUS (SCORE_HAPPENING_NOW's own weight,
-  // not a new invented number). Only ever applied once a real signal
-  // exists -- weatherSignal stays null until the background fetch
-  // resolves, and getSocialForecast() already returns null for the
-  // ambiguous 'Good' case, so no bonus/banner fires on a weak signal.
-  const weatherIndoorBias = weatherSignal?.forecast_label === 'Quiet';
-  const weatherOutdoorBias = weatherSignal?.forecast_label === 'Excellent';
+  // reuses isIndoorCategory/isOutdoorCategory (Home's own weather card
+  // map) applied here as a real scoring bonus (not just a caption) using
+  // WEATHER_BONUS (SCORE_HAPPENING_NOW's own weight, not a new invented
+  // number). Only ever applied once a real signal exists -- weatherSignal
+  // stays null until the background fetch resolves, and getSocialForecast()
+  // already returns null for the ambiguous 'Good' case, so no bonus/banner
+  // fires on a weak signal.
+  //
+  // P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
+  // the bias check itself is now the one shared isWeatherIndoorBiased/
+  // isWeatherOutdoorBiased (utils/weatherBias.js) instead of this
+  // screen's own forecast_label-only definition -- a real, disclosed
+  // widening: this now also picks up a genuine forecast-derived risk
+  // (rain_risk/heat_risk/cold_risk) or a genuinely favorable forecast
+  // (outdoor_favorable), not just the current-conditions label, closing
+  // the exact inconsistency the audit found against Home's own weather
+  // card. weatherSignal already carries every field these checks read --
+  // no new fetch.
+  const weatherIndoorBias = isWeatherIndoorBiased(weatherSignal);
+  const weatherOutdoorBias = isWeatherOutdoorBiased(weatherSignal);
   const weatherBanner = weatherIndoorBias
     ? '🌧️ Rain expected — showing indoor options first'
     : weatherOutdoorBias

@@ -11,6 +11,7 @@
 // universal/AI-driven matching algorithm" constraint).
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 
 export const MAX_HOME_RECOMMENDATIONS = 5;
 
@@ -29,13 +30,20 @@ function isToday(iso) {
 // outdoor (constants/gatheringIndoorOutdoor.js's own deliberately
 // conservative map) — a genuinely ambiguous category (Sports, Music,
 // Fitness, ...) never gets a weather-driven bonus either way.
+//
+// P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md, Aug 28 2026):
+// now reuses the one shared isWeatherIndoorBiased/isWeatherOutdoorBiased
+// definition (utils/weatherBias.js) instead of this file's own local
+// forecast-fields-only check — a real, disclosed widening: this bonus now
+// also fires on a genuinely bad forecast_label ('Quiet') right now, not
+// just a bad forecast for later today, closing the exact inconsistency
+// the audit found between this file and HomeScreen's own weather card.
 function weatherAdjustment(interestTag, weather) {
   if (!weather) return null;
-  const forecastRisk = weather.rain_risk === 'high' || weather.heat_risk === true || weather.cold_risk === true;
-  if (forecastRisk && isIndoorCategory(interestTag)) {
+  if (isWeatherIndoorBiased(weather) && isIndoorCategory(interestTag)) {
     return { points: SCORE_HAPPENING_NOW, reason: 'A good indoor option with weather coming in' };
   }
-  if (weather.outdoor_favorable === true && isOutdoorCategory(interestTag)) {
+  if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(interestTag)) {
     return { points: SCORE_HAPPENING_NOW, reason: 'Great weather for this' };
   }
   return null;

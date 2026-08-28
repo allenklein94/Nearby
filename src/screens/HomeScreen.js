@@ -26,6 +26,7 @@ import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime } from '../utils/timeContext';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -1350,18 +1351,21 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
             )}
             {socialForecast && (() => {
-              // Broadened beyond current-conditions 'Quiet' to also cover a
-              // real forecast-derived risk later today (rain_risk/heat_risk/
-              // cold_risk — the new signals get_weather_result's forecast
-              // leg computes) — weather should power a real recommendation
-              // from the actual forecast, not just describe right now.
-              // outdoor_favorable is the symmetric positive case: a
-              // genuinely good day is a real reason to actively suggest an
-              // outdoor gathering, not just avoid a warning. The two are
-              // mutually exclusive so the card never suggests both at once.
-              const forecastRisk = socialForecast.rain_risk === 'high' || socialForecast.heat_risk || socialForecast.cold_risk;
-              const showIndoor = (socialForecast.forecast_label === 'Quiet' || forecastRisk) && dashboard?.indoorGatheringsToday?.length > 0;
-              const showOutdoor = !showIndoor && socialForecast.outdoor_favorable === true && dashboard?.outdoorGatheringsToday?.length > 0;
+              // P2 item 7 (Universal Signal Remediation Pass, CLAUDE.md,
+              // Aug 28 2026): this card's own indoor/outdoor bias check --
+              // previously its own local definition, now the one shared
+              // isWeatherIndoorBiased/isWeatherOutdoorBiased (utils/
+              // weatherBias.js), which was itself modeled on this exact
+              // block since it was already the most complete of the three
+              // independent versions the audit found. showOutdoor now also
+              // fires on a genuinely 'Excellent' forecast_label right now,
+              // not just a favorable forecast for later -- a real,
+              // disclosed widening, symmetric to this block's own existing
+              // "broaden beyond current-conditions" reasoning for the
+              // indoor case. The two stay mutually exclusive so the card
+              // never suggests both at once.
+              const showIndoor = isWeatherIndoorBiased(socialForecast) && dashboard?.indoorGatheringsToday?.length > 0;
+              const showOutdoor = isWeatherOutdoorBiased(socialForecast) && dashboard?.outdoorGatheringsToday?.length > 0;
               return (
                 <View style={styles.forecastCard}>
                   <View style={styles.forecastLabelRow}>
