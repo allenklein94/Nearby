@@ -246,12 +246,44 @@ device sizes" ask — this sandbox has never had simulator/device access; where 
 needs a real device to verify, say so plainly (🟡 NOT VERIFIABLE FROM THIS SANDBOX, matching the
 verdict vocabulary the Aug 24 2026 Taxonomy audit already established) rather than guessing.
 
-### Status: EXECUTING — explicit go-ahead given directly by the user Aug 28 2026 (a later
-### session). Pass A (systems 1-4) and Pass B (systems 5-7) dispatched as two capped concurrent
-### forks. Check `PRODUCT_AUDIT/` for `FULL_AUDIT_PASS_A_2026-08-28.md`/`_PASS_B_2026-08-28.md`
-### (working files, folded into and deleted once the final deliverable lands, matching this
-### file's own established "one file, not five" convention) and this note's own next update for
-### progress if a restart hits mid-audit.
+### Status: DONE. Executed after an explicit go-ahead given directly by the user (a later
+### session than the one that wrote this plan). Pass A (systems 1-4) and Pass B (systems 5-7)
+### each ran as their own read-only research pass — Pass A's first attempt (a fork) got confused
+### by inherited context and never wrote its file; relaunched as a fresh, fully self-contained
+### agent, which then completed correctly. Direct synthesis (system 8, the 14-signal ×
+### 7-surface ranking table, the six scenario traces, the 11-transition test, severity
+### classification, and the final scorecard + two top-10 lists) was done directly, not
+### delegated, and surfaced two real, previously-undocumented findings on its own: (1) gathering
+### fullness/capacity is honestly surfaced on exactly one of at least four surfaces that
+### recommend/rank/browse gatherings — Home's own "Nearby Right Now," Discover's Recommended/
+### Trending, and `GatheringsScreen`'s own main browse cards all still silently rank/show a full
+### gathering with zero indication before the tap, even though the app already built and locked
+### the opposite principle once, just never generalized it past the one ask-box result panel;
+### (2) a request naming a specific day of the week (e.g. "Friday" — the literal wording of the
+### plan's own locked Scenario B) cannot be represented anywhere in the Ask Nearby Businesses
+### flow — `create-assistant`'s own `VALID_DATE_WINDOWS` has no bucket for a named weekday
+### beyond tomorrow, and `AskBusinessScreen.js` has no date-picker fallback at all (unlike
+### `CreateGatheringScreen.js`, which has a real one) — so this entire class of extremely common
+### real-world ask silently degrades to the wrong bucket or no date constraint, both for the AI
+### classifier and for manual correction. Both were scored 🔴 P0 in the final deliverable, the
+### only two items at that severity.
+###
+### **The single deliverable — `PRODUCT_AUDIT/FULL_END_TO_END_PRODUCT_COHERENCE_AUDIT_2026-08-28.md`
+### — is self-contained** (scorecard, two ranked top-10 lists, full per-system findings for all
+### 10 systems, the full ranking table, all 6 scenario traces, all 11 transitions, and severity
+### classification of every finding) and was handed directly to the user for external (ChatGPT)
+### review, matching this file's own established `UI_IA_REVIEW_FOR_EXTERNAL_AI`/`CONSOLIDATED_AUDIT`
+### precedent. The three intermediate working files (`FULL_AUDIT_PASS_A_2026-08-28.md`/
+### `_PASS_B_2026-08-28.md`/`FULL_AUDIT_SYNTHESIS_NOTES_2026-08-28.md`) were folded in and
+### deleted, matching this repo's own "one file, not five" convention.
+###
+### Headline scorecard: Navigation 7 · Visual 8 · Taxonomy 7 · Preference 6 · Filter 6 ·
+### Matching 6 · Ranking 5 · Context awareness 6 · Business↔consumer integration 5 ·
+### End-to-end actionability 6 — out of 10 each, full reasoning per number in the deliverable.
+###
+### **Per this whole audit's own hard boundary: nothing above has been built or fixed.** Every
+### finding in the deliverable — including the two 🔴 P0 items — is a real, ready-to-build
+### recommendation for a future, separately-authorized pass, not something acted on here.
 
 ## Aug 28 2026 — Universal Signal Remediation Pass (P0/P1/P2 build) — PLAN LOCKED, executing
 ## below; check each item's own status note for what's landed
