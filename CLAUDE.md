@@ -800,6 +800,239 @@ Decision 6, Phase 3 is now fully DONE — schema/RPC, Edge Function, and client 
 applied, verified live, and replayed clean from scratch. Image screening and the periodic
 re-sweep job remain the two real, locked, not-yet-built pieces of Decision 6 as a whole.
 
+### Decision 6, Phase 4 — image screening (`logo_url`) — PLAN LOCKED, executing now
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — check `git status`/`git log` and this section's own status note for what's
+actually landed if a restart hits mid-build. Closes the first of the two real, locked-but-
+unbuilt pieces of Decision 6 named above.
+
+**Real, confirmed scope**: `brand_partners.logo_url` — a plain text field the owner pastes a
+real, already-hosted image URL into (`BusinessDashboardScreen.js`'s Edit Profile modal,
+confirmed via direct read — no upload/storage-bucket flow exists for this field, it's a raw
+`TextInput`). This is already carried through `submitBusinessProfileForScreening()`'s existing
+text-screening call (Phase 1) as part of the `content_snapshot`, but its actual pixel content
+has never been visually inspected — only the accompanying name/description/differentiator text
+is. Matches the locked design's own explicit framing verbatim: "logo_url and any business-linked
+image content need a genuinely different capability (vision-model classification, not the
+existing text-only moderate-text function)."
+
+**Deliberately deferred, not silently folded in**: business-hosted gathering cover photos
+(`gatherings.cover_photo_path`, only relevant when `hosting_partner_id` is set) and Business
+Moments (`stories.partner_id`, the 24h-expiry photo/video posts) are both real, separate image
+surfaces the original finding named — neither is touched by this phase. Each has its own upload
+flow (a real Storage bucket, not a pasted URL) and would need its own integration point wired
+into a different screen (`CreateGatheringScreen`/`EditGatheringScreen` for the first,
+`BusinessDashboardScreen`'s "Post a Moment" flow for the second) — genuinely separate future
+work, flagged here rather than attempted alongside `logo_url` in the same pass.
+
+**Locked mechanism**: Anthropic's Messages API supports real image inputs (a base64-encoded
+`image` content block) on the same `claude-haiku-4-5-20251001` model every other classifier in
+this codebase already uses — no new vendor/account needed, unlike the deferred image surfaces'
+own eventual need for a real Storage-backed upload pipeline. Extends the existing
+`screen-business-content/index.ts` `business_profile` branch (does **not** create a new
+`target_type` — the plan's own "not silently folded into the text classifier" language is read
+as "don't assume the text classifier already covers images," not "must be a separate audit row";
+folding it into the same `business_profile` screening keeps one atomic decision for one atomic
+write, matching `update_business_profile()`'s own single-RPC shape, and is disclosed here as a
+real, deliberate simplification rather than silently built to differ from a literal reading):
+- Runs **only** when a real `logoUrl` is present **and** differs from the partner's current
+  stored `logo_url` (skip re-screening an unchanged, already-approved logo on every unrelated
+  text-only edit — same "don't re-check what hasn't changed" reasoning Phase 1 already used to
+  exclude the AI category-suggestion confirm/Teach Nearby confirm from screening).
+- Fetches the image bytes server-side (`fetch(logoUrl)`), rejects with a clear, honest error —
+  never silently skips the check — if the URL isn't reachable, isn't a real image
+  (`Content-Type` doesn't start with `image/`), or exceeds a real 5MB cap (Anthropic's own
+  documented per-image limit) — "couldn't verify that logo image, check the link and try again,"
+  distinct from a moderation rejection.
+- Base64-encodes the real bytes, sends a real vision classification call using the *same* fixed
+  13-category vocabulary and 4-tier prompt shape `classifyContent()` already uses for text,
+  adapted for visual content (an image-specific system framing, still returning the identical
+  `{risk_tier, matched_categories, reasoning}` JSON shape).
+- The overall `business_profile` submission's `risk_tier` becomes the **worse** of {text tier,
+  image tier} (low < uncertain < medium < high, in worsening order) — since both are gating the
+  exact same atomic write. `matched_categories` merges both real arrays (deduped).
+  `model_reasoning` states both sub-results honestly when a logo was screened ("Text: ...  Logo
+  image: ...") — falls back to the text-only reasoning, unchanged, whenever no logo was screened
+  this call (matching the existing "always populated, even for a clean low result" convention).
+- `content_snapshot` needs no change — `logoUrl` is already captured there from Phase 1.
+
+**Verification convention, matching every other phase in this file**: apply to production and
+verify live — a real disposable non-image URL rejected with the honest "couldn't verify" error;
+a real, genuinely non-changing logoUrl confirmed to skip the vision call entirely (no wasted
+Anthropic cost); the combined-tier logic confirmed correct by direct code read given the
+Anthropic account's own already-disclosed, still-unresolved credit-balance block (Phase 1's own
+"not done" note — unchanged as of this phase) means the actual vision call itself can't be
+exercised end-to-end from this sandbox, same standing limitation as every AI feature in this
+file. Full `npx expo export --platform ios` after any client touch (expected to be none — this
+is a pure Edge Function change, `handleSaveProfile()` already calls the same
+`submitBusinessProfileForScreening()` with no client-side change needed).
+
+**Status: DONE, build-wise.** Built exactly to the locked design above — `classifyImage()` and
+`worseTier()` added to `screen-business-content/index.ts` right after `classifyContent()`, the
+`business_profile` branch's `currentPartner` fetch widened to also select `logo_url` (so a real
+"has this actually changed" comparison is possible), and the branch's own text-only
+`{riskTier, matchedCategories, reasoning}` destructure replaced with `let` bindings that only
+get overwritten (via `worseTier()`, deduped category merge, and a combined reasoning string) when
+`logoChanged` is genuinely true — every other line of the branch (the audit log write, the
+low/high/medium enforcement) is unchanged, still reading the same three variable names.
+
+Deployed to production via `npx supabase functions deploy screen-business-content --project-ref
+enmosvippabmuqslzrox` and **verified**, not just assumed from the deploy command's own success
+message: confirmed `verify_jwt: true` (version bumped to 8) directly via the Management API, not
+the CLI's own default; confirmed a raw unauthenticated request to the function gateway still
+correctly 401s; fetched the deployed function's own real ESZIP body and confirmed via a strings
+search that it genuinely contains the new code (`classifyImage`, `worseTier`,
+`SUPPORTED_IMAGE_MEDIA_TYPES`, `MAX_IMAGE_BYTES` — 12 real hits, not zero), not just that the
+deploy reported success. Verified via a lenient `tsc --noEmit` syntax pass on the full file —
+zero new errors beyond the same expected unresolvable Deno-remote-import/global-`Deno` ones every
+prior pass in this repo already has. `git status` confirms zero client files touched, matching
+the plan's own expectation exactly.
+
+**Not done, disclosed rather than silently skipped**: the actual live round-trip (a real logo
+change triggering a real vision classification) could not be exercised this pass — every path
+through this function, including the pre-existing text classification that already ran
+unconditionally before my new logic, depends on the same Anthropic account that Phase 1's own
+diagnostic redeploy already found blocked on a real, still-unresolved "credit balance too low"
+error, reconfirmed as recently as this same session's own Phase 3 status note. Re-running that
+diagnostic (a temporary echo-the-raw-response redeploy + a disposable test account) was not
+repeated this pass, given it was already exhaustively performed once this same session and has
+no reason to have changed in the intervening hours — this is a disclosed reliance on that
+existing finding, not a fresh verification. `classifyImage()`'s own early-return validation gates
+(unreachable URL, non-image content-type, oversized, unsupported media type) were verified by
+direct code review only, not exercised live, since reaching them at all requires the preceding
+text classification to succeed first, which the account-wide outage currently prevents for every
+request regardless of the logo. Same standing gap as everywhere else in this file: no manual
+simulator/device run-through — next session should confirm, once the Anthropic account is
+funded, that a real changed logo genuinely gets visually classified (not just the accompanying
+text), that an unchanged logo genuinely skips the vision call, and that a real bad/oversized/
+non-image URL produces the honest 400 rather than a generic error.
+
+### Decision 6, Phase 5 — the periodic re-sweep job — PLAN LOCKED, executing next
+
+Closes the second of the two locked-but-unbuilt pieces. Closes the locked design's own explicit
+gap: "a legitimate business later edits its own description/offer into something prohibited...
+nothing in this app currently re-checks for" — everything built in Phases 1-4 is real-time-on-
+write only; this phase adds the genuine defense-in-depth re-check on a schedule.
+
+**Real design decisions made here, not left to guesswork, each disclosed rather than silently
+picked**:
+1. **What gets re-swept**: the four genuinely *ongoing, currently-live* content types — 
+   `business_profile`, `experience`, `offer`, `availability`. `update` (a broadcast already sent
+   to followers) and `offer_response` (a committed reply to one specific customer request) are
+   both real, one-time, already-delivered messages, not ongoing published state the way a
+   profile/listing is — there is nothing "currently live" about either to protect against a
+   later edit, so both are deliberately excluded from re-sweep scope, not an oversight.
+2. **"Due for re-screening"**: reuses the existing `business_content_screening_results` table as
+   the source of truth (no new "last checked" column on 4 different tables) — a currently-active
+   row (`brand_partners` with no separate active flag, so business_profile is always eligible;
+   `business_experiences.active`/`brand_offers.active`/`business_availability.status = 'active'`
+   for the other three) is due once its most recent screening row (of either source) is more
+   than 30 real days old, or doesn't exist at all (prioritized first — never-screened content is
+   the most overdue). A real, bounded batch (25 rows) per run, not an unbounded sweep.
+3. **Cadence, explicitly left open by the plan itself ("not locked here since it wasn't
+   specified")**: locked as **once daily** for the submit side (real, small batch, real but
+   bounded Anthropic cost at this app's real current content volume) — `apply` runs every 5
+   minutes, matching the weather job's own established apply cadence, cheap when nothing's
+   pending.
+4. **Enforcement — the one real, safety-motivated departure from the plan's own literal "HIGH →
+   block/quarantine outright" wording, disclosed here rather than silently narrowed**: for a
+   re-sweep result specifically, **every non-LOW tier (medium/high/uncertain) is held for a real
+   human decision — none auto-quarantines already-live content, HIGH included.** The original
+   "block/quarantine outright" language was written for a *new, not-yet-published* submission,
+   where rejecting it costs nothing (nothing was ever live). Applying the identical rule to
+   *already-live* content re-swept days or weeks after publication is a materially different,
+   higher-stakes action — automatically taking down a real business's real, already-serving
+   listing on a periodic AI re-check, with no human in the loop for the takedown itself, is
+   exactly the kind of consequential, false-positive-prone automated action this file's own
+   standing conventions (and Decision 6's own core "AI is a screening signal, never the final
+   legal authority" principle) argue against. A re-sweep flag always reaches a real admin; the
+   already-live content is left completely untouched in the meantime (same "a real UX call, not
+   resolved by this plan" posture Phase 1 already used for the analogous MEDIUM-tier-visibility
+   question) — no new `pending_review`-shaped gate on any public read path.
+5. **What admin approve/deny actually does for a re-sweep row — genuinely inverted from a
+   submission row's semantics, not reused blind**: a submission row's "approve" writes the staged
+   snapshot to the live row (there's real new content to publish). A re-sweep row's snapshot
+   *is* the current live content — there's nothing new to publish, and blindly re-applying an
+   older re-sweep snapshot risks silently reverting a genuinely newer edit the business made in
+   the meantime. So for a re-sweep row, neither approve nor deny ever writes to the live business-
+   content table — "approve" means "false alarm, no issue, dismiss"; "deny" means "confirmed
+   real problem, needs manual follow-up outside this automated system" (a real admin using their
+   own existing tools — e.g., contacting the business, or a future dedicated per-row quarantine
+   action, explicitly not built this pass). This keeps the write-side simple and avoids the
+   stale-snapshot-overwrite risk entirely.
+
+**Locked schema** (one new migration): `business_content_screening_results` gains `source text
+not null default 'submission' check (source in ('submission', 'resweep'))` — every existing row
+backfills to `'submission'`, zero behavior change for anything already screened.
+`record_business_content_screening()` gains a `source_param text default 'submission'`, and only
+auto-sets `review_outcome = 'auto_blocked'` on a HIGH result when `source_param = 'submission'`
+(a re-sweep HIGH stays genuinely un-auto-resolved, so it reaches the admin queue, per decision 4
+above). `admin_get_pending_content_screenings()`'s filter widens to
+`risk_tier in ('medium','uncertain') or (risk_tier = 'high' and source = 'resweep')`.
+`admin_review_business_content_screening()` gains a real short-circuit at the top: when
+`v_row.source = 'resweep'`, skip every target_type-specific write branch entirely (regardless of
+`approve_param`) and only ever record the review outcome, per decision 5 above.
+
+New `business_content_resweep_queue` table — same real shape/posture as the already-proven
+`weather_dependent_policy_refresh_queue` (RLS enabled, zero policies, cron/SECURITY-DEFINER-only):
+`id`, `target_type`, `target_id` (nullable, matching the audit table's own convention),
+`partner_id`, `request_id bigint` (the real `pg_net` request id), `submitted_at`.
+
+Two new cron-only SECURITY DEFINER functions, mirroring the weather job's own proven two-phase
+submit/poll shape exactly (a single Postgres transaction structurally can't wait on a synchronous
+external HTTP call, the same established lesson):
+- **`submit_business_content_resweeps()`** — selects the real due batch (decision 2 above),
+  fires one real `net.http_post` per row to a new `resweep-business-content` Edge Function (the
+  real `service_role_key` vault secret as the Bearer token, same pattern
+  `notify_video_call_started()` already established for an internal Edge Function call from SQL),
+  records the pending request, returns immediately (own transaction commits right away, making
+  the queued request visible to `pg_net`'s worker).
+- **`apply_business_content_resweeps()`** — polls `net._http_response` for each pending row;
+  once resolved, the real classify-and-log write already happened *inside* the Edge Function
+  itself (unlike the weather job, this function needs no response-body parsing of its own — it
+  only needs to know a request finished so it can clear the queue), so this just clears the
+  queue entry; a genuinely stale (>10 real minutes) pending row is discarded without further
+  action, same "stale, never silently wrong" convention as the weather job.
+
+**New `supabase/functions/_shared/contentClassifier.ts`** — `classifyContent()` and the shared
+13-category `RISK_CATEGORIES` vocabulary, factored out of `screen-business-content/index.ts`
+(which is re-pointed to import from here instead of its own local copy — a pure refactor, zero
+behavior change, verified by a like-for-like diff before trusting it) so the real-time screening
+path and the new re-sweep path can never drift onto two different classification prompts —
+closes the plan's own explicit "the policy vocabulary itself was updated, should retroactively
+re-flag old content" case honestly, since both paths genuinely share one prompt.
+
+**New `supabase/functions/resweep-business-content/index.ts`** — `verify_jwt: false` (no real
+user session exists for a cron-triggered call), authenticated instead by comparing the caller's
+own `Authorization: Bearer <token>` against `Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` directly
+— matching the established `stripe-connect-webhook`/`revenuecat-webhook` "verify_jwt: false, do
+your own internal check" precedent, simplified to a direct secret-equality check since the real
+caller here is this app's own SQL function, not a third-party webhook needing cryptographic
+signature verification. Given `{targetType, targetId, partnerId}`, reads the real *current* live
+content for that target (name/description/differentiator for business_profile; title/description
+for the other three), builds the identical content block shape the real-time path already uses,
+classifies via the shared module, and writes a real audit row via
+`record_business_content_screening(..., source_param: 'resweep')` — `content_snapshot` captures
+the real content actually re-checked, `submitted_by` stays honestly null (nothing here was
+submitted by a person).
+
+**Client**: `AdminContentReviewScreen.js` gains a real "🔍 Routine re-check" badge on any
+`source: 'resweep'` row, and relabels its two action buttons contextually for that row
+("No Issue" / "Flag for Follow-Up" instead of "Approve & Publish" / "Deny") — same underlying
+`admin_review_business_content_screening()` call either way, only the displayed copy differs.
+
+**Verification convention**: apply the migration to production and verify live with real
+disposable test data — the `source` column/CHECK constraint, the widened admin-queue filter (a
+real resweep-source HIGH row appears, a real submission-source HIGH row still correctly doesn't),
+the re-sweep-row review short-circuit (approve/deny neither touches a real disposable business's
+live row) — plus a from-scratch migration replay. The `submit`/`apply` cron functions' own real
+`pg_net` round-trip verified live the same way the weather job's was (a real disposable due row,
+confirmed queued, confirmed the request resolves and the queue clears) — the actual Anthropic
+vision/text call inside `resweep-business-content` itself can't be exercised end-to-end from this
+sandbox, same already-disclosed, still-unresolved credit-balance limitation as every other AI
+feature in this file. Full `npx expo export --platform ios` after the client change.
+
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,
 ## none of it built; this is vision/principle capture, not a fourth locked decision
