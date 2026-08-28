@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
 
 // Intent Layer + Business Fulfillment, Phase 2 (see CLAUDE.md). The 1:1
 // consumer -> business request/offer/reservation lifecycle: this is the
@@ -318,6 +318,42 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
   return data;
 }
 
+// Decision 6, Phase 3 -- the real content-screening path for an offer
+// response to a specific customer request, upgrading the pre-existing
+// generic checkTextModeration() check to real policy classification, per
+// the locked design's own instruction. partnerId is required here (unlike
+// submitBusinessOfferResponse() above, whose underlying RPC derives
+// ownership internally from request_id_param) since the Edge Function's
+// top-level ownership gate needs it explicitly for every target_type.
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null }) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      partnerId,
+      targetType: 'offer_response',
+      requestId,
+      offerType,
+      offerDescription,
+      offerPrice,
+      proposedTime,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) {
+    throw new Error(result?.error || 'Could not send your response right now.');
+  }
+  return result;
+}
+
 export async function declineBusinessOpportunity(requestId) {
   const { data, error } = await supabase.rpc('decline_business_offer', { request_id_param: requestId });
   if (error) throw new Error(error.message);
@@ -374,6 +410,46 @@ export async function postBusinessAvailability({ category = null, title, descrip
   });
   if (error) throw new Error(error.message);
   return { availabilityId: data.availabilityId, matchedCount: data.matchedCount };
+}
+
+// Decision 6, Phase 3 (CLAUDE.md's Aug 27 2026 plan) -- the real content-
+// screening path for availability postings. Deliberately does NOT compute
+// starts_at/ends_at client-side the way postBusinessAvailability() above
+// does -- durationHours (null meaning "rest of today") is sent instead,
+// and the Edge Function computes the real window at the actual moment of
+// publish, whether that's this call's own LOW-tier path or a later admin
+// approval -- avoids ever baking a submission-time window that would go
+// stale during a MEDIUM/UNCERTAIN hold.
+export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15 }) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      partnerId,
+      targetType: 'availability',
+      category,
+      title,
+      description,
+      offerType,
+      price,
+      capacity,
+      durationHours,
+      radiusMiles,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) {
+    throw new Error(result?.error || 'Could not post your availability right now.');
+  }
+  return result;
 }
 
 export async function cancelBusinessAvailability(availabilityId) {

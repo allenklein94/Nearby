@@ -6,12 +6,11 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, createBusinessOffer, toggleOfferActive, getMyBusinessGatherings, postBusinessUpdate, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponse, declineBusinessOpportunity, postBusinessAvailability, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS } from '../services/businessFulfillment';
-import { checkTextModeration } from '../services/textModeration';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -1153,6 +1152,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTypeInput(suggestedOfferType.offerType);
   }
 
+  // Decision 6, Phase 3 (CLAUDE.md's Aug 27 2026 plan) -- this is the real
+  // confirmed gap that phase exists to close: this exact response used to
+  // go straight to submit_business_offer() with only the pre-existing
+  // generic checkTextModeration() check on the description. Now routes
+  // through screen-business-content instead, same three-branch shape
+  // handleSaveExperience() already established -- a LOW result still
+  // calls the real underlying RPC, MEDIUM/UNCERTAIN holds the response
+  // for a real admin decision (nothing sent to the customer yet), HIGH is
+  // rejected outright.
   async function handleSubmitOffer() {
     if (!offerDescriptionInput.trim()) {
       Alert.alert('Add a description', 'Say what you can offer.');
@@ -1162,22 +1170,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Pick a time', 'Choose the time you’re proposing instead.');
       return;
     }
-    const descCheck = await checkTextModeration(offerDescriptionInput);
-    if (!descCheck.safe) {
-      Alert.alert('Not allowed', 'Please revise your offer description and try again.');
-      return;
-    }
     setRespondingOpportunityId(offerModalRequestId);
     try {
       const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
-      await submitBusinessOfferResponse(offerModalRequestId, {
+      const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, offerModalRequestId, {
         offerType: offerTypeInput,
         offerDescription: offerDescriptionInput.trim(),
         offerPrice: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         proposedTime: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
       });
-      setOfferModalRequestId(null);
-      await loadOpportunities(selectedPartner.id);
+
+      if (result.published) {
+        setOfferModalRequestId(null);
+        await loadOpportunities(selectedPartner.id);
+      } else if (result.blocked) {
+        Alert.alert(
+          "Couldn't Send",
+          "This content couldn't be sent — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        );
+      } else {
+        setOfferModalRequestId(null);
+        Alert.alert(
+          'Submitted for Review',
+          'Your response is being reviewed before it’s sent — this is usually quick.'
+        );
+      }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -1281,8 +1298,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // You" row -- the real category (and, when Phase A's own dominant_period
   // is present, a real suggested title naming it) instead of requiring the
   // owner to separately open "+ Post Availability" and re-type it by hand.
-  // Pure UI wiring -- postBusinessAvailability() itself is unchanged, and
-  // every field stays editable before Post, same as the blank-start path.
+  // Pure UI wiring -- submitBusinessAvailabilityForScreening() itself is
+  // unchanged, and every field stays editable before Post, same as the
+  // blank-start path.
   function openPostAvailabilityModal(prefill) {
     const category = prefill?.category ?? null;
     const period = prefill?.dominantPeriod ?? null;
@@ -1298,43 +1316,55 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setPostAvailabilityModalVisible(true);
   }
 
+  // Decision 6, Phase 3 -- same three-branch screening shape as the other
+  // three handlers in this file. Deliberately no longer computes
+  // startsAt/endsAt client-side -- durationHours (null meaning "rest of
+  // today") is sent instead, and the Edge Function computes the real
+  // window at the actual moment of publish (this call's own LOW-tier
+  // path, or a later admin approval), so a held submission never
+  // publishes with a stale, submission-time window.
   async function handlePostAvailability() {
     if (!availabilityTitleInput.trim()) {
       Alert.alert('Add a title', 'Say what you have available, e.g. "4 empty tables tonight".');
       return;
     }
-    const titleCheck = await checkTextModeration(availabilityTitleInput);
-    if (!titleCheck.safe) {
-      Alert.alert('Title not allowed', 'Please revise and try again.');
-      return;
-    }
     setPostingAvailability(true);
     try {
       const duration = AVAILABILITY_DURATION_OPTIONS.find((d) => d.key === availabilityDurationKey);
-      const startsAt = new Date();
-      const endsAt = duration.hours
-        ? new Date(startsAt.getTime() + duration.hours * 60 * 60 * 1000)
-        : new Date(startsAt.getFullYear(), startsAt.getMonth(), startsAt.getDate(), 23, 59, 59);
       const priceNum = availabilityPriceInput.trim() ? parseFloat(availabilityPriceInput.trim()) : null;
       const capacityNum = availabilityCapacityInput.trim() ? parseInt(availabilityCapacityInput.trim(), 10) : null;
-      const { matchedCount } = await postBusinessAvailability({
+      const result = await submitBusinessAvailabilityForScreening(selectedPartner.id, {
         category: availabilityCategoryInput,
         title: availabilityTitleInput.trim(),
         description: availabilityDescriptionInput.trim() || null,
         offerType: availabilityOfferTypeInput,
         price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         capacity: Number.isFinite(capacityNum) && capacityNum > 0 ? capacityNum : null,
-        startsAt: startsAt.toISOString(),
-        endsAt: endsAt.toISOString(),
+        durationHours: duration?.hours ?? null,
       });
-      setPostAvailabilityModalVisible(false);
-      await loadMyAvailability(selectedPartner.id);
-      Alert.alert(
-        'Posted!',
-        matchedCount > 0
-          ? `We matched this against ${matchedCount} open request${matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
-          : 'No open requests match this right now, but it stays live for anyone who asks while it\'s active.'
-      );
+
+      if (result.published) {
+        setPostAvailabilityModalVisible(false);
+        await loadMyAvailability(selectedPartner.id);
+        const matchedCount = result.matchedCount ?? 0;
+        Alert.alert(
+          'Posted!',
+          matchedCount > 0
+            ? `We matched this against ${matchedCount} open request${matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
+            : 'No open requests match this right now, but it stays live for anyone who asks while it\'s active.'
+        );
+      } else if (result.blocked) {
+        Alert.alert(
+          "Couldn't Post",
+          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        );
+      } else {
+        setPostAvailabilityModalVisible(false);
+        Alert.alert(
+          'Submitted for Review',
+          'This availability posting is being reviewed before it goes live — this is usually quick.'
+        );
+      }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -1688,21 +1718,35 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setPostingMoment(false);
   }
 
+  // Decision 6, Phase 3 -- title AND body both screened, the confirmed
+  // gap the locked design names directly (only the title was ever
+  // checked before this phase). Same three-branch shape as every other
+  // handler in this file.
   async function handlePostUpdate() {
     if (!updateTitle.trim()) {
       return Alert.alert('Title required', 'Give your update a short title.');
     }
-    const titleCheck = await checkTextModeration(updateTitle);
-    if (!titleCheck.safe) {
-      return Alert.alert('Title not allowed', 'Please revise and try again.');
-    }
     setPostingUpdate(true);
     try {
-      await postBusinessUpdate(selectedPartner.id, updateTitle.trim(), updateBody.trim() || null);
-      setUpdateModalVisible(false);
-      setUpdateTitle('');
-      setUpdateBody('');
-      Alert.alert('Sent', 'Your followers have been notified.');
+      const result = await submitBusinessUpdateForScreening(selectedPartner.id, updateTitle.trim(), updateBody.trim() || null);
+
+      if (result.published) {
+        setUpdateModalVisible(false);
+        setUpdateTitle('');
+        setUpdateBody('');
+        Alert.alert('Sent', 'Your followers have been notified.');
+      } else if (result.blocked) {
+        Alert.alert(
+          "Couldn't Send",
+          "This content couldn't be sent — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        );
+      } else {
+        setUpdateModalVisible(false);
+        Alert.alert(
+          'Submitted for Review',
+          'This update is being reviewed before it’s sent to your followers — this is usually quick.'
+        );
+      }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -1712,10 +1756,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleCreateOffer() {
     if (!newTitle.trim()) {
       return Alert.alert('Title required', 'Give your offer a title.');
-    }
-    const titleCheck = await checkTextModeration(newTitle);
-    if (!titleCheck.safe) {
-      return Alert.alert('Title not allowed', 'Please revise and try again.');
     }
     if (unlockEnabled) {
       const minMembers = parseInt(newUnlockMinMembers.trim(), 10);
@@ -1734,8 +1774,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       // insert, not re-derived from a post-insert count -- a real, honest
       // signal of the business's actual first-ever offer, not every offer.
       const isFirstOffer = offers.length === 0;
-      await createBusinessOffer({
-        partnerId: selectedPartner.id,
+      const result = await submitBusinessOfferForScreening(selectedPartner.id, {
         title: newTitle.trim(),
         description: newDescription.trim() || null,
         rewardType: 'discount',
@@ -1747,20 +1786,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         unlockCommunityId: unlockScope === 'community' ? unlockCommunityId : null,
         unlockMinMembers: unlockScope ? parseInt(newUnlockMinMembers.trim(), 10) : null,
       });
-      if (isFirstOffer) {
-        logBusinessAcquisitionEvent(sessionId, 'first_offer_created', { partnerId: selectedPartner.id });
+
+      if (result.published) {
+        if (isFirstOffer) {
+          logBusinessAcquisitionEvent(sessionId, 'first_offer_created', { partnerId: selectedPartner.id });
+        }
+        setCreateModalVisible(false);
+        setNewTitle('');
+        setNewDescription('');
+        setNewInstructions('');
+        setOfferGatheringId(null);
+        setNewRedemptionLimit('');
+        setNewTargetInterestTag('');
+        setUnlockEnabled(false);
+        setUnlockCommunityId(null);
+        setNewUnlockMinMembers('');
+        loadOffers(selectedPartner.id);
+      } else if (result.blocked) {
+        Alert.alert(
+          "Couldn't Publish",
+          "This content couldn't be published — it was flagged during a routine content check. If you think this is a mistake, please reach out to support."
+        );
+      } else {
+        setCreateModalVisible(false);
+        Alert.alert(
+          'Submitted for Review',
+          'This offer is being reviewed before it goes live — this is usually quick.'
+        );
       }
-      setCreateModalVisible(false);
-      setNewTitle('');
-      setNewDescription('');
-      setNewInstructions('');
-      setOfferGatheringId(null);
-      setNewRedemptionLimit('');
-      setNewTargetInterestTag('');
-      setUnlockEnabled(false);
-      setUnlockCommunityId(null);
-      setNewUnlockMinMembers('');
-      loadOffers(selectedPartner.id);
     } catch (e) {
       Alert.alert('Error', e.message);
     }

@@ -704,6 +704,77 @@ export async function submitBusinessExperienceForScreening(partnerId, { experien
   return result;
 }
 
+// Decision 6, Phase 3 (CLAUDE.md's Aug 27 2026 plan) -- the same real
+// content-screening path, applied to standing offers (brand_offers).
+// createBusinessOffer()'s own real gathering-linked expiry logic moved
+// server-side into the Edge Function itself (it reads the gathering fresh
+// at the real moment of publish, same reasoning updateBusinessAddress()
+// already established for lat/lng) -- this wrapper just carries the same
+// real fields through, never computes expiresAt client-side anymore.
+export async function submitBusinessOfferForScreening(partnerId, { title, description, rewardType, redemptionInstructions, gatheringId = null, redemptionLimit = null, targetInterestTag = null, unlockScope = null, unlockCommunityId = null, unlockMinMembers = null }) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      partnerId,
+      targetType: 'offer',
+      title,
+      description: description ?? null,
+      rewardType: rewardType ?? 'discount',
+      redemptionInstructions: redemptionInstructions ?? null,
+      gatheringId: gatheringId ?? null,
+      redemptionLimit: redemptionLimit ?? null,
+      targetInterestTag: targetInterestTag ?? null,
+      unlockScope: unlockScope ?? null,
+      unlockCommunityId: unlockCommunityId ?? null,
+      unlockMinMembers: unlockMinMembers ?? null,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) {
+    throw new Error(result?.error || 'Could not save your offer right now.');
+  }
+  return result;
+}
+
+// Same real content-screening path, applied to the broadcast-to-followers
+// "business update" -- title AND body both screened, the confirmed gap
+// the locked design names directly (only the title was ever checked
+// before this phase).
+export async function submitBusinessUpdateForScreening(partnerId, title, body) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      partnerId,
+      targetType: 'update',
+      title,
+      body: body ?? null,
+    }),
+  });
+
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) {
+    throw new Error(result?.error || 'Could not send your update right now.');
+  }
+  return result;
+}
+
 export async function getBusinessProfile(partnerId) {
   const { data, error } = await supabase.from('brand_partners').select('*').eq('id', partnerId).single();
   if (error) {

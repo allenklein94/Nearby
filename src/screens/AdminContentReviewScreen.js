@@ -20,14 +20,17 @@ const RISK_LABELS = {
   uncertain: 'Uncertain',
 };
 
-// Decision 6, Phase 2 -- Signature Experiences join business_profile as a
-// real screened target_type. Every other value in the schema's own CHECK
-// constraint (offer/availability/update/offer_response) is still a real,
-// unattempted future phase -- falls back to the raw value, matching this
-// screen's own pre-existing fallback for an unrecognized value.
+// Decision 6, Phases 1-3 -- every real value in the schema's own CHECK
+// constraint is now a live, screened target_type. Falls back to the raw
+// value for anything unrecognized, matching this screen's own
+// pre-existing fallback.
 const TARGET_TYPE_LABELS = {
   business_profile: 'Business profile edit',
   experience: 'Signature Experience',
+  offer: 'Standing offer',
+  availability: 'Availability posting',
+  update: 'Broadcast update',
+  offer_response: 'Offer response',
 };
 
 const CATEGORY_LABELS = {
@@ -117,7 +120,13 @@ export default function AdminContentReviewScreen() {
               </Text>
 
               {(snapshot.name || snapshot.title) ? <Text style={styles.snapshotName}>{snapshot.name ?? snapshot.title}</Text> : null}
+              {/* offer/availability both carry title+description, already
+                  covered by the fallback above -- update carries body
+                  instead of description, offer_response has no title at
+                  all and carries its free text as offerDescription. */}
               {snapshot.description ? <Text style={styles.snapshotBody}>{snapshot.description}</Text> : null}
+              {snapshot.body ? <Text style={styles.snapshotBody}>{snapshot.body}</Text> : null}
+              {snapshot.offerDescription ? <Text style={styles.snapshotBody}>{snapshot.offerDescription}</Text> : null}
               {snapshot.differentiator ? <Text style={styles.snapshotBody}>"{snapshot.differentiator}"</Text> : null}
 
               {item.matched_categories?.length > 0 && (

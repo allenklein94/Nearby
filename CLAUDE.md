@@ -252,13 +252,11 @@ everywhere else in this file: no manual simulator/device run-through is possible
 sandboxed environment — flag it per phase rather than silently assume clean.
 
 **Status: Decisions 7 and 5 are both DONE, build-wise. Decision 6 (Business Trust & Safety) is
-now underway — Phase 1 (`business_profile`) and Phase 2 (Signature Experiences) are both DONE,
-build-wise, applied and verified live. Phase 3 (offer/availability/update/offer_response) is
-IN PROGRESS — the schema/RPC and Edge Function halves are both DONE, applied to production, and
-verified live; client wiring (`BusinessDashboardScreen.js`'s 4 handlers still call the old
-direct-write functions) is the one piece not yet started — see Phase 3's own status note for the
-exact remaining scope. Image screening and the periodic re-sweep job remain real, locked, not
-yet built.**
+now underway — Phases 1 (`business_profile`), 2 (Signature Experiences), and 3 (offer/
+availability/update/offer_response) are all DONE, build-wise, applied and verified live —
+Phase 3's client wiring (`BusinessDashboardScreen.js`'s 4 handlers) is now also done, see Phase
+3's own status note for the exact detail. Image screening and the periodic re-sweep job remain
+real, locked, not yet built.**
 
 **Decision 5 — DONE.** Built exactly to the locked design above, no schema change, no new Edge
 Function — reused the three already-proven mechanisms named in the plan. Factored a new,
@@ -735,33 +733,72 @@ be published" error text), not just that the deploy command reported success. Al
 a lenient `tsc --noEmit` syntax pass — zero errors beyond the expected unresolvable Deno-remote-
 import/global-`Deno` ones every prior pass in this repo already has.
 
-**Not yet started — the client wiring.** `BusinessDashboardScreen.js`'s four handlers
-(`handleCreateOffer`/`handlePostAvailability`/`handlePostUpdate`/`handleSubmitOffer`) still call
-`createBusinessOffer()`/`postBusinessAvailability()`/`postBusinessUpdate()`/
-`submitBusinessOfferResponse()` directly, each still gated by the old, weaker
-`checkTextModeration()` call this whole phase exists to replace — **production is not broken by
-this**, the schema/Edge Function additions are simply dormant from the client's own point of
-view until wired in, same as how Phase 1/2 were found mid-restart before. Real next steps, in
-order: (1) add `submitBusinessOfferForScreening()`/`submitBusinessAvailabilityForScreening()`/
-`submitBusinessUpdateForScreening()`/`submitBusinessOfferResponseForScreening()` client wrappers
-(same `fetch(functionUrl('screen-business-content'), ...)` shape `submitBusinessExperienceForScreening()`
-already established — `submitBusinessOfferForScreening()`/`submitBusinessUpdateForScreening()`
-belong in `services/brandOffers.js` alongside the functions they supersede;
-`submitBusinessAvailabilityForScreening()`/`submitBusinessOfferResponseForScreening()` belong in
-`services/businessFulfillment.js`, which will need a new `functionUrl` import added — it
-currently only imports `supabase`); (2) rewire all four `BusinessDashboardScreen.js` handlers to
-route through the new functions instead of the old direct writes, removing their now-redundant
-`checkTextModeration()` calls (and, once all four are gone, the now-unused `checkTextModeration`
-import itself — confirmed via grep these are the only 4 usages in the file); (3) give each
-handler the same three-branch UI shape `handleSaveExperience()` already established
-(published/blocked/submitted-for-review); (4) update `AdminContentReviewScreen.js`'s
-`TARGET_TYPE_LABELS` map to cover `offer`/`availability`/`update`/`offer_response`, and add
-per-target-type snapshot preview lines (title+description for offer/availability, title+body for
-update, the offer description for offer_response) alongside the existing `name`/`title`
-fallback; (5) a full `npx expo export --platform ios` to confirm the client bundles cleanly;
-(6) a real from-scratch Docker migration replay covering this migration, not yet run this pass;
-(7) commit and push the client changes as their own increment, then update this status note to
-DONE.
+**Client wiring — DONE.** All four `BusinessDashboardScreen.js` handlers
+(`handleCreateOffer`/`handlePostAvailability`/`handlePostUpdate`/`handleSubmitOffer`) now route
+through the screening path instead of calling `createBusinessOffer()`/`postBusinessAvailability()`/
+`postBusinessUpdate()`/`submitBusinessOfferResponse()` directly.
+
+New client wrappers, same `fetch(functionUrl('screen-business-content'), ...)` shape
+`submitBusinessExperienceForScreening()` already established: `submitBusinessOfferForScreening()`
+and `submitBusinessUpdateForScreening()` in `services/brandOffers.js`, alongside the functions
+they supersede; `submitBusinessAvailabilityForScreening()` and
+`submitBusinessOfferResponseForScreening()` in `services/businessFulfillment.js` (which needed a
+new `functionUrl` import added — it previously only imported `supabase`).
+`submitBusinessAvailabilityForScreening()` deliberately no longer computes `startsAt`/`endsAt`
+client-side the way the old `postBusinessAvailability()` call site did — it sends a real
+`durationHours` (null meaning "rest of today") instead, letting the Edge Function compute the
+real window at the actual moment of publish (whether that's the LOW-tier path in the same call,
+or a later admin approval), so a held submission can never publish with a stale, submission-time
+window baked in. `submitBusinessOfferResponseForScreening()` takes an explicit `partnerId` param
+(unlike the old `submitBusinessOfferResponse()`, whose underlying RPC derives ownership
+internally from `request_id_param`) since the Edge Function's top-level ownership gate needs a
+real `partnerId` explicitly for every `target_type`, `offer_response` included.
+
+All four handlers now use the exact same three-branch UI shape `handleSaveExperience()` already
+established (`published` → the same success path as before, form fields reset, list reloaded,
+zero added friction for clean content; `blocked` → a clear "Couldn't Publish"/"Couldn't Post"/
+"Couldn't Send" alert, nothing saved; neither → a real "Submitted for Review" alert, the modal
+closes without reloading anything, since nothing was actually written yet) — and their now-
+redundant `checkTextModeration()` calls were removed, along with the now-unused
+`checkTextModeration` import itself (confirmed via grep those 4 call sites were the only usages
+in the file). `handleCreateOffer()`'s existing `isFirstOffer`/`logBusinessAcquisitionEvent()`
+tracking was moved inside the `published` branch specifically, so a held-for-review first offer
+doesn't fire the acquisition event before it's genuinely live.
+
+`AdminContentReviewScreen.js`'s `TARGET_TYPE_LABELS` map now covers all four new values
+(`offer: 'Standing offer'`, `availability: 'Availability posting'`, `update: 'Broadcast update'`,
+`offer_response: 'Offer response'`) alongside the existing `business_profile`/`experience`
+entries. The snapshot preview gained two new conditional lines — `snapshot.body` (for `update`,
+whose free text lives under `body`, not `description`) and `snapshot.offerDescription` (for
+`offer_response`, which has no `name`/`title` at all) — the existing `snapshot.title`/
+`snapshot.description` fallback already covers `offer`/`availability` unchanged, since both
+carry real `title`+`description` fields.
+
+**Verified**: a direct `@babel/core` parse of all four touched files (clean); a full `npx expo
+export --platform ios` (clean, no bundling errors, **2270 modules, unchanged** — every touched
+file this pass was an edit, no new client files); the full Jest suite (120/120 passing,
+unaffected — no pure-logic file was touched). **A real from-scratch migration replay** covering
+the full, now-103-file `supabase/migrations/` folder: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check
+status, dropped and recreated a truly empty `public` schema, patched the two known
+image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the test container only,
+created `pg_cron`/`pg_trgm` as `supabase_admin`, then ran the full folder in filename order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, `admin_review_business_content_screening()`
+(with its offer/availability/update/offer_response branches), `record_business_content_screening()`,
+and `business_content_screening_results` (all 13 columns) all confirmed to exist in the
+freshly-rebuilt database. Container removed afterward.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm all four handlers' three UI branches
+(published/blocked/submitted-for-review) render and behave correctly on a real device once the
+Anthropic account is funded (see Phase 1's own already-disclosed credit-balance gap, still
+unresolved as of this pass), and that the admin Content Review Queue correctly renders each of
+the four new `target_type` rows (including the new `body`/`offerDescription` snapshot preview
+lines) end-to-end in the running app.
+
+Decision 6, Phase 3 is now fully DONE — schema/RPC, Edge Function, and client wiring all
+applied, verified live, and replayed clean from scratch. Image screening and the periodic
+re-sweep job remain the two real, locked, not-yet-built pieces of Decision 6 as a whole.
 
 ## Aug 27 2026 (cont'd) — extended product doctrine, pasted by the user as a long follow-up
 ## reply to the three-decision plan above (their own items 40-114) — CAPTURED, READ-ONLY,
