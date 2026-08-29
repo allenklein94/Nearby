@@ -63,75 +63,86 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
   const load = useCallback(async () => {
     try {
-    const { data } = await supabase.from('communities').select('*').eq('id', communityId).single();
-    setCommunity(data);
+      // Phase 1: every one of these is independent of the others -- none
+      // need each other's *result*, only communityId/myId, which are
+      // already known -- so they're fired together instead of one after
+      // another (the old shape was a real ~8-round-trip sequential chain
+      // gating this screen's loading spinner, the same bug already found
+      // and fixed on Home).
+      const [{ data }, { data: sessionData }, mine, count, upcoming, memberList, [communityOffers, myRedemptions]] = await Promise.all([
+        supabase.from('communities').select('*').eq('id', communityId).single(),
+        supabase.auth.getSession(),
+        getMyCommunities(),
+        getCommunityMemberCount(communityId),
+        getCommunityGatherings(communityId),
+        getCommunityMembers(communityId),
+        Promise.all([getCommunityOffers(communityId), getMyRedemptions()]),
+      ]);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const myId = sessionData?.session?.user?.id;
-    setMyId(myId);
-    setIsCreator(data?.creator_id === myId);
+      const myId = sessionData?.session?.user?.id;
+      setCommunity(data);
+      setMyId(myId);
+      setIsCreator(data?.creator_id === myId);
+      setIsMember(mine.some((c) => c.id === communityId));
+      setMemberCount(count);
+      setGatherings(upcoming.filter((g) => new Date(g.scheduled_at) >= new Date()));
+      setMembers(memberList);
+      setOffers(communityOffers);
+      setRedeemedOfferIds(myRedemptions);
 
-    const mine = await getMyCommunities();
-    setIsMember(mine.some((c) => c.id === communityId));
+      const urlEntries = await Promise.all(
+        memberList.map(async (m) => {
+          const path = m.profiles?.photo_url;
+          if (!path) return null;
+          const url = await getSignedPhotoUrl(path);
+          return [m.user_id, url];
+        })
+      );
+      setMemberPhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
 
-    const count = await getCommunityMemberCount(communityId);
-    setMemberCount(count);
+      // Phase 2: both of these depend on phase-1 results (data/myId/
+      // memberList), not on each other -- fired together too.
+      const businessTask = (async () => {
+        // Real ownership check computed from the values just fetched
+        // above, not from React state (which wouldn't have committed
+        // yet) -- matches request_business_partnership's own
+        // creator/leader authority model for a community target.
+        const canManageBusiness = data?.creator_id === myId || memberList.some((m) => m.user_id === myId && m.role === 'leader');
+        if (!canManageBusiness) {
+          setBusinessRequest(null);
+          setAcceptedBusinessOffer(null);
+          setMyPartnershipRequest(null);
+          return;
+        }
+        const [request, partnershipRequest] = await Promise.all([
+          getBusinessRequestForCommunity(communityId),
+          getMyPartnershipRequestForTarget('community', communityId),
+        ]);
+        setBusinessRequest(request);
+        setMyPartnershipRequest(partnershipRequest);
+        setAcceptedBusinessOffer(request ? await getAcceptedOfferForRequest(request.id) : null);
+      })();
 
-    const upcoming = await getCommunityGatherings(communityId);
-    setGatherings(upcoming.filter((g) => new Date(g.scheduled_at) >= new Date()));
+      const hostingPartnerTask = (async () => {
+        if (!data?.hosting_partner_id) return;
+        const [following, partner] = await Promise.all([
+          isFollowingBusiness(data.hosting_partner_id),
+          // If you manage a business, every community you create is
+          // automatically linked to it (set_community_hosting_partner_from_creator
+          // trigger) so it shows up on your own Business Dashboard's
+          // Community tab. Fetched here so the block below can tell
+          // "this is your own business" apart from a genuine
+          // customer-facing perk -- following your own business, or
+          // being told to, makes no sense.
+          getMyManagedPartner(),
+        ]);
+        setFollowingBusiness(following);
+        setMyManagedPartner(partner);
+      })();
 
-    const memberList = await getCommunityMembers(communityId);
-    setMembers(memberList);
-    const urlEntries = await Promise.all(
-      memberList.map(async (m) => {
-        const path = m.profiles?.photo_url;
-        if (!path) return null;
-        const url = await getSignedPhotoUrl(path);
-        return [m.user_id, url];
-      })
-    );
-    setMemberPhotoUrls(Object.fromEntries(urlEntries.filter(Boolean)));
+      await Promise.all([businessTask, hostingPartnerTask]);
 
-    // Real ownership check computed from the values just fetched above, not
-    // from React state (which wouldn't have committed yet) -- matches
-    // request_business_partnership's own creator/leader authority model for
-    // a community target.
-    const canManageBusiness = data?.creator_id === myId || memberList.some((m) => m.user_id === myId && m.role === 'leader');
-    if (canManageBusiness) {
-      const request = await getBusinessRequestForCommunity(communityId);
-      setBusinessRequest(request);
-      if (request) {
-        const accepted = await getAcceptedOfferForRequest(request.id);
-        setAcceptedBusinessOffer(accepted);
-      } else {
-        setAcceptedBusinessOffer(null);
-      }
-      const partnershipRequest = await getMyPartnershipRequestForTarget('community', communityId);
-      setMyPartnershipRequest(partnershipRequest);
-    } else {
-      setBusinessRequest(null);
-      setAcceptedBusinessOffer(null);
-      setMyPartnershipRequest(null);
-    }
-
-    if (data?.hosting_partner_id) {
-      const following = await isFollowingBusiness(data.hosting_partner_id);
-      setFollowingBusiness(following);
-      // If you manage a business, every community you create is
-      // automatically linked to it (set_community_hosting_partner_from_creator
-      // trigger) so it shows up on your own Business Dashboard's Community
-      // tab. Fetched here so the block below can tell "this is your own
-      // business" apart from a genuine customer-facing perk -- following
-      // your own business, or being told to, makes no sense.
-      const partner = await getMyManagedPartner();
-      setMyManagedPartner(partner);
-    }
-
-    const [communityOffers, myRedemptions] = await Promise.all([getCommunityOffers(communityId), getMyRedemptions()]);
-    setOffers(communityOffers);
-    setRedeemedOfferIds(myRedemptions);
-
-    setLoadError(false);
+      setLoadError(false);
     } catch (e) {
       setLoadError(true);
     } finally {

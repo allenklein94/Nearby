@@ -98,41 +98,62 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
 
   const load = useCallback(async () => {
     try {
-    const premiumStatus = await isPremium().catch(() => false);
-    setPremium(premiumStatus);
-
     const { data: sessionData } = await supabase.auth.getSession();
     const myId = sessionData?.session?.user?.id;
     if (myId) {
       supabase.from('profiles').update({ last_activity_check: new Date().toISOString() }).eq('id', myId);
     }
-    const { data: myProfile } = await supabase.from('profiles').select('interests, basics, relationship_intention').eq('id', myId).single();
 
-    const { data: existingMatches } = await supabase
-      .from('matches')
-      .select('user_a, user_b')
-      .or(`user_a.eq.${myId},user_b.eq.${myId}`);
+    // Every one of these only needs myId, not each other's result -- they
+    // were only ever chained one after another, which meant this screen's
+    // own loading spinner stayed up for the sum of ~8 round trips instead
+    // of the slowest one (the same bug already found and fixed on Home).
+    // Fired together instead; the filtering/scoring/sorting that combines
+    // their results stays as synchronous logic below, once they've all
+    // resolved.
+    const [
+      premiumStatus,
+      { data: myProfile },
+      { data: existingMatches },
+      { data: blockedByMe },
+      { data: blockedMe },
+      { data: noticesData },
+      sightings,
+      businessUpdates,
+      businessEcosystemItems,
+    ] = await Promise.all([
+      isPremium().catch(() => false),
+      supabase.from('profiles').select('interests, basics, relationship_intention').eq('id', myId).single(),
+      supabase.from('matches').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
+      supabase.from('blocks').select('blocked_id').eq('blocker_id', myId),
+      supabase.from('blocks').select('blocker_id').eq('blocked_id', myId),
+      // Scalability audit step 10: was unbounded. Same plain-cap treatment
+      // as getCommunityMembers()/getPublicCommunities() (locked decision
+      // 6) — no "load more" UI exists or is demanded today for this feed.
+      supabase
+        .from('notices')
+        .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics, relationship_intention)')
+        .eq('to_user', myId)
+        .order('created_at', { ascending: false })
+        .limit(200),
+      getNearbyMatches().catch(() => []),
+      getFollowedBusinessUpdates().catch(() => []),
+      // Phase 6 of the "build everything" plan (CLAUDE.md): "Activity as
+      // ecosystem memory" — real business-request/offer status-change
+      // events (a business's own reply, an accepted offer, a confirmed
+      // reservation), interleaved into the same chronological feed as
+      // every other real signal here, not a separate section.
+      getMyBusinessEcosystemActivity(myId).catch(() => []),
+    ]);
+    setPremium(premiumStatus);
 
     const matchedUserIds = new Set(
       (existingMatches ?? []).map((m) => (m.user_a === myId ? m.user_b : m.user_a))
     );
-
-    const { data: blockedByMe } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', myId);
-    const { data: blockedMe } = await supabase.from('blocks').select('blocker_id').eq('blocked_id', myId);
     const excludedUserIds = new Set([
       ...(blockedByMe ?? []).map((b) => b.blocked_id),
       ...(blockedMe ?? []).map((b) => b.blocker_id),
     ]);
-
-    // Scalability audit step 10: was unbounded. Same plain-cap treatment as
-    // getCommunityMembers()/getPublicCommunities() (locked decision 6) —
-    // no "load more" UI exists or is demanded today for this feed.
-    const { data: noticesData } = await supabase
-      .from('notices')
-      .select('id, from_user, created_at, is_super, profiles!notices_from_user_fkey(display_name, photo_url, interests, basics, relationship_intention)')
-      .eq('to_user', myId)
-      .order('created_at', { ascending: false })
-      .limit(200);
 
     const filteredNotices = (noticesData ?? []).filter((n) => !matchedUserIds.has(n.from_user) && !excludedUserIds.has(n.from_user));
 
@@ -143,7 +164,6 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       raw: n,
     }));
 
-    const sightings = await getNearbyMatches().catch(() => []);
     const sightingItems = sightings.slice(0, 10).map((s) => ({
       type: 'sighting',
       key: `sighting-${s.id}`,
@@ -151,20 +171,12 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       raw: s,
     }));
 
-    const businessUpdates = await getFollowedBusinessUpdates().catch(() => []);
     const businessUpdateItems = businessUpdates.map((u) => ({
       type: 'business_update',
       key: `business-${u.id}`,
       timestamp: u.created_at,
       raw: u,
     }));
-
-    // Phase 6 of the "build everything" plan (CLAUDE.md): "Activity as
-    // ecosystem memory" — real business-request/offer status-change
-    // events (a business's own reply, an accepted offer, a confirmed
-    // reservation), interleaved into the same chronological feed as
-    // every other real signal here, not a separate section.
-    const businessEcosystemItems = await getMyBusinessEcosystemActivity(myId).catch(() => []);
 
     // Friend requests are no longer interleaved into this chronological
     // feed — they now render in the "Invitations" group below instead,

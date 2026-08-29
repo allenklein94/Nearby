@@ -155,6 +155,12 @@ export default function ProfileScreen({ navigation, route }) {
     const id = sessionData?.session?.user?.id;
     setUserId(id);
 
+    // The profile row needs to resolve first (several fetches below key
+    // off id/managed_partner_id) -- but nothing after it needs each
+    // other's result, they were only ever chained one after another,
+    // which meant the screen's fields visibly filled in one at a time
+    // instead of all at once. Fired together instead, same fix already
+    // applied to Home's load().
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
       setDisplayName(data.display_name || '');
@@ -170,21 +176,13 @@ export default function ProfileScreen({ navigation, route }) {
       setPrompts(data.prompts || []);
       setConnectionGoal(data.connection_goal || '');
       setVoiceIntroPath(data.voice_intro_path || null);
-      if (data.photo_url) {
-        const url = await getSignedPhotoUrl(data.photo_url);
-        setPhotoUrl(url);
-      }
+      setManagesBusiness(!!data.managed_partner_id);
     }
-
-    const extras = await getExtraPhotos(id);
-    setExtraPhotos(extras);
-
-    const stats = await getProfileQuickStats();
-    setQuickStats(stats);
 
     // Quietly keep the stored timezone current — used server-side
     // so daily AI usage limits reset at the user's actual midnight,
-    // not the database server's default UTC midnight.
+    // not the database server's default UTC midnight. Fire-and-forget,
+    // same as before -- never awaited either way.
     try {
       const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (deviceTimezone) {
@@ -194,19 +192,20 @@ export default function ProfileScreen({ navigation, route }) {
       // fail quietly, this is a background nicety, not critical
     }
 
-    const earnedAchievements = await getAchievements();
-    setAchievements(earnedAchievements);
-    setManagesBusiness(!!data?.managed_partner_id);
-    if (!data?.managed_partner_id) {
-      try {
-        const myRequest = await getMyBusinessPartnerRequest();
-        setMyBusinessRequestStatus(myRequest?.status ?? null);
-      } catch (e) {
-        // no-op: don't block the rest of Profile loading over this
-      }
-    }
-    const earnedStats = await getEarnedProfileStats().catch(() => ({ favoriteVibe: null, usuallyActive: null }));
-    setEarnedStats(earnedStats);
+    await Promise.all([
+      data?.photo_url ? getSignedPhotoUrl(data.photo_url).then(setPhotoUrl) : Promise.resolve(),
+      getExtraPhotos(id).then(setExtraPhotos),
+      getProfileQuickStats().then(setQuickStats),
+      getAchievements().then(setAchievements),
+      data?.managed_partner_id
+        ? Promise.resolve()
+        : getMyBusinessPartnerRequest()
+            .then((myRequest) => setMyBusinessRequestStatus(myRequest?.status ?? null))
+            .catch(() => {}), // no-op: don't block the rest of Profile loading over this
+      getEarnedProfileStats()
+        .catch(() => ({ favoriteVibe: null, usuallyActive: null }))
+        .then(setEarnedStats),
+    ]);
   }
 
   async function showStrengths() {
