@@ -559,14 +559,25 @@ export async function getHomeDashboard() {
   let friendsActivity = [];
   if (friendIds.length > 0) {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    // Fetch a wider batch than we'll actually show, then dedupe to one row
+    // per distinct host before capping -- a single friend who created 3
+    // gatherings must never read as "3 friends are already making plans"
+    // (getHomeInsight() below counts friendsActivity.length as the number
+    // of *people*, not the number of gathering rows) or render as the same
+    // host's name repeated 3 times in a row.
     const { data: friendGatherings } = await supabase
       .from('gatherings')
       .select('id, title, host_id, created_at, profiles!gatherings_host_id_fkey(display_name)')
       .in('host_id', friendIds)
       .gte('created_at', threeDaysAgo)
       .order('created_at', { ascending: false })
-      .limit(3);
-    friendsActivity = friendGatherings ?? [];
+      .limit(15);
+    const seenHosts = new Set();
+    friendsActivity = (friendGatherings ?? []).filter((g) => {
+      if (seenHosts.has(g.host_id)) return false;
+      seenHosts.add(g.host_id);
+      return true;
+    }).slice(0, 3);
   }
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

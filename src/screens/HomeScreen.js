@@ -231,40 +231,78 @@ export default function HomeScreen({ navigation }) {
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
       }
-      const result = await getHomeDashboard();
-      setDashboard(result);
-      setLoadError(false);
+      // Everything below is independent -- none of these fetches need each
+      // other's *results* (each only ever sets its own isolated piece of
+      // state), they were only ever chained one after another because
+      // they're all "supplementary, non-fatal" content. Running them one
+      // at a time meant the screen's loading spinner stayed up for the sum
+      // of every round trip, not the slowest one -- on a real network
+      // that's a dozen-plus sequential round trips before `loading` ever
+      // flips false, which is the real, confirmed cause of Home
+      // "sometimes taking a while to load." Firing them all at once and
+      // awaiting together fixes both that and a real, related correctness
+      // gap: in the old sequential chain, a failure partway through
+      // silently skipped every fetch after it (including ones with their
+      // own "non-fatal" try/catch, which never even got a chance to run) --
+      // now each is genuinely independent, matching what the comments
+      // here already claimed.
+      const dashboardTask = getHomeDashboard().then((result) => {
+        setDashboard(result);
+        return result;
+      });
 
-      try {
-        const communities = await getContinueYourCommunities();
-        setContinueCommunities(communities);
-        const perks = await getUnlockedPerksCount();
-        setPerksCount(perks);
-        const unrated = await getMostRecentUnratedGathering();
-        setUnratedGathering(unrated);
-        const pendingInvites = await getPendingInvitesCount(myId);
-        setPendingInvitesCount(pendingInvites);
-        const pendingOutcome = await getPendingIntentOutcomePrompt();
-        setOutcomePrompt(pendingOutcome);
-
-        // 10/10 roadmap Part 7: a real, recurring pattern (if one exists
-        // for right now) joins the existing static rotation as one more
-        // example -- never replaces the box, never auto-submits, never
-        // shown for a user without a real repeated pattern (falls back to
-        // today's static examples exactly as before).
-        const pattern = await getMyIntentPatterns();
-        if (pattern?.placeholderText) {
-          const pool = [...INTENT_PLACEHOLDER_EXAMPLES, pattern.placeholderText];
-          setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
+      const weatherTask = (async () => {
+        try {
+          const { status } = await Location.getForegroundPermissionsAsync();
+          if (status !== 'granted') return { forecast: null, myLocation: null };
+          const myLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+          if (!myLocation) return { forecast: null, myLocation: null };
+          const forecast = await getSocialForecast(myLocation.coords.latitude, myLocation.coords.longitude);
+          setSocialForecast(forecast);
+          return { forecast, myLocation };
+        } catch (e) {
+          // Same reasoning as the rest of this block -- the weather card
+          // is a contextual extra, not core content; a failure here
+          // shouldn't flip the whole screen into an error state.
+          console.error('Social forecast fetch failed', e);
+          return { forecast: null, myLocation: null };
         }
+      })();
 
-        // Nearby 2.0 vision layer 6, "Predictive Nearby" -- a real
-        // proactive nudge, not just a smarter placeholder: the same
-        // 3+-occurrence pattern above, but only ever a dismissible
-        // suggestion the user explicitly taps to act on, never
-        // auto-submitted. Dismissed for today via a local, per-day key --
-        // a fresh day re-evaluates honestly rather than nagging forever.
-        if (pattern?.category) {
+      const communitiesTask = getContinueYourCommunities().then(setContinueCommunities).catch((e) => console.error('getContinueYourCommunities failed', e));
+      const perksTask = getUnlockedPerksCount().then(setPerksCount).catch((e) => console.error('getUnlockedPerksCount failed', e));
+      const unratedTask = getMostRecentUnratedGathering().then(setUnratedGathering).catch((e) => console.error('getMostRecentUnratedGathering failed', e));
+      const pendingInvitesTask = getPendingInvitesCount(myId).then(setPendingInvitesCount).catch((e) => console.error('getPendingInvitesCount failed', e));
+      const pendingOutcomeTask = getPendingIntentOutcomePrompt().then(setOutcomePrompt).catch((e) => console.error('getPendingIntentOutcomePrompt failed', e));
+
+      // 10/10 roadmap Part 7: a real, recurring pattern (if one exists for
+      // right now) joins the existing static rotation as one more example
+      // -- never replaces the box, never auto-submits, never shown for a
+      // user without a real repeated pattern (falls back to today's
+      // static examples exactly as before).
+      const intentPatternTask = getMyIntentPatterns()
+        .then((pattern) => {
+          if (pattern?.placeholderText) {
+            const pool = [...INTENT_PLACEHOLDER_EXAMPLES, pattern.placeholderText];
+            setIntentPlaceholder(pool[Math.floor(Math.random() * pool.length)]);
+          }
+          return pattern;
+        })
+        .catch((e) => {
+          console.error('getMyIntentPatterns failed', e);
+          return null;
+        });
+
+      // Nearby 2.0 vision layer 6, "Predictive Nearby" -- a real proactive
+      // nudge, not just a smarter placeholder: the same 3+-occurrence
+      // pattern above (hence chained off intentPatternTask, the one real
+      // dependency in this whole block), but only ever a dismissible
+      // suggestion the user explicitly taps to act on, never
+      // auto-submitted. Dismissed for today via a local, per-day key -- a
+      // fresh day re-evaluates honestly rather than nagging forever.
+      const predictiveNudgeTask = intentPatternTask
+        .then(async (pattern) => {
+          if (!pattern?.category) return;
           const dismissKey = `predictive_dismiss_${new Date().toDateString()}_${pattern.category}_${pattern.period}`;
           const dismissed = await AsyncStorage.getItem(dismissKey);
           if (!dismissed) {
@@ -274,13 +312,15 @@ export default function HomeScreen({ navigation }) {
               recordNudgeEvent('predictive', 'shown', pattern.category);
             }
           }
-        }
+        })
+        .catch((e) => console.error('predictive nudge dismiss check failed', e));
 
-        // Nearby 2.0 vision layer 3, "Group intent" -- real, dismissible:
-        // shown only when the RPC's own real >=2-connected-people
-        // threshold is actually crossed, never fabricated. Takes the top
-        // (highest-count) real signal only, so this reads as one honest
-        // nudge, not a list of speculative categories.
+      // Nearby 2.0 vision layer 3, "Group intent" -- real, dismissible:
+      // shown only when the RPC's own real >=2-connected-people threshold
+      // is actually crossed, never fabricated. Takes the top
+      // (highest-count) real signal only, so this reads as one honest
+      // nudge, not a list of speculative categories.
+      const groupIntentTask = (async () => {
         try {
           const groupSignals = await getMyGroupIntentSignals();
           if (groupSignals.length > 0) {
@@ -298,11 +338,13 @@ export default function HomeScreen({ navigation }) {
         } catch (e) {
           console.error('getMyGroupIntentSignals failed', e);
         }
+      })();
 
-        // "The Plan Engine" Phase 1 (CLAUDE.md) -- real, dismissible: the
-        // single soonest real upcoming birthday among the caller's own real
-        // connections (friends+matches), scoped server-side. Per-day
-        // dismiss, same convention as the two nudges above.
+      // "The Plan Engine" Phase 1 (CLAUDE.md) -- real, dismissible: the
+      // single soonest real upcoming birthday among the caller's own real
+      // connections (friends+matches), scoped server-side. Per-day
+      // dismiss, same convention as the two nudges above.
+      const birthdayTask = (async () => {
         try {
           const birthdays = await getUpcomingConnectedBirthdays();
           if (birthdays.length > 0) {
@@ -320,11 +362,13 @@ export default function HomeScreen({ navigation }) {
         } catch (e) {
           console.error('getUpcomingConnectedBirthdays failed', e);
         }
+      })();
 
-        // "The Plan Engine" Phase 2 (CLAUDE.md) -- real, dismissible: the
-        // soonest real upcoming hosted gathering with genuinely no venue
-        // and no business_requests row yet. Per-day dismiss, same
-        // convention as every other nudge here.
+      // "The Plan Engine" Phase 2 (CLAUDE.md) -- real, dismissible: the
+      // soonest real upcoming hosted gathering with genuinely no venue and
+      // no business_requests row yet. Per-day dismiss, same convention as
+      // every other nudge here.
+      const venueTask = (async () => {
         try {
           const needingVenue = await getMyGatheringsNeedingVenue();
           if (needingVenue.length > 0) {
@@ -342,11 +386,13 @@ export default function HomeScreen({ navigation }) {
         } catch (e) {
           console.error('getMyGatheringsNeedingVenue failed', e);
         }
+      })();
 
-        // "The Plan Engine" Phase 3 (CLAUDE.md) -- real, dismissible: the
-        // soonest real upcoming hosted gathering with at least one real
-        // still-pending sent invite. Per-day dismiss, same convention as
-        // every other nudge here.
+      // "The Plan Engine" Phase 3 (CLAUDE.md) -- real, dismissible: the
+      // soonest real upcoming hosted gathering with at least one real
+      // still-pending sent invite. Per-day dismiss, same convention as
+      // every other nudge here.
+      const rsvpsTask = (async () => {
         try {
           const outstandingRsvps = await getMyGatheringsWithOutstandingRsvps();
           if (outstandingRsvps.length > 0) {
@@ -364,31 +410,24 @@ export default function HomeScreen({ navigation }) {
         } catch (e) {
           console.error('getMyGatheringsWithOutstandingRsvps failed', e);
         }
-      } catch (e) {
-        // These are supplementary cards, not core functionality — a
-        // failure here should never block social forecast/location
-        // code that runs afterward in the same function, nor the
-        // core dashboard content that already rendered successfully.
-        console.error('Continue Community / Perks / Feedback fetch failed', e);
-      }
+      })();
 
-      let forecast = null;
-      let myLocation = null;
-      try {
-        const { status } = await Location.getForegroundPermissionsAsync();
-        if (status === 'granted') {
-          myLocation = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
-          if (myLocation) {
-            forecast = await getSocialForecast(myLocation.coords.latitude, myLocation.coords.longitude);
-            setSocialForecast(forecast);
-          }
-        }
-      } catch (e) {
-        // Same reasoning as above — the weather card is a contextual
-        // extra, not core content; a failure here shouldn't flip the
-        // whole screen into an error state once the dashboard is up.
-        console.error('Social forecast fetch failed', e);
-      }
+      const [result, weatherResult] = await Promise.all([
+        dashboardTask,
+        weatherTask,
+        communitiesTask,
+        perksTask,
+        unratedTask,
+        pendingInvitesTask,
+        pendingOutcomeTask,
+        predictiveNudgeTask,
+        groupIntentTask,
+        birthdayTask,
+        venueTask,
+        rsvpsTask,
+      ]);
+      const { forecast, myLocation } = weatherResult;
+      setLoadError(false);
 
       // Phase 1 of the "Build everything" plan -- the unified Home
       // recommendation engine. Reuses the already-fetched nearby
@@ -1096,12 +1135,11 @@ export default function HomeScreen({ navigation }) {
             real explanatory card, not a second competing hero. */}
         {seenFirstRunMoment === false && (
           <View style={styles.firstRunCard}>
-            <View style={styles.outcomePromptHeaderRow}>
-              <Text style={styles.firstRunHeading}>👋 This is Nearby</Text>
-              <TouchableOpacity onPress={handleDismissFirstRunMoment} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={16} color={colors.textTertiary} />
-              </TouchableOpacity>
-            </View>
+            {/* Was a header row with both a close icon and, below, a "Got
+                it ->" button -- both called the same dismiss handler, no
+                real distinction between them. "Got it ->" is the one real
+                dismiss action now; the redundant X is gone. */}
+            <Text style={styles.firstRunHeading}>👋 This is Nearby</Text>
             {homeRecommendations.length > 0 ? (
               <>
                 <Text style={styles.firstRunBody}>
