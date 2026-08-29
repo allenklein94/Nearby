@@ -26506,3 +26506,114 @@ run-through — next session should confirm Profile/Activity/Community all still
 section correctly (especially Community's two-phase business/hosting-partner restructure) and
 that the perceived load time is genuinely better on a real connection, not just structurally
 less sequential in the code.
+
+## Aug 29 2026 (cont'd) — the two items flagged "captured, not built" at the end of the prior
+## section — both now built for real: a persistent People/Time/Place plan-completion state,
+## and the Profile/Dating/Settings identity-field reorganization — DONE
+
+Direct follow-up to the section immediately above, closing exactly the two items it named as
+real, coherent future direction rather than something to build blind in the same pass as a
+bug-fix sweep. Both are now built.
+
+### 1. Persistent People/Time/Place plan-completion state (Match → Plan → Business)
+
+Matches the critique's own core ask exactly: "a plan (People ✓ / Time ✓ / Place ○ → 'Find a
+place') staying visibly incomplete until a real business is attached, instead of a business-
+connection banner disappearing forever after one tap." **Deliberately built with zero new
+schema/migration** — the state is a pure, computed value read fresh from already-existing tables
+(`gathering_interest`, `date_proposals`, `business_requests`, `business_request_offers`) every
+time it's rendered, never a stored "dismissed" flag — so it can never go stale or vanish the way
+the one-shot banner the critique complained about did.
+
+New `src/utils/planCompletion.js` — pure functions, no I/O: `getGatheringPlanCompletion({
+approvedAttendeeCount, businessRequest, acceptedOffer})` (People = done once any real approved
+attendee exists, else todo; Time = always done, a gathering always has a real `scheduled_at`;
+Place = done with a real accepted offer, pending with an open request, else todo) and
+`getMatchPlanCompletion({proposalStatus, businessRequest, acceptedOffer})` (People = done/pending/
+todo off the real `date_proposals.status`; Time = done once a real business ask exists — a
+genuine request/offer implies a real date/time window was already chosen; Place = same three-tier
+logic as gatherings), plus `hasStartedMatchPlan()` gating whether the row renders on
+`MatchesScreen` at all (no plan started yet → nothing new to show).
+
+New `src/components/PlanCompletionRow.js` — a shared 3-segment status row (✓/⋯/○ per stage),
+reused across all three surfaces rather than three independent hand-rolled versions. Respects
+the already-locked coral-usage rule directly in its own code: only the Place segment is ever
+made tappable (`TouchableOpacity`, coral when actionable), People/Time are always plain,
+non-interactive `View`s — coral never used for informational-only state.
+
+Two new batched service functions (one query per list, not N+1 per row):
+`getMyActivePlansByMatch(matchIds)` (`dateProposals.js`) and `getGatheringPlaceStatuses(
+gatheringIds)` (`businessFulfillment.js`) — both fetch the real underlying rows for a whole list
+of ids in a small fixed number of round trips.
+
+Wired into four real surfaces: `GatheringDetailScreen.js`'s host banner (a host now sees their
+own gathering's real completion state, not just an accepted-offer card once Place is already
+done); `DateProposalScreen.js`'s header (always visible, the persistent equivalent of the old
+one-shot prompt); `MatchesScreen.js` (a non-romantic match's row also gained a new "🤝 Plan"
+button it never had before — it previously only offered "💌 Plan" to romantic matches, even
+though the existing "Do Something Together" chat menu already worked for any match type; once a
+plan has genuinely started, the row shows the persistent completion strip instead of the
+button); `HomeScreen.js`'s "Your Plans" section (each `PlanCard` now shows the real venue name
+once confirmed, or "Finding a venue…" while a request is genuinely still open — sourced from the
+new batched fetch, not the pre-existing `hosting_partner_id`/"sponsored by" signal alone, which
+never covered the accepted-offer case).
+
+Verified via a direct `@babel/core` parse of all 8 touched/new files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors — 2278 modules, two more than the
+2276 baseline, exactly the two new files; every other touched file was an edit). No schema/RPC
+change at all, so no live-production verification or migration replay applies here — every read
+goes through already-existing, already-verified tables/RLS.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the completion row renders correctly against real
+data on all four surfaces (including the People/Time/Place icon states matching reality at
+every stage), that the new non-romantic-match "🤝 Plan" button correctly opens the together
+menu, and that Home's real venue-name/finding-a-venue text reads correctly once a real request
+exists for one of the caller's own plans.
+
+### 2. Profile/Dating/Settings reorganization — ethnicity + visibility toggles move to Profile
+
+Scoped narrowly, per the prior section's own audit: rather than a full re-litigation of every
+field's placement across Profile/Dating/Settings (a materially larger, separate project), this
+extends a decision this codebase already made once — the Aug 25 2026 taxonomy-audit
+consolidation of `gender_identity`/`interested_in_genders` onto Profile, on the reasoning that a
+self-description fact belongs where you describe yourself, not a screen away in a "preferences"
+surface, even when the same fact is also consumed by dating matching — to the one parallel case
+that same pass never touched: `ethnicity` (a self-description, exactly like gender) and
+`gender_hidden`/`ethnicity_hidden` (visibility toggles that belong next to the fields they
+actually control, not stranded on a different screen).
+
+`ProfileScreen.js` gained a "My Ethnicity" chip picker (reusing the same `ETHNICITY_OPTIONS`
+constant Settings already had — no new taxonomy) and "Hide my gender"/"Hide my ethnicity"
+switches, placed directly next to the existing gender-identity picker. Ethnicity now saves
+through the screen's existing bottom Save button alongside every other identity field; the two
+hidden-toggles keep the exact instant-write-on-toggle behavior they always had (a small local
+`toggleHiddenPref` helper mirroring the shape Settings' own `toggleNotifPref` already used, with
+optimistic UI + rollback-and-alert on failure).
+
+`SettingsScreen.js`'s "Dating Preferences" card had all three (state, `load()`, the
+`savePreferences()` payload field, and the three JSX blocks) removed. What's left there is now
+honestly scoped to real preferences *about other people* and app-level dating intent — age
+range, `ethnicity_preferences`, "Looking For" — nothing that describes the caller themselves.
+The existing "managed on your Profile" link's copy was widened from naming only gender identity
+to also naming ethnicity and visibility.
+
+**Explicitly not touched, per the same reasoning that keeps them exactly where they are**:
+`relationship_intention`/"Looking For", age range, and `ethnicity_preferences` all stay in
+Settings — every one of them is a genuine preference about *other* people, not a fact about the
+caller, so none of them belong on Profile under this same rule. No broader Settings/Profile/
+Dating field audit was attempted beyond this one concrete, already-precedented move — the wider
+reorganization the original critique gestured at remains real, coherent future direction, not
+silently expanded into here.
+
+Verified via a direct `@babel/core` parse of both touched files (clean) and a full `npx expo
+export --platform ios` (clean, no bundling errors — pure edits to two existing files, no new
+files, module count unchanged at 2278). No schema/RPC change — `ethnicity`/`gender_hidden`/
+`ethnicity_hidden` are all pre-existing `profiles` columns, this pass only moved which screen
+reads/writes them.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm Profile's new ethnicity chip picker and both switches
+render/save correctly (including the two switches' instant-write behavior surviving a network
+failure with a correct rollback), and that Settings' trimmed Dating Preferences card reads
+cleanly with the three removed rows genuinely gone, not just visually blank.
