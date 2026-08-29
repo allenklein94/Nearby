@@ -1,6 +1,198 @@
-## Aug 29 2026 — remediation pass against the Aug 28 Full Coherence Audit's two 🔴 P0
-## findings — BOTH DONE, build-wise, applied/verified live where schema was touched, plus a
-## real from-scratch migration replay for the one migration this pass added
+## Aug 29 2026 — business landing page (`docs/business.html`) rewritten to the final external
+## blueprint (200 numbered points, then a 20-item revision pass) — PLAN LOCKED, executing below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — check `git status`/`git log` and this section's own status note for what's
+actually landed vs. still just this plan if a restart hits mid-build.
+
+### Context
+
+The user pasted a very large, two-part external strategic reply about the business-facing
+marketing page: a 200-point blueprint (exact section order, headline/subheadline per section,
+what UI appears where, an explicit "what to remove" list) followed by a 20-item revision pass
+("does anything need to be added since our latest additions") reacting to real product work that
+landed *after* the blueprint was first written — the Request→Offer→Accept/Reservation engine,
+proactive business availability, business preferences/"what you want more of," Signature
+Experiences, weather-aware business ranking, and the Trust & Safety content-screening system.
+The user's own instruction: plan this in the file first, then execute, committing/pushing and
+updating this file along the way.
+
+**This is a rewrite of one static file, `docs/business.html`** (the existing Milestone-5
+business-acquisition landing page, already reviewed/adversarially-checked twice — see this
+file's own Aug 17 2026 "Business Partner acquisition experience" and Aug 17 2026 "consumer-
+connectivity trace" sections) — not a new build, and not a schema/RPC change. The real deep-link
+mechanism (`nearby://business-apply`), the funnel-event logging (`business_acquisition_events`,
+`landing_viewed`/`demo_opened`/`cta_clicked` — the only 3 of its 14 real CHECK-constrained event
+values this page itself ever fires, the rest are logged server-side from the apply screen/
+dashboard/admin RPCs), the theme-token CSS translated from `src/theme.js`, and the "no App Store
+listing yet, so the CTA falls back to honest instructional copy, not a fabricated store link"
+posture are all kept exactly as they are — this pass only rewrites section content/structure.
+
+### Audit — every claim the blueprint wants to make, checked against the real, current product
+### before writing a word of copy, matching this file's own standing "no invented claims" rule
+
+Real, buildable, stated directly and confidently (every one independently verified in this
+session's own recent history, not assumed from memory):
+- **The Request → Offer → Accept/Reservation engine is fully real** ("The Offer System," all 6
+  phases DONE) — a consumer's ask (solo, from a gathering, from a confirmed date, from a group
+  plan) fans out to eligible nearby businesses (reliability-weighted, not first-come), a business
+  responds with a real offer (`standard|discount|perk|upgrade|alt_time` — never hard-coded to a
+  discount), the consumer picks a winner, a real reservation confirms. This is the single biggest
+  addition since the blueprint was first written and the user's own revision pass explicitly
+  says to elevate it to a hero-level demonstration, not leave it buried under "Grow."
+- **Proactive business availability** ("we have capacity right now") is real (Business
+  Fulfillment Phase 4) — a business declares real terms once; it's matched against every
+  currently-open request in reach immediately, and against every future one automatically, both
+  directions.
+- **"What you're great for" / "what you offer" is a real, curated chip vocabulary**, not
+  free text — `BUSINESS_ATTRIBUTE_OPTIONS` (Outdoor Seating, Date-Friendly, Group-Friendly, Live
+  Music, Kid-Friendly, Quiet, Casual, Upscale), `CUISINE_OPTIONS` (11 real values), and
+  `ACCOMMODATE_PARTY_TYPE_OPTIONS` (🧍 Solo-Friendly / 👥 Bring Friends / 👨‍👩‍👧‍👦 Big Group / 💕 A
+  Date Idea) are all real, already-built picker vocabularies — the landing page's illustrative
+  chips are pulled verbatim from these real values, not invented placeholders that don't match
+  what a business owner will actually see on signup.
+- **"What you want more of" is real** — `priority_attributes` (permanent) plus a real, separate
+  temporary priority-boost mechanism (a category boost with a real expiry, Business Intelligence
+  Phase 1) and `PRIORITY_TIME_WINDOW_OPTIONS` (🌅 Mornings / 🌤️ Afternoons / 🌙 Evenings /
+  🎉 Weekends).
+- **Signature Experiences are real** — curated offer bundles, with a real, deterministic
+  (non-LLM) "we drafted 4 for you from your own confirmed attributes" suggestion flow the owner
+  keeps/edits/removes, plus full manual create/edit.
+- **Match Radar / "Demand Near You" is real** — aggregated real local demand (category/party-
+  size/time-window rollups within a business's own real radius), zero individual identity ever
+  exposed to the business, plus a real "you don't currently offer this" demand-gap signal.
+- **The Business Opportunities inbox is real**, with real itemized match reasons drawn from the
+  same shared semantic vocabulary consumers see (Interest/Distance/Time/Context/Availability/
+  Capacity/Popularity — Aug 28 P1 item 4), weather-aware ranking (Aug 28 P1 item 7), budget-aware
+  ranking, and reliability-weighted ordering.
+- **Business reliability/reputation is real and consumer-visible** — real response time,
+  acceptance rate, and completion rate, shown to the *consumer* deciding whether to trust an
+  offer, and it genuinely affects ranking (a reliable business's offer is ordered above a
+  less-reliable one, and eligible businesses are notified in reliability-weighted order, not
+  plain first-come).
+- **Missed-match reporting is real** — a business gets real, itemized reasons for requests it
+  didn't win ("too far," "over capacity," "outside your active hours").
+- **The apply/onboarding flow is real** — a genuine Google Places search-based "find your
+  business" step, a confirm-and-complete step, submission for a real (not instant) admin review,
+  stated as a credibility signal per this file's own Aug 17 2026 locked copy decision, not
+  softened here.
+- **Trust & Safety content screening is real** (Decision 6, all 5 phases) — real 4-tier
+  screening on every real business-authored field, a periodic re-sweep of already-published
+  content. Statable honestly as "Nearby reviews business content to help keep things safe and
+  legitimate" — **never** an absolute claim ("we prevent all bad actors"), matching the user's
+  own item 11 instruction not to overclaim.
+- **The consumer "Start Something" side is real** — Home's intent box ("What do you want to
+  do?"), Quick Picks, the FAB.
+
+Explicitly **not** real — labeled "Coming to Nearby" (matching this file's own established
+convention for exactly this situation, e.g. the business-to-business collaboration idea already
+captured read-only in the Aug 27 2026 vision-doc section) or omitted outright, never silently
+implied as already live:
+- **Business-to-business collaboration/partnerships** — real, coherent future direction per this
+  file's own Aug 27 2026 capture, never built. Kept low on the page, explicitly labeled.
+- **A live "preview your business before you sign up" web generator** (blueprint items 182-186)
+  — not built, and not feasible to fake honestly (there's no web-based business-profile
+  generator anywhere in this stack; the real "find your business" step already happens *inside*
+  the app's own apply screen, which needs the app installed). **Not built this pass** — the
+  real, already-built 4-step apply flow (Find → Confirm & Complete → Submit for Review → Go
+  Live) already covers the spirit of "low-friction, find-first" onboarding items 185-187 ask
+  for; a true instant web preview is a materially larger, separate feature.
+- **Self-serve paid tiers / billing** — `brand_partners.tier` (Core/Growth/Brand) is real
+  schema with real feature-gating, but there is no self-serve upgrade path or Stripe billing for
+  it (only a dev/admin tool exists) — pricing section stays "Free to start," with the existing
+  honest "tailored partnership options" note preserved rather than inventing a self-serve
+  upgrade CTA.
+- **City-specific/geo-aware landing copy** ("Nearby is coming to Delray Beach") — no real
+  geo-detection or city-launch infrastructure exists on this static page. Not built.
+- **A literal "Host Something" button** — no such single UI element exists by that name; the
+  real underlying actions (create a gathering, post availability, create an offer, create a
+  Signature Experience) are all real and are what the copy actually describes — "host
+  something"/"give people something to do with you" is used as *descriptive language* for real
+  capabilities, never implying a specific unbuilt button exists.
+
+### Locked section order (adapting the user's own revised 20-section architecture, mapped onto
+### only what's real per the audit above)
+
+1. **Hero** — "Be part of what people do nearby." Real consumer-intent framing, real deep-link
+   CTA (unchanged mechanism), real phone mockup reusing the existing established pattern.
+2. **The problem / consumer intent** — "People aren't looking for another business directory,"
+   the 5 example asks, "Nearby connects those moments with businesses that can make them
+   happen."
+3. **The differentiator** — "It's not just what's nearby. It's what's relevant." + "distance
+   isn't enough" + "the right customer isn't always the closest customer" (real: reliability-
+   weighted fan-out, attribute/cuisine-bonus scoring, weather-aware ranking all genuinely make
+   this true, not just a slogan).
+4. **The core loop** — "People bring the plans. You bring the experience." Real 4-step loop
+   diagram (person wants something → Nearby understands it → business matches/responds →
+   real-world action → relationship).
+5. **Two ways to become part of the plan** — real, direct mapping of the actual product: (1)
+   people find you (discovery/matching), (2) you respond to real demand (Business Opportunities
+   inbox + Match Radar + proactive availability). This is where the Offer System gets its
+   hero-level demonstration, per the user's own explicit instruction.
+6. **Four pillars: Discover · Respond · Create · Connect** (the user's own revised set, replacing
+   the original Discover/Create/Connect/Grow — "Grow" becomes the outcome, not a pillar).
+   - DISCOVER — profile, categories/attributes/cuisine, weather/reliability-aware ranking.
+   - RESPOND — Business Opportunities inbox, Match Radar, proactive availability, real offers.
+   - CREATE — Signature Experiences, gatherings, standing offers.
+   - CONNECT — messaging, community, follows, the relationship loop.
+7. **"Tell Nearby what you're great at — and what you're looking for"** — the real chip pickers
+   (attributes/cuisine/accommodates/priority time windows/priority attributes + temporary
+   boost), mapped 1:1 onto the real vocabulary audited above, never invented labels.
+8. **The business profile, made dynamic** — real section-by-section mockup (Signature
+   Experiences, availability pulse, Match Radar teaser, upcoming gatherings, reliability line) —
+   same "real UI, not stock photography" convention the existing demo section already uses.
+9. **Reliability & trust** — real response-time/acceptance/completion signal, framed as "the
+   right customer isn't always the closest" pays off in real ranking; plus a concise, honestly-
+   scoped Trust & Safety line (content review, never an absolute-prevention claim).
+10. **"Not another marketing platform" / what Nearby isn't** — per the user's own item 172, never
+    naming a competitor, just the behavioral distinction (no constant posting, no ad manager, no
+    coupon book).
+11. **Get your business on Nearby** — the real, unchanged 4-step apply flow, reframed per items
+    185-187 ("Find Your Business," not "Create a business account"; verification framed as
+    protection, not bureaucracy).
+12. **Business-to-business collaboration** — explicitly labeled "Coming to Nearby," kept low,
+    matching the user's own instruction to place it near the bottom.
+13. **Pricing** — kept simple, "Free to start," the existing honest tailored-partnership note
+    preserved, no invented self-serve tier upgrade.
+14. **You control your presence** — trust/ownership section (item 170), real: every business-
+    authored field really is owner-editable and owner-controlled.
+15. **FAQ** — expanded from the existing 5 to cover the new real capabilities (do I have to
+    discount, how does matching work, what happens if I don't respond, is my content
+    reviewed) — every answer traceable to something real, matching the existing FAQ's own
+    honesty bar.
+16. **Closing CTA** — the signature line, real deep-link CTA (unchanged mechanism).
+
+### What gets removed from the current page, per the user's own explicit "remove" list
+
+The current page's 4-card generic value-prop grid (host gatherings / offers people redeem /
+see how people find you / build relationships) is folded into the new Discover/Respond/Create/
+Connect structure rather than kept as a separate, competing section — matches the user's own
+"don't create eight disconnected feature cards, group them" instruction (items 197-198).
+
+### Locked, not to be softened during the build
+
+- Never insult or name a competitor (item 172) — behavioral distinction only.
+- Every chip/category label shown anywhere on the page must be a real, verifiable value from
+  `BUSINESS_ATTRIBUTE_OPTIONS`/`CUISINE_OPTIONS`/`ACCOMMODATE_PARTY_TYPE_OPTIONS`/
+  `PRIORITY_TIME_WINDOW_OPTIONS` — no invented chip label.
+- No absolute safety claim ("we prevent every bad actor") — matches item 11's own instruction.
+- No fabricated numbers anywhere in any mockup — same "deliberately generic, clearly-labeled
+  placeholder text" convention the existing demo section already established.
+- No self-serve paid-tier CTA, no Stripe-implying language — matches this file's own repeated
+  "billing needs the user present" stance.
+- Real deep-link mechanism, real funnel-event logging (`landing_viewed`/`demo_opened`/
+  `cta_clicked`), real theme tokens — none of this gets touched, only content/structure around
+  it.
+
+### Verification convention, matching this file's own established bar for this exact file
+
+`docs/business.html` isn't part of the Expo bundle, so `npx expo export` doesn't cover it —
+verified instead via a direct HTML well-formedness parse (`html.parser`, zero unclosed/
+mismatched tags) and a `node --check` syntax pass on the page's own inline script, matching the
+verification method already used for this same file in the Aug 17 2026 and Aug 27 2026 passes.
+No schema/RPC touched, so no live-production verification or migration replay applies here.
+
+### Status: plan locked, executing below.
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file — check `git status`/`git log` and each item's own status note for what's
