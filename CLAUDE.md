@@ -26282,3 +26282,178 @@ per-partner billing math running end-to-end on a schedule, but no money actually
   "a fresh empty Supabase project can be rebuilt from committed files alone" rather than assert
   it — verifying against live production alone cannot catch a baseline/migration conflict, since
   production was never rebuilt from these files in the first place.
+
+## Aug 29 2026 (cont'd) — external product-critique reply audited against real code;
+## P0/P1 correctness + UX fixes locked and executing; the two large architectural asks
+## (persistent plan-completion state, Profile/Dating/Settings reorg) captured read-only,
+## not built this pass — plus Home/Discover/Sign-Out load-time fixes
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file. The user pasted a second AI's detailed reaction to a batch of their own
+UX observations (screenshots of: a "3 of your friends are already making plans" line when the
+account has 1 friend; "Apple is hosting Coffee" appearing 3 times; a first-run explainer card
+with both an X and a "Got it" button doing the same thing; Join/Host Gathering buttons reading
+as disabled; a match with no way to start a plan or request a business; a business-connection
+prompt that vanishes after one tap instead of tracking as an unfinished step; a host seeing
+"Why this fits you" on their own gathering; Profile/Dating information sprawl; Discover's
+People content allegedly surviving a switch to Things To Do) plus a large "persistent
+plan-completion loop" and "Profile vs Dating reorg" proposal, and asked to plan + execute,
+committing along the way. Separately flagged: Home, Discover, and Sign Out feel slow to load
+sometimes.
+
+**Every claim was checked against the real, current code before building anything** — same
+standing rule as every other section in this file. Several turned out to be real, confirmed
+bugs; one (Discover mode leakage) checked out as already structurally correct in source, not
+rebuilt; two (the persistent plan-completion loop across the whole app, and the Profile/Dating/
+Settings reorg) are genuinely large, multi-system architectural asks — captured here as real,
+coherent future direction, not built blind in the same pass as a bug-fix sweep, matching this
+file's own repeated "flag a real architectural change, don't guess at it" convention.
+
+### Confirmed real, fixed this pass
+
+1. **Friend-count / duplicate-host bug — the actual root cause of both "3 friends" and "Apple
+   is hosting Coffee" x3.** `homeDashboard.js`'s `friendsActivity` was `up to 3 gathering rows`
+   from `.in('host_id', friendIds).limit(3)` — rows, not unique friends. If one friend created 3
+   gatherings in the lookback window, the query correctly returned 3 real rows, but
+   `getHomeInsight()` reads `dashboard.friendsActivity.length` and says "N of your friends are
+   already making plans" — genuinely counting activity rows, not distinct people, exactly the
+   bug the pasted critique named. The same underlying list is also what renders the "{name} is
+   hosting {title}" row on Home — so the same single-friend/multi-gathering case produces the
+   visually-duplicate "Apple is hosting Coffee" x3 the user saw. **Fixed**: `friendsActivity` now
+   fetches a wider batch (15 rows) ordered by recency, then dedupes to one row per distinct
+   `host_id` (keeping each host's most recent gathering) before capping to 3 — so
+   `friendsActivity.length` is now genuinely `COUNT(DISTINCT friend_user_id)`, matching the
+   critique's own proposed fix exactly, and the same host can never render twice in the list.
+2. **First-run explainer card's X and "Got it →" did the exact same thing.** Both called
+   `handleDismissFirstRunMoment` — confirmed, no semantic difference. Per the critique's own
+   stated preference ("I slightly prefer this for Nearby because the interface is already fairly
+   dense"), the redundant X close icon was removed; "Got it →" is the one real dismiss action.
+3. **Host saw "Why this fits you" on their own gathering.** `GatheringDetailScreen.js` rendered
+   the fit-reasons card (`getGatheringFitReasons()`) unconditionally whenever `reasons.length >
+   0`, with no host/viewer distinction — a host viewing their own gathering was told why *it*
+   fits *them*, which is incoherent (they made it). Fixed: the section is now gated on
+   `!gathering.isHost && reasons.length > 0`. A host-facing "why others might like this" variant
+   was **not** built — there's no real per-audience signal to compute that from without picking
+   one specific hypothetical viewer, which would mean fabricating a reason; flagged as a real,
+   coherent future idea (matches the critique's own suggestion) rather than built on a guess.
+4. **Non-romantic matches had zero "start something together" entry point.** `MatchesScreen.js`
+   only ever showed a "💌 Plan" button (→ `DateProposal`) for `isRomanticMatch` rows — a
+   friendship- or gathering-sourced match had no action beyond View Profile/Chat, even though
+   `ChatScreen.js`'s own "Do Something Together" menu (12 real destinations, including "🌆
+   Suggest a Date Night," which already runs the shared-interest → local-business flow for *any*
+   match type, not just romantic ones) was always fully available — just one screen deeper,
+   with no visible entry point from the match list itself. Fixed: non-romantic match rows now
+   get their own "🤝 Plan" button, navigating to `Chat` with a new `openTogetherMenu: true` route
+   param; `ChatScreen.js` reads it and opens the existing together-menu once, on mount (a
+   `useRef` guard prevents it reopening on a later re-render/refocus with the same stale param).
+   This reuses every existing mechanism — no new schema, no new screen — it just gives a match
+   that isn't dating-shaped the same one-tap discoverability a romantic match already had.
+
+### Checked, found already correct — not rebuilt
+
+**Discover's "People survives switching to Things To Do."** Read `DiscoverHubScreen.js`'s full
+render tree: the outer body is a genuine `mode === 'people' ? (<View>...</View>) : viewStyle ===
+'map' ? (...) : (<ScrollView>...)` chain — a real if/else-if/else, not two independent
+conditionals that could both be true at once. Different element types at each branch
+(View/View/ScrollView), so React fully unmounts the People branch (including the embedded
+`DiscoveryScreen`/`FriendDiscoveryScreen` and their own `StoriesRow`) the instant `mode` flips
+away from `'people'` — there's no code path here that could leave People content mounted while
+Things To Do renders. This may have been a stale impression from before the Round-2/3 IA work
+already documented elsewhere in this file, or worth a real device re-check, but nothing in the
+current source reproduces it — not silently rebuilt on a guess.
+
+**"Join Gathering"/"Host Gathering" buttons "look disabled."** Read the real button styles:
+`joinButton` already has a real category color background, `shadow.button`, and bold white
+uppercase text (`JOIN GATHERING`/`REQUEST TO JOIN`/`JOIN WAITLIST`) — structurally a real
+primary-CTA treatment already, not a muted/disabled one. Whether a *specific* category's color
+happens to render as low-contrast against white text can't be confirmed without a real device
+render, and changing colors blind risks making a currently-fine button worse. Flagged for a real
+device check rather than guessed at.
+
+### Real, deliberately not built this pass — captured, not silently dropped
+
+**A persistent "unfinished plan" state connecting Match → Plan → Business, tracked as a real
+completion state rather than a one-shot prompt that vanishes.** The critique's own core idea —
+a plan (People ✓ / Time ✓ / Place ○ → "Find a place") staying visibly incomplete until a real
+business is attached, instead of a business-connection banner disappearing forever after one tap
+— is coherent and matches this file's own already-built Offer System primitives
+(`business_requests`/`business_request_offers`, the Aug 25 2026 "Gap 1/Gap 2" merged
+accepted-offer cards on `GatheringDetailScreen`/`DateProposalScreen`). But making this a real,
+first-class state surfaced consistently across Home/Matches/Gatherings/Activity is a genuine
+cross-cutting UI/data-model project, not a bug fix — it would mean deciding a real completion-
+state taxonomy (People/Time/Place, or something else), where it renders on every surface that
+shows a plan, and how it interacts with the plans that were never meant to have a business
+attached at all (a pure social gathering). Not attempted here; recorded as real, coherent future
+direction, matching this file's own standing "flag a real architectural change, don't build it
+on inferred momentum" convention.
+
+**Profile / Dating / Settings information reorganization** (identity vs. dating-specific
+preferences vs. app-level settings, canonical data surfaced contextually per screen). Checked
+against this file's own extensive prior IA-restructure history (multiple already-completed
+rounds reorganizing exactly Home/Profile/Settings/Inbox) before treating this as still fully
+open — the broad shape the critique describes (Profile = identity, Dating owns its own
+preferences surface, Settings = pure app/account controls) is *closer* to what's already built
+than the critique's own framing assumes, but a full re-audit of every current field placement
+against this exact proposed split is real, dedicated work on its own, not something to do as a
+byproduct of a bug-fix pass. Not attempted here; recorded as a real future audit item.
+
+### Home / Discover / Sign Out — real load-time causes found and fixed, not just flagged
+
+**Home — the actual, confirmed cause of "takes a while to load sometimes."** `HomeScreen.js`'s
+`load()` ran roughly a dozen independent Supabase fetches **sequentially** — `getHomeDashboard()`,
+then `getContinueYourCommunities()`, then `getUnlockedPerksCount()`, then
+`getMostRecentUnratedGathering()`, then `getPendingInvitesCount()`, then
+`getPendingIntentOutcomePrompt()`, then `getMyIntentPatterns()`, then (each already its own
+try/catch) `getMyGroupIntentSignals()`, `getUpcomingConnectedBirthdays()`,
+`getMyGatheringsNeedingVenue()`, `getMyGatheringsWithOutstandingRsvps()`, then a location+weather
+fetch — one full network round trip after another, with the screen's own `loading` flag only
+flipping `false` in the outer `finally` once every one of them had finished. On a real mobile
+connection that's the *sum* of a dozen round trips before the spinner ever clears, not the
+slowest single one — this is a real, structural, confirmed cause of the reported slowness, not
+a guess. A second, real correctness gap fell out of the same code: several of these were only
+reachable *after* an earlier one in the same shared `try` block, so a failure partway through
+silently skipped supplementary fetches later in the chain (including ones with their own
+"non-fatal" try/catch) that were never supposed to depend on each other at all.
+
+**Fixed**: every one of these fetches is now fired concurrently (each as its own small async
+task, each keeping its own existing try/catch/dismiss-key/nudge-logging logic verbatim) and
+awaited together via `Promise.all` — total wait becomes the slowest single fetch, not the sum of
+all of them, and a failure in one genuinely no longer blocks any of the others (closing the
+correctness gap above as a side effect, not just the speed one). `getMyIntentPatterns()`'s
+result is still correctly shared between the placeholder-text branch and the predictive-nudge
+branch that both read it. The final recommendation-building step (needs `result.nearbyGatherings`
+from the dashboard fetch and `forecast`/`myLocation` from the weather task) still correctly runs
+after the batch, since it's the one real step with an actual data dependency on the others.
+
+**Discover — a smaller, real win.** `DiscoverHubScreen.js`'s main `Promise.all` already
+parallelizes its 5 core fetches (already correct, not touched) — but it only starts *after* a
+sequential location-permission-check + GPS-fix, even though 3 of the 5 (`getNearbyGatherings`,
+`getPublicCommunities`, `getMyCommunities`) don't need location at all. Fixed: those 3 now start
+immediately, in parallel with the location resolution, instead of waiting on it — only the two
+genuinely location-dependent fetches (`getActiveOffers`, `getNearbyBusinesses`) still wait for
+`loc` to resolve (or fall back to `null`, unchanged behavior).
+
+**Sign Out — no loading feedback at all, not a slow query.** `SettingsScreen.js`'s `signOut()`
+was a bare `await supabase.auth.signOut()` with no visible state change while that network round
+trip (Supabase's `signOut()` calls the server to invalidate the session before resolving) was in
+flight — tapping the button gave no feedback until the whole thing completed, reading as a hang
+even when the network itself was only moderately slow. Fixed: a real `signingOut` state disables
+the button and swaps its label to "Signing Out..." for the duration of the call — the actual
+sign-out mechanism (`supabase.auth.signOut()`, still a real server-side session invalidation, not
+weakened to a local-only scope) is unchanged.
+
+### Verification
+
+All six fixes verified via a direct `@babel/core` parse of every touched file (clean) and a full
+`npx expo export --platform ios` after the full set landed. No schema/RPC change in this whole
+pass — every fix is pure client-side logic, so no live-production verification or migration
+replay applies here.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: Home's "Your Plans"/friends-
+activity rows read correctly against a real multi-gathering-per-friend account, the first-run
+card dismisses correctly with just "Got it →," a host viewing their own gathering no longer sees
+"Why this fits you," a non-romantic match's new "🤝 Plan" button correctly opens the together
+menu exactly once, and that Home/Discover both genuinely feel faster on a real network — this
+pass's fixes are grounded in a real, confirmed sequential-round-trip bug, but the actual
+before/after feel has only been reasoned through from source, never measured on a device.
