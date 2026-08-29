@@ -26617,3 +26617,74 @@ run-through — next session should confirm Profile's new ethnicity chip picker 
 render/save correctly (including the two switches' instant-write behavior surviving a network
 failure with a correct rollback), and that Settings' trimmed Dating Preferences card reads
 cleanly with the three removed rows genuinely gone, not just visually blank.
+
+## Aug 29 2026 (cont'd) — app icon hierarchy corrected: coral gradient + white N is now the
+## primary icon, the dark-background rendering becomes a real, disclosed secondary asset
+
+The user gave a direct correction to the icon generated in the "Aug 27 2026 — real brand mark
+rollout" section further up this file: that pass had picked the dark-background rendering as
+`assets/icon.png` (reasoning it matched the source sheet's own "APP ICON PREVIEW" mockup) — the
+user's own explicit call is that the coral→pink/peach gradient background with a solid white N
+Connection mark is the real primary iPhone/App Store icon, with the dark-background version
+demoted to a supporting dark-mode/logo variant.
+
+**Checked directly against the source sheet before rebuilding anything, not guessed**: the
+sheet's own "LOGO VARIATIONS" row already has a real, pre-rendered "SINGLE COLOR" swatch —
+exactly the coral-bg/white-glyph combination the user asked for, confirmed by reading the image
+directly. That swatch is real, already-existing brand art, not something this pass invented —
+but at ~140px in the 1254×1254 sheet, it's far too small to use directly for a 1024px app icon
+without visible upscale softness. Rebuilt it at full resolution instead: sampled the swatch's
+own pixels directly and confirmed a real, smooth top-to-bottom gradient (lighter warm coral at
+top, more saturated coral-red at bottom); cross-checked that direction against the sheet's own
+explicitly-labeled "COLOR PALETTE" section (read via a zoomed crop, not OCR-guessed) — the real
+canonical hex values are `#FF7A59` and `#FF5A5F`, matching both the swatch's own real shading
+and (for `#FF5A5F` specifically) the value already locked into `app.json`'s
+`android.adaptiveIcon.backgroundColor` from the original rollout.
+
+**`scripts/generate-brand-assets.py` updated, not just re-run with different literals** — the
+script's own header comment now states the locked hierarchy explicitly so a future session
+doesn't silently flip it back:
+- `make_app_icon()` rewritten: a new `_vertical_gradient()` helper builds a real, smooth
+  `#FF7A59` → `#FF5A5F` background at full resolution; the same real glyph shape every other
+  output in this script already shares is filled solid white (reusing the exact
+  alpha-fill-white technique `make_notification_icon()` already established) instead of its own
+  natural multi-color gradient. Still a plain square, no pre-rounded corners baked in — the
+  platform applies its own icon mask at install time, matching the user's own explicit
+  instruction. No wordmark, no pin, no spark.
+- **New `make_dark_mode_mark()`** — the prior primary rendering (dark background + the glyph's
+  own natural gradient) is kept, not deleted, now written to a new
+  `assets/branding/dark-mode-icon.png` as a real, disclosed secondary brand asset matching the
+  sheet's own "BLACK" logo variation. **Explicitly not wired into `app.json`** — this Expo-
+  managed project has no native alternate-icon/dark-mode-icon mechanism configured, so there is
+  genuinely nowhere for the OS to switch to this asset at install time today; flagged plainly in
+  the function's own docstring rather than silently implying it's live.
+- `make_adaptive_icon_foreground()`'s fill changed from a soft cream tint (`#FFF6F0`) to solid
+  white, matching the new primary icon's own white-on-coral treatment exactly — Android's
+  `adaptiveIcon.backgroundColor` was already `#FF5A5F` (coral) from the original rollout, so only
+  the foreground glyph's own fill color changed here.
+- **Untouched, deliberately**: `assets/notification-icon.png` (already solid white on a
+  transparent background, required flat by Android's own OS convention — unrelated to this
+  hierarchy question) and `assets/branding/splash-mark.png` (a real, separate design choice —
+  the glyph's own natural gradient on a light cream splash background — not addressed by the
+  user's message, not touched). The in-app resolution-independent `NearbyMark.js` SVG component
+  (white/black/gradient variants, used on Login/Onboarding) already covers the "monochrome when
+  required by a specific UI context" line from the user's own message and wasn't touched either.
+
+**Verified by direct pixel comparison, not assumed correct from the code alone**: read the real
+source swatch and the newly generated `assets/icon.png` side by side (via the Read tool, viewing
+both images directly) — same gradient hue/direction, same glyph shape, same real square (no
+baked corners) versus the reference's own rounded-square rendering. Composited the new
+`adaptive-icon-foreground.png` onto its real `#FF5A5F` background color (not a blank/white
+preview canvas, which would have made a white-on-transparent glyph invisible) and confirmed it
+reads correctly. Confirmed via `git status`/`git diff` that `notification-icon.png` and
+`splash-mark.png` produced byte-identical output (their generating functions were never
+touched), and that `app.json` needed zero edits (every touched output kept its original
+filename).
+
+**Not done, disclosed rather than silently skipped**: no simulator/device pass, and no real
+Xcode/Android Studio icon-mask preview — next session should confirm the icon renders correctly
+once the platform applies its own rounded-corner mask. Also restated from the original rollout,
+still true: editing the raster asset alone has zero effect on an already-installed TestFlight
+build — a new `eas build`/`eas submit` cycle is still required to actually get this onto a real
+device, and per the original rollout's own note, the user previously said "not now" for that
+step; still not run this pass either.
