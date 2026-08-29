@@ -9,6 +9,7 @@ const {
   scoreGatheringForResolver,
   priceAndPartyBonus,
   attributeAndCuisineBonus,
+  detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
@@ -227,5 +228,23 @@ describe('scoreGatheringForResolver', () => {
 describe('SCORE_CONFIRMED_AVAILABILITY_FLOOR', () => {
   it('structurally exceeds policy-only businesses\' own real maximum possible score (SCORE_CLOSE_DISTANCE)', () => {
     expect(SCORE_CONFIRMED_AVAILABILITY_FLOOR).toBeGreaterThan(SCORE_CLOSE_DISTANCE);
+  });
+});
+
+// P1 remediation (CLAUDE.md, Aug 28 2026 Full Coherence Audit, Scenario D):
+// a real, deterministic phrase check -- never a fabricated AI classification.
+describe('detectFriendDiscoveryIntent', () => {
+  it('matches real person-shaped phrasing', () => {
+    expect(detectFriendDiscoveryIntent('I want to meet new people who like tennis')).toBe(true);
+    expect(detectFriendDiscoveryIntent('help me make new friends nearby')).toBe(true);
+    expect(detectFriendDiscoveryIntent('looking to find friends who like hiking')).toBe(true);
+    expect(detectFriendDiscoveryIntent('I want to meet someone tonight')).toBe(true);
+  });
+
+  it('does not match an ordinary gathering/community ask', () => {
+    expect(detectFriendDiscoveryIntent('dinner tonight for two')).toBe(false);
+    expect(detectFriendDiscoveryIntent('start a running club')).toBe(false);
+    expect(detectFriendDiscoveryIntent('')).toBe(false);
+    expect(detectFriendDiscoveryIntent(null)).toBe(false);
   });
 });

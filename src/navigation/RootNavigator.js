@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Animated, TouchableOpacity, Linking } from 'react-native';
+import { Animated, TouchableOpacity, Text, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -449,7 +449,37 @@ export default function RootNavigator() {
             <Stack.Screen name="GatheringHub" component={GatheringHubScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: 'Activity', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: 'Friends', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="GatheringChat" component={GatheringChatScreen} options={({ route }) => ({ headerShown: true, title: route.params?.gatheringTitle ? `${route.params.gatheringTitle} Chat` : 'Group Chat', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen
+              name="GatheringChat"
+              component={GatheringChatScreen}
+              options={({ route, navigation }) => ({
+                headerShown: true,
+                // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
+                // "the chat-header issue is easy") -- matches 1:1
+                // ChatScreen's own tappable-header-title pattern
+                // (headerTitle -> ViewProfile). GatheringChat has 3 real
+                // entry points (GatheringDetail/GatheringHub/
+                // GatheringsScreen), never just the one CommunityChatScreen
+                // has -- so, unlike that screen's own already-fixed "tap
+                // just pops back to where you came from" bug, tapping here
+                // genuinely pushes a real GatheringDetail most of the time,
+                // not a disguised back button.
+                headerTitle: () => (
+                  <TouchableOpacity
+                    onPress={() => route.params?.gatheringId && navigation.navigate('GatheringDetail', { gatheringId: route.params.gatheringId })}
+                    accessibilityLabel={route.params?.gatheringTitle ? `View ${route.params.gatheringTitle}` : 'View gathering'}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
+                      {route.params?.gatheringTitle ? `${route.params.gatheringTitle} Chat` : 'Group Chat'}
+                    </Text>
+                  </TouchableOpacity>
+                ),
+                headerStyle: { backgroundColor: colors.background },
+                headerTintColor: colors.textPrimary,
+                headerShadowVisible: false,
+              })}
+            />
             <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={{ headerShown: true, title: 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
@@ -483,7 +513,32 @@ export default function RootNavigator() {
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessTier" component={AdminBusinessTierScreen} options={{ headerShown: true, title: 'Business Tier Switch (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminContentReview" component={AdminContentReviewScreen} options={{ headerShown: true, title: 'Content Review Queue (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BusinessConversation" component={BusinessConversationScreen} options={({ route }) => ({ headerShown: true, title: route.params?.partnerName ?? 'Message', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen
+              name="BusinessConversation"
+              component={BusinessConversationScreen}
+              options={({ route, navigation }) => ({
+                headerShown: true,
+                // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit) --
+                // same tappable-header pattern as GatheringChat above,
+                // matching 1:1 ChatScreen's own established convention:
+                // "report menu but no view business" is now a real
+                // tap-through to BusinessProfileScreen.
+                headerTitle: () => (
+                  <TouchableOpacity
+                    onPress={() => route.params?.partnerId && navigation.navigate('BusinessProfile', { partnerId: route.params.partnerId })}
+                    accessibilityLabel={route.params?.partnerName ? `View ${route.params.partnerName}'s profile` : 'View business profile'}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
+                      {route.params?.partnerName ?? 'Message'}
+                    </Text>
+                  </TouchableOpacity>
+                ),
+                headerStyle: { backgroundColor: colors.background },
+                headerTintColor: colors.textPrimary,
+                headerShadowVisible: false,
+              })}
+            />
             <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, title: 'Edit Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Places" component={PlacesScreen} options={{ headerShown: false }} />

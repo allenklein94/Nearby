@@ -100,6 +100,34 @@ export function priceAndPartyBonus(gathering, priceLevel, partyType) {
   return priceMatches || partyMatches ? SCORE_HAPPENING_NOW : 0;
 }
 
+// P1 remediation (CLAUDE.md, Aug 28 2026 Full Coherence Audit, Scenario D
+// -- "I want to meet new people who like tennis"): a real, deterministic,
+// no-AI phrase check -- deliberately NOT a new create-assistant intent
+// value (that would need a real Anthropic call this sandbox can't verify
+// end-to-end, matching this app's own repeated "AI never infers, only
+// deterministic checks matter" discipline). Person-shaped phrasing
+// ("meet people," "make friends," ...) routes to the real, already-safe,
+// explicitly opt-in Friend Discovery surface -- never a stranger's
+// profile injected into the resolver's own candidate list, which is
+// exactly the boundary services/friendDiscovery.js's own header comment
+// locks ("Deliberately never referenced by the intent resolver ... the
+// 'trusted network only' pool the resolver's own no-stranger-discovery
+// rule governs"). This function never touches that list; it only decides
+// whether to additionally surface a real, honest "go meet people" action
+// alongside whatever real gatherings/communities/etc. the resolver
+// itself already found for the same category.
+const FRIEND_DISCOVERY_PHRASES = [
+  /\bmeet\s+(new\s+|other\s+)?(people|someone|folks|friends)\b/i,
+  /\bmake\s+(new\s+)?friends\b/i,
+  /\bfind\s+(new\s+)?friends\b/i,
+  /\bmeet\s+people\s+who\b/i,
+];
+
+export function detectFriendDiscoveryIntent(rawText) {
+  if (!rawText) return false;
+  return FRIEND_DISCOVERY_PHRASES.some((re) => re.test(rawText));
+}
+
 // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28 2026),
 // item 3: an already-posted business_availability row already carries its
 // own real attributes/cuisine (the business's own, via brand_partners --

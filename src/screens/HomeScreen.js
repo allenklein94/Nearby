@@ -6,6 +6,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
+import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals } from '../services/businessFulfillment';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
@@ -54,6 +55,12 @@ const INTENT_RESULT_ICONS = {
   // confidence, not a different icon.
   business_policy_match: 'storefront-outline',
   gathering: 'people-outline',
+  // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit, Scenario D) --
+  // a real, honest "go meet people" action, never a stranger's profile
+  // injected into this list; see detectFriendDiscoveryIntent()'s own
+  // header comment for why this stays a navigation action, not a
+  // resolver candidate.
+  friend_discovery: 'heart-outline',
 };
 
 // Nearby 2.0 vision layer 4, "make it happen" multi-option planning (see
@@ -76,7 +83,26 @@ const INTENT_RESULT_TYPE_LABELS = {
   // to fulfill, which is never called "Available."
   business_availability: '🟢 A business has this ready',
   business_policy_match: '🟡 A business may be able to help',
+  // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit, Scenario D) --
+  // see detectFriendDiscoveryIntent()'s own header comment: a real,
+  // honest navigation action, grouped separately from any real resolver
+  // candidate so it never reads as "we found this gathering/perk."
+  friend_discovery: '💗 Meet new people',
 };
+
+// A synthetic result item (not a real resolveIntent() candidate) --
+// appended only when detectFriendDiscoveryIntent(typedText) is true.
+// Copy matches FriendDiscoveryScreen's own header subtitle verbatim, not
+// re-worded, so the same promise ("separate from dating") is stated
+// identically wherever it appears.
+function buildFriendDiscoveryResultItem(category) {
+  return {
+    type: 'friend_discovery',
+    id: 'friend-discovery',
+    title: category ? `Meet people who like ${category}` : 'Meet new people nearby',
+    subtitle: 'People nearby who are also here to make friends — separate from dating.',
+  };
+}
 
 function groupIntentResultsByType(items) {
   const order = [];
@@ -550,12 +576,24 @@ export default function HomeScreen({ navigation }) {
         }
       } else {
         const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null });
+        // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
+        // Scenario D): a real, deterministic person-shaped-phrase check,
+        // never a fabricated resolver candidate -- appends one honest
+        // "go meet people" action alongside whatever real gatherings/
+        // communities/etc. resolveIntent() already found. Counting this
+        // toward hadAnyResult (and so skipping the "ask nearby
+        // businesses" fallback) is deliberate: a person-search ask has no
+        // honest business-ask shape, matching the no-stranger-discovery
+        // principle everywhere else this app already enforces.
+        const items = detectFriendDiscoveryIntent(typedText)
+          ? [...resolved, buildFriendDiscoveryResultItem(result.category)]
+          : resolved;
         const submissionId = await recordIntentSubmission({
           rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
-          intentKind: result.intent, hadAnyResult: resolved.length > 0, reachedBusinessFallback: resolved.length === 0,
+          intentKind: result.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
         });
-        if (resolved.length > 0) {
-          setIntentResults({ items: resolved, classifyResult: result, typedText, submissionId });
+        if (items.length > 0) {
+          setIntentResults({ items, classifyResult: result, typedText, submissionId });
         } else {
           setIntentEmptyFallback({ classifyResult: result, typedText, submissionId });
         }
@@ -591,6 +629,13 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate('ViewProfile', { userId: item.userId });
     } else if (item.type === 'community') {
       navigation.navigate('CommunityDetail', { communityId: item.id });
+    } else if (item.type === 'friend_discovery') {
+      // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
+      // Scenario D) -- never a stranger's profile from this screen, a
+      // real navigation to the already-safe, explicitly opt-in Friend
+      // Discovery surface (its own screen handles the not-yet-enabled
+      // explainer/opt-in state, nothing to prefill here).
+      navigation.navigate('FriendDiscovery');
     } else if (item.type === 'business_availability') {
       // A business already declared these terms in advance -- tapping
       // this doesn't submit anything by itself (same "review before
@@ -961,12 +1006,25 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.intentResults}>
               {intentResults.classifyResult?.intent === 'unclear' && (
                 <Text style={styles.intentUnclearNote}>
-                  Nearby doesn't search for individual people directly — gatherings and
-                  communities are how you meet people here. Here's what's already happening
-                  that might fit.
+                  {detectFriendDiscoveryIntent(intentResults.typedText)
+                    ? 'Nearby doesn\'t search for individual people directly, but Friend Discovery below is a real, opt-in way to meet someone new — separate from dating.'
+                    : 'Nearby doesn\'t search for individual people directly — gatherings and communities are how you meet people here. Here\'s what\'s already happening that might fit.'}
                 </Text>
               )}
               {(() => {
+                // Friend Discovery, alone: never framed as "N ways to make
+                // this happen" (that heading implies real existing supply,
+                // not a navigation action) or as "Already happening near
+                // you" (it isn't). Only reachable when resolveIntent()
+                // genuinely found nothing else for a person-shaped ask.
+                if (intentResults.items.length === 1 && intentResults.items[0].type === 'friend_discovery') {
+                  return (
+                    <>
+                      <Text style={styles.intentResultsHeading}>{INTENT_RESULT_TYPE_LABELS.friend_discovery}</Text>
+                      {renderIntentResultItem(intentResults.items[0])}
+                    </>
+                  );
+                }
                 const distinctTypes = new Set(intentResults.items.map((i) => i.type)).size;
                 if (distinctTypes >= 2) {
                   const grouped = groupIntentResultsByType(intentResults.items);

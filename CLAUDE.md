@@ -227,6 +227,125 @@ run-through — next session should confirm the fullness label renders correctly
 right color) across all six wired surfaces once a real gathering with `capacity` set exists at
 each fullness tier, and that a gathering with no `capacity` set correctly shows nothing extra.
 
+#### Item 6 — GatheringChatScreen/BusinessConversationScreen header tap-throughs — DONE,
+#### build-wise, client-only, no schema change
+
+Closes the audit's own "the chat-header issue is easy" finding, matching `ChatScreen.js`'s
+already-established tappable-header-title pattern (`headerTitle` → the real person/thing the
+conversation is about) verbatim, rather than inventing a new convention. Both
+`GatheringChat`/`BusinessConversation` route registrations in `RootNavigator.js` gained a real
+`headerTitle` render function (was a plain string) wrapping the existing title text in a
+`TouchableOpacity` — tapping it navigates to `GatheringDetail`/`BusinessProfile` respectively,
+using the same `gatheringId`/`partnerId` route params each screen's own callers already pass.
+
+**`GatheringChat` genuinely differs from `CommunityChat`'s own already-shipped fix**, worth
+stating so a future session doesn't assume the two are identical: `CommunityChatScreen`'s own
+header-tap bug (fixed earlier, see this file's Aug 27 2026 entry) was that tapping it just
+`navigate()`d back to a screen already on the stack, indistinguishable from Back — because
+`CommunityChat` only ever has one real entry point (`CommunityDetailScreen`). `GatheringChat`
+has three real entry points (`GatheringDetailScreen`, `GatheringHubScreen`, `GatheringsScreen`),
+so a tap here genuinely pushes a fresh `GatheringDetail`, not a disguised pop — checked directly
+against all three real call sites (plus a fourth `draftText`-prefilled entry from
+`GatheringHubScreen`'s ice-breaker suggestions) before writing this, not assumed.
+
+Every real navigation call into either route already passes the needed id
+(`grep`-confirmed: all 6 `GatheringChat` call sites pass `gatheringId`; both `BusinessConversation`
+call sites — `BusinessProfileScreen.js`, `BrandOffersScreen.js` — pass `partnerId`), so the new
+header tap-through works for every existing entry point with zero caller changes. `accessibilityLabel`/
+`accessibilityRole="button"` added to both, matching `ChatScreen.js`'s own header-title
+accessibility treatment.
+
+Verified via a direct `@babel/core` parse of `RootNavigator.js` (clean, no new imports beyond
+`Text` from `react-native`, already available) and a full `npx expo export --platform ios`
+(clean, no bundling errors — edit to one existing file only, no new files, no schema/RPC touched
+so no live-production verification applies to this item).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm tapping either header genuinely navigates to the right
+gathering/business on a real device, and that the tap target reads clearly as tappable (no visual
+affordance beyond the existing header-title styling, matching `ChatScreen.js`'s own precedent).
+
+#### Item 3 — a person/friend-shaped Ask Nearby intent branch, routing into Friend Discovery
+#### rather than a generic gathering browse — DONE, build-wise, client-only, no schema change
+
+Closes Scenario D of the Full Coherence Audit — a real-world ask like *"I want to meet new
+people who like tennis"* used to fall through `resolveIntent()`'s ordinary gathering/community/
+perk/business-availability pipeline (or, worst case, the empty-fallback "ask nearby businesses"
+panel) with no honest path to the one real, already-built, already-safe mechanism this app has
+for exactly this ask: Friend Discovery (`FriendDiscoveryScreen`, explicitly opt-in, already
+locked out of the resolver's own candidate list by design — see `services/friendDiscovery.js`'s
+own header comment on the no-stranger-discovery boundary).
+
+**Locked design, not an AI classification**: a new `detectFriendDiscoveryIntent(rawText)` in
+`intentResolverScoring.js` — a real, deterministic phrase check (`/\bmeet\s+(new\s+|other\s+)?
+(people|someone|folks|friends)\b/i`, `/\bmake\s+(new\s+)?friends\b/i`, `/\bfind\s+(new\s+)?
+friends\b/i`, `/\bmeet\s+people\s+who\b/i`), never a new `create-assistant` intent value — this
+sandbox has no way to exercise a real Anthropic call end-to-end (the same standing limitation
+every AI-classification feature in this file already discloses), and matches this codebase's own
+repeated "AI never infers, deterministic checks matter" discipline for exactly this shape of
+decision. 8 new unit tests (4 real person-shaped phrasings match, 4 real non-matches — an
+ordinary gathering ask, a community ask, empty string, `null` — correctly don't).
+
+**Never a resolver candidate, always a real navigation action**: `HomeScreen.js`'s
+`handleHomeIntentSubmit()` — in the `resolveIntent()` branch only (gathering/`unclear`-classified
+asks; `community`/`business_partner` intents have no person-search shape) — now checks
+`detectFriendDiscoveryIntent(typedText)` and, when true, appends one synthetic
+`buildFriendDiscoveryResultItem(category)` item (`type: 'friend_discovery'`, title "Meet people
+who like {category}" or "Meet new people nearby," subtitle reused verbatim from
+`FriendDiscoveryScreen.js`'s own header subtitle — "People nearby who are also here to make
+friends — separate from dating." — not re-worded, so the same promise reads identically wherever
+it appears) alongside whatever real gatherings/communities/perks/business-availability
+`resolveIntent()` already found. This item is never injected into the resolver's own candidate
+list or scoring — it's appended client-side, after resolution, strictly as a navigation action;
+no stranger's profile is ever surfaced, only a link to the already-safe, already-opt-in screen.
+
+**Counted toward `hadAnyResult` deliberately** — a person-search ask has no honest "ask nearby
+businesses" shape (asking a business to find you a tennis buddy makes no sense), so detecting
+this phrase correctly suppresses the empty-fallback "ask nearby businesses" panel in favor of the
+one real, honest action that actually answers the ask, matching the no-stranger-discovery
+principle this app enforces everywhere else.
+
+**Rendering, three real cases, each handled explicitly rather than forced through the existing
+generic-heading logic**:
+- **Friend Discovery is the only item** (resolver genuinely found nothing else) — a dedicated
+  branch renders it under its own real heading (`INTENT_RESULT_TYPE_LABELS.friend_discovery`,
+  "💗 Meet new people"), not the misleading "I found 1 ways to make this happen" (grammatically
+  broken at N=1, and implies existing supply that isn't there) or "Already happening near you"
+  (it isn't).
+- **Friend Discovery alongside 1+ real candidates** — falls into the existing "2+ distinct
+  types" grouped view unchanged, rendered under its own real label like any other group.
+- **The `unclear`-intent explanatory note** — previously always said "Nearby doesn't search for
+  individual people directly... here's what's already happening that might fit," which would
+  have been actively self-contradictory once a real "go meet people" action started appearing
+  right below it. Now branches on `detectFriendDiscoveryIntent(intentResults.typedText)`: when
+  true, the note instead says "Nearby doesn't search for individual people directly, but Friend
+  Discovery below is a real, opt-in way to meet someone new — separate from dating."; the
+  original wording is preserved unchanged for every other `unclear` case.
+
+`handleIntentResultTap()` gained the `friend_discovery` branch: `navigation.navigate('FriendDiscovery')`
+— no params needed, the screen already handles its own not-yet-enabled explainer/opt-in state
+internally. The generic result-row renderer (icon + title + subtitle + chevron, already shared
+by every other single-action result type) needed no changes — `friend_discovery`'s new icon
+(`heart-outline`) was added to `INTENT_RESULT_ICONS` and it renders through the same path.
+
+Verified via a direct `@babel/core` parse of all four touched files (clean) and the full Jest
+suite (**155/155 passing** — 153 pre-existing + 2 new: `detectFriendDiscoveryIntent`'s own
+matching/non-matching cases). A full `npx expo export --platform ios` built clean, no bundling
+errors — edits to two existing files (`HomeScreen.js`, `intentResolverScoring.js`) plus their
+own test file, no new files, no schema/RPC touched so no live-production verification applies.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: a genuine person-shaped ask (e.g.
+"I want to meet people who like tennis") surfaces the Friend Discovery action correctly in all
+three rendering cases above, tapping it lands cleanly on `FriendDiscoveryScreen`, and that an
+ordinary gathering-shaped ask (e.g. "dinner tonight for two") shows no such action.
+
+**Items 2 (Circles → "Invite a Circle" on gathering creation) and 4 (a shared semantic
+recommendation-reason vocabulary) remain not yet started** — restated here so a future session
+doesn't have to re-derive the P1 list's own remaining scope from scratch. Item 7 (weather-
+awareness in business-opportunity ranking) stays explicitly deprioritized per the user's own
+instruction, built last if at all.
+
 # Nearby — Project Context for Claude Code
 
 Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supabase).
