@@ -71,9 +71,42 @@ Same as the full rewrite immediately below this section: `docs/business.html` is
 Expo bundle, so verified via a direct HTML well-formedness parse and a `node --check` syntax pass
 on the inline script, not `npx expo export`. No schema/RPC touched.
 
-### Status: plan locked, executing below.
-in this file — check `git status`/`git log` and this section's own status note for what's
-actually landed vs. still just this plan if a restart hits mid-build.
+### Status: DONE. All 3 additions plus the fine-print copy tweak landed — everything else the
+### review flagged as missing was already live, confirmed above, and left untouched.
+
+- **`#intent`'s closing line** changed from "Nearby brings those moments together — and gives
+  local businesses a real place inside them." to the review's own requested declarative:
+  "People make plans. Your business can be part of them." — the section's own body (5 real
+  example asks) is unchanged; only the close was swapped, avoiding a duplicate of `#relevant`'s
+  own "it's about being relevant" line one section later.
+- **`#relevant`'s scenario examples** — a new chip row (Date night → a date-friendly business /
+  Group dinner → a group-friendly business / Something outdoors → outdoor seating / Weekend
+  plans → open and ready for it), added right under the section's lead paragraph, kept alongside
+  — not replacing — the existing 0.4mi/1.7mi distance-comparison cards. Every example maps to a
+  real, verified `BUSINESS_ATTRIBUTE_OPTIONS`/`PRIORITY_TIME_WINDOW_OPTIONS` value
+  (`date_friendly`/`group_friendly`/`outdoor_seating`/`weekend`), matching this whole page's
+  already-locked "no invented chip label" rule from the prior pass.
+- **`#pillars` gained an explicit "you don't have to discount" line**, right under the section's
+  existing close, using the review's own suggested copy near-verbatim.
+- **The bottom CTA gained a real fine-print line** ("Free to start · No credit card required")
+  under the button, above the existing signature line — the `.fine-print` CSS rule was widened
+  from `.hero .fine-print` (scoped only to the hero) to a bare `.fine-print` class so it renders
+  correctly in both places, not just the hero, rather than adding a second, near-duplicate style
+  rule for the same visual treatment.
+- **Confirmed, not re-touched**: the headline, the removal of "target them by interest," and the
+  "30 seconds" wording were all already correct per the audit above — no edit made to any of
+  them.
+
+Verified via a direct HTML well-formedness parse (clean, zero unclosed/mismatched tags) and a
+`node --check` syntax pass on the inline script (clean) — both re-run after the edits, matching
+the prior pass's own verification bar. Section count unchanged at 16 (every addition was inline
+content inside an existing section, not a new top-level section, matching the review's own
+explicit "don't lengthen or complicate the page" instruction). No schema/RPC touched.
+
+**Not done, same standing gap as everywhere else in this file**: no manual browser/device
+run-through — next session should confirm the new scenario-example chips wrap cleanly at narrow
+widths (they're longer strings than the page's other pill-shaped chips) and that the widened
+`.fine-print` rule renders correctly in both the hero and the bottom CTA.
 
 ### Context
 
