@@ -1,5 +1,58 @@
-## Aug 29 2026 (cont'd) — business landing page refinement pass, reacting to a second external
-## review — PLAN LOCKED, executing below
+## Aug 29 2026 (cont'd) — business landing page, one real wording fix + two future ideas
+## captured read-only — PLAN LOCKED, executing below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file. Direct follow-up to the refinement pass immediately below this section — a third
+external review scored the page 9.4/10 and, per its own explicit framing, named exactly one real
+thing to change now, plus two real future ideas *not* to build yet, closing with "I would stop
+making broad changes." Matches this codebase's own established discipline for exactly this
+shape of feedback: execute the one real, concrete ask; capture the deferred ones read-only
+rather than silently building or silently dropping them.
+
+### The one real change — "they pick, you're booked" overstated what's shown in the mockup
+
+Checked directly, not guessed: `accept_business_offer()` genuinely does create a real, immediately
+-confirmed `business_reservations` row the instant a consumer accepts an offer (`provider =
+'nearby'`, auto-confirms — see this file's own Offer System Phase 1/Decision 2 history) — so the
+underlying *claim* ("you're booked") is honest, not an overpromise on the product's real
+behavior. The actual problem, per the review's own framing, is narrower: the mockup's one closing
+line ("Offer sent — they pick, you're booked") compresses three distinct real steps — the offer
+being sent, the customer choosing among their options, and the reservation actually confirming —
+into one line worded as if all three already happened the instant the offer went out. Fixed by
+adopting the review's own second suggested wording verbatim, since the reservation engine is
+genuinely live: **"Offer accepted — reservation confirmed."** This is the accurate, already-real
+outcome once a consumer actually accepts, not a claim about what happens the moment an offer is
+merely sent.
+
+### Two real future ideas — captured here, not built, per the review's own explicit "not now"
+
+1. **A visual for the reservation/payment layer** (Request → Offer → Accept → Reserve, shown as
+   its own diagram) — the review's own instruction: "not now unless it is already production-
+   ready." The underlying mechanics already are production-ready (Offer System, all 6 phases
+   DONE) — but the review is asking about a *second, more detailed visual* than the page's
+   existing "Two ways" mockup already gives, and explicitly says not to add it preemptively.
+   Not built. Revisit only if a future review/decision explicitly asks for it.
+2. **A "Start Something ↔ Host Something" symmetry visual** (a real one-frame diagram: a person
+   starts something → Nearby matches it → a business "hosts" a real response → people join) —
+   real, coherent, and the review itself says "I don't think you need to add it right now."
+   Not built. Both ideas are recorded here, matching this file's own established "capture, don't
+   silently build" convention for a deferred idea, so neither is silently lost nor silently
+   built without being asked for again.
+
+### Explicitly not done, per the review's own and the user's own closing instruction
+
+No new sections added — the review's own closing list (no partnerships expansion, no more
+matching explanations, no more analytics, no more business features, no more screenshots, no
+more pricing explanations, no more future-roadmap content) is treated as a hard boundary for
+this pass, matching the user's own "I would stop making broad changes" line.
+
+### Verification convention, matching the two prior passes on this same file
+
+`docs/business.html` isn't part of the Expo bundle — verified via a direct HTML well-formedness
+parse and a `node --check` syntax pass on the inline script, not `npx expo export`. No schema/
+RPC touched.
+
+### Status: plan locked, executing below.
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file. Direct follow-up to the full rewrite immediately below this section — the user
