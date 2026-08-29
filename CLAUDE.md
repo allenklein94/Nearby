@@ -155,7 +155,94 @@ search on the web (flagged, not faked — needs a real server-side key the user 
 as a Supabase secret). No content-moderation Edge Function call from the new server-side path
 (matches the mobile app's own already-narrow real-time moderation coverage, not a regression).
 
-### Status: executing below — check each piece's own status note.
+### Status: DONE, build-wise — picked up cleanly after a codespace restart, every piece
+### verified live against production (not just re-confirmed already-applied) plus a real
+### from-scratch migration replay, before this pass was ever committed.
+
+On resume, `git status` showed the migration, the new Edge Function, the `docs/business.html`
+rewrite, and the `AdminBusinessRequestsScreen.js` edit all already fully written and
+uncommitted — read every file in full before trusting any of it, matching this file's own
+standing rule, rather than assuming a prior session's own claims. The schema/RPC pieces
+(`business_partner_requests`' new columns/constraints/index, `_claim_web_business_requests()`,
+the `AFTER INSERT` trigger on `profiles`, `approve_business_partner_request()`'s re-point) were
+all already live in production, confirmed directly via `information_schema`/`pg_proc`/`pg_trigger`
+rather than re-applying blind. The Edge Function was also already deployed
+(`verify_jwt: false`, `status: ACTIVE`, version 1).
+
+**Verified live end-to-end against production** (`enmosvippabmuqslzrox`), with real disposable
+test data, not just confirmed-already-applied: the deployed function's OPTIONS preflight, its
+honeypot rejection, its per-field validation (blank name, invalid category, unconfirmed
+representative), a real full submission (landed with the exact right shape — `source: 'web'`,
+`applicant_phone` normalized to `'16095550199'`, `submitter_ip_hash` set, a real
+`apply_submitted` funnel event with `user_id: null`), and the duplicate-pending-application
+guard (a second submission with the same phone correctly hit the new partial unique index and
+returned a real `409`). Both real approval paths were proven, not just read from the SQL: a
+non-admin's approve attempt was correctly rejected; a real admin approval correctly created the
+`brand_partners` row, stamped `resulting_partner_id`, and logged `apply_approved`/`published`;
+**the "signs up later" claim path** was proven by inserting a real disposable `auth.users` row
+with the matching normalized phone and then inserting its `profiles` row — the `AFTER INSERT`
+trigger fired for real, correctly setting both `claimed_at` on the request and
+`managed_partner_id` on the new profile; **the "already had an account at approval time" claim
+path** was proven separately, with the matching account created *before* calling
+`approve_business_partner_request()` — the immediate in-function claim attempt fired correctly,
+same real result. All test rows (2 `business_partner_requests`, 2 `brand_partners`, 2
+`business_acquisition_events` pairs, 2 `profiles`, 2 `auth.users`) were deleted afterward — a
+final leftover-check query confirmed every touched table is back to its exact pre-test baseline
+(all zero).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin`, then ran the full, now-108-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, the new columns, both new CHECK
+constraints, the partial unique index, both new functions, and the new trigger all confirmed to
+exist in the freshly-rebuilt database. Container removed afterward.
+
+**One real, previously-undisclosed inconsistency found and fixed while re-reading the whole page
+end-to-end before considering this done** — not present in the plan's own text, a genuine
+side-effect of pivoting the CTA behavior away from the old `nearby://business-apply` deep link:
+the page's own "How It Works" section (predates this pass) still described a Google-Places
+*search* step ("Find your business... Search for your business and we'll fill in what we can —
+or add it manually") and had its own third CTA button literally labeled "Find Your Business" —
+both accurate descriptions of the *mobile app's* real flow, but no longer accurate for *this*
+page, whose new inline form is manual-entry-only with no search step at all (per this plan's own
+locked "not buildable this pass — no real server-side Places key" finding). Left uncorrected,
+a visitor would have been told to expect a "find your business" search that the actual form
+never does. Fixed: the section's own h2 and step 1's heading/body were reworded to honestly
+describe manual entry only ("Add your business... Right here on this page — name, category,
+address, and how to reach you. No app or search required."), the third CTA's label was changed
+from "Find Your Business" to "Get Your Business on Nearby" (matching the other two, since all
+three now fire the identical `revealApplyForm()` action), and the two remaining "Finding your
+business or adding it manually" phrases (the inline form's own fine-print, and the "Do I need an
+existing online presence?" FAQ answer) were both trimmed to "Adding your business" — preserving
+the exact locked "about 30 seconds... a real person reviews the application before it goes live"
+structure from the earlier FAQ-wording pass, just removing the now-inapplicable "finding" half.
+
+Client-side verified via a direct HTML well-formedness parse (`html.parser`, zero unclosed/
+mismatched tags, re-run after the copy fixes) and a `node --check` syntax pass on the page's own
+inline script (clean, re-run after the copy fixes) — `docs/business.html` isn't part of the Expo
+bundle, matching this file's own established verification convention for this exact file. The
+one touched React Native file, `AdminBusinessRequestsScreen.js`, was verified via a direct
+`@babel/core` parse (clean) and a full `npx expo export --platform ios` (clean, no bundling
+errors, 2276 modules — edit to one existing file only, no new client-bundled files this pass).
+
+**Not done, same standing gap as everywhere else in this file**: no manual browser/device
+run-through — next session should confirm the page actually renders correctly once GitHub Pages
+redeploys, that a real submission from a real browser lands correctly (verified here via direct
+`curl`/API calls with the identical payload shape the page's own `fetch()` call sends, not an
+actual browser page load), and that the reworded "How It Works" step 1 and the renamed third CTA
+read clearly in place. **Also not done, matching this plan's own explicit "Explicitly not built"
+list above**: no `request_more_business_partner_info` handling was added for a web-sourced
+row specifically — checked directly and confirmed it doesn't crash (the push simply, correctly
+no-ops for a null `requester_id`, matching the established convention elsewhere in this schema),
+and the admin already has the applicant's real email/phone shown directly on the card to follow
+up by hand, matching this file's own established "no SMS/email infrastructure exists, a real
+admin reaches out using the contact info provided" pattern used for Emergency Contacts and
+Decision 3's own "Request More Information" deferral — not a gap introduced by this pass, and
+not fixed here since building a real "resubmit" path for an applicant with no app account at all
+is explicitly out of this plan's own locked scope (Decision 3: "skip building a real 'Request
+More Information' reviewer state for v1").
 
 ## Aug 29 2026 (cont'd) — a fourth review's two real findings: the FAQ's own "30 seconds" line
 ## disambiguated from approval, and the CTA's desktop-vs-mobile fallback copy fixed — DONE

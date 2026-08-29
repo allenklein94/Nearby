@@ -101,16 +101,77 @@
     padding: 14.5px 34.5px;
   }
   .fine-print { margin-top: var(--space-md); font-size: 13px; color: var(--text-tertiary); }
-  .cta-fallback {
-    max-width: 460px;
-    margin: var(--space-lg) auto 0;
-    padding: var(--space-md) var(--space-lg);
-    background: var(--surface-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    font-size: 14px;
+
+  /* Real web application form (section 12) */
+  .apply-form { max-width: 520px; margin: 0 auto; }
+  .apply-field { margin-bottom: var(--space-md); }
+  .apply-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
     color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
   }
+  .apply-field input[type="text"],
+  .apply-field input[type="email"],
+  .apply-field input[type="tel"],
+  .apply-field input[type="url"],
+  .apply-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text-primary);
+  }
+  .apply-field textarea { resize: vertical; min-height: 70px; }
+  .apply-field .hint { font-size: 12px; color: var(--text-tertiary); margin-top: var(--space-xs); }
+  .apply-category-row { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+  .apply-category-chip {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .apply-category-chip.selected {
+    background: var(--primary-muted);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .apply-checkbox-row { display: flex; align-items: flex-start; gap: var(--space-sm); margin: var(--space-lg) 0; }
+  .apply-checkbox-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; width: 18px; height: 18px; }
+  .apply-checkbox-row label { font-size: 14px; color: var(--text-primary); }
+  .apply-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .apply-submit-row { text-align: center; margin-top: var(--space-lg); }
+  .apply-error {
+    background: rgba(220, 60, 50, 0.1);
+    border: 1px solid rgba(220, 60, 50, 0.3);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    color: #c0392b;
+    font-size: 14px;
+    margin-bottom: var(--space-md);
+    text-align: center;
+  }
+  .apply-success {
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--space-xl);
+    background: var(--surface-elevated);
+    border: 1.5px solid var(--primary);
+    border-radius: var(--radius-lg);
+  }
+  .apply-success h3 { font-size: 20px; color: var(--text-primary); margin: 0 0 var(--space-sm); }
+  .apply-success p { font-size: 15px; color: var(--text-secondary); line-height: 1.5; margin: 0 0 var(--space-sm); }
+  .apply-success .phone-callout { font-weight: 700; color: var(--primary); }
 
   /* Sections */
   section { padding: var(--space-xxl) 0; }
@@ -482,11 +543,6 @@
     </p>
     <button class="cta-button" id="cta-btn">Get Your Business on Nearby</button>
     <p class="fine-print">Get started in about 30 seconds. Free to start.</p>
-    <p class="cta-fallback" id="cta-fallback" hidden>
-      It looks like you don't have the Nearby app installed yet. Download Nearby from the App
-      Store or Google Play, then come back and tap the button above to pick up right where you
-      left off.
-    </p>
   </section>
 
   <section id="intent">
@@ -725,17 +781,17 @@
   </section>
 
   <section id="how-it-works">
-    <h2>Find your business. Claim it. Make it yours.</h2>
+    <h2>Add your business. Get verified. Make it yours.</h2>
     <div class="steps">
       <div class="step">
         <div class="num">1</div>
-        <h3>Find your business</h3>
-        <p>Search for your business and we'll fill in what we can — or add it manually.</p>
+        <h3>Add your business</h3>
+        <p>Right here on this page — name, category, address, and how to reach you. No app or search required.</p>
       </div>
       <div class="step">
         <div class="num">2</div>
         <h3>Confirm & complete</h3>
-        <p>Confirm it's really you, then tell us what makes your business great.</p>
+        <p>Confirm you're authorized to represent it, then tell us what makes your business great.</p>
       </div>
       <div class="step">
         <div class="num">3</div>
@@ -749,7 +805,92 @@
       </div>
     </div>
     <div class="steps-cta">
-      <button class="cta-button" id="cta-btn-find">Find Your Business</button>
+      <button class="cta-button" id="cta-btn-find">Get Your Business on Nearby</button>
+    </div>
+  </section>
+
+  <section id="apply" hidden>
+    <h2>Get Your Business on Nearby</h2>
+    <p class="section-lead">
+      No app to download. Add your business below — a real person reviews it before it goes live.
+    </p>
+    <form class="apply-form" id="apply-form" novalidate>
+      <div id="apply-error-box"></div>
+
+      <div class="apply-field">
+        <label for="apply-business-name">Business Name</label>
+        <input type="text" id="apply-business-name" name="businessName" maxlength="200" required>
+      </div>
+
+      <div class="apply-field">
+        <label>Category</label>
+        <div class="apply-category-row" id="apply-category-row"></div>
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-address">Business Address</label>
+        <input type="text" id="apply-address" name="address" placeholder="Street, city, state" maxlength="300" required>
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-website">Website <span class="hint">(optional)</span></label>
+        <input type="url" id="apply-website" name="website" placeholder="https://yourbusiness.com">
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-business-phone">Business Phone <span class="hint">(optional)</span></label>
+        <input type="tel" id="apply-business-phone" name="businessPhone" placeholder="(555) 123-4567">
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-description">Tell us about your business <span class="hint">(optional)</span></label>
+        <textarea id="apply-description" name="description" maxlength="600" placeholder="What do you do, and what kind of community would you want to build?"></textarea>
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-name">Your Name</label>
+        <input type="text" id="apply-name" name="applicantName" maxlength="100" required>
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-email">Your Email</label>
+        <input type="email" id="apply-email" name="applicantEmail" maxlength="200" required>
+      </div>
+
+      <div class="apply-field">
+        <label for="apply-phone">Your Phone Number</label>
+        <input type="tel" id="apply-phone" name="applicantPhone" placeholder="(555) 123-4567" required>
+        <p class="hint">
+          Once approved, download Nearby and sign up with this exact phone number — your new
+          business is linked to your account automatically. No separate "claim" step.
+        </p>
+      </div>
+
+      <!-- Honeypot: real visitors never see or fill this in; a filled value means a bot. -->
+      <div class="apply-honeypot" aria-hidden="true">
+        <label for="apply-website-confirm">Leave this field blank</label>
+        <input type="text" id="apply-website-confirm" name="websiteConfirm" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="apply-checkbox-row">
+        <input type="checkbox" id="apply-confirm" name="confirmedRepresentative" required>
+        <label for="apply-confirm">I confirm I'm authorized to represent this business.</label>
+      </div>
+
+      <div class="apply-submit-row">
+        <button type="submit" class="cta-button" id="apply-submit-btn">Submit Application</button>
+        <p class="fine-print">Adding your business takes about 30 seconds. Approval happens after our review.</p>
+      </div>
+    </form>
+
+    <div class="apply-success" id="apply-success" hidden>
+      <h3>Application received 🎉</h3>
+      <p>Thanks — a real person will review it before your business goes live.</p>
+      <p>
+        Once approved, download Nearby and sign up with
+        <span class="phone-callout" id="apply-success-phone"></span>
+        — your business is automatically linked to your new account.
+      </p>
     </div>
   </section>
 
@@ -820,7 +961,7 @@
     </details>
     <details class="faq-item">
       <summary>Do I need an existing online presence?</summary>
-      <p>No. If we can find your business through search, we'll pre-fill what we can. If not, you can add your business manually. Finding your business or adding it manually takes about 30 seconds. After you submit, a real person reviews the application before it goes live.</p>
+      <p>No. Add your business right here on this page — name, category, address, and how to reach you. Adding your business takes about 30 seconds. After you submit, a real person reviews the application before it goes live.</p>
     </details>
     <details class="faq-item">
       <summary>What happens after I submit my application?</summary>
@@ -850,43 +991,122 @@
 </div>
 
 <script>
-  // Business Partner acquisition experience, Milestone 5 (see CLAUDE.md): a real deep link into
-  // the mobile app's own Milestone 2 apply flow (nearby://business-apply, wired in
-  // RootNavigator.js), not a second web-only reimplementation of it. No real App Store/Play
-  // Store listing exists yet to fall back to (this app has never been published -- confirmed
-  // against this whole codebase's own repeated "no session has ever run this app on a real
-  // device" history), so the fallback is honest instructional copy, not a fabricated store URL.
-  function openBusinessApply() {
-    var fallback = document.getElementById('cta-fallback');
-    // A plain, disclosed UA-string heuristic -- not perfect (e.g. an iPad in desktop mode can
-    // report as a Mac), but the fallback message it picks between is advisory copy, not a real
-    // gate on anything, so a false classification here costs nothing beyond slightly-off wording.
-    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    var left = false;
-    function onVisChange() {
-      if (document.hidden) left = true;
-    }
-    document.addEventListener('visibilitychange', onVisChange);
-    window.location.href = 'nearby://business-apply';
-    setTimeout(function () {
-      document.removeEventListener('visibilitychange', onVisChange);
-      if (!left && fallback) {
-        if (!isMobile) {
-          // Desktop has no app-store install path and no way to "come back and tap the button" --
-          // the mobile-phrased default below would just send a desktop visitor chasing an
-          // instruction that doesn't apply to the device they're actually on.
-          fallback.textContent = 'Nearby is a mobile app -- it’s not available on desktop yet. ' +
-            'Open this page on your phone to continue, or search “Nearby” in the App Store ' +
-            'or Google Play.';
-        }
-        fallback.hidden = false;
-        fallback.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 1500);
+  // Real web business application (see CLAUDE.md's "Aug 29 2026 -- real web business
+  // application, no app required" locked plan). Replaces the earlier nearby://business-apply
+  // deep link entirely for this funnel -- per direct instruction, this page should never make a
+  // business owner install the consumer app just to submit an application. The three CTA
+  // buttons now reveal a real, inline application form instead of attempting a deep link.
+  var APPLY_CATEGORIES = [
+    { key: 'food_drink', label: '☕ Food & Drink' },
+    { key: 'fitness_wellness', label: '💪 Fitness & Wellness' },
+    { key: 'retail_shopping', label: '🛍️ Retail & Shopping' },
+    { key: 'arts_entertainment', label: '🎨 Arts & Entertainment' },
+    { key: 'professional_services', label: '💼 Professional Services' },
+    { key: 'other', label: '✨ Other' },
+  ];
+  var selectedApplyCategory = null;
+  var applyCategoryRow = document.getElementById('apply-category-row');
+  APPLY_CATEGORIES.forEach(function (c) {
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'apply-category-chip';
+    chip.textContent = c.label;
+    chip.setAttribute('data-key', c.key);
+    chip.addEventListener('click', function () {
+      selectedApplyCategory = c.key;
+      Array.prototype.forEach.call(applyCategoryRow.children, function (el) {
+        el.classList.toggle('selected', el === chip);
+      });
+    });
+    applyCategoryRow.appendChild(chip);
+  });
+
+  function revealApplyForm() {
+    var section = document.getElementById('apply');
+    section.hidden = false;
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  document.getElementById('cta-btn').addEventListener('click', openBusinessApply);
-  document.getElementById('cta-btn-2').addEventListener('click', openBusinessApply);
-  document.getElementById('cta-btn-find').addEventListener('click', openBusinessApply);
+  document.getElementById('cta-btn').addEventListener('click', revealApplyForm);
+  document.getElementById('cta-btn-2').addEventListener('click', revealApplyForm);
+  document.getElementById('cta-btn-find').addEventListener('click', revealApplyForm);
+
+  var APPLY_FUNCTION_URL = 'https://enmosvippabmuqslzrox.supabase.co/functions/v1/submit-business-application';
+  var applyForm = document.getElementById('apply-form');
+  var applyErrorBox = document.getElementById('apply-error-box');
+  var applySubmitBtn = document.getElementById('apply-submit-btn');
+
+  function showApplyError(message) {
+    applyErrorBox.innerHTML = '';
+    var p = document.createElement('p');
+    p.className = 'apply-error';
+    p.textContent = message;
+    applyErrorBox.appendChild(p);
+  }
+
+  applyForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    applyErrorBox.innerHTML = '';
+
+    var businessName = document.getElementById('apply-business-name').value.trim();
+    var address = document.getElementById('apply-address').value.trim();
+    var website = document.getElementById('apply-website').value.trim();
+    var businessPhone = document.getElementById('apply-business-phone').value.trim();
+    var description = document.getElementById('apply-description').value.trim();
+    var applicantName = document.getElementById('apply-name').value.trim();
+    var applicantEmail = document.getElementById('apply-email').value.trim();
+    var applicantPhone = document.getElementById('apply-phone').value.trim();
+    var confirmedRepresentative = document.getElementById('apply-confirm').checked;
+    var websiteConfirm = document.getElementById('apply-website-confirm').value;
+
+    if (!businessName) return showApplyError("Tell us your business's name.");
+    if (!selectedApplyCategory) return showApplyError('Pick a category for your business.');
+    if (!address) return showApplyError("Tell us your business's address.");
+    if (!applicantName) return showApplyError('Tell us your name.');
+    if (!applicantEmail) return showApplyError('Enter your email address.');
+    if (!applicantPhone) return showApplyError('Enter your phone number.');
+    if (!confirmedRepresentative) return showApplyError("Please confirm you're authorized to represent this business.");
+
+    applySubmitBtn.disabled = true;
+    applySubmitBtn.textContent = 'Submitting...';
+
+    fetch(APPLY_FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName: businessName,
+        category: selectedApplyCategory,
+        address: address,
+        website: website,
+        businessPhone: businessPhone,
+        description: description,
+        applicantName: applicantName,
+        applicantEmail: applicantEmail,
+        applicantPhone: applicantPhone,
+        confirmedRepresentative: confirmedRepresentative,
+        website_confirm: websiteConfirm,
+      }),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        applySubmitBtn.disabled = false;
+        applySubmitBtn.textContent = 'Submit Application';
+        if (!result.ok) {
+          return showApplyError(result.data && result.data.error ? result.data.error : 'Something went wrong. Please try again.');
+        }
+        applyForm.hidden = true;
+        var successBox = document.getElementById('apply-success');
+        document.getElementById('apply-success-phone').textContent = applicantPhone;
+        successBox.hidden = false;
+        successBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      })
+      .catch(function () {
+        applySubmitBtn.disabled = false;
+        applySubmitBtn.textContent = 'Submit Application';
+        showApplyError('Could not reach Nearby right now. Please check your connection and try again.');
+      });
+  });
 
   // Real funnel logging, matching business_acquisition_events' own real, honest steps -- this
   // page has no Supabase Auth session (it's plain static HTML, no Expo involvement), so this

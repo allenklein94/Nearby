@@ -102,7 +102,14 @@ export default function AdminBusinessRequestsScreen() {
                 {item.status === 'needs_info' ? 'needs info' : item.status}
               </Text>
             </View>
-            <Text style={styles.requester}>Requested by {item.profiles?.display_name}</Text>
+            {item.source === 'web' ? (
+              <Text style={styles.requester}>
+                🌐 Web application — {item.applicant_name} ({item.applicant_email}
+                {item.applicant_phone ? `, ${item.applicant_phone}` : ''})
+              </Text>
+            ) : (
+              <Text style={styles.requester}>Requested by {item.profiles?.display_name}</Text>
+            )}
             {item.category ? (
               <Text style={styles.category}>
                 {BUSINESS_CATEGORIES.find((c) => c.key === item.category)?.label ?? item.category}
