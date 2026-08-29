@@ -653,14 +653,159 @@ correctly against real data (including a business with only cuisine set, only at
 both, and neither), and that the new "⏳ Under Review" card renders correctly on a real device
 once a real submission or resweep flag genuinely exists for a real business account.
 
-**Item 12 remains genuinely unscoped** — "global pagination ranking refinement" has never
-appeared anywhere in this file's history before the pasted re-audit, and no existing mechanism in
-this codebase resembles it closely enough to safely infer what it means (a naive guess — e.g.
-applying the shared relevance-scoring vocabulary to the SQL-bounded browse RPCs like
-`get_bounded_nearby_gathering_ids()`, which today order strictly by `scheduled_at`/`created_at`,
-never a relevance score — is one real, defensible candidate, but far from the only one, and
-building the wrong multi-file/schema-adjacent interpretation would waste real effort). Flagged
-for an explicit answer rather than guessed at.
+**Item 12 was clarified by the user, then audited (read-only) against the real
+retrieval→scoring→pagination pipeline on every major recommendation surface** — see the
+"Global pagination ranking" section immediately below for the full trace, findings, and locked
+fix plan (not yet executed).
+
+## Aug 29 2026 (cont'd) — "global pagination ranking" audit (item 12) — read-only, one real
+## finding, PLAN LOCKED, NOT YET EXECUTED
+
+The user clarified item 12 directly: does Nearby ever rank candidates only among whatever batch
+it happened to retrieve/fetch, instead of ranking the full eligible pool before ever truncating
+for display — the "rank first, paginate second" principle, since ranking quality matters most at
+the very top of a list (top-k position bias). Explicit instruction, given directly, not to be
+softened: **audit first, real per-surface citations, and only escalate to a real fix if a
+surface is genuinely doing it wrong today** ("If Claude says already global, great — do nothing.
+If it says page-local, then we fix it.") — not something to build speculatively.
+
+**Method**: traced the actual retrieval → hard-constraint-filter → relevance-score → sort → cap
+pipeline on every major surface by reading the real, current code and (for every SQL-level RPC
+named below) the real, live function body pulled fresh via the Management API — not inferred
+from a migration file, which can drift from a later `CREATE OR REPLACE`.
+
+### Finding — no surface implements the literal page-by-page anti-pattern
+
+Checked explicitly (grepped for `onEndReached`/`loadMore`/`fetchPage`/`.range(` across
+`DiscoverHubScreen.js`/`GatheringsScreen.js`/`CommunitiesScreen.js`): **no client-side
+pagination/infinite-scroll exists anywhere on Nearby's recommendation/browse surfaces.** Every
+one of them does a single bounded fetch, then scores/sorts the *entire* fetched batch, then
+slices for display — so the user's own vivid example (page 1 shows 92/89/87/85, a genuine
+99/97/95/94 sits unseen on page 2) cannot happen today, because there is no page 2 fetch to hide
+anything behind. Confirmed correct, rank-then-cap, on every surface checked:
+- **Ask Nearby's final combine** (`resolveIntent()`, `intentResolver.js:449-450`) —
+  `deduped.sort((a, b) => b.score - a.score); return deduped.slice(0, RESULT_CAP);` — every one
+  of the 6 parallel branches' candidates (gatherings/communities/connected-requests/perks/
+  confirmed-availability/policy-only) is collected, deduped, and sorted globally across every
+  candidate type before the cap, exactly the cross-type global ranking the user's own message
+  named as the harder case.
+- **Home recommendations** (`homeRecommendations.js:155`) —
+  `candidates.sort((a, b) => b.score - a.score).slice(0, MAX_HOME_RECOMMENDATIONS)`.
+- **Discover's "Recommended For You"/"Trending Near You"** (`DiscoverHubScreen.js:400-426`) —
+  same map/score/`.sort()`/`.slice(0, 3)` shape over the full fetched gathering list.
+- **Business Opportunity dashboard ranking** (`scoreBusinessOpportunity()`, wired in
+  `BusinessDashboardScreen.js`) — `getBusinessOpportunities()` fetches every opportunity for
+  that partner unbounded (no `.limit()` at all), every row is scored, then sorted.
+- **Friend Discovery is the gold-standard example** (`get_friend_discovery_candidates()`, the
+  live RPC) — the real relevance score
+  (`shared_interest_count + shared_community_count + mutual_friend_count`) is computed and
+  `order by`-ed *entirely inside the SQL RPC*, before the `limit limit_param` — the database
+  itself never truncates before ranking. This is the pattern the fix below reuses in spirit.
+
+### The one real, currently-active violation — 🔴, matches the user's own P1 escalation rule
+
+**`search_active_business_availability()`** (backs Ask Nearby's confirmed-business-availability
+tier, `resolveBusinessAvailability()` in `intentResolver.js:252-319`) — the live SQL RPC caps the
+candidate pool with `order by distance_miles asc nulls last, ba.created_at desc limit 6`, and
+only *after* that cap does the client apply the real relevance signal
+(`attributeAndCuisineBonus()` — category/cuisine/attribute overlap between the ask and the
+posting). A posting ranked 7th-or-later by raw distance can never reach the scorer even when it's
+the single best category/cuisine/attribute match within the real 15-mile radius — the literal
+anti-pattern from the user's own example, just single-shot (one SQL call, not a second "page")
+rather than multi-page. This is real today, not latent — `limit 6` is tight enough that a modest
+amount of real local business density (well short of "the app has scaled") would already trigger
+it, unlike the two 🟡 findings below.
+
+**Checked and confirmed benign, not a second instance of the same bug**:
+`search_policy_only_businesses()` has the identical `limit 6`-by-distance shape, but its own
+downstream scoring (`resolvePolicyOnlyBusinesses()`) is *itself* distance-based
+(`distance < 2 ? SCORE_CLOSE_DISTANCE : 0`) — capping by distance before scoring can't discard a
+candidate the scorer would have ranked higher, since the two criteria are the same axis.
+`get_connected_open_business_requests()` caps at `limit 4` ordered by `created_at desc`, but
+every candidate in that branch gets an identical flat `SCORE_OWN_NETWORK` in
+`resolveConnectedRequests()` — there's no relevance variance for the cap to discard.
+
+### Two latent instances of the same architectural shape — 🟡, deliberately not being fixed now
+
+- **`get_bounded_nearby_gathering_ids()`** (`20260809_bounded_nearby_gatherings.sql`) —
+  `order by g.scheduled_at asc limit row_limit` (`row_limit` defaults to 500), before every
+  downstream relevance scorer that consumes `getNearbyGatherings()` (Ask Nearby's gathering
+  branch, Home recommendations, Discover's Recommended/Trending) ever runs. Real production
+  gathering count is a handful of rows — nowhere near 500 — so this cap has never actually
+  truncated anything to date.
+- **`getPublicCommunities()`** (`services/communities.js:102-115`) — `.order('created_at', {
+  ascending: false }).limit(200)`, before `resolveCommunityIntent()`'s own relevance scoring
+  (`SCORE_INTEREST_MATCH + titleMentionBonus()`). Real production community count is near-zero.
+
+Both are the *same* architectural shape as the 🔴 finding (a non-relevance SQL-level cap sitting
+upstream of client-side relevance scoring) — genuinely real, worth having a plan for, but not
+worth spending a schema change on right now given the real gap between the cap size and real
+data volume. Matches this file's own established precedent for exactly this tradeoff
+(`getNearbyBusinesses()`'s own comment: "the business-partner count is expected to stay much
+smaller... for a long while... this gets the lighter plain-`.limit()` fix"). **Locked decision**:
+flag both here, revisit only if real gathering/community volume ever approaches either cap —
+don't build against a risk that doesn't exist yet.
+
+### Stable pagination (the user's own third concern) — not applicable today, a forward-looking
+### principle only
+
+Since no surface implements real pagination, there is nothing to destabilize across page loads
+today — flagged as a real design principle for whenever pagination is genuinely added to any of
+these surfaces in the future, not a current gap: at that point, sort should use a deterministic
+multi-key tie-break (relevance score → distance → recency → a stable id), never `score` alone,
+so two candidates tied on score don't reorder between fetches.
+
+### Locked fix plan for the 🔴 finding — NOT YET EXECUTED
+
+**Decision, and the reasoning against the alternative, stated explicitly so it isn't
+re-litigated**: two shapes were considered for `search_active_business_availability()` —
+(a) duplicate the real relevance formula (category match, `attributeAndCuisineBonus()`'s
+cuisine/attribute overlap) into the SQL RPC itself, ordering by that real score before the
+`LIMIT`, matching Friend Discovery's own pattern exactly; or (b) keep relevance scoring
+client-side, in the one place it already lives correctly (`intentResolverScoring.js`/
+`intentResolver.js`), and simply widen the SQL-level candidate window so the realistic eligible
+pool reaches the client before scoring runs, the same tradeoff this file already made for
+`getNearbyBusinesses()`/`get_bounded_nearby_gathering_ids()`/`getPublicCommunities()`.
+
+**Locked: option (b).** Option (a) needs the RPC to gain new `attributes_param text[]`/
+`cuisine_param text` parameters and a real SQL port of `attributeAndCuisineBonus()`'s overlap
+math (the same `cardinality(array(select unnest(...) intersect select unnest(...)))` idiom
+`get_friend_discovery_candidates()` already uses for interest overlap) — buildable, but it means
+the real relevance formula now lives in two places (SQL and `intentResolverScoring.js`), a real,
+disclosed drift risk this codebase's own `intentResolverScoring.js` module exists specifically to
+avoid (one shared, single-source scoring module, not a parallel copy). Option (b) keeps the
+single source of truth exactly where it already is and correctly works, and is the smaller,
+lower-risk change — the real problem is specifically that the *window* is too tight (6), not that
+the client-side scoring itself is wrong; the client-side scoring is already correct once it
+actually receives the candidate.
+
+**Concrete change**: `search_active_business_availability()`'s `limit 6` becomes a real, wider
+cap — locked at **30** (not literally "unlimited," matching this file's own established "no
+invented numbers, but a real generous bound matched to realistic near-term scale" convention;
+picked to comfortably exceed any real business density this app's real, current, near-zero
+partner count could plausibly reach within a 15-mile radius for a long while, the same
+reasoning already applied to gatherings' 500 and communities' 200) — `order by distance_miles
+asc nulls last, ba.created_at desc` stays exactly as-is (distance is still a reasonable
+pre-filter tiebreak for postings that end up tied on real relevance score), only the numeric cap
+changes. No client-side code changes needed at all — `resolveBusinessAvailability()`'s own
+scoring and `resolveIntent()`'s own final global sort-then-cap are already correct and need
+nothing further; they'll simply now see up to 30 real candidates instead of 6 before doing the
+ranking they already do correctly.
+
+**Verification convention for whenever this is picked up, matching every other schema change in
+this file**: `CREATE OR REPLACE FUNCTION` (same signature, only the `limit` clause's numeric
+literal changes — no `DROP FUNCTION` needed since no parameter changes), applied to production
+and verified live with real disposable test data — specifically, a real scenario with 7+ eligible
+postings within radius where the *most category/cuisine/attribute-relevant* one is deliberately
+seeded as the *farthest* by distance, confirming it now genuinely reaches the client and out-ranks
+the closer, less-relevant postings in the final `resolveIntent()` result — not just that the
+`LIMIT` number changed. A from-scratch migration replay per this file's own migration-discipline
+rule. No client file changes expected, so no `npx expo export` regression beyond a sanity check
+that nothing else imports/relies on the old cap number.
+
+**Status: plan locked, not yet executed.** Nothing in this section has been built — the same
+restart-safety convention as every other plan-first section in this file: check `git status`/
+`git log` for what's actually landed vs. still just this plan if a restart hits mid-build.
 
 # Nearby — Project Context for Claude Code
 
