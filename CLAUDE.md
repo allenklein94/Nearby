@@ -159,26 +159,73 @@ run-through — next session should confirm the picker renders/selects correctly
 reflect the picked date correctly, and that switching back to a quick-preset chip after picking
 a date correctly abandons the picked date rather than leaving it silently attached.
 
-### 🟠 P1 remediation list — locked, not yet built, for a future pass
+### 🟠 P1 remediation list — executing below, per direct instruction ("start P1 list and all
+### other parts as well"); each item's own status note updated as it lands, not batched at the
+### end, matching this file's own restart-safety convention
 
-Restated from the second AI's own reply and the user's review of it, so nothing here is lost:
-universal gathering fullness/capacity indicator across every recommendation surface (Home
-Nearby Right Now, Best Pick/Trending, Discover, Gatherings browse — today only
-`AskBusinessScreen`'s matched-availability banner and `GatheringDetailScreen`'s own "almost
-full" nudge show it); a real first downstream use for Circles ("Invite a Circle" on gathering
-creation); a person/friend-shaped Ask Nearby intent branch routing "I want to meet people who
-like tennis" into Friend Discovery rather than a generic gathering browse; a shared semantic
-recommendation-reason vocabulary (Interest / Distance / Time / Context / Availability /
-Capacity / Popularity) reused across Best Pick / Nearby Right Now / Ask Nearby / Friends'
-different scoring formulas, without forcing those formulas into one universal score; Discover
-surfacing price/party/cuisine/attribute/capacity signals it already fetches but doesn't render;
-`GatheringChatScreen`/`BusinessConversationScreen` header tap-throughs to the real gathering/
-business (matching `CommunityChatScreen`'s and 1:1 `ChatScreen`'s own already-real pattern);
-weather-awareness in business-opportunity ranking (explicitly deprioritized by the user's own
-message, "not ahead of the P0/P1 items"). **The canonical "Right Now" definition item is
-already closed** — see this file's own Aug 28 2026 Universal Signal Remediation Pass, P2 item
-8, `src/utils/rightNowWindow.js` — restated here only so a future session doesn't
-re-discover/re-flag it as still open.
+Restated from the second AI's own reply and the user's review of it: universal gathering
+fullness/capacity indicator across every recommendation surface (Home Nearby Right Now, Best
+Pick/Trending, Discover, Gatherings browse — previously only `AskBusinessScreen`'s matched-
+availability banner and `GatheringDetailScreen`'s own "almost full" nudge showed it); a real
+first downstream use for Circles ("Invite a Circle" on gathering creation); a person/friend-
+shaped Ask Nearby intent branch routing "I want to meet people who like tennis" into Friend
+Discovery rather than a generic gathering browse; a shared semantic recommendation-reason
+vocabulary (Interest / Distance / Time / Context / Availability / Capacity / Popularity) reused
+across Best Pick / Nearby Right Now / Ask Nearby / Friends' different scoring formulas, without
+forcing those formulas into one universal score; Discover surfacing price/party/capacity signals
+it already fetches but doesn't render; `GatheringChatScreen`/`BusinessConversationScreen` header
+tap-throughs to the real gathering/business (matching `CommunityChatScreen`'s and 1:1
+`ChatScreen`'s own already-real pattern); weather-awareness in business-opportunity ranking
+(explicitly deprioritized by the user's own message, "not ahead of the P0/P1 items," built last
+if at all). **The canonical "Right Now" definition item is already closed** — see this file's
+own Aug 28 2026 Universal Signal Remediation Pass, P2 item 8, `src/utils/rightNowWindow.js` —
+restated here only so this pass doesn't re-discover/re-flag it as still open.
+
+#### Item 1 — universal gathering fullness indicator — DONE, build-wise
+
+**Real finding that shrank this item's scope**: `capacity` and each gathering's real
+`approvedAttendees` array were already fetched by every surface named above (`SAFE_GATHERING_
+FIELDS` has carried `capacity` since the Aug 8 2026 Capacity/Waitlist build; `getNearbyGatherings()`/
+`enrichGatheringsWithDistanceAndSort()` already attach `approvedAttendees` to every row it
+returns) — this was purely a **rendering** gap, not a missing query, on every surface but the
+one (Ask Nearby's own result panel) that already showed it.
+
+New `src/utils/gatheringFullness.js` (`getGatheringFullness()`/`gatheringFullnessLabel()`) — a
+pure, no-I/O helper, one real locked contract reused everywhere: 🔒 `Full — Join Waitlist` (at
+capacity), 🔥 `N spot(s) left` (within `max(2, ceil(capacity * 0.2))` of full, matching
+`GatheringDetailScreen`'s own already-established "almost full" threshold), 🟢 `N spots left`
+(otherwise) — and `null` (no label at all) for a gathering with no real `capacity` set, matching
+this file's own "no invented numbers" convention rather than fabricating an "unlimited" claim.
+9 real unit tests (`gatheringFullness.test.js`).
+
+Wired into every surface the audit named, using data each already had in scope — **zero new
+queries**: `HomeScreen.js`'s Best Pick card, its Trending Near You rows, and its "Nearby Right
+Now" recommendation list (gated to `type === 'gathering'` items only, since a perk has no
+capacity concept); `DiscoverHubScreen.js`'s Recommended For You, Trending Near You, and main
+Gatherings list sections (new `src/constants/gatheringDisplaySignals.js` alongside it —
+`gatheringSignalLine()` — closes the adjacent "Discover already receives price_level/party_type
+but doesn't render them" finding in the same pass, joined on the same line as the fullness
+label: e.g. "$ · 👥 Bring Friends · 🔥 2 spots left"); `GatheringsScreen.js`'s `nearby` (browse)
+tab main card, as a new badge alongside the existing women-only/matches-interest/friends-
+interested badge cluster. Deliberately **not** added to the `attending`/`hosting` tabs — those
+are "things I already committed to," not a recommend/rank/browse surface, and
+`GatheringDetailScreen`'s own host banner already covers the "should I invite more people"
+question for a host. Ask Nearby's own result-panel label (`intentResolver.js`'s already-shipped
+`"🔒 Full — Join Waitlist (N/M spots taken)"`) was deliberately left untouched, not consolidated
+onto the new shared helper — it's already correct, already verified live, and carries a real
+extra detail (the N/M count) the new generic label doesn't; consistent enough in spirit (same
+lock emoji, same "Join Waitlist" phrase) without touching already-shipped, already-audited code.
+
+Verified via a direct `@babel/core` parse of all five touched/new files (clean), the full Jest
+suite (**153/153 passing** — 144 pre-existing + 9 new), and a full `npx expo export --platform
+ios` (clean, no bundling errors, **2273 modules** — two more than the 2271 baseline, the two new
+files; every other touched file was an edit). No schema/RPC change, so no live-production
+verification applies to this item.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the fullness label renders correctly (and in the
+right color) across all six wired surfaces once a real gathering with `capacity` set exists at
+each fullness tier, and that a gathering with no `capacity` set correctly shows nothing extra.
 
 # Nearby — Project Context for Claude Code
 

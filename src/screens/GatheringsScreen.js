@@ -34,6 +34,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
+import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -1101,6 +1102,19 @@ export default function GatheringsScreen({ navigation, route }) {
                     </View>
                   ) : null;
                 })()}
+                {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
+                    "Fullness needs to be universal") -- the browse tab's
+                    own main card, previously the last of the four
+                    recommend/rank/browse surfaces that still silently
+                    showed a full gathering with zero indication. Same
+                    real signal every other surface now shows. */}
+                {gatheringFullnessLabel(item) && (
+                  <View style={[styles.fullnessBadge, gatheringFullnessLabel(item).startsWith('🔒') && styles.fullnessBadgeFull]}>
+                    <Text style={[styles.fullnessBadgeText, gatheringFullnessLabel(item).startsWith('🔒') && styles.fullnessBadgeTextFull]}>
+                      {gatheringFullnessLabel(item)}
+                    </Text>
+                  </View>
+                )}
                 <NewcomerBadge gatheringId={item.id} />
                 <BusinessHostBadge hostingPartnerId={item.hosting_partner_id} navigation={navigation} />
                 <RecurringBadge recurrenceRule={item.recurrence_rule} />
@@ -1657,6 +1671,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
   },
   friendsInterestedText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  fullnessBadge: {
+    alignSelf: 'flex-start', backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 2, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+  },
+  fullnessBadgeText: { color: colors.textSecondary, fontSize: 11, fontWeight: '700' },
+  fullnessBadgeFull: { backgroundColor: colors.dangerMuted ?? colors.surfaceElevated, borderColor: colors.danger },
+  fullnessBadgeTextFull: { color: colors.danger },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.sm },
   time: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },

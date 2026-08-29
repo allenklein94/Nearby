@@ -25,6 +25,8 @@ import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 
 const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
@@ -709,6 +711,19 @@ export default function DiscoverHubScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
                     <Text style={styles.cardSubtitle} numberOfLines={1}>{g.fit.reasons.join(' · ')}</Text>
+                    {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
+                        Audit, "Discover needs to stop throwing away
+                        information it already has"): price/party/
+                        fullness are already fetched on every gathering
+                        row, just never rendered here before. */}
+                    {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+                      <Text
+                        style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
+                        numberOfLines={1}
+                      >
+                        {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
@@ -736,6 +751,14 @@ export default function DiscoverHubScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
                     <Text style={styles.cardSubtitle}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
+                    {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+                      <Text
+                        style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
+                        numberOfLines={1}
+                      >
+                        {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
@@ -777,6 +800,14 @@ export default function DiscoverHubScreen({ navigation }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
                     <Text style={styles.cardSubtitle}>{g.distanceLabel}</Text>
+                    {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+                      <Text
+                        style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
+                        numberOfLines={1}
+                      >
+                        {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
                   </View>
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>

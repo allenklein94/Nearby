@@ -27,6 +27,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime } from '../utils/timeContext';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -1181,6 +1182,11 @@ export default function HomeScreen({ navigation }) {
                   <View style={styles.planInfo}>
                     <Text style={styles.planTitle}>{item.title}</Text>
                     <Text style={styles.planMeta}>{item.reasons.join(' · ')}</Text>
+                    {item.type === 'gathering' && gatheringFullnessLabel(item.data) && (
+                      <Text style={[styles.planMeta, gatheringFullnessLabel(item.data).startsWith('🔒') && { color: colors.danger }]}>
+                        {gatheringFullnessLabel(item.data)}
+                      </Text>
+                    )}
                     {/* Phase 4 (see CLAUDE.md's "build everything" plan):
                         "Make a plan" is deliberately perk-only, not also
                         offered on a gathering-type recommendation — that
@@ -1613,6 +1619,16 @@ export default function HomeScreen({ navigation }) {
                     {dashboard.bestPick.reasons.map((reason, i) => (
                       <Text key={i} style={styles.bestPickReason}>✓ {reason}</Text>
                     ))}
+                    {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
+                        Audit): the same real fullness signal every
+                        recommendation surface now shows, so a full
+                        gathering never ranks #1 here with zero indication
+                        before the tap. */}
+                    {gatheringFullnessLabel(dashboard.bestPick) && (
+                      <Text style={[styles.bestPickReason, gatheringFullnessLabel(dashboard.bestPick).startsWith('🔒') && { color: colors.danger }]}>
+                        {gatheringFullnessLabel(dashboard.bestPick)}
+                      </Text>
+                    )}
                   </View>
                   <Text style={styles.bestPickAction}>View →</Text>
                 </TouchableOpacity>
@@ -1635,6 +1651,11 @@ export default function HomeScreen({ navigation }) {
                   >
                     <Text style={styles.trendingTitle}>{g.title}</Text>
                     <Text style={styles.trendingMeta}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
+                    {gatheringFullnessLabel(g) && (
+                      <Text style={[styles.trendingMeta, gatheringFullnessLabel(g).startsWith('🔒') && { color: colors.danger }]}>
+                        {gatheringFullnessLabel(g)}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 ))}
               </>
