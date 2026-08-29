@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIn
 import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
+import { getMyCircles } from '../services/friendCircles';
 import LoadErrorState from '../components/LoadErrorState';
 import * as Haptics from 'expo-haptics';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -31,6 +32,8 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [invitedIds, setInvitedIds] = useState({});
   const [invitingId, setInvitingId] = useState(null);
+  const [circles, setCircles] = useState([]);
+  const [invitingCircleId, setInvitingCircleId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,8 +69,18 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     setShowInvite(true);
     if (friends.length > 0 || loadingFriends) return;
     setLoadingFriends(true);
-    const list = await getFriendsWithSharedContext(gathering?.host_id);
+    const [list, myCircles] = await Promise.all([
+      getFriendsWithSharedContext(gathering?.host_id),
+      // P1 item 2 (CLAUDE.md, Aug 28 Full Coherence Audit): the first
+      // real downstream use for Friend Circles -- fetched alongside
+      // friends, not a new lazy step, so "Invite a Circle" is available
+      // the instant the friend list itself renders. A circle-less
+      // account (the common case today) sees nothing extra -- getMyCircles()
+      // already returns [] rather than a fabricated placeholder.
+      getMyCircles(),
+    ]);
     setFriends(list);
+    setCircles(myCircles);
     const urlEntries = await Promise.all(
       list.map(async (f) => {
         if (!f.photo_url) return [f.id, null];
@@ -88,6 +101,48 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
       Alert.alert('Error', e.message);
     }
     setInvitingId(null);
+  }
+
+  // Real member ids, scoped down to whoever is both (a) a genuine
+  // circle member and (b) actually present in this gathering's own
+  // real friends-with-shared-context list -- a circle can reference a
+  // friend id that's since been removed or, in principle, doesn't share
+  // this specific gathering's context, and this never invites anyone
+  // getFriendsWithSharedContext() itself didn't already surface as real,
+  // inviteable friend.
+  function circleInviteTargets(circle) {
+    return circle.memberIds.filter((id) => friends.some((f) => f.id === id) && !invitedIds[id]);
+  }
+
+  // A real, itemized bulk send -- one sendInvite() call per real member,
+  // matching handleInvite()'s own single-friend shape exactly, no new
+  // RPC. Matches this screen's own already-established "honest count,
+  // never a fabricated 'invites sent!' claim" convention (see the
+  // preInviteResult note above) -- a partial failure across several real
+  // sends is disclosed, not silently swallowed.
+  async function handleInviteCircle(circle) {
+    const targetIds = circleInviteTargets(circle);
+    if (targetIds.length === 0) return;
+    setInvitingCircleId(circle.id);
+    const results = await Promise.allSettled(
+      targetIds.map((id) => sendInvite('gathering', gatheringId, id))
+    );
+    const newlyInvited = {};
+    results.forEach((result, i) => {
+      if (result.status === 'fulfilled') newlyInvited[targetIds[i]] = true;
+    });
+    if (Object.keys(newlyInvited).length > 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setInvitedIds((prev) => ({ ...prev, ...newlyInvited }));
+    }
+    const failedCount = results.length - Object.keys(newlyInvited).length;
+    if (failedCount > 0) {
+      Alert.alert(
+        'Some invites didn\'t go through',
+        `Invited ${Object.keys(newlyInvited).length} of ${targetIds.length} in "${circle.name}" — try the rest individually below.`
+      );
+    }
+    setInvitingCircleId(null);
   }
 
   function handleDone() {
@@ -169,6 +224,36 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
           <View style={{ width: '100%' }}>
             <Text style={styles.inviteHeader}>Invite Connections</Text>
             <Text style={styles.inviteSubtext}>Only people you're already friends with — never nearby strangers.</Text>
+            {!loadingFriends && circles.length > 0 && (
+              <View style={styles.circleRow}>
+                {circles.map((circle) => {
+                  const targetCount = circleInviteTargets(circle).length;
+                  const isEmpty = circle.memberIds.length === 0;
+                  const allInvited = !isEmpty && targetCount === 0;
+                  const label = allInvited
+                    ? `✓ ${circle.name}`
+                    : isEmpty
+                    ? `${circle.name} (empty)`
+                    : `🏷️ Invite ${circle.name} (${targetCount})`;
+                  return (
+                    <TouchableOpacity
+                      key={circle.id}
+                      style={[styles.circleChip, (allInvited || isEmpty) && styles.circleChipDone]}
+                      onPress={() => handleInviteCircle(circle)}
+                      disabled={invitingCircleId === circle.id || targetCount === 0}
+                      accessibilityLabel={allInvited ? `Everyone in ${circle.name} already invited` : isEmpty ? `${circle.name} has no members yet` : `Invite everyone in ${circle.name}`}
+                      accessibilityRole="button"
+                    >
+                      {invitingCircleId === circle.id ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Text style={[styles.circleChipText, (allInvited || isEmpty) && styles.circleChipTextDone]}>{label}</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
             {loadingFriends ? (
               <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
             ) : friends.length === 0 ? (
@@ -234,6 +319,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   doneLink: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
   inviteHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   inviteSubtext: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
+  circleRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md, gap: spacing.sm },
+  circleChip: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: 8, minHeight: 32, justifyContent: 'center',
+  },
+  circleChipDone: { backgroundColor: colors.surfaceElevated },
+  circleChipText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  circleChipTextDone: { color: colors.textTertiary },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.xl, lineHeight: 20 },
   friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },

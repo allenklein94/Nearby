@@ -340,11 +340,68 @@ run-through — next session should confirm, on a real device: a genuine person-
 three rendering cases above, tapping it lands cleanly on `FriendDiscoveryScreen`, and that an
 ordinary gathering-shaped ask (e.g. "dinner tonight for two") shows no such action.
 
-**Items 2 (Circles → "Invite a Circle" on gathering creation) and 4 (a shared semantic
-recommendation-reason vocabulary) remain not yet started** — restated here so a future session
-doesn't have to re-derive the P1 list's own remaining scope from scratch. Item 7 (weather-
-awareness in business-opportunity ranking) stays explicitly deprioritized per the user's own
-instruction, built last if at all.
+**Item 4 (a shared semantic recommendation-reason vocabulary) remains not yet started** —
+restated here so a future session doesn't have to re-derive the P1 list's own remaining scope
+from scratch. Item 7 (weather-awareness in business-opportunity ranking) stays explicitly
+deprioritized per the user's own instruction, built last if at all.
+
+#### Item 2 — Circles get a real first downstream use: "Invite a Circle" on gathering
+#### creation — DONE, build-wise, client-only, no schema change
+
+Closes the P1 list's own "Circles → 'invite to gathering'" line. Friend Circles
+(`services/friendCircles.js`, `friend_circles`/`friend_circle_members`) already existed and was
+already applied/verified live (see this file's own Aug 7 2026 "Outstanding: Friend Circles"
+section) — but had never had a single real downstream consumer beyond `FriendsScreen.js`'s own
+tagging UI. This closes that gap using the one screen the item's own text names: the real
+post-create "Invite Connections" step (`GatheringConfirmationScreen.js`, built in Create 2.0 —
+see "Locked decision #3" in that plan, "never nearby strangers, even ones the recommendation
+engine would score as a good match").
+
+**No new RPC, no new table** — `getMyCircles()` (already existed) is fetched in parallel with
+`getFriendsWithSharedContext()` the instant "Invite Connections" is opened (`handleOpenInvite()`),
+not a separate lazy step. A real, honest chip row (`🏷️ Invite {name} (N)`) renders above the
+existing friend list, one chip per circle, shown only when `circles.length > 0` — a circle-less
+account (the common case today, since this is genuinely the first real feature to consume
+Circles) sees no new UI at all, matching this file's own "no invented UI for data that isn't
+there" convention.
+
+**Bulk send, itemized, never a single opaque RPC call**: tapping a chip calls a new
+`handleInviteCircle(circle)` — a real `Promise.allSettled` over one `sendInvite('gathering', ...)`
+call per real target member (the exact same single-friend RPC `handleInvite()` already calls,
+just fired for several real ids at once, not a new bulk-invite mechanism). Target membership is
+computed via a new `circleInviteTargets(circle)` helper, deliberately scoped down to member ids
+that are **both** a real circle member **and** actually present in this gathering's own real
+`getFriendsWithSharedContext()` result — a circle can reference a friend id that's since drifted
+out of that list, and this never invites anyone the underlying friends-only invite system itself
+wouldn't already treat as a real, inviteable friend. Already-invited members are silently
+excluded from the target count on every render (recomputed from `invitedIds`, not cached), so
+the same chip's own count naturally shrinks as individual invites land, and a fully-invited
+circle's chip flips to a real, honest `✓ {name}` disabled state — never showing `(0)` with no
+explanation. An empty circle (a real, if unusual, state — a freshly created circle with no
+members added yet) gets its own honest `{name} (empty)` disabled label, distinct from "already
+invited," so the two zero-target cases never read the same.
+
+**A partial failure across several real sends is disclosed, not silently swallowed** — matching
+this exact screen's own already-established `preInviteResult` philosophy two sections up
+("an honest count, not a fabricated 'invites sent!' claim, since a partial failure... is a real,
+disclosed possibility"): a genuine partial failure shows a real "Invited N of M in '{circle}' —
+try the rest individually below" alert, and the chip's own count/disabled-state still reflects
+exactly what succeeded, not what was attempted.
+
+Verified via a direct `@babel/core` parse of the touched file (clean), the full Jest suite
+(unchanged, still 155/155 — no pure-logic file was touched by this item), and a full `npx expo
+export --platform ios` (clean, no bundling errors — edit to one existing file only, no new
+files, no schema/RPC touched so no live-production verification applies to this item; the one
+read this item relies on, `getMyCircles()`, was already independently verified live when Friend
+Circles first shipped).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the chip row renders correctly for
+an account with real circles (including a genuinely empty one), tapping a chip actually sends
+real invites to every real target member and the chip's own count/label update correctly as
+individual and bulk invites land, and that a genuine partial-failure scenario (hard to construct
+without real network conditions) surfaces the honest partial-count alert rather than a silent
+no-op.
 
 # Nearby — Project Context for Claude Code
 
