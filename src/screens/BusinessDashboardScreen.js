@@ -8,7 +8,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote } from '../services/brandOffers';
+import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
+// P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
+// target-type label map rather than a second, drifting copy.
+import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -341,6 +344,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   const [reservationProviderStatus, setReservationProviderStatus] = useState(null);
   const [editingReservationProvider, setEditingReservationProvider] = useState(false);
+
+  // P2 remediation item 11 (CLAUDE.md): the real, persistent counterpart
+  // to the six one-time "Submitted for Review" alerts scattered across
+  // this screen's own save handlers -- re-fetched on every real dashboard
+  // load, so navigating away and back still shows what's genuinely still
+  // pending, not just a toast the owner may have missed.
+  const [pendingScreenings, setPendingScreenings] = useState([]);
   const [reservationProviderInput, setReservationProviderInput] = useState(null);
   const [reservationVenueIdInput, setReservationVenueIdInput] = useState('');
   const [savingReservationProvider, setSavingReservationProvider] = useState(false);
@@ -458,6 +468,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         setActivePrioritySignals(await getActiveBusinessPrioritySignals(loadedPartnerId));
       } catch (e) {
         console.error('getActiveBusinessPrioritySignals failed', e);
+      }
+      // P2 remediation item 11 (CLAUDE.md) -- same non-fatal
+      // secondary-loader convention as everything else in this block.
+      try {
+        setPendingScreenings(await getMyPendingContentScreenings(loadedPartnerId));
+      } catch (e) {
+        console.error('getMyPendingContentScreenings failed', e);
       }
     }
   }
@@ -1941,6 +1958,30 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           <>
             {section === 'home' && (
               <>
+                {/* P2 remediation item 11 (CLAUDE.md): a real, persistent
+                    "still pending" state -- previously the owner only
+                    ever saw a one-time "Submitted for Review" alert with
+                    nothing telling them a change was still pending once
+                    they navigated away. Neutral (colors.surface/border),
+                    not colors.primary/primaryMuted -- per the app's own
+                    locked coral-usage rule, this is informational, not an
+                    action, and nothing here is destructive either. Shown
+                    only when at least one real row exists, never a
+                    fabricated "all clear" state for a business with
+                    nothing pending. */}
+                {pendingScreenings.length > 0 && (
+                  <View style={styles.pendingReviewCard}>
+                    <Text style={styles.pendingReviewTitle}>⏳ Under Review</Text>
+                    {pendingScreenings.map((s) => (
+                      <Text key={s.id} style={styles.pendingReviewRow}>
+                        {TARGET_TYPE_LABELS[s.target_type] ?? s.target_type}:{' '}
+                        {s.source === 'resweep'
+                          ? 'flagged for a routine re-check — an admin is reviewing it.'
+                          : 'awaiting review, not live yet.'}
+                      </Text>
+                    ))}
+                  </View>
+                )}
                 {showWelcomeCard && (
                   <View style={styles.welcomeCard}>
                     <View style={styles.welcomeCardHeaderRow}>
@@ -4508,6 +4549,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.primary,
     padding: spacing.lg, marginBottom: spacing.lg,
   },
+  // P2 remediation item 11 -- neutral (colors.surface/border), matching
+  // this same file's own briefCard/discoveryTeaser informational-card
+  // treatment, not the coral welcomeCard above (that one's a real set of
+  // tappable onboarding actions; this one is status-only).
+  pendingReviewCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.lg, marginBottom: spacing.lg,
+  },
+  pendingReviewTitle: { ...typography.headline, color: colors.textPrimary },
+  pendingReviewRow: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
   discoveryTeaser: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,

@@ -37,8 +37,12 @@ const RISK_LABELS = {
 // Decision 6, Phases 1-3 -- every real value in the schema's own CHECK
 // constraint is now a live, screened target_type. Falls back to the raw
 // value for anything unrecognized, matching this screen's own
-// pre-existing fallback.
-const TARGET_TYPE_LABELS = {
+// pre-existing fallback. Exported so BusinessDashboardScreen's own
+// persistent "pending review" state (P2 remediation item 11, CLAUDE.md)
+// can name the same real target types the same way, matching this file's
+// own established BUSINESS_CATEGORIES-from-BusinessPartnerApplyScreen
+// reuse precedent rather than a second, drifting copy.
+export const TARGET_TYPE_LABELS = {
   business_profile: 'Business profile edit',
   experience: 'Signature Experience',
   offer: 'Standing offer',

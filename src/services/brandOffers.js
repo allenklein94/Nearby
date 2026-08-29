@@ -65,7 +65,7 @@ export async function getActiveOffers(myLat = null, myLng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description)')
+    .select('*, brand_partners(name, logo_url, description, cuisine, attributes)')
     .eq('active', true)
     .is('gathering_id', null)
     .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
@@ -129,7 +129,7 @@ export async function searchOffers(queryText, myLat = null, myLng = null) {
 
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, logo_url, description)')
+    .select('*, brand_partners(name, logo_url, description, cuisine, attributes)')
     .in('id', ids)
     .order('created_at', { ascending: false });
   if (error) {
@@ -950,6 +950,40 @@ export async function getMyManagedPartner() {
 
   const { data: partner } = await supabase.from('brand_partners').select('*').eq('id', profile.managed_partner_id).single();
   return partner;
+}
+
+// P2 remediation item 11 (CLAUDE.md): the real, previously-flagged gap --
+// "the owner sees only the one-time 'Submitted for Review' alert, with no
+// persistent state anywhere telling them a change is still pending once
+// they navigate away." Closes it by reading the same
+// business_content_screening_results table directly -- RLS already lets
+// an owner SELECT their own rows (see
+// 20260906_business_content_screening.sql's "Business owners can view
+// their own screening history" policy), so this is a plain query, no new
+// RPC needed.
+//
+// "Genuinely still pending" mirrors the exact fix the admin queue's own
+// widened filter already established (CLAUDE.md, Decision 6 Phase 5):
+// review_outcome is null alone isn't enough -- a real LOW-tier row is
+// also review_outcome: null (it was never reviewed because it never
+// needed to be, not because it's still pending). Only a submission-source
+// medium/uncertain row (an edit genuinely not live yet) or a resweep-
+// source high/medium/uncertain row (already-live content flagged for a
+// human to look at, never auto-blocked for a resweep) counts.
+export async function getMyPendingContentScreenings(partnerId) {
+  if (!partnerId) return [];
+  const { data, error } = await supabase
+    .from('business_content_screening_results')
+    .select('id, target_type, source, risk_tier, created_at')
+    .eq('partner_id', partnerId)
+    .is('review_outcome', null)
+    .or('risk_tier.in.(medium,uncertain),and(source.eq.resweep,risk_tier.eq.high)')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('getMyPendingContentScreenings error', error);
+    return [];
+  }
+  return data ?? [];
 }
 
 // Business Partner acquisition experience, Milestone 4 (see CLAUDE.md): a real, fire-and-forget

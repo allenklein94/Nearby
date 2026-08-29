@@ -563,6 +563,105 @@ individual and bulk invites land, and that a genuine partial-failure scenario (h
 without real network conditions) surfaces the honest partial-count alert rather than a silent
 no-op.
 
+## Aug 29 2026 (cont'd) — closing the two real remaining gaps from an external re-audit of the
+## already-DONE P1/P2 remediation list: Discover cuisine/attributes exposure, and a persistent
+## business "pending review" state — BOTH DONE
+
+Direct follow-up to the P1 remediation list immediately above — the user pasted a re-numbered
+external re-audit of that same list (P1 items 3-8, P2 items 9-13) and asked whether it was all
+finished. Checked every item directly against the actual code (not the prior claims) before
+answering: items 3/4/5/6/7/9/10/13 all re-confirmed genuinely done; item 8 (Discover information
+parity) was confirmed **partial** — price/party-type were exposed on gathering cards, but
+cuisine/attributes were never exposed anywhere on Discover; item 11 (persistent business
+"pending review" state) was confirmed **not started** — this file's own Decision 6 Phase 1 text
+already flagged it explicitly as "still genuinely undecided... a real UX call, not resolved by
+this plan"; item 12 ("global pagination ranking refinement") has zero references anywhere in
+this file or the codebase — never scoped, let alone built, and stays that way pending an actual
+answer to what it means (asked the user directly; not yet resolved). This pass closes items 8
+and 11 only.
+
+**Item 8 — Discover cuisine/attributes exposure, closed.** `getActiveOffers()`/`searchOffers()`
+(`services/brandOffers.js`) both widened their `brand_partners(...)` embed from
+`name, logo_url, description` to also include `cuisine, attributes` — both real, already-
+existing columns (confirmed live via `information_schema.columns`), just never selected by
+either function backing Discover's Perks section. New `src/constants/businessDisplaySignals.js`
+— `businessSignalLine(partner)`, the business-side mirror of the already-shipped
+`gatheringDisplaySignals.js`'s `gatheringSignalLine()` — reuses the existing
+`cuisineLabel()`/`businessAttributeLabel()` helpers from `constants/businessAttributes.js`
+rather than a third copy of either label map; caps at the partner's real cuisine plus their
+first 2 real attributes, since this renders on a single-line (`numberOfLines={1}`) card row
+alongside the business name and any "Matches your interests" note. `DiscoverHubScreen.js`'s
+Perks card `reason` line now joins business name → `businessSignalLine()` → the interest-match
+note, filtering out whichever parts are actually null — never a fabricated line for a business
+with no cuisine/attributes set. Capacity (the other half of item 8's own list) is deliberately
+not part of this — a standing perk (`brand_offers`) has no capacity concept the way a gathering
+or a live availability posting does; item 3's fullness work already covers the one place
+capacity genuinely applies (gatherings), and there's nothing analogous to add here.
+
+**Item 11 — a real, persistent "pending review" state, closed.** Previously the only signal a
+business owner ever got was one of six one-time `Alert.alert('Submitted for Review', ...)` calls
+scattered across `BusinessDashboardScreen.js`'s own save handlers (profile/experience/offer/
+availability/update/offer_response) — nothing told them a change was still pending once they
+navigated away, exactly the gap this file's own Decision 6 Phase 1 text already named and left
+explicitly unresolved. New `getMyPendingContentScreenings(partnerId)` in `services/
+brandOffers.js` — no new RPC needed, since `business_content_screening_results` already has a
+real owner-scoped SELECT RLS policy (`20260906_business_content_screening.sql`, "Business owners
+can view their own screening history") that was simply never queried from anywhere but the admin
+screen. The filter reuses the exact same "genuinely still pending" fix the admin queue's own
+widened filter already established (Decision 6 Phase 5) — `review_outcome is null` alone isn't
+enough, since a real LOW-tier row is also `review_outcome: null` (never reviewed because it never
+needed to be, not because it's still pending) — so this only ever counts a submission-source
+`medium`/`uncertain` row (an edit genuinely not live yet) or a resweep-source `high` row
+(already-live content flagged for a human to look at, never auto-blocked for a resweep, per that
+phase's own locked design). `TARGET_TYPE_LABELS` was exported from `AdminContentReviewScreen.js`
+(previously a local const) and reused, rather than a third copy — matching this same file's own
+established `BUSINESS_CATEGORIES`-from-`BusinessPartnerApplyScreen` reuse precedent.
+`BusinessDashboardScreen.js` fetches this in the same non-fatal secondary-loader block as every
+other supplementary fetch on this screen (Stripe status, priority signals, etc. — a failure here
+never blocks the rest of the dashboard), and renders a real "⏳ Under Review" card at the very
+top of the Dashboard tab — shown only when at least one real row exists, styled neutral
+(`colors.surface`/`colors.border`, matching this same file's own `briefCard`/`discoveryTeaser`
+informational-card treatment) rather than coral, per the app's own locked coral-usage rule
+(informational, not an action, nothing destructive) — never the louder `welcomeCard` treatment
+right below it, which is a real set of tappable onboarding actions, not a status display.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — real disposable
+test data covering every real boundary case the filter needs to distinguish: a submission-source
+low-tier row (`review_outcome: null` but not medium/uncertain) correctly excluded; a
+submission-source medium-tier row correctly included; a submission-source high-tier row with
+`review_outcome: 'auto_blocked'` correctly excluded (not null); a resweep-source high-tier row
+correctly included; a resweep-source low-tier row correctly excluded (resweep only counts at
+`high`) — confirmed via the exact raw-SQL equivalent of the `.or()` filter, then re-confirmed
+under **genuine `SET ROLE authenticated`** with the real business owner's own JWT claim (not just
+the Management API's own table-owner bypass, this file's own repeatedly-learned "false-negative
+first pass" lesson) — identical two rows returned. Separately confirmed a genuine non-owner
+querying the same 5 rows gets 0 back, proving the RLS isolation holds, not just the filter logic.
+All 5 test rows deleted afterward; confirmed `business_content_screening_results` back to its
+exact pre-test baseline (0 matching rows). `brand_partners.cuisine`/`attributes` were also
+independently confirmed to be real, existing columns (not assumed) via the same live schema
+check, before relying on either in `businessSignalLine()`.
+
+Verified via a direct `@babel/core` parse of all 5 touched/new files (clean), the full Jest suite
+(**168/168 passing**, unchanged — this was a pure query-shape + rendering addition, no new pure
+function needed a dedicated test, matching `gatheringDisplaySignals.js`'s own precedent of having
+no test file either), and a full `npx expo export --platform ios` (clean, no bundling errors —
+edits to four existing files plus one new `businessDisplaySignals.js`).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the Perks card's new cuisine/attribute line renders
+correctly against real data (including a business with only cuisine set, only attributes set,
+both, and neither), and that the new "⏳ Under Review" card renders correctly on a real device
+once a real submission or resweep flag genuinely exists for a real business account.
+
+**Item 12 remains genuinely unscoped** — "global pagination ranking refinement" has never
+appeared anywhere in this file's history before the pasted re-audit, and no existing mechanism in
+this codebase resembles it closely enough to safely infer what it means (a naive guess — e.g.
+applying the shared relevance-scoring vocabulary to the SQL-bounded browse RPCs like
+`get_bounded_nearby_gathering_ids()`, which today order strictly by `scheduled_at`/`created_at`,
+never a relevance score — is one real, defensible candidate, but far from the only one, and
+building the wrong multi-file/schema-adjacent interpretation would waste real effort). Flagged
+for an explicit answer rather than guessed at.
+
 # Nearby — Project Context for Claude Code
 
 Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supabase).

@@ -27,6 +27,9 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
+// P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
+// the business/perk half of the same fix.
+import { businessSignalLine } from '../constants/businessDisplaySignals';
 
 const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
@@ -923,7 +926,11 @@ export default function DiscoverHubScreen({ navigation }) {
                   key={o.id}
                   icon="🎁"
                   title={o.title}
-                  reason={`${o.brand_partners?.name}${o.target_interest_tag ? ' · Matches your interests' : ''}`}
+                  reason={[
+                    o.brand_partners?.name,
+                    businessSignalLine(o.brand_partners),
+                    o.target_interest_tag ? 'Matches your interests' : null,
+                  ].filter(Boolean).join(' · ')}
                   onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
                   accessibilityLabel={`${o.title}, ${o.brand_partners?.name}`}
                 />
