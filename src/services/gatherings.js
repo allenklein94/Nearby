@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
+import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -953,10 +954,18 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0 } = {}) 
   }
   if (gathering.matchesYourInterests) {
     score += 5;
-    reasons.push('Matches your interests');
+    // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,
+    // canonical text -- reused verbatim by homeRecommendations.js's own
+    // scoreGathering(), so the two surfaces can never silently drift.
+    reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2 && gathering.distanceLabel) {
     score += 3;
+    // Deliberately NOT the shared REASON_TEXT constant -- distanceLabel
+    // is a real, more specific formatted string ("0.3 mi away") than any
+    // shared generic text could honestly say; still classified as a
+    // real DISTANCE reason by categorizeReasonText() wherever it's
+    // rendered (see ReasonList.js).
     reasons.push(gathering.distanceLabel);
   }
   const scheduled = new Date(gathering.scheduled_at);
@@ -964,7 +973,7 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0 } = {}) 
   const isToday = scheduled.getFullYear() === now.getFullYear() && scheduled.getMonth() === now.getMonth() && scheduled.getDate() === now.getDate();
   if (isToday) {
     score += 2;
-    reasons.push('Happening today');
+    reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
   }
   if (gathering.beginner_friendly) {
     score += 1;

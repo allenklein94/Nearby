@@ -1,8 +1,16 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+// P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): the same shared
+// recommendation-reason vocabulary Best Pick/Nearby Right Now/Ask
+// Nearby already use, tagging this card's own real shared-context bits
+// (never a new invented signal -- the three counts below already came
+// from get_friend_discovery_candidates()) so the leading icon matches
+// the same category glyph wherever that category appears app-wide.
+import { REASON_CATEGORIES, REASON_CATEGORY_ICONS } from '../constants/recommendationReasonVocabulary';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
@@ -66,10 +74,22 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onSwipe }) 
   const likeOpacity = position.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
   const skipOpacity = position.x.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
 
+  // Tagged with the same shared vocabulary Best Pick/Nearby Right Now/
+  // Ask Nearby already use -- the joined line stays one compact string
+  // (this card has no room for a stacked reason-per-line layout the way
+  // GatheringDetailScreen/HomeScreen's Best Pick do), but its one leading
+  // icon reflects the strongest real signal present, in the same
+  // priority order these three checks already ran in.
   const sharedBits = [];
-  if (item.shared_interest_count > 0) sharedBits.push(`${item.shared_interest_count} interest${item.shared_interest_count === 1 ? '' : 's'} in common`);
-  if (item.shared_community_count > 0) sharedBits.push(`in ${item.shared_community_count} of your communities`);
-  if (item.mutual_friend_count > 0) sharedBits.push(`${item.mutual_friend_count} mutual friend${item.mutual_friend_count === 1 ? '' : 's'}`);
+  if (item.shared_interest_count > 0) {
+    sharedBits.push({ text: `${item.shared_interest_count} interest${item.shared_interest_count === 1 ? '' : 's'} in common`, category: REASON_CATEGORIES.INTEREST });
+  }
+  if (item.shared_community_count > 0) {
+    sharedBits.push({ text: `in ${item.shared_community_count} of your communities`, category: REASON_CATEGORIES.CONTEXT });
+  }
+  if (item.mutual_friend_count > 0) {
+    sharedBits.push({ text: `${item.mutual_friend_count} mutual friend${item.mutual_friend_count === 1 ? '' : 's'}`, category: REASON_CATEGORIES.CONTEXT });
+  }
 
   return (
     <View style={styles.stackContainer}>
@@ -94,7 +114,15 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onSwipe }) 
             {item.distance_bucket && <Text style={styles.distance}>{item.distance_bucket}</Text>}
           </View>
           {sharedBits.length > 0 && (
-            <Text style={styles.sharedText}>{sharedBits.join(' · ')}</Text>
+            <View style={styles.sharedRow}>
+              <Ionicons
+                name={REASON_CATEGORY_ICONS[sharedBits[0].category]}
+                size={13}
+                color={colors.primary}
+                style={styles.sharedIcon}
+              />
+              <Text style={styles.sharedText}>{sharedBits.map((b) => b.text).join(' · ')}</Text>
+            </View>
           )}
           {item.bio ? <Text style={styles.bio} numberOfLines={3}>{item.bio}</Text> : null}
           {item.interests?.length > 0 && (
@@ -154,6 +182,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
   name: { ...typography.headline, color: colors.textPrimary },
   distance: { ...typography.small, color: colors.textTertiary },
+  // sharedText itself keeps its own marginBottom -- sharedRow adds no
+  // margin of its own, matching ReasonList.js's own "don't double the
+  // gap" convention.
+  sharedRow: { flexDirection: 'row', alignItems: 'center' },
+  sharedIcon: { marginRight: 4 },
   sharedText: { ...typography.small, color: colors.primary, fontWeight: '600', marginBottom: spacing.xs },
   bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

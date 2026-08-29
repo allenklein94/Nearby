@@ -12,6 +12,12 @@
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK } from './intentResolverScoring';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+// P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared, canonical
+// reason text -- closes a real, confirmed duplication where these exact
+// weather strings were independently re-typed, verbatim, in
+// intentResolver.js's own resolveGatherings() (see that file's own
+// weatherBonus block).
+import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 
 export const MAX_HOME_RECOMMENDATIONS = 5;
 
@@ -41,10 +47,10 @@ function isToday(iso) {
 function weatherAdjustment(interestTag, weather) {
   if (!weather) return null;
   if (isWeatherIndoorBiased(weather) && isIndoorCategory(interestTag)) {
-    return { points: SCORE_HAPPENING_NOW, reason: 'A good indoor option with weather coming in' };
+    return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_INDOOR.text };
   }
   if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(interestTag)) {
-    return { points: SCORE_HAPPENING_NOW, reason: 'Great weather for this' };
+    return { points: SCORE_HAPPENING_NOW, reason: REASON_TEXT.WEATHER_GOOD_OUTDOOR.text };
   }
   return null;
 }
@@ -55,15 +61,19 @@ function scoreGathering(gathering, weather, positiveHostIds) {
 
   if (gathering.matchesYourInterests) {
     score += SCORE_INTEREST_MATCH;
-    reasons.push('Matches your interests');
+    reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
     score += SCORE_CLOSE_DISTANCE;
+    // Deliberately not getGatheringFitReasons()'s own more specific
+    // distanceLabel -- this function never has a formatted distance
+    // string in scope, only the raw distanceMiles number, so "Close by"
+    // stays its own real, honest (if less specific) DISTANCE reason.
     reasons.push('Close by');
   }
   if (isToday(gathering.scheduled_at)) {
     score += SCORE_HAPPENING_NOW;
-    reasons.push('Happening today');
+    reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
   }
   const weatherBonus = weatherAdjustment(gathering.interest_tag, weather);
   if (weatherBonus) {
@@ -96,7 +106,7 @@ function scoreOffer(offer, positivePartnerIds) {
   // so explicitly.
   if (offer.target_interest_tag) {
     score += SCORE_INTEREST_MATCH;
-    reasons.push('Matches your interests');
+    reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
   }
   if (offer.brand_partners?.name) {
     reasons.push(`At ${offer.brand_partners.name}`);

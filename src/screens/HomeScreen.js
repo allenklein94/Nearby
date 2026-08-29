@@ -15,6 +15,7 @@ import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import PlanCard from '../components/PlanCard';
+import ReasonList from '../components/ReasonList';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
@@ -1674,9 +1675,7 @@ export default function HomeScreen({ navigation }) {
                 >
                   <Text style={styles.bestPickTitle}>{dashboard.bestPick.title}</Text>
                   <View style={styles.bestPickReasons}>
-                    {dashboard.bestPick.reasons.map((reason, i) => (
-                      <Text key={i} style={styles.bestPickReason}>✓ {reason}</Text>
-                    ))}
+                    <ReasonList reasons={dashboard.bestPick.reasons} textStyle={styles.bestPickReason} iconColor={colors.textSecondary} />
                     {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
                         Audit): the same real fullness signal every
                         recommendation surface now shows, so a full

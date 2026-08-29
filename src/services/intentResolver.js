@@ -6,6 +6,11 @@ import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, sea
 import { getSocialForecast } from './homeDashboard';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+// P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): the identical
+// shared, canonical weather-reason text homeRecommendations.js's own
+// weatherAdjustment() uses -- closes a real, confirmed duplication where
+// this file independently re-typed the same two strings verbatim.
+import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 // 10/10 roadmap Part 8: these five pure helpers used to be defined
 // locally in this file -- moved verbatim (no behavior change) to
 // intentResolverScoring.js so they're directly unit-testable without
@@ -63,10 +68,10 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
     if (weather) {
       if (isWeatherIndoorBiased(weather) && isIndoorCategory(gathering.interest_tag)) {
         weatherBonus = SCORE_HAPPENING_NOW;
-        reasons.push('A good indoor option with weather coming in');
+        reasons.push(REASON_TEXT.WEATHER_GOOD_INDOOR.text);
       } else if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(gathering.interest_tag)) {
         weatherBonus = SCORE_HAPPENING_NOW;
-        reasons.push('Great weather for this');
+        reasons.push(REASON_TEXT.WEATHER_GOOD_OUTDOOR.text);
       }
     }
     return {

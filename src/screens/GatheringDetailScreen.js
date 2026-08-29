@@ -30,6 +30,7 @@ import GatheringQnA from '../components/GatheringQnA';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import GatheringStatusBadge from '../components/GatheringStatusBadge';
+import ReasonList from '../components/ReasonList';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -392,9 +393,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {reasons.length > 0 && (
             <View style={styles.reasonsCard}>
               <Text style={styles.sectionLabel}>Why this fits you</Text>
-              {reasons.map((reason, i) => (
-                <Text key={i} style={styles.reasonLine}>✓ {reason}</Text>
-              ))}
+              <ReasonList reasons={reasons} textStyle={styles.reasonLine} iconColor={colors.textPrimary} />
             </View>
           )}
 

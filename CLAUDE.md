@@ -340,10 +340,102 @@ run-through — next session should confirm, on a real device: a genuine person-
 three rendering cases above, tapping it lands cleanly on `FriendDiscoveryScreen`, and that an
 ordinary gathering-shaped ask (e.g. "dinner tonight for two") shows no such action.
 
-**Item 4 (a shared semantic recommendation-reason vocabulary) remains not yet started** —
-restated here so a future session doesn't have to re-derive the P1 list's own remaining scope
-from scratch. Item 7 (weather-awareness in business-opportunity ranking) stays explicitly
-deprioritized per the user's own instruction, built last if at all.
+Item 7 (weather-awareness in business-opportunity ranking) stays explicitly deprioritized per
+the user's own instruction, built last if at all.
+
+#### Item 4 — a shared semantic recommendation-reason vocabulary (Interest / Distance / Time /
+#### Context / Availability / Capacity / Popularity), reused across Best Pick / Nearby Right Now
+#### / Ask Nearby / Friends — DONE, build-wise, client-only, no schema change
+
+Closes the P1 list's last remaining item. Locked, up front, per the item's own explicit
+constraint: **this never merges Best Pick / Nearby Right Now / Ask Nearby / Friends' four
+independent scoring formulas into one universal score** — each surface still computes its own
+real numeric score from its own real signals on its own real weight scale
+(`SCORE_INTEREST_MATCH` etc. in `intentResolverScoring.js`, completely untouched by this item).
+What's actually new is a shared *reason* layer sitting on top of those four already-independent
+formulas.
+
+**Real, confirmed duplication found before designing anything** (not assumed): the weather-
+context reason strings ("A good indoor option with weather coming in" / "Great weather for
+this") were independently re-typed, verbatim, as inline literals in both
+`homeRecommendations.js`'s `weatherAdjustment()` and `intentResolver.js`'s `resolveGatherings()`
+— two files with zero shared source between them for identical text. "Matches your interests" and
+"Happening today" were likewise independently re-typed in `getGatheringFitReasons()`
+(`services/gatherings.js`, the shared source behind Best Pick, `GatheringDetailScreen`'s "Why
+this fits you," and Discover's Recommended/Trending) and `homeRecommendations.js`'s own
+`scoreGathering()`. This is exactly the kind of silent-drift risk a shared vocabulary closes.
+
+**New `src/constants/recommendationReasonVocabulary.js`** — a pure, no-I/O module (matches
+`intentResolverScoring.js`'s own established "testable in isolation" shape):
+- `REASON_CATEGORIES` — the 7 named categories, exact keys: `interest`, `distance`, `time`,
+  `context`, `availability`, `capacity`, `popularity`.
+- `REASON_CATEGORY_ICONS` — one real Ionicons glyph per category (`heart-outline`,
+  `location-outline`, `time-outline`, `sparkles-outline`, `storefront-outline`, `people-outline`,
+  `flame-outline`), matching this app's established icon-not-emoji convention for UI chrome.
+- `REASON_TEXT` — canonical, byte-shared text for the handful of reasons that genuinely are (or
+  should be) identical across ≥2 surfaces: `MATCHES_INTERESTS`, `HAPPENING_TODAY`,
+  `WEATHER_GOOD_INDOOR`, `WEATHER_GOOD_OUTDOOR`. **Deliberately not used for every reason** —
+  `getGatheringFitReasons()`'s real formatted `distanceLabel` ("0.3 mi away") stays its own,
+  genuinely more specific string rather than being flattened into a shared generic "Close by";
+  collapsing the two would throw away real information one surface has that another doesn't.
+- `categorizeReasonText(text)` — a real, deterministic classifier (exact-match lookup + a small
+  set of real parameterized regex patterns) covering every reason string actually produced
+  somewhere in this app today (grepped, not guessed) — attendee/first-timer/interest/community/
+  mutual-friend counts, the real formatted distance label, Friend Discovery's own fixed 3-value
+  distance bucket, the gathering-fullness labels (`utils/gatheringFullness.js`, giving CAPACITY a
+  real home), and the business-availability confidence labels (`🟢`/`🟡`, giving AVAILABILITY a
+  real home). Returns `null`, never a guess, for anything that doesn't genuinely match a known
+  real shape (e.g. a perk's "At {business name}" label, which isn't really a "why" reason).
+  7 new unit tests, each grounded in a real string pulled from the actual producing code, not
+  invented.
+
+**New `src/components/ReasonList.js`** — the real, shared consumer that makes this genuinely
+"reused," not just defined-and-unused: one small component rendering a reasons array as
+icon-prefixed rows (category icon via `categorizeReasonText()` + `REASON_CATEGORY_ICONS`,
+falling back to a plain checkmark for an unclassified reason), replacing two screens' own
+independently-hardcoded `"✓ {reason}"` text-prefix pattern — `GatheringDetailScreen.js`'s "Why
+this fits you" section and `HomeScreen.js`'s Best Pick card, both of which already source the
+identical `reasons` array from `getGatheringFitReasons()`. Per the locked coral-usage rule
+("informational → must not visually impersonate a button"), `iconColor` is always passed in
+matching the caller's own existing text color (`colors.textPrimary`/`colors.textSecondary`
+respectively) — never brand coral, since this icon is informational, not an action. No
+`marginBottom` of its own on the wrapping row — both real callers' own text styles already carry
+`marginBottom: 2`, so the vertical rhythm matches exactly what the plain `✓` row already had.
+
+**All four named surfaces now genuinely draw from the same shared module**, not just "Best Pick"
+and the detail screen:
+- **Best Pick / Ask Nearby** — both source `getGatheringFitReasons()`, now using
+  `REASON_TEXT.MATCHES_INTERESTS.text`/`REASON_TEXT.HAPPENING_TODAY.text` instead of independent
+  inline literals; rendered via `ReasonList` on Best Pick and `GatheringDetailScreen`.
+- **Nearby Right Now** (`homeRecommendations.js`) — `scoreGathering()`/`scoreOffer()`/
+  `weatherAdjustment()` all now use the same `REASON_TEXT` constants for their identical reasons.
+- **Ask Nearby's resolver** (`intentResolver.js`'s `resolveGatherings()`) — its own weather-bonus
+  reason pushes now use `REASON_TEXT.WEATHER_GOOD_INDOOR.text`/`WEATHER_GOOD_OUTDOOR.text`,
+  closing the real, confirmed duplication with `homeRecommendations.js` named above.
+- **Friends** (`FriendDiscoverySwipeCards.js`) — its own `sharedBits` (shared-interest/community/
+  mutual-friend counts, from `get_friend_discovery_candidates()`, never a new signal) are now
+  tagged with `REASON_CATEGORIES.INTEREST`/`CONTEXT`. The card's real estate is tight (a swipe
+  card, not a dedicated reasons list), so this doesn't restructure into stacked rows like
+  `ReasonList` — instead, one leading icon (the strongest/first bit's category, matching the same
+  priority order the three checks already ran in) now prefixes the existing compact joined line,
+  reusing the exact same `REASON_CATEGORY_ICONS` map every other surface draws from.
+
+Verified via a direct `@babel/core` parse of all nine touched/new files (clean) and the full Jest
+suite (**162/162 passing** — 155 pre-existing + 7 new). A full `npx expo export --platform ios`
+built clean, no bundling errors — three new files (`recommendationReasonVocabulary.js`, its own
+test file, `ReasonList.js`), six edits, no schema/RPC touched so no live-production verification
+applies to this item.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: `GatheringDetailScreen`'s "Why this
+fits you" and Home's Best Pick both render the right icon next to each real reason line (no
+layout regression from the plain `✓` prefix they replace), and Friend Discovery's card shows the
+correct single leading icon for whichever real signal is strongest for a given candidate.
+
+**All 7 items of the P1 remediation list are now closed or explicitly, deliberately deferred** —
+items 1-6 are DONE, build-wise (see each item's own status note above); item 7 (weather-
+awareness in business-opportunity ranking) remains explicitly deprioritized per the user's own
+instruction, not silently dropped.
 
 #### Item 2 — Circles get a real first downstream use: "Invite a Circle" on gathering
 #### creation — DONE, build-wise, client-only, no schema change
