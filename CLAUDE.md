@@ -52,7 +52,19 @@ this pass, matching the user's own "I would stop making broad changes" line.
 parse and a `node --check` syntax pass on the inline script, not `npx expo export`. No schema/
 RPC touched.
 
-### Status: plan locked, executing below.
+### Status: DONE. The one wording fix landed; both future ideas stay captured, not built.
+
+`docs/business.html`'s closing offer-sent line now reads "Offer accepted — reservation confirmed"
+(was "Offer sent — they pick, you're booked") — the exact wording the review itself suggested,
+matching what `accept_business_offer()` actually guarantees the instant a consumer accepts (a
+real, immediately-confirmed `business_reservations` row), not what happens the moment an offer is
+merely sent. No other line on the page was touched. Verified via a direct HTML well-formedness
+parse (`html.parser`, zero unclosed/mismatched tags) and a `node --check` syntax pass on the
+page's own inline script (clean) — matching this file's own established verification convention
+for this exact static file, not `npx expo export` (it isn't part of the Expo bundle). No schema/
+RPC touched. Both future ideas (a reservation/payment-layer visual, a "Start Something ↔ Host
+Something" symmetry visual) remain deliberately uncaptured-as-code, exactly as locked above —
+neither was built, matching the review's own "not now" framing for both.
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file. Direct follow-up to the full rewrite immediately below this section — the user
