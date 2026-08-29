@@ -12,9 +12,11 @@ checked against the actual code before touching anything rather than assumed cor
    real gap — "either way takes about 30 seconds" sat with no disambiguation from the very next
    FAQ item ("A real person reviews every application before it goes live"), so a reader skimming
    just this one answer could reasonably read "30 seconds" as end-to-end. Fixed with the user's
-   own suggested distinction, adapted to point at the existing next FAQ item rather than
-   duplicating its text: "...either way, finding or adding your business takes about 30 seconds.
-   Approval happens after our review (see below)."
+   own suggested distinction, first as a shorter "(see below)" pointer to the existing next FAQ
+   item, then — same review, one more round, same day — the user gave the exact final wording
+   directly rather than leave it to a pointer: "Finding your business or adding it manually takes
+   about 30 seconds. After you submit, a real person reviews the application before it goes
+   live." That's what's live now, verbatim.
 2. **Whether the CTA's "you don't have the app" fallback message is actually correct across
    desktop/mobile/iOS/Android/browsers — asked to verify, not assumed.** Read the real mechanism
    directly (`docs/business.html`'s own `openBusinessApply()`): it fires
