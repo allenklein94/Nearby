@@ -191,6 +191,14 @@ export default function DiscoverHubScreen({ navigation }) {
   async function loadCore() {
     setLoadingCore(true);
     try {
+      // These three don't need location at all -- start them immediately
+      // rather than waiting on the location permission check + GPS fix
+      // below (which can itself take a couple of seconds) before even
+      // kicking them off.
+      const gatheringsPromise = getNearbyGatherings('wide');
+      const publicCommunitiesPromise = getPublicCommunities();
+      const myCommunitiesPromise = getMyCommunities();
+
       const { status } = await Location.getForegroundPermissionsAsync();
       let loc = null;
       if (status === 'granted') {
@@ -202,9 +210,9 @@ export default function DiscoverHubScreen({ navigation }) {
       }
 
       const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData] = await Promise.all([
-        getNearbyGatherings('wide'),
-        getPublicCommunities(),
-        getMyCommunities(),
+        gatheringsPromise,
+        publicCommunitiesPromise,
+        myCommunitiesPromise,
         getActiveOffers(loc?.latitude ?? null, loc?.longitude ?? null),
         getNearbyBusinesses(loc?.latitude ?? null, loc?.longitude ?? null),
       ]);

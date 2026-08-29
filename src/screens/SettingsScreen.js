@@ -83,6 +83,7 @@ export default function SettingsScreen({ navigation, route }) {
   const [e164NewPhone, setE164NewPhone] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const scrollRef = useRef(null);
   const preferencesYRef = useRef(0);
 
@@ -254,7 +255,17 @@ export default function SettingsScreen({ navigation, route }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    // supabase.auth.signOut() invalidates the session server-side before
+    // resolving -- a real network round trip, not a local-only clear -- so
+    // with no visible state change while it's in flight, a moderately slow
+    // network reads as the button just hanging. This gives real, immediate
+    // feedback instead; the actual sign-out mechanism is unchanged.
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   function confirmDeleteAccount() {
@@ -1021,10 +1032,11 @@ export default function SettingsScreen({ navigation, route }) {
         <TouchableOpacity
           style={styles.signOutButton}
           onPress={signOut}
+          disabled={signingOut}
           accessibilityLabel="Sign out"
           accessibilityRole="button"
         >
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>{signingOut ? 'Signing Out...' : 'Sign Out'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
