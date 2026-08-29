@@ -1,3 +1,72 @@
+## Aug 29 2026 (cont'd) — a fourth review's two real findings: the FAQ's own "30 seconds" line
+## disambiguated from approval, and the CTA's desktop-vs-mobile fallback copy fixed — DONE
+
+Direct follow-up to the wording fix immediately below this section — same third-review pass, one
+more round. The user read the shipped page and flagged two things directly, both real, both
+checked against the actual code before touching anything rather than assumed correct:
+
+1. **The FAQ's own "30 seconds" line could be misread as "my business goes live in 30
+   seconds."** Checked: the hero's "Get started in about 30 seconds. Free to start." was already
+   correctly scoped (describes the *application*, not approval) — left untouched, per the user's
+   own explicit "That's fine." The FAQ answer to "Do I need an existing online presence?" was the
+   real gap — "either way takes about 30 seconds" sat with no disambiguation from the very next
+   FAQ item ("A real person reviews every application before it goes live"), so a reader skimming
+   just this one answer could reasonably read "30 seconds" as end-to-end. Fixed with the user's
+   own suggested distinction, adapted to point at the existing next FAQ item rather than
+   duplicating its text: "...either way, finding or adding your business takes about 30 seconds.
+   Approval happens after our review (see below)."
+2. **Whether the CTA's "you don't have the app" fallback message is actually correct across
+   desktop/mobile/iOS/Android/browsers — asked to verify, not assumed.** Read the real mechanism
+   directly (`docs/business.html`'s own `openBusinessApply()`): it fires
+   `window.location.href = 'nearby://business-apply'`, listens for `visibilitychange` for 1.5s,
+   and shows a fallback paragraph if the tab never backgrounds (the real, already-correct signal
+   for "nothing handled this URL scheme"). This part checks out — a phone with the app installed
+   backgrounds the tab (fallback stays hidden); a phone without it, or a desktop browser with no
+   registered handler for a mobile app's custom scheme, never backgrounds (fallback correctly
+   shows). **One real, confirmed gap found in what the fallback then *said*, not in when it
+   fired**: the one fallback message ("Download Nearby from the App Store or Google Play, then
+   come back and tap the button above to pick up right where you left off") only makes sense on
+   the same mobile device the user is already on — on desktop, "download from the App Store" and
+   "come back and tap the button" are both real, actively-misleading instructions (there's no
+   desktop download path for this app at all, and there's no cross-device continuation mechanism
+   to "come back" to). Fixed with a plain, disclosed UA-string check
+   (`/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)`) — desktop visitors now see "Nearby is
+   a mobile app — it's not available on desktop yet. Open this page on your phone to continue, or
+   search 'Nearby' in the App Store or Google Play." instead of the mobile-phrased default, which
+   stays exactly as it was for a genuine mobile-without-the-app visitor. Disclosed directly in the
+   code's own comment, not glossed over: this is a heuristic, not perfect (an iPad in desktop
+   browsing mode reports as a Mac in its UA string, so it would get the desktop message) — but the
+   fallback text is advisory copy, never a real gate on anything, so a misclassification here costs
+   nothing beyond momentarily-off wording, not a blocked flow.
+
+**The larger question underneath item 2 — should a business owner be able to get all the way
+through onboarding without ever installing the app at all — was explicitly not reopened.** The
+user's own message named this as the "ideal future flow" only *if* today's behavior turns out to
+be "simply a fallback message," which it is. This matches an already-locked decision from this
+same file's own Aug 17 2026 Business Partner Onboarding history (Decision 1: "every actual step
+happens after the business owner taps the primary CTA and either opens the already-installed app
+via deep link or is sent to install it first — the claim/apply logic lives in exactly one place
+(the mobile app), not duplicated into a second web-only implementation"). A real web-only
+onboarding flow (no app install required) would mean building and maintaining a second, parallel
+implementation of the apply/claim logic this file's own history already deliberately chose not to
+build once — a genuine, larger architectural decision, not a copy-fix, and not something to
+silently reopen from a "verify this is correct" ask. Flagged here as the real next step if that
+decision is ever revisited, not silently built or silently dropped.
+
+**Verified the same way as every prior pass on this exact file**: a direct HTML well-formedness
+parse (`html.parser`, zero unclosed/mismatched tags, re-run after both edits) and a `node --check`
+syntax pass on the page's own inline script (clean). No schema/RPC touched — `docs/business.html`
+isn't part of the Expo bundle.
+
+**Not done, the same standing gap named in this file's own prior passes on this exact page,
+restated rather than silently assumed closed by this pass's own reasoning**: no live cross-device/
+cross-browser test of the deep-link/fallback mechanism — a real device pass (a genuine phone
+with the app installed, a genuine phone without it, a genuine desktop browser, both iOS Safari
+and Android Chrome specifically, since their custom-scheme-handling behavior is known to differ
+in ways this sandbox can't exercise) is the only thing that actually proves this end-to-end;
+everything above is verified by reading the real mechanism and reasoning through each platform's
+documented behavior, not by observing it happen.
+
 ## Aug 29 2026 (cont'd) — business landing page, one real wording fix + two future ideas
 ## captured read-only — PLAN LOCKED, executing below
 

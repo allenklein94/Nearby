@@ -820,7 +820,7 @@
     </details>
     <details class="faq-item">
       <summary>Do I need an existing online presence?</summary>
-      <p>No. If we can find your business through search, we'll pre-fill what we can. If not, you can add your business manually — either way takes about 30 seconds.</p>
+      <p>No. If we can find your business through search, we'll pre-fill what we can. If not, you can add your business manually — either way, finding or adding your business takes about 30 seconds. Approval happens after our review (see below).</p>
     </details>
     <details class="faq-item">
       <summary>What happens after I submit my application?</summary>
@@ -858,6 +858,10 @@
   // device" history), so the fallback is honest instructional copy, not a fabricated store URL.
   function openBusinessApply() {
     var fallback = document.getElementById('cta-fallback');
+    // A plain, disclosed UA-string heuristic -- not perfect (e.g. an iPad in desktop mode can
+    // report as a Mac), but the fallback message it picks between is advisory copy, not a real
+    // gate on anything, so a false classification here costs nothing beyond slightly-off wording.
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     var left = false;
     function onVisChange() {
       if (document.hidden) left = true;
@@ -867,6 +871,14 @@
     setTimeout(function () {
       document.removeEventListener('visibilitychange', onVisChange);
       if (!left && fallback) {
+        if (!isMobile) {
+          // Desktop has no app-store install path and no way to "come back and tap the button" --
+          // the mobile-phrased default below would just send a desktop visitor chasing an
+          // instruction that doesn't apply to the device they're actually on.
+          fallback.textContent = 'Nearby is a mobile app -- it’s not available on desktop yet. ' +
+            'Open this page on your phone to continue, or search “Nearby” in the App Store ' +
+            'or Google Play.';
+        }
         fallback.hidden = false;
         fallback.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
