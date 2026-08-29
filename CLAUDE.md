@@ -244,6 +244,124 @@ not fixed here since building a real "resubmit" path for an applicant with no ap
 is explicitly out of this plan's own locked scope (Decision 3: "skip building a real 'Request
 More Information' reviewer state for v1").
 
+## Aug 29 2026 (cont'd) — a fifth review flagged the old app-download fallback as still live —
+## traced to a stale/cached view, not a real regression; plus two real, verified matching-engine
+## over-claims found and fixed — PLAN LOCKED, executing below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file. The user forwarded a review (quoting "It looks like you don't have the Nearby app
+installed yet..." and a "Find Your Business" CTA) as if the just-shipped minimal-web-application
+pivot (immediately above this section) hadn't actually landed, and asked to re-confirm the
+locked architecture (landing page → minimal web form → secure Edge Function → existing
+`business_partner_requests` review workflow, never a second full web onboarding system, never an
+anon-writable RLS surface) and separately verify two matching-engine claims against the real
+production resolver.
+
+**Checked directly, per this file's own standing rule, before touching anything — the review's
+own premise doesn't hold against what's live right now.** Fetched `https://allenklein94.github.io/
+Nearby/business.html` directly: zero occurrences of the old fallback text, zero occurrences of a
+"Find Your Business" CTA, the real inline `#apply` form (`id="apply-form"`) is present, and the
+third CTA already reads "Get Your Business on Nearby" — all of it matching commit `0df79c1b`
+exactly, the commit that already closed out the plan immediately above this section. The
+review's own quotes are the *literal* strings this session's own prior pass removed — this is a
+stale/cached view (either the reviewer's own screenshot predates the push, or a CDN/browser
+cache hadn't caught up yet), not a real regression. **Locked architecture reconfirmed, restated
+so it's never re-litigated as if still undecided**: option (b) — landing page → minimal web
+application → secure server-side Edge Function (validation, rate limiting, abuse protection) →
+the existing `business_partner_requests` review workflow → the existing app-side onboarding/
+verification/dashboard as the one real place a business is ever managed — is what's built and
+live. No anonymous direct Supabase write exists (`submit-business-application` writes via the
+service-role client only, confirmed live: `anon` has no INSERT grant on
+`business_partner_requests`). No second full web onboarding system was built.
+
+**Two matching-engine claims verified against the real, live production resolver — not read from
+this file's own history, which can drift from what's actually deployed, per the user's own
+explicit "verify the actual production resolver" instruction.** Pulled `_business_request_fanout()`
+fresh via the Management API, read `src/services/intentResolver.js`'s full `resolveBusinessAvailability()`/
+`resolvePolicyOnlyBusinesses()`/`resolveIntent()` combine, and `BusinessRequestDetailScreen.js`'s
+`displayOffers` reordering, line by line — not assumed from a prior session's own claims:
+
+- **"categories, cuisine and attributes... factor in" — TRUE, confirmed live.**
+  `_business_request_fanout()`'s real live SQL orders eligible partners by real attribute/cuisine
+  overlap first, then real reliability (established 5+-opportunity partners by completion rate),
+  then distance — a farther but better-fitting business is proven to notify-and-rank above a
+  closer, worse-fitting one. `resolveBusinessAvailability()` in `intentResolver.js` independently
+  confirms the identical real `attributeAndCuisineBonus()` on the consumer-facing ask-box side.
+- **"timing... factor in" — TRUE, confirmed live**, in the narrower honest sense that actually
+  exists: `search_active_business_availability()`'s real `where ba.ends_at > now()` clause means
+  a stale/expired posting is never shown at all — a real timing gate, not a fabricated one.
+- **"how reliably you've followed through... factor in" — TRUE, confirmed live in two places.**
+  The fan-out's own real `completion_rate`-based ordering (above), and
+  `BusinessRequestDetailScreen.js`'s `displayOffers` — a real `reliabilityRank()` reorders the
+  consumer-facing offer list by the identical established/completion-rate signal once 2+ live
+  offers exist.
+- **"weather... factor in" (for business matching specifically) — FALSE as currently worded,
+  fixed.** Weather genuinely exists and is genuinely wired into two real places —
+  `resolveGatherings()`'s own weather bonus (gathering matching in the ask box) and
+  `scoreBusinessOpportunity()`'s weather bonus (a business's OWN dashboard ranking of which
+  already-received requests to look at first) — but `resolveBusinessAvailability()`,
+  `resolvePolicyOnlyBusinesses()`, and `_business_request_fanout()` (the three real places that
+  decide whether/how a business surfaces to a *consumer's* ask) take no weather parameter at all,
+  confirmed by reading every one of their real signatures and the `resolveIntent()` final combine
+  directly. The landing page's two claims that weather affects *business* matching (the Discover
+  pillar teaser, and the "How does matching actually work?" FAQ answer) were real over-claims —
+  fixed by removing "weather" from both, not softening it to something vaguer, since the honest
+  answer is "not currently, for this specific dimension."
+- **"Businesses that respond quickly and follow through on what they offer tend to show up
+  first" — the "respond quickly" half is FALSE as currently worded, fixed.** Confirmed live:
+  `get_partner_avg_response_time()`'s real median-response-minutes value is used in exactly one
+  place, `formatPartnerReliabilityLine()` — a **display-only** trust signal shown to a consumer
+  deciding whether to accept an offer. It is never read by `_business_request_fanout()`'s real
+  `ORDER BY`, nor by `BusinessRequestDetailScreen.js`'s `displayOffers` reordering (both of which
+  order purely by attribute/cuisine overlap and completion rate — confirmed by re-reading both
+  bodies, no response-time term anywhere in either). Responding quickly is real, honest,
+  consumer-visible information — it just doesn't currently move a business up or down any real
+  ranking. Fixed by removing "respond quickly and" from the claim, keeping "follow through"
+  (which is real) — the section's own heading, "🕐 Follow through, and it shows," already only
+  ever claimed the true half.
+
+**One deliberate, disclosed departure from the user's own suggested FAQ wording, not silently
+overridden.** The user's forwarded review proposed reverting the "Do I need an existing online
+presence?" FAQ answer to "Finding your business or adding it manually takes about 30 seconds" —
+this is the exact phrasing this session's own prior pass already found and fixed (see the plan
+immediately above this section) precisely because there is no "finding" (Google-Places-search)
+step anywhere in the real, built web form — it's manual-entry only, by this same locked plan's
+own explicit "not buildable this pass" finding. Reverting to that wording would reintroduce the
+identical inaccuracy just closed, not honor the review's own intent (which was written against a
+stale view of the page that still described a search-based flow). Left as "Adding your business
+takes about 30 seconds. After you submit, a real person reviews the application before it goes
+live." — accurate to what the page actually does, keeping the same disambiguation-from-approval
+structure the FAQ wording has been locked to since the original "30 seconds" review pass.
+
+### Locked fixes for this pass
+
+1. Discover pillar teaser (`#pillars` section): drop "weather" from the "matched on more than
+   distance" line, keep the two real dimensions (categories/attributes, reliability).
+2. Trust section ("🕐 Follow through, and it shows"): drop "respond quickly and" from the claim,
+   keep "follow through" (the one half that's actually a real ranking factor).
+3. FAQ ("How does matching actually work?"): drop "weather" from the real-dimensions list,
+   keep categories/cuisine/attributes/timing/reliability, all independently confirmed real above.
+4. The "Do I need an existing online presence?" FAQ wording is confirmed already correct from the
+   prior pass — no change, per the reasoning above.
+
+### Status: DONE, build-wise — see below for what was verified.
+
+Built exactly per the three locked fixes above, no scope beyond them (per the user's own
+explicit "the landing page content is approved, do not redesign it" instruction — this is a
+factual-accuracy correction to three sentences, not a content pass). Verified via a direct HTML
+well-formedness parse (`html.parser`, zero unclosed/mismatched tags) and a `node --check` syntax
+pass on the page's own inline script (clean) — both re-run after the edits, matching this file's
+own established verification convention for this exact static file (not part of the Expo bundle,
+so `npx expo export` doesn't cover it and wasn't re-run for this content-only pass). No schema/
+RPC touched.
+
+**Not done, same standing gap as everywhere else in this file**: no manual browser/device
+run-through — next session should confirm, once GitHub Pages has redeployed this specific
+commit, that a hard-refreshed (not cached) view of the live page shows all three corrected
+sentences and no longer shows any of the app-download-gate language the fifth review's own
+screenshot quoted (which, per this session's own direct fetch, was already gone before this
+pass even started — the review's screenshot was stale, not a real regression).
+
 ## Aug 29 2026 (cont'd) — a fourth review's two real findings: the FAQ's own "30 seconds" line
 ## disambiguated from approval, and the CTA's desktop-vs-mobile fallback copy fixed — DONE
 
