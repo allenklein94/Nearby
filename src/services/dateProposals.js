@@ -70,6 +70,64 @@ export async function getMatchBusinessRequest(matchId) {
 // match has no stored coordinates of its own to read server-side the way
 // a gathering does, so there's no honest "location optional" path here
 // either.
+// Batched, list-shaped counterpart to getLatestDateProposal()/
+// getMatchBusinessRequest() -- MatchesScreen renders a whole list of
+// matches at once, and a real per-row query for each one would be an N+1
+// fetch. Three real, already-RLS-scoped queries (each already correctly
+// widened to both match participants, not just whichever one submitted
+// the request -- "The Offer System" Phase 5's own is_match_participant()
+// policies) instead of one query per row, returned as a map keyed by
+// match_id so a caller can just look up `plans[matchId]`.
+export async function getMyActivePlansByMatch(matchIds) {
+  if (!matchIds || matchIds.length === 0) return {};
+
+  const { data: proposals, error: pErr } = await supabase
+    .from('date_proposals')
+    .select('id, match_id, status, created_at')
+    .in('match_id', matchIds)
+    .order('created_at', { ascending: false });
+  if (pErr) throw new Error(pErr.message);
+
+  // Most recent proposal per match, regardless of status -- same "one real
+  // current answer, not a full history" rule getLatestDateProposal()
+  // already uses for a single match.
+  const latestByMatch = {};
+  for (const p of proposals ?? []) {
+    if (!latestByMatch[p.match_id]) latestByMatch[p.match_id] = p;
+  }
+
+  const { data: requests, error: rErr } = await supabase
+    .from('business_requests')
+    .select('id, match_id, status, party_size')
+    .in('match_id', matchIds)
+    .in('status', ['open', 'fulfilled']);
+  if (rErr) throw new Error(rErr.message);
+
+  const requestByMatch = {};
+  for (const r of requests ?? []) requestByMatch[r.match_id] = r;
+
+  const requestIds = (requests ?? []).map((r) => r.id);
+  const acceptedByRequest = {};
+  if (requestIds.length > 0) {
+    const { data: offers, error: oErr } = await supabase
+      .from('business_request_offers')
+      .select('id, request_id, proposed_time, offer_type, offer_price, offer_description, brand_partners(name, latitude, longitude, address)')
+      .in('request_id', requestIds)
+      .in('status', ['accepted', 'completed']);
+    if (oErr) throw new Error(oErr.message);
+    for (const o of offers ?? []) acceptedByRequest[o.request_id] = o;
+  }
+
+  const result = {};
+  for (const matchId of matchIds) {
+    const proposal = latestByMatch[matchId] ?? null;
+    const businessRequest = requestByMatch[matchId] ?? null;
+    const acceptedOffer = businessRequest ? acceptedByRequest[businessRequest.id] ?? null : null;
+    result[matchId] = { proposal, businessRequest, acceptedOffer };
+  }
+  return result;
+}
+
 export async function createBusinessRequestForMatch({
   matchId,
   text,

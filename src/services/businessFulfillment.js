@@ -172,6 +172,55 @@ export async function getAcceptedOfferForRequest(requestId) {
   return data;
 }
 
+// Batched, list-shaped counterpart to getBusinessRequestForGathering()/
+// getAcceptedOfferForRequest() -- Home's "Your Plans" section renders
+// several gatherings at once, and a real per-row query for each one would
+// be an N+1 fetch. Returns a map keyed by gathering_id so a caller can
+// look up `placeStatus[gatheringId]` directly; a gathering with no
+// business_requests row at all simply has no entry (the "nothing started
+// yet" case is the caller's own default, not something this function
+// needs to represent).
+export async function getGatheringPlaceStatuses(gatheringIds) {
+  if (!gatheringIds || gatheringIds.length === 0) return {};
+
+  const { data: requests, error: rErr } = await supabase
+    .from('business_requests')
+    .select('id, gathering_id, status')
+    .in('gathering_id', gatheringIds)
+    .in('status', ['open', 'fulfilled']);
+  if (rErr) {
+    console.error('getGatheringPlaceStatuses requests error', rErr);
+    return {};
+  }
+
+  const requestByGathering = {};
+  for (const r of requests ?? []) requestByGathering[r.gathering_id] = r;
+
+  const requestIds = (requests ?? []).map((r) => r.id);
+  const acceptedByRequest = {};
+  if (requestIds.length > 0) {
+    const { data: offers, error: oErr } = await supabase
+      .from('business_request_offers')
+      .select('id, request_id, brand_partners(name)')
+      .in('request_id', requestIds)
+      .in('status', ['accepted', 'completed']);
+    if (!oErr) {
+      for (const o of offers ?? []) acceptedByRequest[o.request_id] = o;
+    }
+  }
+
+  const result = {};
+  for (const gatheringId of gatheringIds) {
+    const request = requestByGathering[gatheringId];
+    if (!request) continue;
+    const accepted = acceptedByRequest[request.id];
+    result[gatheringId] = accepted
+      ? { state: 'done', venueName: accepted.brand_partners?.name ?? null }
+      : { state: 'pending', venueName: null };
+  }
+  return result;
+}
+
 const OFFER_TYPE_LABELS = {
   standard: 'Standard offer',
   discount: 'Discount',

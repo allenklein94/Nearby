@@ -8,7 +8,7 @@ import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../servi
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
-import { getMyGroupIntentSignals } from '../services/businessFulfillment';
+import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
 import { buildHomeRecommendations } from '../services/homeRecommendations';
@@ -148,6 +148,20 @@ export default function HomeScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors);
   const [dashboard, setDashboard] = useState(null);
+  // Real, computed Place status for "Your Plans" gathering rows (CLAUDE.md,
+  // Aug 29 2026) -- keyed by gathering id, `{ state: 'done'|'pending',
+  // venueName }`. Deliberately closes a real gap PlanCard's own
+  // hosting_partner_id lookup never covered: hosting_partner_id is only
+  // ever set by the separate business-partnership-sponsorship flow, never
+  // by accepting a business_request_offers row (the actual, more common
+  // "asked local businesses, got an accepted offer" path) -- so this is
+  // the one signal that makes Home's own Plans list honestly reflect the
+  // real outcome of that flow, not a redraw of the offer-accept banner
+  // Home already has a dedicated dismissible nudge for. Only ever
+  // populated for a gathering with a real, currently-open or accepted
+  // request -- a gathering that was never asked about at all has no
+  // entry, so nothing new is shown for the common "never tried" case.
+  const [planPlaceStatus, setPlanPlaceStatus] = useState({});
   const [myName, setMyName] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -428,6 +442,20 @@ export default function HomeScreen({ navigation }) {
       ]);
       const { forecast, myLocation } = weatherResult;
       setLoadError(false);
+
+      // Real, computed Place status for "Your Plans" (CLAUDE.md, Aug 29
+      // 2026) -- fired here rather than inside the earlier Promise.all
+      // batch since it genuinely depends on that batch's own result
+      // (which gathering ids are actually on Home right now). Supplementary
+      // and non-fatal, same convention as every other secondary fetch on
+      // this screen.
+      const planGatheringIds = [
+        ...(result?.plansGoing ?? []).map((p) => p.id),
+        ...(result?.plansHosting ?? []).map((p) => p.id),
+      ];
+      getGatheringPlaceStatuses(planGatheringIds)
+        .then(setPlanPlaceStatus)
+        .catch((e) => console.error('getGatheringPlaceStatuses failed', e));
 
       // Phase 1 of the "Build everything" plan -- the unified Home
       // recommendation engine. Reuses the already-fetched nearby
@@ -978,6 +1006,18 @@ export default function HomeScreen({ navigation }) {
     goAskBusiness({ classifyResult, typedText, submissionId });
   }
 
+  // Real Place status for a "Your Plans" gathering row (CLAUDE.md, Aug 29
+  // 2026) -- 'done' surfaces the real venue name (PlanCard's `venueName`
+  // prop wins over its own `hostingPartnerId` lookup); 'pending' surfaces
+  // honest in-progress text, not a fabricated venue. A gathering with no
+  // entry at all (nothing ever asked) returns undefined, so PlanCard falls
+  // back to its existing hostingPartnerId lookup unchanged.
+  function venueNameForPlan(gatheringId) {
+    const status = planPlaceStatus[gatheringId];
+    if (!status) return undefined;
+    return status.state === 'done' ? status.venueName : 'Finding a venue…';
+  }
+
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
     ? getPinnedQuickPicks(pinnedQuickPicks, period, categoryStyleFor)
     : getPersonalizedQuickPicks(period, dashboard?.becauseYouLikeCategories, categoryStyleFor);
@@ -1198,6 +1238,7 @@ export default function HomeScreen({ navigation }) {
                       dateTimeText={formatHeroDateTime(plan.scheduled_at)}
                       peopleCount={plan.peopleCount}
                       hostingPartnerId={plan.hosting_partner_id}
+                      venueName={venueNameForPlan(plan.id)}
                       status={resolveGatheringPlanStatus({ role: 'attending' })}
                       onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
                     />
@@ -1216,6 +1257,7 @@ export default function HomeScreen({ navigation }) {
                       dateTimeText={formatHeroDateTime(plan.scheduled_at)}
                       peopleCount={plan.peopleCount}
                       hostingPartnerId={plan.hosting_partner_id}
+                      venueName={venueNameForPlan(plan.id)}
                       status={resolveGatheringPlanStatus({ role: 'hosting' })}
                       onPress={() => navigation.navigate('GatheringDetail', { gatheringId: plan.id })}
                     />

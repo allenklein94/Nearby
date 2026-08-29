@@ -12,6 +12,8 @@ import {
 import { getAcceptedOfferForRequest } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
+import PlanCompletionRow from '../components/PlanCompletionRow';
+import { getMatchPlanCompletion } from '../utils/planCompletion';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -149,6 +151,11 @@ export default function DateProposalScreen({ navigation, route }) {
 
   const isProposer = proposal && myId && proposal.proposed_by === myId;
   const showProposeForm = !proposal || proposal.status === 'declined' || proposal.status === 'withdrawn';
+  const planCompletion = getMatchPlanCompletion({
+    proposalStatus: proposal?.status ?? null,
+    businessRequest,
+    acceptedOffer,
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -158,6 +165,24 @@ export default function DateProposalScreen({ navigation, route }) {
           <Text style={styles.subtitle}>
             Propose a plan with {matchName} -- once they say yes, Nearby can ask real nearby businesses to help make it happen.
           </Text>
+
+          {/* Persistent, computed People/Time/Place status (CLAUDE.md, Aug
+              29 2026) -- this is the same real completion state Matches'
+              own list row shows, so a plan tracked here never reads
+              differently depending on which screen it's viewed from. */}
+          <PlanCompletionRow
+            people={planCompletion.people}
+            time={planCompletion.time}
+            place={planCompletion.place}
+            onPlacePress={
+              acceptedOffer || businessRequest
+                ? () => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })
+                : proposal?.status === 'accepted'
+                ? () => navigation.navigate('AskBusiness', { matchId, matchName })
+                : undefined
+            }
+            style={{ marginBottom: spacing.lg }}
+          />
 
           {proposal && TERMINAL_STATUS_COPY[proposal.status] && (
             <View style={styles.priorPlanCard}>

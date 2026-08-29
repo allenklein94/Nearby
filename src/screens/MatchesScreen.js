@@ -6,6 +6,9 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getSeenMatchIds, markMatchesSeen } from '../services/matchCelebration';
 import { getPendingCheckIns, respondToCheckIn } from '../services/dateSafety';
 import { generateCompatibilityReport } from '../services/compatibility';
+import { getMyActivePlansByMatch } from '../services/dateProposals';
+import { getMatchPlanCompletion, hasStartedMatchPlan } from '../utils/planCompletion';
+import PlanCompletionRow from '../components/PlanCompletionRow';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import SkeletonCard from '../components/SkeletonCard';
@@ -56,6 +59,13 @@ export default function MatchesScreen({ navigation }) {
   const [newOfferCount, setNewOfferCount] = useState(0);
   const [celebrationWasWave, setCelebrationWasWave] = useState(false);
   const [celebrationIsFirst, setCelebrationIsFirst] = useState(false);
+  // Persistent, computed People/Time/Place plan state (CLAUDE.md, Aug 29
+  // 2026) -- keyed by match id, one batched fetch for the whole list
+  // instead of an N+1 query per row. Only ever populated for romantic
+  // matches that have actually started a plan; a match nothing's been
+  // proposed for yet has no entry, which is what keeps the plain "start a
+  // plan" button showing instead of an always-empty status row.
+  const [activePlansByMatch, setActivePlansByMatch] = useState({});
 
   const load = useCallback(async () => {
     try {
@@ -84,6 +94,20 @@ export default function MatchesScreen({ navigation }) {
         })
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
+
+      // Persistent plan-completion status (CLAUDE.md, Aug 29 2026) --
+      // scoped to romantic matches only, since a friend/gathering-sourced
+      // match's own "plan" is either the linked gathering itself (already
+      // visible on GatheringDetailScreen) or the general "Do Something
+      // Together" menu, neither of which is a date_proposals row.
+      // Supplementary, non-fatal -- a failure here shouldn't block the
+      // rest of the match list from rendering.
+      const romanticMatchIds = data
+        .filter((m) => !m.source_gathering_id && !m.source_friendship_id)
+        .map((m) => m.id);
+      getMyActivePlansByMatch(romanticMatchIds)
+        .then(setActivePlansByMatch)
+        .catch((e) => console.error('getMyActivePlansByMatch failed', e));
 
       const seenIds = await getSeenMatchIds(myId);
       const isFirstRunEver = seenIds.length === 0 && data.length > 0;
@@ -285,7 +309,25 @@ export default function MatchesScreen({ navigation }) {
           const gatheringLabel = item.gatherings?.title ? `Met through ${item.gatherings.title}` : null;
           const matchedLabel = formatMatchedTime(item.matched_at);
           const subLabel = gatheringLabel ? `${gatheringLabel} · ${matchedLabel}` : matchedLabel || t('matches.tapToChat');
+          // Persistent People/Time/Place status (CLAUDE.md, Aug 29 2026) --
+          // only shown once a real plan has actually been started (a
+          // proposal or a business request exists), so an untouched match
+          // still shows the plain "start a plan" button rather than a row
+          // of three ○'s nobody asked to see.
+          const activePlan = isRomanticMatch ? activePlansByMatch[item.id] : null;
+          const planStarted = isRomanticMatch && hasStartedMatchPlan({
+            proposalStatus: activePlan?.proposal?.status ?? null,
+            businessRequest: activePlan?.businessRequest ?? null,
+          });
+          const matchPlanCompletion = planStarted
+            ? getMatchPlanCompletion({
+                proposalStatus: activePlan?.proposal?.status ?? null,
+                businessRequest: activePlan?.businessRequest ?? null,
+                acceptedOffer: activePlan?.acceptedOffer ?? null,
+              })
+            : null;
           return (
+            <View style={styles.cardWrap}>
             <View style={styles.card}>
               <TouchableOpacity
                 onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}
@@ -324,7 +366,7 @@ export default function MatchesScreen({ navigation }) {
                 </View>
                 <Text style={styles.sub}>{subLabel}</Text>
               </TouchableOpacity>
-              {isRomanticMatch ? (
+              {isRomanticMatch && !planStarted ? (
                 <TouchableOpacity
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
@@ -334,7 +376,7 @@ export default function MatchesScreen({ navigation }) {
                 >
                   <Text style={styles.planDateButtonText}>💌 Plan</Text>
                 </TouchableOpacity>
-              ) : (
+              ) : isRomanticMatch ? null : (
                 // A friend/gathering-sourced match had no "start
                 // something" entry point at all before this -- the real
                 // "Do Something Together" menu (12 real destinations,
@@ -352,6 +394,22 @@ export default function MatchesScreen({ navigation }) {
                 </TouchableOpacity>
               )}
               <Text style={styles.chevron}>›</Text>
+            </View>
+            {planStarted && (
+              <TouchableOpacity
+                style={styles.planStatusRow}
+                onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
+                activeOpacity={0.85}
+                accessibilityLabel={`Continue planning with ${other?.display_name}`}
+                accessibilityRole="button"
+              >
+                <PlanCompletionRow
+                  people={matchPlanCompletion.people}
+                  time={matchPlanCompletion.time}
+                  place={matchPlanCompletion.place}
+                />
+              </TouchableOpacity>
+            )}
             </View>
           );
         }}
@@ -394,15 +452,25 @@ const getStyles = (colors) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  cardWrap: { marginBottom: spacing.sm },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     padding: spacing.sm,
-    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  planStatusRow: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderTopWidth: 0,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginTop: -1,
   },
   avatar: { width: 52, height: 52, borderRadius: radius.md, marginRight: spacing.md },
   avatarPlaceholder: { backgroundColor: colors.surfaceElevated },

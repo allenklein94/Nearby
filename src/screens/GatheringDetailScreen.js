@@ -33,6 +33,8 @@ import GatheringStatusBadge from '../components/GatheringStatusBadge';
 import ReasonList from '../components/ReasonList';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
+import PlanCompletionRow from '../components/PlanCompletionRow';
+import { getGatheringPlanCompletion } from '../utils/planCompletion';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
@@ -326,6 +328,25 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
   const categoryStyle = categoryStyleFor(gathering.interest_tag);
   const { reasons } = getGatheringFitReasons(gathering, { firstTimerCount });
+  // Persistent, computed People/Time/Place status (CLAUDE.md, Aug 29
+  // 2026) -- reuses exactly the same businessRequest/acceptedBusinessOffer
+  // state the merged offer card below already fetches, so this never
+  // needs a second query and can never say something different from the
+  // detailed banner right underneath it.
+  const planCompletion = getGatheringPlanCompletion({
+    approvedAttendeeCount: gathering.approvedAttendees?.length ?? 0,
+    businessRequest,
+    acceptedOffer: acceptedBusinessOffer,
+  });
+  const gatheringIsUpcoming = new Date(gathering.scheduled_at) >= new Date();
+  const canActOnPlace = Boolean(businessRequest || acceptedBusinessOffer || gatheringIsUpcoming);
+  function handlePlaceRowPress() {
+    if (businessRequest || acceptedBusinessOffer) {
+      navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id });
+    } else if (gatheringIsUpcoming) {
+      setBusinessHelpChooserOpen(true);
+    }
+  }
   const hasVibe = VIBE_SCALES.some((scale) => gathering[scale.key] != null);
   const curatedCover = curatedCoverPhotoFor(gathering.interest_tag);
 
@@ -561,6 +582,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {gathering.isHost ? (
             <View style={styles.hostBanner}>
               <Text style={styles.hostBannerText}>You're hosting this gathering.</Text>
+              <PlanCompletionRow
+                people={planCompletion.people}
+                time={planCompletion.time}
+                place={planCompletion.place}
+                onPlacePress={canActOnPlace ? handlePlaceRowPress : undefined}
+                style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}
+              />
               {countdownStats && (
                 <View style={styles.countdownRow}>
                   <View style={styles.countdownStat}>
