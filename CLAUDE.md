@@ -1,3 +1,162 @@
+## Aug 29 2026 (cont'd) — real web business application, no app required — PLAN LOCKED,
+## executing below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a restart hits mid-build, check `git status`/`git log` and the per-piece status
+notes below for what's actually landed. Direct follow-up to the desktop-fallback finding two
+sections below: confirmed live (not assumed) that the CTA's *only* path was the mobile deep link
+— no web-based way existed to submit a business application at all. The user's own explicit
+instruction, given directly after reviewing three architecture options: **build option 2 (a
+minimal web apply form), but not as "browser → anonymous direct Supabase write."** Locked
+architecture: **web form → a real server-side Edge Function (validation, rate limiting, abuse
+protection) → the existing `business_partner_requests` review workflow** — no new anon-writable
+RLS policy, no duplicated onboarding/verification/dashboard logic, the app stays the source of
+truth for actually managing an approved business.
+
+### Real architecture audit, done before designing anything — several premises corrected
+
+Pulled the **live** `approve_business_partner_request()` body via the Management API (not
+assumed from a migration file) before designing around it: it already creates the real
+`brand_partners` row from the request's own fields alone, and only *afterward* does
+`update profiles set managed_partner_id = ... where id = req.requester_id` — a query that
+silently matches zero rows (not an error) whenever `requester_id` is null. This is the key fact
+that makes a `requester_id`-less (web-sourced) request *safe* to feed into the existing approve
+RPC unmodified in its core shape — the business goes live correctly either way; only the
+"link it to somebody's account" step needs a new mechanism for the web case.
+
+**A real, decisive finding that overturned my own first design**: the natural "auto-link once
+they eventually sign up, matched by the email they typed on the web form" idea — the obvious
+choice, and what I started building — turned out to be structurally broken. Checked
+`LoginScreen.js` directly: this app's real, only, consumer-facing sign-in method is
+**phone-number OTP** (`supabase.auth.signInWithOtp({ phone })`) — there is no email field
+anywhere in the actual signup flow, and `profiles` has no email column at all. Confirmed live
+against production (`auth.users`, 8 real rows): the 5 rows carrying a real `email` are disposable
+test accounts created directly via the Auth API for this file's own established SQL-based
+verification technique, not real users who signed up through the app — real users only ever have
+`phone` populated (`19542075405`-style, digits-only, US country code prepended, matching
+`contactsImport.js`'s own existing `normalizePhone()` convention exactly, confirmed live). An
+email-matching claim mechanism would have silently never fired for a single real user. **Locked
+fix: match by phone, not email** — the applicant is asked for their own phone number
+specifically so it can, so the same normalization already used elsewhere in this codebase.
+
+**Also checked and confirmed, not assumed**: no Supabase secret exists anywhere for a
+server-side-usable Google Maps/Places key (checked live via the Management API's secrets list —
+`SUPABASE_*`, AWS, `REVIEW_LOGIN_PIN`, `ANTHROPIC_API_KEY`, `REVENUECAT_WEBHOOK_SECRET`, nothing
+Places-related). The mobile app's own key (`Constants.expoConfig.extra.googleMapsApiKey`) is a
+build-time template value (`app.json` literally stores the placeholder string
+`"$GOOGLE_MAPS_API_KEY"`, injected by EAS at build time) — not present anywhere in this repo or
+this session's reach. **The real "Find your business" Google-Places-search step is therefore not
+buildable this pass** — flagged honestly, not faked with a broken/guessed key or a client-exposed
+key that would likely be rejected by Google's own referrer restrictions anyway. The web form is
+"Add your business manually" only, matching the mobile app's own existing manual-entry path
+(`BusinessPartnerApplyScreen.js`'s `startManualEntry()` branch) field-for-field, not a narrower
+copy of it.
+
+**No content-moderation Edge Function call was wired in either, disclosed rather than silently
+skipped.** The mobile app's own apply screen only ever moderates the business *name* in real
+time (`checkTextModeration()`, needs a real signed-in bearer token `moderate-text` itself
+expects) — every other field (description, website, phone, address) on that same screen has
+*never* been real-time-screened, relying entirely on the human review step already stated
+plainly in this page's own FAQ ("A real person reviews every application before it goes live").
+Calling `moderate-text` from a service-role context (no real user session) would need real,
+unverified changes to that function's own auth assumptions — not something to guess at correctly
+under time pressure. The new web path relies on the identical safety net every other unscreened
+field on the app's own form already relies on: real human review before anything goes live.
+
+### Locked schema (`business_partner_requests`)
+
+- `requester_id` becomes nullable (was `not null`) — an app-sourced row still always has one; a
+  web-sourced row never does.
+- New columns: `source text not null default 'app' check (source in ('app','web'))`,
+  `applicant_name text`, `applicant_email text`, `applicant_phone text` (normalized,
+  digits-only, matching `auth.users.phone`'s own real stored format), `claimed_at timestamptz`
+  (null until a real matching profile links it), `resulting_partner_id uuid references
+  brand_partners(id)` (the real gap found while designing this: `approve_business_partner_
+  request()` never persisted which `brand_partners` row it created back onto the request row at
+  all — needed regardless of web/app source, to make a later claim lookup possible instead of
+  guessing by name/address).
+- A CHECK constraint requiring the right shape per source: app rows need a real `requester_id`;
+  web rows need `applicant_name`/`applicant_email`/`applicant_phone` all present.
+- A new partial unique index on `applicant_phone` where `status='pending' and source='web'` —
+  the web-sourced mirror of the existing per-requester one-pending-application index, using
+  phone (not email) as the identity key since that's the one the claim mechanism actually
+  matches on.
+- `submitter_ip_hash text` — a real, small, disclosed rate-limit signal (not a new table), same
+  "real generous bound, not literally unlimited" convention this file already uses elsewhere.
+
+### Locked claim mechanism (the honest way to close "who actually manages this business")
+
+`approve_business_partner_request()` re-pointed (pulled live, edited additively): persists
+`resulting_partner_id`; for a `source='web'` row, looks up whether a real profile already exists
+whose `auth.users.phone` matches `applicant_phone` (covers "the applicant already had a Nearby
+account before applying") and immediately links it if so. A new, locked-down internal
+`_claim_web_business_requests(profile_id_param uuid)` (zero grants to any role, matching the
+established `_business_request_fanout()`-style internal-only pattern) does the real linking —
+`managed_partner_id` + retroactive gathering/community `hosting_partner_id` links, same logic
+`approve_business_partner_request()` already does for an app-sourced row, factored into one
+place so neither path can drift. A new `AFTER INSERT ON profiles` trigger calls the same
+function for the brand-new-signup case (`profiles` rows are created once, client-side, in
+`CompleteProfileScreen.js`'s own upsert — confirmed this only fires the `INSERT` trigger path
+once per real new account, not on every later profile edit).
+
+**Disclosed limitation, not silently glossed over**: this only works if the applicant later signs
+up using the *exact same phone number* they typed on the web form — stated plainly on the
+confirmation screen itself (see below), not left implicit. There is no email-sending or
+SMS-sending infrastructure anywhere in this codebase (re-confirmed via the same live secrets
+check above — no `RESEND`/`SENDGRID`/`TWILIO`/`SMTP` secret exists), so there is no way to
+proactively notify the applicant once approved beyond a real admin manually reaching out using
+the contact info they provided — matching this file's own already-established Emergency Contacts
+precedent for exactly this class of gap.
+
+### Locked Edge Function (`submit-business-application`)
+
+`verify_jwt: false` (no user session exists for a public web visitor — matches the established
+`stripe-connect-webhook`/`revenuecat-webhook` "public entry point, do your own internal check"
+precedent, though here the internal check is real abuse protection, not a signature/secret
+comparison, since this is a genuine public form, not a webhook from a known caller). Real CORS
+headers (`Access-Control-Allow-Origin: *`, a real `OPTIONS` preflight handler) — the first Edge
+Function in this codebase that needs them at all, since every existing one is only ever called
+from the native mobile app's own fetch, which browser CORS rules don't apply to. Real server-side
+validation (every required field, a real category-key check against the same 6 values the app's
+own form uses, a plausible-phone/email shape check, a honeypot field that silently rejects if
+filled), a real IP-based rate limit (a small, disclosed cap per hour, reusing
+`submitter_ip_hash` — no new table), and the same `23505`-catches-a-duplicate-pending-application
+handling the app's own form already relies on. Writes via the service-role client (server-side
+only) — never an anon-writable table grant.
+
+### Locked frontend change (`docs/business.html`)
+
+All three CTA buttons (hero, bottom, "Find Your Business") now reveal/scroll to a real inline
+application section on the same page instead of attempting the mobile deep link — matches the
+user's own explicit "ZERO unnecessary app download" framing for this specific funnel. The
+deep-link/fallback-message mechanism built earlier this same day is removed from this flow
+entirely (the mobile app's own existing in-app "Partner With Us"/Business Mode entry points, for
+an already-installed consumer, are untouched and unrelated to this landing page). The form
+collects exactly the fields the user named — business name/category/address/website/phone,
+applicant name/email/phone, a required "I confirm I represent this business" checkbox — plus one
+hidden honeypot field. A real success state states the phone-matching mechanism plainly: "download
+Nearby and sign up with this phone number to get access to your dashboard once approved" — never
+a fabricated "we'll email you" promise this codebase can't actually deliver on.
+
+### `AdminBusinessRequestsScreen.js`
+
+`item.profiles?.display_name` silently renders "Requested by undefined" for a `requester_id`-less
+web row today — fixed to fall back to the real `applicant_name`/`applicant_email`/
+`applicant_phone` fields, labeled distinctly from an app-sourced request, so admin can actually
+act on a web application instead of seeing a broken row.
+
+### Explicitly not built, per the user's own instruction, restated so it isn't silently reopened
+
+No anonymous direct Supabase write, no new public write-capable RLS policy. No duplicated
+onboarding/verification/dashboard/business-management logic anywhere on the web — the moment a
+business is approved and later claimed, `BusinessDashboardScreen.js` (already built, already
+live) is the one real place it's ever managed, exactly as before this pass. No Google Places
+search on the web (flagged, not faked — needs a real server-side key the user would need to add
+as a Supabase secret). No content-moderation Edge Function call from the new server-side path
+(matches the mobile app's own already-narrow real-time moderation coverage, not a regression).
+
+### Status: executing below — check each piece's own status note.
+
 ## Aug 29 2026 (cont'd) — a fourth review's two real findings: the FAQ's own "30 seconds" line
 ## disambiguated from approval, and the CTA's desktop-vs-mobile fallback copy fixed — DONE
 
