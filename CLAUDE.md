@@ -1,3 +1,147 @@
+## Aug 29 2026 — remediation pass against the Aug 28 Full Coherence Audit's two 🔴 P0
+## findings (plan written before implementation, per direct instruction) — both DONE, see
+## each item's own status note below
+
+Written before implementation, same restart-safety convention as every other plan-first
+section in this file — check `git status`/`git log` and each item's own status note for what's
+actually landed if a restart hits mid-build. Direct follow-up to
+`PRODUCT_AUDIT/FULL_END_TO_END_PRODUCT_COHERENCE_AUDIT_2026-08-28.md` (all 10 systems, the
+14×7 ranking table, 6 scenarios, 11-transition test, scorecard + two top-10 lists) — the user
+reviewed the audit in full and, together with a second AI's own reaction to it, gave a
+concrete, ranked remediation list. Per the user's own explicit instruction, this pass builds
+only the two 🔴 P0 items (the only two findings at that severity in the whole audit) — the
+🟠 P1 items the second AI also proposed (universal fullness indicator, Circles → "invite to
+gathering," a person/friend-shaped Ask Nearby intent branch, one canonical "Right Now"
+definition — already closed per the Aug 28 Universal Signal Remediation Pass, a shared
+recommendation-reason vocabulary, Discover exposing price/party/cuisine/attributes it already
+has, gathering-chat/business-conversation header tap-throughs) are recorded here as a real,
+locked follow-on list for a future pass, not silently built or silently dropped.
+
+### P0 #1 — a confirmed business venue never reached anyone but the host
+
+**The real gap, confirmed by re-reading the code, not assumed from the audit's own prose**:
+`GatheringDetailScreen.js`'s `load()` only ever fetched `getBusinessRequestForGathering()`/
+`getAcceptedOfferForRequest()` inside `if (g.isHost)` — an approved attendee's own `load()`
+call always set both to `null`, and even if the client-side gate were removed, RLS on both
+`business_requests` and `business_request_offers` only ever granted SELECT to the real
+requester (the host, since only the host can call `create_business_request_for_gathering()`)
+or the responding business — never a gathering attendee. So once a host accepted a real
+business offer, every other approved attendee still saw only the gathering's own original
+coordinates, with zero indication a real venue had been confirmed — exactly the scenario the
+user's own message describes.
+
+**Locked design, reusing an already-proven pattern rather than inventing a new one**: this
+schema already has two precedents for "widen who can see a `business_requests`/
+`business_request_offers` row, additively, never narrowing anything" — Group Plans' own
+`is_group_plan_participant()`-gated SELECT policies
+(`20260815_v3_group_plans_phase_d.sql`) and the Offer System's own `is_match_participant()`-
+gated ones (`20260817_offer_system_phase5_date_proposals.sql`). The gathering case needs no new
+SECURITY DEFINER helper at all — `gathering_interest` already has a real, live "Anyone can see
+approved attendees" SELECT policy (`status = 'approved'`, no recursion risk, since it's a plain
+boolean condition with no reference back to either `business_requests` or
+`business_request_offers`) — so a plain `EXISTS` subquery against it, from within a new policy
+on each of the two tables, is safe, matching the exact shape `business_request_offers`' own
+pre-existing "Requesters can view offers on their own requests" policy already uses (a plain
+`EXISTS` on `business_requests` from `business_request_offers`, already live in production
+today with no recursion issue).
+
+Two new, additive SELECT policies:
+- `business_requests`: an approved attendee of the gathering the request is `gathering_id`-
+  linked to can see the request row.
+- `business_request_offers`: an approved attendee can see an offer on that request **only**
+  when it's genuinely `accepted`/`completed` — never a business's own pending/declined bid.
+  That's deliberate, not an oversight: which businesses responded and what they each offered is
+  the host's own decision-making context, not something every attendee needs visibility into:
+  only the real, final, confirmed outcome is ever widened to the group.
+
+**Client**: `GatheringDetailScreen.js`'s `load()` now also fetches the same
+request/accepted-offer pair for a non-host caller whose own `myStatus === 'approved'` —
+deliberately **not** the "waiting to hear back" pending state or the partnership-request state
+(both stay host-only, since neither is actionable for an attendee and showing every in-flight
+bid isn't something the widened RLS even permits regardless). The existing "You're in! 🎉"
+approved-attendee panel now renders the same `AcceptedBusinessOfferCard` the host banner
+already uses — real venue name, proposed time, confirmed party size, offer summary, and (via
+the card's own already-built `openUberToDestination()` action) a real "🚗 Get an Uber there"
+link once the business has real coordinates — satisfying the audit's own "venue name + address
++ map + directions/Uber" ask using a mechanism that already existed, not a new one. Deliberately
+**no** "View request →" link for attendees (unlike the host's own rendering) —
+`BusinessRequestDetailScreen`'s other actions (accept/decline/cancel) are requester-only in
+spirit even though the underlying RPCs are independently guarded server-side; not worth the
+confusion of an attendee landing on a screen built for the host's own decision-making.
+
+**Status: DONE, build-wise, applied to production and verified live with real disposable test
+data.** See the commit associated with `20260829_gathering_attendees_see_confirmed_venue.sql`
+for the exact verification queries (a real approved attendee's session correctly sees the
+request/accepted-offer row once the new policies are live; a non-attendee, non-host stranger
+still correctly sees neither; a pending/declined offer on the same request stays correctly
+invisible to the attendee). **Not done, same standing gap as everywhere else in this file**: no
+manual simulator/device run-through — next session should confirm the "You're in!" panel
+renders the confirmed-venue card correctly for a real approved attendee once a real offer has
+been accepted, and that the Uber link opens correctly.
+
+### P0 #2 — "Friday" (or any other named weekday/specific date) had nowhere to go in Ask
+### Nearby Businesses
+
+**The real gap, confirmed by re-reading `AskBusinessScreen.js`**: `DATE_OPTIONS` is a fixed
+4-chip set (Today / Tomorrow / This weekend / I'm flexible) with no date-picker fallback at
+all — unlike `CreateGatheringScreen.js`'s own gathering-creation "When" step, which already has
+a real `DateTimePicker` behind its own preset buttons. `create-assistant`'s own
+`VALID_DATE_WINDOWS` vocabulary has no bucket for a named weekday beyond tomorrow either
+(`now|today|tonight|tomorrow|weekend|flexible`) — matching this app's own locked "AI never
+infers a specific date/time from free text" rule correctly, but leaving a real user typing or
+tapping their way to "Friday" with no way to actually say so anywhere downstream.
+
+**Locked design, matching the external AI's own suggestion and this app's already-proven
+`CreateGatheringScreen.js` pattern**: keep every existing quick-preset chip unchanged (Today /
+Tomorrow / This weekend / I'm flexible) — this is additive, not a replacement — and add a real
+5th "📅 Pick a date" chip. Selecting it opens the same `@react-native-community/DateTimePicker`
+component `CreateGatheringScreen.js`/`BusinessDashboardScreen.js` already use elsewhere in this
+codebase (`mode="date"`, `display: Platform.OS === 'ios' ? 'spinner' : 'default'`,
+`minimumDate: new Date()`, `themeVariant` matching dark mode) — a plain calendar-date picker,
+not datetime, since `business_requests.date` is a plain date column with no time-of-day
+component (confirmed via the schema, matching `toDateParam()`'s own existing comment on this).
+Once a real date is picked, the recap line and the submitted `date` param both use that exact
+picked date — `toDateParam()`'s existing preset-window math is completely untouched for the
+other four chips.
+
+**Deliberately not attempted this pass, flagged rather than silently expanded into**: teaching
+`create-assistant`'s own prompt to recognize a named weekday in free text and pre-route the UI
+to this new picker (e.g. "Friday" in the typed ask pre-selecting "Pick a date" with that Friday
+already filled in). The locked "AI never infers a specific date" rule means the AI could at
+most *flag* that a specific day was named, never assign the actual date itself — a real, small,
+separate enhancement, not required to close the literal P0 finding ("Friday isn't
+representable anywhere in the flow"), which this pass closes by making a specific date
+representable at all, regardless of how the screen was reached.
+
+**Status: DONE, build-wise, client-only, no schema/RPC change needed** (`business_requests.date`
+already accepts an arbitrary `YYYY-MM-DD` string from any entry point). **Not done, same
+standing gap as everywhere else in this file**: no manual simulator/device run-through — next
+session should confirm the picker renders/selects correctly on both iOS (spinner) and Android
+(default), that the recap line and the actual submitted request both reflect the picked date
+correctly, and that switching back to a quick-preset chip after picking a date correctly
+abandons the picked date rather than leaving it silently attached.
+
+### 🟠 P1 remediation list — locked, not yet built, for a future pass
+
+Restated from the second AI's own reply and the user's review of it, so nothing here is lost:
+universal gathering fullness/capacity indicator across every recommendation surface (Home
+Nearby Right Now, Best Pick/Trending, Discover, Gatherings browse — today only
+`AskBusinessScreen`'s matched-availability banner and `GatheringDetailScreen`'s own "almost
+full" nudge show it); a real first downstream use for Circles ("Invite a Circle" on gathering
+creation); a person/friend-shaped Ask Nearby intent branch routing "I want to meet people who
+like tennis" into Friend Discovery rather than a generic gathering browse; a shared semantic
+recommendation-reason vocabulary (Interest / Distance / Time / Context / Availability /
+Capacity / Popularity) reused across Best Pick / Nearby Right Now / Ask Nearby / Friends'
+different scoring formulas, without forcing those formulas into one universal score; Discover
+surfacing price/party/cuisine/attribute/capacity signals it already fetches but doesn't render;
+`GatheringChatScreen`/`BusinessConversationScreen` header tap-throughs to the real gathering/
+business (matching `CommunityChatScreen`'s and 1:1 `ChatScreen`'s own already-real pattern);
+weather-awareness in business-opportunity ranking (explicitly deprioritized by the user's own
+message, "not ahead of the P0/P1 items"). **The canonical "Right Now" definition item is
+already closed** — see this file's own Aug 28 2026 Universal Signal Remediation Pass, P2 item
+8, `src/utils/rightNowWindow.js` — restated here only so a future session doesn't
+re-discover/re-flag it as still open.
+
 # Nearby — Project Context for Claude Code
 
 Nearby is a proximity-based dating/social discovery app (React Native/Expo/Supabase).
