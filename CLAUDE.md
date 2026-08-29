@@ -26466,3 +26466,43 @@ modules, no bundling errors.** The two captured-not-built items (a persistent pl
 state, the Profile/Dating/Settings reorg) remain exactly that — real, recorded future direction,
 not silently started. Same standing gap as everywhere else in this file: no manual simulator/
 device run-through of any of this pass's own changes.
+
+## Aug 29 2026 (cont'd) — the same sequential-load pattern checked across every other screen,
+## found and fixed on 3 more, 3 checked and confirmed already fine — DONE
+
+Direct follow-up to the Home/Discover/Sign-Out load-time fixes above: ranked every screen by
+count of `await get*/search*/fetch*()` calls vs. `Promise.all` usage, then read the highest-
+ratio candidates directly rather than assuming the count alone meant a bug.
+
+**Real, confirmed instances of the same bug, fixed**: `ProfileScreen.js` (~7 independent
+fetches chained one after another — photo URL, extra photos, quick stats, achievements,
+business-request status, earned stats — none depend on each other, previously visible as
+fields filling in one at a time instead of all at once), `ActivityScreen.js` (~8 independent
+queries — profile, matches, both block directions, notices, sightings, business updates,
+business-ecosystem activity — all only needing `myId`, gating the screen's own loading state
+behind their sum), `CommunityDetailScreen.js` (~8 fetches with two small internal dependency
+chains — a two-phase restructure keeps the real dependencies: community row before the
+business/hosting-partner checks that need it, and the accepted-offer lookup still resolves
+after its own business-request fetch — while parallelizing everything actually independent).
+All three now use `Promise.all`, keeping every existing fallback/`.catch()` behavior intact.
+
+**Checked, found already correct, not touched**: `BusinessDashboardScreen.js` (despite 41 raw
+`await` calls across ~20 loader functions, its `useFocusEffect` fires all of them without
+awaiting between calls — already genuinely concurrent, the high count was misleading).
+`GatheringsScreen.js` (already a 9-awaits/7-`Promise.all` ratio). `GatheringDetailScreen.js`
+(already releases its `loading` state right after the core fetch, before its own supplementary
+`Promise.all` batch runs — the one small remaining sequential chain there doesn't block
+anything visible). `DiscoveryScreen.js` — deliberately left alone: it already releases
+`initialLoading` early (right after `getNearbyMatches()`, before photo URLs/online statuses/
+premium/profile all load in the background), and its one real candidate for reordering
+(`reportPresence()` before `getNearbyMatches()`) may be a genuine write-then-read dependency
+for crossed-paths matching — not confirmed either way, so not touched rather than guessed at.
+
+Verified via a direct `@babel/core` parse of all three touched files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm Profile/Activity/Community all still render every
+section correctly (especially Community's two-phase business/hosting-partner restructure) and
+that the perceived load time is genuinely better on a real connection, not just structurally
+less sequential in the code.
