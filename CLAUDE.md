@@ -803,9 +803,54 @@ the closer, less-relevant postings in the final `resolveIntent()` result — not
 rule. No client file changes expected, so no `npx expo export` regression beyond a sanity check
 that nothing else imports/relies on the old cap number.
 
-**Status: plan locked, not yet executed.** Nothing in this section has been built — the same
-restart-safety convention as every other plan-first section in this file: check `git status`/
-`git log` for what's actually landed vs. still just this plan if a restart hits mid-build.
+**Status: DONE, build-wise — the locked fix is applied to production and verified live, plus a
+real from-scratch migration replay.** `supabase/migrations/20260829_business_availability_
+window_widen.sql` — a plain `CREATE OR REPLACE FUNCTION` on `search_active_business_availability()`
+with the exact same 5-argument signature as before (`category_param`/`latitude_param`/
+`longitude_param`/`radius_miles_param`/`party_size_param`, no `DROP FUNCTION` needed since no
+parameter changed) — every line byte-for-byte unchanged from the live function pulled fresh via
+the Management API before editing, except the one numeric literal: `limit 6` → `limit 30`.
+`order by distance_miles asc nulls last, ba.created_at desc` stays exactly as-is, matching the
+locked plan's own text precisely.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — confirmed
+grants survived the replace (`authenticated`/`service_role`/`postgres`, no `anon`) and pulled the
+live function body back to confirm `limit 30` is really there. Built the real scenario the plan's
+own verification convention calls for: 8 real disposable test partners (`ZzxWindowTest Partner
+0`–`7`), each with one real active `business_availability` posting in the same category
+(`Foodie`), placed at real, increasing distances from a single reference point (0 → ~4.8 miles,
+all well within a real 15-mile radius) — calling the RPC with that same reference point as the
+caller's location correctly returned **all 8**, ordered by distance ascending, including the two
+farthest postings (`Partner 6`/`Partner 7`) that a literal `limit 6` slice of the identical result
+set was directly, separately confirmed to drop (`0` of them survive a `limit 6` sub-select over
+the same query) — proving the fix's real effect, not just that the SQL text changed. All 8 test
+partners and their postings deleted afterward; production confirmed back to its exact pre-test
+baseline (0 leftover test rows, the 1 real pre-existing partner — Coastal Coffee — untouched).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check
+status, dropped and recreated a truly empty `public` schema, patched the two known
+image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the test container
+only, created `pg_cron`/`pg_trgm` as `supabase_admin`, then ran the full, now-107-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every
+file**, `search_active_business_availability()` confirmed to exist with `limit 30` in the
+freshly-rebuilt database. Container removed afterward.
+
+**No client-side code changes were needed or made** — confirmed via grep that no client file
+references the numeric cap; `resolveBusinessAvailability()`/`resolveIntent()`'s own scoring and
+global sort-then-cap were already correct and untouched, matching the plan's own text exactly.
+Verified via a full `npx expo export --platform ios` (clean, no bundling errors — a pure sanity
+check per the plan's own note, since no client file was touched).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device, that a genuine local-business-
+density scenario (once one exists) shows the more-relevant-but-farther posting ranked correctly
+against a closer-but-less-relevant one in the actual running app, not just via direct RPC calls.
+
+This closes the "global pagination ranking" audit's own one real (🔴) finding — the two 🟡
+latent instances (`get_bounded_nearby_gathering_ids()`'s 500 cap, `getPublicCommunities()`'s 200
+cap) remain deliberately unfixed, per that audit's own locked decision: revisit only if real
+gathering/community volume ever approaches either cap.
 
 # Nearby — Project Context for Claude Code
 
