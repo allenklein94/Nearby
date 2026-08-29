@@ -26457,3 +26457,12 @@ card dismisses correctly with just "Got it →," a host viewing their own gather
 menu exactly once, and that Home/Discover both genuinely feel faster on a real network — this
 pass's fixes are grounded in a real, confirmed sequential-round-trip bug, but the actual
 before/after feel has only been reasoned through from source, never measured on a device.
+
+**Status: all six fixes above are DONE, build-wise — committed and pushed incrementally
+(`c27720e1` Home fixes, `84efa0b4` Discover/Sign-Out, `7fcff988` host-reasons/non-romantic
+match) as each landed, per the user's own explicit "commit and push along the way"
+instruction. A full `npx expo export --platform ios` after the complete set built clean, 2276
+modules, no bundling errors.** The two captured-not-built items (a persistent plan-completion
+state, the Profile/Dating/Settings reorg) remain exactly that — real, recorded future direction,
+not silently started. Same standing gap as everywhere else in this file: no manual simulator/
+device run-through of any of this pass's own changes.
