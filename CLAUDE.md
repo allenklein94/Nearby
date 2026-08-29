@@ -1,7 +1,77 @@
-## Aug 29 2026 — business landing page (`docs/business.html`) rewritten to the final external
-## blueprint (200 numbered points, then a 20-item revision pass) — PLAN LOCKED, executing below
+## Aug 29 2026 (cont'd) — business landing page refinement pass, reacting to a second external
+## review — PLAN LOCKED, executing below
 
 Written before implementation, same restart-safety convention as every other plan-first section
+in this file. Direct follow-up to the full rewrite immediately below this section — the user
+pasted a second, detailed external review scoring the finished page 8.5/10 and asking for three
+targeted additions plus several copy tweaks, given as an explicit "do this, don't redesign the
+whole page again" instruction.
+
+### Audit — checked the review's own premises against the actual live file before touching
+### anything, per this file's own standing rule; several turned out to already be satisfied
+
+The review reads as reacting to an **earlier or cached version of the page**, not the one that
+was actually shipped and deployed the same session — checked directly, not assumed:
+- The review says "It's not just what's nearby, it's what's relevant" is **missing** — it
+  already exists as its own dedicated section (`#relevant`), built in the prior pass.
+- The review says the Request→Offer engine "is not yet represented" and explicitly instructs
+  "do NOT force Claude to add it now if it isn't built" — it **is** built (the Offer System, all
+  6 phases DONE), and the prior pass already gave it exactly the hero-level treatment the review
+  itself calls "mandatory" once built: `#two-ways` ("Two ways to become part of the plan"),
+  including a real "Looking for a group dinner Saturday" → offer-sent mockup.
+- The review flags `"target them by interest"` as copy to fix — that phrase was already removed
+  in the prior pass (the old 4-card value grid it lived in no longer exists).
+- The review flags the bottom CTA ("Ready to get started?") and the headline ("Get Your
+  Business on Nearby") as needing to change — both already changed in the prior pass (bottom CTA
+  now reads "Be there when people decide what to do."; the H1 is already "Be part of what
+  people do nearby.").
+- The review flags "30 seconds" as needing to be checked for over-promising — the copy is
+  already the exact safe wording the review itself proposes ("Get started in about 30 seconds.
+  Free to start.").
+
+**Not disputing the instruction — executing every concrete ask below regardless** — but
+disclosed here so a future session doesn't re-read this review's own text as an accurate
+description of what's currently missing, and so the real, still-genuinely-additive pieces (the
+three items below) don't get buried under re-implementing things that already shipped.
+
+### What's genuinely new and worth adding — 3 real gaps, checked against the live file
+
+1. **A tighter "people make plans" framing directly after the hero.** The existing `#intent`
+   section covers the same idea but with different, more question-shaped copy ("People aren't
+   looking for another business directory... Let's find something to do...") — the review's own
+   suggested framing ("People make plans. Your business can be part of them.") is a real,
+   stronger, more declarative close. Fold it in as the section's own closing line rather than
+   replacing the whole section (avoids duplicating the "it's about being relevant" line, which
+   already lives one section later in `#relevant`).
+2. **Concrete scenario → business-type examples in the differentiator section.** `#relevant`
+   currently only has the abstract 0.4mi/1.7mi distance-comparison cards — real, but not as
+   concrete as the review's own ask (date night → a date-friendly business, group dinner → a
+   group-friendly business, etc.). Genuinely additive — add 4 scenario examples, kept alongside
+   (not replacing) the existing distance cards. Every example must map to a real attribute value,
+   matching this whole page's own already-locked "no invented chip label" rule: Date night →
+   `date_friendly`; Group dinner/celebration → `group_friendly`; Something outdoors →
+   `outdoor_seating`; Weekend plans → the real `weekend` priority-time-window value.
+3. **An explicit "you don't have to discount to participate" line.** Currently only implied
+   inside one FAQ answer — genuinely worth a standalone, visible line, per the review's own
+   reasoning (don't let a business owner subconsciously categorize Nearby as "another place I
+   have to give discounts"). Added to the `#pillars` section, right under the Create pillar.
+
+### Copy tweaks, checked against the live file first
+
+- Bottom CTA: already reads "Be there when people decide what to do." (matches the spirit of the
+  review's own request) — add the review's own suggested fine print
+  ("Free to start · No credit card required") underneath the signature line, a small, real,
+  additive improvement not currently present.
+- Headline/`"target them by interest"`/`"30 seconds"`: already correct, confirmed above — no
+  edit made, not silently re-touched.
+
+### Verification convention, matching the prior pass on this same file
+
+Same as the full rewrite immediately below this section: `docs/business.html` isn't part of the
+Expo bundle, so verified via a direct HTML well-formedness parse and a `node --check` syntax pass
+on the inline script, not `npx expo export`. No schema/RPC touched.
+
+### Status: plan locked, executing below.
 in this file — check `git status`/`git log` and this section's own status note for what's
 actually landed vs. still just this plan if a restart hits mid-build.
 
