@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager, Switch } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,6 +12,7 @@ import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
+import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
@@ -104,6 +105,21 @@ export default function ProfileScreen({ navigation, route }) {
   const [sexualOrientation, setSexualOrientation] = useState('');
   const [genderIdentity, setGenderIdentity] = useState([]);
   const [interestedInGenders, setInterestedInGenders] = useState([]);
+  // Profile/Dating/Settings reorganization (CLAUDE.md, Aug 29 2026):
+  // extends the exact reasoning already locked for gender_identity/
+  // interested_in_genders (a fact about yourself, even when it's also
+  // consumed by dating matching, belongs where you describe yourself --
+  // not a screen away in a "preferences" surface). Both moved here from
+  // Settings' "Dating Preferences" card, which now correctly holds only
+  // real preferences about *other people* (age range, ethnicity_preferences)
+  // and app-level Looking For intent -- never a fact about the caller
+  // themselves. myEthnicity is a self-description, saved through the same
+  // bottom Save button as gender_identity; the two "hidden" toggles keep
+  // their original instant-write behavior, just relocated next to the
+  // fields they actually control.
+  const [myEthnicity, setMyEthnicity] = useState(null);
+  const [genderHidden, setGenderHidden] = useState(false);
+  const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [basics, setBasics] = useState({});
   const [prompts, setPrompts] = useState([]);
   const [questionPickerVisible, setQuestionPickerVisible] = useState(false);
@@ -172,6 +188,9 @@ export default function ProfileScreen({ navigation, route }) {
       setSexualOrientation(data.sexual_orientation || '');
       setGenderIdentity(data.gender_identity || []);
       setInterestedInGenders(data.interested_in_genders || []);
+      setMyEthnicity(data.ethnicity ?? null);
+      setGenderHidden(data.gender_hidden ?? false);
+      setEthnicityHidden(data.ethnicity_hidden ?? false);
       setBasics(data.basics || {});
       setPrompts(data.prompts || []);
       setConnectionGoal(data.connection_goal || '');
@@ -257,6 +276,17 @@ const result = await response.json();
     setInterests((prev) =>
       prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
     );
+  }
+
+  // Same instant-write shape SettingsScreen's own toggleNotifPref already
+  // established for these exact two columns -- relocated, not redesigned.
+  async function toggleHiddenPref(key, value, setter) {
+    setter(value);
+    const { error } = await supabase.from('profiles').update({ [key]: value }).eq('id', userId);
+    if (error) {
+      setter(!value);
+      Alert.alert('Error', error.message);
+    }
   }
 
   function toggleGenderIdentity(option) {
@@ -465,6 +495,7 @@ const result = await response.json();
         sexual_orientation: sexualOrientation.trim() || null,
         gender_identity: genderIdentity,
         interested_in_genders: interestedInGenders,
+        ethnicity: myEthnicity,
         basics,
         prompts,
         connection_goal: connectionGoal || null,
@@ -1034,6 +1065,48 @@ const result = await response.json();
           </View>
           <Text style={styles.helperText}>Select all that apply. Matching is mutual — you'll only see people whose preferences also include you.</Text>
 
+          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Hide my gender</Text>
+              <Text style={styles.helperText}>Your gender won't be shown on your profile.</Text>
+            </View>
+            <Switch
+              value={genderHidden}
+              onValueChange={(v) => toggleHiddenPref('gender_hidden', v, setGenderHidden)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Hide my gender"
+            />
+          </View>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>My Ethnicity</Text>
+          <View style={styles.chipsWrap}>
+            {ETHNICITY_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[styles.chip, myEthnicity === option && styles.chipSelected]}
+                onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
+                activeOpacity={0.8}
+                accessibilityLabel={option}
+                accessibilityRole="button"
+                accessibilityState={{ selected: myEthnicity === option }}
+              >
+                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Hide my ethnicity</Text>
+              <Text style={styles.helperText}>Your ethnicity won't be shown on your profile.</Text>
+            </View>
+            <Switch
+              value={ethnicityHidden}
+              onValueChange={(v) => toggleHiddenPref('ethnicity_hidden', v, setEthnicityHidden)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Hide my ethnicity"
+            />
+          </View>
+
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('profile.pronounsLabel')}</Text>
           <TextInput
             style={styles.input}
@@ -1357,6 +1430,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+  settingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   chip: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,

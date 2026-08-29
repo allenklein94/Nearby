@@ -61,9 +61,6 @@ export default function SettingsScreen({ navigation, route }) {
   const [userId, setUserId] = useState(null);
   const [minAge, setMinAge] = useState('18');
   const [maxAge, setMaxAge] = useState('99');
-  const [genderHidden, setGenderHidden] = useState(false);
-  const [myEthnicity, setMyEthnicity] = useState(null);
-  const [ethnicityHidden, setEthnicityHidden] = useState(false);
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [relationshipIntention, setRelationshipIntention] = useState([]);
@@ -131,9 +128,6 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyMatches(data.notify_matches ?? true);
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
-      setGenderHidden(data.gender_hidden ?? false);
-      setMyEthnicity(data.ethnicity ?? null);
-      setEthnicityHidden(data.ethnicity_hidden ?? false);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setEthnicityPreferences(data.ethnicity_preferences ?? []);
       setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
@@ -174,7 +168,6 @@ export default function SettingsScreen({ navigation, route }) {
       .update({
         preferred_min_age: minAgeNum,
         preferred_max_age: maxAgeNum,
-        ethnicity: myEthnicity,
         ethnicity_preferences: ethnicityPreferences,
         // Phase 3 (progressive/contextual settings): explicitly saving here
         // is itself "already engaged with these preferences" -- flips the
@@ -475,10 +468,10 @@ export default function SettingsScreen({ navigation, route }) {
           <TouchableOpacity
             style={{ marginTop: spacing.md }}
             onPress={() => navigation.navigate('Profile', { scrollToGenderSection: true })}
-            accessibilityLabel="Gender identity and who you're interested in are managed on your Profile"
+            accessibilityLabel="Gender identity, ethnicity, and their visibility are managed on your Profile"
             accessibilityRole="button"
           >
-            <Text style={styles.linkText}>Gender identity & who you're interested in are managed on your Profile →</Text>
+            <Text style={styles.linkText}>Gender identity, ethnicity, and their visibility are managed on your Profile →</Text>
           </TouchableOpacity>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ageRange')}</Text>
@@ -499,49 +492,6 @@ export default function SettingsScreen({ navigation, route }) {
               keyboardType="number-pad"
               placeholderTextColor={colors.textTertiary}
               accessibilityLabel="Maximum age"
-            />
-          </View>
-
-          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('settings.hideGender')}</Text>
-              <Text style={styles.helperText}>{t('settings.hideGenderHelper')}</Text>
-            </View>
-            <Switch
-              value={genderHidden}
-              onValueChange={(v) => toggleNotifPref('gender_hidden', v, setGenderHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('settings.hideGender')}
-            />
-          </View>
-
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.myEthnicity')}</Text>
-          <View style={styles.chipsWrap}>
-            {ETHNICITY_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[styles.chip, myEthnicity === option && styles.chipSelected]}
-                onPress={() => setMyEthnicity(myEthnicity === option ? null : option)}
-                activeOpacity={0.8}
-                accessibilityLabel={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: myEthnicity === option }}
-              >
-                <Text style={[styles.chipText, myEthnicity === option && styles.chipTextSelected]}>{option}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>{t('settings.hideEthnicity')}</Text>
-              <Text style={styles.helperText}>{t('settings.hideEthnicityHelper')}</Text>
-            </View>
-            <Switch
-              value={ethnicityHidden}
-              onValueChange={(v) => toggleNotifPref('ethnicity_hidden', v, setEthnicityHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('settings.hideEthnicity')}
             />
           </View>
 
