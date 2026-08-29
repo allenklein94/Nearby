@@ -138,6 +138,17 @@ export default function ChatScreen({ route, navigation }) {
   const [isRomanticMatch, setIsRomanticMatch] = useState(true);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [togetherMenuVisible, setTogetherMenuVisible] = useState(false);
+  // MatchesScreen's non-romantic "🤝 Plan" row navigates here with this
+  // param instead of duplicating the together-menu options in a second
+  // place -- opened once on arrival, guarded so a later re-render/refocus
+  // with the same still-present route param doesn't reopen it.
+  const openedTogetherMenuRef = useRef(false);
+  useEffect(() => {
+    if (route.params?.openTogetherMenu && !openedTogetherMenuRef.current) {
+      openedTogetherMenuRef.current = true;
+      setTogetherMenuVisible(true);
+    }
+  }, [route.params?.openTogetherMenu]);
   const [courageMenuVisible, setCourageMenuVisible] = useState(false);
   const [gifPickerVisible, setGifPickerVisible] = useState(false);
   const [checkInModalVisible, setCheckInModalVisible] = useState(false);

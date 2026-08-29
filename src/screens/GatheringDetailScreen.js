@@ -390,7 +390,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {reasons.length > 0 && (
+          {/* A host was previously shown "Why this fits you" on their own
+              gathering -- incoherent, since they made it. There's no real
+              per-audience signal to compute a host-facing "why others
+              might like this" variant from without fabricating one for a
+              hypothetical viewer, so this is just suppressed for the host
+              rather than replaced with a guess. */}
+          {!gathering.isHost && reasons.length > 0 && (
             <View style={styles.reasonsCard}>
               <Text style={styles.sectionLabel}>Why this fits you</Text>
               <ReasonList reasons={reasons} textStyle={styles.reasonLine} iconColor={colors.textPrimary} />

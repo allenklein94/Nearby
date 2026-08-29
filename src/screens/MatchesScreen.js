@@ -324,7 +324,7 @@ export default function MatchesScreen({ navigation }) {
                 </View>
                 <Text style={styles.sub}>{subLabel}</Text>
               </TouchableOpacity>
-              {isRomanticMatch && (
+              {isRomanticMatch ? (
                 <TouchableOpacity
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
@@ -333,6 +333,22 @@ export default function MatchesScreen({ navigation }) {
                   accessibilityRole="button"
                 >
                   <Text style={styles.planDateButtonText}>💌 Plan</Text>
+                </TouchableOpacity>
+              ) : (
+                // A friend/gathering-sourced match had no "start
+                // something" entry point at all before this -- the real
+                // "Do Something Together" menu (12 real destinations,
+                // including a shared-interest -> local-business flow) was
+                // always available, just a screen deeper inside Chat with
+                // no visible link from the match list itself.
+                <TouchableOpacity
+                  style={styles.planDateButton}
+                  onPress={() => navigation.navigate('Chat', { matchId: item.id, openTogetherMenu: true })}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`Start something with ${other?.display_name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.planDateButtonText}>🤝 Plan</Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.chevron}>›</Text>
