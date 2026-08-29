@@ -432,10 +432,78 @@ fits you" and Home's Best Pick both render the right icon next to each real reas
 layout regression from the plain `✓` prefix they replace), and Friend Discovery's card shows the
 correct single leading icon for whichever real signal is strongest for a given candidate.
 
-**All 7 items of the P1 remediation list are now closed or explicitly, deliberately deferred** —
-items 1-6 are DONE, build-wise (see each item's own status note above); item 7 (weather-
-awareness in business-opportunity ranking) remains explicitly deprioritized per the user's own
-instruction, not silently dropped.
+#### Item 7 — weather-awareness in business-opportunity ranking — DONE, build-wise, client-only,
+#### no schema change
+
+Direct follow-up, per explicit instruction ("finish item 7"), reversing this item's own earlier
+"stays explicitly deprioritized" note above — that note accurately reflected the state at the
+time it was written; this closes it for real rather than leaving it deferred indefinitely.
+Closes the audit's own closing-synthesis finding: Business Opportunity ranking
+(`scoreBusinessOpportunity()`, `services/businessOpportunityScoring.js`, powering
+`BusinessDashboardScreen.js`'s `scoredOpportunities` list) was the one real ranking surface in
+the whole app that stayed weather-blind — every consumer-facing surface (the ask box via
+`intentResolver.js`, `GatheringsScreen`'s full browse/filter surface via the same day's Universal
+Signal Remediation Pass P2 item 7) already had real weather context threaded in; the business
+side never did.
+
+**Reuses the exact same shared primitive every other weather-aware surface already uses — no new
+rule invented.** `scoreBusinessOpportunity()` gained an optional `weather` param (the real,
+already-fetched `getSocialForecast()` result shape, `null`/`undefined` by default so every
+existing call site/test is unaffected) and one new scoring block: when the request has a real
+`requestCategory` and a real weather object is present, `isWeatherIndoorBiased(weather)` +
+`isIndoorCategory(requestCategory)` or `isWeatherOutdoorBiased(weather)` +
+`isOutdoorCategory(requestCategory)` (both from the already-established `utils/weatherBias.js`/
+`constants/gatheringIndoorOutdoor.js` pair) each award the same `SCORE_HAPPENING_NOW` weight
+every other weather bonus in this app already uses — never a new invented weight, never a bonus
+for a category this app can't honestly classify as indoor or outdoor (Sports/Music/etc. stay
+unclassified, exactly as everywhere else). The two reason strings reuse
+`REASON_TEXT.WEATHER_GOOD_INDOOR.text`/`WEATHER_GOOD_OUTDOOR.text` from Item 4's own shared
+recommendation-reason vocabulary, built earlier the same pass — a deliberate, disclosed
+connection between the two items: a business owner now sees the literal identical sentence a
+consumer would see for the identical real signal, not a fourth independently-typed wording of the
+same fact.
+
+**Real data only, one new non-blocking fetch, zero new query for the score inputs
+themselves.** `BusinessDashboardScreen.js` already loads `selectedPartner` via
+`getMyManagedPartner()` (`select('*')`), so `selectedPartner.latitude`/`.longitude` were already
+in scope with no new query. A new `useEffect` fires `getSocialForecast(latitude, longitude)` once
+those real coordinates are known, storing the result (or `null` on any failure/no-coordinates
+case — `getSocialForecast()` itself already never throws) in a new `businessWeather` state,
+non-blocking and independent of the dashboard's own primary load. `scoredOpportunities`'s
+existing `useMemo` now passes `weather: businessWeather` into `scoreBusinessOpportunity()` and
+lists `businessWeather` in its own dependency array, so the ranking re-computes the moment the
+async weather result actually resolves — a business with no real coordinates set (most businesses
+today) simply never gets a weather bonus, matching this file's own "no invented numbers" rule
+rather than fabricating a signal. The render side needed zero changes — `o.opportunityReasons` was
+already a plain, generically-mapped `🎯 {label}` list; the new reason renders through that exact
+same path.
+
+6 new unit tests added to `businessOpportunityScoring.test.js`, each independent of and additive
+to the pre-existing 19: the real indoor bonus firing for a genuinely indoor category on
+indoor-biased weather, the symmetric outdoor case, a genuinely ambiguous category (Sports)
+correctly getting nothing even with a real weather signal, `weather: null` correctly getting
+nothing, a mismatched category/weather-bias pairing correctly getting nothing, and — the one real
+edge case worth a dedicated test — a mixed signal (`rain_risk: 'high'` *and*
+`outdoor_favorable: true` on the same weather object) correctly resolving to exactly one bonus
+(indoor wins), never double-counted, matching `isWeatherIndoorBiased`/`isWeatherOutdoorBiased`'s
+own already-established precedence rather than inventing a new tie-break rule for this surface.
+
+Verified via a direct `@babel/core` parse of all three touched files (clean) and the full Jest
+suite (**168/168 passing** — 162 pre-existing + 6 new). A full `npx expo export --platform ios`
+built clean, no bundling errors — edits to three existing files only
+(`businessOpportunityScoring.js`, its own test file, `BusinessDashboardScreen.js`), no new files,
+no schema/RPC touched so no live-production verification applies to this item.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device, that a business with real
+coordinates set genuinely sees its opportunity list re-rank once the async weather fetch resolves,
+that the new "🎯 A good indoor option with weather coming in"/"🎯 Great weather for this" reason
+lines render correctly alongside the pre-existing reason lines, and that a business with no
+coordinates set behaves exactly as before this item (no visible change, no error).
+
+**All 7 items of the P1 remediation list are now DONE, build-wise** — every item, including item
+7, is closed; nothing on this list remains deferred. See each item's own status note above for
+the full detail on each.
 
 #### Item 2 — Circles get a real first downstream use: "Invite a Circle" on gathering
 #### creation — DONE, build-wise, client-only, no schema change

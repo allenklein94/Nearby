@@ -183,3 +183,51 @@ describe('scoreBusinessOpportunity', () => {
     expect(result.reasons).toHaveLength(5);
   });
 });
+
+// P1 item 7 (CLAUDE.md, Aug 28 2026 Full Coherence Audit): closes the
+// audit's own "Business Opportunity ranking still lives in its own
+// weather-blind world" finding, reusing the identical shared weatherBias
+// primitive/weight every other weather-aware surface already uses.
+describe('scoreBusinessOpportunity weather bonus', () => {
+  it('awards SCORE_HAPPENING_NOW for a genuinely indoor-category request when weather is indoor-biased', () => {
+    const result = scoreBusinessOpportunity({
+      requestCategory: 'Coffee',
+      weather: { forecast_label: 'Quiet' },
+    });
+    expect(result.score).toBe(SCORE_HAPPENING_NOW);
+    expect(result.reasons).toEqual([
+      { label: 'A good indoor option with weather coming in', points: SCORE_HAPPENING_NOW },
+    ]);
+  });
+
+  it('awards SCORE_HAPPENING_NOW for a genuinely outdoor-category request when weather is outdoor-biased', () => {
+    const result = scoreBusinessOpportunity({
+      requestCategory: 'Hiking',
+      weather: { forecast_label: 'Excellent' },
+    });
+    expect(result.score).toBe(SCORE_HAPPENING_NOW);
+    expect(result.reasons).toEqual([{ label: 'Great weather for this', points: SCORE_HAPPENING_NOW }]);
+  });
+
+  it('awards nothing for a genuinely ambiguous category, even with a real weather signal', () => {
+    expect(scoreBusinessOpportunity({ requestCategory: 'Sports', weather: { forecast_label: 'Quiet' } }).score).toBe(0);
+  });
+
+  it('awards nothing when weather is unknown (no coordinates / not yet resolved)', () => {
+    expect(scoreBusinessOpportunity({ requestCategory: 'Coffee', weather: null }).score).toBe(0);
+  });
+
+  it('awards nothing for an indoor category on a genuinely good-weather day (mismatched bias)', () => {
+    expect(scoreBusinessOpportunity({ requestCategory: 'Coffee', weather: { forecast_label: 'Excellent' } }).score).toBe(0);
+  });
+
+  it('does not double-count -- indoor bias wins over outdoor bias for a mixed signal, matching isWeatherIndoorBiased/isWeatherOutdoorBiased precedence', () => {
+    // outdoor_favorable true AND rain_risk high -- indoor always wins.
+    const result = scoreBusinessOpportunity({
+      requestCategory: 'Coffee',
+      weather: { forecast_label: 'Good', rain_risk: 'high', outdoor_favorable: true },
+    });
+    expect(result.score).toBe(SCORE_HAPPENING_NOW);
+    expect(result.reasons).toHaveLength(1);
+  });
+});

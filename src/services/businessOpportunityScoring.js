@@ -20,6 +20,21 @@
 // priority_time_windows; Phase 1's activePrioritySignals) -- no new query.
 import { SCORE_INTEREST_MATCH, SCORE_HAPPENING_NOW, SCORE_OWN_NETWORK, SCORE_CLOSE_DISTANCE } from './intentResolverScoring';
 import { getTimePeriod } from '../utils/timeContext';
+// P1 item 7 (CLAUDE.md, Aug 28 2026 Full Coherence Audit): the same real,
+// shared weather-scoring primitive already threaded into the ask box
+// (intentResolver.js) and GatheringsScreen's full browse surface (P2 item
+// 7 of the same day's Universal Signal Remediation Pass) -- extended here
+// into a fourth surface. Closes the audit's own closing-synthesis finding
+// ("Business Opportunity ranking still lives in its own weather-blind
+// world relative to the consumer side"), not a new invented rule.
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
+// Reuses the exact same canonical weather-reason text P1 item 4's shared
+// recommendation-reason vocabulary already established for the consumer
+// side, so a business owner sees the identical real sentence a consumer
+// would for the identical real signal, not a fourth independently-typed
+// wording of the same fact.
+import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 
 // Universal Signal Remediation Pass, P1 item 5 (CLAUDE.md, Aug 28 2026):
 // a real, monotonic, capped-not-fabricated reference point -- $150 was
@@ -46,6 +61,13 @@ export function scoreBusinessOpportunity({
   businessPriorityTimeWindows = [],
   activePrioritySignals = [],
   fulfillmentPolicy = null,
+  // Optional -- the real, already-fetched weather object for the
+  // business's own real location (getSocialForecast(), same shape every
+  // other weather-aware surface already uses). null/undefined for a
+  // business with no coordinates set, or before the async weather
+  // request resolves -- this bonus simply doesn't apply, never a
+  // fabricated one.
+  weather = null,
 } = {}) {
   const reasons = [];
   let score = 0;
@@ -121,6 +143,28 @@ export function scoreBusinessOpportunity({
     if (businessPriorityTimeWindows.includes(period)) {
       score += SCORE_HAPPENING_NOW;
       reasons.push({ label: `Fits your usual ${period} hours`, points: SCORE_HAPPENING_NOW });
+    }
+  }
+
+  // P1 item 7 (CLAUDE.md, Aug 28 2026 Full Coherence Audit): a real
+  // weather-context bonus, only when the request's own real category is
+  // one this app can honestly classify as indoor or outdoor (the same
+  // deliberately conservative map every other weather-aware surface
+  // already relies on -- a genuinely ambiguous category like Sports or
+  // Music never gets a bonus either way). A business fielding an indoor-
+  // shaped request becomes more relevant to look at first when real bad
+  // weather is coming in (people are about to need exactly this more
+  // urgently); the symmetric case for an outdoor-shaped request on a
+  // genuinely great-weather day. Reuses SCORE_HAPPENING_NOW, the same
+  // weight every other weather bonus in this app already uses -- not a
+  // new invented scale.
+  if (requestCategory && weather) {
+    if (isWeatherIndoorBiased(weather) && isIndoorCategory(requestCategory)) {
+      score += SCORE_HAPPENING_NOW;
+      reasons.push({ label: REASON_TEXT.WEATHER_GOOD_INDOOR.text, points: SCORE_HAPPENING_NOW });
+    } else if (isWeatherOutdoorBiased(weather) && isOutdoorCategory(requestCategory)) {
+      score += SCORE_HAPPENING_NOW;
+      reasons.push({ label: REASON_TEXT.WEATHER_GOOD_OUTDOOR.text, points: SCORE_HAPPENING_NOW });
     }
   }
 

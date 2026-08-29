@@ -18,6 +18,10 @@ import { getBusinessEntitlements, hasEntitlement, entitlementLimit, checkLimit, 
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion, getBusinessAttributeSuggestions, setBusinessPrioritySignal, clearBusinessPrioritySignal, getActiveBusinessPrioritySignals } from '../services/businessIntelligence';
 import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring';
+// P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
+// already-deployed async submit-then-poll weather RPC every other
+// weather-aware surface already calls -- never a new one.
+import { getSocialForecast } from '../services/homeDashboard';
 import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel } from '../constants/businessAttributes';
@@ -227,6 +231,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         businessPriorityTimeWindows: selectedPartner?.priority_time_windows ?? [],
         activePrioritySignals,
         fulfillmentPolicy,
+        weather: businessWeather,
       });
       return { ...o, opportunityScore: score, opportunityReasons: reasons };
     });
@@ -234,7 +239,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const awaiting = withScores.filter(isAwaitingDecision).sort((a, b) => b.opportunityScore - a.opportunityScore);
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
-  }, [opportunities, selectedPartner, activePrioritySignals, fulfillmentPolicy]);
+  }, [opportunities, selectedPartner, activePrioritySignals, fulfillmentPolicy, businessWeather]);
   // Business Intelligence & Opportunity Engine, Phase 3 -- a real,
   // deterministic offer-recommendation ranking, entirely client-side over
   // data this screen already has loaded (this partner's own full
@@ -351,10 +356,30 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // convention elsewhere -- e.g. TabHeaderActions' first-open hint), always
   // dismissible, never blocking anything below it.
   const [showWelcomeCard, setShowWelcomeCard] = useState(false);
+  // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): supplementary,
+  // non-blocking -- null until the business's own real coordinates are
+  // known AND the async weather request resolves. scoreBusinessOpportunity()
+  // already treats a null weather as "no bonus, ever," so a business with
+  // no address set (or before this resolves) sees the ranking exactly as
+  // it always has, never a stuck/loading state.
+  const [businessWeather, setBusinessWeather] = useState(null);
 
   useEffect(() => {
     loadMyPartner();
   }, []);
+
+  // Fires once real coordinates exist on the loaded partner -- never
+  // blocks the rest of the dashboard, matching every other weather fetch
+  // in this app (Home's own social-forecast card, the ask box's parallel
+  // resolver branches). A business with no address set never fires this
+  // at all, and this effect's own failure is swallowed rather than
+  // surfaced -- weather is a real bonus signal here, never a required one.
+  useEffect(() => {
+    if (selectedPartner?.latitude == null || selectedPartner?.longitude == null) return;
+    getSocialForecast(selectedPartner.latitude, selectedPartner.longitude)
+      .then(setBusinessWeather)
+      .catch(() => setBusinessWeather(null));
+  }, [selectedPartner?.id, selectedPartner?.latitude, selectedPartner?.longitude]);
 
   async function loadMyPartner() {
     let loadedPartnerId = null;
