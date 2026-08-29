@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
@@ -26,6 +27,16 @@ const DATE_OPTIONS = [
   { key: 'weekend', label: 'This weekend' },
   { key: 'flexible', label: "I'm flexible" },
 ];
+
+// P0 #2 from the Aug 28 2026 Full Coherence Audit (CLAUDE.md's own Aug 29
+// remediation plan): "Friday" -- or any other specific date -- had
+// nowhere to go in this flow, since the four presets above are the only
+// options and business_requests.date has no free-text fallback anywhere.
+// A real 5th chip opens the same DateTimePicker CreateGatheringScreen.js
+// already uses elsewhere in this codebase -- mode="date" only, since
+// business_requests.date is a plain calendar date with no time-of-day
+// component (see toDateParam()'s own comment).
+const PICK_DATE_KEY = 'pick_date';
 
 // PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md finding 4 -- the
 // empty-fallback's own "try widening what you're looking for" copy
@@ -75,6 +86,16 @@ function toDateParam(dateWindow) {
   return null;
 }
 
+// P0 #2 fix: a real picked date always wins over the preset math above --
+// dateWindow only ever equals PICK_DATE_KEY once a real date has actually
+// been picked (the chip itself doesn't set dateWindow until onChange
+// fires), so pickedDate is never null here in practice, but the fallback
+// to toDateParam() keeps this safe regardless.
+function resolveDateParam(dateWindow, pickedDate) {
+  if (dateWindow === PICK_DATE_KEY && pickedDate) return pickedDate.toISOString().slice(0, 10);
+  return toDateParam(dateWindow);
+}
+
 // Reached four ways: from Home's intent box once Tiers 1/3 (existing
 // gatherings/perks) genuinely found nothing -- Tier 4 of the resolver,
 // "ask a business to make it happen," framed as a real, first-class path,
@@ -102,7 +123,7 @@ function toDateParam(dateWindow) {
 // real server-side data (the community's own Community Area), never the
 // device's own GPS.
 export default function AskBusinessScreen({ navigation, route }) {
-  const { colors, shadow } = useTheme();
+  const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
 
   const gatheringId = route.params?.gatheringId ?? null;
@@ -135,6 +156,20 @@ export default function AskBusinessScreen({ navigation, route }) {
   const rawPrefillDateWindow = route.params?.prefillDateWindow;
   const normalizedPrefillDateWindow = rawPrefillDateWindow === 'tonight' || rawPrefillDateWindow === 'now' ? 'today' : rawPrefillDateWindow;
   const [dateWindow, setDateWindow] = useState(normalizedPrefillDateWindow && normalizedPrefillDateWindow !== 'flexible' ? normalizedPrefillDateWindow : 'flexible');
+  // P0 #2 fix: a genuinely picked date, independent of the preset chips --
+  // pickedDate only matters while dateWindow === PICK_DATE_KEY; switching
+  // back to any preset chip abandons it rather than leaving it silently
+  // attached to a submit that no longer reflects it. Re-hydrated from
+  // Finding 4's own "Try a Wider Radius" retry (BusinessRequestDetailScreen
+  // pushes a fresh AskBusiness with prefillDateWindow carried forward) --
+  // without this, a retry after a real picked date would silently lose it
+  // and fall back to "flexible".
+  const [pickedDate, setPickedDate] = useState(
+    normalizedPrefillDateWindow === PICK_DATE_KEY && route.params?.prefillPickedDateISO
+      ? new Date(route.params.prefillPickedDateISO)
+      : null
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [radiusMiles, setRadiusMiles] = useState(RADIUS_OPTIONS.includes(route.params?.prefillRadiusMiles) ? route.params.prefillRadiusMiles : 15);
   // Phase 3 item 1 (CLAUDE.md): the real intent_submissions row behind
   // this ask, when Home's own intent flow is what led here -- carried
@@ -192,6 +227,11 @@ export default function AskBusinessScreen({ navigation, route }) {
       // filled in, so businesses still only ever get the one composed
       // description.
       const finalText = extraNotes.trim() ? `${text.trim()}. ${extraNotes.trim()}` : text.trim();
+      // P0 #2 fix: resolveDateParam() honors a real picked date over the
+      // preset math when PICK_DATE_KEY is selected -- computed once here
+      // so every branch below and the navigation params after submit all
+      // reflect the exact same resolved date.
+      const resolvedDate = resolveDateParam(dateWindow, pickedDate);
 
       let result;
       if (gatheringId) {
@@ -208,7 +248,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           text: finalText,
           category,
           budgetMax: safeBudgetMax,
-          date: toDateParam(dateWindow),
+          date: resolvedDate,
           radiusMiles,
         });
       } else if (communityId) {
@@ -218,7 +258,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           category,
           partySize: safePartySize,
           budgetMax: safeBudgetMax,
-          date: toDateParam(dateWindow),
+          date: resolvedDate,
           radiusMiles,
         });
       } else {
@@ -227,7 +267,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           category,
           partySize: safePartySize,
           budgetMax: safeBudgetMax,
-          date: toDateParam(dateWindow),
+          date: resolvedDate,
           radiusMiles,
           submissionId,
           preferredAvailabilityId: matchedAvailability?.availabilityId ?? null,
@@ -248,6 +288,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         prefillPartySize: safePartySize,
         prefillBudgetMax: safeBudgetMax,
         prefillDateWindow: dateWindow,
+        prefillPickedDateISO: dateWindow === PICK_DATE_KEY && pickedDate ? pickedDate.toISOString() : null,
         prefillRadiusMiles: radiusMiles,
         prefillSubmissionId: submissionId,
         gatheringId,
@@ -274,7 +315,12 @@ export default function AskBusinessScreen({ navigation, route }) {
     recapParts.push(`Looking for: ${text.trim()}`);
     if (category) recapParts.push(category);
     if (!gatheringId) {
-      const dateLabel = DATE_OPTIONS.find((d) => d.key === dateWindow)?.label;
+      // P0 #2 fix: a genuinely picked date recaps as its own real,
+      // formatted date -- never falls through to "undefined" now that
+      // dateWindow can hold PICK_DATE_KEY, which isn't in DATE_OPTIONS.
+      const dateLabel = dateWindow === PICK_DATE_KEY && pickedDate
+        ? pickedDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+        : DATE_OPTIONS.find((d) => d.key === dateWindow)?.label;
       if (dateLabel) recapParts.push(dateLabel);
     }
     if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
@@ -364,14 +410,48 @@ export default function AskBusinessScreen({ navigation, route }) {
                   <TouchableOpacity
                     key={d.key}
                     style={[styles.chip, dateWindow === d.key && styles.chipSelected]}
-                    onPress={() => setDateWindow(d.key)}
+                    onPress={() => {
+                      // P0 #2 fix: switching to any preset chip abandons a
+                      // previously picked date -- never leaves it silently
+                      // attached to a submit that no longer reflects it.
+                      setPickedDate(null);
+                      setDateWindow(d.key);
+                    }}
                     accessibilityLabel={d.label}
                     accessibilityRole="button"
                   >
                     <Text style={[styles.chipText, dateWindow === d.key && styles.chipTextSelected]}>{d.label}</Text>
                   </TouchableOpacity>
                 ))}
+                <TouchableOpacity
+                  style={[styles.chip, dateWindow === PICK_DATE_KEY && styles.chipSelected]}
+                  onPress={() => setShowDatePicker(true)}
+                  accessibilityLabel="Pick a specific date"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.chipText, dateWindow === PICK_DATE_KEY && styles.chipTextSelected]}>
+                    📅 {dateWindow === PICK_DATE_KEY && pickedDate
+                      ? pickedDate.toLocaleDateString([], { month: 'short', day: 'numeric' })
+                      : 'Pick a date'}
+                  </Text>
+                </TouchableOpacity>
               </View>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={pickedDate ?? new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  themeVariant={isDark ? 'dark' : 'light'}
+                  minimumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(Platform.OS === 'ios');
+                    if (selectedDate) {
+                      setPickedDate(selectedDate);
+                      setDateWindow(PICK_DATE_KEY);
+                    }
+                  }}
+                />
+              )}
             </>
           )}
 

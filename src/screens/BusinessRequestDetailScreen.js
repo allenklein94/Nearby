@@ -81,6 +81,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     prefillPartySize: route.params?.prefillPartySize ?? null,
     prefillBudgetMax: route.params?.prefillBudgetMax ?? null,
     prefillDateWindow: route.params?.prefillDateWindow ?? null,
+    // P0 #2 fix (CLAUDE.md, Aug 29 2026): carry a real picked date forward
+    // too, not just its dateWindow key -- without this, a retry after
+    // picking a specific date would silently lose it and fall back to
+    // "flexible" (PICK_DATE_KEY alone means nothing without the ISO
+    // string next to it).
+    prefillPickedDateISO: route.params?.prefillPickedDateISO ?? null,
     prefillSubmissionId: route.params?.prefillSubmissionId ?? null,
     gatheringId: route.params?.gatheringId ?? null,
     gatheringTitle: route.params?.gatheringTitle ?? null,

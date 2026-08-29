@@ -1,6 +1,6 @@
 ## Aug 29 2026 — remediation pass against the Aug 28 Full Coherence Audit's two 🔴 P0
-## findings (plan written before implementation, per direct instruction) — both DONE, see
-## each item's own status note below
+## findings — BOTH DONE, build-wise, applied/verified live where schema was touched, plus a
+## real from-scratch migration replay for the one migration this pass added
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file — check `git status`/`git log` and each item's own status note for what's
@@ -70,14 +70,31 @@ spirit even though the underlying RPCs are independently guarded server-side; no
 confusion of an attendee landing on a screen built for the host's own decision-making.
 
 **Status: DONE, build-wise, applied to production and verified live with real disposable test
-data.** See the commit associated with `20260829_gathering_attendees_see_confirmed_venue.sql`
-for the exact verification queries (a real approved attendee's session correctly sees the
-request/accepted-offer row once the new policies are live; a non-attendee, non-host stranger
-still correctly sees neither; a pending/declined offer on the same request stays correctly
-invisible to the attendee). **Not done, same standing gap as everywhere else in this file**: no
-manual simulator/device run-through — next session should confirm the "You're in!" panel
-renders the confirmed-venue card correctly for a real approved attendee once a real offer has
-been accepted, and that the Uber link opens correctly.
+data, plus a real from-scratch migration replay — not just applied.**
+`20260829_gathering_attendees_see_confirmed_venue.sql` applied via the Management API and
+confirmed live (`pg_policies` shows both new policies). Verified end-to-end against production
+(`enmosvippabmuqslzrox`) with real disposable test data — a real gathering hosted by `Allen`, a
+real approved `gathering_interest` row for `Claude`, a real linked `business_requests` row, and
+a real `accepted` offer against the real `Coastal Coffee` partner: under genuine `SET ROLE
+authenticated`, `Claude`'s session correctly sees both the request and the accepted offer;
+`Allen Klein` and `Google voice` (genuine strangers to this gathering — neither host nor
+attendee) correctly see neither; flipping the offer to `offered` (not yet accepted) correctly
+made it invisible to `Claude` again, while the request row itself correctly stayed visible
+(the request-level policy is deliberately status-independent — only the *offer*-level policy is
+scoped to `accepted`/`completed`). All test rows deleted afterward — confirmed production back
+to its exact pre-test baseline (0 rows across every touched test id). **Verified via a real
+from-scratch migration replay**: pulled the already-cached `supabase/postgres:15.1.0.147`
+Docker image, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin`, then ran the full 106-file `supabase/migrations/` folder in order via `psql -v
+ON_ERROR_STOP=1` — exit 0 on every file, both new policies confirmed to exist in the
+freshly-rebuilt database. Container removed afterward. Client-side (`GatheringDetailScreen.js`)
+verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios`
+(clean, no bundling errors, **2271 modules, unchanged** — edit to one existing file only, no new
+files). **Not done, same standing gap as everywhere else in this file**: no manual simulator/
+device run-through — next session should confirm the "You're in!" panel renders the
+confirmed-venue card correctly for a real approved attendee once a real offer has been accepted
+in the running app, and that the Uber link opens correctly.
 
 ### P0 #2 — "Friday" (or any other named weekday/specific date) had nowhere to go in Ask
 ### Nearby Businesses
@@ -114,12 +131,33 @@ representable anywhere in the flow"), which this pass closes by making a specifi
 representable at all, regardless of how the screen was reached.
 
 **Status: DONE, build-wise, client-only, no schema/RPC change needed** (`business_requests.date`
-already accepts an arbitrary `YYYY-MM-DD` string from any entry point). **Not done, same
-standing gap as everywhere else in this file**: no manual simulator/device run-through — next
-session should confirm the picker renders/selects correctly on both iOS (spinner) and Android
-(default), that the recap line and the actual submitted request both reflect the picked date
-correctly, and that switching back to a quick-preset chip after picking a date correctly
-abandons the picked date rather than leaving it silently attached.
+already accepts an arbitrary `YYYY-MM-DD` string from any entry point, confirmed unchanged).
+Built exactly per the locked design: a real 5th "📅 Pick a date" chip on `AskBusinessScreen.js`
+opens the same `DateTimePicker` pattern already established by `CreateGatheringScreen.js`
+(`mode="date"`, `minimumDate: new Date()`, spinner-on-iOS). A new `resolveDateParam()` module
+function makes a real picked date win over the four presets' own math at all three
+`handleSubmit()` call sites (solo/match/community — gathering mode is unaffected, it never asks
+for a date at all, the gathering's own real `scheduled_at` already covers it server-side).
+Selecting any preset chip explicitly clears a previously-picked date, so the two can never drift
+out of sync with each other. The real picked date is also carried through
+`BusinessRequestDetailScreen.js`'s existing "Try a Wider Radius" retry (`prefillPickedDateISO`,
+alongside the pre-existing `prefillDateWindow`) — without this, a retry after picking a specific
+date would have silently reverted to "flexible," a real, caught-before-shipping regression in
+the exact mechanism this whole fix exists to close. **Deliberately not attempted this pass, per
+the plan's own text**: no change to `create-assistant`'s own prompt to recognize a named weekday
+in free text — the locked "AI never infers a specific date" rule means the AI could at most flag
+that a specific day was named, never assign it; the literal P0 finding is closed by making a
+picked date representable at all, regardless of how the screen was reached. Verified via a
+direct `@babel/core` parse of all three touched files (`AskBusinessScreen.js`,
+`BusinessRequestDetailScreen.js`, clean) and a full `npx expo export --platform ios` (clean, no
+bundling errors, 2271 modules, unchanged — edits only, no new files; `@react-native-community/
+datetimepicker` was already a real dependency, confirmed in `package.json` before reusing it).
+No schema/RPC touched, so no live-production or from-scratch-replay verification applies here.
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the picker renders/selects correctly on both iOS
+(spinner) and Android (default), that the recap line and the actual submitted request both
+reflect the picked date correctly, and that switching back to a quick-preset chip after picking
+a date correctly abandons the picked date rather than leaving it silently attached.
 
 ### 🟠 P1 remediation list — locked, not yet built, for a future pass
 

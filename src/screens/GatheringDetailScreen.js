@@ -130,10 +130,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
         // Gap #1 (CLAUDE.md, "vision doc describes a fully merged
         // gathering/date <-> business UX"): the gathering's own linked
         // business request/offer, surfaced inline instead of only ever
-        // living on a separate BusinessRequestDetailScreen. Host-only --
-        // business_requests' own RLS only ever lets the real requester
-        // (the host, since only the host can call
-        // create_business_request_for_gathering) see the row at all.
+        // living on a separate BusinessRequestDetailScreen. Host sees the
+        // full in-progress state (pending/waiting, not just confirmed) --
+        // business_requests' own RLS lets the real requester see the row
+        // regardless of status.
         const request = await getBusinessRequestForGathering(gatheringId);
         setBusinessRequest(request);
         if (request) {
@@ -146,9 +146,31 @@ export default function GatheringDetailScreen({ route, navigation }) {
         setMyPartnershipRequest(partnershipRequest);
       } else {
         setCountdownStats(null);
-        setBusinessRequest(null);
-        setAcceptedBusinessOffer(null);
         setMyPartnershipRequest(null);
+        // P0 #1 fix (CLAUDE.md, Aug 29 2026 Full Coherence Audit
+        // remediation): an approved attendee should see the real
+        // confirmed venue too, not just the host -- RLS now allows this
+        // (see 20260829_gathering_attendees_see_confirmed_venue.sql).
+        // Deliberately narrower than the host's own fetch: never surface
+        // the "waiting to hear back" pending state to an attendee -- only
+        // the real, final, confirmed outcome, which is also all the
+        // widened business_request_offers policy actually permits
+        // (accepted/completed only, never a business's own in-progress
+        // bid).
+        if (g.myStatus === 'approved') {
+          const request = await getBusinessRequestForGathering(gatheringId);
+          if (request) {
+            const accepted = await getAcceptedOfferForRequest(request.id);
+            setBusinessRequest(request);
+            setAcceptedBusinessOffer(accepted);
+          } else {
+            setBusinessRequest(null);
+            setAcceptedBusinessOffer(null);
+          }
+        } else {
+          setBusinessRequest(null);
+          setAcceptedBusinessOffer(null);
+        }
       }
 
       if (g.approvedAttendees?.length > 0) {
@@ -738,6 +760,21 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <View style={styles.youreInPanel}>
               <Text style={styles.youreInTitle}>You're in! 🎉</Text>
               <Text style={styles.youreInSub}>Say hello before it starts?</Text>
+              {acceptedBusinessOffer && (
+                // P0 #1 fix (CLAUDE.md, Aug 29 2026 Full Coherence Audit
+                // remediation): the real confirmed venue, now widened to
+                // every approved attendee, not just the host -- same
+                // shared component the host banner uses, so this never
+                // drifts into a second hand-copied rendering. No
+                // "View request ->" link here on purpose -- that screen's
+                // other actions (accept/decline/cancel) are the host's
+                // own decision-making context.
+                <AcceptedBusinessOfferCard
+                  offer={acceptedBusinessOffer}
+                  partySize={businessRequest?.party_size ?? null}
+                  style={{ marginBottom: spacing.sm }}
+                />
+              )}
               <TouchableOpacity
                 style={styles.sayHelloButton}
                 onPress={() => navigation.navigate('GatheringHub', { gatheringId })}
