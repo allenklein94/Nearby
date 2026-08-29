@@ -192,7 +192,62 @@ mismatched tags) and a `node --check` syntax pass on the page's own inline scrip
 verification method already used for this same file in the Aug 17 2026 and Aug 27 2026 passes.
 No schema/RPC touched, so no live-production verification or migration replay applies here.
 
-### Status: plan locked, executing below.
+### Status: DONE. `docs/business.html` rewritten to the full 16-section architecture locked
+### above.
+
+Every section from the locked plan landed: Hero → "People aren't looking for another business
+directory" → "It's not just what's nearby, it's what's relevant" → the core loop → **"Two ways
+to become part of the plan"** (the Offer System's own hero-level demonstration, per the user's
+own explicit instruction — a real request→offer flow rendered as a mockup, "Looking for a group
+dinner Saturday" → a real offer sent → "they pick, you're booked") → the four pillars
+(**Discover · Respond · Create · Connect**, replacing the older Discover/Create/Connect/Grow
+set) → "Tell Nearby what you're great at" (three real chip pickers) → the dynamic business-
+profile mockup (availability pulse, a Signature Experience, the reliability line, Perks) →
+reliability & trust → "not another marketing platform" → the reframed apply flow ("Find Your
+Business," verification framed as protection) → business-to-business collaboration (explicitly
+`Coming to Nearby`-badged) → pricing (unchanged, still free-to-start, no invented tier) →
+"you control your presence" → an 8-question FAQ (5 original + 3 new, every answer traceable to
+something real) → the closing CTA with the signature line ("People bring the plans. You bring
+the experience. Nearby connects the two.").
+
+**Every chip label was checked against — and one was corrected to exactly match — the real,
+live schema vocabulary**, not approximated: `BUSINESS_ATTRIBUTE_OPTIONS` (Outdoor Seating/
+Date-Friendly/Group-Friendly/Live Music/Kid-Friendly/Quiet/Casual/Upscale) and
+`ACCOMMODATE_PARTY_TYPE_OPTIONS` (🧍 Solo-Friendly/👥 Bring Friends/👨‍👩‍👧‍👦 Big Group/💕 A Date
+Idea) matched on the first pass; `PRIORITY_TIME_WINDOW_OPTIONS` did not — the first draft used
+🌤️/🌙/🎉 for Afternoons/Evenings/Weekends, but the real, live constants file uses ☀️/🌆/📅.
+Caught by re-reading `src/constants/businessAttributes.js` directly rather than trusting memory,
+and fixed before this was ever committed — every chip on the page now renders the literal real
+icon+label a business owner will actually see on signup, not an approximation.
+
+**No competitor is named or disparaged anywhere** (the one "Google Play" hit is the pre-existing,
+necessary App Store/Play Store fallback copy, not a comparison). No fabricated numbers in any
+mockup (same "deliberately generic, clearly-labeled placeholder text" convention the original
+demo section already established). No self-serve paid-tier CTA. The real deep-link mechanism
+(`nearby://business-apply`), the real funnel-event logging (`landing_viewed`/`demo_opened`/
+`cta_clicked` — unchanged, no new event type added; the new "Find Your Business" CTA fires the
+same real `cta_clicked` event as the other two buttons), and the real theme-token CSS are all
+completely unchanged from before this pass — only content/structure around them changed. The
+business-to-business section is the one place the page describes something not yet built, and
+it's explicitly, visibly labeled `Coming to Nearby` — nothing else on the page implies a
+capability that doesn't exist.
+
+**Verified**: a direct HTML well-formedness parse (`html.parser`, zero unclosed/mismatched tags,
+confirmed twice — once before and once after the chip-icon correction) and a `node --check`
+syntax pass on the page's own inline script (clean both times). Cross-checked every
+`getElementById()` call in the script against the real ids in the HTML — all 5 resolve, no
+dangling reference, including the two newly-added ones (`cta-btn-find`, and the pre-existing
+`demo`/`cta-fallback` ids, both reused unchanged). No schema/RPC touched, so no live-production
+verification or migration replay applies to this pass.
+
+**Not done, same standing gap as everywhere else in this file**: no manual browser/device
+run-through — next session should confirm the page actually renders correctly once GitHub Pages
+redeploys (a static-file push this sandbox can't preview live), that all four CTA buttons
+(hero, "Find Your Business," and the closing CTA) correctly attempt the `nearby://business-apply`
+deep link and correctly show the honest fallback message when the app isn't installed, and that
+the new sections read cleanly on a real narrow mobile viewport (the CSS reuses the existing
+`@media (max-width: 480px)` breakpoint, not independently re-verified against every new section
+this pass added).
 
 Written before implementation, same restart-safety convention as every other plan-first
 section in this file — check `git status`/`git log` and each item's own status note for what's
