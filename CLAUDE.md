@@ -1,5 +1,97 @@
-## Aug 30 2026 — external UX critique (Messages entry point + Discover/People screen
-## "clutteredness") audited against real code, then fixed — PLAN LOCKED, executing below
+## Aug 30 2026 (cont'd) — second external UX critique on the same Discover/People screen,
+## audited against the just-shipped fix — most of it already resolved; two real,
+## consequential decisions flagged rather than silently picked, since one directly
+## re-litigates a pattern this file already tried once and reverted
+
+Written before any further implementation, same restart-safety convention as every other
+plan-first section in this file. The user forwarded a second, much larger external critique of
+the same screen — a full 24-point re-architecture proposal (Discover's overall hierarchy, the
+Dating/Friends toggle, Stories placement, Cards/Map/info controls, Crossed Paths as a
+"discovery source" rather than a nav toggle, unifying every filter mechanism, empty-state
+rhythm, and a parallel ask for Things-to-Do mode). **Checked every concrete claim against the
+current, post-Aug-30-fix code before reacting, same standing rule as every other section in
+this file** — the critique reads as reacting to the screen *before* the Aug 30 pass above ever
+landed, not the one that's actually live now, so most of its own headline complaints are already
+resolved.
+
+### Already true today — not rebuilt, restated so a future pass doesn't redo real work
+
+- **"Crossed Paths should NOT look like a second navigation system" / "fold it into filters as a
+  discovery source"** — already exactly this. The Aug 30 pass moved the Crossed Paths/Browse
+  switcher off the main screen entirely, into `FiltersModal.js`'s own "🔀 Discovery" section —
+  the main screen now shows only a subtitle naming the active mode, no second toggle competing
+  with anything.
+- **"Combine Looking For / Quick Filters / Filters into one control"** — already exactly this.
+  All three now live inside the one `FiltersModal` sheet, reached from a single "Filters" button
+  showing a real, honest summary (`filtersSummaryText` — mode + active-filter count), matching
+  the critique's own proposed "Filters · Dating · Within 5 mi" pattern almost verbatim.
+- **"Cards / Map / info shouldn't be a labeled pill bar"** — already shrunk to three small,
+  unbordered, unlabeled icon buttons (`headerIconButton`), and the info icon moved off brand
+  coral to a neutral tone, matching this file's own already-locked coral-usage rule. One real
+  nuance the critique doesn't know about, worth stating explicitly: `DiscoveryScreen.js` has no
+  literal "map view" of the results at all — the 🗺️ icon opens a *separate* feature (every past
+  crossed-paths sighting plotted on one overview map), not a map rendering of the current result
+  set. Merging it with the Cards/List toggle into one "Cards | Map" control, as the critique's
+  mockup shows, would misrepresent what that button actually does — left as its own small icon,
+  not merged.
+- **"Don't show an enormous empty state early, shorten the copy, keep the 35-foot detail behind
+  an info disclosure"** — already exactly this, from the same Aug 30 pass: the default Crossed
+  Paths empty-state sentence was shortened across all 11 languages, and the "about 35 feet,
+  roughly the same room" detail already lives in the ⓘ info alert (`radiusInfoText`), untouched.
+- **"The subtitle shouldn't stay stuck on 'Who's around you' once Things-to-Do is selected"** —
+  checked directly: `DiscoverHubScreen.js`'s subtitle was already mode-aware before this critique
+  arrived (`DISCOVER_MODES` carries its own subtitle per mode — "What's happening nearby." for
+  Things to Do, "Who's around you." only for People) — never a single frozen sentence. No bug to
+  fix here.
+- **"Cards should say why you're seeing this person (Crossed paths / Same gathering / Shared
+  interest)"** — already real, already shipped (Aug 29 2026, per this file's own history):
+  Crossed Paths rows show "📍 Within about 35 feet · Crossed paths {time}", Browse rows show
+  "🔎 Matches your filters." Not the richer taxonomy the critique imagines (no "same gathering"/
+  "mutual connection" reason exists for a dating candidate today — inventing one would be
+  fabricating a signal this resolver doesn't compute), but the underlying ask — an honest,
+  visible reason on the card — is already met with what's actually true.
+- **"The giant isolated 'Your Story' circle"** — checked `StoriesRow.js` directly, again: a
+  single 60px ring in a 12px-vertical-padding row, not a giant circle — the same finding this
+  file's own Aug 24 2026 audit already made once before, independently re-confirmed here. The
+  critique's framing may be reacting to a stale screenshot or an exaggerated verbal description,
+  not the actual rendered component — not touched, since there's no real defect to fix.
+
+### Two real, consequential decisions — flagged, not silently picked
+
+**1. The Dating/Friends control — the critique's own explicit ask directly re-litigates a
+pattern this file already built, tested, and reverted once, on the record.** Restated from this
+file's own Aug 22 2026 history: a filter-chip treatment for reaching Friends was built, then
+"replaced before ever shipping to a real user" the same day, because it added a tap for no
+benefit and "the whole premise of a filter only makes sense over a live, in-place feed; this
+card was never a feed." The critique's own proposed replacement — a "Dating ▾" dropdown, or a
+segmented "Dating · Friends · All" control — has the identical shape: reaching either mode would
+cost a tap to open the control plus a tap to pick, instead of today's one direct tap on either
+chip. Building it back would repeat the exact regression already found and reverted, not
+something to silently redo on a fresh critique that doesn't know that history. Separately, the
+critique's own "All"/"Everyone" third option is not honestly buildable at all without reopening
+this file's own hard, repeatedly-reaffirmed architectural boundary: Dating and Friends are two
+genuinely separate matching engines (separate opt-in, separate swipe tables, separate exclusion
+rules) with **no merged candidate pool anywhere in this schema** — stated explicitly as recently
+as this same screen's own Aug 24 2026 build comment ("this is a navigation-only merge, never a
+combined candidate pool"). An "All" tab could only ever be a fake — either silently picking one
+of the two pools, or interleaving two independently-fetched lists with no real combined ranking
+— which is exactly the kind of fabricated feature this file's conventions exist to avoid.
+**Not touched. Asked directly below, rather than silently kept or silently rebuilt.**
+
+**2. Things-to-Do mode's own parallel decluttering** — the critique's point 16 asks for the same
+treatment (search box + type filter chips + view toggle + a conditional Places-category row, all
+persistently visible at once) applied to `DiscoverHubScreen.js`'s Things-to-Do content, which the
+Aug 30 pass never touched — that pass was scoped to the People-mode/`DiscoveryScreen.js` side
+only. This is a real, comparably-sized second redesign, not a small addition to the pass already
+done — it needs the same "audit first, then build" treatment, not blind execution off a second
+critique's mockup. **Not attempted this pass. Asked directly below** whether to scope it now as
+a second phase, or capture it as a real, deliberately-deferred future item.
+
+### Status
+
+Read-only this pass — nothing above was built. The two questions above are the actual blocker;
+see the user's answer for what (if anything) gets built next, recorded here once decided.
+
 
 Written before implementation, same restart-safety convention as every other plan-first section
 in this file — if a restart hits mid-build, check `git status`/`git log` and the status note at
