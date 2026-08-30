@@ -1,3 +1,71 @@
+## Aug 30 2026 (cont'd) — "I don't see a way to remove myself from a gathering I joined" — a
+## real, confirmed navigation gap, not just a discoverability problem, found and fixed
+
+Direct user report, investigated against the real code rather than trusted on either side —
+neither "this is a real missing feature" nor "this must already work" was assumed going in.
+
+**The leave action itself was already fully correct and already existed** —
+`GatheringDetailScreen.js` (lines 817-896) has a real "Leave Gathering" link for an `approved`
+attendee, "Leave Waitlist" for `waitlisted`, and "Withdraw Request" for `pending` — all three
+calling the same `confirmLeave` → `leaveGathering()` → the `leave_gathering` RPC, already
+verified live in this file's own Capacity/Waitlist history further down. So the report wasn't
+about a missing mechanism.
+
+**The real bug: `GatheringHubScreen.js` — the actual, primary screen a non-host attendee lands
+on after joining — has zero leave action and, for the common case, zero link back to
+`GatheringDetailScreen` (the one screen that does).** Read the whole file: its render tree
+(joined banner → growth prompt → header → host banner → either the checked-in "during" panel or
+the pre-event Who You'll Meet / Ice Breakers / Group Chat / Before You Go / Meet-Up Point / "I'm
+On My Way" panel) has no leave-adjacent action anywhere. The only two places this file navigates
+to `GatheringDetail` are dead ends for this exact case: line 209 only renders in the
+`!gathering.isHost && gathering.myStatus !== 'approved'` fallback (i.e., *not* approved — the
+opposite of who needs to leave an approved spot), and line 335's "❓ Questions" button only
+exists inside the checked-in "during" panel, gated behind having already tapped "I'm here — check
+in" — not a reasonable prerequisite for finding the exit.
+
+**This directly contradicts, and disproves, this file's own prior stated reasoning for why Hub
+never got a leave action** (Aug 7 2026 Gathering Hub section: *"No leave/cancel-request action
+was added to GatheringHubScreen.js — GatheringDetailScreen already covers it for every real path
+into a gathering (Hub is reached either through Detail or by re-navigating to Detail already
+being the natural place for this destructive action to live)"*) — confirmed via a real grep of
+every `navigate`/`replace` call into `GatheringHub` (4 total) that this premise is false:
+`GatheringDetailScreen.js`'s own post-join flow does `navigation.replace('GatheringHub', {...})`
+(line 250) — `replace`, not `navigate`, so Detail is popped off the stack entirely, not just
+underneath Hub — and `GatheringsScreen.js`'s attending tab (line 1292) and hosting tab (line
+1469) both have a direct "🚀 Gathering Hub" button that navigates straight to Hub, bypassing
+Detail completely; the title/host row on the same card is a *separate* tap target that goes to
+Detail (line 1264), but nothing tells a user tapping the more prominent Hub button that a
+different tap on the same card would have gotten them somewhere the Hub button won't. Net effect:
+a non-host approved attendee who reaches Hub via either the natural post-join replace or the
+attending-tab's own dedicated Hub button had no way back to the one screen with a Leave action,
+short of first checking in to something they might not have physically arrived at yet.
+
+**Fixed**: `GatheringHubScreen.js`'s header (title + countdown/attendee-count line) gained a
+small, always-visible "View full details →" link for any non-host viewer, navigating to
+`GatheringDetail` — reusing the existing Detail screen's own leave/waitlist/withdraw logic
+rather than duplicating a second copy of that destructive-action confirmation flow on Hub, which
+matches this file's own original (still-correct, once the reachability premise is fixed) instinct
+that Detail should be the one place this action lives. Gated to `!gathering.isHost` since a host
+has no "leave my own gathering" concept — their equivalent actions (edit/cancel) live elsewhere
+and weren't part of this report. Re-confirmed `GatheringDetailScreen.js`'s own approved-panel
+Leave Gathering link is **not** conditioned on the gathering being upcoming (`gatheringIsUpcoming`
+gates a different, unrelated section — the "Ask Local Businesses" place-CTA at line 366) — it
+renders identically for a past gathering, where the underlying RPC itself is what correctly
+rejects leaving something already over ("This gathering has already happened"), so the new Hub
+link needed no past/future gating of its own either.
+
+Verified via a direct `@babel/core` parse (clean) and a full `npx expo export --platform ios`
+(clean, no bundling errors — edit to one existing file only, no new files). Full Jest suite
+re-run clean (168/168 passing, 14 suites) — this touched no pure-logic file, but re-run anyway
+per this file's own standing verification convention.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the new "View full details →" link
+renders correctly in Hub's header for a non-host approved attendee (both before and after
+checking in), that tapping it lands on `GatheringDetail` with the real Leave Gathering/Leave
+Waitlist/Withdraw Request link visible and working, and that the link is genuinely absent for a
+host viewing their own gathering's Hub.
+
 ## Aug 30 2026 (cont'd) — closed the "Join Gathering buttons look disabled" item this file had
 ## explicitly deferred one turn earlier — measured, not guessed, and fixed at every real instance
 

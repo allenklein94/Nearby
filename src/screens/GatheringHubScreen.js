@@ -298,6 +298,29 @@ export default function GatheringHubScreen({ route, navigation }) {
             <Text style={styles.metaLine}>
               {countdown ?? 'This gathering has wrapped up'} · {gathering.approvedAttendees.length} attending
             </Text>
+            {!gathering.isHost && (
+              // Aug 30 2026 -- a real, previously-missing link back to
+              // GatheringDetailScreen, the one screen that actually owns
+              // "Leave Gathering"/"Leave Waitlist"/"Withdraw Request".
+              // Hub is reachable two ways that both leave Detail
+              // unreachable otherwise: GatheringDetailScreen's own
+              // post-join replace() pops Detail off the stack entirely,
+              // and GatheringsScreen's attending-tab "🚀 Gathering Hub"
+              // button navigates here directly, bypassing Detail. Before
+              // this link existed, a non-host approved attendee who
+              // landed on Hub via either path had no way to leave at
+              // all short of checking in first (which unlocks a
+              // Questions button that also routes to Detail, but
+              // shouldn't be a prerequisite for finding the exit).
+              <TouchableOpacity
+                onPress={() => navigation.navigate('GatheringDetail', { gatheringId })}
+                style={{ marginTop: 4 }}
+                accessibilityLabel="View full gathering details, including how to leave"
+                accessibilityRole="button"
+              >
+                <Text style={styles.detailsLink}>View full details →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -519,6 +542,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   categoryBadgeIcon: { fontSize: 20 },
   title: { ...typography.title, color: colors.textPrimary },
   metaLine: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  detailsLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   hostBanner: { marginTop: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.sm },
   hostBannerText: { color: colors.textSecondary, fontSize: 13 },
   section: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
