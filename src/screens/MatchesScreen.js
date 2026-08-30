@@ -341,7 +341,7 @@ export default function MatchesScreen({ navigation }) {
             <View style={styles.cardWrap}>
             <View style={styles.card}>
               <TouchableOpacity
-                onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}
+                onPress={() => navigation.navigate('ViewProfile', { userId: other?.id, ...(isRomanticMatch ? { viewContext: 'dating' } : null) })}
                 activeOpacity={0.85}
                 accessibilityLabel={`View ${other?.display_name}'s profile`}
                 accessibilityRole="button"

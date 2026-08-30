@@ -560,7 +560,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             onlineStatuses={onlineStatuses}
             onNotice={handleCardNotice}
             onWave={handleCardWave}
-            onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId })}
+            onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId, viewContext: 'dating' })}
             onReport={(id, name) => setReportTarget({ id, name })}
             compatibilityColor={compatibilityColor}
             onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
@@ -603,7 +603,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           <View style={styles.card}>
             <TouchableOpacity
               style={styles.tappableProfileArea}
-              onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId })}
+              onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })}
               activeOpacity={0.9}
               accessibilityLabel={`View ${item.profiles?.display_name}'s profile${onlineStatuses[item.otherUserId] ? ', online now' : ''}`}
               accessibilityRole="button"
@@ -796,7 +796,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
               sightings={nearby}
               photoUrls={photoUrls}
               userLocation={null}
-              onSelectSighting={(s) => navigation.navigate('ViewProfile', { userId: s.otherUserId })}
+              onSelectSighting={(s) => navigation.navigate('ViewProfile', { userId: s.otherUserId, viewContext: 'dating' })}
             />
           </SafeAreaView>
         </View>

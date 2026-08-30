@@ -42,7 +42,16 @@ function isNewHere(createdAt) {
 }
 
 export default function ViewProfileScreen({ route, navigation }) {
-  const { userId } = route.params;
+  // "10/10 blueprint" audit, Finding 9 (CLAUDE.md, Aug 30 2026), resolved by
+  // a direct decision from the user: gender_identity/interested_in_genders
+  // are a real hard match-gate but were never shown to a viewer anywhere --
+  // shown here now, but deliberately context-aware. viewContext is only
+  // ever set to 'dating' by a real dating-discovery entry point (the
+  // Discovery swipe/browse screen, or a genuinely romantic match/chat) --
+  // Friends, gatherings, communities, and business contexts never pass it,
+  // so a person's dating orientation stays exactly where the user said it
+  // belongs: relevant to a dating context, invisible everywhere else.
+  const { userId, viewContext } = route.params;
   const { colors } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors);
@@ -101,7 +110,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks, voice_intro_path')
+        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders')
         .eq('id', userId)
         .single();
 
@@ -236,11 +245,26 @@ export default function ViewProfileScreen({ route, navigation }) {
     isNewHere(profile.created_at) && { icon: '🌱', label: 'New Here', color: colors.textSecondary },
   ].filter(Boolean);
 
+  // Finding 9's own real fields -- the canonical, multi-select pair the
+  // dating match-gate actually uses (distinct from the free-text `gender`/
+  // `sexual_orientation` fields already shown above, which are a separate,
+  // self-described "how I describe myself" concept). Real, honest labels --
+  // the user's own exact selected chips, never a fabricated summary --
+  // shown only in a genuine dating context and only when the viewed
+  // person hasn't hidden their gender.
+  const isDatingContext = viewContext === 'dating';
+  const genderIdentity = profile.gender_identity || [];
+  const interestedInGenders = profile.interested_in_genders || [];
+
   const details = [
     profile.pronouns && { label: 'Pronouns', value: profile.pronouns },
     profile.gender && !profile.gender_hidden && { label: 'Gender', value: profile.gender },
     profile.sexual_orientation && { label: 'Orientation', value: profile.sexual_orientation },
     profile.ethnicity && !profile.ethnicity_hidden && { label: 'Ethnicity', value: profile.ethnicity },
+    isDatingContext && !profile.gender_hidden && genderIdentity.length > 0 &&
+      { label: 'Gender Identity', value: genderIdentity.join(', ') },
+    isDatingContext && !profile.gender_hidden && interestedInGenders.length > 0 &&
+      { label: 'Interested In', value: `Interested in ${interestedInGenders.join(', ')}` },
   ].filter(Boolean);
 
   const filledDetails = BASICS_FIELDS

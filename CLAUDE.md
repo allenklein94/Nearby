@@ -194,7 +194,84 @@ run-through — next session should confirm, on a real device, that a real ask n
 type (e.g. "a date spot tonight") genuinely ranks a business that declared it accommodates
 `date` above an otherwise-equal one that didn't.
 
+### Status: Finding 9 is DONE — resolved by a direct decision from the user, not silently
+### built or silently skipped, built exactly to that decision
 
+Asked directly via `AskUserQuestion` rather than picking a direction unilaterally. The user's
+own answer, preserved rather than paraphrased since it's the actual locked decision, not a
+summary of one:
+
+> Yes — I would choose #1, but with one important UX modification. My recommendation: Show it
+> plainly in Dating context. ... Someone views you through Dating: About Allen / Man /
+> Interested in women / Then your other dating-relevant information. Someone encounters you
+> through Friends: Don't show dating orientation. Someone sees you in a Gathering: Don't show
+> it. Someone sees you through a business/activity interaction: Don't show it. ... So I would
+> not choose #2. I also wouldn't choose #3 as written because that requires changing the
+> routing architecture just to expose something that should simply be context-aware. I'd tell
+> Claude: Choose #1, but implement it as Dating-context-only visibility. Show gender identity
+> and interested-in on ViewProfileScreen when the profile is being viewed in Dating. Do not
+> expose those fields in Friends, Gatherings, or other non-dating contexts. Treat the display
+> as a transparency layer for attributes already used by the dating compatibility gate.
+> Preserve the user's exact selected labels and respect any profile visibility/privacy setting.
+
+**Built exactly to that instruction, no schema/migration needed** — `gender_identity`/
+`interested_in_genders` already existed as real columns, just never selected or rendered by
+`ViewProfileScreen.js`. A new `viewContext` route param (only ever set to `'dating'`, never any
+other value — a plain presence check, not a taxonomy) threads through from every entry point
+that is genuinely dating-sourced, and only those:
+- `DiscoveryScreen.js`'s three `navigate('ViewProfile', ...)` call sites (the actual dating
+  swipe/browse screen) — always pass `viewContext: 'dating'`, unconditionally, since every
+  profile reachable from this screen is a genuine dating candidate.
+- `MatchesScreen.js` and `ChatScreen.js`'s own `navigate('ViewProfile', ...)` call sites — each
+  already computes a real `isRomanticMatch` (`!source_gathering_id && !source_friendship_id`,
+  the same established distinction this app already uses elsewhere to separate a genuine dating
+  match from a friendship- or gathering-sourced one) — `viewContext: 'dating'` is spread in only
+  when that specific row/match is romantic, so a friend-sourced match's profile view carries no
+  dating context at all.
+- Every other real `navigate('ViewProfile', ...)` call site in the app (`notifications.js`,
+  `HomeScreen.js`, `GatheringHubScreen.js`, `GatheringChatScreen.js`, `FriendsScreen.js`,
+  `ActivityScreen.js`, `GatheringDetailScreen.js`, `CommunityChatScreen.js`,
+  `GatheringsScreen.js`) was left completely untouched — no `viewContext` passed, so none of
+  those paths can ever see the new fields, matching "don't expose in Friends, Gatherings, or
+  other non-dating contexts" exactly.
+
+`ViewProfileScreen.js` — widened its profile `.select(...)` to also fetch `gender_identity`/
+`interested_in_genders` (previously not selected at all), and added two new conditional entries
+to the existing `details` array, gated on **both** `viewContext === 'dating'` **and**
+`!profile.gender_hidden` (the real, already-existing visibility toggle this profile's own owner
+already controls — satisfying "respect any profile visibility/privacy setting" with the
+mechanism that already exists, rather than inventing a second, redundant one) **and** the
+respective array actually being non-empty: "Gender Identity" → the real joined selected labels,
+verbatim, never reworded; "Interested In" → `"Interested in {joined real labels}"`. Both render
+using the exact same `details` list/row component every other identity field
+(Pronouns/Gender/Orientation/Ethnicity) already uses — no new UI pattern.
+
+**One real, disclosed scope note, not silently built or silently dropped**: the user's message
+also floated, as a further "one more thing I'd add," a dedicated dating-profile-setup
+visibility control — separate checkboxes specifically for "Shown on your Dating profile:
+Gender / Who I'm interested in," distinct from the existing single `gender_hidden` toggle. The
+instruction's own mandatory core ("Choose #1... respect any profile visibility/privacy
+setting") is satisfied by the existing `gender_hidden` toggle, which already gates exactly this
+data — that's what was built. The separate, more granular dedicated control was floated as an
+addition, not stated as a hard requirement of the fix itself; **not built this pass**, flagged
+here explicitly rather than silently added or silently ignored, as a real, coherent future
+enhancement if the single shared toggle ever proves too coarse in practice.
+
+**Verified**: a direct `@babel/core` parse of all four touched files (`ViewProfileScreen.js`,
+`DiscoveryScreen.js`, `MatchesScreen.js`, `ChatScreen.js`, clean); the full Jest suite
+(**172/172 passing**, unaffected — no pure-logic file was touched by this fix); a full
+`npx expo export --platform ios` (clean, no bundling errors, **2279 modules, unchanged** — every
+touched file was an edit, no new files). No schema/RPC change, so no live-production
+verification or migration replay applies here — both columns already existed and were already
+correctly populated by the existing Dating-preferences UI.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: a genuine dating-context view
+(from `DiscoveryScreen`, or a romantic match's row on `MatchesScreen`/`ChatScreen`) shows both
+new fields correctly when the viewed profile has them set and hasn't hidden gender; a
+friendship- or gathering-sourced match's profile view shows neither field even though the same
+underlying data exists on that profile; and that toggling `gender_hidden` off on one's own
+profile correctly suppresses both fields the next time someone views it in a dating context.
 
 Direct user report, investigated against the real code rather than trusted on either side —
 neither "this is a real missing feature" nor "this must already work" was assumed going in.

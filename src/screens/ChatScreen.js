@@ -386,7 +386,7 @@ export default function ChatScreen({ route, navigation }) {
         headerShown: true,
         headerTitle: () => (
           <TouchableOpacity
-            onPress={() => navigation.navigate('ViewProfile', { userId: other?.id })}
+            onPress={() => navigation.navigate('ViewProfile', { userId: other?.id, ...(isRomanticMatch ? { viewContext: 'dating' } : null) })}
             accessibilityLabel={`View ${other?.display_name}'s profile`}
             accessibilityRole="button"
           >
