@@ -1,5 +1,157 @@
-## Aug 30 2026 (cont'd) — "I don't see a way to remove myself from a gathering I joined" — a
-## real, confirmed navigation gap, not just a discoverability problem, found and fixed
+## Aug 30 2026 (cont'd) — "10/10 blueprint" (a long external strategic reply) audited against
+## real code; the one genuinely open, well-specified signal-propagation gap it names (Finding 8,
+## `accommodates_party_types`) closed; a second (Finding 9, gender visibility) resolved by a
+## direct decision from the user rather than silently built or silently skipped; the mega-audit /
+## network-effect / stranger-test / geographic-launch / "prove businesses will pay" asks are
+## explicitly NOT attempted, with the specific reason each can't be executed from this session —
+## PLAN LOCKED, executing below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file. The user pasted a long, structured external reply arguing the path from here to a
+real "10/10" isn't more features — it's proof, simplification, consistency, and real-world
+execution — laid out as a 10-row scorecard, five priorities (explain Nearby in one sentence;
+make the universal signal engine truly universal; make business onboarding invisible; close every
+consumer→business loop; prove the network effect in one real city), a proposed
+"zero-tolerance-for-seams" mega-audit, a "stranger test" (20 people, unscripted, record every
+question they ask), and an explicit "what I would NOT do" list (no new mode/tab/carousel/field/
+AI feature/notification type/dashboard "unless it fixes a demonstrated problem"). Instruction:
+plan it into this file, execute, commit/push, update this file with findings along the way.
+
+### Audit against the real, current code — done before writing a single line of "plan," per this
+### file's own standing rule for every external doc, not accepted at face value
+
+Checked the five priorities and the scorecard's own row-by-row claims directly, rather than
+treating the reply's framing as an accurate read of where the app currently stands:
+
+1. **"Explain Nearby in one sentence" / the intent-first pitch.** Already substantially built,
+   across several already-DONE passes this file's own history documents at length (the intent-
+   first Home redesign, "Create Consolidation," the "10/10 blueprint" reply's own suggested
+   one-liner — "Nearby helps you figure out what to do, who to do it with, and where to go" — is
+   already, almost verbatim, what Home's own hero does: "What do you want to do?" as the literal
+   first interactive element on the screen, resolved through the 5-tier resolver without the user
+   ever needing to know a resolver exists). No further copy change made here without a real,
+   demonstrated confusion point — the reply's own "stranger test" is the only honest way to find
+   one, and it needs real humans this sandbox doesn't have (see below).
+2. **"Make the universal signal engine truly universal."** The reply's own proposed WHO/WHAT/
+   WHEN/WHERE/CONSTRAINTS/WHO-ELSE shape is a real, coherent *description* of what already
+   exists, not a gap — `intentResolver.js`'s 5-tier resolver, `intentResolverScoring.js`'s shared
+   `SCORE_*` axis, `PRODUCT_AUDIT/SIGNAL_CONTRACT.md` (a real, already-built factual reference
+   naming exactly this per-signal for all 12 tracked signals: meaning, collection point, null
+   semantics, hard-constraint/ranking-bonus/contextual classification, public-display status).
+   Rewriting the resolver's several real, independently-verified representations into one literal
+   shared object would be a large, high-blast-radius refactor with no demonstrated bug behind
+   it — exactly the "complexity is now your enemy" trap the reply's own closing section warns
+   against. **Not attempted.** What the Signal Contract doc *does* still carry, explicitly, as
+   open: two real, previously-flagged findings, both explicitly marked "not in the authorized
+   build order," both real "does this signal propagate everywhere it should" gaps — see below,
+   this is where the reply's own #2 priority actually has live, unclosed work.
+3. **"Make business onboarding invisible."** Already built and independently verified live
+   end-to-end multiple times — `docs/business.html`'s streamlined apply flow (real Google Places
+   search → confirm → complete profile → submit, "~30 seconds," honest about real admin review
+   afterward, not instant), the Business Partner Acquisition initiative's 7 milestones, the
+   dashboard's own first-run welcome card. Not re-audited from scratch here — no new claim in the
+   reply names a concrete gap beyond what's already documented as DONE.
+4. **"Close every consumer → business loop" — the reply's own worked example ("Mexican food
+   tonight for 6") is, almost field-for-field, the Offer System's own already-shipped, already
+   live-verified lifecycle**: party size as a real hard feasibility constraint (not just a
+   ranking signal — Universal Signal Remediation Pass P0 item 2), `search_active_business_
+   availability`/fan-out/accept/reservation, the merged accepted-offer card on
+   `GatheringDetailScreen`/`DateProposalScreen`/`BusinessRequestDetailScreen`, and a real
+   "🚗 Get an Uber there" deep link once a real venue is confirmed. Not rebuilt — already real.
+5. **"Prove the network effect in one city."** Confirmed, not disputed: this cannot be executed
+   from a coding session. It needs real users, real businesses, real density, and real retention
+   data over real time — the same standing limitation this file has repeated in every section for
+   months ("Real-World Validation... no session has ever run this app on a simulator or a real
+   device"). **Not attempted, correctly.**
+
+### The reply's proposed mega-audit — not re-run from scratch, and here's the real reason why
+
+The reply's own "zero-tolerance-for-seams" audit (walk every signal across Home → Discover →
+Create → People → Activity → Profile → Gatherings → Business, asking "is it captured / stored /
+propagated / ranked / matched / displayed / does the business receive it / does the final action
+reflect it") is **not a new idea for this codebase — it's already been run, more than once**,
+each time against the real, current code, each time producing a real deliverable with file/line
+citations: `PRODUCT_AUDIT/UNIVERSAL_SIGNAL_RECOMMENDATION_AUDIT_2026-08-28.md` (the original
+12-signal × 7-stage matrix), the Universal Signal Remediation Pass that fixed 8 of its 10 real
+findings, `PRODUCT_AUDIT/SIGNAL_CONTRACT.md` (the resulting factual reference, built once the
+fixes landed), and `PRODUCT_AUDIT/FULL_END_TO_END_PRODUCT_COHERENCE_AUDIT_2026-08-28.md` (a
+broader 10-system pass: Home/Discover/Dating/Friends/Gatherings/Business/Messaging/Profile/a
+14-signal ranking table/6 real user-intent scenarios/an 11-transition "does this still feel like
+Nearby" test). Re-running the identical exercise from scratch would either rediscover the same
+two real open items these audits already found and explicitly left open (see Findings 8/9 below),
+or manufacture new "findings" with no real evidence behind them just to have something to report —
+exactly the kind of padding this file's own conventions exist to avoid. **What's actually still
+real and open, per those audits' own text, not invented for this pass, is exactly two items —
+closed/resolved below, not a fresh audit.**
+
+### Finding 8 — `brand_partners.accommodates_party_types` never reached a consumer-facing
+### rank/match stage — real, well-scoped, closed this pass
+
+Per `PRODUCT_AUDIT/SIGNAL_CONTRACT.md` (§9) and the original Universal Signal audit: a business
+declares which real party shapes it can accommodate (`solo|friends|groups|date` — the identical
+vocabulary `gatherings.party_type`/`business_requests.party_type` already use), already collected
+from the dashboard, already shown as real chips on `BusinessProfileScreen.js` — but never read by
+`resolveBusinessAvailability()` or any other consumer-facing ranking/matching path. Re-confirmed
+directly before touching anything: grepped every resolver/scoring file — zero hits outside the two
+business-facing screens that collect/display it.
+
+**Locked fix, matching the exact shape `attributeAndCuisineBonus()`/`priceAndPartyBonus()`
+already established for the identical class of signal (real value match → a flat
+`SCORE_HAPPENING_NOW` ranking bonus, never a hard filter — a business that can't honestly claim a
+match is never excluded, just not boosted)**: `search_active_business_availability()` (the RPC
+behind Tier 4-lite, confirmed real availability) gains one more returned column,
+`accommodates_party_types`, reading the exact same `brand_partners` row its existing `attributes`/
+`cuisine` columns already come from — no new query, no new table. `resolveBusinessAvailability()`
+gains the caller's own already-classified `partyType` (already computed by `create-assistant` and
+already threaded through `resolveIntent()` to `resolveGatherings()`'s own `priceAndPartyBonus()` —
+this closes the one branch that never received it) and awards a new
+`accommodatesPartyTypeBonus()` (new pure function, `intentResolverScoring.js`, same file/testing
+convention as its two siblings) whenever the ask's real party type is present in the business's
+own real `accommodates_party_types` array.
+
+**Deliberately not touched, scope stated explicitly**: `_business_request_fanout()` (who gets
+notified first when a brand-new request is created) and `scoreBusinessOpportunity()` (the
+business's own dashboard-side ranking of which opportunity to look at first) — both real,
+separate ranking surfaces `attributeAndCuisineBonus()` itself was never wired into either, per
+that same original build's own scope. Finding 8's own text is specifically "never reaches a
+consumer-facing filter, match, or rank stage" — `resolveBusinessAvailability()` is that surface;
+widening into the notification-fan-out RPC family is a real, separate, larger change with its own
+blast radius, not something to fold in here on inferred momentum.
+
+### Finding 9 — `gender_identity`/`interested_in_genders` never shown to a profile viewer — a
+### real, previously-flagged privacy/product decision, not something this pass silently resolves
+
+Per `PRODUCT_AUDIT/SIGNAL_CONTRACT.md` (§4) and the original audit: this is a genuine hard-
+constraint mutual-match gate (`passesGenderMatch()`), collected and used correctly, but never
+rendered anywhere a viewer can see it — flagged twice already, explicitly, as "needing a real
+yes/no from the user," never silently resolved either direction. **Not silently built here
+either** — asked directly, see the decision recorded below once the user answers.
+
+### What is explicitly NOT attempted this pass, and the specific reason each one can't be
+
+- **The stranger test (20 unscripted people)** — needs real humans in a room with the app; no
+  simulator/device access exists in this sandbox, the single most-repeated standing limitation in
+  this file's entire history.
+- **Prove the network effect in one real city** — needs real users, real businesses, real time.
+- **"Prove businesses will pay"** — real money, a real Stripe/payment-processor account, a real
+  pricing decision — this file's own long-standing, repeatedly-reaffirmed rule: needs the user
+  present for that decision, not something to set up autonomously.
+- **A from-scratch mega-audit re-litigating everything already covered by the four audits named
+  above** — would either rediscover the same two findings this pass already closes/resolves, or
+  manufacture new findings with no real evidence behind them.
+- **New modes/tabs/carousels/fields/AI features/notification types/dashboards** — none proposed
+  or built; matches the reply's own explicit "don't, unless it fixes a demonstrated problem" list.
+
+### Verification convention, matching every other schema-touching pass in this file
+
+`search_active_business_availability()`'s widened return shape applied to production and
+verified live with real disposable test data (a real business with `accommodates_party_types`
+set, a matching and a non-matching ask) — cleaned up afterward. New unit tests for
+`accommodatesPartyTypeBonus()`, full Jest suite re-run. Full `npx expo export --platform ios`
+after the client change. Same standing limitation as everywhere else in this file: no manual
+simulator/device run-through.
+
+
 
 Direct user report, investigated against the real code rather than trusted on either side —
 neither "this is a real missing feature" nor "this must already work" was assumed going in.
