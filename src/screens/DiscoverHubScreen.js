@@ -422,16 +422,34 @@ export default function DiscoverHubScreen({ navigation }) {
         .sort((a, b) => b.fit.score - a.fit.score)
         .slice(0, 3)
     : [];
+  const recommendedGatheringIds = new Set(recommended.map((g) => g.id));
 
   // Same signal/threshold Home's own "🔥 Trending Near You" already uses
   // (homeDashboard.js's trendingGatherings) — Discover had no trending
   // section at all before this, even though the underlying gathering
   // list is already fetched here for search.
+  //
+  // Aug 30 2026 (CLAUDE.md, second UX critique): both this list and
+  // `recommended` above draw from the exact same `filteredGatherings`
+  // array with no awareness of each other, and the plain "Gatherings"
+  // list below draws from it a third time -- a real, previously-
+  // undetected version of the same "features stacked with no
+  // cross-awareness" problem the critique found in People mode, just
+  // provable in code instead of guessed from a screenshot: the same
+  // gathering could legitimately render three separate times on the
+  // same scroll (once as a personalized pick, once as popular, once in
+  // the plain list). Trending now excludes anything Recommended already
+  // claimed -- Recommended is the stronger, more personalized signal, so
+  // it wins the dedup, same "later section excludes what an earlier,
+  // stronger one already surfaced" convention Home's own Because-You're-
+  // Into/Also-Coming-Up sections already established.
   const trending = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
     ? [...filteredGatherings]
+        .filter((g) => !recommendedGatheringIds.has(g.id))
         .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
         .slice(0, 3)
     : [];
+  const trendingGatheringIds = new Set(trending.map((g) => g.id));
 
   const showGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
   const showCommunities = typeFilter === 'all' || typeFilter === 'communities';
@@ -440,7 +458,15 @@ export default function DiscoverHubScreen({ navigation }) {
   const showViewToggle = typeFilter === 'all' || typeFilter === 'gatherings' || typeFilter === 'perks';
   const isAll = typeFilter === 'all';
 
-  const gatheringsToShow = isAll ? filteredGatherings.slice(0, PREVIEW_COUNT) : filteredGatherings;
+  // Same dedup as trending above -- whatever already surfaced as a
+  // personalized pick or a trending pick doesn't need to repeat in the
+  // plain catch-all list right below it. A no-op when Recommended/
+  // Trending are both empty (Communities/Places/Perks views, or while
+  // actively searching), so this never changes behavior anywhere else.
+  const dedupedGatherings = filteredGatherings.filter(
+    (g) => !recommendedGatheringIds.has(g.id) && !trendingGatheringIds.has(g.id)
+  );
+  const gatheringsToShow = isAll ? dedupedGatherings.slice(0, PREVIEW_COUNT) : dedupedGatherings;
   const communitiesToShow = isAll ? filteredCommunities.slice(0, PREVIEW_COUNT) : filteredCommunities;
   const offersToShow = isAll ? filteredOffers.slice(0, PREVIEW_COUNT) : filteredOffers;
   const placesToShow = isAll ? places.slice(0, PREVIEW_COUNT) : places;
@@ -712,9 +738,13 @@ export default function DiscoverHubScreen({ navigation }) {
             <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
           )}
 
+          {(recommended.length > 0 || trending.length > 0) && (
+            <Text style={styles.sectionHeader}>Recommended For You</Text>
+          )}
+
           {recommended.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Recommended For You</Text>
+              {trending.length > 0 && <Text style={styles.subLabel}>✨ Personalized For You</Text>}
               {recommended.map((g) => (
                 <TouchableOpacity
                   key={g.id}
@@ -754,7 +784,7 @@ export default function DiscoverHubScreen({ navigation }) {
 
           {trending.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>🔥 Trending Near You</Text>
+              <Text style={styles.subLabel}>🔥 Trending Near You</Text>
               {trending.map((g) => (
                 <TouchableOpacity
                   key={g.id}
@@ -1164,6 +1194,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   cardChevron: { color: colors.textTertiary, fontSize: 24 },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
+  // Same "one cluster header, several lighter sub-labels underneath"
+  // recipe HomeScreen.js's own "✨ Because You Like…" cluster already
+  // established -- reused verbatim (Aug 30 2026 second UX critique fix)
+  // so Recommended/Trending read as one grouped signal, not two
+  // competing top-level sections.
+  subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
   seeAll: { color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: spacing.lg },
   emptyText: { color: colors.textTertiary, marginBottom: spacing.lg },
   storyRing: { alignItems: 'center', width: 64 },

@@ -87,10 +87,119 @@ done — it needs the same "audit first, then build" treatment, not blind execut
 critique's mockup. **Not attempted this pass. Asked directly below** whether to scope it now as
 a second phase, or capture it as a real, deliberately-deferred future item.
 
-### Status
+### Decision 1 — resolved by the user directly, at real length, not silently picked: keep the
+### two one-tap chips, reject the dropdown and "All" outright, redesign only the surrounding
+### visual weight
 
-Read-only this pass — nothing above was built. The two questions above are the actual blocker;
-see the user's answer for what (if anything) gets built next, recorded here once decided.
+The user's own answer (preserved in full below rather than paraphrased, since the reasoning
+matters as much as the conclusion, and a future session should never re-litigate this from a
+fresh critique without reading it first): **Option 1 — keep Dating and Friends as two always-
+visible, one-tap choices.** No dropdown (adds friction to something users already understand and
+want directly). No "All"/merged option (would imply a unified candidate pool that doesn't exist
+and structurally can't, without reopening a hard, already-decided architecture boundary — "not a
+UX improvement if the system can't honestly deliver what the label promises"). Explicit
+guardrails restated so a future session never reads this as license to touch the engines: *"Do
+not change candidate generation, matching engines, ranking, data sources, or navigation
+architecture. Dating and Friends remain separate by design."* This is a UI/IA simplification
+pass only, not a reopening of the underlying product decision.
+
+**What the user did explicitly authorize, in the same breath**: "do NOT interpret Option 1 as
+'leave the current screen visually unchanged.'" The real ask is that Dating/Friends "read as a
+compact secondary mode selector rather than another major feature block" — smaller, calmer,
+clearly subordinate to the outer Things-to-Do/People toggle, while staying exactly as fast to
+reach. Illustrative mockup given: two auto-width chips (`Dating` / `Friends`) sitting in a
+lightweight row, explicitly *not* "two huge competing pills taking up nearly the entire width,"
+with the note that "the exact styling can stay within your existing design system."
+
+**Checked directly against the real, current styles rather than assumed satisfied** — the inner
+`peopleSubToggleButton`/`peopleSubToggleRow` treatment (built as part of the *first* Aug 30 pass,
+predating this second critique, under the same "make the inner toggle visually subordinate"
+reasoning) already matches every concrete property the mockup asks for, compared value-by-value
+against the outer `modeToggleButton` it used to visually match:
+
+| Property | Outer (Things-to-Do \| People) | Inner (Dating \| Friends) |
+|---|---|---|
+| Width | `flex: 1` — each half the row, stretched | auto-width — sized to its own label, chips sit with a gap, never stretched |
+| Border | `1.5px` | `1px` |
+| Shape | `radius.lg` (rounded rect) | `radius.full` (true pill) |
+| Vertical padding | `spacing.sm + 2` (~14) | `spacing.xs` (~4) — over 3x less |
+| Icon/text size | 16 / 14 | 13 / 13 |
+| Active state | `colors.primaryMuted` bg + `colors.primary` border | identical treatment, same coral-on-select rule, just at the smaller footprint |
+
+This is a real, independently-converged match, not a coincidence dressed up as compliance — the
+first Aug 30 pass built this restyle for its own stated reason ("outer mode first, inner
+sub-mode clearly secondary") *before* this second critique's own mockup ever existed, and the two
+land on the identical qualitative shape: auto-width pill chips, ~1/3 the vertical weight, same
+coral-only-when-active rule, zero change to tap count or destination. The mockup's literal "People"
+overline label and same-row "Filters" placement were not reproduced pixel-for-pixel — the active
+state of the outer toggle already communicates "you're in People mode" without a redundant second
+label, and Filters already lives one visual step below, inside whichever embedded screen
+(`DiscoveryScreen`/`FriendDiscoveryScreen`) is currently active, rather than duplicated onto a
+row it doesn't structurally belong to. Both are exactly the kind of illustrative-not-literal
+detail the user's own closing line ("the exact styling can stay within your existing design
+system") explicitly waived.
+
+**Conclusion: Decision 1 needed no further code change.** The already-shipped restyle already
+satisfies every concrete, load-bearing property of the user's own detailed ask. Restated here so
+a future session doesn't rediscover this from scratch or "fix" it back toward the mockup's
+literal pixels believing something was missed.
+
+### Decision 2 — Things-to-Do mode's own decluttering pass — "Do it now (Recommended)" — DONE
+
+Audited `DiscoverHubScreen.js`'s Things-to-Do content directly (search bar, `TYPE_FILTERS` chip
+row, Cards/List/Map view toggle, the conditional Places-category row) against the same "features
+stacked with no cross-awareness" lens the People-mode fix used — and found a real, previously-
+undetected version of exactly that problem, provable in code rather than guessed from a
+screenshot: **`recommended`, `trending`, and the plain "Gatherings" list all derived from the
+same `filteredGatherings` array with zero deduplication.** In "All" mode, the identical gathering
+could legitimately render up to three separate times on the same scroll — once under
+"Recommended For You," once under "🔥 Trending Near You," once again in the plain Gatherings
+list right below both.
+
+**Fixed**: `trending` now excludes any gathering `recommended` already claimed (Recommended is
+the stronger, more personalized signal — a real interest/distance/happening-today score vs.
+Trending's plain attendee-count ranking — so it wins the dedup, same "a later section excludes
+what an earlier, stronger one already surfaced" convention Home's own Because-You're-Into/Also-
+Coming-Up sections already established). The plain `gatheringsToShow` list (feeding both the
+"All" preview slice and the full Gatherings-filtered view) now excludes whatever both Recommended
+and Trending already claimed. All three checks are `Set`-based exclusion on gathering id, computed
+once, with zero behavior change for Communities/Places/Perks views or while actively searching
+(both `recommended`/`trending` are already empty in those states, so the new filters are a no-op
+there).
+
+**The two remaining top-level headers were merged into one cluster**, reusing `HomeScreen.js`'s
+own already-established "one cluster header, several lighter sub-labels underneath" recipe
+verbatim (the same pattern behind its "✨ Because You Like…" section) rather than inventing a new
+visual language: one "Recommended For You" `sectionHeader` renders whenever either list has
+content; if *both* are non-empty, each gets its own smaller `subLabel` ("✨ Personalized For You" /
+"🔥 Trending Near You") underneath the shared header; if only one is non-empty, it renders
+directly under the shared header with no redundant sub-label duplicating what the header already
+says. New `subLabel` style added, byte-identical to `HomeScreen.js`'s own plain-text recipe
+(`{ color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs,
+marginTop: spacing.xs }`) — not approximated.
+
+**The rest of Things-to-Do mode's controls were evaluated and found *not* to need the same
+"unify into one sheet" treatment People mode needed, stated explicitly rather than left
+implicit**: the search bar + `TYPE_FILTERS` chip row + view toggle + conditional Places-category
+row are one real filter axis each (search text; content type; card/list/map presentation;
+Places' own required category, since Google's Nearby Search needs one) — not four independently-
+built, overlapping filter mechanisms answering the same question three different ways, which is
+what People mode's Crossed-Paths/Browse toggle + Looking-For + Quick-Filters + a separate Filters
+chip actually were before that fix. Collapsing these into one sheet here would remove real,
+independently-useful controls for no clutter benefit — correctly left as-is.
+
+Verified via a direct `@babel/core` parse of the touched file (clean) and a full `npx expo
+export --platform ios` (clean, no bundling errors, **2278 modules, unchanged** from the prior
+baseline — a pure edit to one existing file, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: a real account whose nearby
+gatherings produce both a Recommended and a Trending hit shows each gathering exactly once
+across the whole Discover scroll (never duplicated across Recommended/Trending/the plain list),
+the merged cluster header + two sub-labels read correctly when both are present, a single
+sub-label is correctly suppressed when only one of the two lists has content, and the
+Dating/Friends chip row visually reads as clearly secondary to the outer Things-to-Do/People
+toggle on a real screen, not just by style-value comparison.
 
 
 Written before implementation, same restart-safety convention as every other plan-first section
