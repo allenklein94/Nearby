@@ -1,3 +1,131 @@
+## Aug 30 2026 — external UX critique (Messages entry point + Discover/People screen
+## "clutteredness") audited against real code, then fixed — PLAN LOCKED, executing below
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — if a restart hits mid-build, check `git status`/`git log` and the status note at
+the bottom of this section for what's actually landed. The user pasted a full external UX
+critique thread (two rounds) reacting to two screenshots: the Messages/chat icon in the
+Discover header, and the Discover → People → Dating screen's overall density. Per this file's
+own standing rule, every concrete claim was checked against the real, current code before
+building anything — not accepted at face value.
+
+### Round 1 (Messages entry point) — checked, already matches the ask almost exactly
+
+Read `src/components/TabHeaderActions.js` directly: it already renders the 💬 icon with a real
+unread-count badge overlaid top-right (`unreadCount > 0` → a small red circle showing the real
+count, capped at "99+") — exactly the critique's own "💬③" ask, not something to build. It
+navigates to a route literally named `Messages`. This was already built in an earlier pass (Aug
+23 2026 Product Coherence Audit P2, per the file's own header comment) — nothing here needed
+building. **Not independently re-verified this pass**: that `MessagesScreen`'s own header title
+literally reads "Messages" (not "Inbox"/"Chat") — very likely true given the route name and this
+file's own history of an IA restructure explicitly separating Messages (conversations) from
+Activity (events), but not re-opened and re-read this pass since it wasn't the user's actual
+focus (see below).
+
+### Round 2 (Discover → People → Dating clutter) — the real, confirmed work this pass does
+
+The user's own follow-up made the actual ask explicit: "I'm more focused on the clutterness of
+the screen... more like bolted-on features to one screen." The screenshot is
+`DiscoverHubScreen.js`'s People mode with Dating selected (which embeds `DiscoveryScreen.js`).
+Read both files end to end before designing anything. Confirmed real, exactly as described:
+Things-to-Do/People (outer) and Dating/Friends (inner) render as two visually co-equal
+full-width segmented controls; below that, `DiscoveryScreen.js` stacks an info button + a
+labeled Cards/List pill + a conditional map-overview button, then a full-width Crossed
+Paths/Browse segmented switcher (same visual weight class as the two toggles above it), then a
+2-section accordion ("💘 Looking For", "⚡ Quick Filters"), then a separate "Filters (Premium)"
+chip that opens a full-screen `FiltersModal`, then (once loaded) either a `SkeletonCard` stack or
+the empty state. That's 3 independent filter mechanisms (Looking For / Quick Filters / Advanced
+Filters) plus a data-source switcher (Crossed Paths/Browse) all rendered as separate persistent
+UI blocks before any actual content — the literal "controls → controls → controls → nothing"
+rhythm the critique names.
+
+**Checked, found already correct or already scoped appropriately — not touched**:
+- `FriendDiscoveryScreen.js` (the "Friends" side of the same People-mode toggle) already has
+  exactly one collapsed "Filters" accordion (Interests + Distance sub-rows under one toggle) —
+  this was already fixed in the Aug 28 2026 Taxonomy Post-Implementation Audit remediation,
+  item 4, specifically to be lighter than Dating's own multi-section accordion. Nothing to do.
+- `StoriesRow.js` — read directly: even its empty state (nothing but "+ Your Story") is a single
+  60px ring in a `paddingVertical: spacing.md` (~12px) container, not the "giant empty circle"
+  the critique's general framing describes. Not touched — the critique's own three offered
+  options (A/B/C) don't force a change here, and this file's real implementation doesn't match
+  the "giant" framing closely enough to justify moving/hiding it.
+- Per-card "why am I seeing this person" context already exists and is real, not fabricated:
+  Crossed Paths rows already show "📍 Within about 35 feet · Crossed paths {time}"; Browse rows
+  already show "🔎 Matches your filters" — this directly answers the critique's own item 7
+  ("why am I seeing this person"), already built, not new work.
+
+### Locked decisions for this pass — real, scoped, not a full re-architecture
+
+1. **Do NOT merge Crossed Paths and Browse into one unified result set with a "discovery
+   source" filter chip inside a single candidate pool.** This is the critique's own most
+   ambitious ask (and, on inspection, its biggest real architecture change) — `getNearbyMatches()`
+   (proximity-based) and `getBrowseMatches()` (paginated, filter-based) are genuinely different
+   queries with different pagination semantics (`browseOffset`/`browseHasMore`/
+   `loadMoreBrowse()` exist only for Browse). Merging them into one mixed, per-item-labeled list
+   is real, valuable, future work — but it's a materially larger change than "declutter this
+   screen," and this file's own standing convention is to flag a real architectural change
+   rather than build it blind under time pressure. **What's actually built instead**: the real
+   toggle between the two modes moves off the main screen (no longer a giant top-level
+   segmented control) into the new unified Filters sheet (below) as a "Discovery" section — same
+   two real modes, same real behavior, `switchDiscoveryMode()` completely unchanged — just
+   demoted from "third competing navigation row" to "one row inside Filters," which is exactly
+   what closes the "Crossed Paths looks like a second navigation system" complaint without
+   touching the underlying data model.
+2. **Consolidate "Looking For" + "Quick Filters" + "Filters (Premium)" into one always-visible
+   "Filters" button that opens one unified sheet.** `FiltersModal.js` has exactly one caller
+   (`DiscoveryScreen.js`, confirmed via grep) — safe to extend rather than replace. The premium
+   gate moves from "you can't even open this modal" (today: `openFilters()` shows an upgrade
+   `Alert` and never opens `FiltersModal` for a free user) to "the modal always opens; only its
+   Advanced Filters section is locked with a real inline upsell row" — Looking For and Quick
+   Filters were never premium-gated to begin with, so this actually widens what a free user can
+   reach in one place, not narrows it.
+3. **The three header-right icons (info / Cards-List toggle / crossed-paths map) shrink from
+   bordered, labeled pills to small plain icons.** No behavior change — same three actions, same
+   accessibility labels — just visual weight. While touching this, the info icon's color changes
+   from `colors.primary` (coral) to a neutral tertiary tone: informational chrome being
+   brand-colored is a real, small violation of this file's own already-locked "coral = action,
+   not decoration" rule (Aug 16 2026 coral-usage section) that this pass closes as a side effect,
+   not a new rule.
+4. **The Dating/Friends inner toggle gets a visually lighter treatment** — smaller, auto-width
+   chip buttons instead of two full-width, equal-weight pills matching the outer Things-to-Do/
+   People control's own visual language. Still the same two real modes, same
+   `selectPeopleSubMode()`, same embedded-screen-swap mechanism — a style-only change signaling
+   "this is a secondary intent, not a second top-level nav," matching the critique's own explicit
+   ask.
+5. **Shorten the default (non-empty-filter) empty-state copy** for Crossed Paths, across all 11
+   language files — the existing "about 35 feet, roughly the same room" detail moves to (already
+   exists in) the info-button's own explainer alert; the on-screen copy becomes a short, honest
+   sentence. Every other empty-state branch (Browse's own copy, the "no one matches these
+   filters" case) is untouched — only the one default sentence identified by the critique.
+
+### Build plan
+
+- `src/components/FiltersModal.js` — extended, not replaced: new optional sections (Discovery
+  mode, Looking For, Quick Filters, all rendered when their driving props are passed) ahead of
+  the existing Age Range + Advanced Filters (`fields`) section, which now gates behind a real
+  `isPremium` prop with an inline upsell instead of the caller blocking the whole modal. A new
+  `onClearFreeFilters` callback lets "Clear" reset the new free sections too (Discovery mode is
+  deliberately excluded from Clear — it's a data source, not a narrowing filter, and resetting
+  it would trigger an unwanted, surprising data reload). The footer's active-filter count now
+  totals across every section, not just the advanced ones.
+- `src/screens/DiscoveryScreen.js` — the `modeSwitcher`, the two-section `accordionContainer`,
+  and the old `moreFiltersButton` are all removed, replaced with one compact "Filters" button
+  showing a real, honest one-line summary (discovery mode + a total active-filter count, never a
+  fabricated number). `openFilters()` no longer premium-gates opening the modal. Header icons
+  restyled per decision 3. `expandedFilterSection`/`toggleFilterSection`/`lookingForSummary`/
+  `quickFilterSummary` (all now-dead) removed.
+- `src/screens/DiscoverHubScreen.js` — `PEOPLE_SUBMODES` render switches from the shared
+  `modeToggleRow`/`modeToggleButton` styles to new, lighter `peopleSubToggleRow`/
+  `peopleSubToggleButton` styles (auto-width chips, thinner border, smaller text).
+- `src/i18n/translations.js` — `discovery.emptyText` shortened in all 11 language blocks.
+
+**Verification plan**: a direct `@babel/core` parse of every touched file, then a full `npx expo
+export --platform ios`. Same standing limitation as every other section in this file: no manual
+simulator/device run-through is possible from this sandbox — flagged for next session, same as
+always.
+
+**Status: DONE, build-wise — see the note below this line once built.**
+
 ## Aug 29 2026 (cont'd) — real web business application, no app required — PLAN LOCKED,
 ## executing below
 
