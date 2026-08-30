@@ -6,6 +6,7 @@ import {
   getGatheringById,
   getGatheringMeetupPoint,
   setGatheringOnMyWay,
+  unsetGatheringOnMyWay,
   checkInToGathering,
   getFirstTimerAttendeeIds,
   hasSubmittedFeedback,
@@ -154,7 +155,14 @@ export default function GatheringHubScreen({ route, navigation }) {
   async function handleOnMyWay() {
     setOnMyWayBusy(true);
     try {
-      await setGatheringOnMyWay(gatheringId);
+      // Aug 30 2026: a real toggle, not a one-way action -- tapping it
+      // again while already on the way undoes it (e.g. tapped by mistake,
+      // or plans changed before checking in).
+      if (iAmOnMyWay) {
+        await unsetGatheringOnMyWay(gatheringId);
+      } else {
+        await setGatheringOnMyWay(gatheringId);
+      }
       await load();
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -438,13 +446,13 @@ export default function GatheringHubScreen({ route, navigation }) {
                 <TouchableOpacity
                   style={[styles.bigButton, { backgroundColor: iAmOnMyWay ? colors.surface : categoryStyle.color, borderWidth: iAmOnMyWay ? 1 : 0, borderColor: colors.border }, shadow.button]}
                   onPress={handleOnMyWay}
-                  disabled={onMyWayBusy || iAmOnMyWay}
+                  disabled={onMyWayBusy}
                   activeOpacity={0.85}
-                  accessibilityLabel={iAmOnMyWay ? "You're on your way" : "I'm On My Way"}
+                  accessibilityLabel={iAmOnMyWay ? "You're on your way — tap to undo" : "I'm On My Way"}
                   accessibilityRole="button"
                 >
                   <Text style={[styles.bigButtonText, iAmOnMyWay && { color: colors.textSecondary }]}>
-                    {iAmOnMyWay ? "You're On Your Way" : "I'M ON MY WAY"}
+                    {iAmOnMyWay ? "✓ ON YOUR WAY — TAP TO UNDO" : "I'M ON MY WAY"}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity

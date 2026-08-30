@@ -172,6 +172,36 @@ export async function getAcceptedOfferForRequest(requestId) {
   return data;
 }
 
+// Aug 30 2026 (CLAUDE.md, "unfinished plan" persistent-state follow-up):
+// real sub-state inside the Place row's single 'pending' stage -- the
+// staged Find a place -> N businesses found -> Choose an option -> Booked
+// flow needs to tell "just fanned out, nobody's replied yet" apart from
+// "N businesses have replied, you need to pick one." Both real counts
+// come off the same request's own business_request_offers rows (pending =
+// notified, not yet responded; offered = a real competing offer exists),
+// one query, only ever called once a real open request exists with no
+// accepted offer yet -- a genuinely new, tiny query, not a widened one, so
+// getAcceptedOfferForRequest's already-verified contract is untouched.
+export async function getOpenOfferCounts(requestId) {
+  if (!requestId) return { pendingCount: 0, offeredCount: 0 };
+  const { data, error } = await supabase
+    .from('business_request_offers')
+    .select('status')
+    .eq('request_id', requestId)
+    .in('status', ['pending', 'offered']);
+  if (error) {
+    console.error('getOpenOfferCounts error', error);
+    return { pendingCount: 0, offeredCount: 0 };
+  }
+  let pendingCount = 0;
+  let offeredCount = 0;
+  for (const row of data ?? []) {
+    if (row.status === 'offered') offeredCount += 1;
+    else pendingCount += 1;
+  }
+  return { pendingCount, offeredCount };
+}
+
 // Batched, list-shaped counterpart to getBusinessRequestForGathering()/
 // getAcceptedOfferForRequest() -- Home's "Your Plans" section renders
 // several gatherings at once, and a real per-row query for each one would
@@ -198,14 +228,28 @@ export async function getGatheringPlaceStatuses(gatheringIds) {
 
   const requestIds = (requests ?? []).map((r) => r.id);
   const acceptedByRequest = {};
+  // Aug 30 2026 (CLAUDE.md, "unfinished plan" persistent-state follow-up):
+  // also fetch pending/offered status so a real "N businesses found" /
+  // "N offers -- choose one" sub-state is available for every row in the
+  // batch, at no extra query -- just widening the same in-clause this
+  // function already had.
+  const offerCountsByRequest = {};
   if (requestIds.length > 0) {
     const { data: offers, error: oErr } = await supabase
       .from('business_request_offers')
-      .select('id, request_id, brand_partners(name)')
+      .select('id, request_id, status, brand_partners(name)')
       .in('request_id', requestIds)
-      .in('status', ['accepted', 'completed']);
+      .in('status', ['pending', 'offered', 'accepted', 'completed']);
     if (!oErr) {
-      for (const o of offers ?? []) acceptedByRequest[o.request_id] = o;
+      for (const o of offers ?? []) {
+        if (o.status === 'accepted' || o.status === 'completed') {
+          acceptedByRequest[o.request_id] = o;
+        } else {
+          const counts = (offerCountsByRequest[o.request_id] ??= { pendingCount: 0, offeredCount: 0 });
+          if (o.status === 'offered') counts.offeredCount += 1;
+          else counts.pendingCount += 1;
+        }
+      }
     }
   }
 
@@ -214,9 +258,10 @@ export async function getGatheringPlaceStatuses(gatheringIds) {
     const request = requestByGathering[gatheringId];
     if (!request) continue;
     const accepted = acceptedByRequest[request.id];
+    const counts = offerCountsByRequest[request.id] ?? { pendingCount: 0, offeredCount: 0 };
     result[gatheringId] = accepted
-      ? { state: 'done', venueName: accepted.brand_partners?.name ?? null }
-      : { state: 'pending', venueName: null };
+      ? { state: 'done', venueName: accepted.brand_partners?.name ?? null, ...counts }
+      : { state: 'pending', venueName: null, ...counts };
   }
   return result;
 }

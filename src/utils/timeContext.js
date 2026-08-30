@@ -12,6 +12,36 @@ export function formatHeroDateTime(iso) {
   return `${d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${time}`;
 }
 
+// Aug 30 2026 (CLAUDE.md) -- Home's "Friends' Activity" cards used to show
+// only a title and host name, with zero time context -- a gathering
+// scheduled hours earlier the same day read identically to one starting in
+// 10 minutes. Returns real, honest wording either way: an upcoming/imminent
+// event still gets formatHeroDateTime's own calendar-relative string; an
+// already-past one gets a real elapsed-time label ("2 hrs ago") plus
+// `isPast: true` so the caller can also flip verb tense ("hosted" vs
+// "is hosting") -- never silently ambiguous between the two.
+export function describeFriendGatheringTiming(iso) {
+  const scheduled = new Date(iso);
+  const now = new Date();
+  const diffMs = now - scheduled;
+  if (diffMs <= 0) {
+    return { isPast: false, text: formatHeroDateTime(iso) };
+  }
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 60) {
+    return { isPast: true, text: diffMin <= 1 ? 'Just now' : `${diffMin} min ago` };
+  }
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) {
+    return { isPast: true, text: `${diffHr} hr${diffHr === 1 ? '' : 's'} ago` };
+  }
+  const diffDays = Math.floor(diffHr / 24);
+  if (diffDays === 1) {
+    return { isPast: true, text: 'Yesterday' };
+  }
+  return { isPast: true, text: formatHeroDateTime(iso) };
+}
+
 export function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 12) return 'Good morning';

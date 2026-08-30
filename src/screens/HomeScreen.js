@@ -9,6 +9,7 @@ import { resolveIntent, resolveCommunityIntent } from '../services/intentResolve
 import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
+import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
 import { buildHomeRecommendations } from '../services/homeRecommendations';
@@ -27,7 +28,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime } from '../utils/timeContext';
+import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 
@@ -1007,15 +1008,23 @@ export default function HomeScreen({ navigation }) {
   }
 
   // Real Place status for a "Your Plans" gathering row (CLAUDE.md, Aug 29
-  // 2026) -- 'done' surfaces the real venue name (PlanCard's `venueName`
-  // prop wins over its own `hostingPartnerId` lookup); 'pending' surfaces
-  // honest in-progress text, not a fabricated venue. A gathering with no
-  // entry at all (nothing ever asked) returns undefined, so PlanCard falls
-  // back to its existing hostingPartnerId lookup unchanged.
+  // 2026, extended Aug 30 2026 with a real staged sub-status -- "N
+  // businesses found" / "N offers, choose one" -- instead of one fixed
+  // "Finding a venue…" string). 'done' surfaces the real venue name
+  // (PlanCard's `venueName` prop wins over its own `hostingPartnerId`
+  // lookup); 'pending' surfaces honest real-count in-progress text. A
+  // gathering with no entry at all (nothing ever asked) returns undefined,
+  // so PlanCard falls back to its existing hostingPartnerId lookup
+  // unchanged.
   function venueNameForPlan(gatheringId) {
     const status = planPlaceStatus[gatheringId];
     if (!status) return undefined;
-    return status.state === 'done' ? status.venueName : 'Finding a venue…';
+    if (status.state === 'done') return status.venueName;
+    return formatPlaceStatusLabel({
+      place: 'pending',
+      pendingCount: status.pendingCount ?? 0,
+      offeredCount: status.offeredCount ?? 0,
+    });
   }
 
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0
@@ -1804,18 +1813,27 @@ export default function HomeScreen({ navigation }) {
                   <Ionicons name="people-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
                   <Text style={styles.subLabelText}>Friends' Activity</Text>
                 </View>
-                {dashboard.friendsActivity.map((g) => (
-                  <TouchableOpacity
-                    key={g.id}
-                    style={styles.trendingCard}
-                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                    accessibilityLabel={`${g.profiles?.display_name} is hosting ${g.title}`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.trendingTitle}>{g.profiles?.display_name} is hosting</Text>
-                    <Text style={styles.trendingMeta}>{g.title}</Text>
-                  </TouchableOpacity>
-                ))}
+                {dashboard.friendsActivity.map((g) => {
+                  const timing = g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
+                  const verb = timing?.isPast ? 'hosted' : 'is hosting';
+                  return (
+                    <TouchableOpacity
+                      key={g.id}
+                      style={styles.trendingCard}
+                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                      accessibilityLabel={`${g.profiles?.display_name} ${verb} ${g.title}${timing ? `, ${timing.isPast ? `${timing.text}, already happened` : timing.text}` : ''}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.trendingTitle}>{g.profiles?.display_name} {verb}</Text>
+                      <Text style={styles.trendingMeta}>{g.title}</Text>
+                      {timing && (
+                        <Text style={styles.trendingMeta}>
+                          {timing.isPast ? `${timing.text} · Already happened` : timing.text}
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </>
             )}
           </>

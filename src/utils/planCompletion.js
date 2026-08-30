@@ -74,3 +74,31 @@ export function getMatchPlanCompletion({
 export function hasStartedMatchPlan({ proposalStatus, businessRequest }) {
   return Boolean(proposalStatus) || Boolean(businessRequest);
 }
+
+// Aug 30 2026 -- the real staged copy behind the "unfinished plan" state
+// (CLAUDE.md): "No place yet" -> "Find a place" -> a real "N businesses
+// found" / "waiting to hear back" sub-state -> "N offers, choose one" ->
+// "Booked at {venue}", all four/five surfaces read off the identical
+// underlying pending/offered/accepted business_request_offers rows so
+// none of them can ever say something different from the others. Pure
+// formatter, no I/O -- every count it reads is real (pendingCount =
+// businesses notified who haven't replied yet, offeredCount = businesses
+// who have), never a fabricated number.
+export function formatPlaceStatusLabel({
+  place,
+  pendingCount = 0,
+  offeredCount = 0,
+  venueName = null,
+} = {}) {
+  if (place === PLAN_STAGE_DONE) return venueName ? `Booked at ${venueName}` : 'Booked';
+  if (place === PLAN_STAGE_PENDING) {
+    if (offeredCount > 0) {
+      return `${offeredCount} offer${offeredCount === 1 ? '' : 's'} — choose one`;
+    }
+    if (pendingCount > 0) {
+      return `Asked ${pendingCount} business${pendingCount === 1 ? '' : 'es'} — waiting to hear back`;
+    }
+    return 'Waiting for business offer';
+  }
+  return 'Find a place';
+}

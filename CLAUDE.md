@@ -1,3 +1,141 @@
+## Aug 30 2026 (cont'd) — a third external product-critique reply: Friends' Activity time
+## context, Dating Preferences relocated to its own screen, real staged "Find a place" sub-
+## status labels across every plan surface, and a real "I'm On My Way" undo — all four DONE,
+## picked back up after a codespace restart interrupted the session mid-verification
+
+Written to document what was reconstructed and finished after a codespace restart, matching
+this file's own restart-safety convention — the restart hit *after* the code for all four items
+below was already written (confirmed via `git status`/`git diff` on resume: 14 modified files,
+2 new untracked files, all four items' own code already complete and internally consistent) but
+*before* the live-migration verification, the final `npx expo export`/Jest re-run, and this
+CLAUDE.md entry itself ever happened — the original plan text this session's own prior turn
+would have written into this file was lost with the conversation, not with the filesystem.
+Reconstructed directly from the real diffs (every touched file read in full, cross-referenced
+against its own header comments, which consistently cite "CLAUDE.md, external product-critique
+reply" as their source) rather than guessed at.
+
+### The four real items, each closing a real, specific complaint
+
+1. **Home's "Friends' Activity" cards had zero time context.** A gathering scheduled hours
+   earlier the same day read identically to one starting in 10 minutes — both just showed a
+   title and host name. New `describeFriendGatheringTiming()` in `utils/timeContext.js` — a
+   real, honest elapsed/upcoming label (`formatHeroDateTime()`'s own calendar-relative string
+   for anything still upcoming; "Just now" / "N min ago" / "N hrs ago" / "Yesterday" for
+   anything already past) plus an `isPast` flag so the card can also flip verb tense ("hosted"
+   vs. "is hosting") — never silently ambiguous between the two. `homeDashboard.js`'s
+   `friendsActivity` query widened by one column (`scheduled_at`, already-fetched rows, no new
+   query) to feed it. `HomeScreen.js` wired to render both the verb and the real timing line.
+2. **Dating preferences relocated to their own real screen — "Dating should own the
+   dating-specific information," not generic Settings.** New `src/screens/DatingPreferencesScreen.js`
+   + `DatingPreferences` route (`RootNavigator.js`) — the real canonical home for what's
+   genuinely dating-specific (Looking For/`relationship_intention`, age range, ethnicity
+   preferences — the exact same columns Settings used to write directly, a relocation of the one
+   real edit surface, never a second copy). Gender identity/ethnicity/interests/photos/bio stay
+   owned by Profile (a single fact about who you are shouldn't have two edit surfaces that could
+   drift) — the new screen surfaces interests read-only with a link back to Profile to actually
+   change them, and links to Profile's own gender/ethnicity section the same way Settings' old
+   card did. `SettingsScreen.js`'s inline "Dating Preferences" card (Looking For chips, age-range
+   inputs, ethnicity chips, Save) was fully removed — replaced with a single "Manage →" row
+   pointing at the new screen; `SettingsScreen.js` lost its now-dead `minAge`/`maxAge`/
+   `ethnicityPreferences`/`relationshipIntention` state, `toggleEthnicityPreference`/
+   `toggleIntention`/`savePreferences`, and both now-unused constant imports. `DiscoveryScreen.js`
+   (Discover → People → Dating) gained a real 👤 header icon reaching the same screen directly,
+   so it's reachable from where dating actually happens, not just from Settings.
+   **A genuine duplicate found and fixed while finishing this pass, not left standing**: the new
+   screen also included a real "✨ Why someone would be lucky to date you" AI note generator
+   (`generate-strengths`) — but `ProfileScreen.js` still had its own, byte-for-byte identical
+   button calling the same Edge Function, never removed when the new screen was built. Two
+   screens independently offering the same AI action, with nothing stating a relationship between
+   them, is exactly the class of duplication this file's own conventions repeatedly catch and
+   close elsewhere. Since this is genuinely dating-matchmaking copy, not general profile content,
+   it now lives once — on `DatingPreferencesScreen` — and was fully removed from `ProfileScreen.js`
+   (the `showStrengths` function, its `loadingStrengths` state, the button's own JSX, the two
+   now-dead `strengthsButton`/`strengthsButtonText` styles, and the now-unused `functionUrl`
+   import, none of which had any other caller in the file — confirmed via grep before removing
+   each).
+3. **A real staged sub-status for the "unfinished plan" Place segment, not one fixed
+   "Waiting to hear back" string.** Direct follow-up to the Aug 29 2026 persistent
+   People/Time/Place plan-completion state (`PlanCompletionRow`/`planCompletion.js`, already
+   DONE) — its `pending` state previously showed the same generic default text regardless of
+   whether a request had just been sent or already had real competing offers waiting to be
+   chosen. New `formatPlaceStatusLabel()` in `utils/planCompletion.js` — a pure formatter, no
+   I/O, every count real: `done` → `"Booked at {venue}"`; `pending` with real offers waiting →
+   `"N offers — choose one"`; `pending` with businesses notified but none replied yet →
+   `"Asked N businesses — waiting to hear back"`; otherwise the honest `"Waiting for business
+   offer"`; `todo` → `"Find a place"`. New `getOpenOfferCounts(requestId)` in
+   `services/businessFulfillment.js` (a real, small, genuinely new query — `business_request_offers`
+   rows in `pending`/`offered` status for one request) and a widened `getGatheringPlaceStatuses()`
+   (same in-clause, no extra query) both feed it; `services/dateProposals.js`'s
+   `getMyActivePlansByMatch()` got the identical widening for the batched match-list case.
+   **A real, RLS-dependent correctness claim baked into the code as comments — independently
+   verified live against production this pass, not assumed**: a gathering attendee's own RLS
+   policy on `business_request_offers` ("Approved gathering attendees can view the accepted
+   offer") is scoped to `status IN ('accepted','completed')` only, so only the real requester
+   (host) — via the separate, unscoped "Requesters can view offers on their own requests" policy
+   — can ever see a `pending`/`offered` row for a gathering-sourced request; a match-sourced
+   request's "Match participants can view offers on their request" policy has no such status
+   restriction, so *both* real match participants can see the same sub-state. Pulled all five
+   live `business_request_offers` RLS policies directly via the Management API and confirmed
+   this exactly — `GatheringDetailScreen.js` only computes real counts for the host, everyone
+   else gets the honest fallback; `DateProposalScreen.js` computes it for either participant.
+   Wired into all four real surfaces that render a Place segment: `HomeScreen.js`'s "Your Plans"
+   rows (`venueNameForPlan()`), `GatheringDetailScreen.js`'s `PlanCompletionRow`, `DateProposalScreen.js`'s
+   `PlanCompletionRow`, and `MatchesScreen.js`'s per-match row — `PlanCompletionRow.js` itself
+   needed no change, since it already accepted an arbitrary `placeLabels` map from the Aug 29
+   build; this pass only supplies richer, real-count-backed values into that same prop.
+4. **A real "I'm On My Way" undo — previously a one-way action with no way back.** Real,
+   user-reported gap: `GatheringHubScreen.js`'s "I'M ON MY WAY" button disabled itself the
+   instant it was tapped, with no path back if tapped by mistake or if plans changed before
+   checking in — `set_gathering_on_my_way()` had no counterpart. New `unset_gathering_on_my_way(
+   gathering_id_param)` SECURITY DEFINER RPC (`supabase/migrations/20260830_gathering_on_my_way_undo.sql`)
+   — pulled `set_gathering_on_my_way()`'s real live body fresh before writing this, not
+   reconstructed from memory — mirrors its exact shape (same owner-scoped `user_id = auth.uid()`
+   check, same `status = 'approved'`-only guard), just clearing `on_my_way_at` back to `null`
+   instead of setting it. `unsetGatheringOnMyWay()` added to `services/gatherings.js`.
+   `GatheringHubScreen.js`'s `handleOnMyWay()` is now a real toggle — tapping again while already
+   on the way calls the new function instead of being disabled; the button's own label reads
+   "✓ ON YOUR WAY — TAP TO UNDO" while active, and it's no longer `disabled={iAmOnMyWay}`.
+
+### Verification, this pass
+
+- **All 16 touched/new files parse clean** via a direct `@babel/core` transform (16/16 OK, one
+  by one, not just the final export).
+- **A full `npx expo export --platform ios` built clean, no bundling errors — 2279 modules**
+  (one more than the prior 2278 baseline, exactly the one new client-bundled file,
+  `DatingPreferencesScreen.js`; the migration file isn't bundled, matching convention). Re-run a
+  second time after the `ProfileScreen.js` duplicate-button cleanup, still clean, same module
+  count (that cleanup only removed code from an already-counted file).
+- **The full Jest suite passes, 168/168, 14 suites** (unchanged from the pre-pass baseline —
+  `timeContext.test.js` in particular still passes clean after `describeFriendGatheringTiming`
+  was added alongside the existing `formatHeroDateTime`/period tests).
+- **`unset_gathering_on_my_way()` verified live end-to-end against production**
+  (`enmosvippabmuqslzrox`), not just confirmed to exist — real disposable test data (a real test
+  gathering hosted by a real profile, a real approved attendee, cleaned up afterward): the real
+  attendee's own `set_gathering_on_my_way()` call correctly set `on_my_way_at`; the same
+  attendee's `unset_gathering_on_my_way()` call correctly reverted it to `null`; a genuine
+  non-participant's attempt to unset a different person's row correctly did nothing (the
+  `user_id = auth.uid()` ownership check holds, proven under a real cross-account attempt, not
+  just read from the SQL); re-verified the real owner's own undo a second time **under genuine
+  `SET ROLE authenticated`** (not just a `request.jwt.claims` GUC against the Management API's
+  own table-owner connection, this file's own repeatedly-learned "false-negative first pass"
+  lesson) — still correctly succeeds; a genuinely `pending` (not yet approved) attendee's
+  `on_my_way_at` is correctly untouchable by `set_gathering_on_my_way()` either way, matching
+  the guard's own `status = 'approved'` clause. All test rows (the gathering, both
+  `gathering_interest` rows) deleted afterward — confirmed production back to its exact pre-test
+  baseline (0 matching rows).
+- **The `business_request_offers` RLS claim behind item 3 was independently verified live**
+  (all five real policies pulled directly, not assumed from a prior session's own comment),
+  confirming the host-only-vs-both-match-participants distinction the new code relies on is
+  real, not a guess.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through of any of the four items — next session should confirm, on a real device: Home's
+Friends' Activity cards read correctly for both a past and an upcoming friend gathering, the new
+Dating Preferences screen renders/saves correctly and is reachable from both Settings and
+Discover's People→Dating icon, the real staged Place sub-status text reads correctly across all
+four surfaces once a real request has real pending/offered/accepted offers at each stage, and
+that the "I'm On My Way" button genuinely toggles both directions on a real device tap.
+
 ## Aug 30 2026 (cont'd) — second external UX critique on the same Discover/People screen,
 ## audited against the just-shipped fix — most of it already resolved; two real,
 ## consequential decisions flagged rather than silently picked, since one directly

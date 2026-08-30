@@ -7,8 +7,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
-import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
-import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { typography, spacing, radius } from '../theme';
 
 function toE164(rawInput) {
@@ -59,11 +57,7 @@ export default function SettingsScreen({ navigation, route }) {
   const { t, language, setLanguage } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
-  const [minAge, setMinAge] = useState('18');
-  const [maxAge, setMaxAge] = useState('99');
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
-  const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
-  const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
@@ -123,62 +117,14 @@ export default function SettingsScreen({ navigation, route }) {
 
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
-      setMinAge(String(data.preferred_min_age ?? 18));
-      setMaxAge(String(data.preferred_max_age ?? 99));
       setNotifyMatches(data.notify_matches ?? true);
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
-      setEthnicityPreferences(data.ethnicity_preferences ?? []);
-      setRelationshipIntention(Array.isArray(data.relationship_intention) ? data.relationship_intention : (data.relationship_intention ? [data.relationship_intention] : []));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
       setIntentVisibility(data.intent_visibility ?? 'friends_and_matches');
     }
-  }
-
-  function toggleEthnicityPreference(option) {
-    setEthnicityPreferences((prev) =>
-      prev.includes(option) ? prev.filter((e) => e !== option) : [...prev, option]
-    );
-  }
-
-  async function toggleIntention(value) {
-    const current = Array.isArray(relationshipIntention) ? relationshipIntention : [];
-    const newValue = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
-    setRelationshipIntention(newValue);
-    const { error } = await supabase.from('profiles').update({ relationship_intention: newValue.length > 0 ? newValue : null }).eq('id', userId);
-    if (error) {
-      Alert.alert('Error', error.message);
-    }
-  }
-
-  async function savePreferences() {
-    const minAgeNum = parseInt(minAge, 10);
-    const maxAgeNum = parseInt(maxAge, 10);
-
-    if (isNaN(minAgeNum) || isNaN(maxAgeNum) || minAgeNum < 18 || maxAgeNum < minAgeNum) {
-      return Alert.alert('Invalid range', 'Enter a valid age range (minimum 18).');
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        preferred_min_age: minAgeNum,
-        preferred_max_age: maxAgeNum,
-        ethnicity_preferences: ethnicityPreferences,
-        // Phase 3 (progressive/contextual settings): explicitly saving here
-        // is itself "already engaged with these preferences" -- flips the
-        // same flag DiscoveryScreen's first-open prompt gates on, so a user
-        // who edits this in Settings first is never asked again.
-        dating_preferences_set: true,
-      })
-      .eq('id', userId);
-
-    if (error) return Alert.alert('Error', error.message);
-    Alert.alert('Saved');
   }
 
   async function updateDiscoveryViewStyle(style) {
@@ -425,107 +371,27 @@ export default function SettingsScreen({ navigation, route }) {
           Preferences
         </Text>
 
-        {/* Taxonomy audit Phase 1: "Looking For" and "Discovery Preferences"
-            merged into one card so the two headers stop reading as two
-            disconnected systems (CLAUDE.md, Aug 25 2026). The legacy
-            discovery_gender/show_me chip pickers are gone from this screen
-            outright -- gender identity & who you're interested in are now
-            edited exactly one place, Profile's own gender_identity/
-            interested_in_genders section -- linked below, not duplicated
-            here. discovery_gender/show_me stay real, live columns
-            (passesGenderMatch()'s own fallback still reads them for any
-            account that hasn't touched the new fields yet), just no longer
-            asked about or editable from this screen -- same "don't delete
-            legacy data, just stop asking" convention as relationship_goals'
-            own removal from basicsFields.js. */}
+        {/* Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating
+            preferences are product preferences, not application settings."
+            What's looking for/age range/ethnicity preferences used to be
+            edited inline right here now lives at its real canonical home,
+            DatingPreferencesScreen -- reached from Discover -> People ->
+            Dating (a real dedicated icon there) as well as from this one
+            shortcut row. Settings is no longer where these are actually
+            written; it's just a pointer, matching the same "don't delete
+            legacy data, just stop asking" posture the taxonomy pass already
+            established for discovery_gender/show_me above. */}
         <Text style={styles.sectionLabel} accessibilityRole="header">❤️ Dating Preferences</Text>
-        <View style={styles.card}>
-          <Text style={styles.label}>Looking For</Text>
-          <View style={styles.chipsWrap}>
-            {INTENTION_OPTIONS.map((option) => {
-              const selected = (Array.isArray(relationshipIntention) ? relationshipIntention : []).includes(option.value);
-              return (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  onPress={() => toggleIntention(option.value)}
-                  activeOpacity={0.8}
-                  accessibilityLabel={option.label}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {option.icon} {option.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={styles.helperText}>
-            Select as many as apply. Shown on your profile. How often you change this is visible too — it's meant to keep expectations honest, for you and everyone you match with.
-          </Text>
-
-          <TouchableOpacity
-            style={{ marginTop: spacing.md }}
-            onPress={() => navigation.navigate('Profile', { scrollToGenderSection: true })}
-            accessibilityLabel="Gender identity, ethnicity, and their visibility are managed on your Profile"
-            accessibilityRole="button"
-          >
-            <Text style={styles.linkText}>Gender identity, ethnicity, and their visibility are managed on your Profile →</Text>
-          </TouchableOpacity>
-
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ageRange')}</Text>
-          <View style={styles.ageRow}>
-            <TextInput
-              style={[styles.input, styles.ageInput]}
-              value={minAge}
-              onChangeText={setMinAge}
-              keyboardType="number-pad"
-              placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Minimum age"
-            />
-            <Text style={styles.ageDash}>to</Text>
-            <TextInput
-              style={[styles.input, styles.ageInput]}
-              value={maxAge}
-              onChangeText={setMaxAge}
-              keyboardType="number-pad"
-              placeholderTextColor={colors.textTertiary}
-              accessibilityLabel="Maximum age"
-            />
-          </View>
-
-          <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('settings.ethnicityPreferences')}</Text>
-          <View style={styles.chipsWrap}>
-            {ETHNICITY_OPTIONS.map((option) => {
-              const selected = ethnicityPreferences.includes(option);
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.chip, selected && styles.chipSelected]}
-                  onPress={() => toggleEthnicityPreference(option)}
-                  activeOpacity={0.8}
-                  accessibilityLabel={option}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={styles.helperText}>{t('settings.ethnicityPreferencesHelper')}</Text>
-
-          <TouchableOpacity
-            style={styles.button}
-            onPress={savePreferences}
-            activeOpacity={0.85}
-            accessibilityLabel="Save preferences"
-            accessibilityRole="button"
-          >
-            <Text style={styles.buttonText}>Save Preferences</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.card, styles.settingRow]}
+          onPress={() => navigation.navigate('DatingPreferences')}
+          activeOpacity={0.8}
+          accessibilityLabel="Dating Preferences, manage in your Dating Profile"
+          accessibilityRole="button"
+        >
+          <Text style={styles.settingLabel}>Dating Preferences</Text>
+          <Text style={styles.linkText}>Manage →</Text>
+        </TouchableOpacity>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>
         <View style={styles.card}>
@@ -1025,9 +891,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
-  ageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  ageInput: { flex: 1, textAlign: 'center' },
-  ageDash: { color: colors.textTertiary },
   helperText: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm, lineHeight: 16 },
   linkText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },

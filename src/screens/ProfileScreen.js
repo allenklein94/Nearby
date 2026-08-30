@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, LayoutAnimation, UIManager, Switch } from 'react-native';
-import { supabase, functionUrl } from '../services/supabase';
+import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
@@ -128,7 +128,6 @@ export default function ProfileScreen({ navigation, route }) {
   const [draftQuestion, setDraftQuestion] = useState('');
   const [draftAnswer, setDraftAnswer] = useState('');
   const [expandedField, setExpandedField] = useState(null);
-  const [loadingStrengths, setLoadingStrengths] = useState(false);
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
@@ -227,45 +226,14 @@ export default function ProfileScreen({ navigation, route }) {
     ]);
   }
 
-  async function showStrengths() {
-    setLoadingStrengths(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      const response = await fetch(functionUrl('generate-strengths'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          Alert.alert(
-            'Premium Feature',
-            'Generating a personalized note about your profile uses AI and is a Premium feature.',
-            [
-              { text: 'Not now', style: 'cancel' },
-              { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
-            ]
-          );
-          setLoadingStrengths(false);
-          return;
-        }
-        Alert.alert('Error', result.error || 'Could not generate this right now.');
-        setLoadingStrengths(false);
-        return;
-      }
-
-      Alert.alert('✨ A note for you', result.summary, [{ text: 'Thanks' }]);
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    }
-    setLoadingStrengths(false);
-  }
+  // Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating
+  // should own the dating-specific information" -- this "why someone
+  // would be lucky to date you" note is dating-specific matchmaking copy,
+  // not general profile content. It now lives once, on
+  // DatingPreferencesScreen, alongside the rest of what's genuinely
+  // dating-specific (Looking For, age range, ethnicity preferences) --
+  // removed from here so it isn't the same AI action offered from two
+  // unrelated screens with no stated relationship between them.
 
   function toggleFieldExpanded(key) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -1204,17 +1172,6 @@ const result = await response.json();
         </View>
 
         <TouchableOpacity
-          style={styles.strengthsButton}
-          onPress={showStrengths}
-          disabled={loadingStrengths}
-          activeOpacity={0.85}
-          accessibilityLabel="Generate a note about why someone would be lucky to date you"
-          accessibilityRole="button"
-        >
-          <Text style={styles.strengthsButtonText}>{loadingStrengths ? 'Thinking...' : '✨ Why someone would be lucky to date you'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={styles.button}
           onPress={save}
           activeOpacity={0.85}
@@ -1441,11 +1398,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  strengthsButton: {
-    backgroundColor: colors.primaryMuted, borderRadius: radius.full, paddingVertical: 14,
-    alignItems: 'center', marginTop: spacing.lg, borderWidth: 1, borderColor: colors.primary,
-  },
-  strengthsButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   promptCard: {
     flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.surfaceElevated,
     borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,

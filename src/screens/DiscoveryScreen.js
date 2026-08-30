@@ -479,6 +479,19 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                 <Text style={styles.headerIconText}>🗺️</Text>
               </TouchableOpacity>
             )}
+            {/* Aug 30 2026 (CLAUDE.md, external product-critique reply):
+                "Dating should own the dating-specific information" -- a
+                real entry point into the dedicated Dating Profile, right
+                here inside Discover -> People -> Dating rather than only
+                reachable through generic Settings. */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('DatingPreferences')}
+              style={styles.headerIconButton}
+              accessibilityLabel="Your Dating Profile — what you're looking for and dating preferences"
+              accessibilityRole="button"
+            >
+              <Text style={styles.headerIconText}>👤</Text>
+            </TouchableOpacity>
           </View>
         </View>
         {/* Was a static "Crossed Paths"/"People you've been near recently"

@@ -9,11 +9,11 @@ import {
   respondToDateProposal,
   withdrawDateProposal,
 } from '../services/dateProposals';
-import { getAcceptedOfferForRequest } from '../services/businessFulfillment';
+import { getAcceptedOfferForRequest, getOpenOfferCounts } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import PlanCompletionRow from '../components/PlanCompletionRow';
-import { getMatchPlanCompletion } from '../utils/planCompletion';
+import { getMatchPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -40,6 +40,7 @@ export default function DateProposalScreen({ navigation, route }) {
   const [proposal, setProposal] = useState(null);
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedOffer, setAcceptedOffer] = useState(null);
+  const [placeOfferCounts, setPlaceOfferCounts] = useState({ pendingCount: 0, offeredCount: 0 });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [planText, setPlanText] = useState('');
@@ -65,12 +66,19 @@ export default function DateProposalScreen({ navigation, route }) {
         if (request) {
           const offer = await getAcceptedOfferForRequest(request.id);
           setAcceptedOffer(offer);
+          // Real "N businesses found" / "N offers, choose one" sub-state
+          // (CLAUDE.md, Aug 30 2026) -- both match participants can
+          // legitimately see pending/offered rows on a match-sourced
+          // request (unlike a gathering attendee's narrower policy).
+          setPlaceOfferCounts(offer ? { pendingCount: 0, offeredCount: 0 } : await getOpenOfferCounts(request.id));
         } else {
           setAcceptedOffer(null);
+          setPlaceOfferCounts({ pendingCount: 0, offeredCount: 0 });
         }
       } else {
         setBusinessRequest(null);
         setAcceptedOffer(null);
+        setPlaceOfferCounts({ pendingCount: 0, offeredCount: 0 });
       }
     } catch (e) {
       console.error('DateProposalScreen load failed', e);
@@ -156,6 +164,11 @@ export default function DateProposalScreen({ navigation, route }) {
     businessRequest,
     acceptedOffer,
   });
+  const planPlaceLabels = {
+    done: formatPlaceStatusLabel({ place: 'done', venueName: acceptedOffer?.brand_partners?.name ?? null }),
+    pending: formatPlaceStatusLabel({ place: 'pending', ...placeOfferCounts }),
+    todo: 'Find a place',
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -174,6 +187,7 @@ export default function DateProposalScreen({ navigation, route }) {
             people={planCompletion.people}
             time={planCompletion.time}
             place={planCompletion.place}
+            placeLabels={planPlaceLabels}
             onPlacePress={
               acceptedOffer || businessRequest
                 ? () => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })

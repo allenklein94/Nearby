@@ -567,7 +567,7 @@ export async function getHomeDashboard() {
     // host's name repeated 3 times in a row.
     const { data: friendGatherings } = await supabase
       .from('gatherings')
-      .select('id, title, host_id, created_at, profiles!gatherings_host_id_fkey(display_name)')
+      .select('id, title, host_id, created_at, scheduled_at, profiles!gatherings_host_id_fkey(display_name)')
       .in('host_id', friendIds)
       .gte('created_at', threeDaysAgo)
       .order('created_at', { ascending: false })

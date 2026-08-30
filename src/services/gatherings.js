@@ -1092,6 +1092,14 @@ export async function setGatheringOnMyWay(gatheringId) {
   if (error) throw error;
 }
 
+// Aug 30 2026 -- a real undo for the above: tapping "I'm On My Way" used to
+// be a one-way action with no way back if it was tapped by mistake or plans
+// changed before checking in.
+export async function unsetGatheringOnMyWay(gatheringId) {
+  const { error } = await supabase.rpc('unset_gathering_on_my_way', { gathering_id_param: gatheringId });
+  if (error) throw error;
+}
+
 export async function checkInToGathering(gatheringId) {
   const { error } = await supabase.rpc('check_in_to_gathering', { gathering_id_param: gatheringId });
   if (error) throw error;

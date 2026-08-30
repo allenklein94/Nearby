@@ -23,6 +23,7 @@ import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import {
   getBusinessRequestForGathering,
   getAcceptedOfferForRequest,
+  getOpenOfferCounts,
   submitBusinessRequestForGathering,
 } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
@@ -34,7 +35,7 @@ import ReasonList from '../components/ReasonList';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import PlanCompletionRow from '../components/PlanCompletionRow';
-import { getGatheringPlanCompletion } from '../utils/planCompletion';
+import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
@@ -75,6 +76,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [countdownStats, setCountdownStats] = useState(null);
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedBusinessOffer, setAcceptedBusinessOffer] = useState(null);
+  const [placeOfferCounts, setPlaceOfferCounts] = useState({ pendingCount: 0, offeredCount: 0 });
   const [firingBusinessRequest, setFiringBusinessRequest] = useState(false);
   // "Find a Business for This Plan" merge (CLAUDE.md, locked directly by
   // the user) -- the specific-business half of the merged entry point.
@@ -142,8 +144,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
         if (request) {
           const accepted = await getAcceptedOfferForRequest(request.id);
           setAcceptedBusinessOffer(accepted);
+          // Real "N businesses found" / "N offers, choose one" sub-state
+          // (CLAUDE.md, Aug 30 2026) -- host-only, since RLS only ever
+          // lets the requester see pending/offered rows at all (an
+          // attendee's own widened policy is scoped to accepted/completed
+          // only, see the comment on that branch below).
+          setPlaceOfferCounts(accepted ? { pendingCount: 0, offeredCount: 0 } : await getOpenOfferCounts(request.id));
         } else {
           setAcceptedBusinessOffer(null);
+          setPlaceOfferCounts({ pendingCount: 0, offeredCount: 0 });
         }
         const partnershipRequest = await getMyPartnershipRequestForTarget('gathering', gatheringId);
         setMyPartnershipRequest(partnershipRequest);
@@ -174,6 +183,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
           setBusinessRequest(null);
           setAcceptedBusinessOffer(null);
         }
+        // An attendee's own RLS never surfaces pending/offered rows (only
+        // accepted/completed, per the branch above's own comment) -- no
+        // real count to show, the formatter's honest fallback ("Waiting
+        // for business offer") is what an attendee should see either way.
+        setPlaceOfferCounts({ pendingCount: 0, offeredCount: 0 });
       }
 
       if (g.approvedAttendees?.length > 0) {
@@ -338,6 +352,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
     businessRequest,
     acceptedOffer: acceptedBusinessOffer,
   });
+  // Real staged copy for the Place segment (CLAUDE.md, Aug 30 2026 --
+  // "Find a place" -> "N businesses found" -> "Choose an option" ->
+  // "Booked at {venue}") -- every count is real, from the same
+  // business_request_offers rows the merged accepted-offer card below
+  // already reads.
+  const planPlaceLabels = {
+    done: formatPlaceStatusLabel({ place: 'done', venueName: acceptedBusinessOffer?.brand_partners?.name ?? null }),
+    pending: formatPlaceStatusLabel({ place: 'pending', ...placeOfferCounts }),
+    todo: 'Find a place',
+  };
   const gatheringIsUpcoming = new Date(gathering.scheduled_at) >= new Date();
   const canActOnPlace = Boolean(businessRequest || acceptedBusinessOffer || gatheringIsUpcoming);
   function handlePlaceRowPress() {
@@ -586,6 +610,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 people={planCompletion.people}
                 time={planCompletion.time}
                 place={planCompletion.place}
+                placeLabels={planPlaceLabels}
                 onPlacePress={canActOnPlace ? handlePlaceRowPress : undefined}
                 style={{ marginTop: spacing.xs, marginBottom: spacing.sm }}
               />

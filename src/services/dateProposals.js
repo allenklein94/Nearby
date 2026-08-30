@@ -108,14 +108,27 @@ export async function getMyActivePlansByMatch(matchIds) {
 
   const requestIds = (requests ?? []).map((r) => r.id);
   const acceptedByRequest = {};
+  // Aug 30 2026 (CLAUDE.md, "unfinished plan" persistent-state follow-up):
+  // same widened in-clause as getGatheringPlaceStatuses -- gives every row
+  // a real "N businesses found" / "N offers, choose one" sub-state at no
+  // extra query.
+  const offerCountsByRequest = {};
   if (requestIds.length > 0) {
     const { data: offers, error: oErr } = await supabase
       .from('business_request_offers')
-      .select('id, request_id, proposed_time, offer_type, offer_price, offer_description, brand_partners(name, latitude, longitude, address)')
+      .select('id, request_id, status, proposed_time, offer_type, offer_price, offer_description, brand_partners(name, latitude, longitude, address)')
       .in('request_id', requestIds)
-      .in('status', ['accepted', 'completed']);
+      .in('status', ['pending', 'offered', 'accepted', 'completed']);
     if (oErr) throw new Error(oErr.message);
-    for (const o of offers ?? []) acceptedByRequest[o.request_id] = o;
+    for (const o of offers ?? []) {
+      if (o.status === 'accepted' || o.status === 'completed') {
+        acceptedByRequest[o.request_id] = o;
+      } else {
+        const counts = (offerCountsByRequest[o.request_id] ??= { pendingCount: 0, offeredCount: 0 });
+        if (o.status === 'offered') counts.offeredCount += 1;
+        else counts.pendingCount += 1;
+      }
+    }
   }
 
   const result = {};
@@ -123,7 +136,10 @@ export async function getMyActivePlansByMatch(matchIds) {
     const proposal = latestByMatch[matchId] ?? null;
     const businessRequest = requestByMatch[matchId] ?? null;
     const acceptedOffer = businessRequest ? acceptedByRequest[businessRequest.id] ?? null : null;
-    result[matchId] = { proposal, businessRequest, acceptedOffer };
+    const offerCounts = businessRequest
+      ? offerCountsByRequest[businessRequest.id] ?? { pendingCount: 0, offeredCount: 0 }
+      : { pendingCount: 0, offeredCount: 0 };
+    result[matchId] = { proposal, businessRequest, acceptedOffer, ...offerCounts };
   }
   return result;
 }

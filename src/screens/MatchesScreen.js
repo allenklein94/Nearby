@@ -7,7 +7,7 @@ import { getSeenMatchIds, markMatchesSeen } from '../services/matchCelebration';
 import { getPendingCheckIns, respondToCheckIn } from '../services/dateSafety';
 import { generateCompatibilityReport } from '../services/compatibility';
 import { getMyActivePlansByMatch } from '../services/dateProposals';
-import { getMatchPlanCompletion, hasStartedMatchPlan } from '../utils/planCompletion';
+import { getMatchPlanCompletion, hasStartedMatchPlan, formatPlaceStatusLabel } from '../utils/planCompletion';
 import PlanCompletionRow from '../components/PlanCompletionRow';
 import MatchCelebrationModal from '../components/MatchCelebrationModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
@@ -326,6 +326,17 @@ export default function MatchesScreen({ navigation }) {
                 acceptedOffer: activePlan?.acceptedOffer ?? null,
               })
             : null;
+          const matchPlaceLabels = planStarted
+            ? {
+                done: formatPlaceStatusLabel({ place: 'done', venueName: activePlan?.acceptedOffer?.brand_partners?.name ?? null }),
+                pending: formatPlaceStatusLabel({
+                  place: 'pending',
+                  pendingCount: activePlan?.pendingCount ?? 0,
+                  offeredCount: activePlan?.offeredCount ?? 0,
+                }),
+                todo: 'Find a place',
+              }
+            : undefined;
           return (
             <View style={styles.cardWrap}>
             <View style={styles.card}>
@@ -407,6 +418,7 @@ export default function MatchesScreen({ navigation }) {
                   people={matchPlanCompletion.people}
                   time={matchPlanCompletion.time}
                   place={matchPlanCompletion.place}
+                  placeLabels={matchPlaceLabels}
                 />
               </TouchableOpacity>
             )}
