@@ -9,6 +9,7 @@ const {
   scoreGatheringForResolver,
   priceAndPartyBonus,
   attributeAndCuisineBonus,
+  accommodatesPartyTypeBonus,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
@@ -105,6 +106,26 @@ describe('attributeAndCuisineBonus', () => {
 
   it('does not award the attribute bonus twice for multiple overlapping attributes', () => {
     expect(attributeAndCuisineBonus({ cuisine: null, attributes: ['outdoor_seating', 'quiet', 'casual'] }, ['outdoor_seating', 'quiet'], null)).toBe(SCORE_HAPPENING_NOW);
+  });
+});
+
+// "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026).
+describe('accommodatesPartyTypeBonus', () => {
+  it('awards a bonus when the business genuinely accommodates the asked-for party type', () => {
+    expect(accommodatesPartyTypeBonus({ accommodates_party_types: ['solo', 'date'] }, 'date')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when the ask has no classified party type', () => {
+    expect(accommodatesPartyTypeBonus({ accommodates_party_types: ['solo', 'date'] }, null)).toBe(0);
+  });
+
+  it('awards nothing for a real mismatch, never a fabricated match', () => {
+    expect(accommodatesPartyTypeBonus({ accommodates_party_types: ['groups'] }, 'date')).toBe(0);
+  });
+
+  it('awards nothing when the business never declared any accommodated party types', () => {
+    expect(accommodatesPartyTypeBonus({ accommodates_party_types: [] }, 'date')).toBe(0);
+    expect(accommodatesPartyTypeBonus({ accommodates_party_types: null }, 'date')).toBe(0);
   });
 });
 

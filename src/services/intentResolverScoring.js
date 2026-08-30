@@ -153,6 +153,20 @@ export function attributeAndCuisineBonus(row, attributes, cuisine) {
   return bonus;
 }
 
+// "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the business's
+// own real, declared accommodates_party_types (solo|friends|groups|date --
+// the identical vocabulary gatherings.party_type/business_requests.party_type
+// already use) was collected and shown on the business's own public profile
+// but never reached any consumer-facing ranking. Same shape as
+// attributeAndCuisineBonus() above -- a real value match is a flat
+// SCORE_HAPPENING_NOW bonus, never a hard filter, so a business that can't
+// honestly claim a match is never excluded, just not boosted.
+export function accommodatesPartyTypeBonus(row, partyType) {
+  if (!partyType) return 0;
+  const accommodates = Array.isArray(row.accommodates_party_types) ? row.accommodates_party_types : [];
+  return accommodates.includes(partyType) ? SCORE_HAPPENING_NOW : 0;
+}
+
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

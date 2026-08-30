@@ -29,6 +29,7 @@ import {
   scoreGatheringForResolver,
   priceAndPartyBonus,
   attributeAndCuisineBonus,
+  accommodatesPartyTypeBonus,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -249,7 +250,7 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType) {
   if (!location) return [];
   // Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
   // a real hard feasibility filter now, not just relevance -- a posting
@@ -287,6 +288,10 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // less relevant but slightly closer one, without ever hiding an
     // otherwise-eligible posting outright.
     score += attributeAndCuisineBonus(row, attributes, cuisine);
+    // "10/10 blueprint" audit, Finding 8 (CLAUDE.md, Aug 30 2026): the
+    // business's own real accommodates_party_types now propagates all the
+    // way to a consumer-facing ranking bonus, not just its public profile.
+    score += accommodatesPartyTypeBonus(row, partyType);
     return {
       type: 'business_availability',
       id: row.id,
@@ -421,7 +426,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType),
     resolvePolicyOnlyBusinesses(location, partySize),
   ]);
 

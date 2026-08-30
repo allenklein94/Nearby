@@ -151,6 +151,49 @@ set, a matching and a non-matching ask) — cleaned up afterward. New unit tests
 after the client change. Same standing limitation as everywhere else in this file: no manual
 simulator/device run-through.
 
+### Status: Finding 8 is DONE, build-wise — applied to production, verified live with real
+### disposable test data, replayed clean from a truly empty database.
+
+`supabase/migrations/20260911_business_availability_accommodates_party_types.sql` —
+`search_active_business_availability()`'s live 5-arg signature was pulled fresh via the
+Management API before editing (every other line stayed byte-for-byte unchanged), `DROP
+FUNCTION`ed and recreated with the one new returned column, `accommodates_party_types`, reading
+the identical `brand_partners` row its existing `attributes`/`cuisine` columns already come
+from — no new query, no new table. New `accommodatesPartyTypeBonus(row, partyType)` in
+`intentResolverScoring.js`, same shape/weight as `attributeAndCuisineBonus()` (a flat
+`SCORE_HAPPENING_NOW` bonus on a genuine match, never a hard filter, never awarded when nothing
+was implied) — 4 new unit tests. `resolveBusinessAvailability()` (`intentResolver.js`) gained a
+`partyType` parameter (already computed upstream by `create-assistant` and already threaded
+through `resolveIntent()` to the gathering branch's own `priceAndPartyBonus()` — this closes the
+one branch that never received it) and now awards the new bonus.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed the
+new function has exactly one signature and the correct grants (`authenticated`/`service_role`/
+`postgres`, no `anon`); a real disposable test business (`accommodates_party_types: ['date']`)
+with a real active availability posting, queried under genuine `SET ROLE authenticated`
+(matching this file's own "not just the table-owner bypass" convention), correctly returned its
+real `accommodates_party_types` array in the RPC's result. Test rows deleted afterward;
+production confirmed back to its exact pre-test baseline (0 leftover rows).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin`, then ran the full, now-110-file `supabase/migrations/` folder in order via
+`psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, the widened function (with the new
+`accommodates_party_types` column, confirmed as the *only* signature) present in the
+freshly-rebuilt database. Container removed afterward.
+
+Client-side verified via a direct `@babel/core` parse of both touched files (clean), the full
+Jest suite (**172/172 passing** — 168 pre-existing + 4 new), and a full `npx expo export
+--platform ios` (clean, no bundling errors — edits to two existing files, one new migration, no
+new client files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device, that a real ask naming a party
+type (e.g. "a date spot tonight") genuinely ranks a business that declared it accommodates
+`date` above an otherwise-equal one that didn't.
+
 
 
 Direct user report, investigated against the real code rather than trusted on either side —
