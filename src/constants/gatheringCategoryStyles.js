@@ -44,3 +44,20 @@ export const CATEGORY_STYLES = {
 export function categoryStyleFor(interestTag) {
   return CATEGORY_STYLES[interestTag] || { icon: '🎉', color: PALETTE[0] };
 }
+
+// Aug 30 2026 -- "Join Gathering"/"I'm Interested"/etc. buttons read as
+// disabled: measured, not guessed. This PALETTE is deliberately low-
+// saturation (14-70%, four of six entries under 35%) -- built for badges/
+// tints, never for carrying solid white CTA text. White-on-PALETTE
+// contrast is 2.03-3.19:1 for every single entry, all below the WCAG 3:1
+// floor for large bold text -- that's the actual "looks disabled" cause,
+// not a fabricated one. This dark color (the exact lightColors.textPrimary
+// value, not a new one) gets every entry to 4.75-7.45:1, a real fix.
+// Deliberately NOT theme-derived (colors.textPrimary from useTheme()) --
+// PALETTE itself never changes with the app's light/dark setting, so a
+// theme-aware text color would silently regress back to white-on-pastel
+// the moment dark mode is on. Use this specifically for text/icons drawn
+// directly on a solid `categoryStyle.color` fill; the light `+ '30'`/`+
+// '20'` tinted badges elsewhere are unaffected -- they already pair with
+// dark or category-colored text, never a solid white-on-pastel button.
+export const CATEGORY_BUTTON_TEXT_COLOR = '#2D2420';

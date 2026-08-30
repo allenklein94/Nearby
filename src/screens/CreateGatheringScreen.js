@@ -7,7 +7,7 @@ import { createGathering } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
@@ -385,7 +385,17 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
                       >
-                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{style.icon} {option}</Text>
+                        {/* Aug 30 2026 -- a scoped override, not a change
+                            to the shared chipTextSelected style: that
+                            style is also used by 4 other chip pickers on
+                            this screen whose selected background is the
+                            real brand colors.primary (fully saturated,
+                            not affected), not this category palette
+                            (deliberately low-saturation, measured
+                            2.03-3.19:1 white-on-color contrast -- below
+                            the WCAG floor). See gatheringCategoryStyles.js's
+                            own CATEGORY_BUTTON_TEXT_COLOR comment. */}
+                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected, isSelected && { color: CATEGORY_BUTTON_TEXT_COLOR }]}>{style.icon} {option}</Text>
                       </TouchableOpacity>
                     );
                   })}

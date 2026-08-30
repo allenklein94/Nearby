@@ -36,7 +36,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import PlanCompletionRow from '../components/PlanCompletionRow';
 import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -1070,5 +1070,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   pendingText: { color: colors.textSecondary, fontSize: 14, textAlign: 'center' },
   joinButton: { marginTop: spacing.xl, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
-  joinButtonText: { color: '#fff', fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
+  // Aug 30 2026 -- dark, not white: categoryStyle.color is a deliberately
+  // low-saturation badge palette, not built to carry solid white CTA
+  // text (measured 2.03-3.19:1 contrast, below the WCAG floor -- the
+  // real cause of "this button looks disabled"). See
+  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment.
+  joinButtonText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
 });

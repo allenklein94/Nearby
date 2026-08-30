@@ -16,7 +16,7 @@ import {
 import { getSocialForecast } from '../services/homeDashboard';
 import { getSignedPhotoUrl } from '../services/photos';
 import { iceBreakersFor, prepTipsFor } from '../constants/gatheringHubContent';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { openUberToDestination } from '../utils/uberDeepLink';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
@@ -505,7 +505,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   growthPromptTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   growthAction: { width: '100%', borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.sm },
   growthActionSecondary: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border },
-  growthActionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  // Aug 30 2026 -- dark, not white: this is the base color for the primary
+  // ("Invite a Friend", solid categoryStyle.color fill) variant; the
+  // secondary ("Share Link") variant still correctly overrides via
+  // growthActionTextSecondary, applied later in the same style array. See
+  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment
+  // for the measured white-on-PALETTE contrast failure this fixes.
+  growthActionText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '700', fontSize: 15 },
   growthActionTextSecondary: { color: colors.textPrimary },
   growthSkip: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -526,12 +532,20 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   iceChip: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   iceChipText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
   chatButton: { marginTop: spacing.lg, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
-  chatButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  // Aug 30 2026 -- see gatheringCategoryStyles.js's own
+  // CATEGORY_BUTTON_TEXT_COLOR comment.
+  chatButtonText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '700', fontSize: 15 },
   checklistItem: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.xs },
   map: { width: '100%', height: 180, borderRadius: radius.lg },
   onTheWayText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: spacing.sm, textAlign: 'center' },
   bigButton: { borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
-  bigButtonText: { color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.5 },
+  // Aug 30 2026 -- this is the base ("I'M ON MY WAY", solid
+  // categoryStyle.color fill) color; the active ("✓ ON YOUR WAY", plain
+  // colors.surface fill) state still correctly overrides to
+  // colors.textSecondary via the inline `iAmOnMyWay && {...}` spread at
+  // its own render site, applied after this base style. See
+  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment.
+  bigButtonText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '800', fontSize: 15, letterSpacing: 0.5 },
   checkInLink: { marginTop: spacing.md, alignItems: 'center' },
   checkInLinkText: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
   uberLink: { marginTop: spacing.sm, alignItems: 'center' },

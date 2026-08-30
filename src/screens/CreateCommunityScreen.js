@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
 import { getMyManagedPartner } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -198,7 +198,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: '#fff' },
+  // Aug 30 2026 -- the one and only chip variant in this screen is the
+  // category picker, whose selected background is categoryStyle.color
+  // (a deliberately low-saturation palette) -- white text there measures
+  // 2.03-3.19:1, below the WCAG floor for large bold text. See
+  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment.
+  chipTextSelected: { color: CATEGORY_BUTTON_TEXT_COLOR },
   visToggle: {
     flex: 1, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center',

@@ -27,7 +27,7 @@ import StoryViewerModal from '../components/StoryViewerModal';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { getActiveOffers, getMyRedemptions } from '../services/brandOffers';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
@@ -1632,7 +1632,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
-  filterChipTextActive: { color: '#fff' },
+  // Aug 30 2026 -- the one and only user of this style is the category
+  // filter chip (active background = categoryStyle.color, deliberately
+  // low-saturation, measured 2.03-3.19:1 white-text contrast -- below the
+  // WCAG floor). See gatheringCategoryStyles.js's own
+  // CATEGORY_BUTTON_TEXT_COLOR comment.
+  filterChipTextActive: { color: CATEGORY_BUTTON_TEXT_COLOR },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
@@ -1712,7 +1717,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   fellowNoticeButtonText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   noticeSentText: { color: colors.success, fontSize: 12, fontWeight: '700' },
   interestButton: { borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
-  interestButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  // Aug 30 2026 -- see gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR
+  // comment: white on this palette measures 2.03-3.19:1, below the WCAG
+  // floor for large bold text -- the real, measured cause of this button
+  // reading as disabled.
+  interestButtonText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '700', fontSize: 13 },
   inviteFriendsButton: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.full,
     width: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border,

@@ -1,3 +1,84 @@
+## Aug 30 2026 (cont'd) — closed the "Join Gathering buttons look disabled" item this file had
+## explicitly deferred one turn earlier — measured, not guessed, and fixed at every real instance
+
+Direct follow-up to the item this same file's own immediately-preceding "external product-
+critique reply" section left open: *"Whether a specific category's color happens to render as
+low-contrast against white text can't be confirmed without a real device render, and changing
+colors blind risks making a currently-fine button worse. Flagged for a real device check rather
+than guessed at."* Asked directly whether this had been done — it hadn't. Rather than guess a
+second time, measured it: computed real WCAG contrast ratios for white text against every one of
+the 6 `gatheringCategoryStyles.js` `PALETTE` colors — **5 of 6 fail outright (2.03–2.86:1, below
+the 3:1 floor for large bold text), the 6th is borderline (3.19:1)**. Cross-checked against HSL
+saturation to understand *why*: the palette is genuinely low-saturation (14–70%, four of six
+entries under 35% — "dusty mauve," "sage green," "dusty rose"), built for translucent badge
+tints, never for carrying solid white CTA text — unlike the app's own brand coral
+(`colors.primary`), which is 100% saturated and reads as vivid/active even though its own raw
+luminance-contrast number is similarly borderline (2.8:1 light mode). This is the real,
+measurable cause of "these buttons look disabled," not a guess.
+
+**Locked fix, chosen over the alternative on purpose**: dark text on the existing category
+color, not a recolor to brand coral. Considered switching every join/interest button to plain
+`colors.primary`, matching this file's own already-locked "coral = action, not decoration" rule
+— rejected, because (a) coral's own raw contrast number is *not* meaningfully better than the
+category palette's (2.8 vs. 2.03–3.19), so it wouldn't actually fix the measured problem, and
+(b) it would silently remove the per-category color identity these buttons currently carry
+(each category's own button/badge/dot all sharing one color family), which is a real design
+decision this pass has no standing to overrule unilaterally. Dark text fixes the actual,
+measured failure without touching that identity: computed the same contrast check with the
+app's own `lightColors.textPrimary` (`#2D2420`) against all 6 palette colors — **every one
+passes WCAG AA, 4.75–7.45:1**.
+
+**One deliberate non-obviousness, stated so a future session doesn't "fix" it into the same bug
+a different way**: this new color is a genuinely *fixed* constant, not read from the theme-aware
+`useTheme()` hook. `gatheringCategoryStyles.js`'s `PALETTE` itself never changes between light
+and dark mode — a theme-derived text color (`colors.textPrimary`, which flips to `#ffffff` in
+dark mode) would pass in light mode and silently regress back to the exact same failure the
+moment dark mode is on. New `CATEGORY_BUTTON_TEXT_COLOR` export (`gatheringCategoryStyles.js`,
+reusing the exact `lightColors.textPrimary` hex value, not inventing a new color) is deliberately
+static for this reason.
+
+**Every real instance found and fixed, via a full sweep for a solid (non-tinted) `categoryStyle.
+color` fill paired with white text — not just the one screen that prompted the original
+question**: `GatheringDetailScreen.js`'s `joinButtonText` ("JOIN GATHERING"/"REQUEST TO JOIN"/
+"JOIN WAITLIST"); `GatheringsScreen.js`'s `interestButtonText` ("I'm Interested") and
+`filterChipTextActive` (the category filter-chip accordion, confirmed used nowhere else in the
+file before changing it directly); `GatheringHubScreen.js`'s `growthActionText` ("🤝 Invite a
+Friend" — the "Share Link" secondary variant already correctly used dark text via its own
+override, unaffected), `chatButtonText` ("💬 Group Chat"), and `bigButtonText` ("I'M ON MY WAY" —
+the already-on-the-way state already correctly overrides to `colors.textSecondary` against a
+plain `colors.surface` background, unaffected, only the base/not-yet-tapped state needed the fix);
+`CreateCommunityScreen.js`'s `chipTextSelected` (its one and only chip picker, confirmed via grep
+before changing the shared style directly). **`CreateGatheringScreen.js` needed a scoped fix, not
+a shared one** — its `chipTextSelected` style is reused across 5 different chip pickers, 4 of
+which select against the real brand `colors.primary` (fully saturated, not affected by this bug)
+— changing the shared style would have wrongly darkened those too. Fixed with a targeted inline
+override (`isSelected && { color: CATEGORY_BUTTON_TEXT_COLOR }`) applied only at the one category-
+chip render site, leaving the shared style and its other 4 consumers untouched.
+
+**Checked and confirmed NOT affected, not silently skipped**: `GatheringDetailScreen.js`'s
+`vibeDot`/`timelineDot` (small decorative dots, no text drawn on them); `MomentumScreen.js`'s
+`vibeBarFill` (already a translucent `opacity: 0.35` overlay with its own real `vibeTag` text
+label rendered in `colors.textPrimary` against the neutral track background, not on the fill
+itself — an already-correct, different pattern, not a variant of this bug); every `+ '30'`/
+`+ '20'` tinted badge (`categoryBadge`, `iconBadge`, `joinedBanner`) across `GatheringDetailScreen.js`/
+`GatheringsScreen.js`/`GatheringHubScreen.js`/`CommunityDetailScreen.js` — all translucent tints
+paired with dark or category-colored text already, never a solid white-on-pastel fill;
+`GatheringsMapView.js`'s `pinColor` (a map marker color, no overlaid text); `GatheringDetailScreen.js`'s
+`categoryStyle.color + '30'` hero fallback (a tint, not a solid fill). `EditGatheringScreen.js`
+was checked directly and confirmed to have no category-chip picker of its own at all.
+
+**Verified**: a direct `@babel/core` parse of all 6 touched files (clean), a full `npx expo
+export --platform ios` (clean, no bundling errors, module count unchanged — every touched file
+was an edit, no new files besides the one new named export), and the full Jest suite
+(168/168 passing, unchanged — no pure-logic file was touched, this whole pass was styling only).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the dark text actually reads clearly against each of
+the 6 category colors on a real screen (this pass computed and verified the numbers directly,
+not a rendered screenshot), and specifically that `GatheringHubScreen.js`'s "I'M ON MY WAY" →
+"✓ ON YOUR WAY — TAP TO UNDO" transition still reads correctly across both its real background
+states (category color, then plain surface) now that the base color changed.
+
 ## Aug 30 2026 (cont'd) — a third external product-critique reply: Friends' Activity time
 ## context, Dating Preferences relocated to its own screen, real staged "Find a place" sub-
 ## status labels across every plan surface, and a real "I'm On My Way" undo — all four DONE,
