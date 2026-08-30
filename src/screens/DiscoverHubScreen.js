@@ -678,8 +678,8 @@ export default function DiscoverHubScreen({ navigation }) {
                 accessibilityLabel="Gatherings happening right now"
                 accessibilityRole="button"
               >
-                <Text style={styles.quickTimeCardIcon}>🔴</Text>
-                <Text style={styles.quickTimeCardText}>Right Now</Text>
+                <Text style={styles.quickTimeCardIcon}>⚡</Text>
+                <Text style={styles.quickTimeCardText}>Happening Now</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quickTimeCard}

@@ -53,6 +53,21 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
     onClose();
   }
 
+  // Skipping must actually record something -- otherwise
+  // getMostRecentUnratedGathering() (services/gatherings.js) has no way
+  // to know this gathering was ever asked about, and re-surfaces the
+  // exact same prompt every time Home reloads (on every focus). This
+  // writes a real, honest "asked, declined to rate" row -- no rating
+  // fabricated -- same convention as dismissIntentOutcomePrompt()'s
+  // answered_at-with-no-outcome stamp. Fire-and-forget: skipping must
+  // never feel blocked on a network call, and a failed write here just
+  // means the prompt may honestly resurface later, matching the "fails
+  // quietly" posture already used for the real Submit path below.
+  function handleSkip() {
+    submitGatheringFeedback(gatheringId).catch((e) => console.error('Failed to record feedback skip', e));
+    handleClose();
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     try {
@@ -125,7 +140,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleSkip}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>How was it?</Text>
@@ -181,7 +196,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
           >
             <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.sm }} accessibilityLabel="Skip" accessibilityRole="button">
+          <TouchableOpacity onPress={handleSkip} style={{ marginTop: spacing.sm }} accessibilityLabel="Skip" accessibilityRole="button">
             <Text style={styles.skipText}>Skip</Text>
           </TouchableOpacity>
         </View>
