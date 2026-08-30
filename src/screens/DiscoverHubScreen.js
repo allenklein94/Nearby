@@ -592,20 +592,30 @@ export default function DiscoverHubScreen({ navigation }) {
         <View style={{ flex: 1 }}>
           <View style={styles.peopleFixedArea}>
             <StoriesRow />
-            <View style={styles.modeToggleRow}>
+            {/* Aug 30 2026 (CLAUDE.md, external UX critique response): this
+                inner Dating/Friends choice used to reuse the outer
+                Things-to-Do/People toggle's own full-width equal-weight
+                pill chrome (modeToggleRow/modeToggleButton) -- two
+                co-equal-looking controls stacked directly on top of each
+                other read as one undifferentiated block. Given its own
+                lighter, auto-width chip treatment instead, so the visual
+                hierarchy matches the real one: outer mode first, inner
+                sub-mode clearly secondary. Same PEOPLE_SUBMODES data, same
+                selectPeopleSubMode() handler -- style-only change. */}
+            <View style={styles.peopleSubToggleRow}>
               {PEOPLE_SUBMODES.map((pm) => {
                 const active = peopleSubMode === pm.key;
                 return (
                   <TouchableOpacity
                     key={pm.key}
-                    style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
+                    style={[styles.peopleSubToggleButton, active && styles.peopleSubToggleButtonActive]}
                     onPress={() => selectPeopleSubMode(pm.key)}
                     accessibilityLabel={pm.label}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
                   >
-                    <Text style={styles.modeToggleIcon}>{pm.icon}</Text>
-                    <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{pm.label}</Text>
+                    <Text style={styles.peopleSubToggleIcon}>{pm.icon}</Text>
+                    <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{pm.label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -1077,6 +1087,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modeToggleIcon: { fontSize: 16 },
   modeToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
   modeToggleTextActive: { color: colors.primary },
+  // Aug 30 2026 (CLAUDE.md, external UX critique response): the People
+  // mode's own inner Dating/Friends choice -- a real, deliberately lighter
+  // treatment than the outer mode toggle above (auto-width pill chips,
+  // not two full-width equal-weight buttons), so it reads as clearly
+  // secondary to the primary Things-to-Do/People choice, not co-equal.
+  peopleSubToggleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  peopleSubToggleButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1,
+    borderColor: colors.border, paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
+  },
+  peopleSubToggleButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  peopleSubToggleIcon: { fontSize: 13 },
+  peopleSubToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
+  peopleSubToggleTextActive: { color: colors.primary },
   // The non-scrolling header area above People mode's embedded Dating/
   // Friends content (Stories + the sub-toggle) -- same horizontal padding
   // as the outer `header`/`scrollContent` blocks so it lines up visually.

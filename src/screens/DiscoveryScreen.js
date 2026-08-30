@@ -113,7 +113,6 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const [browseOffset, setBrowseOffset] = useState(0);
   const [browseHasMore, setBrowseHasMore] = useState(true);
   const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
-  const [expandedFilterSection, setExpandedFilterSection] = useState(null);
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showDatingPrefsPrompt, setShowDatingPrefsPrompt] = useState(false);
@@ -264,23 +263,14 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     setCompatModalName(item.profiles?.display_name || '');
   }
 
+  // Aug 30 2026 (CLAUDE.md, external UX critique response): used to
+  // premium-gate opening the modal at all -- Looking For and Quick
+  // Filters were never actually premium features, so a free user
+  // couldn't reach them from here even though they're free everywhere
+  // else. The modal itself now gates only its own Advanced Filters
+  // section (isPremium prop below), so this always opens.
   function openFilters() {
-    if (!isUserPremium) {
-      Alert.alert(
-        'Advanced Filters is Premium',
-        'Filtering by education, drinking, religion, love language, and more is a Premium feature. Basic filters stay free.',
-        [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Upgrade to Premium', onPress: () => navigation.navigate('Paywall') },
-        ]
-      );
-      return;
-    }
     setFiltersModalVisible(true);
-  }
-
-  function toggleFilterSection(section) {
-    setExpandedFilterSection((prev) => (prev === section ? null : section));
   }
 
   async function toggleViewStyle() {
@@ -420,11 +410,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const ageFilterActive = ageRangeFilter.min !== 18 || ageRangeFilter.max !== 99;
   const totalActiveCount = advancedFilterCount + (ageFilterActive ? 1 : 0);
   const anyFilterActive = intentionFilter.length > 0 || verifiedOnly || highCompatOnly || onlineOnly || totalActiveCount > 0;
-  const lookingForSummary = intentionFilter.length > 0
-    ? intentionFilter.map((v) => INTENTION_OPTIONS.find((o) => o.value === v)?.label).filter(Boolean).join(', ')
-    : 'Any';
   const activeQuickCount = [verifiedOnly, highCompatOnly, onlineOnly].filter(Boolean).length;
-  const quickFilterSummary = activeQuickCount > 0 ? `${activeQuickCount} active` : 'None';
 
   const filteredNearby = nearby.filter((item) => {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
@@ -449,71 +435,62 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     return true;
   });
 
+  const filtersSummaryCount = intentionFilter.length + activeQuickCount + totalActiveCount;
+  const filtersSummaryModeLabel = discoveryMode === 'browse' ? 'Browse' : 'Crossed Paths';
+  const filtersSummaryText = filtersSummaryCount > 0
+    ? `${filtersSummaryModeLabel} · ${filtersSummaryCount} filter${filtersSummaryCount === 1 ? '' : 's'}`
+    : filtersSummaryModeLabel;
+
   return (
     <Container style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerRow}>
-          {!embedded && (
-            <Text style={styles.headerTitle} accessibilityRole="header">
-              {discoveryMode === 'browse' ? 'Browse' : t('discovery.title')}
-            </Text>
-          )}
-          <TouchableOpacity
-            onPress={showRadiusInfo}
-            style={styles.infoButton}
-            accessibilityLabel={discoveryMode === 'browse' ? 'Learn how Browse works' : 'Learn how Crossed Paths works'}
-            accessibilityRole="button"
-          >
-            <Text style={styles.infoButtonText}>ⓘ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={toggleViewStyle}
-            style={styles.viewToggleButton}
-            accessibilityLabel={viewStyle === 'cards' ? 'Currently on card view, switch to list view' : 'Currently on list view, switch to card view'}
-            accessibilityRole="button"
-          >
-            <Text style={styles.viewToggleIcon}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
-            <Text style={styles.viewToggleLabel}>{viewStyle === 'cards' ? 'Cards' : 'List'}</Text>
-          </TouchableOpacity>
-          {discoveryMode === 'crossedPaths' && (
+          <View style={{ flex: 1 }}>
+            {!embedded && (
+              <Text style={styles.headerTitle} accessibilityRole="header">
+                {discoveryMode === 'browse' ? 'Browse' : t('discovery.title')}
+              </Text>
+            )}
+          </View>
+          <View style={styles.headerIconsRow}>
             <TouchableOpacity
-              onPress={() => setShowSightingsOverview(true)}
-              style={styles.infoButton}
-              accessibilityLabel="See all your crossed paths on a map"
+              onPress={showRadiusInfo}
+              style={styles.headerIconButton}
+              accessibilityLabel={discoveryMode === 'browse' ? 'Learn how Browse works' : 'Learn how Crossed Paths works'}
               accessibilityRole="button"
             >
-              <Text style={styles.infoButtonText}>🗺️</Text>
+              <Text style={styles.headerIconText}>ⓘ</Text>
             </TouchableOpacity>
-          )}
+            <TouchableOpacity
+              onPress={toggleViewStyle}
+              style={styles.headerIconButton}
+              accessibilityLabel={viewStyle === 'cards' ? 'Currently on card view, switch to list view' : 'Currently on list view, switch to card view'}
+              accessibilityRole="button"
+            >
+              <Text style={styles.headerIconText}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
+            </TouchableOpacity>
+            {discoveryMode === 'crossedPaths' && (
+              <TouchableOpacity
+                onPress={() => setShowSightingsOverview(true)}
+                style={styles.headerIconButton}
+                accessibilityLabel="See all your crossed paths on a map"
+                accessibilityRole="button"
+              >
+                <Text style={styles.headerIconText}>🗺️</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         {/* Was a static "Crossed Paths"/"People you've been near recently"
             title+subtitle, unconditionally, even in Browse mode -- directly
             contradicting the mode switcher two rows below it. Now tracks
-            whichever mode is actually selected. */}
+            whichever mode is actually selected -- and, since the mode
+            switcher itself moved into the Filters sheet (Aug 30 2026,
+            CLAUDE.md), this subtitle is now the *only* on-screen indicator
+            of which discovery mode is active. */}
         <Text style={styles.headerSubtitle}>
           {discoveryMode === 'browse' ? 'A wider pool of people matching your filters' : t('discovery.subtitle')}
         </Text>
-      </View>
-
-      <View style={styles.modeSwitcher}>
-        <TouchableOpacity
-          style={[styles.modeButton, discoveryMode === 'crossedPaths' && styles.modeButtonActive]}
-          onPress={() => switchDiscoveryMode('crossedPaths')}
-          accessibilityLabel="Crossed Paths, people you've actually been near"
-          accessibilityRole="button"
-          accessibilityState={{ selected: discoveryMode === 'crossedPaths' }}
-        >
-          <Text style={[styles.modeButtonText, discoveryMode === 'crossedPaths' && styles.modeButtonTextActive]}>📍 Crossed Paths</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeButton, discoveryMode === 'browse' && styles.modeButtonActive]}
-          onPress={() => switchDiscoveryMode('browse')}
-          accessibilityLabel="Browse, a wider pool of people matching your filters, not limited to proximity"
-          accessibilityRole="button"
-          accessibilityState={{ selected: discoveryMode === 'browse' }}
-        >
-          <Text style={[styles.modeButtonText, discoveryMode === 'browse' && styles.modeButtonTextActive]}>🔎 Browse</Text>
-        </TouchableOpacity>
       </View>
 
       {/* The one-time "tap Browse" hint banner was removed -- the two-button
@@ -524,109 +501,22 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
           than helpful. */}
       {confidenceBannerReason && <ConfidenceModeBanner reason={confidenceBannerReason} onDismiss={handleDismissConfidenceBanner} />}
 
-      <View style={styles.accordionContainer}>
-        <TouchableOpacity
-          style={styles.accordionHeader}
-          onPress={() => toggleFilterSection('lookingFor')}
-          accessibilityLabel={`Looking For: ${lookingForSummary}, ${expandedFilterSection === 'lookingFor' ? 'tap to collapse' : 'tap to expand'}`}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: expandedFilterSection === 'lookingFor' }}
-        >
-          <Text style={styles.accordionHeaderLabel}>💘 Looking For</Text>
-          <View style={styles.accordionHeaderRight}>
-            <Text style={styles.accordionHeaderValue}>{lookingForSummary}</Text>
-            <Text style={styles.accordionChevron}>{expandedFilterSection === 'lookingFor' ? '⌃' : '⌄'}</Text>
-          </View>
-        </TouchableOpacity>
-        {expandedFilterSection === 'lookingFor' && (
-          <View style={styles.accordionBody}>
-            <View style={styles.chipsWrapInline}>
-              {INTENTION_OPTIONS.map((option) => {
-                const active = intentionFilter.includes(option.value);
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[styles.filterChip, active && styles.filterChipActive]}
-                    onPress={() => setIntentionFilter((prev) => active ? prev.filter((v) => v !== option.value) : [...prev, option.value])}
-                    accessibilityLabel={`Filter by ${option.label}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{option.icon} {option.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        <View style={styles.accordionDivider} />
-
-        <TouchableOpacity
-          style={styles.accordionHeader}
-          onPress={() => toggleFilterSection('quick')}
-          accessibilityLabel={`Quick Filters: ${quickFilterSummary}, ${expandedFilterSection === 'quick' ? 'tap to collapse' : 'tap to expand'}`}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: expandedFilterSection === 'quick' }}
-        >
-          <Text style={styles.accordionHeaderLabel}>⚡ Quick Filters</Text>
-          <View style={styles.accordionHeaderRight}>
-            <Text style={styles.accordionHeaderValue}>{quickFilterSummary}</Text>
-            <Text style={styles.accordionChevron}>{expandedFilterSection === 'quick' ? '⌃' : '⌄'}</Text>
-          </View>
-        </TouchableOpacity>
-        {expandedFilterSection === 'quick' && (
-          <View style={styles.accordionBody}>
-            <View style={styles.chipsWrapInline}>
-              {quickFilterOrder.filter((key) => quickFilterVisible.includes(key)).map((key) => {
-                const configs = {
-                  verified: { active: verifiedOnly, toggle: () => setVerifiedOnly(!verifiedOnly), label: '✓ Verified Only', a11y: 'Filter to only photo-verified profiles' },
-                  highCompat: { active: highCompatOnly, toggle: () => setHighCompatOnly(!highCompatOnly), label: '🎯 70%+ Match', a11y: 'Filter to 70 percent compatible or higher' },
-                  online: { active: onlineOnly, toggle: () => setOnlineOnly(!onlineOnly), label: '🟢 Online Now', a11y: 'Filter to only people online now' },
-                };
-                const config = configs[key];
-                if (!config) return null;
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    style={[styles.filterChip, config.active && styles.filterChipActive]}
-                    onPress={config.toggle}
-                    accessibilityLabel={config.a11y}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: config.active }}
-                  >
-                    <Text style={[styles.filterChipText, config.active && styles.filterChipTextActive]}>{config.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-              <TouchableOpacity
-                onPress={() => navigation.navigate('QuickFilterCustomize')}
-                accessibilityLabel="Customize which Quick Filters show and their order"
-                accessibilityRole="button"
-              >
-                <Text style={styles.customizeLink}>⚙️ Customize</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-
+      {/* Aug 30 2026 (CLAUDE.md, external UX critique response): this one
+          button replaces what used to be 3 separate persistent blocks --
+          the Crossed Paths/Browse mode switcher, a 2-section Looking
+          For/Quick Filters accordion, and a separate premium-gated
+          "Filters" chip. All of that content now lives inside FiltersModal
+          (extended below), reached from this one honest summary line --
+          real state, never a fabricated count. */}
       <TouchableOpacity
-        style={[styles.moreFiltersButton, totalActiveCount > 0 && styles.moreFiltersButtonActive]}
+        style={[styles.filtersButton, filtersSummaryCount > 0 && styles.filtersButtonActive]}
         onPress={openFilters}
-        accessibilityLabel={`More filters, Premium${totalActiveCount > 0 ? `, ${totalActiveCount} active` : ''}`}
+        accessibilityLabel={`Filters, ${filtersSummaryText}`}
         accessibilityRole="button"
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {isUserPremium ? (
-            <Feather name="sliders" size={14} color={totalActiveCount > 0 ? colors.primary : colors.textSecondary} />
-          ) : (
-            <Text style={{ fontSize: 13 }}>🔒</Text>
-          )}
-          <Text style={[styles.moreFiltersText, totalActiveCount > 0 && styles.moreFiltersTextActive]}>
-            Filters{totalActiveCount > 0 ? ` (${totalActiveCount})` : ''}
-          </Text>
-        </View>
+        <Feather name="sliders" size={14} color={filtersSummaryCount > 0 ? colors.primary : colors.textSecondary} />
+        <Text style={[styles.filtersButtonLabel, filtersSummaryCount > 0 && styles.filtersButtonLabelActive]}>Filters</Text>
+        <Text style={styles.filtersButtonSummary} numberOfLines={1}>{filtersSummaryText}</Text>
       </TouchableOpacity>
 
       {initialLoading ? (
@@ -840,6 +730,30 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       <FiltersModal
         visible={filtersModalVisible}
         onClose={() => setFiltersModalVisible(false)}
+        isPremium={isUserPremium}
+        onUpgrade={() => { setFiltersModalVisible(false); navigation.navigate('Paywall'); }}
+        discoveryMode={discoveryMode}
+        onChangeDiscoveryMode={switchDiscoveryMode}
+        intentionOptions={INTENTION_OPTIONS}
+        intentionFilter={intentionFilter}
+        onToggleIntention={(value) => setIntentionFilter((prev) => (
+          prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+        ))}
+        quickFilterOrder={quickFilterOrder}
+        quickFilterVisible={quickFilterVisible}
+        quickFilters={{ verified: verifiedOnly, highCompat: highCompatOnly, online: onlineOnly }}
+        onToggleQuickFilter={(key) => {
+          if (key === 'verified') setVerifiedOnly((v) => !v);
+          if (key === 'highCompat') setHighCompatOnly((v) => !v);
+          if (key === 'online') setOnlineOnly((v) => !v);
+        }}
+        onCustomizeQuickFilters={() => { setFiltersModalVisible(false); navigation.navigate('QuickFilterCustomize'); }}
+        onClearFreeFilters={() => {
+          setIntentionFilter([]);
+          setVerifiedOnly(false);
+          setHighCompatOnly(false);
+          setOnlineOnly(false);
+        }}
         fields={DISCOVERY_FILTER_FIELDS}
         activeFilters={advancedFilters}
         onApply={setAdvancedFilters}
@@ -883,63 +797,35 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: { ...typography.title, color: colors.textPrimary },
-  infoButton: {
-    marginLeft: spacing.sm, width: 32, height: 32, borderRadius: 16,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  infoButtonText: { color: colors.primary, fontSize: 18, fontWeight: '700' },
-  viewToggleButton: {
-    flexDirection: 'row', alignItems: 'center', marginLeft: spacing.sm,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
-  },
-  viewToggleIcon: { fontSize: 18, marginRight: 6 },
-  viewToggleLabel: { color: colors.textSecondary, fontSize: 14, fontWeight: '700' },
+  // Aug 30 2026 (CLAUDE.md, external UX critique response): the three
+  // header-right actions (info / Cards-List / crossed-paths map) used to
+  // be bordered, labeled pills -- same visual weight class as the primary
+  // navigation controls above them. Shrunk to plain icon buttons, no
+  // border/background, no text label -- same 3 actions, same
+  // accessibility labels, just lighter. The info icon also moves off
+  // brand coral (`colors.primary`) to a neutral tone -- it's informational
+  // chrome, not an action, and this app's own already-locked "coral =
+  // action, not decoration" rule (see the Aug 16 2026 coral-usage section)
+  // already says brand color shouldn't be spent on it.
+  headerIconsRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  headerIconButton: { padding: spacing.xs },
+  headerIconText: { fontSize: 17, color: colors.textSecondary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-  accordionContainer: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.sm, backgroundColor: colors.surface,
-    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-  },
-  accordionHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
-  },
-  accordionHeaderLabel: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
-  accordionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  accordionHeaderValue: { color: colors.textTertiary, fontSize: 13 },
-  accordionChevron: { color: colors.textTertiary, fontSize: 14 },
-  accordionBody: { paddingHorizontal: spacing.md, paddingBottom: spacing.md },
-  accordionDivider: { height: 1, backgroundColor: colors.border },
-  chipsWrapInline: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  modeSwitcher: {
-    flexDirection: 'row', marginHorizontal: spacing.lg, marginBottom: spacing.md,
-    backgroundColor: colors.surfaceElevated, borderRadius: radius.full, padding: 3,
-  },
-  modeButton: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.full, alignItems: 'center' },
-  modeButtonActive: { backgroundColor: colors.primary },
-  modeButtonText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
-  modeButtonTextActive: { color: '#fff' },
-  filterBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, marginBottom: spacing.md, gap: spacing.sm },
-  filterRow: { flexGrow: 0, flexShrink: 1 },
-  filterChip: {
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterChipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
-  filterChipTextActive: { color: '#fff' },
-  customizeLink: { color: colors.primary, fontSize: 12, fontWeight: '700', alignSelf: 'center', paddingHorizontal: spacing.sm },
-  moreFiltersButton: {
+  // Replaces the old modeSwitcher (2 full-width pill buttons) + a
+  // 2-section accordion (Looking For / Quick Filters) + a separate
+  // premium-gated "Filters" chip -- all three now live inside the one
+  // unified FiltersModal, reached from this single summary button.
+  filtersButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     marginHorizontal: spacing.lg, marginBottom: spacing.md, alignSelf: 'flex-start',
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  moreFiltersButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
-  moreFiltersText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
-  moreFiltersTextActive: { color: colors.primary },
+  filtersButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  filtersButtonLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  filtersButtonLabelActive: { color: colors.primary },
+  filtersButtonSummary: { color: colors.textTertiary, fontSize: 13, maxWidth: 180 },
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },

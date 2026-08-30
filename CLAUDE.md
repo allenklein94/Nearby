@@ -124,7 +124,50 @@ export --platform ios`. Same standing limitation as every other section in this 
 simulator/device run-through is possible from this sandbox — flagged for next session, same as
 always.
 
-**Status: DONE, build-wise — see the note below this line once built.**
+**Status: DONE, build-wise — picked up cleanly after a codespace restart interrupted the
+session mid-build.** On resume, `git status` showed all four touched files already fully
+written and uncommitted (`FiltersModal.js`, `DiscoveryScreen.js`, `DiscoverHubScreen.js`,
+`translations.js`) — read every file in full and diffed it against this plan's own text before
+trusting it, rather than assuming a prior session's own claims, matching this file's standing
+rule. Every piece of the locked build plan was confirmed already built exactly as specified:
+`FiltersModal.js`'s three new optional sections (Discovery mode, Looking For, Quick Filters)
+render ahead of the Age Range/Advanced Filters section, which now gates behind a real `isPremium`
+prop with an inline upsell instead of blocking the whole modal; `onClearFreeFilters` resets the
+three new free sections but deliberately leaves `discoveryMode` untouched (confirmed by reading
+`clearAll()` directly — it never calls `onChangeDiscoveryMode`); the footer's `activeCount` sums
+across every section (intention + quick filters + advanced + age), not just the advanced ones.
+`DiscoveryScreen.js`'s `modeSwitcher`, the two-section accordion, and the old `moreFiltersButton`
+are all gone — grepped the file and confirmed zero remaining references to
+`modeSwitcher`/`accordionContainer`/`expandedFilterSection`/`toggleFilterSection`/
+`lookingForSummary`/`quickFilterSummary` — replaced by the one `filtersButton` showing a real
+`filtersSummaryText` (mode + total active-filter count, computed the same way the modal's own
+footer computes it, never a fabricated number). `openFilters()` no longer premium-gates opening
+the modal — confirmed the old `Alert.alert('Advanced Filters is Premium', ...)` branch is gone
+and the function is now a bare `setFiltersModalVisible(true)`. The three header-right icons
+(`headerIconButton`/`headerIconText`) are plain, unbordered, unlabeled, and the info icon now
+renders in `colors.textSecondary` rather than `colors.primary`. `DiscoverHubScreen.js`'s
+`PEOPLE_SUBMODES` render through the new `peopleSubToggleRow`/`peopleSubToggleButton` styles
+(auto-width chips, thinner border, smaller text) instead of the shared `modeToggleRow`/
+`modeToggleButton` styles the outer Things-to-Do/People toggle still uses — confirmed the two
+style sets are now genuinely distinct, not aliased. `translations.js`'s `discovery.emptyText` is
+shortened in all 11 language blocks (en/es/de/fr/pt/ht/zh/vi/tl/ru/ko) — grepped for every
+language's own "same room"/"same area" phrasing and confirmed none remain; `radiusInfoText`
+(the info-button's own explainer alert) was deliberately left untouched in every language, still
+carrying the "about 35 feet" detail the shortened on-screen copy moved out of.
+
+Verified via a direct `@babel/core` parse of all four touched files (clean) and a full `npx expo
+export --platform ios` (clean, no bundling errors, 2278 modules, unchanged from the prior
+baseline — every touched file this pass was an edit, no new files added, matching the plan's own
+expectation).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the unified Filters sheet opens for
+a free account (no longer premium-blocked), its Discovery/Looking For/Quick Filters sections
+save and apply correctly, "Clear" resets the free sections without silently switching discovery
+mode, the compact "Filters" button's summary text reads correctly against real active-filter
+state, the three restyled header icons render at the right size/weight, the People-mode
+Dating|Friends chip row visually reads as secondary to the outer mode toggle, and the shortened
+Crossed Paths empty-state copy renders correctly in at least one non-English language.
 
 ## Aug 29 2026 (cont'd) — real web business application, no app required — PLAN LOCKED,
 ## executing below
