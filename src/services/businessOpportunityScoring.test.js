@@ -165,6 +165,40 @@ describe('scoreBusinessOpportunity', () => {
     ).toBe(0);
   });
 
+  // "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3 2026).
+  it('scores a real occasion match at SCORE_OWN_NETWORK', () => {
+    const result = scoreBusinessOpportunity({
+      requestOccasion: 'birthday',
+      businessPriorityOccasions: ['birthday', 'anniversary'],
+    });
+    expect(result.score).toBe(SCORE_OWN_NETWORK);
+    expect(result.reasons).toEqual([
+      { label: 'Matches an occasion you want more of (birthday)', points: SCORE_OWN_NETWORK },
+    ]);
+  });
+
+  it('does not credit an occasion mismatch', () => {
+    expect(
+      scoreBusinessOpportunity({
+        requestOccasion: 'date_night',
+        businessPriorityOccasions: ['birthday'],
+      }).score
+    ).toBe(0);
+  });
+
+  it('does not credit an occasion match when the business has declared no priority occasions', () => {
+    expect(scoreBusinessOpportunity({ requestOccasion: 'birthday', businessPriorityOccasions: [] }).score).toBe(0);
+  });
+
+  it('does not attempt an occasion score when the request has no occasion at all', () => {
+    expect(
+      scoreBusinessOpportunity({
+        requestOccasion: null,
+        businessPriorityOccasions: ['birthday', 'anniversary', 'celebration'],
+      }).score
+    ).toBe(0);
+  });
+
   it('combines several real, distinct signals additively, one reason per signal', () => {
     const result = scoreBusinessOpportunity({
       requestAttributes: ['date_friendly', 'outdoor_seating'],

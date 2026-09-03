@@ -6,7 +6,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessPriorityAttributes, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessPriorityTimeWindows, setBusinessPriorityOccasions } from '../services/brandOffers';
 import { getBusinessCommunities } from '../services/communities';
 import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
@@ -27,7 +27,7 @@ import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring
 import { getSocialForecast } from '../services/homeDashboard';
 import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
@@ -108,6 +108,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // Want More Of," saved together with priorityAttributesInput via the
   // same Save button (one card, one action, two RPCs underneath).
   const [priorityTimeWindowsInput, setPriorityTimeWindowsInput] = useState([]);
+  // "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3 2026) -- the real
+  // WHY half of "What You're Looking For," saved via the same Save button
+  // and RPC batch as the two fields above.
+  const [priorityOccasionsInput, setPriorityOccasionsInput] = useState([]);
   const [savingPriorityAttributes, setSavingPriorityAttributes] = useState(false);
   // Phase 3 -- Availability Pulse, a real self-reported "how's business
   // right now" signal.
@@ -228,10 +232,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         requestTimeWindowStart: req.time_window_start ?? null,
         requestBudgetMax: req.budget_max ?? null,
         requestPartySize: req.party_size ?? null,
+        requestOccasion: req.occasion ?? null,
         businessAttributes: selectedPartner?.attributes ?? [],
         businessCuisine: selectedPartner?.cuisine ?? null,
         businessPriorityAttributes: selectedPartner?.priority_attributes ?? [],
         businessPriorityTimeWindows: selectedPartner?.priority_time_windows ?? [],
+        businessPriorityOccasions: selectedPartner?.priority_occasions ?? [],
         activePrioritySignals,
         fulfillmentPolicy,
         weather: businessWeather,
@@ -401,6 +407,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadedPartnerId = partner.id;
         setPriorityAttributesInput(partner.priority_attributes ?? []);
         setPriorityTimeWindowsInput(partner.priority_time_windows ?? []);
+        setPriorityOccasionsInput(partner.priority_occasions ?? []);
         setPulseNoteInput(partner.availability_pulse_note ?? '');
         setAccommodatePartyTypesInput(partner.accommodates_party_types ?? []);
         logBusinessAcquisitionEvent(sessionId, 'dashboard_viewed', { partnerId: partner.id });
@@ -617,9 +624,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // distinct from the full Edit Profile form since this is meant to be
   // revisited often, not part of an identity edit. "Business Profile
   // Phase 1" addendum: also saves priorityTimeWindowsInput in the same
-  // tap -- one card, one Save button, two RPCs underneath (the two
-  // fields live in separate columns/RPCs since "customers you want" and
-  // "when you want them" are genuinely different vocabularies).
+  // tap. "Intelligent demand inbox" Phase 2: also saves
+  // priorityOccasionsInput -- one card, one Save button, three RPCs
+  // underneath (each field lives in its own column/RPC since "customers
+  // you want," "when you want them," and "why they're coming" are
+  // genuinely different vocabularies).
   async function handleSavePriorityAttributes() {
     if (!selectedPartner) return;
     setSavingPriorityAttributes(true);
@@ -627,11 +636,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       await Promise.all([
         setBusinessPriorityAttributes(selectedPartner.id, priorityAttributesInput),
         setBusinessPriorityTimeWindows(selectedPartner.id, priorityTimeWindowsInput),
+        setBusinessPriorityOccasions(selectedPartner.id, priorityOccasionsInput),
       ]);
       setSelectedPartner((prev) => ({
         ...prev,
         priority_attributes: priorityAttributesInput,
         priority_time_windows: priorityTimeWindowsInput,
+        priority_occasions: priorityOccasionsInput,
       }));
       Alert.alert('Saved', "We'll flag opportunities that match what you're looking for.");
     } catch (e) {
@@ -3114,6 +3125,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         accessibilityState={{ selected }}
                       >
                         <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{w.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {/* "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3
+                    2026) -- the real WHY half of "What You're Looking
+                    For." Reuses the exact same OCCASION_OPTIONS
+                    vocabulary Phase 1's consumer-side occasion picker
+                    (AskBusinessScreen.js) already established -- one real
+                    taxonomy on both sides. Saved via the same Save button
+                    below, alongside the customer/time chips above. */}
+                <Text style={[styles.breakdownText, { fontWeight: '700', marginTop: spacing.md, marginBottom: spacing.xs }]}>Why</Text>
+                <Text style={styles.helperText}>
+                  What occasions would you like more of? We'll flag matching requests higher.
+                </Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {OCCASION_OPTIONS.map((o) => {
+                    const selected = priorityOccasionsInput.includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => setPriorityOccasionsInput((prev) => (selected ? prev.filter((k) => k !== o.key) : [...prev, o.key]))}
+                        accessibilityRole="button"
+                        accessibilityLabel={o.label}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
                       </TouchableOpacity>
                     );
                   })}

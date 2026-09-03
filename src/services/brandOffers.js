@@ -821,6 +821,20 @@ export async function setBusinessPriorityTimeWindows(partnerId, timeWindows) {
   if (error) throw error;
 }
 
+// "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3 2026) -- business
+// occasion-appetite preferences ("what would you like more customers
+// for"). Reuses the exact same real OCCASION_OPTIONS vocabulary Phase 1's
+// business_requests.occasion column already established -- no second
+// taxonomy. Same narrow-RPC shape as setBusinessPriorityAttributes/
+// setBusinessPriorityTimeWindows above.
+export async function setBusinessPriorityOccasions(partnerId, occasions) {
+  const { error } = await supabase.rpc('set_business_priority_occasions', {
+    partner_id_param: partnerId,
+    occasions_param: occasions ?? [],
+  });
+  if (error) throw error;
+}
+
 // "Business Story" plan, Phase 3 -- a real, coarse, self-reported
 // "how's business right now" signal (open/limited/full), deliberately
 // not the deeper capacity-rules business_fulfillment_policies mechanism.

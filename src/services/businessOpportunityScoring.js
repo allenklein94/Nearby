@@ -55,10 +55,15 @@ export function scoreBusinessOpportunity({
   requestTimeWindowStart = null,
   requestBudgetMax = null,
   requestPartySize = null,
+  // "Intelligent demand inbox" Phase 2 (CLAUDE.md, Sep 3 2026) -- the
+  // real WHY signal Phase 1 added to business_requests, matched against
+  // the business's own declared occasion-appetite preferences below.
+  requestOccasion = null,
   businessAttributes = [],
   businessCuisine = null,
   businessPriorityAttributes = [],
   businessPriorityTimeWindows = [],
+  businessPriorityOccasions = [],
   activePrioritySignals = [],
   fulfillmentPolicy = null,
   // Optional -- the real, already-fetched weather object for the
@@ -81,6 +86,18 @@ export function scoreBusinessOpportunity({
   if (priorityMatches.length > 0) {
     score += SCORE_OWN_NETWORK;
     reasons.push({ label: 'Matches what you said you want more of', points: SCORE_OWN_NETWORK });
+  }
+
+  // "Intelligent demand inbox" Phase 2: the same "the business explicitly
+  // said it wants more of this" signal as the priority-attribute bonus
+  // above, just for the real WHY (occasion) instead of the general
+  // attribute vocabulary. Reuses the identical SCORE_OWN_NETWORK weight --
+  // never a new invented scale, matching this file's own repeated "no new
+  // scoring axis" rule -- and is silent whenever either side lacks a real
+  // value (no fabricated match from an absent signal).
+  if (requestOccasion && businessPriorityOccasions.includes(requestOccasion)) {
+    score += SCORE_OWN_NETWORK;
+    reasons.push({ label: `Matches an occasion you want more of (${requestOccasion.replace(/_/g, ' ')})`, points: SCORE_OWN_NETWORK });
   }
 
   // A weaker, still-real signal: the business already offers this, even

@@ -256,6 +256,70 @@ run-through, and the actual Anthropic call path inside `create-assistant` was no
 end-to-end — this sandbox has no way to mint a real signed-in session's access token, the same
 standing limitation as every other AI-classification feature in this file.
 
+### Phase 2 — DONE, build-wise, verified live against production and via a real from-scratch
+### migration replay
+
+Built exactly to the locked design above: `brand_partners.priority_occasions text[]` (default
+`'{}'`, real curated 8-value CHECK constraint reusing Phase 1's exact `occasion` vocabulary
+verbatim — no second taxonomy), and a new `set_business_priority_occasions(partner_id_param,
+occasions_param)` SECURITY DEFINER RPC, mirroring `set_business_priority_attributes()`/
+`set_business_priority_time_windows()`'s exact shape (owner-only via the same `profiles.
+managed_partner_id = partner_id_param` check, real vocabulary check, no other side effects) —
+one more small, dedicated, frequently-revisited-toggle RPC, not folded into
+`update_business_profile()`.
+
+**`scoreBusinessOpportunity()`** (`services/businessOpportunityScoring.js`) gained
+`requestOccasion`/`businessPriorityOccasions` params and a new bonus block, placed right after
+the priority-attribute-match block since it's the same class of signal ("the business explicitly
+said it wants more of this") just for occasion instead of attribute — reuses the identical
+`SCORE_OWN_NETWORK` weight the priority-attribute bonus already uses, never a new invented scale,
+matching this file's own repeated "no new scoring axis" rule. Silent whenever either side lacks a
+real value — no fabricated match from an absent signal. `getBusinessOpportunities()`
+(`services/businessFulfillment.js`) now also selects `business_requests.occasion` (one added
+column on an already-existing select, no new query) so there's real data to score against.
+`BusinessDashboardScreen.js`'s `scoredOpportunities` now threads `req.occasion`/
+`selectedPartner?.priority_occasions` through into the scoring call — no dependency-array change
+needed, since both `opportunities`/`selectedPartner` were already tracked.
+
+**UI**: a new "Why" chip row (real `OCCASION_OPTIONS`, the exact same vocabulary/icons Phase 1's
+consumer-side `AskBusinessScreen.js` picker already uses) added to the existing "What You're
+Looking For" card, right after the existing "When" row and before the shared Save button —
+same chip/chip-selected visual convention as every other picker on this card, no new pattern.
+`handleSavePriorityAttributes()` now saves all three fields (customer attributes / time windows /
+occasions) in one `Promise.all`, one Save button, three RPCs underneath — matching the card's own
+established "one card, one action" shape. Loaded from `partner.priority_occasions ?? []` on
+`loadMyPartner()`, alongside the two existing priority fields (`getMyManagedPartner()` already
+does `select('*')`, so no new query was needed to read it back either).
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied, using the real
+`Coastal Coffee` partner (owned by `Allen`) and a genuine non-owner (`Claude`): the real owner's
+set call succeeded and round-tripped exactly (`['birthday','date_night']`); the non-owner's
+identical call was correctly rejected (`You do not manage this business`); an invalid occasion
+value was correctly rejected (`Invalid occasion`) with the real owner's prior valid value
+confirmed still intact afterward (the rejected call didn't clobber it, proving real transaction
+atomicity, not just a surface-level check); a raw `anon`-role execute check confirmed `false`
+while `authenticated` confirmed `true`. Test state reverted to an empty array afterward —
+confirmed production back to its exact pre-test baseline.
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped/recreated a truly empty `public` schema,
+patched the two known image-version gaps onto the test container only, created `pg_cron`/
+`pg_trgm` as `supabase_admin`, then ran the full, now-112-file `supabase/migrations/` folder in
+order via `psql -v ON_ERROR_STOP=1` — exit 0 on every file, the new column/constraint/function
+all confirmed to exist in the freshly-rebuilt database. Container removed afterward.
+
+**Client verification**: a direct `@babel/core` parse of all four touched files (clean); the full
+Jest suite (**176/176 passing** — 172 pre-existing + 4 new tests for the occasion-match bonus,
+covering a real match, a mismatch, a business with no declared priority occasions, and a request
+with no occasion at all); a full `npx expo export --platform ios` (clean, no bundling errors,
+**2279 modules, unchanged** — every touched file this phase was an edit, no new files).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "Why" chip row renders/saves correctly on a
+real device alongside the existing customer/time chips, and that a real occasion-matched
+opportunity genuinely reorders above an otherwise-equal non-matching one in the running app, not
+just via direct function calls.
+
 ## Aug 30 2026 (cont'd) — "10/10 blueprint" (a long external strategic reply) audited against
 ## real code; the one genuinely open, well-specified signal-propagation gap it names (Finding 8,
 ## `accommodates_party_types`) closed; a second (Finding 9, gender visibility) resolved by a
