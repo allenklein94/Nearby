@@ -2,6 +2,7 @@ import {
   computeOfferTypeAcceptanceRates,
   bestAcceptedOfferType,
   rankExperiencesForOpportunity,
+  buildOfferTitleScaffold,
   MAX_OFFER_SUGGESTIONS,
 } from './businessOfferRecommendation';
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW } from './intentResolverScoring';
@@ -137,5 +138,23 @@ describe('rankExperiencesForOpportunity', () => {
     });
     expect(result.length).toBeLessThanOrEqual(MAX_OFFER_SUGGESTIONS);
     expect(result[0].experienceId).toBe('high');
+  });
+});
+
+describe('buildOfferTitleScaffold', () => {
+  it('builds a real scaffold from a real occasion + category', () => {
+    expect(buildOfferTitleScaffold({ occasion: 'birthday', category: 'Foodie' })).toBe('Birthday Foodie');
+  });
+
+  it('returns null when occasion is missing -- never fabricates one', () => {
+    expect(buildOfferTitleScaffold({ occasion: null, category: 'Foodie' })).toBeNull();
+  });
+
+  it('returns null when category is missing -- never fabricates one', () => {
+    expect(buildOfferTitleScaffold({ occasion: 'birthday', category: null })).toBeNull();
+  });
+
+  it('returns null when both are missing', () => {
+    expect(buildOfferTitleScaffold({})).toBeNull();
   });
 });

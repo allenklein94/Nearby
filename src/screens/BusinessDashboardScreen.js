@@ -25,9 +25,9 @@ import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
 import { getSocialForecast } from '../services/homeDashboard';
-import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity } from '../services/businessOfferRecommendation';
+import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiencesForOpportunity, buildOfferTitleScaffold } from '../services/businessOfferRecommendation';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
@@ -260,6 +260,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   const [myAvailability, setMyAvailability] = useState([]);
+  // Phase 4(c): a real, persistent "N tables available -- we found M
+  // matching requests" card, sourced from post_business_availability()'s
+  // own already-real matchedCount -- no new backend logic. Replaces the
+  // old one-shot Alert (which vanished the instant it was dismissed) with
+  // a real card that stays visible until the owner dismisses it.
+  const [lastPostedAvailability, setLastPostedAvailability] = useState(null);
   const [postAvailabilityModalVisible, setPostAvailabilityModalVisible] = useState(false);
   const [availabilityTitleInput, setAvailabilityTitleInput] = useState('');
   const [availabilityDescriptionInput, setAvailabilityDescriptionInput] = useState('');
@@ -293,6 +299,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       fulfillmentPolicy,
     });
   }, [offerModalRequest, experiences, fulfillmentPolicy]);
+  // Phase 4(e): a real, honest offer-title scaffold, only ever buildable
+  // when the request's own real occasion (Phase 1) AND category are both
+  // present -- null otherwise, never a guessed fallback.
+  const offerTitleScaffold = useMemo(() => {
+    if (!offerModalRequest) return null;
+    return buildOfferTitleScaffold({
+      occasion: offerModalRequest.occasion ?? null,
+      category: offerModalRequest.category ?? null,
+    });
+  }, [offerModalRequest]);
   const [policyModalVisible, setPolicyModalVisible] = useState(false);
   const [policyPartySizeMinInput, setPolicyPartySizeMinInput] = useState('');
   const [policyPartySizeMaxInput, setPolicyPartySizeMaxInput] = useState('');
@@ -1208,6 +1224,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferTypeInput(suggestedOfferType.offerType);
   }
 
+  // "Intelligent demand inbox" plan, Phase 4(e): a real, honest offer-
+  // title scaffold (occasion + category), never a price -- prefills only
+  // the title portion of the description field, same "never touch price"
+  // discipline as applyExperienceSuggestion above.
+  function applyOfferTitleScaffold(title) {
+    setOfferDescriptionInput(title);
+  }
+
   // Decision 6, Phase 3 (CLAUDE.md's Aug 27 2026 plan) -- this is the real
   // confirmed gap that phase exists to close: this exact response used to
   // go straight to submit_business_offer() with only the pre-existing
@@ -1402,13 +1426,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (result.published) {
         setPostAvailabilityModalVisible(false);
         await loadMyAvailability(selectedPartner.id);
-        const matchedCount = result.matchedCount ?? 0;
-        Alert.alert(
-          'Posted!',
-          matchedCount > 0
-            ? `We matched this against ${matchedCount} open request${matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
-            : 'No open requests match this right now, but it stays live for anyone who asks while it\'s active.'
-        );
+        // Phase 4(c): a real, persistent card (not a one-shot Alert) --
+        // stays visible on the dashboard until the owner dismisses it,
+        // sourced purely from the real matchedCount post_business_
+        // availability() already computes -- no new backend logic.
+        setLastPostedAvailability({
+          title: availabilityTitleInput.trim(),
+          matchedCount: result.matchedCount ?? 0,
+        });
       } else if (result.blocked) {
         Alert.alert(
           "Couldn't Post",
@@ -2499,6 +2524,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           ].filter(Boolean).join(' · ')}
                         </Text>
                       )}
+                      {d.request_count > 0 && d.dominant_occasion && (
+                        // "Intelligent demand inbox" plan, Phase 4(d): a real
+                        // occasion-based bucket alongside category/party-size/
+                        // time-window -- same "no new signal, just surface
+                        // what's already there" convention as dominant_period
+                        // above, just rolled up by occasion instead.
+                        <Text style={styles.breakdownText}>
+                          {OCCASION_OPTIONS.find((o) => o.key === d.dominant_occasion)?.icon ?? ''}{' '}
+                          mostly {occasionLabel(d.dominant_occasion).toLowerCase()} ({d.dominant_occasion_count} of {d.request_count})
+                        </Text>
+                      )}
                       {d.request_count > 0 && d.unmet_intent_count > 0 && (
                         // Gap 1's own "never blended" requirement -- a real,
                         // separate softer signal on top of the real request
@@ -2543,6 +2579,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // still-open opportunities are already sorted by this
                     // same real score, highest first.
                     const reqAttrs = o.business_requests?.attributes ?? [];
+                    // Phase 4(a): a real "What they're looking for" tag row,
+                    // deliberately separate from the itemized "why you're a
+                    // match" reasons list right above it -- both pull from
+                    // fields already selected by getBusinessOpportunities
+                    // (category/occasion/party-size/budget/attributes/
+                    // cuisine), no new query. Replaces the old plain text
+                    // line + a second, separate cuisine/attribute-only chip
+                    // row with one consolidated, scannable tag summary.
+                    const reqOccasion = OCCASION_OPTIONS.find((opt) => opt.key === o.business_requests?.occasion);
+                    const lookingForTags = [
+                      o.business_requests?.category,
+                      reqOccasion ? `${reqOccasion.icon} ${reqOccasion.label}` : null,
+                      o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
+                      o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
+                      o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
+                      ...reqAttrs.map((key) => businessAttributeLabel(key)),
+                    ].filter(Boolean);
                     return (
                     <View key={o.id} style={styles.gatheringRow}>
                       {o.opportunityReasons.length > 0 && (
@@ -2555,25 +2608,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         </View>
                       )}
                       <Text style={styles.offerTitle}>{o.business_requests?.raw_text}</Text>
-                      <Text style={styles.breakdownText}>
-                        {[
-                          o.business_requests?.category,
-                          o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
-                          o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
-                        ].filter(Boolean).join(' · ') || 'No further details given'}
-                      </Text>
-                      {(reqAttrs.length > 0 || o.business_requests?.cuisine) && (
-                        <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                          {o.business_requests?.cuisine && (
-                            <View style={styles.chip}>
-                              <Text style={styles.chipText}>{cuisineLabel(o.business_requests.cuisine)}</Text>
-                            </View>
-                          )}
-                          {reqAttrs.map((key) => (
-                            <View key={key} style={styles.chip}>
-                              <Text style={styles.chipText}>{businessAttributeLabel(key)}</Text>
-                            </View>
-                          ))}
+                      {lookingForTags.length > 0 && (
+                        <View style={{ marginTop: spacing.xs }}>
+                          <Text style={styles.notesLabel}>What they're looking for</Text>
+                          <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                            {lookingForTags.map((tag) => (
+                              <View key={tag} style={styles.chip}>
+                                <Text style={styles.chipText}>{tag}</Text>
+                              </View>
+                            ))}
+                          </View>
                         </View>
                       )}
                       {o.status === 'pending' && o.business_requests?.status === 'open' && (
@@ -2591,10 +2635,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
                             onPress={() => handleDeclineOpportunity(o.request_id)}
                             disabled={respondingOpportunityId === o.request_id}
-                            accessibilityLabel="Decline this request"
+                            accessibilityLabel="Can't accommodate this request"
                             accessibilityRole="button"
                           >
-                            {respondingOpportunityId === o.request_id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Not for me</Text>}
+                            {/* Phase 4(b): already wired to the real decline_business_offer()
+                                RPC (see declineBusinessOpportunity) -- this is a relabel only,
+                                matching the plan's own explicit "Can't accommodate" wording. */}
+                            {respondingOpportunityId === o.request_id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Can't accommodate</Text>}
                           </TouchableOpacity>
                         </View>
                       )}
@@ -2608,6 +2655,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })
                 )}
 
+                {lastPostedAvailability && (
+                  // Phase 4(c): a real, persistent card -- reuses the same
+                  // neutral pendingReviewCard treatment (colors.surface/
+                  // border, not coral -- informational, not an action).
+                  // Sourced purely from post_business_availability()'s own
+                  // already-real matchedCount, no new backend logic.
+                  <View style={[styles.pendingReviewCard, { marginTop: spacing.lg }]}>
+                    <View style={styles.welcomeCardHeaderRow}>
+                      <Text style={styles.pendingReviewTitle}>✅ Posted: {lastPostedAvailability.title}</Text>
+                      <TouchableOpacity onPress={() => setLastPostedAvailability(null)} accessibilityLabel="Dismiss" accessibilityRole="button">
+                        <Text style={{ color: colors.textTertiary, fontSize: 18 }}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.pendingReviewRow}>
+                      {lastPostedAvailability.matchedCount > 0
+                        ? `Nearby found ${lastPostedAvailability.matchedCount} matching request${lastPostedAvailability.matchedCount === 1 ? '' : 's'} nearby -- they'll see your offer right away.`
+                        : "No open requests match this right now, but it stays live for anyone who asks while it's active."}
+                    </Text>
+                  </View>
+                )}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
                   <Text style={styles.sectionHeader}>Your Availability</Text>
                   <TouchableOpacity
@@ -4180,6 +4247,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </TouchableOpacity>
                   ))}
                 </View>
+              )}
+              {offerSuggestions.length === 0 && offerTitleScaffold && (
+                // Phase 4(e): no Signature Experience matched well -- offer a
+                // real, honest title scaffold (occasion + category) instead
+                // of a blank field. Price is never touched here either.
+                <TouchableOpacity
+                  style={[styles.offerCard, { marginBottom: spacing.md }]}
+                  onPress={() => applyOfferTitleScaffold(offerTitleScaffold)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Start from a scaffold titled ${offerTitleScaffold}`}
+                >
+                  <Text style={styles.offerDescription}>
+                    ✨ No Signature Experience matches this yet -- start from "{offerTitleScaffold}"
+                  </Text>
+                </TouchableOpacity>
               )}
               {offerSuggestions.length === 0 && suggestedOfferType && (
                 <TouchableOpacity

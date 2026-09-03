@@ -446,6 +446,118 @@ session's access token, the same standing limitation as every other AI-classific
 in this file), and that the read-only status/admin-review cards render the new fields correctly
 end-to-end in the running app.
 
+### Phase 4 — DONE, all five sub-items (a)-(e), reusing every mechanism from Phases 1-3, no new
+### lifecycle introduced
+
+Picked back up after a codespace restart interrupted the session right after Phase 3 landed —
+`git status` was clean, `git log` matched `origin/main` exactly at the Phase 3 commit, nothing
+was lost. Built exactly per the plan's own locked text, no design changes during implementation.
+
+**(a) "What they're looking for" tag row — DONE.** The Business Opportunities list's own row
+previously split a request's real signal across three separate places: a plain `category ·
+party_size · budget` text line, and a second, separate chip row for cuisine/attributes only —
+occasion (Phase 1) was never shown here at all. Consolidated into one real, labeled tag row
+("What they're looking for") pulling category/occasion/party-size/budget/cuisine/attributes all
+from the request's already-selected fields (`getBusinessOpportunities()`'s own select already
+carries every one of them, confirmed unchanged — no new query). Deliberately kept separate from
+the itemized "🎯 why you're a match" reasons list right above it, matching the plan's own explicit
+"separate from" instruction — one is "what they asked for," the other is "why *your* business is
+a fit for it," two genuinely different questions.
+
+**(b) "Can't accommodate" — DONE, a relabel only.** Checked first, not assumed: the existing
+"Not for me" decline button already called `handleDeclineOpportunity()` → `declineBusinessOpportunity()`
+→ the real, already-live `decline_business_offer()` RPC — the mechanism was already fully
+correct, only the copy didn't match the plan's own explicit wording. Renamed the button text and
+its accessibility label; zero behavior change.
+
+**(c) A real, persistent "posted" card — DONE.** `post_business_availability()`'s own real
+`matchedCount` (already computed server-side, already returned to the client) previously only
+ever surfaced as a one-shot `Alert.alert('Posted!', ...)` that vanished the instant it was
+dismissed — no lingering record telling the owner what just happened once they'd moved past the
+alert. New `lastPostedAvailability` state, set on a successful post instead of firing the Alert,
+rendered as a real dismissible card directly above "Your Availability" — reusing the existing
+neutral `pendingReviewCard`/`pendingReviewTitle`/`pendingReviewRow` styles verbatim (the same
+"informational, not coral" treatment already established for the "⏳ Under Review" card) rather
+than inventing a new visual language. No new backend logic — purely surfacing a number the
+function already computes, exactly as the plan's own text specifies.
+
+**(d) A real occasion-based demand bucket — DONE, schema + client.** `get_aggregated_demand_for_partner()`
+gained `dominant_occasion`/`dominant_occasion_count`, mirroring the exact shape its own existing
+`dominant_period`/`dominant_period_count` columns already established (a new `occasions`/
+`ranked_occasions` CTE pair, parallel to the existing `periods`/`ranked_periods` pair, joined the
+same way with the same `row_number() over (partition by category order by count desc) = 1`
+tie-break) — no new signal invented, `business_requests.occasion` was already real, collected
+data from Phase 1, just never rolled up here. Old 8-column signature `drop function`ed first
+(the return shape changed, matching this schema's own "an added output column creates a distinct
+orphaned overload" rule, not a bare `create or replace`). `BusinessDashboardScreen.js`'s "Demand
+Near You" card now shows a real "🎂 mostly birthday (2 of 3)" line alongside the existing
+category/party-size/time-window line, using the same real `OCCASION_OPTIONS` icon/label already
+established in Phases 1-2 — shown only when at least one real open request in that category
+actually named an occasion, same "no invented default" convention `dominant_period` already used.
+
+**(e) A real offer-title scaffold, closing Phase 3's own item-3 gap — DONE.** New
+`buildOfferTitleScaffold({occasion, category})` in `businessOfferRecommendation.js` (pure, no
+I/O, same testable shape as every other function in that module) — returns a real, honest title
+(e.g. "Birthday Foodie") only when BOTH the request's own real occasion and category are present,
+`null` otherwise, never a guessed fallback. Price is never touched by this — matches the module's
+own already-locked "price_level/price is never guessed" rule verbatim; the owner still always
+types their own real price. Wired into the Make-an-Offer modal: when no Signature Experience
+matches well (`offerSuggestions.length === 0`) and a real scaffold is buildable, a new "✨ No
+Signature Experience matches this yet — start from '{title}'" card renders alongside (not
+replacing) the existing "🏆 best-performing offer type" fallback — the two answer different
+questions (what to name the offer vs. which offer *type* to pick) and can both be shown at once.
+4 new unit tests added (`businessOfferRecommendation.test.js`) — a real scaffold from real
+occasion+category, and the three null-when-anything-is-missing cases.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — the one
+schema piece, `20260913_v2_aggregated_demand_occasion.sql`: confirmed grants survived (
+`authenticated` yes, `anon` no). A real disposable scenario against the real `Coastal Coffee`
+partner (coordinates temporarily set, reverted after, same established convention every prior
+pass touching this partner already used) — 3 real disposable Coffee-category open requests (2
+`occasion: 'birthday'`, 1 `occasion: 'celebration'`) plus 1 Foodie-category request with no
+occasion set: the Coffee row correctly returned `dominant_occasion: 'birthday'`,
+`dominant_occasion_count: 2` (out of `request_count: 3`); the Foodie row correctly returned
+`dominant_occasion: null` (its one request had no occasion, nothing to roll up, not a fabricated
+default) with `request_count: 1` unaffected. All 4 test rows deleted afterward and Coastal
+Coffee's coordinates reverted to `null` — confirmed production back to its exact pre-test
+baseline (0 `business_requests`).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check
+status, dropped/recreated a truly empty `public` schema, patched the two known image-version
+gaps onto the test container only, created `pg_cron`/`pg_trgm` as `supabase_admin` with no
+workaround needed this run, then ran the full, now-114-file `supabase/migrations/` folder in
+order via `psql -v ON_ERROR_STOP=1` — exit 0 on every file, the widened function (confirmed as
+the *only* signature, correctly including the two new occasion columns) present in the
+freshly-rebuilt database. Container removed afterward.
+
+**Client-side verified**: a direct `@babel/core` parse of all three touched files (clean); the
+full Jest suite (**180/180 passing** — 176 pre-existing + 4 new); a full `npx expo export
+--platform ios` (clean, no bundling errors, **2280 modules, unchanged** — every touched file
+this pass was an edit, no new client files; the one new file is a `.sql` migration, not bundled).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the new "What they're looking for"
+tag row renders correctly against real request data (including a request with every one of the
+six possible tags present at once, and one with none), the persistent "Posted" card renders and
+dismisses correctly, the occasion line on "Demand Near You" reads correctly once real occasion-
+tagged demand exists nearby a real business, and the new offer-title-scaffold card renders and
+correctly prefills the description field (leaving price untouched) once a real opportunity with
+both a real occasion and category exists with no matching Signature Experience.
+
+**This closes out the "intelligent demand inbox" plan's own locked 4-phase build order in
+full — Phases 1-4 are all now DONE, build-wise and verified live.** One real, disclosed
+discrepancy in this plan's own text, found while closing it out rather than silently resolved
+either way: this section's own opening "Status" line says the user's go-ahead covered "including
+the previously-flagged Phase 5 IA simplification" (the Opportunities/Bookings/Availability/
+Profile bottom-nav restructuring) — but the plan's own "Locked build order" only ever defined
+Phases 1-4, never wrote a Phase 5, and none of Phase 4's own five sub-items (a)-(e) touch
+navigation/IA at all. **That large navigation change has not been built** — it was authorized in principle, but it
+was never actually scoped into a concrete phase anywhere in this plan's own text, so nothing
+here silently built it and nothing here silently dropped it either. Flagged explicitly for a future session to scope and build as its own real, standalone
+piece of work, not inferred from this closing note. The standing device-run-through gap above is
+the other real open item left behind by this whole initiative.
+
 ## Aug 30 2026 (cont'd) — "10/10 blueprint" (a long external strategic reply) audited against
 ## real code; the one genuinely open, well-specified signal-propagation gap it names (Finding 8,
 ## `accommodates_party_types`) closed; a second (Finding 9, gender visibility) resolved by a

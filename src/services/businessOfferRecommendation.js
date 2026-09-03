@@ -21,6 +21,7 @@
 // rule from the Signature Experiences design itself. The business always
 // types their own real offer_price, same as every other offer.
 import { SCORE_INTEREST_MATCH, SCORE_CLOSE_DISTANCE, SCORE_HAPPENING_NOW } from './intentResolverScoring';
+import { occasionLabel } from '../constants/businessAttributes';
 
 export const MAX_OFFER_SUGGESTIONS = 3;
 
@@ -135,4 +136,19 @@ export function rankExperiencesForOpportunity({
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score);
   return scored.slice(0, MAX_OFFER_SUGGESTIONS);
+}
+
+// "Intelligent demand inbox" plan (CLAUDE.md, Sep 3 2026), Phase 4(e) --
+// closes Phase 3's own item-3 gap: when no existing Signature Experience
+// matches an opportunity well, this is the real one-tap fallback -- a
+// genuine offer-title scaffold built ONLY from two real, already-
+// collected signals (the request's own occasion + category), never
+// fabricated when either is missing. This is a TITLE only, never a
+// price -- matches every other rule in this module and this schema's
+// own "price is never guessed" convention: the owner always types their
+// own real offer_price/description themselves; this just gives them
+// something honest to start from instead of a blank field.
+export function buildOfferTitleScaffold({ occasion = null, category = null } = {}) {
+  if (!occasion || !category) return null;
+  return `${occasionLabel(occasion)} ${category}`;
 }
