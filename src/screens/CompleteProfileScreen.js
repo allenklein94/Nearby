@@ -201,6 +201,23 @@ export default function CompleteProfileScreen() {
         console.error('Failed to read onboarding answers', e);
       }
 
+      // Sep 3 2026 ("global onboarding -> product wiring" master plan,
+      // CLAUDE.md, Phase A): onboarding_motivations was a real, confirmed
+      // orphaned field before this pass -- captured here at signup, then
+      // never read by anything downstream, anywhere in the app (grepped
+      // for it before writing this). Closing the one honest, bounded,
+      // explicit-consent consumption of it: choosing "Make new friends" as
+      // one of up to 3 motivations *is* the same explicit opt-in Friend
+      // Discovery's own "Turn On" screen already asks for separately
+      // (open_to_friend_discovery, Aug 16 2026) -- so a real, stated
+      // intent at signup can honestly set it automatically, without
+      // silently discovering anyone the person didn't ask to be shown to.
+      // Never forced back to false here -- an existing account that
+      // already turned it off some other way is untouched, since this
+      // only ever runs once, at first profile completion.
+      const wantsFriends = Array.isArray(onboardingAnswers.onboarding_motivations)
+        && onboardingAnswers.onboarding_motivations.includes('Make new friends');
+
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         display_name: displayName.trim(),
@@ -210,6 +227,7 @@ export default function CompleteProfileScreen() {
         ...(onboardingAnswers.onboarding_motivations ? { onboarding_motivations: onboardingAnswers.onboarding_motivations } : {}),
         ...(onboardingAnswers.social_comfort_level ? { social_comfort_level: onboardingAnswers.social_comfort_level } : {}),
         ...(onboardingAnswers.monthly_interests ? { monthly_interests: onboardingAnswers.monthly_interests, monthly_interests_updated_at: new Date().toISOString() } : {}),
+        ...(wantsFriends ? { open_to_friend_discovery: true } : {}),
       });
       if (!profileError) {
         // Marks this as a fresh signup so the navigator shows the

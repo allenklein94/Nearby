@@ -241,7 +241,7 @@ export default function HomeScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
       if (myId) {
-        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment').eq('id', myId).single();
+        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
@@ -486,6 +486,12 @@ export default function HomeScreen({ navigation }) {
             excludeIds: new Set(result?.upcomingPlanIds ?? []),
             positiveHostIds,
             positivePartnerIds,
+            // Sep 3 2026 ("global onboarding -> product wiring" master
+            // plan, CLAUDE.md, Phase A) -- `profile` is the same select
+            // from earlier in this same load() call (closure, not a
+            // second fetch); social_comfort_level was a real, confirmed
+            // orphaned onboarding field until this line.
+            socialComfortLevel: profile?.social_comfort_level ?? null,
           })
         );
       } catch (e) {

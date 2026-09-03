@@ -1,0 +1,22 @@
+-- Sep 3 2026 (CLAUDE.md, "global onboarding -> product wiring" master
+-- plan, Phase B) -- the first real appearance-based matching filter.
+-- basicsFields.js's own `hair_color` entry (Black/Brown/Blonde/Red/Gray/
+-- White/Bald/Other) has always been a purely decorative self-description
+-- field, never consumed by anything -- exactly the "decorative profile
+-- field, not a real matching filter" gap the external reply named
+-- directly. This is the first real filter *preference* over it, mirroring
+-- ethnicity_preferences' own exact shape (services/proximity.js) -- a
+-- plain, self-editable text[] with no trusted_update guard, since it's a
+-- preference about who the caller wants to see, not a privileged column --
+-- rather than inventing a second mechanism. Height was deliberately NOT
+-- given the same treatment this pass: basics.height is free text ("5'10\""),
+-- and turning free text into a real range filter would mean either
+-- guessing a parse or silently converting existing values -- both violate
+-- this schema's own "never guess/parse messy data into a hard filter"
+-- convention. Flagged in CLAUDE.md as its own, separately-scoped future
+-- phase (a real structured height_inches column + a real picker,
+-- matching the gender/ethnicity precedent of promoting a field out of
+-- generic "basics" once it needs to be filterable), not silently
+-- attempted here.
+alter table public.profiles
+  add column if not exists dating_pref_hair_colors text[] not null default '{}';

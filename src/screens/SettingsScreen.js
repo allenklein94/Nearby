@@ -65,6 +65,11 @@ export default function SettingsScreen({ navigation, route }) {
   const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
   const [notifyWaves, setNotifyWaves] = useState(true);
+  // Sep 3 2026 ("global onboarding -> product wiring" master plan,
+  // CLAUDE.md, Phase C) -- the one real, previously fully-ungated push
+  // (notify_business_update -> every follower, no preference check) now
+  // has a real toggle.
+  const [notifyBusinessesOffers, setNotifyBusinessesOffers] = useState(true);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   const [changingPhone, setChangingPhone] = useState(false);
@@ -120,6 +125,7 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyMatches(data.notify_matches ?? true);
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
+      setNotifyBusinessesOffers(data.notify_businesses_offers ?? true);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
@@ -578,6 +584,16 @@ export default function SettingsScreen({ navigation, route }) {
               onValueChange={(v) => toggleNotifPref('notify_waves', v, setNotifyWaves)}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Notify me about Waves"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>Business updates</Text>
+            <Switch
+              value={notifyBusinessesOffers}
+              onValueChange={(v) => toggleNotifPref('notify_businesses_offers', v, setNotifyBusinessesOffers)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about updates from businesses I follow"
             />
           </View>
         </View>

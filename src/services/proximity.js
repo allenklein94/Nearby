@@ -218,13 +218,20 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
+  // Sep 3 2026 ("global onboarding -> product wiring" master plan,
+  // CLAUDE.md, Phase B) -- a real hair_color matching filter, same
+  // preference shape as ethnicityPreferences above, but deliberately
+  // NOT the same exclusion rule: a candidate with no basics.hair_color
+  // set is never excluded, even while this preference is active --
+  // absence of self-reported data is never held against a candidate.
+  const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -297,6 +304,10 @@ export async function getNearbyMatches() {
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(item.profiles.ethnicity)) {
         return false;
       }
+      const candidateHairColor = item.profiles.basics?.hair_color;
+      if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) {
+        return false;
+      }
       return true;
     });
 }
@@ -341,7 +352,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, interests, basics, gender_identity, interested_in_genders')
+    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -350,6 +361,10 @@ export async function getBrowseMatches(offset = 0) {
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
+  // Sep 3 2026 ("global onboarding -> product wiring" master plan,
+  // CLAUDE.md, Phase B) -- same real filter as getNearbyMatches above;
+  // a candidate with no basics.hair_color set is never excluded.
+  const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
 
   const { data: existingMatches } = await supabase
     .from('matches')
@@ -392,6 +407,8 @@ export async function getBrowseMatches(offset = 0) {
       const age = calculateAge(p.birthdate);
       if (age !== null && (age < minAge || age > maxAge)) return false;
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
+      const candidateHairColor = p.basics?.hair_color;
+      if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) return false;
       return true;
     })
     .map((p) => {

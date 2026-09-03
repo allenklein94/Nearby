@@ -4,6 +4,14 @@ import { supabase, functionUrl } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
+import { BASICS_FIELDS } from '../constants/basicsFields';
+
+// Sep 3 2026 ("global onboarding -> product wiring" master plan,
+// CLAUDE.md, Phase B) -- the real, curated 8-value vocabulary a
+// self-description hair_color field already uses (basicsFields.js) is
+// reused verbatim as the filter's own options, not a second invented
+// list.
+const HAIR_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'hair_color')?.options ?? [];
 import { typography, spacing, radius, shadow } from '../theme';
 
 // Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating should
@@ -28,6 +36,7 @@ export default function DatingPreferencesScreen({ navigation }) {
   const [maxAge, setMaxAge] = useState('99');
   const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
+  const [hairColorPreferences, setHairColorPreferences] = useState([]);
   const [interests, setInterests] = useState([]);
   const [loadingStrengths, setLoadingStrengths] = useState(false);
 
@@ -43,7 +52,7 @@ export default function DatingPreferencesScreen({ navigation }) {
     if (id) {
       const { data } = await supabase
         .from('profiles')
-        .select('preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, interests, dating_preferences_set')
+        .select('preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, interests, dating_preferences_set')
         .eq('id', id)
         .single();
       if (data) {
@@ -57,6 +66,7 @@ export default function DatingPreferencesScreen({ navigation }) {
             : []
         );
         setEthnicityPreferences(data.ethnicity_preferences ?? []);
+        setHairColorPreferences(data.dating_pref_hair_colors ?? []);
         setInterests(data.interests ?? []);
       }
     }
@@ -78,6 +88,10 @@ export default function DatingPreferencesScreen({ navigation }) {
     setEthnicityPreferences((prev) => (prev.includes(option) ? prev.filter((e) => e !== option) : [...prev, option]));
   }
 
+  function toggleHairColorPreference(option) {
+    setHairColorPreferences((prev) => (prev.includes(option) ? prev.filter((h) => h !== option) : [...prev, option]));
+  }
+
   async function savePreferences() {
     const minAgeNum = parseInt(minAge, 10);
     const maxAgeNum = parseInt(maxAge, 10);
@@ -90,6 +104,7 @@ export default function DatingPreferencesScreen({ navigation }) {
         preferred_min_age: minAgeNum,
         preferred_max_age: maxAgeNum,
         ethnicity_preferences: ethnicityPreferences,
+        dating_pref_hair_colors: hairColorPreferences,
         dating_preferences_set: true,
       })
       .eq('id', userId);
@@ -223,6 +238,27 @@ export default function DatingPreferencesScreen({ navigation }) {
             })}
           </View>
           <Text style={styles.helperText}>Who you'd like to be matched with. Leave blank for no preference.</Text>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>Hair Color Preferences</Text>
+          <View style={styles.chipsWrap}>
+            {HAIR_COLOR_OPTIONS.map((option) => {
+              const selected = hairColorPreferences.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleHairColorPreference(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>A real filter, not just a Profile description — leave blank for no preference.</Text>
 
           <TouchableOpacity
             style={styles.button}
