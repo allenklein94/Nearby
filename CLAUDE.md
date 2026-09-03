@@ -1,3 +1,261 @@
+## Sep 3 2026 — "intelligent demand inbox" business-side philosophy (external reply) audited
+## against real code; most of its 8 concrete asks are already substantially built under
+## different names; 5 real, genuinely new gaps identified and locked as a build plan; one large
+## navigation-simplification idea explicitly flagged for a decision, not silently built — PLAN
+## LOCKED, NOT YET EXECUTED
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — nothing in this section has been built yet. The user pasted a long external
+reply reacting to a set of business-side mockup screenshots, arguing the real opportunity isn't
+"a marketplace dashboard" but an **intelligent demand inbox** — the thesis, in the reply's own
+words: *"Businesses don't manage Nearby. Nearby manages the complexity for businesses."* Per
+this file's own standing rule for every external doc, every concrete claim was checked against
+the real, current code before being treated as a build item — not accepted at face value.
+
+### Audit — each of the reply's 8 numbered asks, checked directly, not assumed
+
+1. **"Don't make businesses hunt for customers" / lead with 'Nearby found something that fits
+   your business.'"** Already substantially true in spirit — the Business Opportunities inbox is
+   already a reactive "here's what came to you" list, not a search tool, and Business
+   Intelligence Phase 5's "Nearby Brief" already frames things this way ("today at {business}").
+   Nothing structurally new needed here; this is a copy/framing check to carry into whichever UI
+   pass touches the opportunity list, not its own build item.
+2. **The Opportunity card as centerpiece (What they're looking for / Why you're a match / Accept
+   & Offer / Can't accommodate).** **Mostly already real, confirmed by direct code read, not the
+   reply's own framing.** `businessOpportunityScoring.js`'s `scoreBusinessOpportunity()` already
+   produces a real, itemized reasons list (🎯 per-signal lines — priority-attribute match,
+   cuisine match, timing fit, budget fit, party-size fit) rendered on
+   `BusinessDashboardScreen.js`'s Business Opportunities list — this **is** "Why you're a match,"
+   already shipped (Business Intelligence Phases 2/3/7). `decline_business_offer(request_id)` is
+   a real, existing RPC (`20260814_business_fulfillment.sql`) — "Can't accommodate" already has a
+   real backing mechanism, confirmed via grep; it isn't literally labeled that way in the UI
+   today, but there's no missing mechanism here, only a possible copy/layout pass. **Real,
+   confirmed gap**: "What they're looking for" as its own separate, tag-style summary line
+   (distinct from the reasons list) doesn't exist as a discrete UI element — currently the raw
+   request text/category/party-size/budget render as separate fields, not a single scannable tag
+   row. Small, cosmetic, not scheduled as its own phase below — folded into Phase 4.
+3. **"One-tap smart offer," Nearby pre-fills time/party/occasion, business edits, sends.**
+   **Partially real, confirmed.** `businessOfferRecommendation.js`'s `rankExperiencesForOpportunity()`
+   already ranks the business's own existing Signature Experience templates against an
+   opportunity and prefills the Make-an-Offer modal's description/offer-type from the best match
+   — real prefill, not fabricated. **One correction to the reply's own mockup, not a gap**: the
+   mockup shows Nearby prefilling a **price** ("$X/person"). That directly conflicts with this
+   codebase's own repeatedly-locked rule — restated in at least four separate sections of this
+   file — that price is **never** invented or auto-filled by AI/the system; the business always
+   types their own real price. Whatever gets built here must prefill time/party size/occasion/
+   category honestly and leave price blank for the owner to set, exactly like every other
+   prefill in this app already does (e.g. Signature Experience suggestions never guess
+   `price_level`). **Real, confirmed gap**: there's no path today from "no good existing template
+   matches" to "here's a brand-new named offer scaffold" (e.g. "Birthday Dinner Package") — the
+   current recommendation only ever surfaces an existing template or falls back to a bare
+   accept-rate stat with no offer scaffold at all.
+4. **"What would you like more customers for?" occasion/demand-appetite checklist during
+   onboarding.** **Real, confirmed gap — this is genuinely not the same thing as what already
+   exists.** `brand_partners.priority_attributes` is a fixed 8-value *attribute* vocabulary
+   (`outdoor_seating, date_friendly, group_friendly, live_music, kid_friendly, quiet, casual,
+   upscale`, `20260903_business_dna_goals_pulse.sql`) and `priority_time_windows` is a 4-value
+   *time-of-day* vocabulary (`morning, afternoon, evening, weekend`) — neither is an *occasion/
+   demand-type* taxonomy (weeknight dining, large groups, birthdays, anniversaries, date nights,
+   last-minute bookings, slow hours, private events). This is a real, separate signal axis that
+   doesn't exist anywhere in the schema today.
+5. **"Fill a Gap" engine (business declares capacity, Nearby matches it against real open
+   demand).** **Already fully real and already shipped**, just under a different name and
+   without this exact UI copy. `post_business_availability()` (Business Fulfillment Phase 4,
+   `20260814_business_fulfillment_availability.sql`) already does precisely this: a business
+   posts real time-boxed capacity/terms, and the function immediately scans every currently-open
+   `business_requests` row within reach and auto-generates real offers — the "two-way matching"
+   this file's own history already documents in detail. **No new mechanism needed.** The one
+   real, confirmed gap is presentational: the demonstrative copy from the reply ("8 tables
+   available tonight — Nearby found 6 matching requests — View opportunities") doesn't exist
+   as literal UI text anywhere — confirmed via grep, zero hits. Small copy/UI pass, not a new
+   engine.
+6. **"Demand Nearby" — aggregated demand by category, with "your business matches N of these."**
+   **Mostly already real.** `get_aggregated_demand_for_partner()` (Business Intelligence Phase 1)
+   already gives a business a real category/party-size/time-window rollup of nearby open demand,
+   with a real "demand gap" flag for categories the business doesn't yet serve (Business
+   Intelligence Phase "Demand-gap detection"). **Real, confirmed gap**: none of that rollup can
+   bucket by *occasion* ("18 celebrations," "11 groups of 6+ for a birthday") because occasion
+   isn't a real column anywhere (see the schema gap in #4) — today's rollup can bucket by
+   category/party-size/time only. This is the same underlying gap as #4, not a second one.
+7. **Real AI-powered business onboarding from a free-text paragraph ("Tell Nearby about your
+   business" → full structured extraction).** **Real, confirmed gap — the existing "AI"
+   classifiers are deterministic, not a real model call.** `businessCategoryClassifier.js` and
+   `businessAttributeExtraction.js` are both plain keyword-match pure functions (confirmed via
+   direct read) — genuinely useful for confirming a *single* field from short text, but
+   structurally incapable of the reply's actual ask: parsing a full paragraph into category +
+   attributes + cuisine + experience-type + occasion-appetite + availability pattern all at
+   once. This app already has the exact right precedent to extend, though — `create-assistant`
+   (consumer intent → category/date-window/party-size/budget, a real deployed Claude Haiku Edge
+   Function) already proves this "free text → structured, server-validated fields, never
+   auto-committed, always shown back for confirmation" pattern works and is safe. A real,
+   analogous `business-onboarding-assistant` (or an extension of the existing apply flow) is
+   genuinely new work, not a rename of anything that exists.
+8. **The closing philosophy — "businesses don't manage Nearby, Nearby manages the complexity;
+   the owner only ever sees Opportunities / Bookings / Availability / Profile."** **Real,
+   confirmed gap, and the single largest one in the whole reply — a genuine navigation/IA
+   change, not a copy pass.** Read `BusinessDashboardScreen.js` directly: today's real section
+   set is `business | gatherings | inbox_modal | insights | requests` — five sections mapping
+   business identity, gathering hosting, messaging, analytics, and the opportunity/offer
+   pipeline all separately, not the reply's clean four-noun model. Collapsing to
+   Opportunities/Bookings/Availability/Profile would mean either dropping real functionality
+   (gathering hosting, messaging, analytics all have real, working screens today) or folding
+   each of those under one of the four new labels in a way nobody has explicitly decided yet.
+   **This is exactly the shape of change this file's own history treats as needing an explicit
+   go-ahead before touching, not something to silently redesign** (see every prior IA-restructure
+   section in this file, all of which were explicitly proposed and confirmed before being built).
+   **Not scheduled below. Flagged, not decided.**
+
+### The three-signal architecture (individual demand / aggregated demand / business opportunity)
+
+Already real, not a new idea to build: `business_requests` (one row = one individual ask, real),
+`get_aggregated_demand_for_partner()` (a real rollup across many open asks), and
+`scoreBusinessOpportunity()`/`opportunityReasons` (the per-business relevance layer on top of
+both) are three genuinely separate, already-shipped mechanisms. The reply's actual point — the
+business owner should never have to understand the distinction, only ever see "N opportunities
+for you" — is already true of the current Business Opportunities inbox (one merged list, not
+three separately-labeled sections). Nothing to build here; restated so a future session doesn't
+rebuild something that already exists under this framing.
+
+### Locked build order — 4 phases, the real genuinely-new gaps only; each depends on the
+### schema piece in Phase 1 existing first
+
+**Phase 1 — a real `occasion` signal.** New nullable `business_requests.occasion` column, a
+fixed, curated vocabulary (not free text, matching this app's own "no invented taxonomy"
+convention everywhere else — e.g. `birthday | anniversary | date_night | celebration |
+casual_hangout | business_meal | family_gathering | other`, exact list to be finalized against
+real, already-established language elsewhere in the app before building, not invented fresh
+here). `create-assistant`'s existing extraction gains a best-effort `occasion` field, same
+"never guessed unless genuinely implied" discipline every other extracted field already uses
+(matching `priceLevel`/`partyType`'s own established pattern). Threaded through wherever
+`business_requests` rows are created (solo ask, gathering-sourced, match-sourced) exactly like
+`attributes`/`cuisine` already are. This is the one real prerequisite every other phase below
+depends on — without it, "occasion-based demand" and "occasion-appetite preferences" have
+nothing real to read from.
+
+**Phase 2 — business occasion-appetite preferences ("what would you like more customers for").**
+A new, real, separate business preference — `brand_partners.priority_occasions text[]` (or a
+new small join table if a business needs per-occasion strength/recency, resolved during build,
+not guessed here), same real curated vocabulary as Phase 1's `occasion` column, same UI
+convention as the existing priority-attributes/priority-time-windows pickers on the dashboard
+(a chip picker, not a new pattern). `scoreBusinessOpportunity()` gains a real bonus when an
+opportunity's own `occasion` matches one of the business's declared priorities — reusing an
+existing `SCORE_*` weight, never a new invented scale, matching this file's own repeated
+"no new scoring axis" rule.
+
+**Phase 3 — real AI-powered business onboarding from free text.** A new Edge Function
+(`business-onboarding-assistant` or similar, name TBD at build time), modeled directly on
+`create-assistant`'s already-proven, already-deployed pattern (bearer-token auth, rate-limited
+via the shared `check_and_increment_ai_use` RPC, Claude Haiku, real server-side validation of
+every returned field against the real, live CHECK-constraint vocabularies — category/attributes/
+cuisine/occasion — never trusted raw from the model). Takes a business owner's own free-text
+description, returns a real "We understood your business: {chips}" confirmation screen the
+owner can edit before anything is saved — matches this app's already-locked "AI suggests, never
+silently commits" convention exactly, not a new posture invented for this. Wired into
+`BusinessPartnerApplyScreen.js`'s existing apply flow as an optional fast-path alongside the
+existing manual category/attribute/cuisine pickers, not a replacement for them (a business owner
+who'd rather tap through fields still can).
+
+**Phase 4 — Opportunity card + demand-copy pass, reusing every mechanism above.** (a) A real
+"What they're looking for" tag-style summary row on the Business Opportunities list, separate
+from the itemized "Why you're a match" reasons list that already exists — both pulling from
+already-fetched `business_requests` fields (category/occasion/party-size/attributes/cuisine),
+no new query. (b) An explicit "Can't accommodate" button wired to the already-real
+`decline_business_offer()` RPC, replacing whatever the current dismiss/ignore affordance is. (c)
+A real "N tables available tonight — Nearby found M matching requests" card on the availability-
+posting flow, sourced from `post_business_availability()`'s own already-real match count — no
+new backend logic, purely surfacing a number the function already computes. (d) `get_
+aggregated_demand_for_partner()` extended to also roll up by the new real `occasion` column
+(Phase 1), giving "Demand Nearby" a genuine occasion-based bucket ("18 celebrations this
+weekend") instead of only category/party-size. (e) The "one-tap smart offer" prefill from Phase
+3's own item 3 gap — when no existing Signature Experience template matches well, offer a real
+named offer-title scaffold (occasion + category, e.g. "Birthday Dinner") with price left
+genuinely blank for the owner, never fabricated.
+
+### Explicitly not scheduled, flagged rather than silently built or silently dropped
+
+The full Opportunities/Bookings/Availability/Profile navigation simplification (reply item 8) —
+a real, large IA change, needs an explicit go-ahead the way every other IA restructure in this
+file's history got one, not something to infer from this reply's own enthusiasm for the idea.
+
+### Verification convention for whenever this is picked up, matching every other schema-touching
+### plan in this file
+
+Phase 1's schema change: applied to production and verified live with real disposable test data
+(a real ask naming a real occasion, confirmed round-tripping through `create-assistant`'s own
+extraction once deployed) plus a from-scratch migration replay, before being considered done.
+Phase 2 the same, plus a live check that the new scoring bonus actually reorders a real
+two-candidate opportunity list. Phase 3's Edge Function: deployed and confirmed
+`verify_jwt: true` explicitly (not assumed from the CLI default — this file's own repeatedly-
+learned lesson), confirmed live rather than assumed. Every client change verified via a direct
+`@babel/core` parse and a full `npx expo export --platform ios`. Same standing limitation as
+everywhere else in this file: no manual simulator/device run-through is possible from this
+sandbox — flag it per phase rather than silently assume clean.
+
+**Status: plan locked, then explicitly authorized to build in full, including the previously-
+flagged Phase 5 IA simplification ("FLAGGED NOT DECIDED FOR LARGE IA CHANGE- IM GIVE YOU THE GO
+AHEAD"). Executing below, each phase its own commit, this section updated as each lands.**
+
+### Phase 1 — DONE, build-wise, verified live against production and via a real from-scratch
+### migration replay; one real mistake made and fixed in the same pass, disclosed rather than
+### glossed over
+
+**A real mistake, caught and fixed before this was ever committed, not glossed over**: the
+first draft of this migration reconstructed the tail of `create_business_request`/
+`create_business_request_for_gathering`/`create_business_request_for_match` from memory/this
+file's own documented history instead of the real, live bodies — applying it to production
+broke all three functions for a few minutes (a live test immediately surfaced `function
+_match_request_to_availability(uuid, uuid) does not exist`, since the real function takes 10
+args, not the 2 the reconstructed version guessed). Caught immediately by testing the real call
+rather than assuming the migration text was correct, fixed by pulling each function's exact real
+body fresh via the Management API and re-applying with the occasion additions layered onto the
+byte-for-byte real body, nothing else changed. The committed migration file only ever contains
+this corrected version.
+
+**Schema**: `business_requests.occasion` (nullable text, real curated 8-value CHECK constraint —
+`birthday | anniversary | date_night | celebration | casual_hangout | business_meal |
+family_gathering | other`). `create_business_request()`/`create_business_request_for_gathering()`/
+`create_business_request_for_match()` all gained a trailing `occasion_param` (old signatures
+explicitly `DROP FUNCTION`ed first, matching this schema's own "an added param creates a distinct
+orphaned overload" lesson) — every other line of each function's real body is unchanged.
+`create_business_request_for_community()` deliberately **not** touched, per this plan's own
+locked scope ("solo ask, gathering-sourced, match-sourced" only).
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: a real
+disposable test request submitted with `occasion: 'birthday'` round-tripped correctly; an
+invalid occasion value was correctly rejected (`Invalid occasion`); test row deleted afterward,
+confirmed back to 0 matching rows. **Verified via a real from-scratch migration replay**: pulled
+the cached `supabase/postgres:15.1.0.147` image, dropped/recreated an empty `public` schema,
+patched the two known image-version gaps, created `pg_cron`/`pg_trgm` as `supabase_admin`, then
+ran the full, now-111-file `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1`
+— exit 0 on every file, the new column/constraint and all three functions (confirmed at their
+correct new signatures, no orphaned old overload) present in the freshly-rebuilt database.
+Container removed afterward.
+
+**Client**: `submitBusinessRequest()`/`submitBusinessRequestForGathering()`
+(`services/businessFulfillment.js`) and `createBusinessRequestForMatch()`
+(`services/dateProposals.js`) all thread a new `occasion` param through. `create-assistant`
+gained a real, best-effort `occasion` extraction (new `VALID_OCCASIONS` list, same
+"never guess unless genuinely implied" discipline every other extracted field already uses —
+explicit prompt instruction that a category/activity alone never implies an occasion) — deployed
+to production and confirmed live (`verify_jwt: true`, version 9, an unauthenticated request
+still correctly 401s at the gateway). New `OCCASION_OPTIONS`/`occasionLabel()` in
+`src/constants/businessAttributes.js` (the same real vocabulary, reused by both the consumer
+picker below and Phase 2's business-side picker). `AskBusinessScreen.js` gained a real "What's
+this for? (optional)" chip row — shown in every mode (solo/gathering/match), not gated behind
+`isSoloMode` the way attributes/cuisine are, since an occasion is honestly relevant even when
+party size/budget are pre-filled from a gathering/match — threaded into the recap line and into
+every submit branch except the community one (matching the locked scope).
+
+Verified via a direct `@babel/core` parse of all four touched client files (clean), a lenient
+`tsc --noEmit` pass on the Edge Function (clean, no errors beyond the expected unresolvable
+Deno-remote-import ones), and a full `npx expo export --platform ios` (clean, no bundling
+errors).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through, and the actual Anthropic call path inside `create-assistant` was not exercised
+end-to-end — this sandbox has no way to mint a real signed-in session's access token, the same
+standing limitation as every other AI-classification feature in this file.
+
 ## Aug 30 2026 (cont'd) — "10/10 blueprint" (a long external strategic reply) audited against
 ## real code; the one genuinely open, well-specified signal-propagation gap it names (Finding 8,
 ## `accommodates_party_types`) closed; a second (Finding 9, gender visibility) resolved by a

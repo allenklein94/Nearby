@@ -153,6 +153,7 @@ export async function createBusinessRequestForMatch({
   timeWindowStart = null,
   timeWindowEnd = null,
   radiusMiles = 15,
+  occasion = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -167,6 +168,7 @@ export async function createBusinessRequestForMatch({
     longitude_param: location.coords.longitude,
     category_param: category,
     budget_max_param: budgetMax,
+    occasion_param: occasion,
     date_param: date,
     time_window_start_param: timeWindowStart,
     time_window_end_param: timeWindowEnd,

@@ -52,6 +52,16 @@ const VALID_CUISINES = [
   'mediterranean', 'indian', 'thai', 'seafood', 'other',
 ];
 
+// "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): the real
+// WHY-signal vocabulary, matching business_requests.occasion's own live
+// CHECK constraint exactly. Extracted the same "never guess unless
+// genuinely implied" way as attributes/cuisine above -- this is a real,
+// separate signal from category (category is WHAT, occasion is WHY).
+const VALID_OCCASIONS = [
+  'birthday', 'anniversary', 'date_night', 'celebration', 'casual_hangout',
+  'business_meal', 'family_gathering', 'other',
+];
+
 // Intent Layer plan (CLAUDE.md), Phase 1b -- a coarse date-window bucket,
 // the same vocabulary GatheringsScreen.js's own date-filter chips already
 // use (today/tomorrow/weekend), plus "flexible" for no real time signal.
@@ -131,8 +141,9 @@ Regardless of intent, also extract these when the text gives a real clue (used o
 - partyType: one of ${JSON.stringify(VALID_PARTY_TYPES)} if the text implies who this is for (e.g. "just me"/"solo" is "solo", "me and my friends" is "friends", "a big group" is "groups", "a date"/"with my partner" is "date"), or null if no such signal was mentioned at all. Never guess.
 - attributes: an array of zero or more values from this exact list: ${JSON.stringify(VALID_ATTRIBUTES)} -- only include one when the text genuinely names that specific quality (e.g. "outdoor seating"/"patio" implies "outdoor_seating", "for a date"/"romantic" implies "date_friendly", "for the kids" implies "kid_friendly", "somewhere quiet" implies "quiet", "casual" implies "casual", "somewhere nice/upscale/fancy" implies "upscale", "live music" implies "live_music", "for a big group" implies "group_friendly"). Never guess -- an empty array is the common, correct answer when nothing specific was named.
 - cuisine: one value from this exact list: ${JSON.stringify(VALID_CUISINES)} if a specific food type/cuisine was named (e.g. "Italian" is "italian", "sushi"/"Japanese" is "japanese", "tacos"/"Mexican" is "mexican"), or null if no specific cuisine was mentioned. Never guess.
+- occasion: one value from this exact list: ${JSON.stringify(VALID_OCCASIONS)} if the text names a real reason for the plan, not just what/when/where. "birthday"/"turning 30"/"her birthday" is "birthday". "anniversary" is "anniversary". "date"/"date night"/"anniversary dinner for two" (when not a literal anniversary) is "date_night". "celebrating"/"celebration"/"promotion"/"graduation" is "celebration". "just hanging out"/"nothing special" is "casual_hangout". "work dinner"/"client meeting"/"team lunch" is "business_meal". "family reunion"/"visiting family" is "family_gathering". Use "other" only when a real occasion is clearly implied but doesn't fit any of the above -- leave this null (not "other") when no occasion is implied at all. Never guess an occasion from the category/activity alone (e.g. "dinner" alone does not imply "date_night" or "celebration" -- only pick one when the text itself gives a real reason).
 
-Reply with ONLY valid JSON in this exact shape, nothing else: {"intent":"gathering"|"community"|"business_partner"|"unclear","title":<string or null>,"category":<string or null>,"businessName":<string or null>,"partySize":<integer or null>,"dateWindow":<string or null>,"budgetMax":<integer or null>,"priceLevel":<string or null>,"partyType":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>}`;
+Reply with ONLY valid JSON in this exact shape, nothing else: {"intent":"gathering"|"community"|"business_partner"|"unclear","title":<string or null>,"category":<string or null>,"businessName":<string or null>,"partySize":<integer or null>,"dateWindow":<string or null>,"budgetMax":<integer or null>,"priceLevel":<string or null>,"partyType":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"occasion":<string or null>}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -190,9 +201,10 @@ Reply with ONLY valid JSON in this exact shape, nothing else: {"intent":"gatheri
       ? Array.from(new Set(parsed.attributes.filter((a) => VALID_ATTRIBUTES.includes(a)))).slice(0, 4)
       : [];
     const cuisine = VALID_CUISINES.includes(parsed?.cuisine) ? parsed.cuisine : null;
+    const occasion = VALID_OCCASIONS.includes(parsed?.occasion) ? parsed.occasion : null;
 
     return new Response(
-      JSON.stringify({ intent, title, category, businessName, partySize, dateWindow, budgetMax, priceLevel, partyType, attributes, cuisine }),
+      JSON.stringify({ intent, title, category, businessName, partySize, dateWindow, budgetMax, priceLevel, partyType, attributes, cuisine, occasion }),
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (err) {

@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel } from '../constants/businessAttributes';
+import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -186,6 +186,15 @@ export default function AskBusinessScreen({ navigation, route }) {
   // on this screen, same isSoloMode gate.
   const [attributesInput, setAttributesInput] = useState([]);
   const [cuisineInput, setCuisineInput] = useState(null);
+  // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): a real
+  // WHY signal, genuinely optional in every mode -- unlike attributes/
+  // cuisine (solo-only, since party size/budget are already solo-only
+  // here), a gathering or a confirmed date can honestly have an occasion
+  // too ("birthday dinner for the gathering"), so this isn't gated on
+  // isSoloMode. Never inferred here -- create-assistant's own extraction
+  // is the one place a best-effort guess happens, and this screen never
+  // pre-fills it from that guess without the user seeing/confirming it.
+  const [occasionInput, setOccasionInput] = useState(null);
   const isSoloMode = !gatheringId && !matchId && !communityId;
 
   // Per the locked design (CLAUDE.md, Aug 24 2026): every field genuinely
@@ -241,6 +250,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           category,
           budgetMax: safeBudgetMax,
           radiusMiles,
+          occasion: occasionInput,
         });
       } else if (matchId) {
         result = await createBusinessRequestForMatch({
@@ -250,6 +260,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           budgetMax: safeBudgetMax,
           date: resolvedDate,
           radiusMiles,
+          occasion: occasionInput,
         });
       } else if (communityId) {
         result = await submitBusinessRequestForCommunity({
@@ -273,6 +284,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           preferredAvailabilityId: matchedAvailability?.availabilityId ?? null,
           attributes: attributesInput.length > 0 ? attributesInput : null,
           cuisine: category === 'Foodie' ? cuisineInput : null,
+          occasion: occasionInput,
         });
       }
       // Finding 4: carry the original ask's real prefill fields forward so
@@ -325,6 +337,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     }
     if (!gatheringId && !matchId && partySize.trim()) recapParts.push(`${partySize.trim()} people`);
     if (budgetMax.trim()) recapParts.push(`up to $${budgetMax.trim()}`);
+    if (occasionInput) recapParts.push(occasionLabel(occasionInput));
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
     recapParts.push(`within ${radiusMiles} mi`);
@@ -482,6 +495,22 @@ export default function AskBusinessScreen({ navigation, route }) {
                 accessibilityLabel="Budget max"
               />
             </View>
+          </View>
+
+          <Text style={styles.label}>What's this for? (optional)</Text>
+          <View style={styles.chipRow}>
+            {OCCASION_OPTIONS.map((o) => (
+              <TouchableOpacity
+                key={o.key}
+                style={[styles.chip, occasionInput === o.key && styles.chipSelected]}
+                onPress={() => setOccasionInput(occasionInput === o.key ? null : o.key)}
+                accessibilityLabel={o.label}
+                accessibilityRole="button"
+                accessibilityState={{ selected: occasionInput === o.key }}
+              >
+                <Text style={[styles.chipText, occasionInput === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {isSoloMode && (

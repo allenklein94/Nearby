@@ -121,3 +121,26 @@ export const PRIORITY_TIME_WINDOW_OPTIONS = [
 export function priorityTimeWindowLabel(key) {
   return PRIORITY_TIME_WINDOW_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }
+
+// "Intelligent demand inbox" Phase 1/2 (CLAUDE.md, Sep 3 2026) -- the real
+// WHY-signal vocabulary. Mirrors business_requests.occasion's own live
+// CHECK constraint exactly (20260912_business_request_occasion.sql) --
+// keep these two in sync if either ever changes. Reused two ways: a
+// consumer's own optional occasion picker on AskBusinessScreen, and a
+// business's "what would you like more customers for" occasion-appetite
+// picker (Phase 2) -- same real taxonomy on both sides, not two vocabs
+// that happen to look similar.
+export const OCCASION_OPTIONS = [
+  { key: 'birthday', label: 'Birthday', icon: '🎂' },
+  { key: 'anniversary', label: 'Anniversary', icon: '💍' },
+  { key: 'date_night', label: 'Date Night', icon: '💕' },
+  { key: 'celebration', label: 'Celebration', icon: '🎉' },
+  { key: 'casual_hangout', label: 'Casual Hangout', icon: '☕' },
+  { key: 'business_meal', label: 'Business Meal', icon: '💼' },
+  { key: 'family_gathering', label: 'Family Gathering', icon: '👨‍👩‍👧‍👦' },
+  { key: 'other', label: 'Other Occasion', icon: '✨' },
+];
+
+export function occasionLabel(key) {
+  return OCCASION_OPTIONS.find((o) => o.key === key)?.label ?? key;
+}

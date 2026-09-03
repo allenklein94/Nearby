@@ -44,6 +44,12 @@ export async function submitBusinessRequest({
   // caller explicitly picked something.
   attributes = null,
   cuisine = null,
+  // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): the one
+  // real WHY signal this schema tracks -- birthday/anniversary/date_night/
+  // etc. Never inferred here (the client only ever sends what the caller
+  // explicitly picked); create-assistant's own extraction is the one place
+  // this gets a best-effort guess, and even that is server-validated.
+  occasion = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -67,6 +73,7 @@ export async function submitBusinessRequest({
     preferred_availability_id_param: preferredAvailabilityId,
     attributes_param: attributes,
     cuisine_param: cuisine,
+    occasion_param: occasion,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
@@ -76,13 +83,14 @@ export async function submitBusinessRequest({
 // Host-only. party_size/date/location are all sourced server-side from the
 // gathering's own real data -- never re-collected from the device or
 // typed by the caller, unlike the solo submitBusinessRequest() above.
-export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15 }) {
+export async function submitBusinessRequestForGathering({ gatheringId, text, category = null, budgetMax = null, radiusMiles = 15, occasion = null }) {
   const { data, error } = await supabase.rpc('create_business_request_for_gathering', {
     gathering_id_param: gatheringId,
     raw_text_param: text,
     category_param: category,
     budget_max_param: budgetMax,
     radius_miles_param: radiusMiles,
+    occasion_param: occasion,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
