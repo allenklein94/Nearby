@@ -62,7 +62,6 @@ export default function SettingsScreen({ navigation, route }) {
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
 
-  const [notifyMatches, setNotifyMatches] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
   const [notifyWaves, setNotifyWaves] = useState(true);
   // Sep 3 2026 ("global onboarding -> product wiring" master plan,
@@ -70,6 +69,19 @@ export default function SettingsScreen({ navigation, route }) {
   // (notify_business_update -> every follower, no preference check) now
   // has a real toggle.
   const [notifyBusinessesOffers, setNotifyBusinessesOffers] = useState(true);
+  // Sep 13 2026 (Phase E of the same master plan) -- the real 7-category
+  // taxonomy replacing the old single, overloaded "New Matches" toggle
+  // (which gated three different real concepts: dating matches, gathering
+  // approvals, and friend requests, none of them cleanly). Two categories
+  // (Things To Do / Nearby Opportunities) are real, honest placeholders --
+  // no consumer-facing push exists for either yet, matching
+  // notify_businesses_offers' own Phase C precedent of shipping the column
+  // before there's a live push to gate.
+  const [notifyThingsToDo, setNotifyThingsToDo] = useState(true);
+  const [notifyFriends, setNotifyFriends] = useState(true);
+  const [notifyDating, setNotifyDating] = useState(true);
+  const [notifyPlans, setNotifyPlans] = useState(true);
+  const [notifyNearbyOpportunities, setNotifyNearbyOpportunities] = useState(true);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   const [changingPhone, setChangingPhone] = useState(false);
@@ -122,10 +134,14 @@ export default function SettingsScreen({ navigation, route }) {
 
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
-      setNotifyMatches(data.notify_matches ?? true);
       setNotifyMessages(data.notify_messages ?? true);
       setNotifyWaves(data.notify_waves ?? true);
       setNotifyBusinessesOffers(data.notify_businesses_offers ?? true);
+      setNotifyThingsToDo(data.notify_things_to_do ?? true);
+      setNotifyFriends(data.notify_friends ?? true);
+      setNotifyDating(data.notify_dating ?? true);
+      setNotifyPlans(data.notify_plans ?? true);
+      setNotifyNearbyOpportunities(data.notify_nearby_opportunities ?? true);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
@@ -558,12 +574,52 @@ export default function SettingsScreen({ navigation, route }) {
         <Text style={styles.groupHeader} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>{t('settings.newMatches')}</Text>
+            <Text style={styles.settingLabel}>🎯 Things To Do</Text>
             <Switch
-              value={notifyMatches}
-              onValueChange={(v) => toggleNotifPref('notify_matches', v, setNotifyMatches)}
+              value={notifyThingsToDo}
+              onValueChange={(v) => toggleNotifPref('notify_things_to_do', v, setNotifyThingsToDo)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about new matches"
+              accessibilityLabel="Notify me about nearby things to do"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>🤝 Friends</Text>
+            <Switch
+              value={notifyFriends}
+              onValueChange={(v) => toggleNotifPref('notify_friends', v, setNotifyFriends)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about friend requests and friend activity"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>💘 Dating</Text>
+            <Switch
+              value={notifyDating}
+              onValueChange={(v) => toggleNotifPref('notify_dating', v, setNotifyDating)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about new dating matches"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>📅 Plans</Text>
+            <Switch
+              value={notifyPlans}
+              onValueChange={(v) => toggleNotifPref('notify_plans', v, setNotifyPlans)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about gathering interest and approvals"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>🌟 Nearby Opportunities</Text>
+            <Switch
+              value={notifyNearbyOpportunities}
+              onValueChange={(v) => toggleNotifPref('notify_nearby_opportunities', v, setNotifyNearbyOpportunities)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me about nearby opportunities"
             />
           </View>
           <View style={styles.divider} />

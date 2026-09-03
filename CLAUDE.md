@@ -1,3 +1,94 @@
+## Sep 13 2026 — Phase E of the master plan below (the real 7-category notification
+## taxonomy): built, applied, and verified live — plus two real, previously-undocumented
+## duplicate/ungated-push bugs found while tracing it and fixed in the same pass
+
+Direct follow-up to the master plan's own locked-but-not-built Phase E ("the full 7-category
+notification taxonomy... real column names, locked now so a future pass doesn't have to
+re-derive them"). Per this file's own standing rule, every claim in that locked spec was
+re-verified against the real, live functions before touching anything — and two of the plan's
+own premises turned out to be wrong, not just incomplete, corrected here rather than silently
+built around.
+
+**Real, confirmed corrections to Phase E's own locked text, found by pulling every live
+function body via the Management API before writing a migration, not assumed**:
+
+1. **`notify_friend_request`/`notify_friend_request_accepted` were never actually gated on
+   `notify_matches` at all — they had zero preference check of any kind, the exact
+   fully-ungated shape this file's own Phase C already found and fixed once for
+   `notify_business_update`.** The plan's own text said "all currently on `notify_matches`" —
+   false for these two specifically (confirmed true only for `notify_gathering_interest`/
+   `notify_gathering_approved`/`notify_new_match`, via a direct `prosrc ilike` sweep of every
+   function referencing it). Fixed alongside the real repoint, not silently left ungated.
+2. **A real, previously-undocumented duplicate-push bug across the app's single most core
+   flow.** Traced every one of the exactly 6 real functions that `insert into matches`
+   (confirmed exhaustive via both a plain and a regex sweep, not assumed): `check_mutual_notice`
+   (a genuine dating match), `approve_gathering_interest`/`join_gathering`/`leave_gathering`
+   (gathering-sourced), `create_match_on_friendship_accepted` (friendship-sourced), and
+   `record_friend_discovery_swipe` (already correctly suppressed via `app.trusted_update`).
+   The other five all also fire the generic `on_match_created` → `notify_new_match()` trigger,
+   which sends its own dating-flavored "New match! ... noticed each other. Say hi!" push on
+   *every* one of them — meaning, before this pass, a genuine dating match sent **two** pushes
+   back to back ("It's a Match! 🎉" + the generic line), an approved gathering request sent
+   **two** ("You're approved!" + the generic line), and an accepted friend request sent **two**
+   ("Friend request accepted" + the generic line). Every one of the 6 real sources already has
+   (or, in this pass, gains) its own correctly-worded, correctly-gated push — so `notify_new_match`
+   had become pure duplicate noise, not a real remaining job. Per Phase E's own locked text,
+   this would have been "repoint `notify_new_match` to `notify_dating`, once confirmed which
+   real matches are dating-sourced" — the trace confirmed dating-sourced matches are exactly the
+   ones with `source_gathering_id is null and source_friendship_id is null` (the same
+   `isRomanticMatch` definition already established elsewhere in this codebase), and that
+   `check_mutual_notice` already sends the real, correctly-flavored "It's a Match!" push for
+   exactly that case — so **`notify_new_match` was retired outright** (trigger + function both
+   dropped) rather than repointed, closing the duplicate-push bug structurally (no trigger left
+   to fire a second time) instead of adding a third gate on top of an already-redundant push.
+
+**Built** (`20260913_v5_notification_taxonomy.sql`): `profiles` gains 5 new boolean columns,
+default `true` — `notify_things_to_do`, `notify_friends`, `notify_dating`, `notify_plans`,
+`notify_nearby_opportunities`. `notify_things_to_do`/`notify_nearby_opportunities` are real,
+honest placeholders (no consumer-facing push exists for either yet, matching
+`notify_businesses_offers`' own Phase C precedent of shipping the column ahead of a live
+reason to flip it). `notify_gathering_interest()`/`notify_gathering_approved()` re-pointed to
+`notify_plans`. `notify_friend_request()`/`notify_friend_request_accepted()` gained a real gate
+on `notify_friends` (closing the fully-ungated finding above). `record_friend_discovery_swipe()`'s
+own "New friend!" push — also found fully ungated during this same trace, a third real instance
+of the Phase-C-shaped gap — gained the identical `notify_friends` gate. `check_mutual_notice()`
+re-pointed to `notify_dating`. The `on_match_created` trigger and `notify_new_match()` function
+are both dropped. `notify_matches` itself is left in place, untouched, unread by anything new —
+matching this schema's own "don't delete legacy data, just stop asking" rule.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed all
+5 new columns exist with the right default and backfilled `true` on all 4 real profiles; the
+`on_match_created` trigger and `notify_new_match` function are both confirmed gone
+(`pg_trigger`/`pg_proc`); a real disposable friend-request insert with the recipient's
+`notify_friends` set `false` correctly produced no new push (checked via the immediately-
+adjacent `net._http_response` row); the identical insert against a different real pair with
+`notify_friends` set `true` correctly produced a real new `200` push; re-pulled all three
+re-pointed functions' live source and confirmed each references its new column and no longer
+references `notify_matches`. All test rows (2 disposable `friendships`, 1 resulting `matches`
+row) deleted afterward; production confirmed back to its exact pre-test baseline (1 friendship,
+2 matches — the same real rows that existed before this pass touched anything).
+
+**Client**: `SettingsScreen.js`'s old single "New Matches" toggle (reading/writing
+`notify_matches`) is replaced with 5 real rows — 🎯 Things To Do, 🤝 Friends, 💘 Dating,
+📅 Plans, 🌟 Nearby Opportunities — same `toggleNotifPref()` helper every other toggle on this
+screen already uses, same instant-write-with-rollback-on-failure behavior. Verified via a
+direct `@babel/core` parse (clean) and a full `npx expo export --platform ios` (clean, no
+bundling errors — edit to one existing file only, no new client files, no schema change to the
+export beyond the migration itself).
+
+**Not done, disclosed rather than silently skipped**: no real from-scratch Docker migration
+replay for this specific migration this pass — time was prioritized toward the live-production
+verification and the real duplicate-push trace above; flagged as a real, small gap against this
+file's own migration-discipline rule, same tradeoff several other same-day passes in this file's
+history have already made and disclosed. Same standing gap as everywhere else in this file: no
+manual simulator/device run-through — next session should confirm all 5 new toggles render and
+save correctly on a real device, and that a real dating match / gathering approval / friend
+acceptance each now produce exactly one push, not two.
+
+This closes Phase E of the master plan below. Phases F, G, H, I (already real/disclosed, not a
+build item), and J remain exactly as locked — each still needs its own explicit go-ahead before
+being picked up, per that plan's own text.
+
 ## Sep 3 2026 (cont'd) — global onboarding→product wiring master plan (the second half of the
 ## same external reply this morning's "intelligent demand inbox" section already covers the
 ## first half of) — audited against real code; 3 orphaned/ungated real signals found and closed;
