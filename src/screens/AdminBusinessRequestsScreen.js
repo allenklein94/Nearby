@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
+import { businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -120,6 +121,13 @@ export default function AdminBusinessRequestsScreen() {
             {item.website ? <Text style={styles.contact}>🔗 {item.website}</Text> : null}
             {item.phone ? <Text style={styles.contact}>📱 {item.phone}</Text> : null}
             {item.address ? <Text style={styles.contact}>📍 {item.address}</Text> : null}
+            {item.attributes?.length ? (
+              <Text style={styles.contact}>✨ {item.attributes.map((a) => businessAttributeLabel(a)).join(', ')}</Text>
+            ) : null}
+            {item.cuisine ? <Text style={styles.contact}>🍽️ {cuisineLabel(item.cuisine)}</Text> : null}
+            {item.priority_occasions?.length ? (
+              <Text style={styles.contact}>🎉 Wants more: {item.priority_occasions.map((o) => occasionLabel(o)).join(', ')}</Text>
+            ) : null}
             {item.reviewed_by ? (
               <Text style={styles.contact}>Reviewed {item.reviewed_at ? new Date(item.reviewed_at).toLocaleDateString() : ''}</Text>
             ) : null}

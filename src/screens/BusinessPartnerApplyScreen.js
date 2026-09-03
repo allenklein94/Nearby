@@ -6,6 +6,8 @@ import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { searchPlacesByText, getPlaceDetails } from '../services/places';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
+import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
+import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -79,6 +81,19 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   const [requestedFeatures, setRequestedFeatures] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // "Intelligent demand inbox" Phase 3 (CLAUDE.md, Sep 3 2026) -- real
+  // fields for the AI onboarding fast-path (and their own manual pickers,
+  // which never existed on this screen before this pass) to fill in.
+  // aiSummary holds the last real classification result, purely to drive
+  // the "We understood your business" confirmation banner's own text --
+  // the actual editable state is these three below, same fields the
+  // pickers themselves read/write.
+  const [attributes, setAttributes] = useState([]);
+  const [cuisine, setCuisine] = useState(null);
+  const [priorityOccasions, setPriorityOccasions] = useState([]);
+  const [classifying, setClassifying] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+
   useEffect(() => {
     logBusinessAcquisitionEvent(sessionId, 'apply_started');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,6 +103,40 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     setRequestedFeatures((prev) =>
       prev.includes(key) ? prev.filter((f) => f !== key) : [...prev, key]
     );
+  }
+
+  function toggleAttribute(key) {
+    setAttributes((prev) => (prev.includes(key) ? prev.filter((a) => a !== key) : [...prev, key]));
+  }
+
+  function toggleOccasion(key) {
+    setPriorityOccasions((prev) => (prev.includes(key) ? prev.filter((o) => o !== key) : [...prev, key]));
+  }
+
+  // "Intelligent demand inbox" Phase 3: the real, optional AI fast-path --
+  // takes whatever the owner has already typed in "Tell us about your
+  // business" and returns a best-effort category/attributes/cuisine/
+  // priorityOccasions extraction. Matches this app's already-locked "AI
+  // suggests, never silently commits" convention exactly: the result only
+  // ever pre-fills the same editable state the manual pickers below
+  // already read/write, and nothing is submitted until the owner
+  // themselves taps Submit Application.
+  async function runBusinessOnboardingAssistant() {
+    if (!description.trim()) {
+      return Alert.alert('Tell us about your business first', 'Add a short description above, then try again.');
+    }
+    setClassifying(true);
+    try {
+      const result = await classifyBusinessDescription(description);
+      if (result.category) setCategory(result.category);
+      setAttributes(result.attributes ?? []);
+      if (result.cuisine) setCuisine(result.cuisine);
+      setPriorityOccasions(result.priorityOccasions ?? []);
+      setAiSummary(result);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setClassifying(false);
   }
 
   async function runSearch() {
@@ -164,6 +213,9 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         latitude,
         longitude,
         requested_features: requestedFeatures.length ? requestedFeatures : null,
+        attributes,
+        cuisine,
+        priority_occasions: priorityOccasions,
       });
 
       if (error) {
@@ -284,6 +336,35 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             accessibilityLabel="Business description, optional"
           />
 
+          <TouchableOpacity
+            style={[styles.aiButton, (classifying || !description.trim()) && { opacity: 0.5 }]}
+            onPress={runBusinessOnboardingAssistant}
+            disabled={classifying || !description.trim()}
+            accessibilityRole="button"
+            accessibilityLabel="Let AI help fill this in"
+          >
+            {classifying ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <Text style={styles.aiButtonText}>✨ Let AI help fill this in</Text>
+            )}
+          </TouchableOpacity>
+
+          {aiSummary ? (
+            <View style={styles.confirmBanner}>
+              <Text style={styles.confirmTitle}>We understood your business:</Text>
+              <Text style={styles.confirmSubtitle}>
+                {[
+                  aiSummary.category ? BUSINESS_CATEGORIES.find((c) => c.key === aiSummary.category)?.label : null,
+                  aiSummary.attributes?.length ? aiSummary.attributes.map((a) => businessAttributeLabel(a)).join(', ') : null,
+                  aiSummary.cuisine ? cuisineLabel(aiSummary.cuisine) : null,
+                  aiSummary.priorityOccasions?.length ? aiSummary.priorityOccasions.map((o) => occasionLabel(o)).join(', ') : null,
+                ].filter(Boolean).join(' · ') || "Nothing specific stood out — feel free to fill in the fields below yourself."}
+              </Text>
+              <Text style={styles.confirmSubtitle}>Edit anything below before submitting.</Text>
+            </View>
+          ) : null}
+
           <Text style={styles.label}>Contact Info</Text>
           <TextInput
             style={styles.input}
@@ -308,6 +389,64 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
                 <Text style={[styles.chipText, category === c.key && styles.chipTextActive]}>{c.label}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+
+          <Text style={styles.label}>What's your business great for? (optional)</Text>
+          <View style={styles.chipRow}>
+            {BUSINESS_ATTRIBUTE_OPTIONS.map((a) => {
+              const selected = attributes.includes(a.key);
+              return (
+                <TouchableOpacity
+                  key={a.key}
+                  style={[styles.chip, selected && styles.chipActive]}
+                  onPress={() => toggleAttribute(a.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={a.label}
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>{a.icon} {a.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {category === 'food_drink' ? (
+            <>
+              <Text style={styles.label}>Cuisine (optional)</Text>
+              <View style={styles.chipRow}>
+                {CUISINE_OPTIONS.map((c) => (
+                  <TouchableOpacity
+                    key={c.key}
+                    style={[styles.chip, cuisine === c.key && styles.chipActive]}
+                    onPress={() => setCuisine(cuisine === c.key ? null : c.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={c.label}
+                    accessibilityState={{ selected: cuisine === c.key }}
+                  >
+                    <Text style={[styles.chipText, cuisine === c.key && styles.chipTextActive]}>{c.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : null}
+
+          <Text style={styles.label}>What occasions would you like more customers for? (optional)</Text>
+          <View style={styles.chipRow}>
+            {OCCASION_OPTIONS.map((o) => {
+              const selected = priorityOccasions.includes(o.key);
+              return (
+                <TouchableOpacity
+                  key={o.key}
+                  style={[styles.chip, selected && styles.chipActive]}
+                  onPress={() => toggleOccasion(o.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={o.label}
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextActive]}>{o.icon} {o.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <Text style={styles.label}>Website</Text>
@@ -421,4 +560,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   confirmBanner: { backgroundColor: colors.primaryMuted, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1.5, borderColor: colors.primary },
   confirmTitle: { ...typography.headline, color: colors.textPrimary },
   confirmSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  aiButton: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1.5, borderColor: colors.primary, paddingVertical: 10, alignItems: 'center', marginTop: spacing.sm },
+  aiButtonText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
 });

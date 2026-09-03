@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getMyBusinessPartnerRequest, resubmitBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { checkTextModeration } from '../services/textModeration';
 import { BUSINESS_CATEGORIES, FEATURE_OPTIONS } from './BusinessPartnerApplyScreen';
+import { businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -185,6 +186,13 @@ export default function MyBusinessApplicationScreen({ navigation }) {
             {request.website ? <DetailRow label="Website" value={request.website} styles={styles} /> : null}
             {request.phone ? <DetailRow label="Phone" value={request.phone} styles={styles} /> : null}
             {request.address ? <DetailRow label="Address" value={request.address} styles={styles} /> : null}
+            {request.attributes?.length ? (
+              <DetailRow label="Great For" value={request.attributes.map((a) => businessAttributeLabel(a)).join(', ')} styles={styles} />
+            ) : null}
+            {request.cuisine ? <DetailRow label="Cuisine" value={cuisineLabel(request.cuisine)} styles={styles} /> : null}
+            {request.priority_occasions?.length ? (
+              <DetailRow label="Occasions You Want More Of" value={request.priority_occasions.map((o) => occasionLabel(o)).join(', ')} styles={styles} />
+            ) : null}
             {featureLabels.length ? (
               <DetailRow label="Interested In" value={featureLabels.join(', ')} styles={styles} />
             ) : null}

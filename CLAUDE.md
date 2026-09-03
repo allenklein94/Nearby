@@ -320,6 +320,132 @@ real device alongside the existing customer/time chips, and that a real occasion
 opportunity genuinely reorders above an otherwise-equal non-matching one in the running app, not
 just via direct function calls.
 
+### Phase 3 — DONE, build-wise, including a real, disclosed correction to this plan's own
+### literal wording, found by reading the actual current schema/screen before building anything
+### rather than assuming the plan's own assumptions still held
+
+Before writing any code, checked Phase 3's own locked text against the real, current
+`business_partner_requests` schema and the real, current `BusinessPartnerApplyScreen.js` —
+same standing rule as every other schema-touching pass in this file, and it surfaced a real
+mismatch rather than confirming the plan as-written. The plan's own text said the new function
+should validate "every returned field against the real, live CHECK-constraint vocabularies —
+category/attributes/cuisine/occasion" and be wired in "alongside the existing manual category/
+attribute/cuisine pickers" — but `business_partner_requests` had **no** `attributes`/`cuisine`/
+`occasion` columns at all (pulled the live column list directly:
+`id, requester_id, business_name, business_description, contact_info, status, created_at,
+reviewed_at, category, website, phone, address, requested_features, admin_notes, reviewed_by,
+latitude, longitude, source, applicant_name, applicant_email, applicant_phone, claimed_at,
+resulting_partner_id, submitter_ip_hash` — `category` only), and
+`BusinessPartnerApplyScreen.js` had no attribute/cuisine pickers of any kind to be "alongside" —
+confirmed by reading the file in full. The plan's own assumption about current state was wrong,
+not a gap to silently paper over or quietly narrow the build to work around.
+
+**Resolution, locked here rather than guessed at**: extended `business_partner_requests` with
+the three real fields, reusing `brand_partners`' own exact, already-live CHECK-constraint
+vocabularies verbatim — `attributes` (the 8-value `BUSINESS_ATTRIBUTE_OPTIONS` list), `cuisine`
+(the 11-value `CUISINE_OPTIONS` list) — plus one real, deliberate mapping decision: the
+business-level analog of "occasion" is Phase 2's own `priority_occasions` (an array of
+occasions a business wants more customers for), not a scalar `occasion` column like Phase 1's
+column on `business_requests` — that column describes one consumer's own single ask, which has
+no honest meaning for a business applying to join the platform. This closes the real gap Phase
+2 already opened a target for: once approved, all three fields ride straight onto the new
+`brand_partners` row (mirroring exactly how `category`/`address`/`latitude`/`longitude` are
+already carried over at approval time), so a business owner who used the AI fast path (or the
+new manual pickers) at apply time doesn't have to re-enter the same real facts again on the
+dashboard after being approved.
+
+**Schema** (`20260913_business_partner_request_ai_fields.sql`): `business_partner_requests`
+gains `attributes text[] not null default '{}'`, `cuisine text` (nullable), and
+`priority_occasions text[] not null default '{}'` — each with a CHECK constraint copied
+verbatim from `brand_partners`' own live constraints. `approve_business_partner_request()`
+re-pointed — pulled the **live** function body fresh via the Management API first, every other
+line (the admin check, the pending-status guard, the retroactive gathering/community
+`hosting_partner_id` links, the push notification, the web-sourced-applicant claim path)
+reproduced byte-for-byte; the only real change is the new `brand_partners` insert also carrying
+the three new fields.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: a real insert
+with a bogus attribute value and a separate one with a bogus occasion value were both correctly
+rejected by their own CHECK constraints (`23514`); a real, valid disposable test request
+(`attributes: ['date_friendly','outdoor_seating'], cuisine: 'italian', priority_occasions:
+['birthday','anniversary']`) round-tripped exactly on insert; a non-admin's approve attempt was
+correctly rejected (`Only admins can approve business partner requests`); the real admin's
+approve succeeded, and the resulting `brand_partners` row was confirmed to carry all three
+fields exactly as submitted, with the requester's own `managed_partner_id` correctly set. All
+test state (the `brand_partners` row, the `business_partner_requests` row, the
+`business_acquisition_events` rows, the requester's reverted `managed_partner_id`) deleted/
+reverted afterward — confirmed production back to its exact pre-test baseline (1 pre-existing
+request, 1 real partner, 0 leftover acquisition events).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped/recreated a truly empty `public` schema,
+patched the two known image-version gaps onto the test container only, created `pg_cron`/
+`pg_trgm` as `supabase_admin`, then ran the full, now-113-file `supabase/migrations/` folder in
+order via `psql -v ON_ERROR_STOP=1` — exit 0 on every file, the three new columns, all three new
+CHECK constraints, and `approve_business_partner_request()` (confirmed as the *only* signature,
+no orphaned overload — a body-only `create or replace`, not a parameter-list change) all
+confirmed to exist in the freshly-rebuilt database. Container removed afterward.
+
+**New Edge Function `business-onboarding-assistant`**, modeled directly on `create-assistant`'s
+already-proven, already-deployed pattern — bearer-token auth via a service-role `auth.getUser()`
+call, rate-limited via the same shared `check_and_increment_ai_use` RPC (150/day, the per-
+message-feature ceiling, not the single-shot 50 — a business owner iterating on their own
+description a few times while applying is the expected shape), `claude-haiku-4-5-20251001`.
+Takes the owner's own free-text business description and extracts a best-effort `category`/
+`attributes`/`cuisine`/`priorityOccasions`, every field re-validated server-side against the
+real, live vocabularies — never trusted raw from the model, matching `create-assistant`'s own
+"never guess unless genuinely implied" discipline verbatim. Deployed to production and
+**verified**, not assumed: confirmed `verify_jwt: true` directly via the Management API (correct
+on first deploy this time, not left `false` the way `ai-concierge`'s first deploy once was); a
+raw unauthenticated request to the function gateway correctly 401s; the deployed bundle's own
+fetched body was confirmed via a `strings` search to genuinely contain the new extraction logic
+(`priorityOccasions`, `check_and_increment_ai_use`, the real `date_friendly` vocabulary string —
+real hits, not zero), not just that the deploy command reported success. Also verified via a
+lenient `tsc --noEmit` syntax pass — zero errors beyond the same expected unresolvable
+Deno-remote-import/global-`Deno` ones every prior pass in this repo already has.
+
+**Client**: new `src/services/businessOnboardingAssistant.js`
+(`classifyBusinessDescription(text)`). `BusinessPartnerApplyScreen.js` gained three real manual
+chip pickers that didn't exist before this pass — "What's your business great for?"
+(attributes), "Cuisine" (shown only for `food_drink` category, matching the dashboard's own
+established convention), and "What occasions would you like more customers for?"
+(`priority_occasions`) — plus a real "✨ Let AI help fill this in" button, disabled until the
+owner has typed a description, that calls the new Edge Function and shows a "We understood your
+business: {real extracted values}" confirmation banner. Matches this app's already-locked "AI
+suggests, never silently commits" convention exactly: the result only ever pre-fills the same
+editable state the manual pickers themselves read/write, and nothing is submitted until the
+owner taps Submit Application. `submit()`'s insert now carries `attributes`/`cuisine`/
+`priority_occasions` through. `MyBusinessApplicationScreen.js`'s read-only "Your Application"
+card and `AdminBusinessRequestsScreen.js`'s review card both gained matching display rows for
+the same three fields (real labels via the existing `businessAttributeLabel()`/`cuisineLabel()`/
+`occasionLabel()` helpers), so an applicant checking their own status and an admin reviewing the
+application both see the complete real picture, not a partial one.
+
+**Deliberately not done this phase, disclosed rather than silently left inconsistent**: the
+`needs_info` resubmit flow (`resubmit_business_partner_request()`, `MyBusinessApplicationScreen.js`'s
+own resubmit form) was **not** extended to carry the three new fields — doing so needs a real
+signature change to that RPC (a genuine `drop function`/`create function`, since adding params
+changes the signature) plus rebuilding that screen's own resubmit form with the same three
+pickers, which is a real, separate, coherent unit of work the plan's own text never asked for.
+Flagged here so a future session doesn't read the read-only display's new completeness as
+implying the resubmit path is equally complete — today, a business asked to resubmit after
+`needs_info` can still only resend name/description/contact/category/website/phone/address/
+requested_features, not attributes/cuisine/priority_occasions.
+
+**Verified client-side**: a direct `@babel/core` parse of all four touched/new files (clean);
+the full Jest suite (unchanged, still **176/176 passing** — no pure-logic file was touched this
+phase); a full `npx expo export --platform ios` (clean, no bundling errors, **2280 modules** —
+one more than the 2279 baseline, the one new `businessOnboardingAssistant.js`; every other
+touched file was an edit).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the three new pickers render/save correctly, that the
+AI fast-path button correctly pre-fills them from a real free-text description once the
+Anthropic account can actually be exercised (this sandbox has no way to mint a real signed-in
+session's access token, the same standing limitation as every other AI-classification feature
+in this file), and that the read-only status/admin-review cards render the new fields correctly
+end-to-end in the running app.
+
 ## Aug 30 2026 (cont'd) — "10/10 blueprint" (a long external strategic reply) audited against
 ## real code; the one genuinely open, well-specified signal-propagation gap it names (Finding 8,
 ## `accommodates_party_types`) closed; a second (Finding 9, gender visibility) resolved by a
