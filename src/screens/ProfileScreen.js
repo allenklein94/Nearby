@@ -13,6 +13,7 @@ import { BASICS_FIELDS } from '../constants/basicsFields';
 import { PROMPT_QUESTIONS } from '../constants/promptQuestions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
+import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
@@ -120,6 +121,15 @@ export default function ProfileScreen({ navigation, route }) {
   const [myEthnicity, setMyEthnicity] = useState(null);
   const [genderHidden, setGenderHidden] = useState(false);
   const [ethnicityHidden, setEthnicityHidden] = useState(false);
+  // Phase F (CLAUDE.md, Sep 3 2026 master plan) -- height promoted out
+  // of the free-text basics.height field into a real first-class column,
+  // matching the exact gender/ethnicity precedent above: a real feet+
+  // inches picker, saved through this same bottom Save button. The
+  // legacy basics.height text field is deliberately left completely
+  // untouched by this -- someone who already typed a height only gets
+  // the real, filterable version once they re-enter it here.
+  const [heightFeet, setHeightFeet] = useState('');
+  const [heightInchesVal, setHeightInchesVal] = useState('');
   const [basics, setBasics] = useState({});
   const [prompts, setPrompts] = useState([]);
   const [questionPickerVisible, setQuestionPickerVisible] = useState(false);
@@ -190,6 +200,9 @@ export default function ProfileScreen({ navigation, route }) {
       setMyEthnicity(data.ethnicity ?? null);
       setGenderHidden(data.gender_hidden ?? false);
       setEthnicityHidden(data.ethnicity_hidden ?? false);
+      const heightPair = totalInchesToFeetInches(data.height_inches);
+      setHeightFeet(heightPair.feet);
+      setHeightInchesVal(heightPair.inches);
       setBasics(data.basics || {});
       setPrompts(data.prompts || []);
       setConnectionGoal(data.connection_goal || '');
@@ -452,6 +465,21 @@ export default function ProfileScreen({ navigation, route }) {
       }
     }
 
+    // Phase F -- height is optional, but a genuinely half-filled pair
+    // (a real feet value with no inches, or vice versa) or a value
+    // outside the real 4'0"-7'0" bound is worth blocking on and telling
+    // the user about, not silently coercing to null and discarding what
+    // they typed -- matches the hard-validation posture the age-range
+    // fields on DatingPreferencesScreen already use for the identical
+    // "partial/invalid range input" shape.
+    let heightInchesToSave = null;
+    if (!isBlankHeightPair(heightFeet, heightInchesVal)) {
+      heightInchesToSave = feetInchesToTotalInches(heightFeet, heightInchesVal);
+      if (heightInchesToSave === null) {
+        return Alert.alert('Invalid height', "Enter a real height between 4'0\" and 7'0\", or leave both fields blank.");
+      }
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -464,6 +492,7 @@ export default function ProfileScreen({ navigation, route }) {
         gender_identity: genderIdentity,
         interested_in_genders: interestedInGenders,
         ethnicity: myEthnicity,
+        height_inches: heightInchesToSave,
         basics,
         prompts,
         connection_goal: connectionGoal || null,
@@ -1075,6 +1104,33 @@ export default function ProfileScreen({ navigation, route }) {
             />
           </View>
 
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>My Height</Text>
+          <View style={styles.heightRow}>
+            <TextInput
+              style={[styles.input, styles.heightInput]}
+              value={heightFeet}
+              onChangeText={setHeightFeet}
+              keyboardType="number-pad"
+              placeholder="ft"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Height, feet"
+              maxLength={1}
+            />
+            <Text style={styles.heightDash}>'</Text>
+            <TextInput
+              style={[styles.input, styles.heightInput]}
+              value={heightInchesVal}
+              onChangeText={setHeightInchesVal}
+              keyboardType="number-pad"
+              placeholder="in"
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Height, inches"
+              maxLength={2}
+            />
+            <Text style={styles.heightDash}>"</Text>
+          </View>
+          <Text style={styles.helperText}>Optional — leave both blank if you'd rather not say.</Text>
+
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('profile.pronounsLabel')}</Text>
           <TextInput
             style={styles.input}
@@ -1386,6 +1442,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   basicFieldBlock: { marginBottom: spacing.sm },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },
+  // Phase F -- matches DatingPreferencesScreen's ageRow/ageInput/ageDash
+  // shape exactly, reused here (a small new set, not a shared import,
+  // since the two screens' own style objects are each self-contained
+  // getStyles(colors) calls with different colors/params).
+  heightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  heightInput: { flex: 1, textAlign: 'center' },
+  heightDash: { color: colors.textTertiary },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
   settingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   chip: {

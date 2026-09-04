@@ -218,7 +218,7 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, interests, basics, gender_identity, interested_in_genders')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -232,6 +232,13 @@ export async function getNearbyMatches() {
   // set is never excluded, even while this preference is active --
   // absence of self-reported data is never held against a candidate.
   const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
+  // Phase F -- same absence-never-excludes posture as hair color above,
+  // but reads a real profiles.height_inches column, not basics.height
+  // (which stays free text, never silently converted). A candidate who
+  // hasn't re-entered their height through the new picker yet is never
+  // excluded just because this preference is active.
+  const heightMinPref = myProfile?.dating_pref_min_height_inches ?? null;
+  const heightMaxPref = myProfile?.dating_pref_max_height_inches ?? null;
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -262,7 +269,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -308,6 +315,11 @@ export async function getNearbyMatches() {
       if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) {
         return false;
       }
+      const candidateHeight = item.profiles.height_inches;
+      if (candidateHeight != null) {
+        if (heightMinPref != null && candidateHeight < heightMinPref) return false;
+        if (heightMaxPref != null && candidateHeight > heightMaxPref) return false;
+      }
       return true;
     });
 }
@@ -352,7 +364,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, interests, basics, gender_identity, interested_in_genders')
+    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -365,6 +377,10 @@ export async function getBrowseMatches(offset = 0) {
   // CLAUDE.md, Phase B) -- same real filter as getNearbyMatches above;
   // a candidate with no basics.hair_color set is never excluded.
   const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
+  // Phase F -- same real filter as getNearbyMatches above, over the
+  // real profiles.height_inches column (never basics.height).
+  const heightMinPref = myProfile?.dating_pref_min_height_inches ?? null;
+  const heightMaxPref = myProfile?.dating_pref_max_height_inches ?? null;
 
   const { data: existingMatches } = await supabase
     .from('matches')
@@ -391,7 +407,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: profiles, error } = await supabase
     .from('profiles')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
     .in('wide_area', neighborBuckets)
     .range(offset, offset + BROWSE_BATCH_SIZE - 1);
 
@@ -409,6 +425,10 @@ export async function getBrowseMatches(offset = 0) {
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
       const candidateHairColor = p.basics?.hair_color;
       if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) return false;
+      if (p.height_inches != null) {
+        if (heightMinPref != null && p.height_inches < heightMinPref) return false;
+        if (heightMaxPref != null && p.height_inches > heightMaxPref) return false;
+      }
       return true;
     })
     .map((p) => {

@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
+import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 
 // Sep 3 2026 ("global onboarding -> product wiring" master plan,
 // CLAUDE.md, Phase B) -- the real, curated 8-value vocabulary a
@@ -37,6 +38,14 @@ export default function DatingPreferencesScreen({ navigation }) {
   const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [hairColorPreferences, setHairColorPreferences] = useState([]);
+  // Phase F (CLAUDE.md, Sep 3 2026 master plan) -- a real height-range
+  // preference, wired into proximity.js the exact same way as
+  // hairColorPreferences above: min/max total inches stored on the
+  // caller's own profile, both blank means no preference at all.
+  const [minHeightFeet, setMinHeightFeet] = useState('');
+  const [minHeightInches, setMinHeightInches] = useState('');
+  const [maxHeightFeet, setMaxHeightFeet] = useState('');
+  const [maxHeightInches, setMaxHeightInches] = useState('');
   const [interests, setInterests] = useState([]);
   const [loadingStrengths, setLoadingStrengths] = useState(false);
 
@@ -52,7 +61,9 @@ export default function DatingPreferencesScreen({ navigation }) {
     if (id) {
       const { data } = await supabase
         .from('profiles')
-        .select('preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, interests, dating_preferences_set')
+        .select(
+          'preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, dating_preferences_set'
+        )
         .eq('id', id)
         .single();
       if (data) {
@@ -67,6 +78,12 @@ export default function DatingPreferencesScreen({ navigation }) {
         );
         setEthnicityPreferences(data.ethnicity_preferences ?? []);
         setHairColorPreferences(data.dating_pref_hair_colors ?? []);
+        const minPair = totalInchesToFeetInches(data.dating_pref_min_height_inches);
+        setMinHeightFeet(minPair.feet);
+        setMinHeightInches(minPair.inches);
+        const maxPair = totalInchesToFeetInches(data.dating_pref_max_height_inches);
+        setMaxHeightFeet(maxPair.feet);
+        setMaxHeightInches(maxPair.inches);
         setInterests(data.interests ?? []);
       }
     }
@@ -98,6 +115,30 @@ export default function DatingPreferencesScreen({ navigation }) {
     if (Number.isNaN(minAgeNum) || Number.isNaN(maxAgeNum) || minAgeNum < 18 || maxAgeNum < minAgeNum) {
       return Alert.alert('Invalid range', 'Enter a valid age range (minimum 18).');
     }
+
+    // Phase F -- same hard-validation posture as the age range above: a
+    // genuinely half-filled pair or an out-of-bound value is worth
+    // blocking on, not silently discarded. Both sides fully blank means
+    // no preference at all, matching hairColorPreferences' own "leave
+    // blank for no preference" convention.
+    let minHeightToSave = null;
+    if (!isBlankHeightPair(minHeightFeet, minHeightInches)) {
+      minHeightToSave = feetInchesToTotalInches(minHeightFeet, minHeightInches);
+      if (minHeightToSave === null) {
+        return Alert.alert('Invalid height', "Enter a real minimum height between 4'0\" and 7'0\", or leave both fields blank.");
+      }
+    }
+    let maxHeightToSave = null;
+    if (!isBlankHeightPair(maxHeightFeet, maxHeightInches)) {
+      maxHeightToSave = feetInchesToTotalInches(maxHeightFeet, maxHeightInches);
+      if (maxHeightToSave === null) {
+        return Alert.alert('Invalid height', "Enter a real maximum height between 4'0\" and 7'0\", or leave both fields blank.");
+      }
+    }
+    if (minHeightToSave !== null && maxHeightToSave !== null && maxHeightToSave < minHeightToSave) {
+      return Alert.alert('Invalid range', 'Maximum height must be at or above the minimum.');
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -105,6 +146,8 @@ export default function DatingPreferencesScreen({ navigation }) {
         preferred_max_age: maxAgeNum,
         ethnicity_preferences: ethnicityPreferences,
         dating_pref_hair_colors: hairColorPreferences,
+        dating_pref_min_height_inches: minHeightToSave,
+        dating_pref_max_height_inches: maxHeightToSave,
         dating_preferences_set: true,
       })
       .eq('id', userId);
@@ -260,6 +303,65 @@ export default function DatingPreferencesScreen({ navigation }) {
           </View>
           <Text style={styles.helperText}>A real filter, not just a Profile description — leave blank for no preference.</Text>
 
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>Height Preference</Text>
+          <View style={styles.heightRangeRow}>
+            <View style={styles.heightRangeCol}>
+              <Text style={styles.heightRangeLabel}>Min</Text>
+              <View style={styles.heightRow}>
+                <TextInput
+                  style={[styles.input, styles.heightInput]}
+                  value={minHeightFeet}
+                  onChangeText={setMinHeightFeet}
+                  keyboardType="number-pad"
+                  placeholder="ft"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Minimum height, feet"
+                  maxLength={1}
+                />
+                <Text style={styles.heightDash}>'</Text>
+                <TextInput
+                  style={[styles.input, styles.heightInput]}
+                  value={minHeightInches}
+                  onChangeText={setMinHeightInches}
+                  keyboardType="number-pad"
+                  placeholder="in"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Minimum height, inches"
+                  maxLength={2}
+                />
+                <Text style={styles.heightDash}>"</Text>
+              </View>
+            </View>
+            <View style={styles.heightRangeCol}>
+              <Text style={styles.heightRangeLabel}>Max</Text>
+              <View style={styles.heightRow}>
+                <TextInput
+                  style={[styles.input, styles.heightInput]}
+                  value={maxHeightFeet}
+                  onChangeText={setMaxHeightFeet}
+                  keyboardType="number-pad"
+                  placeholder="ft"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Maximum height, feet"
+                  maxLength={1}
+                />
+                <Text style={styles.heightDash}>'</Text>
+                <TextInput
+                  style={[styles.input, styles.heightInput]}
+                  value={maxHeightInches}
+                  onChangeText={setMaxHeightInches}
+                  keyboardType="number-pad"
+                  placeholder="in"
+                  placeholderTextColor={colors.textTertiary}
+                  accessibilityLabel="Maximum height, inches"
+                  maxLength={2}
+                />
+                <Text style={styles.heightDash}>"</Text>
+              </View>
+            </View>
+          </View>
+          <Text style={styles.helperText}>A real filter, not just a Profile description — leave both blank for no preference.</Text>
+
           <TouchableOpacity
             style={styles.button}
             onPress={savePreferences}
@@ -340,6 +442,12 @@ const getStyles = (colors) =>
     ageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     ageInput: { flex: 1, textAlign: 'center' },
     ageDash: { color: colors.textTertiary },
+    heightRangeRow: { flexDirection: 'row', gap: spacing.lg },
+    heightRangeCol: { flex: 1 },
+    heightRangeLabel: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.xs },
+    heightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    heightInput: { flex: 1, textAlign: 'center' },
+    heightDash: { color: colors.textTertiary },
     helperText: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm, lineHeight: 16 },
     linkText: { ...typography.body, color: colors.primary, fontWeight: '600' },
     button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg, ...shadow.button },
