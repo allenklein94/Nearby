@@ -1,3 +1,53 @@
+## Sep 14 2026 (cont'd) — eye color matching filter, same pattern as Phase B's hair_color,
+## closing the last decorative-only field named in the onboarding-to-product audit matrix
+
+Direct follow-up to Phase F, same day: asked to close the remaining `eye_color` gap "same
+pattern." Checked `basicsFields.js` directly before picking which pattern actually applies —
+unlike `height` (free text, needed promoting into a real structured column, Phase F's own
+shape), `eye_color` was already a real, curated 6-value `select` field
+(`Brown`/`Blue`/`Green`/`Hazel`/`Gray`/`Other`) in `basics` jsonb, already rendered generically
+via `ProfileScreen.js`'s existing `BASICS_FIELDS.filter((f) => f.type === 'select')` loop —
+exactly the same shape `hair_color` was in before Phase B (Sep 3 2026) gave it a real
+`dating_pref_hair_colors` preference. So "same pattern" here correctly means Phase B's pattern,
+not Phase F's — a smaller, more contained piece of work, since no promote-out-of-basics step
+was needed.
+
+**Built**: `20260914_dating_pref_eye_colors.sql` — one new self-editable
+`profiles.dating_pref_eye_colors text[] not null default '{}'` column, same posture as
+`dating_pref_hair_colors` (no `trusted_update` guard — a preference about who the caller wants
+to see, not a privileged column). `DatingPreferencesScreen.js` gained a real "Eye Color
+Preferences" chip picker (reusing `basicsFields.js`'s existing 6-value `eye_color` vocabulary
+verbatim, no second taxonomy), placed right after Hair Color Preferences — same load/toggle/
+save wiring the hair-color section already established (`toggleEyeColorPreference`, added to
+the select/load/save calls). `services/proximity.js`'s `getNearbyMatches()`/`getBrowseMatches()`
+both gained the identical filter hair color already has: a candidate's own `basics.eye_color`
+(already selected on the candidate side by both functions for hair color — no new select
+column needed there, unlike height) excludes them only when it's real and non-matching; a
+candidate with no eye color set is never excluded, absence is never held against anyone.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied: confirmed the
+new column round-trips a real value correctly against a real disposable test write, and that
+all 4 real production profiles correctly default to `'{}'` (zero regression). Reverted the test
+write and confirmed production back to its exact pre-test baseline (0 non-empty rows).
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+schema, patched the two known image-version gaps onto the test container only, then ran the
+full, now-119-file `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` —
+**exit 0 on every file**, the new column confirmed to exist in the freshly-rebuilt database.
+Container removed afterward. Client-side verified via a direct `@babel/core` parse of both
+touched files (clean), the full Jest suite (still 190/190 — no pure-logic file was touched this
+pass, so no new tests), and a full `npx expo export --platform ios` (clean, no bundling errors).
+
+**Closes the last field named as still-decorative in the "global onboarding→product wiring"
+master plan's own audit matrix** — every appearance-based field with a real curated vocabulary
+(`hair_color`, `eye_color`) now has a real matching filter; `height` (Phase F, same day) is a
+real structured column with its own range preference. Nothing remains flagged as decorative-only
+in that matrix.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new chip picker renders/saves/filters correctly
+against real data on a real device.
+
 ## Sep 14 2026 — Phase F of the "global onboarding -> product wiring" master plan: height
 ## promoted to a real structured filter — picked back up after a codespace restart, closed the
 ## one gap the interrupted session left open (proximity.js wiring), plus the styling gap the
