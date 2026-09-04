@@ -1,3 +1,166 @@
+## Sep 14 2026 (cont'd) — Phase G (the unified Plan object) and Phase H (a general consumer
+## Occasions object), both picked up and closed — DONE, build-wise, verified live and via a
+## real from-scratch migration replay across all 122 files
+
+Picked back up after a codespace restart interrupted the session mid-build — `git status`
+showed two new migrations (`20260914_plans_unified_object.sql`, `20260914_occasions.sql`) and
+two new client files (`src/services/occasions.js`, `src/screens/OccasionsScreen.js`) already
+fully written and uncommitted, plus `RootNavigator.js`/`ProfileScreen.js` already wired to the
+new `Occasions` route — matching this file's own restart-safety convention (read what's
+actually there before assuming anything, not re-derived from scratch). Read every file in full
+before trusting it, confirmed all four were already correct and complete, then closed the one
+real gap the `occasions.sql` migration's own header comment had promised but never actually
+delivered: Home-nudge wiring.
+
+**Phase G — the unified Plan object, built exactly per its own locked schema sketch, a real
+thin wrapper/pointer, not a replacement.** `plans` (`id`, `plan_type` —
+`dating_date|friend_hangout|gathering|birthday|anniversary|business_request`, `created_by`,
+`title`, `scheduled_at`, `location_lat/lng`, `location_label`, `party_size`, `budget_max`,
+`status` — `draft|confirmed|completed|cancelled`, `resulting_gathering_id`/
+`resulting_business_request_id`/`resulting_date_proposal_id` nullable FKs to the *existing*
+tables) is populated additively, entirely via 5 new AFTER INSERT/UPDATE trigger functions on
+`gatherings`/`business_requests`/`date_proposals` — every already-verified screen/RPC for those
+three tables keeps working completely unchanged, exactly as the plan's own text required.
+`create_plan_from_gathering()` (`plan_type` = `friend_hangout` when `party_type = 'friends'`,
+else `gathering`; `status = 'confirmed'` immediately, since a real gathering already exists the
+moment it's created). `create_plan_from_business_request()` (`status = 'draft'`, `title =
+coalesce(raw_text, category)`). `sync_plan_status_from_business_request()` (AFTER UPDATE OF
+status: `fulfilled` → `confirmed`; `cancelled`/`expired` → `cancelled`, guarded by `status not
+in ('cancelled','confirmed')` so an already-confirmed plan can never be silently un-confirmed by
+a stale status transition on its own source row). `create_plan_from_date_proposal()`
+(`plan_type = 'dating_date'`, `status = 'draft'`, `title = plan_text`).
+`sync_plan_status_from_date_proposal()` (`accepted` → `confirmed`; `declined`/`withdrawn` →
+`cancelled`, same not-already-terminal guard). RLS: `for select using (auth.uid() =
+created_by)`; every write path is trigger-only — `revoke all ... from public, anon,
+authenticated` on every one of the 5 functions, `grant select` (no insert/update/delete) to
+`authenticated` on the table itself.
+
+**Phase H — a general consumer Occasions object, closing the one real design question the
+plan's own locked text had left open before this phase could be picked up.** Resolved directly
+inside the migration's own header comment, not re-asked: does an anniversary need a real second
+confirmed person, the way a Date does (Aug 17 2026, "Match ≠ Date")? No — an Occasion is a
+factual record of a real shared date, never an invitation someone has to accept; unlike a Date
+Proposal ("will you actually do this with me"), an Occasion only ever asks "is this date real."
+So: no consent gate, no `date_proposals`-shaped accept/decline flow. A user creates their own
+occasion (optionally naming a real connected person it's shared with), and the *action* on it
+("let's plan something") flows through the exact same already-real mechanism the birthday nudge
+already uses — a Home nudge that prefills `CreateGathering`, never auto-creates anything, never
+requires the other person's confirmation to exist as a record. Deliberately additive, not a
+replacement for the existing birthday nudge: `profiles.birthdate` +
+`get_upcoming_connected_birthdays()` are left completely untouched, still the one live,
+already-verified path for birthdays specifically — `occasions.occasion_type`'s own CHECK
+constraint includes `'birthday'` for schema completeness, but `OccasionsScreen.js`'s own
+`OCCASION_TYPES` picker deliberately excludes it (5 real, previously-unbuilt types only:
+anniversary/graduation/milestone/life_event/other).
+
+`occasions` (`id`, `user_id`, `connected_user_id` nullable, `occasion_type` CHECK-constrained,
+`title`, `occasion_date`, `recurs_annually` default `true`, `created_at`) — a plain, self-
+editable personal record, same posture as `emergency_contacts`/`date_checkins`: one RLS policy
+(`for all using (auth.uid() = user_id) with check (auth.uid() = user_id)`), no RPC needed for
+the owner's own CRUD. Visibility to a real connected person is deliberately **not** a second raw
+RLS policy — it's gated entirely inside `get_upcoming_occasions()`, which re-checks the real
+connected relationship (accepted friendship OR match, both directions — the identical
+connected-set definition `get_upcoming_connected_birthdays()` already established) at read time,
+not creation time, so a friendship/match removed later correctly stops surfacing the signal.
+Real, leap-year-safe recurring-date computation reused verbatim from the existing birthday RPC's
+own pattern: attempt `make_date(year, month, day)`, catch the exception on a genuine Feb-29-in-
+a-non-leap-year case, fall back to `make_date(year, 2, 28)` — applied for both the current-year
+attempt and the rolled-forward-to-next-year attempt when the computed date has already passed.
+A non-recurring occasion whose date has already passed is correctly skipped (`continue`), never
+surfaced as a stale nudge.
+
+**A real, previously-undetected security gap found and closed in the same pass, not silently
+left as-is**: `occasions` was left with Postgres's own default-privileges artifact granting
+`anon` full raw table privileges (INSERT/SELECT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER) —
+the identical stray-grant shape this schema has already found and closed several times before
+(`business_partner_requests`, `photo_comments`). RLS already made this functionally inert (a
+real anon caller has `auth.uid()` = null, so the owner-scoped predicate can never match), but
+per this schema's own established defense-in-depth convention, the raw grant itself needed
+closing too, not left standing on "RLS already covers it" alone. Fixed via a new, separate
+migration, `20260914_occasions_revoke_anon.sql` (`revoke all on public.occasions from public,
+anon;`) — kept as its own file rather than folded into the original migration, since the
+original was already applied to production by the time this was found.
+
+**Home-nudge wiring — the one real gap actually closed this pass, not just verified.** The
+`occasions.sql` migration's own header comment promised the action on an occasion "flows through
+the exact same already-real mechanism the birthday nudge already uses" — but `HomeScreen.js` had
+never actually been wired to call `getUpcomingOccasions()` at all before this pass. Closed by
+precisely replicating the existing, already-proven `birthdayNudge` pattern end to end: a new
+`occasionTask` async fetch, run concurrently inside the same `Promise.all([...])` batch every
+other Home nudge already shares (never sequential — this screen has a documented load-time
+convention against sequential awaits); a per-day `AsyncStorage` dismiss key
+(`occasion_dismiss_${date}_${occasion_id}`); `recordNudgeEvent('predictive', 'shown'|'dismissed'|
+'acted', 'occasion')` analytics logging, deduped via the existing `loggedNudgeShownRef` ref so
+"shown" only ever logs once per dismiss key; an "act" handler navigating straight to
+`CreateGathering` with `quickStartTitle: occasionNudge.title` (the occasion's own real,
+user-authored title — "Our Anniversary" — used verbatim, never re-templated the way the
+birthday nudge has to synthesize one from a bare `display_name`), never auto-submitting; a new
+card rendered inside the same `styles.outcomePromptCard` treatment every other Home nudge
+already uses, gated into the existing banner-cluster visibility OR-condition. A small local
+`OCCASION_TYPE_ICONS` map (kept in manual sync with `OccasionsScreen.js`'s own `OCCASION_TYPES`,
+since neither file imports the other) supplies the nudge's own icon.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), exhaustively, across every real
+branch of both phases, not just the schema shape — real disposable test data throughout, every
+row deleted/reverted afterward:
+- **Plans**: both real `party_type` variants for a gathering-sourced plan (`friends` →
+  `friend_hangout`, anything else → `gathering`), both status-sync directions for a
+  business_request-sourced plan (`fulfilled` → `confirmed`; `cancelled` → `cancelled`) and a
+  date_proposal-sourced plan (`accepted` → `confirmed`; `declined` → `cancelled`), including the
+  disclosed "already-confirmed stays confirmed" guard proven directly (flipping an already-
+  `confirmed` plan's source row to a terminal-cancelling status and confirming the plan itself
+  stayed `confirmed`, not silently reverted). RLS confirmed under genuine `SET ROLE authenticated`
+  (not just a JWT-claim GUC against the Management API's own table-owner connection): the real
+  creator sees their own row, a genuine stranger sees zero. A direct client-side write attempt to
+  any of the 5 columns (INSERT and UPDATE both) confirmed rejected at the grant level — every
+  write genuinely only ever happens via the trigger mechanism.
+- **Occasions**: own-row visibility, connected-sharing visibility via the friendship-OR-match
+  check — proven for *both* branches independently, not just the union (temporarily removed the
+  real accepted-friendship row between two profiles with a shared occasion and confirmed the
+  match-only branch alone still correctly surfaced it, then restored the friendship row to its
+  exact original id/timestamps), stranger exclusion, RLS-spoofing rejection under genuine `SET
+  ROLE authenticated`, the leap-year Feb-29-fallback computation (both the current-year and
+  rolled-forward-year exception branches), a non-recurring past-dated occasion correctly
+  excluded, and the new `anon` grant-revoke fix (re-queried and confirmed only
+  `authenticated`/`postgres`/`service_role` retain any privilege on the table).
+- **A real query-tooling gotcha hit and worked around, not a bug in the schema itself**: an
+  early "stranger visibility" assertion returned an ambiguous result because the Management
+  API's batched-query endpoint has a documented quirk where a genuinely empty *last* statement
+  in a batch silently falls back to reporting an earlier statement's non-empty result instead of
+  a real `[]`. Re-ran wrapped in `select count(*) from get_upcoming_occasions(30);` instead of
+  `select * from ...` for an unambiguous zero-row signal, and applied the same `count(*)`
+  wrapping proactively to every subsequent RLS-proof query in this pass to avoid the same
+  ambiguity recurring.
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, dropped and recreated a truly empty `public`
+schema, patched the two known image-version gaps (`auth.users.phone`,
+`storage.buckets.public`) onto the test container only, created `pg_cron`/`pg_trgm` as
+`supabase_admin` (the real superuser in this image, not `postgres`), then ran the full, now-
+122-file `supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on
+every file**, both new tables, all 6 new functions (5 for Plans + `get_upcoming_occasions`),
+all 5 triggers, and the corrected `occasions` grants all confirmed to exist correctly in the
+freshly-rebuilt database. Container removed afterward.
+
+Client-side verified via a full `npx expo export --platform ios` (clean, no bundling errors,
+**2283 modules** — no new client files beyond what was already committed pre-restart;
+`HomeScreen.js`'s own edits were additions to an already-bundled file). Committed as
+`6b359222` and pushed to `main`.
+
+**This closes Phase G and Phase H of the master plan in full.** Phase I remains exactly as
+already disclosed (Aug 29 2026) — real, already built, not re-opened. **Phase J (an explicit
+recommendation signal-priority-by-maturity model) was not started** — no artifacts exist
+anywhere for it, and per this file's own standing "flag a real architectural change, don't
+build it on inferred momentum" convention, it needs its own explicit go-ahead before being
+picked up, not assumed as the next obvious step just because G/H are now closed.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device: the new Occasions screen's full
+CRUD flow (add/list/remove, the date picker, the recurs-annually checkbox), the new Home nudge
+card rendering correctly for a genuinely upcoming real occasion and dismissing/acting correctly,
+and that a real gathering/business-request/date-proposal lifecycle transition genuinely produces
+the correct visible `plans` row end-to-end in the running app, not just via direct RPC calls.
+
 ## Sep 14 2026 (cont'd) — eye color matching filter, same pattern as Phase B's hair_color,
 ## closing the last decorative-only field named in the onboarding-to-product audit matrix
 
