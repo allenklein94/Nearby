@@ -762,6 +762,22 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>
         </TouchableOpacity>
+        {/* Phase H (CLAUDE.md, "global onboarding -> product wiring" master
+            plan) -- real Occasions CRUD, additive to the already-live
+            birthday nudge (unchanged). */}
+        <TouchableOpacity
+          style={styles.timelineLink}
+          onPress={() => navigation.navigate('Occasions')}
+          activeOpacity={0.85}
+          accessibilityLabel="View your saved occasions"
+          accessibilityRole="button"
+        >
+          <View style={styles.timelineLinkTextCol}>
+            <Text style={styles.timelineLinkText}>📅 Occasions</Text>
+            <Text style={styles.timelineLinkSubtitle}>Anniversaries, graduations, and other real dates</Text>
+          </View>
+          <Text style={styles.timelineLinkChevron}>›</Text>
+        </TouchableOpacity>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (

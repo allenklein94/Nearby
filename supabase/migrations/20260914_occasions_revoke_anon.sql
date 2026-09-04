@@ -1,0 +1,11 @@
+-- Sep 14 2026 (CLAUDE.md, Phase H follow-up) -- occasions was left with
+-- Postgres's default-privileges artifact granting anon full raw table
+-- privileges (INSERT/SELECT/UPDATE/DELETE/etc.) -- the same stray-grant
+-- shape this schema has already found and closed several times before
+-- (business_partner_requests, photo_comments). RLS already makes this
+-- functionally inert for a real anon caller (auth.uid() is null, so the
+-- owner-scoped "using (auth.uid() = user_id)" / "with check (auth.uid()
+-- = user_id)" predicate can never match), but the raw grant is still
+-- closed here as defense-in-depth, matching this file's own established
+-- convention rather than relying on RLS alone.
+revoke all on public.occasions from public, anon;

@@ -11,6 +11,7 @@ import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomeP
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
 import { formatPlaceStatusLabel } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
+import { getUpcomingOccasions } from '../services/occasions';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
 import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -126,6 +127,15 @@ const PERIOD_SUBTITLES = {
   weekend: 'What sounds good this weekend?',
 };
 
+// Same icon set OccasionsScreen.js's OCCASION_TYPES already uses -- kept
+// in sync manually since neither file imports the other. 'birthday' has
+// no real path into this table (birthdays live in profiles.birthdate,
+// surfaced by the separate birthdayNudge above), so this is a defensive
+// fallback, not a real case.
+const OCCASION_TYPE_ICONS = {
+  anniversary: '💑', graduation: '🎓', milestone: '🏆', life_event: '🌟', other: '📅', birthday: '🎂',
+};
+
 // "Coffee" / "Coffee & Outdoors" / "Coffee, Outdoors & Music" — the real
 // top categories this section is drawn from, not just the first result.
 function formatCategoryList(categories) {
@@ -198,6 +208,7 @@ export default function HomeScreen({ navigation }) {
   // -- this fires days ahead, while there's still real time to plan, and
   // routes to gathering creation instead.
   const [birthdayNudge, setBirthdayNudge] = useState(null);
+  const [occasionNudge, setOccasionNudge] = useState(null);
   // "The Plan Engine" Phase 2 (CLAUDE.md) -- the soonest real upcoming
   // hosted gathering that genuinely has no venue and no business_requests
   // row yet at all. Same per-day dismiss convention as the nudges above;
@@ -379,6 +390,34 @@ export default function HomeScreen({ navigation }) {
         }
       })();
 
+      // Phase H (CLAUDE.md, "global onboarding -> product wiring" master
+      // plan) -- real, dismissible: the single soonest real Occasion
+      // (anniversary/graduation/milestone/life_event/other) among the
+      // caller's own saved occasions plus any a real connected person
+      // shared with them, scoped server-side. Same per-day dismiss
+      // convention as every other nudge here. Deliberately additive to
+      // birthdayTask above, never a replacement -- birthdays stay their
+      // own, already-live signal.
+      const occasionTask = (async () => {
+        try {
+          const occasions = await getUpcomingOccasions();
+          if (occasions.length > 0) {
+            const soonest = occasions[0];
+            const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${soonest.occasion_id}`;
+            const dismissed = await AsyncStorage.getItem(dismissKey);
+            if (!dismissed) {
+              setOccasionNudge(soonest);
+              if (!loggedNudgeShownRef.current.has(dismissKey)) {
+                loggedNudgeShownRef.current.add(dismissKey);
+                recordNudgeEvent('predictive', 'shown', 'occasion');
+              }
+            }
+          }
+        } catch (e) {
+          console.error('getUpcomingOccasions failed', e);
+        }
+      })();
+
       // "The Plan Engine" Phase 2 (CLAUDE.md) -- real, dismissible: the
       // soonest real upcoming hosted gathering with genuinely no venue and
       // no business_requests row yet. Per-day dismiss, same convention as
@@ -438,6 +477,7 @@ export default function HomeScreen({ navigation }) {
         predictiveNudgeTask,
         groupIntentTask,
         birthdayTask,
+        occasionTask,
         venueTask,
         rsvpsTask,
       ]);
@@ -925,6 +965,28 @@ export default function HomeScreen({ navigation }) {
     recordNudgeEvent('predictive', 'dismissed', 'birthday');
   }
 
+  // Phase H (CLAUDE.md) -- same "navigate straight to gathering creation
+  // with an honest prefilled title, never auto-submit" posture as the
+  // birthday nudge. Unlike a birthday (a bare display_name, no freeform
+  // title), an occasion's own title is real, user-authored text (e.g.
+  // "Our Anniversary") -- used verbatim, never re-templated.
+  function handleOccasionAct() {
+    if (!occasionNudge) return;
+    const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
+    setOccasionNudge(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'acted', 'occasion');
+    navigation.navigate('CreateGathering', { quickStartTitle: occasionNudge.title });
+  }
+
+  function handleOccasionDismiss() {
+    if (!occasionNudge) return;
+    const dismissKey = `occasion_dismiss_${new Date().toDateString()}_${occasionNudge.occasion_id}`;
+    setOccasionNudge(null);
+    AsyncStorage.setItem(dismissKey, '1').catch(() => {});
+    recordNudgeEvent('predictive', 'dismissed', 'occasion');
+  }
+
   // "The Plan Engine" Phase 2 (CLAUDE.md) -- deliberately does NOT submit
   // or create anything itself. GatheringDetailScreen's own existing
   // 4-state host banner already owns the real decision/submit step; this
@@ -1368,7 +1430,7 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
 
-        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
+        {(pendingInvitesCount > 0 || perksCount > 0 || socialForecast || outcomePrompt || predictivePattern || groupIntentSignal || birthdayNudge || occasionNudge || venueNeededGathering || rsvpsOutstandingGathering || (dashboard?.sinceAway && (dashboard.sinceAway.newPeopleCount > 0 || dashboard.sinceAway.newGatheringsCount > 0))) && (
           <View style={{ marginBottom: spacing.md }}>
             {predictivePattern && (
               <View style={styles.outcomePromptCard}>
@@ -1413,6 +1475,23 @@ export default function HomeScreen({ navigation }) {
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity style={styles.predictiveActButton} onPress={handleBirthdayAct} accessibilityLabel="Plan something" accessibilityRole="button">
+                  <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {occasionNudge && (
+              <View style={styles.outcomePromptCard}>
+                <View style={styles.outcomePromptHeaderRow}>
+                  <Text style={styles.outcomePromptText} numberOfLines={2}>
+                    {OCCASION_TYPE_ICONS[occasionNudge.occasion_type] ?? '📅'} {occasionNudge.title} is{' '}
+                    {occasionNudge.days_until === 0 ? 'today' : occasionNudge.days_until === 1 ? 'tomorrow' : `in ${occasionNudge.days_until} days`}
+                    {' '}— want to plan something?
+                  </Text>
+                  <TouchableOpacity onPress={handleOccasionDismiss} accessibilityLabel="Dismiss" accessibilityRole="button" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.predictiveActButton} onPress={handleOccasionAct} accessibilityLabel="Plan something" accessibilityRole="button">
                   <Text style={styles.predictiveActButtonText}>Yes, let's plan something →</Text>
                 </TouchableOpacity>
               </View>
