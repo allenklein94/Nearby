@@ -252,7 +252,10 @@ export default function HomeScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
       if (myId) {
-        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level').eq('id', myId).single();
+        // Phase J (CLAUDE.md) -- created_at is the one new column this
+        // whole phase needs; a plain, already-fetched real timestamp, zero
+        // new query, used below to compute real account-age maturity.
+        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
@@ -518,6 +521,22 @@ export default function HomeScreen({ navigation }) {
           positiveHostIds: new Set(),
           positivePartnerIds: new Set(),
         }));
+        // Phase J (CLAUDE.md) -- both real, zero-new-query: accountAgeDays
+        // from profile.created_at (this same load() call's own already-
+        // fetched profile row); hasBehavioralHistory from
+        // result.becauseYouLikeCategories (getHomeDashboard()'s own
+        // already-fetched getMyTopGatheringCategories() result, reused
+        // here for a second, different purpose -- non-empty means the
+        // caller has genuinely joined/hosted something with a real
+        // category before, empty means a brand-new account with nothing
+        // yet). A missing created_at (shouldn't happen for a real row,
+        // but never trusted blind) falls back to null, which
+        // computeAccountMaturity() reads as "unknown -> full trust", the
+        // same safe default as omitting the param entirely.
+        const accountAgeDays = profile?.created_at
+          ? (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24)
+          : null;
+        const hasBehavioralHistory = (result?.becauseYouLikeCategories?.length ?? 0) > 0;
         setHomeRecommendations(
           buildHomeRecommendations({
             gatherings: result?.nearbyGatherings ?? [],
@@ -532,6 +551,8 @@ export default function HomeScreen({ navigation }) {
             // second fetch); social_comfort_level was a real, confirmed
             // orphaned onboarding field until this line.
             socialComfortLevel: profile?.social_comfort_level ?? null,
+            accountAgeDays,
+            hasBehavioralHistory,
           })
         );
       } catch (e) {

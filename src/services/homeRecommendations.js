@@ -18,6 +18,17 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // intentResolver.js's own resolveGatherings() (see that file's own
 // weatherBonus block).
 import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
+// Phase J (CLAUDE.md, Sep 3 2026 audit finding 8 / locked "Phase J" text) --
+// the real signal-source-priority-by-maturity model. Every bonus below is
+// tagged with its real provenance class; weightSignal() only ever scales
+// the BEHAVIORAL/SOCIAL/TRANSACTIONAL classes, and only once a real
+// maturity number is actually supplied by the caller (HomeScreen.js) --
+// see that file's own call site for how accountAgeDays/hasBehavioralHistory
+// are computed from data this screen already has in scope, zero new
+// queries. EXPLICIT/CONTEXTUAL are structurally never dampened by
+// weightSignal() itself, so tagging them here is documentation, not a
+// behavior lever.
+import { SIGNAL_SOURCES, computeAccountMaturity, weightSignal } from '../constants/signalSourceMaturity';
 
 export const MAX_HOME_RECOMMENDATIONS = 5;
 
@@ -86,16 +97,20 @@ function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
   return null;
 }
 
-function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel) {
+function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity) {
   let score = 0;
   const reasons = [];
 
   if (gathering.matchesYourInterests) {
-    score += SCORE_INTEREST_MATCH;
+    // EXPLICIT: profiles.interests is a direct self-report -- always full
+    // weight, weightSignal() never dampens this class.
+    score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
     reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
-    score += SCORE_CLOSE_DISTANCE;
+    // CONTEXTUAL: a fact about the world (how far away this is), not
+    // about the caller's own history -- always full weight.
+    score += weightSignal(SCORE_CLOSE_DISTANCE, SIGNAL_SOURCES.CONTEXTUAL, maturity);
     // Deliberately not getGatheringFitReasons()'s own more specific
     // distanceLabel -- this function never has a formatted distance
     // string in scope, only the raw distanceMiles number, so "Close by"
@@ -103,12 +118,14 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel)
     reasons.push('Close by');
   }
   if (isToday(gathering.scheduled_at)) {
-    score += SCORE_HAPPENING_NOW;
+    // CONTEXTUAL: today's real date, always full weight.
+    score += weightSignal(SCORE_HAPPENING_NOW, SIGNAL_SOURCES.CONTEXTUAL, maturity);
     reasons.push(REASON_TEXT.HAPPENING_TODAY.text);
   }
   const weatherBonus = weatherAdjustment(gathering.interest_tag, weather);
   if (weatherBonus) {
-    score += weatherBonus.points;
+    // CONTEXTUAL: today's real weather, always full weight.
+    score += weightSignal(weatherBonus.points, SIGNAL_SOURCES.CONTEXTUAL, maturity);
     reasons.push(weatherBonus.reason);
   }
   // "The Plan Engine" Phase 4 (CLAUDE.md) -- closes the doc's own VISIT ->
@@ -117,21 +134,26 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel)
   // (satisfaction_rating loved_it/good AND would_attend_again = true, per
   // get_my_positive_experience_signals()) -- reuses SCORE_OWN_NETWORK, the
   // highest existing weight, since a real lived experience is at least as
-  // strong a signal as an own-network connection.
+  // strong a signal as an own-network connection. TRANSACTIONAL: a single
+  // specific past interaction -- real, but the narrowest-scope class of
+  // the five, so it's the one bonus Phase J's own maturity weighting
+  // actually dampens for a low-maturity caller.
   if (gathering.host_id && positiveHostIds?.has(gathering.host_id)) {
-    score += SCORE_OWN_NETWORK;
+    score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
     reasons.push('You loved a gathering with this host before');
   }
   const comfortBonus = socialComfortBonus(gathering.group_size_feel, socialComfortLevel);
   if (comfortBonus) {
-    score += comfortBonus.points;
+    // EXPLICIT: social_comfort_level is a direct onboarding self-report --
+    // always full weight.
+    score += weightSignal(comfortBonus.points, SIGNAL_SOURCES.EXPLICIT, maturity);
     reasons.push(comfortBonus.reason);
   }
 
   return { score, reasons };
 }
 
-function scoreOffer(offer, positivePartnerIds) {
+function scoreOffer(offer, positivePartnerIds, maturity) {
   let score = 0;
   const reasons = [];
 
@@ -139,9 +161,10 @@ function scoreOffer(offer, positivePartnerIds) {
   // targeted one whose target_interest_tag genuinely matches the
   // caller's own real interests — so any offer reaching this function at
   // all is already a real, honest match; a targeted one just gets to say
-  // so explicitly.
+  // so explicitly. EXPLICIT: validated against the caller's own real
+  // interests -- always full weight.
   if (offer.target_interest_tag) {
-    score += SCORE_INTEREST_MATCH;
+    score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
     reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
   }
   if (offer.brand_partners?.name) {
@@ -150,9 +173,10 @@ function scoreOffer(offer, positivePartnerIds) {
   // "The Plan Engine" Phase 4 (CLAUDE.md) -- same real closing-the-loop
   // bonus as scoreGathering above, for a business the caller has genuinely
   // rated positively before (satisfaction_rating loved_it/good AND
-  // would_repeat yes/maybe on a real past offer).
+  // would_repeat yes/maybe on a real past offer). TRANSACTIONAL, same
+  // reasoning as the positiveHostIds bonus above.
   if (offer.partner_id && positivePartnerIds?.has(offer.partner_id)) {
-    score += SCORE_OWN_NETWORK;
+    score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
     reasons.push('You loved this business last time');
   }
 
@@ -160,7 +184,14 @@ function scoreOffer(offer, positivePartnerIds) {
 }
 
 // context: { gatherings=[], offers=[], weather=null, excludeIds=Set(),
-// positiveHostIds=Set(), positivePartnerIds=Set() }
+// positiveHostIds=Set(), positivePartnerIds=Set(), accountAgeDays=null,
+// hasBehavioralHistory=false }
+// accountAgeDays/hasBehavioralHistory are both optional and both default
+// to values that resolve to full trust (computeAccountMaturity() returns
+// 1 when accountAgeDays is null) -- an existing caller that doesn't pass
+// either sees byte-identical scores to before Phase J, matching this
+// file's own "an omitted optional param must never change existing
+// behavior" convention.
 // Returns up to MAX_HOME_RECOMMENDATIONS items, highest score first, each
 // carrying every real reason it earned that score — never a bare number
 // with no explanation attached.
@@ -172,19 +203,22 @@ export function buildHomeRecommendations({
   positiveHostIds = new Set(),
   positivePartnerIds = new Set(),
   socialComfortLevel = null,
+  accountAgeDays = null,
+  hasBehavioralHistory = false,
 } = {}) {
   const candidates = [];
+  const maturity = computeAccountMaturity({ accountAgeDays, hasBehavioralHistory });
 
   for (const gathering of gatherings) {
     if (excludeIds.has(gathering.id)) continue;
-    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel);
+    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, data: gathering });
   }
 
   for (const offer of offers) {
     if (excludeIds.has(offer.id)) continue;
-    const { score, reasons } = scoreOffer(offer, positivePartnerIds);
+    const { score, reasons } = scoreOffer(offer, positivePartnerIds, maturity);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, data: offer });
   }

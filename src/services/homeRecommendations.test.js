@@ -119,6 +119,65 @@ describe('buildHomeRecommendations', () => {
     expect(noBonus[0].reasons).not.toContain('You loved this business last time');
   });
 
+  it('Phase J: an omitted accountAgeDays/hasBehavioralHistory produces byte-identical scores to before -- zero regression', () => {
+    const withoutMaturity = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host1', matchesYourInterests: true, distanceMiles: 0.5 })],
+      positiveHostIds: new Set(['host1']),
+    });
+    const withFullMaturity = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host1', matchesYourInterests: true, distanceMiles: 0.5 })],
+      positiveHostIds: new Set(['host1']),
+      accountAgeDays: 14,
+      hasBehavioralHistory: true,
+    });
+    expect(withoutMaturity[0].score).toBe(withFullMaturity[0].score);
+  });
+
+  it('Phase J: dampens the TRANSACTIONAL "loved this host before" bonus for a brand-new, no-history account', () => {
+    const mature = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host1' })],
+      positiveHostIds: new Set(['host1']),
+    });
+    const brandNew = buildHomeRecommendations({
+      gatherings: [gathering({ host_id: 'host1' })],
+      positiveHostIds: new Set(['host1']),
+      accountAgeDays: 0,
+      hasBehavioralHistory: false,
+    });
+    expect(brandNew[0].score).toBeLessThan(mature[0].score);
+    expect(brandNew[0].score).toBeGreaterThan(0);
+    // The reason text itself never changes -- it's still honestly true,
+    // only the ranking weight behind it is smaller for a thin-history
+    // account.
+    expect(brandNew[0].reasons).toContain('You loved a gathering with this host before');
+  });
+
+  it('Phase J: never dampens EXPLICIT (interests) or CONTEXTUAL (distance/today/weather) bonuses, even at zero maturity', () => {
+    const brandNew = buildHomeRecommendations({
+      gatherings: [
+        gathering({
+          matchesYourInterests: true,
+          distanceMiles: 0.5,
+          scheduled_at: new Date().toISOString(),
+        }),
+      ],
+      weather: { rain_risk: 'high' },
+      accountAgeDays: 0,
+      hasBehavioralHistory: false,
+    });
+    const mature = buildHomeRecommendations({
+      gatherings: [
+        gathering({
+          matchesYourInterests: true,
+          distanceMiles: 0.5,
+          scheduled_at: new Date().toISOString(),
+        }),
+      ],
+      weather: { rain_risk: 'high' },
+    });
+    expect(brandNew[0].score).toBe(mature[0].score);
+  });
+
   it('caps the merged, sorted result at MAX_HOME_RECOMMENDATIONS', () => {
     const many = Array.from({ length: MAX_HOME_RECOMMENDATIONS + 5 }, (_, i) =>
       gathering({ id: `g${i}`, matchesYourInterests: true })
