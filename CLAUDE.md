@@ -476,6 +476,86 @@ Phases 2-6 in the plan's own locked order — each its own commit, per the plan'
 convention. Phase 7 stays gated exactly as the plan already states; do not start it without an
 explicit go-ahead on Path A vs. B.
 
+## Sep 15 2026 (cont'd) — Phase 1 (decline reasons + owner-visible decline-pattern insight) —
+## DONE, applied to production, verified live, and replayed clean from a truly empty database
+
+Picked up directly from the prior session's own research-prep note — the schema/RPC design
+captured there was built exactly as locked, no changes during implementation.
+
+**Migration** (`supabase/migrations/20260915_decline_reasons.sql`): `business_request_offers`
+gains `decline_reason text`/`decline_note text` (both nullable, only ever set alongside
+`status = 'declined'`), a real 6-value CHECK constraint (`too_far | too_busy_right_now |
+cant_accommodate_group_size | outside_our_hours | not_a_fit_for_us | other`) — a curated
+vocabulary distinct from `business_match_exclusions`' own system-computed reason set, matching
+the locked design exactly. `decline_business_offer(request_id_param uuid)`'s old 1-arg signature
+was `DROP FUNCTION`ed first, per this schema's own repeatedly-stated "an added parameter creates
+a distinct orphaned overload" rule, and recreated as `decline_business_offer(request_id_param
+uuid, reason_param text, note_param text default null)` — the reason is re-validated
+server-side against the real vocabulary (defense in depth over the table's own CHECK) before
+writing, and `decline_note` is only ever actually stored when `reason_param = 'other'` (silently
+discarded otherwise, matching the locked "only meaningful when reason = 'other'" rule) — every
+other line of the function's real body (the ownership check, the `FOR UPDATE` lock, the
+pending/offered status guard) is preserved byte-for-byte from what was pulled live in the prior
+session. New `get_partner_decline_patterns(partner_id_param uuid, days_back_param integer
+default 30)` — real aggregated counts grouped by `decline_reason` over a real recent window,
+owner-only (`profiles.managed_partner_id = partner_id_param`, mirroring `get_missed_match_summary()`'s
+own shape exactly), deliberately with **no** entitlement gate — the locked plan's own text is
+explicit ("owner-only... never exposed to anyone but the business itself"), only the ownership
+check, never a tier gate.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), real disposable test data, not
+just applied: 7 test `business_requests`/`business_request_offers` rows built against the real
+`Coastal Coffee` partner — all 6 real decline reasons succeeded and round-tripped exactly
+(`decline_note` correctly `null` for every non-`other` reason even when one was sent, correctly
+stored for the real `other` case); `get_partner_decline_patterns()` correctly returned exactly
+1 count per reason for all 6. Every negative case proven, not assumed: an invalid reason value
+rejected (`Invalid decline reason.`); a non-owner rejected (`You do not manage a business.`); a
+second decline attempt on an already-declined row rejected (`This request has already been
+resolved.`); a raw insert attempting to bypass the RPC and write a bogus `decline_reason`
+directly rejected by the table's own CHECK constraint (`23514`); a genuine non-owner's call to
+`get_partner_decline_patterns()` correctly returned 0 rows, not an error — isolation proven, not
+just the ownership branch's happy path. All test rows deleted afterward; production confirmed
+back to its exact pre-test baseline (0 matching rows).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check
+status, dropped and recreated a truly empty `public` schema, patched the two known
+image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the test container only,
+created `pg_cron`/`pg_trgm` as `supabase_admin`, then ran the full, now-123-file
+`supabase/migrations/` folder in order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**,
+including this pass's own migration — both new columns, the CHECK constraint, and both
+functions (confirmed as the *only* signature for `decline_business_offer`, no orphaned 1-arg
+overload) all confirmed to exist in the freshly-rebuilt database. Container removed afterward.
+
+**Client**: `services/businessFulfillment.js` — `declineBusinessOpportunity(requestId, reason,
+note = null)` now threads both new params through to the RPC; new `DECLINE_REASON_OPTIONS`
+(chip-picker data) and `DECLINE_REASON_LABELS` (the same `{label, hint}` shape
+`MISSED_MATCH_REASON_LABELS` already established, reused verbatim as the convention to mirror)
+exports; new `getPartnerDeclinePatterns()` thin RPC wrapper. `BusinessDashboardScreen.js`'s
+"Can't accommodate" tap now opens a real reason-picker modal (a chip row over the 6 real values,
+`other` reveals a short optional free-text field) instead of a silent one-tap decline — Confirm
+is disabled until a reason is picked, matching every other required-field submit button on this
+screen. A new "What You've Declined" card renders on the Insights tab, a real sibling to "Why
+You Might Be Missing Requests" and "Performance by Category" (same `sectionHeader`/`offerCard`
+visual language, no new pattern introduced), honestly empty ("Nothing declined in the last 30
+days.") when nothing has been declined yet, matching this dashboard's established no-fabricated-
+numbers posture throughout. `getBusinessOpportunities()`'s existing `.select('*', ...)` on
+`business_request_offers` already wildcard-selects the two new columns automatically — no
+select-list change was needed there, closing the one open item the prior session's own
+hook-points note had flagged as "not yet done."
+
+Verified via a direct `@babel/core` parse of both touched files (clean) and a full `npx expo
+export --platform ios` (clean, no bundling errors, **2284 modules**).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the reason-picker modal renders/selects/submits
+correctly on a real device (including the conditional free-text field for `other`), and that
+the new "What You've Declined" card renders correctly once real decline data exists.
+
+This closes Phase 1 of the "Business Web as an Operating System" plan. Phases 2-6 remain locked,
+not yet started, per the plan's own build order — Phase 7 stays explicitly gated, not to be
+started without an explicit go-ahead on Path A vs. B.
+
 ## Sep 14 2026 (cont'd) — Phase J: an explicit recommendation signal-source-priority-by-maturity
 ## model — DONE, build-wise
 
