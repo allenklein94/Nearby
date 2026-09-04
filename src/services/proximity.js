@@ -218,7 +218,7 @@ export async function getNearbyMatches() {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
+    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -232,6 +232,12 @@ export async function getNearbyMatches() {
   // set is never excluded, even while this preference is active --
   // absence of self-reported data is never held against a candidate.
   const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
+  // Sep 14 2026 -- same real filter, same absence-never-excludes rule,
+  // for the second appearance-based preference: eye color. Unlike hair
+  // color, basics.eye_color was already a real curated select (not free
+  // text), so this needed no promote-out-of-basics step -- only the
+  // missing preference/filter half.
+  const eyeColorPreferences = myProfile?.dating_pref_eye_colors ?? [];
   // Phase F -- same absence-never-excludes posture as hair color above,
   // but reads a real profiles.height_inches column, not basics.height
   // (which stays free text, never silently converted). A candidate who
@@ -315,6 +321,10 @@ export async function getNearbyMatches() {
       if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) {
         return false;
       }
+      const candidateEyeColor = item.profiles.basics?.eye_color;
+      if (eyeColorPreferences.length > 0 && candidateEyeColor && !eyeColorPreferences.includes(candidateEyeColor)) {
+        return false;
+      }
       const candidateHeight = item.profiles.height_inches;
       if (candidateHeight != null) {
         if (heightMinPref != null && candidateHeight < heightMinPref) return false;
@@ -364,7 +374,7 @@ export async function getBrowseMatches(offset = 0) {
 
   const { data: myProfile } = await supabase
     .from('profiles')
-    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
+    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
     .eq('id', userId)
     .single();
 
@@ -377,6 +387,9 @@ export async function getBrowseMatches(offset = 0) {
   // CLAUDE.md, Phase B) -- same real filter as getNearbyMatches above;
   // a candidate with no basics.hair_color set is never excluded.
   const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
+  // Sep 14 2026 -- same real filter as getNearbyMatches above; a
+  // candidate with no basics.eye_color set is never excluded.
+  const eyeColorPreferences = myProfile?.dating_pref_eye_colors ?? [];
   // Phase F -- same real filter as getNearbyMatches above, over the
   // real profiles.height_inches column (never basics.height).
   const heightMinPref = myProfile?.dating_pref_min_height_inches ?? null;
@@ -425,6 +438,8 @@ export async function getBrowseMatches(offset = 0) {
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
       const candidateHairColor = p.basics?.hair_color;
       if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) return false;
+      const candidateEyeColor = p.basics?.eye_color;
+      if (eyeColorPreferences.length > 0 && candidateEyeColor && !eyeColorPreferences.includes(candidateEyeColor)) return false;
       if (p.height_inches != null) {
         if (heightMinPref != null && p.height_inches < heightMinPref) return false;
         if (heightMaxPref != null && p.height_inches > heightMaxPref) return false;

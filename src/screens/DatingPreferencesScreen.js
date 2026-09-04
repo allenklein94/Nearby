@@ -13,6 +13,12 @@ import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } f
 // reused verbatim as the filter's own options, not a second invented
 // list.
 const HAIR_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'hair_color')?.options ?? [];
+// Sep 14 2026 -- the second appearance-based matching filter, same
+// reuse-the-real-curated-vocabulary shape as hair color above. Unlike
+// hair_color, eye_color was already a real, curated select (never free
+// text), so this is purely the missing preference/filter half, not a
+// promote-out-of-basics step.
+const EYE_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'eye_color')?.options ?? [];
 import { typography, spacing, radius, shadow } from '../theme';
 
 // Aug 30 2026 (CLAUDE.md, external product-critique reply): "Dating should
@@ -38,6 +44,7 @@ export default function DatingPreferencesScreen({ navigation }) {
   const [relationshipIntention, setRelationshipIntention] = useState([]);
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [hairColorPreferences, setHairColorPreferences] = useState([]);
+  const [eyeColorPreferences, setEyeColorPreferences] = useState([]);
   // Phase F (CLAUDE.md, Sep 3 2026 master plan) -- a real height-range
   // preference, wired into proximity.js the exact same way as
   // hairColorPreferences above: min/max total inches stored on the
@@ -62,7 +69,7 @@ export default function DatingPreferencesScreen({ navigation }) {
       const { data } = await supabase
         .from('profiles')
         .select(
-          'preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, dating_preferences_set'
+          'preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, dating_preferences_set'
         )
         .eq('id', id)
         .single();
@@ -78,6 +85,7 @@ export default function DatingPreferencesScreen({ navigation }) {
         );
         setEthnicityPreferences(data.ethnicity_preferences ?? []);
         setHairColorPreferences(data.dating_pref_hair_colors ?? []);
+        setEyeColorPreferences(data.dating_pref_eye_colors ?? []);
         const minPair = totalInchesToFeetInches(data.dating_pref_min_height_inches);
         setMinHeightFeet(minPair.feet);
         setMinHeightInches(minPair.inches);
@@ -107,6 +115,10 @@ export default function DatingPreferencesScreen({ navigation }) {
 
   function toggleHairColorPreference(option) {
     setHairColorPreferences((prev) => (prev.includes(option) ? prev.filter((h) => h !== option) : [...prev, option]));
+  }
+
+  function toggleEyeColorPreference(option) {
+    setEyeColorPreferences((prev) => (prev.includes(option) ? prev.filter((e) => e !== option) : [...prev, option]));
   }
 
   async function savePreferences() {
@@ -146,6 +158,7 @@ export default function DatingPreferencesScreen({ navigation }) {
         preferred_max_age: maxAgeNum,
         ethnicity_preferences: ethnicityPreferences,
         dating_pref_hair_colors: hairColorPreferences,
+        dating_pref_eye_colors: eyeColorPreferences,
         dating_pref_min_height_inches: minHeightToSave,
         dating_pref_max_height_inches: maxHeightToSave,
         dating_preferences_set: true,
@@ -291,6 +304,27 @@ export default function DatingPreferencesScreen({ navigation }) {
                   key={option}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => toggleHairColorPreference(option)}
+                  activeOpacity={0.8}
+                  accessibilityLabel={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{option}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <Text style={styles.helperText}>A real filter, not just a Profile description — leave blank for no preference.</Text>
+
+          <Text style={[styles.label, { marginTop: spacing.lg }]}>Eye Color Preferences</Text>
+          <View style={styles.chipsWrap}>
+            {EYE_COLOR_OPTIONS.map((option) => {
+              const selected = eyeColorPreferences.includes(option);
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => toggleEyeColorPreference(option)}
                   activeOpacity={0.8}
                   accessibilityLabel={option}
                   accessibilityRole="button"
