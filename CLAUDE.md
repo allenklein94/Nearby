@@ -1,3 +1,104 @@
+## Sep 14 2026 (cont'd) — Phase J: an explicit recommendation signal-source-priority-by-maturity
+## model — DONE, build-wise
+
+Picked up after a codespace restart, per direct instruction to continue Phase J. **Restart-
+safety check done first, per this file's own standing convention, and the result is disclosed
+plainly rather than silently glossed over**: `git status`/`git log`/`git stash list`/`git
+reflog` all confirmed the working tree was completely clean — no uncommitted changes, no stash,
+nothing in progress anywhere. Phase J had never actually been started; the prior session's own
+closing text (still visible below, until this pass's own correction) says as much: "no
+artifacts exist anywhere for it... needs its own explicit go-ahead before being picked up, not
+assumed as the next obvious step just because G/H are now closed." The direct instruction to
+continue is read as exactly that go-ahead, matching this file's own repeated pattern for a
+phase locked-but-not-built — so this is a fresh build, not a resume of lost work.
+
+**What Phase J actually is**, restated from its own locked spec (Sep 3 2026 audit, finding 8):
+"an explicit **signal-source** hierarchy (explicit > behavioral > social > contextual >
+transactional) that shifts weighting over a user's own real account age/history, with an
+explicit 'don't let personalization overwhelm a new user' rule" — deliberately distinct from
+`recommendationReasonVocabulary.js`, which tags reason *text* with a semantic "why" category
+(Interest/Distance/Time/Context/Availability/Capacity/Popularity); Phase J tags a scoring
+*contribution* with a "how much do we trust this, for THIS caller, right now" provenance
+category — an orthogonal axis, not a rename of the existing one.
+
+**Locked design, resolving the spec's own vagueness with real, non-fabricated inputs, not
+guessed**: two of the five categories (**EXPLICIT** — the user directly told Nearby something,
+e.g. `profiles.interests`/`social_comfort_level`/a chosen `target_interest_tag`; **CONTEXTUAL**
+— a fact about the world right now, e.g. real weather/distance/today-ness, never about the
+caller's own history) are never dampened, at any account age — matching the spec's own "don't
+overwhelm a new user" goal literally: dampening either would make Home actively *less* useful on
+day one, the opposite of the stated intent. The other three (**BEHAVIORAL** — derived from
+repeated real account actions over time; **SOCIAL** — derived from the caller's own real
+connections; **TRANSACTIONAL** — one specific past completed interaction the caller explicitly
+rated) are scaled by a real, computed 0–1 maturity multiplier, derived from exactly two real,
+already-observable facts — real account age (`profiles.created_at`) and whether the account has
+any real behavioral history at all (a non-empty `getMyTopGatheringCategories()` result, already
+fetched by `getHomeDashboard()` for the "Because You're Into…" section — reused with zero new
+query, not a second fetch). A real behavioral-history data point floors trust at `0.5`
+(`MIN_MATURITY_WITH_HISTORY`) even on day zero — a genuine interaction is real evidence, not
+noise, it just isn't yet as much evidence as `MATURITY_WINDOW_DAYS` (14, a real, small, stated-
+as-a-starting-default threshold, not derived from real usage data this app doesn't have enough
+of yet to tune against) of real elapsed time earns on its own. Both inputs default to full trust
+(`1`) when omitted — matches this codebase's own "an omitted optional param must never change
+existing behavior" rule exactly, so every existing caller of `buildHomeRecommendations()` that
+doesn't wire either input up sees byte-identical scores to before this phase.
+
+**Built**: new `src/constants/signalSourceMaturity.js` — `SIGNAL_SOURCES` (the 5-value enum),
+`computeAccountMaturity({accountAgeDays, hasBehavioralHistory})`, and
+`weightSignal(points, sourceCategory, maturity)` — three small, pure, no-I/O functions, no new
+scoring scale invented (every point value it ever scales was already computed by its caller on
+that caller's own existing real weight scale). `homeRecommendations.js`'s `scoreGathering()`/
+`scoreOffer()` both gained a `maturity` param and now wrap every existing bonus in
+`weightSignal(POINTS, SIGNAL_SOURCES.X, maturity)`, classified honestly per bonus: interest-match
+→ EXPLICIT, close-distance/happening-today/weather → CONTEXTUAL, the `positiveHostIds`/
+`positivePartnerIds` "you loved this before" bonus (reusing `SCORE_OWN_NETWORK`) → TRANSACTIONAL,
+`social_comfort_level` → EXPLICIT, `target_interest_tag` → EXPLICIT. `buildHomeRecommendations()`
+itself gained `accountAgeDays`/`hasBehavioralHistory` params, computing `maturity` once per call
+via `computeAccountMaturity()` and threading it through both scorers. `HomeScreen.js`'s existing
+`profiles` select gained one added column (`created_at` — a plain, already-used-elsewhere
+timestamp, e.g. Timeline's "Joined Nearby" entry, zero new query) and now computes real
+`accountAgeDays`/`hasBehavioralHistory` from data already in scope (the profile row just
+fetched; `result.becauseYouLikeCategories`, already returned by `getHomeDashboard()`) before
+passing both through to `buildHomeRecommendations()`.
+
+**A real, honestly-disclosed gap, not silently glossed over**: as of this build, only two of the
+five categories (EXPLICIT, CONTEXTUAL) and TRANSACTIONAL have a live bonus attached anywhere in
+`homeRecommendations.js` — no BEHAVIORAL or SOCIAL bonus exists in that file today. Rather than
+fabricate a placeholder bonus to "fill" all five categories on paper, this was left as a real,
+disclosed extension point for a future pass, matching this file's oldest rule (no invented
+signals) over a cosmetically complete-looking taxonomy.
+
+**A real, deliberate scope boundary, not an oversight**: `intentResolverScoring.js` (the ask-box
+resolver's own shared `SCORE_*` weights) was **not** touched this pass. Its own `SCORE_OWN_NETWORK`
+represents a genuinely different signal (a live connected friend/community — SOCIAL) than
+`homeRecommendations.js`'s reuse of the identical weight for a TRANSACTIONAL (past-rated-
+experience) signal — extending Phase J into that file correctly would mean tracing all 5 resolver
+tiers individually, a real, separate piece of work, not folded into this pass on inferred
+momentum.
+
+**New tests**: `src/constants/signalSourceMaturity.test.js` (9 tests — the default-full-trust
+case, real fractional maturity by elapsed days, reaching full trust at the window boundary, the
+history floor, and that EXPLICIT/CONTEXTUAL are never scaled even at zero maturity) and 3 new
+tests added to `src/services/homeRecommendations.test.js` (an omitted `accountAgeDays`/
+`hasBehavioralHistory` produces byte-identical scores to before — the zero-regression guarantee,
+proven, not assumed; a brand-new no-history account gets a real, smaller-but-still-positive
+TRANSACTIONAL bonus, with the reason text itself unchanged — only the ranking weight moves;
+EXPLICIT/CONTEXTUAL bonuses are provably identical between a brand-new and a mature account).
+Full suite now **202/202 passing** (190 pre-existing + 12 new, 16 suites).
+
+Verified via a direct `@babel/core` parse of all 3 touched/new files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, **2284 modules** — one more than
+the prior 2283 baseline, the one new client-bundled file, `signalSourceMaturity.js`; its own
+`.test.js` file is correctly excluded from the Metro bundle, matching every other test file in
+this repo). No schema/RPC touched this pass — this is pure client-side scoring logic — so no
+live-production verification or migration replay applies here.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm, on a real device, that a genuinely brand-new account
+sees a Home recommendation list that still reads sensibly (a real TRANSACTIONAL bonus present
+but smaller, never suppressed entirely) and that an established account's own ranking is
+genuinely unchanged from before this phase.
+
 ## Sep 14 2026 (cont'd) — Phase G (the unified Plan object) and Phase H (a general consumer
 ## Occasions object), both picked up and closed — DONE, build-wise, verified live and via a
 ## real from-scratch migration replay across all 122 files
@@ -152,7 +253,9 @@ already disclosed (Aug 29 2026) — real, already built, not re-opened. **Phase 
 recommendation signal-priority-by-maturity model) was not started** — no artifacts exist
 anywhere for it, and per this file's own standing "flag a real architectural change, don't
 build it on inferred momentum" convention, it needs its own explicit go-ahead before being
-picked up, not assumed as the next obvious step just because G/H are now closed.
+picked up, not assumed as the next obvious step just because G/H are now closed. **Update, same
+day — given directly by the user, per this same convention: Phase J is now DONE, build-wise —
+see the "Phase J" section immediately above this one.**
 
 **Not done, same standing gap as everywhere else in this file**: no manual simulator/device
 run-through — next session should confirm, on a real device: the new Occasions screen's full
@@ -667,10 +770,13 @@ between a polished-looking onboarding flow and a genuinely connected product sys
   Flagged for an explicit decision before this phase is picked up.
 - **Phase I** — business web/app parity. Already real, already disclosed (Aug 29 2026) — not
   re-opened, not re-decided here.
-- **Phase J (locked, NOT built)** — an explicit recommendation signal-priority-by-maturity model
+- **Phase J — DONE, Sep 14 2026** (see that section further up this file for the full build/
+  verification detail). An explicit recommendation signal-priority-by-maturity model
   (explicit > behavioral+social+contextual+transactional, weighted by real account age/history),
-  distinct from the already-real `recommendationReasonVocabulary.js` reason taxonomy. Real,
-  coherent, not built this pass.
+  distinct from the already-real `recommendationReasonVocabulary.js` reason taxonomy — built as
+  a real, standalone `signalSourceMaturity.js` primitive and wired into `homeRecommendations.js`
+  only; `intentResolverScoring.js` (the ask-box resolver) was deliberately left untouched, a
+  real, disclosed scope boundary, not an oversight.
 
 ### Verification convention for this whole pass, matching every other schema-touching plan in
 ### this file
