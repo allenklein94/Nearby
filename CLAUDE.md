@@ -339,6 +339,143 @@ rebuild of anything in the "already fully real" list above.
 **Status: plan locked, per direct instruction to plan thoroughly and place it in this file
 before executing. Nothing in Phases 1-7 has been built yet.**
 
+## Sep 15 2026 (cont'd) — Phases 1-6 build: research/prep pass only, session ended before any
+## code was written or applied — real findings captured so the next session starts building
+## immediately instead of re-deriving them
+
+Given the direct instruction to build phases 1-6 (committing/pushing along the way, updating
+this file as work lands), the session began — but hit a usage-limit stop during the research/
+prep pass, **before any migration was applied and before any client file was edited.** Per this
+file's own restart-safety convention, nothing below is "done" — this is the exact groundwork a
+resuming session needs, not a substitute for actually building it.
+
+**Confirmed environment, not assumed**: this sandbox has real Supabase Management API access
+(the token in `.claude/mcp.json`, used via direct `curl` against
+`https://api.supabase.com/v1/projects/enmosvippabmuqslzrox/database/query` — the Supabase MCP
+server itself is not connected/available via ToolSearch this session, so use the curl method,
+not an MCP tool). Docker is available (`/usr/bin/docker`, v29.3.0) for the from-scratch replay
+this file's migration-discipline rule requires. `enmosvippabmuqslzrox` ("Nearby") is the real,
+only relevant project.
+
+**Real facts pulled live from production this pass, to save a resuming session the trip**:
+- `decline_business_offer(request_id_param uuid)`'s full live body — single-arg, no reason
+  captured, confirmed exactly as the plan's own audit already said. Locks the design of the new
+  2-extra-arg version (see below) exactly, since the existing capacity/status-check logic
+  should be preserved verbatim, only the reason-write added.
+- `_match_request_to_policy(request_id_param, latitude_param, longitude_param,
+  radius_miles_param, party_size_param, time_window_start_param, time_window_end_param)`'s full
+  live body pulled and read in full — critically, it does **not** currently receive or use the
+  request's own `date` anywhere, only `raw_text` (via a separate `select raw_text into v_raw_text
+  from business_requests where id = request_id_param`). Adding day-of-week requires widening that
+  same select to also grab `date` (e.g. `select raw_text, date into v_raw_text, v_request_date
+  from business_requests where id = request_id_param;`), then adding one additive predicate in
+  three places: the main matching CTE's WHERE clause, the exclusion-reason CASE (a new branch,
+  `'active_days_mismatch'`, inserted before the existing `else 'weather_unfavorable'` catch-all —
+  weather must stay last since it's currently the real catch-all), and the final bulk-exclusion
+  INSERT's own "not (...)" eligibility check. Predicate: `(bfp.active_days is null or
+  v_request_date is null or extract(dow from v_request_date)::smallint = any(bfp.active_days))` —
+  `extract(dow from date)` returns `double precision`, needs the explicit `::smallint` cast to
+  compare against a `smallint[]` via `= any(...)`.
+- `upsert_business_fulfillment_policy(...)`'s full live 12-argument body pulled and read in
+  full — the exact `insert ... on conflict (partner_id) do update` shape to extend with one more
+  column (`active_days`), matching the plan's own null-means-every-day convention exactly (no
+  `coalesce` needed on the new param — `null` is the real, meaningful "every day" value, not a
+  default to normalize away).
+- `get_missed_match_summary(partner_id_param, days_back_param)`'s full live body — the real
+  pattern to mirror for `get_partner_decline_patterns()`, with one deliberate difference: it has
+  a real entitlement-gate call (`check_business_entitlement`) that `get_partner_decline_patterns`
+  should **not** copy — the locked plan's own text never mentions an entitlement gate for decline
+  patterns ("owner-only... never exposed to anyone but the business itself"), only the ownership
+  check (`profiles.managed_partner_id = partner_id_param`).
+- Live column lists for `business_fulfillment_policies` (confirms no `active_days` column exists
+  yet — real gap, matches the plan), `business_request_offers` (confirms no `decline_reason`/
+  `decline_note`/`media_path`/`media_type`/`experience_id` columns exist yet), `business_experiences`
+  (confirms no `media_path`/`media_type` columns exist yet), and `business_requests` (confirms the
+  real `date`/`party_size`/`occasion`/`category`/`attributes`/`cuisine` columns Phase 1's UI tag
+  row already reads).
+- `business_request_offers`'s live CHECK constraints (`status` allows `pending|offered|accepted|
+  declined|expired|cancelled|completed|withdrawn`; `offer_type` allows `standard|discount|perk|
+  upgrade|alt_time`) and `business_match_exclusions`'s live `reason` CHECK (`no_auto_accept|
+  party_size_out_of_range|hours_mismatch|weather_unfavorable|category_mismatch|zero_capacity|
+  insufficient_capacity|date_or_time_mismatch`) — Phase 2's new `'active_days_mismatch'` value
+  needs this constraint widened (`drop constraint` + `add constraint` with the extended list,
+  matching this schema's own "widen the CHECK, never repurpose a value" rule).
+
+**A real, previously-unflagged design gap found in Phase 3 (per-template offer-performance
+funnel), not yet resolved — flag this explicitly, don't silently guess at it**: the plan's own
+text says the funnel should be "grouped by which real `business_experiences` row... generated
+the offer" and calls this "built entirely over already-tracked data, no new signal invented" —
+but confirmed live, **`business_request_offers` has no linkage to `business_experiences` at
+all** today. Read `BusinessDashboardScreen.js`'s `applyExperienceSuggestion()`
+(`src/screens/BusinessDashboardScreen.js:1211-1219`) directly: tapping a ranked Signature
+Experience suggestion in the Make-an-Offer modal only ever prefills the description text and
+offer type — the chosen `experienceId` (confirmed present on every suggestion object, via
+`rankExperiencesForOpportunity()` in `src/services/businessOfferRecommendation.js:109-139`,
+which already returns `experienceId` per ranked suggestion) is never carried through to
+`submit_business_offer`/`business_request_offers` in any form. **Locked resolution for whoever
+picks this up**: add a real nullable `experience_id uuid references business_experiences(id) on
+delete set null` column to `business_request_offers`, thread the already-available
+`suggestion.experienceId` through client state (`applyExperienceSuggestion` → a new
+`selectedExperienceIdInput` state → `submitBusinessOfferResponseForScreening`/
+`submit_business_offer`'s new `experience_id_param`) so it's actually recorded going forward.
+This is a real, small, additive schema change — recording which already-real template was used,
+not fabricating a new engagement metric — consistent with the plan's own "no new signal invented"
+in spirit even though it needs one new column. Offers made without picking a suggestion (typed
+from scratch, or the offer-title-scaffold fallback) correctly get `experience_id: null` and group
+under "offer type" in the funnel, matching the plan's own "(or offer type, for an offer with no
+linked template)" phrasing exactly.
+
+**Phase 4 (media upload) storage-bucket design, resolved, not yet built**: pulled the real,
+live `gathering-photos` bucket + RLS policies from `supabase/migrations/00000000000000_baseline.sql`
+(lines ~6125-6156) as the pattern to replicate — `insert into storage.buckets (id, name, public)
+values ('business-offer-media', 'business-offer-media', false)`, a real `SELECT` policy `to
+public using (bucket_id = 'business-offer-media')` (matching "Anyone can view gathering cover
+photos" — an offer/experience's own promotional media is meant to be seen by whoever the offer
+card is shown to, same reasoning), and `INSERT`/`UPDATE` policies scoped by
+`(storage.foldername(objects.name))[1]` matching a real `partner_id` the caller's own
+`profiles.managed_partner_id` owns — one shared bucket, folder keyed by `partner_id` for both
+`business_request_offers` and `business_experiences` uploads (distinguished by filename prefix,
+e.g. `offer-*`/`experience-*`), not two separate buckets. Upload client code should mirror
+`uploadGatheringCoverPhoto()`/`getSignedGatheringPhotoUrl()` in `src/services/gatherings.js:705-733`
+exactly (`FileSystem.readAsStringAsync` + `base64ToUint8Array`, never `fetch().blob()`, which
+silently produces 0-byte files on iOS for local file URIs — this file's own already-learned
+lesson). `media_type` CHECK: `image|video`, nullable.
+
+**Client-side hook points located, exact file/line, for whoever resumes**:
+- Phase 1 decline button: `src/screens/BusinessDashboardScreen.js:2634-2645` (the "Can't
+  accommodate" `TouchableOpacity`, currently calling `handleDeclineOpportunity(o.request_id)`
+  directly with no reason picker) and `handleDeclineOpportunity()`/`declineBusinessOpportunity()`
+  at `BusinessDashboardScreen.js:1284-1293` / `src/services/businessFulfillment.js:459-463`.
+  "Why You Might Be Missing Requests" card (the real sibling-card pattern for "What You've
+  Declined") is at `BusinessDashboardScreen.js:2838-2857`, using `MISSED_MATCH_REASON_LABELS`
+  (`src/services/businessFulfillment.js:732-760`) as the label+hint convention to mirror.
+- Phase 2 Fulfillment Policy editor: `openPolicyModal()`/`handleSavePolicy()` at
+  `BusinessDashboardScreen.js:1313-1375`; the modal JSX itself starts at line 4476. State vars
+  for the new day-of-week chip row should follow the exact naming convention of the existing
+  `policyPartySizeMinInput` etc. siblings declared just above line 1313.
+- Phase 1/3/4/5 new cards all belong in the Insights tab, right before the "✨ Ask the AI
+  Assistant"/"🤖 AI Automation Settings" buttons at `BusinessDashboardScreen.js:2891-2912` (after
+  the existing "Performance by Category" card at 2864-2889).
+- Phase 6 rename: `SECTIONS` const at `BusinessDashboardScreen.js:39-46` — the `requests` entry's
+  `label: 'Requests'` → `'Opportunities'`, one line, zero other changes (matches the section's
+  own already-correct internal "Business Opportunities" heading at line 2562).
+- `getBusinessOpportunities()` client select (`src/services/businessFulfillment.js:401-409`) will
+  need `decline_reason, decline_note, experience_id, media_path, media_type` added to its
+  `business_request_offers` select list once those columns exist, so the Requests-tab list can
+  render them — not yet done.
+
+**Not done — restated so nothing above is mistaken for progress**: zero migrations written to
+disk, zero migrations applied to production, zero client files edited, zero commits beyond this
+note itself. Every SQL snippet described above is a locked *design*, verified against the real
+live function bodies/columns, not yet written to a real `supabase/migrations/*.sql` file. Next
+session should: write the Phase 1 migration first (schema + `decline_business_offer` re-point +
+`get_partner_decline_patterns`, matching the exact live body captured above so nothing besides
+the reason-write changes), apply + verify live with real disposable test data + a from-scratch
+Docker replay, then the client-side reason picker + insight card, commit, and proceed through
+Phases 2-6 in the plan's own locked order — each its own commit, per the plan's own verification
+convention. Phase 7 stays gated exactly as the plan already states; do not start it without an
+explicit go-ahead on Path A vs. B.
+
 ## Sep 14 2026 (cont'd) — Phase J: an explicit recommendation signal-source-priority-by-maturity
 ## model — DONE, build-wise
 
