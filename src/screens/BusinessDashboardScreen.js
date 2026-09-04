@@ -13,7 +13,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -327,6 +327,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [policyCancellationWindowInput, setPolicyCancellationWindowInput] = useState('');
   const [policyActiveInput, setPolicyActiveInput] = useState(true);
   const [policyWeatherDependentInput, setPolicyWeatherDependentInput] = useState(false);
+  // Business Web as an Operating System, Phase 2: an array of selected
+  // day-of-week keys (0=Sunday .. 6=Saturday). An empty array is the UI's
+  // own shorthand for "every day" -- saved as a real null, never an empty
+  // array, matching active_days' own established "absent means every day"
+  // convention.
+  const [policyActiveDaysInput, setPolicyActiveDaysInput] = useState([]);
   const [savingPolicy, setSavingPolicy] = useState(false);
   const [offerTypeInput, setOfferTypeInput] = useState('standard');
   const [offerDescriptionInput, setOfferDescriptionInput] = useState('');
@@ -1346,7 +1352,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setPolicyCancellationWindowInput(fulfillmentPolicy?.cancellation_window_hours != null ? String(fulfillmentPolicy.cancellation_window_hours) : '');
     setPolicyActiveInput(fulfillmentPolicy?.active ?? true);
     setPolicyWeatherDependentInput(fulfillmentPolicy?.weather_dependent ?? false);
+    setPolicyActiveDaysInput(Array.isArray(fulfillmentPolicy?.active_days) ? fulfillmentPolicy.active_days : []);
     setPolicyModalVisible(true);
+  }
+
+  function togglePolicyActiveDay(dayKey) {
+    setPolicyActiveDaysInput((prev) =>
+      prev.includes(dayKey) ? prev.filter((d) => d !== dayKey) : [...prev, dayKey].sort((a, b) => a - b)
+    );
   }
 
   function parsePolicyInt(text) {
@@ -1389,6 +1402,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         cancellationWindowHours: parsePolicyInt(policyCancellationWindowInput),
         active: policyActiveInput,
         weatherDependent: policyWeatherDependentInput,
+        activeDays: policyActiveDaysInput.length > 0 ? policyActiveDaysInput : null,
       });
       setPolicyModalVisible(false);
       await loadFulfillmentPolicy(selectedPartner.id);
@@ -4638,6 +4652,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   onChangeText={setPolicyActiveHoursEndInput}
                   accessibilityLabel="Active hours end, 24-hour HH:MM"
                 />
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Active days (optional)</Text>
+              <Text style={styles.helperText}>
+                Leave every day unselected (or select them all) to auto-accept every day of the
+                week. Select just the days you're actually open to auto-accept.
+              </Text>
+              <View style={styles.chipRow}>
+                {DAY_OF_WEEK_OPTIONS.map((day) => {
+                  const selected = policyActiveDaysInput.includes(day.key);
+                  return (
+                    <TouchableOpacity
+                      key={day.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => togglePolicyActiveDay(day.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={day.label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{day.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Auto-accept party size up to</Text>
               <TextInput

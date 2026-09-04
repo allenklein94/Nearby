@@ -487,6 +487,23 @@ export const DECLINE_REASON_OPTIONS = [
   { key: 'other', label: 'Other' },
 ];
 
+// Business Web as an Operating System, Phase 2: the real day-of-week
+// vocabulary for a Fulfillment Policy's active_days -- matches Postgres's
+// own extract(dow from date) convention (0=Sunday ... 6=Saturday), the
+// exact values business_fulfillment_policies.active_days is CHECK-
+// constrained to. Multi-select; an empty selection is client-side shorthand
+// for "every day," saved as a real null (never an empty array), matching
+// this table's own established "absent means every day" convention.
+export const DAY_OF_WEEK_OPTIONS = [
+  { key: 0, label: 'Su' },
+  { key: 1, label: 'Mo' },
+  { key: 2, label: 'Tu' },
+  { key: 3, label: 'We' },
+  { key: 4, label: 'Th' },
+  { key: 5, label: 'Fr' },
+  { key: 6, label: 'Sa' },
+];
+
 // Real, owner-only, aggregated counts of the caller's own declines,
 // grouped by real reason over a recent window -- never fed back into
 // matching automatically (CLAUDE.md's own locked Decision 2: a real,
@@ -634,6 +651,11 @@ export async function upsertBusinessFulfillmentPolicy(partnerId, {
   cancellationWindowHours = null,
   active = true,
   weatherDependent = false,
+  // Phase 2: Business Web as an Operating System. null (unset) means
+  // "every day," matching this schema's own established convention for
+  // every other nullable bound on this table -- never coalesced to a
+  // default here, since null is itself the real, meaningful value.
+  activeDays = null,
 }) {
   const { data, error } = await supabase.rpc('upsert_business_fulfillment_policy', {
     partner_id_param: partnerId,
@@ -648,6 +670,7 @@ export async function upsertBusinessFulfillmentPolicy(partnerId, {
     cancellation_window_hours_param: cancellationWindowHours,
     active_param: active,
     weather_dependent_param: weatherDependent,
+    active_days_param: activeDays,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -795,6 +818,10 @@ export const MISSED_MATCH_REASON_LABELS = {
   date_or_time_mismatch: {
     label: "A posting's date/time didn't overlap what was asked for",
     hint: 'Post availability for the real dates/times people are actually asking about.',
+  },
+  active_days_mismatch: {
+    label: "The request's day of the week was outside your policy's active days",
+    hint: 'Widen the days your Fulfillment Policy auto-accepts, or leave every day selected if you’re open daily.',
   },
   weather_unfavorable: {
     label: 'Your weather-dependent policy paused itself for real rain/storms',
