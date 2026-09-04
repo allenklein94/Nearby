@@ -556,6 +556,87 @@ This closes Phase 1 of the "Business Web as an Operating System" plan. Phases 2-
 not yet started, per the plan's own build order — Phase 7 stays explicitly gated, not to be
 started without an explicit go-ahead on Path A vs. B.
 
+## Sep 15 2026 (cont'd) — Phase 2 (real day-of-week/recurring availability windows) — DONE,
+## applied to production, verified live, and replayed clean from a truly empty database
+
+Picked up after a codespace restart interrupted the session mid-build — on resume, `git status`
+showed the migration (`supabase/migrations/20260915_v2_active_days_availability.sql`) and both
+client-side edits already fully written and uncommitted, matching the plan's own locked design
+exactly (checked line-by-line before trusting it, not assumed correct from its own presence).
+Checking production directly (not re-applying blind) confirmed the whole migration — the new
+column, the widened `business_match_exclusions` CHECK, and both re-pointed functions — was
+already live from before the restart; the only remaining work was verification, commit, and
+this note.
+
+**Schema** (`supabase/migrations/20260915_v2_active_days_availability.sql`):
+`business_fulfillment_policies` gains `active_days smallint[]` (nullable, `null` = every day,
+matching this table's own already-established "absent means the widest/most permissive
+interpretation" convention already used for `party_size_min/max`/`active_hours_start/end`), a
+plain array of 0-6 (Sunday-Saturday, matching Postgres's own `extract(dow from date)`
+convention), CHECK-constrained to real values only. `business_match_exclusions.reason` gains a
+new, additive `active_days_mismatch` value (widened CHECK, never repurposing an existing value,
+per this schema's own house rule). `_match_request_to_policy()` — pulled fresh from production
+immediately before writing the migration, every line outside the new predicate preserved
+verbatim, including the weather-dependent logic added in a later pass than the one that first
+documented this function's shape — gains one additive real day-of-week comparison against the
+request's own real `date`, inserted into the missed-match exclusion `CASE` right before the
+existing `weather_unfavorable` catch-all (which correctly stays the real catch-all, matching the
+plan's own locked ordering). `upsert_business_fulfillment_policy()` gains a new trailing
+`active_days_param` (old 12-arg signature explicitly `DROP FUNCTION`ed first, not left as a
+silent orphaned overload) plus its own real server-side validation (`active_days_param <@
+array[0..6]`, defense in depth over the table's own CHECK).
+
+**Verified live against production** (`enmosvippabmuqslzrox`), real disposable test data, not
+just applied: confirmed the migration's one live signature for both `upsert_business_
+fulfillment_policy` (13-arg) and `_match_request_to_policy`, correct grants (`authenticated`
+yes, `anon`/`public` no). Built a real fulfillment policy for the real `Coastal Coffee` partner
+(coordinates temporarily set, reverted after) with `active_days` scoped to today's real day of
+the week only — a real disposable test request dated today correctly auto-accepted (a real
+`offered` row created); the identical request dated tomorrow correctly did **not** match and
+correctly logged a real `active_days_mismatch` exclusion. Reverting the same policy's
+`active_days` to `null` and re-running the tomorrow-dated request correctly resumed matching
+(zero regression for every pre-existing policy, which all default to `null`). The RPC's own
+server-side validation correctly rejected an out-of-range day value (`7`) with the real friendly
+error; a real owner save with a genuine multi-day selection round-tripped exactly; a non-owner's
+save attempt was correctly rejected. All test rows (2 requests, 1 offer, 1 exclusion, 1 policy)
+deleted afterward and `Coastal Coffee`'s coordinates reverted to `null` — confirmed production
+back to its exact pre-test baseline (1 pre-existing `business_requests` row, 0 offers, 0
+exclusions, 0 policies).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached `supabase/
+postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check status,
+dropped and recreated a truly empty `public` schema, patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`) onto the test container only, created `pg_cron`/
+`pg_trgm` as `supabase_admin`, then ran the full, now-124-file `supabase/migrations/` folder in
+order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, including this pass's own
+migration — the new column, both re-pointed functions (each confirmed as the *only* signature,
+no orphaned overload), and the widened CHECK constraint all confirmed to exist in the
+freshly-rebuilt database. Container removed afterward.
+
+**Client**: `services/businessFulfillment.js` — a new `DAY_OF_WEEK_OPTIONS` export (Su-Sa,
+matching Postgres's own `extract(dow ...)` values exactly), `upsertBusinessFulfillmentPolicy()`
+threads a new `activeDays` option through to `active_days_param` (`null` when unset, never
+coalesced to a default — `null` is itself the real, meaningful "every day" value), and a new
+`active_days_mismatch` entry in `MISSED_MATCH_REASON_LABELS`. `BusinessDashboardScreen.js`'s
+Fulfillment Policy editor gained a real day-of-week chip row (multi-select, unset/all-selected
+both read as "every day"), state var following the exact naming convention of its existing
+`policyPartySizeMinInput`-style siblings, wired into the same Save button that already saves
+every other field on this card.
+
+Verified via a direct `@babel/core` parse of both touched client files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, **2284 modules, unchanged** —
+edits to two existing files only, no new client files this phase).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new day-of-week chip row renders/selects/saves
+correctly on a real device, and that a real day-of-week-bounded policy correctly matches/
+excludes a real request on and off its configured days in the running app, not just via direct
+RPC calls.
+
+This closes Phase 2 of the "Business Web as an Operating System" plan. Phases 3-6 remain locked,
+not yet started, per the plan's own build order — Phase 7 stays explicitly gated, not to be
+started without an explicit go-ahead on Path A vs. B.
+
 ## Sep 14 2026 (cont'd) — Phase J: an explicit recommendation signal-source-priority-by-maturity
 ## model — DONE, build-wise
 
