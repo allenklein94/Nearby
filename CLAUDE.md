@@ -1,3 +1,344 @@
+## Sep 15 2026 — "Business Web as an Operating System" (a long external strategic reply, 6
+## sequential "keep going" continuations plus a standalone decline-logic addendum) — audited
+## against real code; most of it already real under different names; a real, concrete, ranked
+## build plan locked for what's genuinely missing; the single largest implicit ask (a real
+## business web dashboard) explicitly gated on one more decision, not silently built or
+## silently dropped — PLAN LOCKED, NOT YET EXECUTED, per direct instruction
+
+Written before implementation, same restart-safety convention as every other plan-first section
+in this file — **nothing in this section has been built yet.** The user pasted a long external
+strategic conversation (6 sequential "keep going" continuations, each pasted as its own message,
+plus a final standalone note) covering: an "Opportunities inbox" as the primary business object;
+reframing "business → advertisement" as "consumer demand → business opportunity"; opt-in
+"Smart Offers" auto-response; proactive availability as a cold-start solution; businesses
+declaring real availability windows; capacity-aware business-side matching; "what we want more
+of" priority preferences; AI-assisted business onboarding; "why this opportunity" transparency;
+**decline without penalty, with a real categorized reason, feeding a learning system** (the one
+item repeated across two separate messages, the second entirely dedicated to it); a real
+Opportunity→Offer→Accepted→Redeemed lifecycle with time-aware expiration; weather/event-driven
+business intelligence; a full "Progressive Depth" UX doctrine (4 interaction levels — state
+change, inline expansion, quick action, genuine destination) and a "Living Canvas" framing
+applied across Home/Discover/Create/People/Activity/Profile/Business. Explicit instruction,
+given directly: read it more than once so nothing is missed, plan thoroughly, put the plan in
+this file, **do not execute yet**.
+
+**Method, matching this file's own standing rule for every external doc**: every concrete claim
+was checked directly against the real, current code — not accepted at face value because it was
+detailed or well-argued. This mattered enormously here — the large majority of the pasted vision
+is not a new idea to this codebase, it's a description (sometimes strikingly close, sometimes
+using different names) of infrastructure that's already real and already shipped across the
+Business Fulfillment / Business Intelligence / Offer System / AI Trust Engine work documented
+extensively elsewhere in this file. Isolating the genuinely new, genuinely missing pieces from
+the already-built ones is the actual value of this pass — building any of the already-real items
+a second time under a new name would be pure waste.
+
+### Audit — every concrete claim checked directly against the real, current code, not accepted
+### at face value
+
+**Already fully real, not rebuilt — restated so a future session doesn't duplicate it**:
+- **"Opportunities inbox" as the primary business object, Request → Offer → Accepted →
+  Redeemed lifecycle.** `business_requests`/`business_request_offers` (Offer System Phases 1-6),
+  the "Business Opportunities" list on `BusinessDashboardScreen.js`'s Requests tab, real
+  `submit_business_offer()`/`accept_business_offer()`/`complete_business_reservation()` RPCs.
+  The one real naming mismatch: the outer dashboard tab is still literally labeled `Requests`
+  (`SECTIONS` const, `BusinessDashboardScreen.js:39-46`) while the section *inside* it is already
+  labeled "Business Opportunities" — a real, small, cheap rename opportunity, not a missing
+  mechanism (see Phase 6 below).
+- **"Consumer demand → business opportunity," never "advertisement."** Already the literal
+  framing this whole subsystem was built and named around from the start (Business
+  Fulfillment/Business Intelligence, both already-locked names).
+- **Opt-in "Smart Offers" / instant auto-response.** Already real, and more thorough than the
+  pasted doc's own sketch: the AI Trust Engine (Levels 1-3, `business_ai_policies`,
+  `_ai_auto_respond_to_business_requests()`) *and* the earlier, simpler, fully-deterministic
+  `business_fulfillment_policies` auto-accept engine (Offer System Phase 2) both already do
+  exactly this — opt-in, owner-configured, never silent.
+- **Proactive availability solving cold-start.** Already real: `business_availability` +
+  `post_business_availability()` (Business Fulfillment Phase 4) — a business declares real
+  terms once, and it's matched against every currently-open request in reach immediately, both
+  directions, with zero manual step.
+- **Capacity-aware, business-side matching ("business intent resolver").** Already real:
+  `_match_request_to_availability()`, `_match_request_to_policy()`, the reliability-weighted
+  fan-out (`_business_request_fanout()`), and the real party-size feasibility hard constraint
+  (Aug 28 2026 fix) — category/capacity/location/time/policy/reliability are all already real
+  inputs to who gets notified and in what order.
+- **"What we want more of."** Already real: `brand_partners.priority_attributes`/
+  `priority_time_windows`, `business_priority_signals` (a real, time-bounded temporary boost
+  layer), `priority_occasions` — a materially richer version of the pasted doc's own checkbox
+  sketch.
+- **AI-assisted business onboarding from a category alone.** Already real:
+  `businessCategoryClassifier.js`/`businessAttributeExtraction.js` ("Teach Nearby"), the
+  `business-onboarding-assistant` Edge Function (free-text → structured category/attributes/
+  cuisine/occasions, real, server-validated, owner reviews before anything saves).
+- **"Why this opportunity?" transparency.** Already real: `scoreBusinessOpportunity()`'s real,
+  itemized `opportunityReasons`, rendered as a real "🎯 {reason}" list directly above each
+  opportunity card (confirmed live in the file, `BusinessDashboardScreen.js:2600-2608`) —
+  matches the pasted doc's own mockup almost verbatim.
+- **"Your demand today: Coffee 34, Breakfast 12…"** Already real:
+  `get_aggregated_demand_for_partner()`'s category rollup, plus a real occasion-based rollup
+  from a later phase (`dominant_occasion`/`dominant_occasion_count`).
+- **Offer Library / reusable saved offers, one tap to reuse, AI-suggested titles.** Already
+  real: Signature Experiences (`business_experiences`) is exactly this — a real, curated,
+  owner-editable, AI-suggestible offer-template system — plus `rankExperiencesForOpportunity()`
+  and `buildOfferTitleScaffold()` (`businessOfferRecommendation.js`) already rank a business's
+  own templates against a live opportunity and suggest a real, honest title when none matches,
+  never guessing a price.
+- **Weather/event-driven business intelligence.** Already real: Business Intelligence Phase 7
+  wired the real weather signal directly into `scoreBusinessOpportunity()` — an opportunity
+  matching a genuinely weather-favorable category earns a real ranking bonus with an honest
+  itemized reason. The pasted doc's own exact "🌧️ Rain expected tonight — 23 matching requests"
+  card copy doesn't exist as its own dashboard card yet — the underlying signal is real and
+  live, only the specific digest-card presentation is missing (folded into Phase 5 below, kept
+  small).
+- **Time-aware expiration, "an opportunity shouldn't live forever."** Already real:
+  `expire_stale_business_requests()`, a real hourly `pg_cron` job, expires stale open requests
+  and their pending/offered offspring on a real schedule — an already-past opportunity can't be
+  accepted after the fact.
+- **Decline shouldn't be visually as prominent as Make Offer, and shouldn't feel punitive.**
+  Already correct, confirmed by reading the actual JSX
+  (`BusinessDashboardScreen.js:2621-2643`): "Make an Offer" uses `colors.primary` (the real,
+  locked coral-as-primary-action rule); "Can't accommodate" uses the neutral
+  `colors.surfaceElevated` — already the exact secondary/non-punitive treatment the pasted doc
+  asks for. Nothing to change here.
+
+**Real, confirmed, genuinely still-missing pieces — this is what the build plan below actually
+targets:**
+
+1. **Decline has no real, categorized reason anywhere — the single largest, most emphasized,
+   twice-independently-requested gap in the whole pasted conversation.** Pulled
+   `decline_business_offer(request_id_param)`'s live SQL body directly
+   (`supabase/migrations/20260817_offer_system_phase1_reservation_payment_seams.sql`) and
+   confirmed it: one argument, the request id — no reason of any kind is ever captured, an
+   opportunity a business genuinely received and reviewed just flips straight to `declined`
+   with nothing recorded about why. **This is not the same thing as
+   `business_match_exclusions`**, confirmed by reading that table's own real shape and every
+   function that writes to it (`20260826_missed_match_and_category_outcomes.sql` and its later
+   widenings): that table is a *system-computed* log of requests a business was **never even
+   shown** because the matching engine itself excluded them (category mismatch, hours mismatch,
+   zero capacity, etc.) — a genuinely different concept from a human owner explicitly declining
+   a real opportunity they were shown and reviewed. No code anywhere conflates the two today,
+   but nothing captures the second concept at all — exactly the gap the pasted doc's own final,
+   standalone message calls out by name and asks to be built into the app's own Business Mode
+   directly (not deferred to a hypothetical future web dashboard).
+2. **Business availability has no real day-of-week recurrence.** Confirmed via the live schema
+   (`business_fulfillment_policies`, `20260817_offer_system_phase2_fulfillment_policies.sql`):
+   `active_hours_start`/`active_hours_end` are a single daily `time` window, already an
+   explicitly-disclosed simplification when this table was first built ("resolved during
+   build... a single daily time-of-day window, not a day-of-week matrix, matching
+   `business_availability`'s own simplest-shape precedent"). `business_availability` postings
+   are one-shot, time-boxed, non-recurring. The pasted doc's own "Monday–Friday, 4 PM–9 PM"
+   example genuinely can't be expressed anywhere in this schema today — a real, previously
+   already-disclosed, now-directly-requested gap.
+3. **No per-offer-type/per-template funnel comparison view.** `viewed_at` (Offer System Phase
+   3), acceptance, and completion are all real, already-tracked facts — but nothing groups them
+   by *which Signature Experience/offer type was actually used* to answer "which of my saved
+   offers actually converts." A real, bounded reporting gap over data that already exists.
+4. **No way to attach a real photo/video to an offer.** Grepped the whole offer-creation path —
+   `business_request_offers`/`business_experiences` both have zero media-reference columns, and
+   no upload UI exists anywhere in the Make-an-Offer modal. The pasted doc's own "upload
+   existing creative, Nearby wraps the appropriate offer info around it" idea has no real
+   backing today.
+5. **The "Requests" tab is a naming mismatch with the concept the whole build is actually
+   organized around.** Real but tiny — see Phase 6.
+
+**A large, genuinely new implicit ask, checked and confirmed not to exist at all: a real business
+web dashboard.** Read every relevant signal directly before treating this as anything but a full
+greenfield build: `docs/business.html` is a real, static, 1158-line **landing/apply page only** —
+hero, value props, a real inline apply form, an admin-review handoff — confirmed, again, to have
+zero dashboard/opportunities/offer functionality of any kind, matching every prior pass on this
+exact file already documented elsewhere in this history. `app.json`'s `expo` config has no `web`
+key at all (`node -e "console.log(require('./app.json').expo.web)"` → `undefined`), and
+`package.json` has neither `react-native-web` nor `react-dom` as a dependency — this Expo project
+has **never** had any web output configured, at any point in its history. Building the pasted
+doc's own vision of "manage your business from any browser, no app required" — an Opportunities
+inbox, Smart Offers config, an Offer Library, the new decline-reason UI, all rendered in a real
+browser — is not a UI variant of something that exists, it is new infrastructure from zero. This
+directly reopens a decision this file has already locked and explicitly restated as closed
+**at least three separate times** across its own history — "Phase I: business web parity —
+already real, already disclosed (Aug 29 2026) — not re-opened, not re-decided here." Per this
+file's own standing rule (a direct, explicit, detailed request from the user *is* the go-ahead
+needed to reopen a locked decision — the same carve-out the standing Feature Freeze section
+already states in its own words), this is treated as a real, live decision point again — not
+silently built, and not silently waved away either. See **Phase 7** below, which is explicitly
+**not authorized to start** until one more concrete choice is made.
+
+**"Progressive Depth" (4 interaction levels) + "Living Canvas" — captured as a standing design
+doctrine, not a discrete build item.** Checked the pasted framework's own concrete complaints
+against real, already-shipped work rather than assuming it describes today's app: the "Home →
+Your Activity Screen" and "Home → Plans screen → gathering" over-navigation examples the doc
+itself gives are **already fixed**, independently, in this file's own prior history — Round 2/3
+of the IA restructure work already collapsed Activity's own same-day nudge into a lightweight
+inline row (no intermediate destination), and the "Your Plans" hero card + the
+`PlanCompletionRow` inline People/Time/Place strip (Sep 4 2026, further down this file) already
+implement almost exactly the doc's own "expand before leaving, change state instead of
+navigating" principle for gatherings/matches specifically. This is real, independent evidence
+this app has already been pushed in the doctrine's own direction across several completed
+passes, not merely aspirational text. **Not attempted as a discrete build item this pass** — a
+full, rigorous re-audit of every remaining screen against the doc's own explicit 4-level test
+("is the user doing a fundamentally different task, or changing context on the same task?") is
+real, valuable, and large enough to be its own dedicated future pass (matching this file's
+established precedent for capturing a real strategic framework read-only rather than mechanically
+executing it in the same breath it was received — see the "Nearby 2.0 Vision"/"V3/V4" captures
+elsewhere in this history). **Locked as a standing principle for all future UI work in this
+codebase, restated so a future session can hold new work to it without re-deriving it**:
+
+> Don't navigate for information. Navigate for tasks. A screen change should only ever
+> happen when the user's actual task changes, or when real information depth genuinely
+> requires it — never merely because a filter, a category, or a piece of already-visible
+> data changed.
+
+### Locked decisions
+
+1. **Decline reasons are built now, into the app's own Business Mode directly** — exactly per
+   the user's own explicit, standalone final instruction, not deferred to a hypothetical future
+   web dashboard. The RPC/schema are designed so a future web dashboard (if/when Phase 7 is ever
+   authorized) reuses the identical mechanism — same table, same RPC, same vocabulary — never a
+   second, web-specific decline path.
+2. **Decline reasons feed a real, owner-visible insight surface, not a silent automated
+   re-weighting of the matching algorithm.** The pasted doc's own "Nearby learns Coastal Coffee
+   doesn't want large groups after 8 PM, next time don't send it" framing describes real,
+   automated, adaptive matching behavior — this codebase's own repeated, hard rule ("no
+   premature universal/AI-driven matching algorithm," restated across the Business Intelligence
+   & AI Trust Engine plans already built) argues directly against silently building that kind of
+   self-adjusting black-box behavior into a live matching pipeline without its own explicit
+   review. Locked instead: decline reasons are aggregated into a real, honest "What You've
+   Declined" insight (same card/list treatment the existing "Why You Might Be Missing Requests"
+   section already established for *system* exclusions, a genuine sibling section, not a
+   duplicate), so the **owner** can see their own real pattern and manually tighten their own
+   Fulfillment Policy/Priority Attributes in response. A real, future, separately-authorized pass
+   could turn this into automated re-weighting once real decline volume exists to reason about —
+   not guessed at here.
+3. **Real day-of-week/recurring availability is a genuine schema extension, not a UI tweak** —
+   locked as its own phase (2), reusing the existing `business_fulfillment_policies` table
+   (widened) rather than a second, parallel schedule concept.
+4. **Offer media upload is real, bounded, and explicitly lower priority**, matching the pasted
+   doc's own "don't build all of this now" self-caution — locked as Phase 4, sequenced after the
+   two higher-value, more-requested items.
+5. **The business web dashboard (Phase 7) is not authorized to start this pass.** Two real
+   technical paths exist, given here so the decision is concrete rather than abstract when it's
+   picked up:
+   - **Path A — Expo web output.** This is already an Expo/React Native app; Expo supports a
+     real `web` platform target (`react-native-web` + `react-dom`, `expo.web` config,
+     `npx expo export --platform web`) that renders the *exact same* React Native screens/
+     components in a browser. The Business Dashboard screens/services/RPCs already built for
+     the app would need zero duplication — the same `BusinessDashboardScreen.js`, the same
+     `services/businessFulfillment.js`, the same RPCs, reused verbatim, matching this
+     codebase's own oldest, most consistently enforced rule (no second parallel system, reuse
+     what exists). Real cost: standing up a new deploy target, real browser-specific
+     verification (mouse/touch input differences, browser storage vs. `AsyncStorage`,
+     responsive layout for a screen originally built mobile-first) — genuine new work, but not
+     a second codebase.
+   - **Path B — a wholly separate web codebase.** Bigger, slower, and directly against every
+     established convention in this file's history (every existing "should this be web-only or
+     app-only" decision in this codebase's own past has landed on reuse over duplication) —
+     named here only so it's not silently assumed as the default the next time this is picked
+     up.
+   Recommendation, not a decision made unilaterally: Path A, for the reasons above. **This phase
+   stays explicitly gated until the user gives a real go-ahead specifically on this choice** —
+   everything else in this plan (Phases 1-6) needs no such gate and is ready to execute once
+   this whole plan is reviewed.
+
+### Locked build order — 7 phases; 1-6 need no further decision; 7 is explicitly gated
+
+1. **Decline reasons + owner-visible decline-pattern insight.**
+   - Schema: `business_request_offers` gains `decline_reason text` (nullable, only ever set
+     alongside `status = 'declined'`) and `decline_note text` (nullable, only meaningful when
+     `decline_reason = 'other'` — same "structured reason + optional free text" convention this
+     schema already uses elsewhere, e.g. content moderation/report flows). Real, curated
+     vocabulary, distinct from `business_match_exclusions`' own system-computed reason set (not
+     reused verbatim, since these describe a human's own stated judgment on a real opportunity
+     they were shown, not a system computation) — `too_far`, `too_busy_right_now`,
+     `cant_accommodate_group_size`, `outside_our_hours`, `not_a_fit_for_us`, `other` — a real,
+     small, human-facing set matching the pasted doc's own proposed list almost verbatim, backed
+     by a real table CHECK constraint.
+   - `decline_business_offer(request_id_param uuid)` gains `reason_param text`/
+     `note_param text default null` — per this schema's own repeatedly-stated "an added
+     parameter creates a distinct orphaned overload" rule, the old 1-arg signature is explicitly
+     `DROP FUNCTION`ed first, not left as a silent second overload. Re-validates `reason_param`
+     against the real vocabulary server-side (defense in depth over the table's own CHECK, same
+     posture every other RPC-mediated write in this schema already takes) before writing.
+   - New `get_partner_decline_patterns(partner_id_param)` — real, aggregated counts of the
+     caller's own declines grouped by `decline_reason` over a real recent window, owner-only
+     (same `profiles.managed_partner_id = partner_id_param` ownership check every sibling
+     business RPC already uses) — never exposed to anyone but the business itself, and never
+     used to silently change matching behavior (Decision 2).
+   - Client: `BusinessDashboardScreen.js`'s "Can't accommodate" tap opens a small, real reason
+     picker (a chip row over the 6 real values, `other` reveals a short optional free-text
+     field) before actually calling `decline_business_offer()` — never a silent one-tap decline
+     anymore. A new "What You've Declined" card on the Insights tab, real sibling to the
+     existing "Why You Might Be Missing Requests" card, using `MISSED_MATCH_REASON_LABELS`'
+     established label+hint convention for its own new reason set — honestly empty when nothing
+     has been declined yet, matching this dashboard's own established no-fabricated-numbers
+     posture throughout.
+2. **Real day-of-week/recurring availability windows.**
+   - `business_fulfillment_policies` gains `active_days smallint[]` (nullable, `null` meaning
+     "every day," matching this table's own established "absent means the widest/most permissive
+     interpretation" convention already used for its other nullable bound columns) — a plain
+     array of 0-6 (Sunday-Saturday), CHECK-constrained to real values only. `_match_request_to_
+     policy()`'s existing hours check gains one additive real day-of-week comparison against the
+     request's own real date, alongside its existing time-of-day check — a genuinely new
+     predicate, not a replacement of the existing one.
+   - Client: the Fulfillment Policy editor gains a real day-of-week chip row (Su/Mo/Tu/We/Th/Fr/
+     Sa, multi-select, defaulting to all-selected/unset = every day, matching the schema's own
+     null-means-everywhere convention) alongside the existing hours picker.
+3. **Per-template offer-performance funnel.** A new, real, owner-only rollup —
+   viewed/accepted/completed counts grouped by which real `business_experiences` row (or offer
+   type, for an offer with no linked template) generated the offer — surfaced as a real
+   "Offer Performance" card on the Insights tab, reusing the exact table/row visual convention
+   the pasted doc's own mockup shows (Offer / Viewed / Accepted / Redeemed columns), built
+   entirely over already-tracked data, no new signal invented.
+4. **Real media attach on an offer.** A new nullable `media_path`/`media_type` pair on
+   `business_request_offers` (and, separately, on `business_experiences` for a *standing*
+   Signature Experience's own default creative) — reuses this app's already-established
+   private-bucket-plus-signed-URL upload convention (matching `gathering-photos`/`profile-photos`),
+   not a new storage pattern. The Make-an-Offer modal gains an optional "Add a photo or video"
+   step; the resulting offer card (both business-side and consumer-side) renders the real
+   media inside the *existing* standardized offer-card wrapper — per the pasted doc's own
+   explicit instruction, Nearby's own presentation frame is never bypassed by a business's own
+   uploaded creative, the media sits inside it.
+5. **A real weather/event digest card, small and copy-only.** The signal is already fully real
+   and already live (Business Intelligence Phase 7) — this phase is purely a presentational
+   consolidation: a small "🌦️ Today's Conditions" card on the Insights tab, showing the real,
+   already-computed weather-favorability signal plus a real count of how many currently-open
+   opportunities that signal is already boosting for this business (derived client-side from
+   data the Opportunities list already has, zero new query) — never a new signal, never a
+   fabricated forecast claim beyond what the existing weather RPC already honestly returns.
+6. **Rename "Requests" → "Opportunities."** `SECTIONS`' `requests` tab label changes from
+   `Requests` to `Opportunities`, matching the section already rendered inside it — a pure copy
+   change, zero logic touched, zero risk. Deliberately sequenced last among the low-risk phases
+   since it's the smallest and safest, a natural closer.
+7. **Business web dashboard — NOT authorized to start.** Per Decision 5 above, this phase stays
+   locked until a real, explicit go-ahead names which technical path (A or B) to build against.
+   Once authorized: reuse (per Path A) the *exact* `BusinessDashboardScreen.js`/
+   `services/businessFulfillment.js`/every RPC already built for Phases 1-6 above, unmodified —
+   this whole plan's earlier phases are deliberately designed so nothing about them needs to be
+   redone or duplicated the moment Phase 7 is eventually greenlit.
+
+### Verification convention for this whole plan, matching every other schema-touching plan in
+### this file
+
+Every schema change (Phases 1, 2, 4) applied to production and verified live with real
+disposable test data — a real decline with each of the 6 reasons, a real day-of-week-bounded
+policy correctly matching/excluding a real request on and off its configured days, a real media
+upload round-tripping through the signed-URL convention — cleaned up afterward, plus a
+from-scratch migration replay before any of them is considered done, matching this file's own
+migration-discipline rule. Every client change verified via a direct `@babel/core` parse and a
+full `npx expo export --platform ios`. Each phase committed and pushed individually as it lands,
+not batched at the end. Same standing limitation as everywhere else in this file: no manual
+simulator/device run-through is possible from this sandbox.
+
+### Explicitly not doing, restated so nothing here reads as silently dropped
+
+No automated re-weighting of the matching/fan-out algorithm based on decline history (Decision
+2) — real, future, separately-authorized work once real decline volume exists. No business web
+dashboard build of any kind (Phase 7) without one more explicit decision on Path A vs. B. No
+mechanical, screen-by-screen re-audit against the "Progressive Depth" 4-level test — captured as
+a standing doctrine for future work to be held to, not executed as its own sweep this pass. No
+change to the already-correct decline-button visual hierarchy (already matches the ask). No
+rebuild of anything in the "already fully real" list above.
+
+**Status: plan locked, per direct instruction to plan thoroughly and place it in this file
+before executing. Nothing in Phases 1-7 has been built yet.**
+
 ## Sep 14 2026 (cont'd) — Phase J: an explicit recommendation signal-source-priority-by-maturity
 ## model — DONE, build-wise
 
