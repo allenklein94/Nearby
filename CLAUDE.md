@@ -1,3 +1,101 @@
+## Sep 14 2026 — Phase F of the "global onboarding -> product wiring" master plan: height
+## promoted to a real structured filter — picked back up after a codespace restart, closed the
+## one gap the interrupted session left open (proximity.js wiring), plus the styling gap the
+## interrupted session's own JSX referenced but never defined — built, applied, verified live,
+## and replayed clean from a truly empty database
+
+Picked up after a codespace restart interrupted the session mid-build — `git status` showed
+`DatingPreferencesScreen.js`/`ProfileScreen.js` already modified and two new untracked files
+(`src/utils/heightUnits.js`, `supabase/migrations/20260914_dating_height_filter.sql`), matching
+this file's own restart-safety convention: read what was actually there before assuming anything,
+not re-derived from scratch. Direct follow-up to the master plan's own locked-but-not-built
+Phase F (see the "global onboarding→product wiring" section further down this file): "Promote
+`height` out of `basics` jsonb into a first-class `profiles.height_inches integer` column... plus
+`profiles.dating_pref_min_height_inches`/`dating_pref_max_height_inches` preference columns,
+wired into `proximity.js` the same way as Phase B's hair-color filter."
+
+**What was already done before the restart, confirmed rather than re-built**: the migration
+(3 nullable columns — `height_inches`, `dating_pref_min_height_inches`, `dating_pref_max_
+height_inches` — each with a real `between 48 and 84` CHECK constraint, no `trusted_update`
+guard, matching `dating_pref_hair_colors`' exact self-editable posture) was already live in
+production, confirmed via a direct query rather than re-applying blind (a second `alter table
+... add column` would have been a harmless no-op via `if not exists`, but the constraints
+would have errored on a duplicate `add constraint`, so checking first mattered).
+`src/utils/heightUnits.js` (the shared feet+inches ↔ total-inches conversion module, matching
+this file's own "one shared function, reused everywhere" convention already established for
+`utils/timeContext.js`/`utils/planCompletion.js`) was fully written and correct.
+`ProfileScreen.js` (a "My Height" picker, placed right after "My Ethnicity," matching the
+gender/ethnicity precedent's own field ordering) and `DatingPreferencesScreen.js` (a real
+min/max height-range preference, same hard-validation posture as the existing age-range fields
+— a genuinely half-filled pair or an out-of-bound value blocks save with a real alert, both
+fields blank means no preference) were both fully wired for save/load, including the CHECK-
+matching client-side validation.
+
+**Two real gaps closed this pass, not present before the restart**:
+1. **`DatingPreferencesScreen.js`'s new height-range JSX referenced six style keys
+   (`heightRangeRow`/`heightRangeCol`/`heightRangeLabel`/`heightRow`/`heightInput`/
+   `heightDash`) that were never actually defined in the file's own `StyleSheet`** — the exact
+   "undefined style value silently renders as `undefined`" bug shape this file has caught and
+   fixed several times before (e.g. `colors.surfaceAlt`, `CommunityDetailScreen`'s modal sheet).
+   Added all six, mirroring the file's own existing `ageRow`/`ageInput`/`ageDash` pattern one
+   section up rather than inventing a new visual language.
+2. **`proximity.js` was never touched at all** — the plan's own explicit "wired into `proximity.js`
+   the same way as Phase B's hair-color filter" was the one piece genuinely unbuilt. Closed by
+   mirroring `dating_pref_hair_colors`' exact shape in both `getNearbyMatches()` and
+   `getBrowseMatches()`: `dating_pref_min_height_inches`/`dating_pref_max_height_inches` added
+   to the caller's own profile select, `height_inches` added to the candidate profiles select
+   (a real first-class column now, never `basics.height`, which stays free text and untouched),
+   and the identical **absence-never-excludes** rule the hair-color filter already established —
+   a candidate with no `height_inches` set is never excluded, even while the preference is
+   active, matching the plan's own "no invented numbers, absence isn't held against anyone"
+   convention. Both functions' filters are additive to the existing gender/age/ethnicity/hair-
+   color checks, nothing else touched.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), not just applied — confirmed all
+three columns and their real CHECK constraints already existed and matched the migration file
+byte-for-byte; real disposable test data against a real profile (`Claude`): a valid update
+(70/64/76) round-tripped exactly; an out-of-bound `height_inches: 200` and an out-of-bound
+`dating_pref_min_height_inches: 0` were both correctly rejected with a real `23514` constraint
+violation; the already-set valid values were confirmed still intact after both rejected
+attempts (no partial clobber). Test profile reverted to its exact pre-test baseline (`null`
+across all three columns) afterward — confirmed via a `count(*)` sweep across every real
+profile that production is back to 0 non-null rows. Along the way, confirmed this real profile
+already has a free-text `basics.height: "5'10\""` — direct, observed proof the plan's own
+disclosed limitation is real: the new structured column and the old free-text field are
+genuinely disconnected, exactly as designed, not silently reconciled.
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached
+`supabase/postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check
+status, dropped and recreated a truly empty `public` schema, created `pg_cron`/`pg_trgm`
+cleanly as `postgres` (no `supabase_admin` workaround needed this run), patched the two known
+image-version gaps (`auth.users.phone`, `storage.buckets.public`) onto the test container only,
+then ran the full, now-118-file `supabase/migrations/` folder in order via `psql -v
+ON_ERROR_STOP=1` — **exit 0 on every file**, including this pass's own migration — all three new
+columns and their real CHECK constraints confirmed to exist in the freshly-rebuilt database.
+Container removed afterward.
+
+**New real unit tests**: `src/utils/heightUnits.test.js` (10 tests — the real 48/84-inch
+boundary inclusivity in both directions, a garbage 0'0" mis-tap correctly rejected, the blank-
+vs-invalid distinction, and a real round-trip through `totalInchesToFeetInches`/
+`feetInchesToTotalInches`/`formatHeightInches` never fabricating a default for a null input) —
+matching this file's own established "pure function, no I/O, gets its own test file" convention
+(`gatheringFullness.test.js`, `intentPatterns.test.js`, `rightNowWindow.test.js`). Full suite
+now **190/190 passing** (180 pre-existing + 10 new, 15 suites). Client-side verified via a
+direct `@babel/core` parse of all four touched/new files (clean) and a full `npx expo export
+--platform ios` (clean, no bundling errors — the same deterministic bundle hash before and
+after adding the new test file, confirming it's correctly excluded from the Metro bundle).
+
+**This closes Phase F of the master plan in full.** Phase G (the unified Plan object) remains
+exactly as locked in that plan's own text — still needs its own explicit go-ahead before being
+picked up.
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the feet/inches pickers on both Profile and Dating
+Preferences render/save correctly on a real device, that the invalid-height alert reads clearly
+for a genuinely half-filled pair, and that a real dating-preference height range actually
+narrows Crossed Paths/Browse results correctly once two real profiles with different heights
+exist to test against.
+
 ## Sep 13 2026 — Phase E of the master plan below (the real 7-category notification
 ## taxonomy): built, applied, and verified live — plus two real, previously-undocumented
 ## duplicate/ungated-push bugs found while tracing it and fixed in the same pass
@@ -326,14 +424,17 @@ between a polished-looking onboarding flow and a genuinely connected product sys
   "opportunity" push exists today, only the business-owner-facing demand/intent ones already
   named as out of scope). `notify_businesses_offers` (Phase C) and the existing `notify_messages`/
   `notify_waves` already cover their own categories cleanly.
-- **Phase F (locked, NOT built)** — height as a real structured filter. Promote `height` out of
-  `basics` jsonb into a first-class `profiles.height_inches integer` column (a real feet/inches
-  picker replacing the free-text input, matching the gender/ethnicity precedent exactly), plus
-  `profiles.dating_pref_min_height_inches`/`dating_pref_max_height_inches` preference columns,
-  wired into `proximity.js` the same way as Phase B's hair-color filter. Existing free-text
-  `basics.height` values are left exactly as they are (display-only, never silently converted)
-  — a real, disclosed limitation: someone who already typed a height only gets the real filter
-  once they re-enter it via the new picker.
+- **Phase F — DONE, Sep 14 2026** (see that section further up this file for the full build/
+  verification detail). Height promoted out of `basics` jsonb into a first-class
+  `profiles.height_inches integer` column (a real feet/inches picker replacing the free-text
+  input on Profile, matching the gender/ethnicity precedent exactly), plus real
+  `profiles.dating_pref_min_height_inches`/`dating_pref_max_height_inches` preference columns
+  on Dating Preferences, wired into `proximity.js`'s `getNearbyMatches()`/`getBrowseMatches()`
+  the same absence-never-excludes way as Phase B's hair-color filter. Existing free-text
+  `basics.height` values were left exactly as they are (display-only, never silently converted)
+  — the disclosed limitation held: someone who already typed a height only gets the real filter
+  once they re-enter it via the new picker, confirmed directly against a real profile's own
+  pre-existing free-text value during live verification.
 - **Phase G (locked, NOT built)** — the unified Plan object. Real schema sketch, given so a
   future session isn't starting from nothing: a `plans` table (`id`, `plan_type` —
   `dating_date|friend_hangout|gathering|birthday|anniversary|business_request`,
@@ -458,7 +559,8 @@ real downstream consumer — a genuine verdict per cell, not "displayed on the o
 | `display_name`, `birthdate`, profile photo | ✅ | ✅ | ✅ (age filter, identity everywhere) | ✅ | ✅ | ✅ | ✅ | — |
 | `gender_identity`/`interested_in_genders` | ✅ | ✅ (Dating-context-only, Aug 25 2026 Finding 9) | ✅ real hard-constraint gate, `passesGenderMatch()` | — | — | — | — | — |
 | `hair_color` (Profile "Basics") | ✅ `profiles.basics.hair_color` (self-description) | ✅ | ✅ (Phase B, this pass) via new `dating_pref_hair_colors` preference | — | — | — | — | — |
-| `height`/`eye_color` (Profile "Basics") | ✅ `profiles.basics.*` (self-description) | ✅ | ❌ still decorative only — real, confirmed gap, locked as Phase F below, not attempted this pass (free text can't be silently turned into a hard filter) | — | — | — | — | — |
+| `height` — promoted to `profiles.height_inches` (Sep 14 2026, Phase F, this file's own top entry) | ✅ `profiles.height_inches` (real column, real 4'0"-7'0" bound) | ✅ real feet/inches picker | ✅ (Phase F) via new `dating_pref_min/max_height_inches` preference, same absence-never-excludes filter as hair color | — | — | — | — | — |
+| `eye_color` (Profile "Basics") — still decorative only, real, confirmed, unresolved gap, no phase currently locked for it (free text can't be silently turned into a hard filter) | ✅ `profiles.basics.eye_color` (self-description) | ✅ | ❌ | — | — | — | — | — |
 | Location permission (`OnboardingLocationScreen`) | ✅ (via later app usage — `wide_area`/`precise_lat/lng` on real actions, not written by this screen itself) | — | ✅ already powers the whole system (Community Area, weather, aggregated demand, intent resolver) — confirmed already true, not re-audited from scratch | ✅ | ✅ | ✅ | ✅ | — |
 | Dating preferences (age range, `ethnicity_preferences`, `relationship_intention` — captured on `DatingPreferencesScreen`, not the initial onboarding funnel itself, but the same real category) | ✅ | ✅ (Dating-context-only) | ✅ real filters in `proximity.js` | — | — | — | — | — |
 | Notification category preference | ❌ **no such onboarding question exists at all** — a real, confirmed gap relative to the user's own suggested onboarding flow ("What should Nearby keep you posted about?") | — | — | — | — | — | — | ⚠️ only Settings has toggles (4 granular categories as of Phase C; the user's proposed 7-category model is Phase E, not built) |
