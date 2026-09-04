@@ -13,7 +13,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -191,6 +191,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [missedMatchLocked, setMissedMatchLocked] = useState(false);
   const [categoryOutcomes, setCategoryOutcomes] = useState([]);
   const [categoryOutcomesLocked, setCategoryOutcomesLocked] = useState(false);
+  // Phase 1 -- decline reasons + the owner-visible "What You've Declined"
+  // insight, a real sibling to "Why You Might Be Missing Requests" above.
+  const [declineModalRequestId, setDeclineModalRequestId] = useState(null);
+  const [declineReasonInput, setDeclineReasonInput] = useState(null);
+  const [declineNoteInput, setDeclineNoteInput] = useState('');
+  const [declinePatterns, setDeclinePatterns] = useState([]);
   const [entitlements, setEntitlements] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
@@ -1088,6 +1094,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadInsights(selectedPartner.id);
         loadMissedMatchSummary(selectedPartner.id);
         loadCategoryOutcomes(selectedPartner.id);
+        loadDeclinePatterns(selectedPartner.id);
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
         // Fetches conversations once and feeds the same result to both
@@ -1281,11 +1288,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setRespondingOpportunityId(null);
   }
 
-  async function handleDeclineOpportunity(requestId) {
-    setRespondingOpportunityId(requestId);
+  // Phase 1 -- a real reason picker, never a silent one-tap decline. The
+  // "Can't accommodate" tap opens this modal instead of calling the RPC
+  // directly; the actual decline_business_offer() call now only ever
+  // happens from handleSubmitDecline() below, once a real reason is set.
+  function openDeclineModal(requestId) {
+    setDeclineModalRequestId(requestId);
+    setDeclineReasonInput(null);
+    setDeclineNoteInput('');
+  }
+
+  async function handleSubmitDecline() {
+    if (!declineReasonInput) return;
+    setRespondingOpportunityId(declineModalRequestId);
     try {
-      await declineBusinessOpportunity(requestId);
+      await declineBusinessOpportunity(
+        declineModalRequestId,
+        declineReasonInput,
+        declineReasonInput === 'other' ? declineNoteInput.trim() || null : null
+      );
+      setDeclineModalRequestId(null);
       await loadOpportunities(selectedPartner.id);
+      loadDeclinePatterns(selectedPartner.id);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -1707,6 +1731,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       } else {
         console.error('loadCategoryOutcomes failed', e);
       }
+    }
+  }
+
+  // Phase 1 -- real, owner-only, aggregated decline reasons. Never
+  // entitlement-gated (per the locked plan: "owner-only... never exposed
+  // to anyone but the business itself"), so no locked-state branch is
+  // needed here the way missed-match/category-outcomes have one.
+  async function loadDeclinePatterns(partnerId) {
+    try {
+      const result = await getPartnerDeclinePatterns(partnerId);
+      setDeclinePatterns(result);
+    } catch (e) {
+      console.error('loadDeclinePatterns failed', e);
     }
   }
 
@@ -2633,14 +2670,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                            onPress={() => handleDeclineOpportunity(o.request_id)}
+                            onPress={() => openDeclineModal(o.request_id)}
                             disabled={respondingOpportunityId === o.request_id}
                             accessibilityLabel="Can't accommodate this request"
                             accessibilityRole="button"
                           >
-                            {/* Phase 4(b): already wired to the real decline_business_offer()
-                                RPC (see declineBusinessOpportunity) -- this is a relabel only,
-                                matching the plan's own explicit "Can't accommodate" wording. */}
+                            {/* Phase 1: opens a real reason picker instead of a silent
+                                one-tap decline -- see openDeclineModal/handleSubmitDecline
+                                and the Decline Reason modal below. */}
                             {respondingOpportunityId === o.request_id ? <ActivityIndicator color={colors.textPrimary} size="small" /> : <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>Can't accommodate</Text>}
                           </TouchableOpacity>
                         </View>
@@ -2886,6 +2923,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   ))}
                 </>
+              )}
+
+              {/* Phase 1 -- a real, owner-visible insight into the business's own
+                  declined opportunities. A genuine sibling to "Why You Might Be
+                  Missing Requests" above: that one is the system's own reasons a
+                  request never became visible at all; this is the owner's own
+                  stated reasons for a real opportunity they were shown and turned
+                  down. Deliberately aggregated only, no per-request dump, and
+                  never used to silently re-weight matching -- the owner decides
+                  what to do with their own pattern (see CLAUDE.md's Decision 2). */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>What You've Declined</Text>
+              {declinePatterns.length === 0 ? (
+                <Text style={styles.emptyText}>Nothing declined in the last 30 days.</Text>
+              ) : (
+                declinePatterns.map((d) => {
+                  const info = DECLINE_REASON_LABELS[d.decline_reason] ?? { label: d.decline_reason, hint: null };
+                  return (
+                    <View key={d.decline_reason} style={styles.offerCard}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.offerTitle}>
+                          {info.label} · {d.decline_count}x
+                        </Text>
+                        {info.hint && <Text style={styles.offerDescription}>{info.hint}</Text>}
+                      </View>
+                    </View>
+                  );
+                })
               )}
 
               <TouchableOpacity
@@ -4361,6 +4425,58 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+      <Modal visible={!!declineModalRequestId} animationType="slide" transparent onRequestClose={() => setDeclineModalRequestId(null)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <View style={styles.sheet}>
+              <Text style={styles.sheetTitle}>Can't Accommodate This One</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                No penalty -- this just helps you see your own real pattern later, on the
+                "What You've Declined" card below.
+              </Text>
+              <View style={styles.chipRow}>
+                {DECLINE_REASON_OPTIONS.map((o) => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.chip, declineReasonInput === o.key && styles.chipSelected]}
+                    onPress={() => setDeclineReasonInput(o.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={o.label}
+                    accessibilityState={{ selected: declineReasonInput === o.key }}
+                  >
+                    <Text style={[styles.chipText, declineReasonInput === o.key && styles.chipTextSelected]}>{o.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {declineReasonInput === 'other' && (
+                <TextInput
+                  style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
+                  placeholder="What's the real reason? (optional)"
+                  placeholderTextColor={colors.textTertiary}
+                  value={declineNoteInput}
+                  onChangeText={setDeclineNoteInput}
+                  multiline
+                  accessibilityLabel="Optional note for why you're declining"
+                />
+              )}
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleSubmitDecline}
+                disabled={!declineReasonInput || respondingOpportunityId === declineModalRequestId}
+                accessibilityLabel={respondingOpportunityId === declineModalRequestId ? 'Declining' : 'Confirm decline'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.submitButtonText}>{respondingOpportunityId === declineModalRequestId ? 'Declining...' : 'Confirm'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setDeclineModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

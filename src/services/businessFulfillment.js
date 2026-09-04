@@ -456,10 +456,48 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
   return result;
 }
 
-export async function declineBusinessOpportunity(requestId) {
-  const { data, error } = await supabase.rpc('decline_business_offer', { request_id_param: requestId });
+// "Business Web as an Operating System" Phase 1 (see CLAUDE.md): a real,
+// categorized reason is now required on every decline, distinct from
+// business_match_exclusions' own system-computed reason set -- this
+// describes a human owner's stated judgment on a real opportunity they
+// were shown, not why a request was never shown at all. reason must be
+// one of DECLINE_REASON_OPTIONS' own keys; noteParam is only ever
+// meaningful (and only ever stored) alongside reason === 'other'.
+export async function declineBusinessOpportunity(requestId, reason, note = null) {
+  const { data, error } = await supabase.rpc('decline_business_offer', {
+    request_id_param: requestId,
+    reason_param: reason,
+    note_param: note,
+  });
   if (error) throw new Error(error.message);
   return data;
+}
+
+// The real, curated decline-reason vocabulary -- a human owner's own
+// stated judgment, never repurposing business_match_exclusions' own
+// system-computed reason set. Shared so the reason picker and the
+// "What You've Declined" insight card can never drift onto two
+// different label sets for the same six real values.
+export const DECLINE_REASON_OPTIONS = [
+  { key: 'too_far', label: 'Too far' },
+  { key: 'too_busy_right_now', label: 'Too busy right now' },
+  { key: 'cant_accommodate_group_size', label: "Can't fit that group size" },
+  { key: 'outside_our_hours', label: 'Outside our hours' },
+  { key: 'not_a_fit_for_us', label: 'Not a fit for us' },
+  { key: 'other', label: 'Other' },
+];
+
+// Real, owner-only, aggregated counts of the caller's own declines,
+// grouped by real reason over a recent window -- never fed back into
+// matching automatically (CLAUDE.md's own locked Decision 2: a real,
+// disclosed rule against silently self-adjusting ranking behavior).
+export async function getPartnerDeclinePatterns(partnerId, daysBack = 30) {
+  const { data, error } = await supabase.rpc('get_partner_decline_patterns', {
+    partner_id_param: partnerId,
+    days_back_param: daysBack,
+  });
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
 // ---- Tier 2 of the Intent Layer resolver ----
@@ -762,6 +800,21 @@ export const MISSED_MATCH_REASON_LABELS = {
     label: 'Your weather-dependent policy paused itself for real rain/storms',
     hint: 'This only fires when you’ve turned on "Weather-Dependent" and our last hourly check found real rain or storms at your location -- it clears again once conditions improve.',
   },
+};
+
+// Real, human-readable labels for the fixed decline-reason vocabulary --
+// the "What You've Declined" card's own sibling to MISSED_MATCH_REASON_
+// LABELS above. A genuinely different concept: this is a human owner's
+// own stated judgment on an opportunity they were shown and reviewed,
+// never a system computation of a request that was excluded before the
+// business ever saw it.
+export const DECLINE_REASON_LABELS = {
+  too_far: { label: 'Too far', hint: 'Worth checking whether your fulfillment policy/availability radius is wider than you actually want to travel.' },
+  too_busy_right_now: { label: 'Too busy right now', hint: "A real, recurring pattern here might mean it's worth tightening your active hours or auto-accept party size." },
+  cant_accommodate_group_size: { label: "Can't fit that group size", hint: 'Consider adjusting your Fulfillment Policy’s party-size range if this keeps coming up.' },
+  outside_our_hours: { label: 'Outside our hours', hint: 'If this happens often at a specific time, your posted hours may not match when people are actually asking.' },
+  not_a_fit_for_us: { label: 'Not a fit for us', hint: 'A pattern here might point at your category/attributes not matching what tends to get sent your way.' },
+  other: { label: 'Other', hint: null },
 };
 
 // Shared formatting so BusinessRequestDetailScreen and BusinessProfileScreen
