@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
@@ -1232,9 +1232,22 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // convention — this business's own real id, not a fabricated code.
   async function handleShareBusinessLink() {
     if (!selectedPartner) return;
+    const message = `Check out ${selectedPartner.name} on Nearby — nearby://business/${selectedPartner.id}`;
+    // Phase 7 (Business Web, CLAUDE.md) -- Share.share has no real native
+    // share-sheet equivalent on the web; a clipboard copy is the honest
+    // browser-specific adapter for the same underlying action.
+    if (Platform.OS === 'web') {
+      try {
+        await navigator.clipboard.writeText(message);
+        window.alert('Link copied to clipboard!');
+      } catch (e) {
+        // Clipboard permission denial isn't an error worth surfacing.
+      }
+      return;
+    }
     try {
       await Share.share({
-        message: `Check out ${selectedPartner.name} on Nearby — nearby://business/${selectedPartner.id}`,
+        message,
         url: `nearby://business/${selectedPartner.id}`,
       });
     } catch (e) {
@@ -2466,21 +2479,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.postUpdateButtonText}>📣 Post Update to Followers</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
-                    onPress={handlePostMoment}
-                    disabled={postingMoment}
-                    accessibilityLabel="Post a real-time photo or video moment, visible to people nearby for 24 hours"
-                    accessibilityRole="button"
-                  >
-                    {postingMoment ? (
-                      <ActivityIndicator color={colors.primary} />
-                    ) : entitlements && !hasEntitlement(entitlements, 'business_moments') ? (
-                      <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔒 Post a Moment — Growth feature</Text>
-                    ) : (
-                      <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔴 Post a Moment (visible 24h)</Text>
-                    )}
-                  </TouchableOpacity>
+                  {/* Phase 7 (Business Web, CLAUDE.md) -- real device camera
+                      capture has no web equivalent worth building for a v1;
+                      hidden on web, native behavior untouched. */}
+                  {Platform.OS !== 'web' && (
+                    <TouchableOpacity
+                      style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
+                      onPress={handlePostMoment}
+                      disabled={postingMoment}
+                      accessibilityLabel="Post a real-time photo or video moment, visible to people nearby for 24 hours"
+                      accessibilityRole="button"
+                    >
+                      {postingMoment ? (
+                        <ActivityIndicator color={colors.primary} />
+                      ) : entitlements && !hasEntitlement(entitlements, 'business_moments') ? (
+                        <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔒 Post a Moment — Growth feature</Text>
+                      ) : (
+                        <Text style={[styles.postUpdateButtonText, { color: colors.primary }]}>🔴 Post a Moment (visible 24h)</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
 
                   {selectedPartner && (
                     <TouchableOpacity
@@ -2520,7 +2538,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <TouchableOpacity
                       key={g.id}
                       style={styles.gatheringRow}
-                      onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                      onPress={() => {
+                        // Phase 7 (Business Web, CLAUDE.md) -- GatheringDetail
+                        // is a large consumer screen out of Business Web's
+                        // scope; a real, honest message beats a silent
+                        // navigation-to-nowhere on web.
+                        if (Platform.OS === 'web') {
+                          window.alert('Open the Nearby app to view full gathering details.');
+                          return;
+                        }
+                        navigation.navigate('GatheringDetail', { gatheringId: g.id });
+                      }}
                       activeOpacity={0.85}
                       accessibilityLabel={`View and manage ${g.title}`}
                       accessibilityRole="button"
@@ -2596,7 +2624,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <TouchableOpacity
                       key={c.id}
                       style={styles.gatheringRow}
-                      onPress={() => navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name })}
+                      onPress={() => {
+                        // Phase 7 (Business Web, CLAUDE.md) -- same rationale
+                        // as the GatheringDetail guard above: CommunityDetail
+                        // is out of Business Web's scope.
+                        if (Platform.OS === 'web') {
+                          window.alert('Open the Nearby app to view full community details.');
+                          return;
+                        }
+                        navigation.navigate('CommunityDetail', { communityId: c.id, communityName: c.name });
+                      }}
                       activeOpacity={0.85}
                       accessibilityLabel={`View and manage ${c.name}`}
                       accessibilityRole="button"
@@ -3907,6 +3944,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </>
                 )}
 
+                {/* Phase 7 (Business Web, CLAUDE.md) -- Stripe Connect
+                    onboarding's native-scheme OAuth return has no web
+                    equivalent built yet (moot today anyway, since Stripe
+                    isn't configured live anywhere in this app); hidden on
+                    web as a defense-in-depth guard, native untouched. The
+                    background getMyStripeConnectStatus() read that feeds
+                    stripeStatus above keeps running unconditionally --
+                    only this action UI is hidden. */}
+                {Platform.OS !== 'web' && (
+                <>
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Get Paid via Stripe</Text>
                 <View style={styles.gatheringRow}>
                   {!isStripeConfigured() ? (
@@ -3954,6 +4001,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </>
                   )}
                 </View>
+                </>
+                )}
 
                 <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>Reservation Provider</Text>
                 <View style={styles.gatheringRow}>
@@ -4658,7 +4707,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </Text>
                   </TouchableOpacity>
                   {showOfferTimePicker && (
-                    <DateTimePicker
+                    <PlatformDateTimeInput
                       value={offerProposedTime ?? new Date()}
                       mode="datetime"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}

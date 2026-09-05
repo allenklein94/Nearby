@@ -33,6 +33,14 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png"
+    },
+    "experiments": {
+      "baseUrl": "/Nearby/business"
+    },
     "android": {
       "package": "com.allenklein.nearby",
       "adaptiveIcon": {

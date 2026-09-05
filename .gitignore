@@ -14,3 +14,9 @@ web-build/
 .env*.local
 .claude/
 supabase/.temp/
+
+# Phase 7 (Business Web, CLAUDE.md): docs/business/ is a committed Expo web
+# export (GitHub Pages deploy target), not source -- its bundled
+# node_modules-derived asset paths must not be caught by the node_modules/
+# rule above.
+!docs/business/**

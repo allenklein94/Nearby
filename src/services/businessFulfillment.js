@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -51,15 +52,40 @@ export async function pickBusinessOfferMedia() {
 // local file:// URIs, this codebase's own already-learned lesson (see
 // uploadGatheringCoverPhoto() in gatherings.js).
 export async function uploadBusinessOfferMedia(partnerId, asset, kind) {
+  const isVideo = asset.type === 'video';
+  const prefix = kind === 'experience' ? 'experience' : 'offer';
+
+  // Phase 7 (Business Web, CLAUDE.md) -- expo-file-system has no web
+  // implementation at all. The base64 round-trip below only exists to
+  // work around an iOS-specific fetch().blob() bug for local file://
+  // URIs -- that bug doesn't apply on web, where asset.uri from
+  // expo-image-picker's own web shim is already a real blob:/data: URL a
+  // plain fetch().blob() can read directly.
+  if (Platform.OS === 'web') {
+    const response = await fetch(asset.uri);
+    const blob = await response.blob();
+    if (!blob || blob.size === 0) {
+      throw new Error('Could not read the selected file. Please try a different one.');
+    }
+    const contentType = blob.type || (isVideo ? 'video/webm' : 'image/jpeg');
+    const fileExt = contentType.split('/')[1]?.split(';')[0] || (isVideo ? 'webm' : 'jpg');
+    const path = `${partnerId}/${prefix}-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabase.storage
+      .from('business-offer-media')
+      .upload(path, blob, { contentType });
+
+    if (error) throw error;
+    return { path, mediaType: isVideo ? 'video' : 'image' };
+  }
+
   const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' });
   if (!base64 || base64.length === 0) {
     throw new Error('Could not read the selected file. Please try a different one.');
   }
 
   const bytes = base64ToUint8Array(base64);
-  const isVideo = asset.type === 'video';
   const fileExt = isVideo ? 'mov' : (asset.uri.split('.').pop()?.split('?')[0] || 'jpg');
-  const prefix = kind === 'experience' ? 'experience' : 'offer';
   const path = `${partnerId}/${prefix}-${Date.now()}.${fileExt}`;
 
   const { error } = await supabase.storage
