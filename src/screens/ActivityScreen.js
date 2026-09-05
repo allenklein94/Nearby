@@ -707,12 +707,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
+  // Phase 8 section H (Activity): was a bordered/shadowed radius.lg box per
+  // row -- read as a stack of separate cards. Flattened to a plain timeline
+  // row (bottom divider only, no fill/border/shadow) per the locked H plan
+  // ("lighter, timeline rows, less card-like than today") -- Discover's
+  // card treatment is deliberately NOT ported here.
   row: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
-    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.sm, marginBottom: spacing.sm, ...shadow.card,
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  waveRow: { borderColor: colors.primary, borderWidth: 2 },
+  waveRow: { borderLeftWidth: 3, borderLeftColor: colors.primary, paddingLeft: spacing.sm - 3 },
   rowAvatar: { width: 48, height: 48, borderRadius: 24, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},
   lockIconSmall: { position: 'absolute', left: 16, top: 16, fontSize: 18 },

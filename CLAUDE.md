@@ -40,9 +40,8 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Phase 8 (Discover visual hierarchy + expand-in-place) — Discover itself (sections A-G) is
-DONE and pushed; only section H remains, and it is gated on the user confirming Discover works.
-See the Phase 8 section below.**
+**Phase 8 (Discover visual hierarchy + expand-in-place) is fully DONE, including section H.**
+Full account moved to `CLAUDE_HISTORY.md` ("Phase 8 ... section H — BUILT").
 "Business Web as an Operating System" (Phases 1-7) is fully DONE. Phases 1-6 (decline reasons,
 day-of-week availability, offer-performance funnel, media-on-offer
 upload, weather digest card, Requests→Opportunities rename) were verified live in production —
@@ -62,40 +61,6 @@ that session; if something looks visually off on the deployed site, that's the f
 suspect. `docs/business/` must be regenerated (`npx expo export -p web`, then copy `dist/*` over
 it) and recommitted any time a business-facing screen changes — it is not auto-built by CI (no
 GitHub Actions workflow exists for this yet).
-
-### Phase 8: Discover visual hierarchy + expand-in-place
-
-**Sections A-G are DONE.** Full build/verification account, including every judgment call made
-along the way and the couple of real design changes that went beyond the literal spec, is at the
-top of `CLAUDE_HISTORY.md` ("Phase 8 ... sections A-G — BUILT"). Read it before changing anything
-on Discover, not "just in case".
-
-Short version of what now exists: `DiscoverHubScreen.js` tiers notable gatherings by their real
-`fit.score` (hero / standard, no fixed slot count), names the actual matched interest in its reason
-copy, and uses real app CTA vocabulary. Tapping a notable card's **body** expands the same screen
-in place around that gathering's own context (interest tag + `gatheringTimeBadge()` bucket +
-already-applied nearby scope) — local state, no navigation; its **CTA** is a separate nested
-touchable that still opens `GatheringDetailScreen`, because joining is a real task change. A
-breadcrumb row, Android hardware back (`BackHandler`), and switching to People mode all clear it.
-Inside the context: Gatherings / Places / Perks as primary content, with a strictly secondary
-"People You Know" section showing only real friends/matches who genuinely RSVP'd to one of the
-listed gatherings. New shared primitives: `src/utils/gatheringTimeLabel.js`,
-`getMyMatches()`/`filterToMyMatches()` in `services/matchActions.js`, and
-`filterToMyConnections()` in the new `services/connections.js`.
-
-**Not verified running.** No simulator, device, or browser tooling has ever been available in a
-session on this project. Jest passes and the files parse; that is the whole extent of it. If a
-hero card's gradient/scrim/text layering looks off, or the nested CTA touchable inside the hero
-card doesn't register a tap, suspect those two first.
-
-**H (the only remaining Phase 8 item) — approved but explicitly gated: do not start until
-Discover's own version above is confirmed working by the user.** Roll the same treatment out in
-this order: Home (1-2 hero moments only, not a wall of imagery; reuse `gatheringTimeLabel.js`) →
-People (image-forward, real profile photos) → Profile (moderate/editorial) → Activity (lighter,
-timeline rows, less card-like than today) → Create (stays as-is, white surfaces already right) →
-Business dashboard (structured/data-forward, deliberately *not* the consumer Discover look). The
-expand-in-place pattern is meant to generalize to these surfaces too — but only after Discover's
-version is confirmed, not before.
 
 ## Standing Conventions (Locked)
 

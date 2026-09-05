@@ -1330,16 +1330,22 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   settingsGearText: { fontSize: 22 },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
+  // Phase 8 section H (Profile): "moderate/editorial" -- a deliberate step
+  // up from the tiny 64x64 circular avatar this used to be (read as a
+  // settings-list row, not a "this is me" moment), but not Discover's
+  // full-bleed hero treatment either -- this screen is still primarily an
+  // editing surface. A portrait-oriented photo plus a slightly heavier name
+  // treatment is the moderate middle ground.
   snapshotCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,
   },
-  snapshotPhoto: { width: 64, height: 64, borderRadius: radius.full },
+  snapshotPhoto: { width: 84, height: 104, borderRadius: radius.lg },
   snapshotPhotoPlaceholder: { backgroundColor: colors.surfaceElevated },
   snapshotInfo: { flex: 1 },
-  snapshotName: { ...typography.headline, color: colors.textPrimary },
-  snapshotBio: { ...typography.caption, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.xs },
+  snapshotName: { ...typography.headline, color: colors.textPrimary, fontSize: 20 },
+  snapshotBio: { ...typography.caption, color: colors.textSecondary, marginTop: 4, marginBottom: spacing.sm },
   snapshotEditLink: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   editSectionDivider: {
     borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.xl, paddingTop: spacing.lg, marginBottom: spacing.sm,

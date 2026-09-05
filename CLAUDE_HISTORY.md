@@ -1,3 +1,61 @@
+## Sep 5 2026 — Phase 8 (Discover visual hierarchy + expand-in-place), section H — BUILT
+
+Closes section H, the last remaining item of the Phase 8 plan (sections A-G closed out earlier
+the same day — see the entry immediately below this one). The gate ("do not start until
+Discover's own version is confirmed working by the user") was lifted by a direct, explicit user
+instruction to finish section H, given after a codespace restart interrupted the session that had
+already built the Home slice (commit `dd5e9f91`, from a still-earlier session) — that instruction
+is the standing authorization for the rest of this entry's work, consistent with this project's
+feature-freeze convention (a direct request is always sufficient to proceed).
+
+**Standing caveat, unchanged and load-bearing**: none of this has been seen running. No simulator,
+device, or browser tooling has ever been available in a session on this project. Jest unit tests
+(202, 16 suites) pass and every touched file parses clean via a Babel transform check, which is
+the entire extent of the verification that was possible.
+
+### Rollout order and what actually changed per surface
+
+The plan's rollout order was Home → People → Profile → Activity → Create → Business dashboard.
+Home was already done (`dd5e9f91`, prior session). For the remaining four, two turned out to
+already satisfy the plan's own target description and were deliberately left untouched rather
+than forcing a cosmetic change for its own sake — the plan describes a target state, not a
+mandate to edit a file:
+
+- **People** — no change. There is no standalone "People" screen; it's `DiscoverHubScreen.js`'s
+  `mode === 'people'` branch, which embeds `DiscoveryScreen` (dating) and `FriendDiscoveryScreen`
+  (friends). Friends is 100% swipe-deck (`FriendDiscoverySwipeCards`) — already fully
+  image-forward with real photos. Dating has both a swipe-deck view and a list view
+  (`DiscoveryScreen.js`); the list view's row already renders a full-width 280px-tall real photo
+  (`styles.avatar: { width: '100%', height: 280 }`) above name/bio/compatibility — already
+  image-forward, not a small-avatar text row. The plan's bar ("image-forward, real profile
+  photos") was already met before this session touched anything.
+- **Profile** (`ProfileScreen.js`) — real change. The top-of-screen `snapshotCard` "this is me"
+  preview (added in an earlier Aug 23 2026 IA pass) used a 64x64 circular avatar next to text —
+  read as a settings-list row, not an editorial moment. Bumped `snapshotPhoto` to an 84x104
+  portrait-oriented rounded-rect (`radius.lg`, not `radius.full`) and `snapshotName` to 20px, kept
+  the surrounding card border/background as-is. Deliberately stopped short of Discover's
+  full-bleed hero treatment — this screen's primary job is still editing, not browsing — landing
+  on the plan's own "moderate" framing rather than either extreme.
+- **Activity** (`ActivityScreen.js`) — real change. Every row type (needs-attention, today's
+  reminders, and the "Earlier" list) shared one `styles.row` — a bordered, `shadow.card`,
+  `radius.lg` box per item, which read as a stack of separate cards, the opposite of what the plan
+  asked for. Flattened `row` to a plain divided timeline row: no fill/border/shadow, just
+  `borderBottomWidth: 1`. The one exception state (`waveRow`, for a Wave/super-notice) used to be
+  a thicker full border; converted to a 3px left accent border instead, consistent with a timeline
+  read (a marked row, not a separate card). One style-object change propagated correctly to every
+  row type since they all reference the same `styles.row`.
+- **Create** — no change, per the plan's own text ("stays as-is, white surfaces already right").
+- **Business dashboard** (`BusinessDashboardScreen.js`) — no change. The plan's own target
+  description for this surface is "structured/data-forward, deliberately *not* the consumer
+  Discover look" — i.e. it names the screen's current state as the goal, not a departure from it.
+  Not touched.
+
+### Commit
+
+- `dd5e9f91` — Home slice (prior session, already landed before this entry's work began)
+- (this entry's commit) — Profile + Activity changes above, plus this CLAUDE.md/CLAUDE_HISTORY.md
+  closeout
+
 ## Sep 5 2026 — Phase 8 (Discover visual hierarchy + expand-in-place), sections A-G — BUILT
 
 Closes sections A-G of the Phase 8 plan that was held in CLAUDE.md's active-work section. Section
