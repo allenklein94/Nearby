@@ -13,7 +13,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -197,6 +197,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [declineReasonInput, setDeclineReasonInput] = useState(null);
   const [declineNoteInput, setDeclineNoteInput] = useState('');
   const [declinePatterns, setDeclinePatterns] = useState([]);
+  // "Business Web as an Operating System" Phase 3 -- the real per-template
+  // offer-performance rollup shown on the Insights tab.
+  const [offerPerformance, setOfferPerformance] = useState([]);
   const [entitlements, setEntitlements] = useState(null);
   const [communities, setCommunities] = useState([]);
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
@@ -265,6 +268,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const suggestedOfferType = useMemo(() => bestAcceptedOfferType(offerTypeAcceptance), [offerTypeAcceptance]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
+  // Phase 3 -- which real Signature Experience (if any) the currently-open
+  // offer was built from, so it's actually recorded on submit and can feed
+  // the per-template performance funnel. Null when typed from scratch or
+  // built from the offer-title scaffold fallback.
+  const [selectedExperienceIdInput, setSelectedExperienceIdInput] = useState(null);
   const [myAvailability, setMyAvailability] = useState([]);
   // Phase 4(c): a real, persistent "N tables available -- we found M
   // matching requests" card, sourced from post_business_availability()'s
@@ -1101,6 +1109,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadMissedMatchSummary(selectedPartner.id);
         loadCategoryOutcomes(selectedPartner.id);
         loadDeclinePatterns(selectedPartner.id);
+        loadOfferPerformance(selectedPartner.id);
         loadCommunities(selectedPartner.id);
         loadGrowth(selectedPartner.id);
         // Fetches conversations once and feeds the same result to both
@@ -1213,6 +1222,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferPriceInput('');
     setOfferProposedTime(null);
     setShowOfferTimePicker(false);
+    setSelectedExperienceIdInput(null);
   }
 
   // Business Intelligence & Opportunity Engine, Phase 3: tapping a real
@@ -1229,6 +1239,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       if (suggestedOfferType.offerType !== 'alt_time') setOfferProposedTime(null);
       setOfferTypeInput(suggestedOfferType.offerType);
     }
+    // Phase 3: record which real Signature Experience this offer was built
+    // from, so it's actually carried through to submit and can feed the
+    // per-template performance funnel -- never fabricated, null whenever
+    // no suggestion was ever picked.
+    setSelectedExperienceIdInput(suggestion.experienceId ?? null);
   }
 
   function applySuggestedOfferType() {
@@ -1243,6 +1258,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // discipline as applyExperienceSuggestion above.
   function applyOfferTitleScaffold(title) {
     setOfferDescriptionInput(title);
+    // A real, different starting point than any already-applied Signature
+    // Experience suggestion -- clears whichever experience id that
+    // suggestion may have set, matching the plan's own "typed from
+    // scratch, or the offer-title-scaffold fallback" -> null convention.
+    setSelectedExperienceIdInput(null);
   }
 
   // Decision 6, Phase 3 (CLAUDE.md's Aug 27 2026 plan) -- this is the real
@@ -1271,6 +1291,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         offerDescription: offerDescriptionInput.trim(),
         offerPrice: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         proposedTime: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
+        experienceId: selectedExperienceIdInput,
       });
 
       if (result.published) {
@@ -1758,6 +1779,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setDeclinePatterns(result);
     } catch (e) {
       console.error('loadDeclinePatterns failed', e);
+    }
+  }
+
+  // "Business Web as an Operating System" Phase 3 -- the real per-template
+  // offer-performance funnel (Offer / Viewed / Accepted / Redeemed), built
+  // entirely over already-tracked data via the new experience_id column on
+  // business_request_offers. Owner-only, same non-fatal loader shape as
+  // every other Insights-tab section on this screen.
+  async function loadOfferPerformance(partnerId) {
+    try {
+      const result = await getPartnerOfferPerformance(partnerId);
+      setOfferPerformance(result);
+    } catch (e) {
+      console.error('loadOfferPerformance failed', e);
     }
   }
 
@@ -2964,6 +2999,29 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   );
                 })
+              )}
+
+              {/* "Business Web as an Operating System" Phase 3 -- a real
+                  per-template offer-performance funnel: viewed/accepted/
+                  completed counts grouped by which real Signature
+                  Experience actually generated the offer (or by offer
+                  type, for an offer with no linked template) -- built
+                  entirely over already-tracked data, no new signal
+                  invented. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>Offer Performance</Text>
+              {offerPerformance.length === 0 ? (
+                <Text style={styles.emptyText}>No offers sent yet.</Text>
+              ) : (
+                offerPerformance.map((row) => (
+                  <View key={row.group_key} style={styles.offerCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.offerTitle}>{row.group_label}</Text>
+                      <Text style={styles.offerDescription}>
+                        {row.offer_count} offered · {row.viewed_count} viewed · {row.accepted_count} accepted · {row.completed_count} redeemed
+                      </Text>
+                    </View>
+                  </View>
+                ))
               )}
 
               <TouchableOpacity

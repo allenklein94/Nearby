@@ -408,13 +408,14 @@ export async function getBusinessOpportunities(partnerId) {
   return data ?? [];
 }
 
-export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null }) {
+export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null }) {
   const { data, error } = await supabase.rpc('submit_business_offer', {
     request_id_param: requestId,
     offer_type_param: offerType,
     offer_description_param: offerDescription,
     offer_price_param: offerPrice,
     proposed_time_param: proposedTime,
+    experience_id_param: experienceId,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -427,7 +428,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null }) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -446,6 +447,7 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       offerDescription,
       offerPrice,
       proposedTime,
+      experienceId,
     }),
   });
 
@@ -783,6 +785,18 @@ export async function getMissedMatchSummary(partnerId, daysBack = 30) {
 // real 5+ minimum sample per category.
 export async function getPartnerCategoryOutcomes(partnerId) {
   const { data, error } = await supabase.rpc('get_partner_category_outcomes', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+// "Business Web as an Operating System" Phase 3 -- a real, owner-only
+// per-template offer-performance funnel: viewed/accepted/completed counts
+// grouped by which real Signature Experience (business_experiences row)
+// generated the offer, or by offer type when no template was linked.
+// Built entirely over already-tracked data via the new experience_id
+// column on business_request_offers -- no new signal invented.
+export async function getPartnerOfferPerformance(partnerId) {
+  const { data, error } = await supabase.rpc('get_partner_offer_performance', { partner_id_param: partnerId });
   if (error) throw new Error(error.message);
   return data ?? [];
 }

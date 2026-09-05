@@ -675,6 +675,19 @@ Body: ${updateBody || '(none)'}`;
     if (!offerDescription) return json({ error: 'Say what you can offer.' }, 400);
     const offerPrice = Number.isFinite(body.offerPrice) ? body.offerPrice : null;
     const proposedTime = typeof body.proposedTime === 'string' && body.proposedTime ? body.proposedTime : null;
+    // Business Web as an Operating System, Phase 3 -- which real Signature
+    // Experience (if any) a suggestion this offer was built from actually
+    // came from, so the per-template performance funnel has something real
+    // to group by. Defense in depth, same shape the 'experience' target
+    // type already established: confirm it genuinely belongs to this
+    // partner before it's ever recorded, never trusted raw from the client.
+    let experienceId = typeof body.experienceId === 'string' && body.experienceId ? body.experienceId : null;
+    if (experienceId) {
+      const { data: existing } = await admin.from('business_experiences').select('partner_id').eq('id', experienceId).single();
+      if (!existing || existing.partner_id !== partnerId) {
+        experienceId = null;
+      }
+    }
 
     const contentBlock = `Offer description: ${offerDescription}`;
 
@@ -682,7 +695,7 @@ Body: ${updateBody || '(none)'}`;
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerPrice, proposedTime };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerPrice, proposedTime, experienceId };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -702,7 +715,7 @@ Body: ${updateBody || '(none)'}`;
     if (riskTier === 'low') {
       const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
         request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
-        offer_price_param: offerPrice, proposed_time_param: proposedTime,
+        offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);
