@@ -633,7 +633,153 @@ correctly on a real device, and that a real day-of-week-bounded policy correctly
 excludes a real request on and off its configured days in the running app, not just via direct
 RPC calls.
 
-This closes Phase 2 of the "Business Web as an Operating System" plan. Phases 3-6 remain locked,
+This closes Phase 2 of the "Business Web as an Operating System" plan. Phase 3 is now also done
+(see the section immediately below). Phases 4-6 remain locked, not yet started, per the plan's
+own build order — Phase 7 stays explicitly gated, not to be started without an explicit go-ahead
+on Path A vs. B.
+
+## Sep 15 2026 (cont'd) — Phase 3 (per-template offer-performance funnel) — DONE, applied to
+## production, verified live end-to-end (including a real bug found and fixed before it ever
+## shipped), and replayed clean from a truly empty database
+
+Picked up after a codespace restart interrupted the session mid-build — on resume, `git status`
+showed the migration (`supabase/migrations/20260916_offer_performance_funnel.sql`), the Edge
+Function edit (`screen-business-content/index.ts`), and both client-side files
+(`services/businessFulfillment.js`, `BusinessDashboardScreen.js`) already fully written and
+uncommitted, matching the design the prior session's own research-prep note had already locked
+(the shared `experience_id` linkage). Applied the migration to production directly (checked
+first, not re-applied blind — confirmed via a live schema query that the column and both RPCs
+genuinely didn't exist yet), then verified it exhaustively before touching anything else, per
+this file's own migration-discipline house rule.
+
+**Schema/RPC** (`20260916_offer_performance_funnel.sql`): `business_request_offers` gains a
+nullable `experience_id uuid references business_experiences(id) on delete set null` — closes
+the exact gap the prior session's own research pass found and locked: tapping a ranked
+Signature Experience suggestion in the Make-an-Offer modal only ever prefilled description/
+offer-type text, the chosen `experienceId` (already present on every suggestion object via
+`rankExperiencesForOpportunity()`) was never carried through to submit or recorded going
+forward. `submit_business_offer()` gains a trailing `experience_id_param` — old 5-arg signature
+explicitly `DROP FUNCTION`ed first, matching this schema's own repeatedly-stated "an added
+parameter creates a distinct orphaned overload" house rule, not left as a silent second
+overload; every other line of the function's real body (pulled fresh from production before
+writing this) is unchanged. `admin_review_business_content_screening()`'s own `offer_response`
+approve branch — the held-then-admin-approved path, distinct from the direct
+`submit_business_offer()` path, since the caller there is the reviewing admin, not the business
+owner, so it does its own raw `UPDATE` rather than calling the RPC — gained the identical
+`experience_id` carry-through, read back from its own real staged `content_snapshot`; same
+2-arg signature, every other line byte-for-byte unchanged from the live body pulled fresh first.
+New `get_partner_offer_performance(partner_id_param)` RPC — real `offer_count`/`viewed_count`/
+`accepted_count`/`completed_count` grouped by `coalesce(experience_id::text, 'offer_type:' ||
+offer_type)`, joined to `business_experiences` for a real template title when one was used,
+falling back to a formatted offer-type label when none was. Owner-gated (`profiles.
+managed_partner_id = partner_id_param`), returns empty for a non-owner rather than raising,
+matching every sibling business RPC. Excludes still-`pending` opportunities entirely from the
+funnel (an unanswered opportunity has no real `offer_type`/description yet, so counting it
+would misattribute it to a fabricated "standard" bucket).
+
+**A real bug found and fixed before this migration was ever committed, not glossed over**: the
+first draft's own `GROUP BY` clause included `bro.offer_type` alongside the coalesced group-key
+expression — this silently defeats the entire point of grouping by `experience_id` whenever a
+business reuses the same real Signature Experience template with a *different* `offer_type` on
+a later submission (a completely ordinary, expected case — the same template, a discount one
+time and a straight perk the next), splitting what should be one merged funnel row into two.
+Caught by building a real, deliberately-realistic disposable test scenario (four requests, four
+offers against the real `Coastal Coffee` partner, two of them sharing one real
+`business_experiences` row but with genuinely different `offer_type` values) and finding the
+funnel returned two separate rows for the one template instead of a single merged one. Fixed by
+removing `bro.offer_type` from the `GROUP BY` list entirely — it's already fully implied by the
+coalesced `group_key` expression it appears inside of, and only ever needs independent grouping
+in the no-template fallback branch, where every row sharing that branch's key already shares the
+identical real `offer_type` by construction. This surfaced a second, related issue in the same
+edit: `group_label`'s own fallback expression also referenced `bro.offer_type` as a bare column
+outside any aggregate, which Postgres rejects once it's no longer a `GROUP BY` key — fixed by
+wrapping it in `min(bro.offer_type)`, which is both syntactically valid and semantically correct
+(that branch of the `coalesce` is only ever actually *used* once every row in the group already
+shares one real `offer_type`, so the aggregate is a real no-op there, and is silently discarded
+by `coalesce` in the template branch where `be.title` already wins first). Re-applied just the
+corrected function to production (a plain `CREATE OR REPLACE`, safe and idempotent) and
+re-verified the same scenario now correctly merges to one row (`offer_count: 3`) before the
+migration file was ever committed.
+
+**Verified live against production** (`enmosvippabmuqslzrox`), real disposable test data, not
+just applied — a real four-offer scenario against the real `Coastal Coffee` partner, exercising
+every real status/experience/offer-type combination the funnel needs to get right: offer A
+(`accepted`, real experience linked, `viewed_at` set), offer B (`offered`, no template — the
+`offer_type:discount` fallback bucket), offer C (`declined`, same real experience as A but a
+different `offer_type`), offer D (started `pending` — deliberately left untouched at first to
+prove a still-open opportunity is correctly excluded from the funnel entirely, then carried
+through the held-for-review→admin-approved path). The real owner's call to
+`get_partner_offer_performance()` correctly returned exactly two merged groups after the fix —
+the real experience (`offer_count: 3`, `viewed_count: 1`, `accepted_count: 1`, `completed_count:
+0`, spanning A+C+D) and the offer-type fallback (`offer_count: 1` for B) — matching hand-checked
+ground truth exactly; a genuine non-owner's identical call correctly returned zero rows both
+before and after the `GROUP BY` fix (isolation unaffected by the correction).
+
+Separately verified the whole `admin_review_business_content_screening()` `offer_response`
+branch end-to-end, not just the direct `submit_business_offer()` path: built a real disposable
+`business_content_screening_results` row (`target_type: 'offer_response'`, `source:
+'submission'`, `risk_tier: 'medium'`, a real staged `content_snapshot` naming offer D's own
+request and the same real experience id) and called the RPC as the real admin (`Allen`) —
+offer D's row correctly flipped to `status: 'offered'` with the real `offer_type`/
+`offer_description`/`experience_id` all carried through from the snapshot and `responded_at`
+set, exactly matching the direct-submit path's own behavior. Also proved, with real calls, not
+just by reading the SQL: a genuine non-admin's review attempt is rejected (`Only admins can
+review business content`) with the screening row left completely untouched; the deny path
+(`approve_param: false`) correctly marks the screening `denied` while leaving the target offer
+row **byte-for-byte unchanged** (captured its exact state before and after the deny call and
+diffed them); and the double-review guard correctly rejects a second review attempt on an
+already-reviewed screening (`This has already been reviewed`), regardless of which outcome the
+first review produced.
+
+All test data (4 `business_requests`, 4 `business_request_offers`, 1 `business_experiences`, 2
+`business_content_screening_results`, 1 `business_reservations` row created as a side effect of
+one test acceptance) deleted afterward in FK-safe order — confirmed production back to its exact
+pre-test baseline (`business_requests: 1` — the one real pre-existing, untouched `expired` row —
+`business_request_offers: 0`, `business_experiences: 0`, `business_content_screening_results: 0`,
+`business_reservations: 0`).
+
+**Verified via a real from-scratch migration replay**: pulled the already-cached `supabase/
+postgres:15.1.0.147` Docker image, waited for its own real `healthy` health-check status,
+dropped and recreated a truly empty `public` schema, patched the two known image-version gaps
+(`auth.users.phone`, `storage.buckets.public`) onto the test container only, created `pg_cron`/
+`pg_trgm` as `supabase_admin`, then ran the full, now-125-file `supabase/migrations/` folder in
+order via `psql -v ON_ERROR_STOP=1` — **exit 0 on every file**, including this pass's own
+(already-corrected) migration — the new `experience_id` column, `submit_business_offer()` at
+exactly one (6-arg) signature, and `get_partner_offer_performance(uuid)` with correct grants
+(`authenticated` yes, `anon` no) all confirmed to exist in the freshly-rebuilt database.
+Container removed afterward.
+
+**Edge Function**: `screen-business-content` (its `experienceId` parsing/validation/carry-
+through in the `offer_response` branch was already written in a prior session, sitting unused
+until this migration's schema actually existed to support it) was redeployed via
+`npx supabase functions deploy`, and `verify_jwt: true` was independently confirmed live via the
+Management API (version bumped to 10) rather than assumed from the CLI default — a raw
+unauthenticated request to the function gateway still correctly 401s.
+
+**Client**: `BusinessDashboardScreen.js` — `openOfferModal()` resets `selectedExperienceIdInput`
+to `null` on open; `applyExperienceSuggestion()` now sets it from the suggestion's own real
+`experienceId`; `applyOfferTitleScaffold()` (the no-good-template-match fallback) explicitly
+clears it back to `null`, since typing from a scaffold is a genuinely different starting point
+than an applied suggestion; `handleSubmitOffer()` threads it through as `experienceId` on the
+existing `submitBusinessOfferResponseForScreening()` call. A new `loadOfferPerformance()`
+non-fatal loader (same try/catch-and-log shape as every other Insights-tab loader on this
+screen) fires alongside the existing decline-pattern loader on focus, and a new "Offer
+Performance" card renders the real funnel — one row per group, `{group_label}` plus a real
+"N offered · N viewed · N accepted · N redeemed" line — between "What You've Declined" and the
+"✨ Ask the AI Assistant" button, with an honest "No offers sent yet." empty state.
+
+Verified via a direct `@babel/core` parse of both touched client files (clean) and a full
+`npx expo export --platform ios` (clean, no bundling errors, **2284 modules, unchanged** — edits
+to two existing files only, no new client files this phase).
+
+**Not done, same standing gap as everywhere else in this file**: no manual simulator/device
+run-through — next session should confirm the new "Offer Performance" card renders correctly on
+a real device once a real business has real offer history spanning both grouping branches
+(template-linked and offer-type-fallback), and that applying a Signature Experience suggestion
+in the Make-an-Offer modal, then submitting, actually shows up correctly attributed in the
+funnel in the running app, not just via direct RPC calls.
+
+This closes Phase 3 of the "Business Web as an Operating System" plan. Phases 4-6 remain locked,
 not yet started, per the plan's own build order — Phase 7 stays explicitly gated, not to be
 started without an explicit go-ahead on Path A vs. B.
 
