@@ -27,6 +27,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const [conversationLevel, setConversationLevel] = useState(gathering.conversation_level ?? null);
   const [groupSizeFeel, setGroupSizeFeel] = useState(gathering.group_size_feel ?? null);
   const [beginnerFriendly, setBeginnerFriendly] = useState(gathering.beginner_friendly ?? true);
+  const [showGroupInsights, setShowGroupInsights] = useState(gathering.show_group_insights ?? true);
   const [timelineSteps, setTimelineSteps] = useState(gathering.timeline_steps ?? []);
   const [coverPhotoPath, setCoverPhotoPath] = useState(gathering.cover_photo_path ?? null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState(null);
@@ -105,6 +106,7 @@ export default function EditGatheringScreen({ route, navigation }) {
         groupSizeFeel,
         beginnerFriendly,
         timelineSteps: cleanedTimelineSteps.length > 0 ? cleanedTimelineSteps : null,
+        showGroupInsights,
       });
       Alert.alert('Updated', 'Your changes are saved.');
       navigation.goBack();
@@ -212,6 +214,16 @@ export default function EditGatheringScreen({ route, navigation }) {
               accessibilityLabel="Beginner friendly"
             />
           </View>
+
+          <View style={styles.toggleRow}>
+            <Text style={styles.label}>Show group insights</Text>
+            <Switch
+              value={showGroupInsights}
+              onValueChange={setShowGroupInsights}
+              accessibilityLabel="Show group insights to attendees"
+            />
+          </View>
+          <Text style={styles.subheader}>Shared interests and an age/gender-makeup summary, shown to attendees once there's enough people to keep it anonymous.</Text>
 
           <Text style={styles.sectionHeader}>Timeline</Text>
           {timelineSteps.map((step, index) => (

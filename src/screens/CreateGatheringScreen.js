@@ -153,6 +153,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [askLocalBusinesses, setAskLocalBusinesses] = useState(false);
   const [priceLevel, setPriceLevel] = useState(null);
   const [partyType, setPartyType] = useState(null);
+  const [showGroupInsights, setShowGroupInsights] = useState(true);
 
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
@@ -317,6 +318,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         askLocalBusinesses,
         priceLevel,
         partyType,
+        showGroupInsights,
       });
 
       // Checking the box only stores real consent/intent on the
@@ -777,6 +779,20 @@ export default function CreateGatheringScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Let relevant local businesses know about this gathering so they can potentially offer options — never contacted on your behalf beyond that.
                 </Text>
+
+                <TouchableOpacity
+                  style={styles.womenOnlyToggle}
+                  onPress={() => { Haptics.selectionAsync(); setShowGroupInsights((v) => !v); }}
+                  activeOpacity={0.85}
+                  accessibilityLabel={showGroupInsights ? 'Group insights shown to attendees, tap to hide' : 'Group insights hidden, tap to show'}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: showGroupInsights }}
+                >
+                  <Text style={styles.womenOnlyToggleText}>{showGroupInsights ? '✓ ' : ''}Show Group Insights</Text>
+                </TouchableOpacity>
+                <Text style={styles.helperText}>
+                  Lets attendees see a shared-interests and age/gender-makeup summary once there are enough people — never anyone's individual info, and never shown at all below a minimum group size.
+                </Text>
               </>
             )}
           </>
@@ -826,6 +842,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <View style={styles.previewRow}>
                 <Text style={styles.previewRowIcon}>🍽️</Text>
                 <Text style={styles.previewRowText}>We'll look for local business options once your gathering has real attendees</Text>
+              </View>
+            )}
+            {!showGroupInsights && (
+              <View style={styles.previewRow}>
+                <Text style={styles.previewRowIcon}>🙈</Text>
+                <Text style={styles.previewRowText}>Group insights hidden from attendees</Text>
               </View>
             )}
             {priceLevel && (
