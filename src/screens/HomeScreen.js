@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, ActivityIndicator, Alert, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals } from '../services/gatherings';
+import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
 import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
@@ -17,7 +18,6 @@ import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
 import PlanCard from '../components/PlanCard';
-import ReasonList from '../components/ReasonList';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
@@ -32,6 +32,8 @@ import { spacing, radius, typography } from '../theme';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, formatHeroDateTime, describeFriendGatheringTiming } from '../utils/timeContext';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
+import { lightenHex } from '../utils/colorUtils';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -173,6 +175,13 @@ export default function HomeScreen({ navigation }) {
   // request -- a gathering that was never asked about at all has no
   // entry, so nothing new is shown for the common "never tried" case.
   const [planPlaceStatus, setPlanPlaceStatus] = useState({});
+  // Phase 8 section H (CLAUDE.md) -- Home's own single hero moment.
+  // dashboard.bestPick already only exists when a real gathering cleared
+  // getGatheringFitReasons()'s own score>=5 threshold (homeDashboard.js),
+  // so this never fetches a cover for an ordinary/filler pick. Deliberately
+  // just one signed-URL fetch, not a batch like Discover's coverPhotoUrls
+  // map -- Home has exactly one hero candidate, never a list of them.
+  const [bestPickCoverUrl, setBestPickCoverUrl] = useState(null);
   const [myName, setMyName] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -277,6 +286,11 @@ export default function HomeScreen({ navigation }) {
       // here already claimed.
       const dashboardTask = getHomeDashboard().then((result) => {
         setDashboard(result);
+        if (result?.bestPick?.cover_photo_path) {
+          getSignedGatheringPhotoUrl(result.bestPick.cover_photo_path).then(setBestPickCoverUrl).catch(() => {});
+        } else {
+          setBestPickCoverUrl(null);
+        }
         return result;
       });
 
@@ -1856,36 +1870,69 @@ export default function HomeScreen({ navigation }) {
               </>
             )}
 
-            {dashboard?.bestPick && (
-              <>
-                <View style={styles.subLabelRow}>
-                  <Ionicons name="star-outline" size={13} color={colors.textSecondary} style={styles.bannerIcon} />
-                  <Text style={styles.subLabelText}>Best Pick Tonight</Text>
-                </View>
+            {dashboard?.bestPick && (() => {
+              // Phase 8 section H (CLAUDE.md) -- Home's one hero moment,
+              // same visual language as Discover's own hero tier (full-bleed
+              // cover image or a category-color gradient fallback, dark
+              // scrim, white text). Deliberately the ONLY card on this whole
+              // screen that gets this treatment: bestPick is the one signal
+              // Home computes as a genuine standout (getGatheringFitReasons()
+              // score >= 5, homeDashboard.js) -- manufacturing a second hero
+              // out of, say, the #1 Trending item would be exactly the
+              // "invented hierarchy" Discover's own build explicitly avoided.
+              // Everything below (Trending, Friends' Activity, Nearby Right
+              // Now) stays plain text rows, per the "not a wall of imagery"
+              // instruction.
+              const categoryStyle = categoryStyleFor(dashboard.bestPick.interest_tag);
+              const fullness = gatheringFullnessLabel(dashboard.bestPick);
+              return (
                 <TouchableOpacity
-                  style={styles.bestPickCard}
+                  style={[styles.heroCard, shadow.card]}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: dashboard.bestPick.id })}
-                  accessibilityLabel={`${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
+                  activeOpacity={0.9}
+                  accessibilityLabel={`Best Pick Tonight: ${dashboard.bestPick.title}, ${dashboard.bestPick.reasons.join(', ')}`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.bestPickTitle}>{dashboard.bestPick.title}</Text>
-                  <View style={styles.bestPickReasons}>
-                    <ReasonList reasons={dashboard.bestPick.reasons} textStyle={styles.bestPickReason} iconColor={colors.textSecondary} />
-                    {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
-                        Audit): the same real fullness signal every
-                        recommendation surface now shows, so a full
-                        gathering never ranks #1 here with zero indication
-                        before the tap. */}
-                    {gatheringFullnessLabel(dashboard.bestPick) && (
-                      <Text style={[styles.bestPickReason, gatheringFullnessLabel(dashboard.bestPick).startsWith('🔒') && { color: colors.danger }]}>
-                        {gatheringFullnessLabel(dashboard.bestPick)}
+                  {bestPickCoverUrl ? (
+                    <Image source={{ uri: bestPickCoverUrl }} style={styles.heroImage} />
+                  ) : (
+                    <LinearGradient
+                      colors={[lightenHex(categoryStyle.color, 0.28), categoryStyle.color]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.heroImage}
+                    >
+                      <Text style={styles.heroWatermarkIcon}>{categoryStyle.icon}</Text>
+                    </LinearGradient>
+                  )}
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']}
+                    style={styles.heroScrim}
+                    pointerEvents="none"
+                  />
+                  <Text style={styles.heroEyebrow}>{gatheringTimeBadge(dashboard.bestPick.scheduled_at) ?? 'BEST PICK TONIGHT'}</Text>
+                  <View style={styles.heroBody}>
+                    <View style={{ flex: 1, marginRight: spacing.sm }}>
+                      <Text style={styles.heroTitle} numberOfLines={1}>{dashboard.bestPick.title}</Text>
+                      <Text style={styles.heroMeta} numberOfLines={1}>
+                        {dashboard.bestPick.reasons.join(' · ')}
                       </Text>
-                    )}
+                      {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
+                          Audit): the same real fullness signal every
+                          recommendation surface shows, so a full gathering
+                          never ranks #1 here with zero indication before
+                          the tap. */}
+                      {fullness && (
+                        <Text style={[styles.heroMeta, fullness.startsWith('🔒') && { color: '#FFB4B4' }]}>{fullness}</Text>
+                      )}
+                    </View>
+                    <View style={styles.heroCta}>
+                      <Text style={styles.heroCtaText}>View →</Text>
+                    </View>
                   </View>
-                  <Text style={styles.bestPickAction}>View →</Text>
                 </TouchableOpacity>
-              </>
-            )}
+              );
+            })()}
 
             {dashboard?.trendingGatherings?.length > 0 && (
               <>
@@ -2202,17 +2249,35 @@ const getStyles = (colors) => StyleSheet.create({
   subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
   subLabelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, marginTop: spacing.xs },
   subLabelText: { color: colors.textSecondary, fontSize: 13, fontWeight: '700' },
-  // Home hierarchy audit recommendation #4: this card previously matched the
-  // hero intent box's own loud primaryMuted/1.5px-border treatment, making a
-  // "personalization"-tier element outstyle both the hero and the primary
-  // (Your Plans) section. Dialed down to match ordinary trendingCard chrome --
-  // its content (the real ✓ reasons list, the "Best Pick Tonight" sub-label)
-  // carries the recommendation signal now, not its chrome.
-  bestPickCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
-  bestPickTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.sm },
-  bestPickReasons: { marginBottom: spacing.sm },
-  bestPickReason: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
-  bestPickAction: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  // Phase 8 section H (CLAUDE.md) -- Home's one hero moment, same visual
+  // recipe as Discover's own hero tier (DiscoverHubScreen.js). Superseded
+  // the old flat bestPickCard/bestPickTitle/bestPickReasons chrome (Home
+  // hierarchy audit recommendation #4's "dialed down" card) now that the
+  // content itself (a real cover image + time badge) carries the signal.
+  heroCard: {
+    borderRadius: radius.lg, overflow: 'hidden', marginBottom: spacing.sm,
+    minHeight: 132, justifyContent: 'flex-end',
+  },
+  heroImage: { ...StyleSheet.absoluteFillObject, alignItems: 'flex-end', justifyContent: 'flex-start' },
+  heroWatermarkIcon: { fontSize: 84, opacity: 0.25, marginTop: -18, marginRight: -6 },
+  heroScrim: { ...StyleSheet.absoluteFillObject },
+  heroEyebrow: {
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.6,
+    backgroundColor: 'rgba(0,0,0,0.32)', paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: radius.full, overflow: 'hidden',
+  },
+  heroBody: {
+    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
+    padding: spacing.md, paddingTop: spacing.xl,
+  },
+  heroTitle: { color: '#FFFFFF', fontWeight: '800', fontSize: 17, marginBottom: 2 },
+  heroMeta: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '500' },
+  heroCta: {
+    backgroundColor: colors.primary, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
+  },
+  heroCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
   recapCard: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,

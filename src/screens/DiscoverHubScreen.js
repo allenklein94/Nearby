@@ -21,6 +21,7 @@ import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolver
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
+import { lightenHex } from '../utils/colorUtils';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
@@ -63,14 +64,6 @@ const TRENDING_ATTENDANCE_MIN = 5;
 // separately by the hero card's own dark scrim (styles.heroScrim below),
 // not by this function -- this never needs to hit a real contrast ratio
 // on its own.
-function lightenHex(hex, amount) {
-  const num = parseInt(hex.replace('#', ''), 16);
-  const r = Math.min(255, (num >> 16) + Math.round(255 * amount));
-  const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * amount));
-  const b = Math.min(255, (num & 0xff) + Math.round(255 * amount));
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
 const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'gatherings', label: 'Gatherings' },
