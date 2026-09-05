@@ -40,8 +40,9 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-Nothing currently active. "Business Web as an Operating System" (Phases 1-7) is fully DONE.
-Phases 1-6 (decline reasons, day-of-week availability, offer-performance funnel, media-on-offer
+**Phase 8 (Discover visual hierarchy) — IN PROGRESS, see below for exact state.**
+"Business Web as an Operating System" (Phases 1-7) is fully DONE. Phases 1-6 (decline reasons,
+day-of-week availability, offer-performance funnel, media-on-offer
 upload, weather digest card, Requests→Opportunities rename) were verified live in production —
 see `CLAUDE_HISTORY.md`, search "Business Web as an Operating System" for the full plan/audit and
 each phase's build/verification detail. **Phase 7** (Path A: Expo web export of the existing
@@ -59,6 +60,60 @@ that session; if something looks visually off on the deployed site, that's the f
 suspect. `docs/business/` must be regenerated (`npx expo export -p web`, then copy `dist/*` over
 it) and recommitted any time a business-facing screen changes — it is not auto-built by CI (no
 GitHub Actions workflow exists for this yet).
+
+### Phase 8: Discover visual hierarchy (approved direction, not yet built)
+
+The user reviewed and approved a mock (an Artifact — a before/after of `DiscoverHubScreen.js`
+showing hero image cards vs. the current uniform white `card`) with specific refinements on top
+of it. **Nothing in `DiscoverHubScreen.js` has been changed yet** — the mock was HTML only, no
+app code touched. Full approved spec, to build next:
+
+- **Dynamic tiering by relevance score, not a hardcoded top-2.** Every Discover result already
+  gets a real score (`getGatheringFitReasons()`, `fit.score` — currently used with a flat `>= 5`
+  cutoff for "recommended"). Replace the fixed hero/trending-get-2-slots-forever rule with real
+  thresholds: high score → hero (full-bleed image/gradient card), medium → standard card, low →
+  compact row. If a third result genuinely scores as high-confidence, it becomes a third hero
+  card that day — never artificially capped at two.
+- **No arbitrary per-category colors outside the hero image fallback.** Hero cards may use
+  `categoryStyleFor(interest_tag)`'s color as a gradient fallback when no real cover photo exists
+  (that's the "Image" token, already legitimate). Standard/compact tiers stay neutral — do NOT
+  give Communities/Places/Perks/etc. a different tint per category; that's the exact "rainbow of
+  category colors" look the user explicitly rejected.
+- **A consistent time-hierarchy label system, shared across Home and Discover** (not invented
+  fresh for one screen): RIGHT NOW / TODAY / TONIGHT / THIS WEEKEND / UPCOMING. Check whether
+  Home already has any bucket-label logic before inventing one for Discover.
+- **Specific reason/distance/time copy, every card.** Never "Matches your interests" — say
+  "Matches your Coffee interest" (name the actual interest tag). Never "Very close" — say
+  "0.4 mi away" (real distance). Never "Happening today" alone — say "Today · 6:30 PM" (real
+  time) where a real start time exists. Every recommendation card should answer why/when/how far
+  in its subtitle line, from data already fetched, never invented.
+- **Contextual CTA labels, not universal "Explore →".** Join / Interested / Accept Offer /
+  Connect — whatever the object's real next action actually is — rather than one generic verb
+  everywhere. Needs checking whether list rows already carry the current user's own
+  join/interest/redemption state or whether that's an additional fetch.
+- **Explicitly flagged tension, not yet resolved with the user**: the approved message also
+  proposed that tapping a hero card should reconfigure Discover in place (filter to
+  Coffee+Tonight+Nearby showing gatherings/places/**people**/offers) rather than navigate away.
+  The people-surfacing part of that conflicts with this file's own hard privacy rule ("no
+  stranger discovery via intent" — people may only ever appear via real connections, never
+  proximity/interest match) and was called out as such but not resolved either way. The
+  gatherings/places/offers-only version of "expand in place" doesn't conflict and could still be
+  worth doing, just not decided yet — treat as a separate, later decision, not bundled into the
+  visual-hierarchy work below.
+- **Rest of the app, approved but explicitly sequenced — do not start until Discover itself is
+  done and confirmed working**: Home (1-2 hero moments only, not a wall of imagery) → People
+  (image-forward, real profile photos) → Profile (moderate/editorial) → Activity (lighter,
+  timeline rows, less card-like than today) → Create (stays as-is, white surfaces already right)
+  → Business dashboard (structured/data-forward, not the consumer Discover look).
+
+**Where a restart should pick up**: a research fork was dispatched to ground the implementation
+in real code before writing it — findings on `getGatheringFitReasons()`'s actual score
+range/reason strings, whether a gathering row already carries a raw start-time field vs. only a
+human `distanceLabel` string, whether existing Home dashboard code already has time-bucket-label
+logic to reuse, whether list rows already carry the user's own join/interest/offer-redemption
+state, and confirming `PALETTE` in `gatheringCategoryStyles.js` is still just the 6 existing
+low-saturation colors. If that fork's results aren't visible in-session, redo that grounding pass
+before writing `DiscoverHubScreen.js` changes — do not guess thresholds or invent copy.
 
 ## Standing Conventions (Locked)
 
