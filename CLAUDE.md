@@ -40,14 +40,25 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-Nothing currently active. "Business Web as an Operating System" (Phases 1-6: decline reasons,
-day-of-week availability, offer-performance funnel, media-on-offer upload, weather digest card,
-Requests→Opportunities rename) is fully DONE and verified live in production — see
-`CLAUDE_HISTORY.md`, search "Business Web as an Operating System" for the full plan/audit and
-each phase's build/verification detail. **Phase 7 (a real business web dashboard) stays
-explicitly NOT authorized** — do not start it without a fresh, explicit go-ahead naming Path A
-(Expo web output, reusing existing RN screens, the standing recommendation) vs. Path B (a
-separate codebase).
+Nothing currently active. "Business Web as an Operating System" (Phases 1-7) is fully DONE.
+Phases 1-6 (decline reasons, day-of-week availability, offer-performance funnel, media-on-offer
+upload, weather digest card, Requests→Opportunities rename) were verified live in production —
+see `CLAUDE_HISTORY.md`, search "Business Web as an Operating System" for the full plan/audit and
+each phase's build/verification detail. **Phase 7** (Path A: Expo web export of the existing
+business dashboard, reusing RN screens verbatim, deployed as a static site at
+`/Nearby/business/` via GitHub Pages from the committed `docs/business/` folder) landed
+2026-09-05 — `App.web.js` / `BusinessWebNavigator.js` / `BusinessWebHomeScreen.js` /
+`PlatformDateTimeInput.js` are the new web-only surface; `BusinessDashboardScreen.js` and
+`businessFulfillment.js` gained `Platform.OS === 'web'` branches for the handful of native-only
+actions (camera Moments, Stripe Connect OAuth return, native DateTimePicker, native file upload,
+Share.share, GatheringDetail/CommunityDetail navigation) with honest fallback messages/behavior
+rather than silent failure. Verified: `expo export -p web` builds clean, output serves correctly
+under the `/Nearby/business/` base path via a local static server, no secrets in the built
+bundle. **Not verified in an actual browser** — no browser/simulator tooling was available in
+that session; if something looks visually off on the deployed site, that's the first thing to
+suspect. `docs/business/` must be regenerated (`npx expo export -p web`, then copy `dist/*` over
+it) and recommitted any time a business-facing screen changes — it is not auto-built by CI (no
+GitHub Actions workflow exists for this yet).
 
 ## Standing Conventions (Locked)
 
