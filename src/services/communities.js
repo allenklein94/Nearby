@@ -194,6 +194,16 @@ export async function leaveCommunity(communityId) {
   if (error) throw error;
 }
 
+// Creator-only, matching the real "Creator can delete their community" RLS
+// policy already in place (baseline.sql) -- a raw delete against the row
+// itself, the same shape cancelGathering() already uses for gatherings.
+// community_members/community_messages/gatherings.community_id all cascade
+// or null out via their own FK constraints, so no manual cleanup needed here.
+export async function deleteCommunity(communityId) {
+  const { error } = await supabase.from('communities').delete().eq('id', communityId);
+  if (error) throw error;
+}
+
 // Paginated, cursor-based fetch backing usePaginatedMessages — returns
 // rows newest-first, capped at `limit`. Was previously an unconditional
 // `getCommunityMessages()` fetch of the entire history, called on every

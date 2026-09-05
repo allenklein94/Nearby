@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAr
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
-import { getMyCommunities, joinCommunity, leaveCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
+import { getMyCommunities, joinCommunity, leaveCommunity, deleteCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
 import { getBusinessRequestForCommunity, getAcceptedOfferForRequest } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
@@ -258,6 +258,28 @@ export default function CommunityDetailScreen({ route, navigation }) {
     }
   }
 
+  function confirmDeleteCommunity() {
+    Alert.alert(
+      `Delete "${community.name}"?`,
+      `This permanently removes the community and its ${memberCount} member${memberCount === 1 ? '' : 's'}. Gatherings already linked to it aren't deleted, just unlinked. This can't be undone.`,
+      [
+        { text: 'Keep It', style: 'cancel' },
+        {
+          text: 'Delete Community',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteCommunity(communityId);
+              navigation.goBack();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   function formatDate(iso) {
     return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
@@ -311,6 +333,23 @@ export default function CommunityDetailScreen({ route, navigation }) {
             <Text style={[styles.joinButtonText, isMember && styles.leaveButtonText]}>
               {isMember ? 'Leave Community' : 'Join Community'}
             </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* The creator had no membership action here at all -- not a Leave
+            button (leaving your own community makes no sense) and, until
+            now, no Delete option either, despite the real "Creator can
+            delete their community" RLS policy already existing (baseline.sql)
+            -- this was a missing UI affordance, not a missing capability. */}
+        {isCreator && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={confirmDeleteCommunity}
+            activeOpacity={0.85}
+            accessibilityLabel={`Delete ${community.name}`}
+            accessibilityRole="button"
+          >
+            <Text style={styles.deleteButtonText}>Delete Community</Text>
           </TouchableOpacity>
         )}
 
@@ -695,6 +734,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   leaveButton: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   joinButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   leaveButtonText: { color: colors.textSecondary },
+  deleteButton: {
+    backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.danger,
+    paddingVertical: 14, alignItems: 'center', marginBottom: spacing.sm,
+  },
+  deleteButtonText: { color: colors.danger, fontWeight: '700', fontSize: 15 },
   chatButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.lg },
   chatButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   businessHelpLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
