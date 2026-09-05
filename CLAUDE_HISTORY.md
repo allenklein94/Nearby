@@ -1,3 +1,158 @@
+## Sep 5 2026 — Phase 8 (Discover visual hierarchy + expand-in-place), sections A-G — BUILT
+
+Closes sections A-G of the Phase 8 plan that was held in CLAUDE.md's active-work section. Section
+H (rolling the same treatment out to Home / People / Profile / Activity / Business) is **not**
+built and is deliberately still gated — it stays in CLAUDE.md as the one remaining active item.
+
+**Standing caveat, unchanged and load-bearing**: none of this has been seen running. No simulator,
+device, or browser tooling has ever been available in a session on this project. Jest unit tests
+(202, 16 suites) pass and every touched file parses clean, which is the entire extent of the
+verification that was possible. If a gradient/scrim/text layer looks wrong, or the nested CTA
+touchable inside the hero card doesn't register, those are the first two things to suspect.
+
+### Commits
+
+- `231cf20c` — shared gathering time-bucket labels (`src/utils/gatheringTimeLabel.js`)
+- `283a77bc` — tiering, real copy, real CTAs (sections A-E)
+- (this entry's first commit) — `getMyMatches()` + `filterToMyConnections()` (section G's helper)
+- (this entry's second commit) — expand-in-place + People You Know (sections F/G)
+
+### A-E — tiering, copy, CTAs
+
+Real thresholds in `DiscoverHubScreen.js`: `HERO_SCORE = 12`, `STANDARD_SCORE = 5` (replacing the
+old flat `>= 5`), `NOTABLE_DISPLAY_CAP = 6`. The cap is a display-sanity limit on the whole notable
+list, not a per-tier cap — a judgment call added during the build, not in the original spec, so a
+day with many qualifying gatherings doesn't turn the entire screen into cards. Tier is decided
+per-item off each gathering's own `fit.score` in the render, never a fixed "first N are hero" rule.
+
+A real design change beyond the literal spec text, flagged in case a future session expects the old
+layout: the two independent passes (`recommended`, filtered on `fit.score`; `trending`, sorted on
+attendance — each blind to what the other had already picked, so the same gathering could
+legitimately render twice) were replaced with **one** list sorted by `fit.score`
+(`notableGatherings`). `getGatheringFitReasons()`'s formula already folds attendance, interest
+match, distance and today-ness into one number, so one sort surfaces both "personalized" and
+"genuinely popular" without two selection passes. `TRENDING_ATTENDANCE_MIN = 5` (half the fit-score
+formula's own attendance cap) is the real, disclosed cutoff for "trending enough to headline" in
+the hero eyebrow and reason line.
+
+`expo-linear-gradient` was added as a new dependency, used for the hero image's gradient fallback
+and its legibility scrim. `lightenHex()` is simple additive lightening feeding a decorative
+gradient endpoint only — text legibility over it comes from the separate dark scrim, so it never
+needs to hit a real contrast ratio on its own.
+
+Reason copy names the actual interest ("Matches your Coffee interest") built locally in the screen
+off `g.interest_tag`. The shared `REASON_TEXT.MATCHES_INTERESTS.text` constant was **not** edited —
+it's the literal generic string shared verbatim across `gatherings.js` / `homeRecommendations.js` /
+`intentResolver.js` and covered by `recommendationReasonVocabulary.test.js`. DiscoverHubScreen
+renders `g.fit.reasons.join(' · ')` directly rather than through the shared `ReasonList` /
+`categorizeReasonText` component, which is what makes the screen-local override safe.
+
+CTA logic lives in `gatheringActionInfo()` / `myAttendeeStatus()` inside `DiscoverHubScreen.js`,
+mirroring `GatheringDetailScreen.js`'s own `isFull` / `is_public` logic exactly, off each row's
+existing `attendees` / `capacity` fields (`useAuth().session.user.id` for the current user).
+"Interested" / "Waitlisted" / "Going" are state badges for someone already RSVP'd, never fresh CTA
+labels. For Perks the CTA is the real `t('brandOffers.redeem')` word "Redeem" (never "Accept
+Offer", which is not a string anywhere in this app), and the already-redeemed state is real:
+`getMyRedemptions()` was added to DiscoverHubScreen's own load rather than fabricated.
+`PlaceCard.js` gained an optional `actionLabel`/`actionIsState` prop pair for that, defaulted off so
+every other call site is unchanged.
+
+Deliberately out of scope for A-E: no Places-card changes. B's "standard/compact tiers stay
+neutral" rule was read as covering gatherings only, since Places never had a fit score to tier by.
+
+### G's helper — the matches half of the connected set
+
+`getMyMatches()` and `filterToMyMatches()` were added to `src/services/matchActions.js` (previously
+a one-function file holding only `unmatch`). This did not exist before: every caller that needed
+"my matches" inlined its own ad hoc `matches` query — `MatchesScreen`, `ChatScreen`,
+`ActivityScreen`, `memoryVault`, `RelationshipToolsScreen`, `dateSafety`, `proximity`,
+`confidenceMode`, `homeDashboard`, `notifications`, `DiscoveryScreen`, `ViewProfileScreen` — each
+selecting a different column set for its own screen. The new pair deliberately mirrors
+`friends.js`'s own `getMyFriends()` / `filterToMyFriends()` shape exactly (same `user_a`/`user_b`
+resolution, same `{id, display_name, photo_url}` return, same log-and-return-`[]` on error). The
+`matches` table has no status column — a row existing IS the match — so there is deliberately no
+status filter, unlike friendships' `'accepted'`.
+
+`src/services/connections.js` (new) composes both halves into `filterToMyConnections()`, the
+client-side equivalent of the "friendships union matches" definition the schema's own server-side
+RPCs already use (`get_my_group_intent_signals`, `get_connected_open_business_requests`,
+`get_upcoming_connected_birthdays`). It exists specifically so CLAUDE.md's standing hard privacy
+rule is enforceable in one place. Each returned person carries its real `connection` kind
+(`'friend'` / `'match'`) rather than flattening both into an anonymous "someone you know"; a person
+who is both (real — `matches.source_friendship_id` exists precisely for that path) is deduped, with
+"friend" winning the label deliberately, as the broader and less intimate word to show in a
+shared/public-ish context like a gathering roster.
+
+### F — expand in place
+
+Tapping a hero or standard notable card no longer navigates. It sets local
+`expandedContext = { interestTag, timeBucket, sourceGatheringId }` and reconfigures the same screen.
+Deliberately local component state, not a nav param — the whole point of the Progressive Depth
+doctrine is that answering "what else is like this?" is not a task change and must not push a
+screen. `timeBucket` reuses `gatheringTimeBadge()`'s own vocabulary (`RIGHT NOW` / `TODAY` /
+`TONIGHT` / `THIS WEEKEND` / `UPCOMING`) rather than a second time system;
+`titleCaseBadge()` just re-cases those same words for the breadcrumb line.
+
+The card's Join / Request CTA became its own **nested** `TouchableOpacity` and still opens
+`GatheringDetailScreen`, because committing to a join is a real task change and that screen owns
+the mutation's edge cases. An already-RSVP'd state pill stays a non-touchable `View`, per the
+"informational must not visually impersonate a button" rule. A gathering with no real
+`interest_tag` has no context to expand into and honestly falls back to navigating to the detail
+screen rather than showing an empty "· Tonight · Nearby" breadcrumb.
+
+Getting out, three ways: a breadcrumb row (`← Coffee · Tonight · Nearby`) that replaces the search
+bar and type-filter chips while a context is open (those controls describe the normal browse list;
+leaving them live would let someone silently contradict the breadcrumb they're reading); Android's
+hardware back via `BackHandler` (there was no prior `BackHandler` use anywhere in this codebase —
+this is the first, using RN 0.81's subscription-returning `addEventListener`); and switching to
+People mode, which clears it too.
+
+Content inside the context — Gatherings / Places / Perks as primary, per the spec's "no new people
+peer tab" rule:
+
+- **Gatherings**: filtered out of the already-fetched `gatherings` array on interest tag + time
+  bucket. Same-interest gatherings at a genuinely different time get their own labelled "More X
+  Nearby" group rather than being folded in silently — a "Tonight" context must never quietly list
+  next Saturday under the same heading. The gathering the user tapped is marked with a neutral
+  border tint (`cardSourceHighlight`), never coral.
+- **Perks**: filtered on the offer row's own real `target_interest_tag` field, not a keyword guess
+  against the title. Reads `offers` (the browse list) directly rather than `filteredOffers`, since
+  a context is a browse context and never a search result.
+- **Places**: one real Google Places keyword search on the interest tag itself, fired only once a
+  context is open — Places is a metered external API and follows the same on-demand-only discipline
+  the main Places effect already did. Deliberately **not** an interest → place-category mapping
+  table: `searchNearbyPlaces` knows only four real categories (`cafe`/`restaurant`/`park`/
+  `community_center`), which don't cover the interest vocabulary, so mapping "Yoga" onto one of them
+  would be an invented association. Searching the real word is the honest version.
+
+"Nearby" in the breadcrumb is **not** a third filter applied in the expanded view: every row in
+`gatherings` already came from `getNearbyGatherings('wide')` and every row in `offers` from
+`getActiveOffers(lat, lng)`. The label names a constraint genuinely already in force rather than
+claiming one that isn't.
+
+Entering a context fires no new gatherings or offers query at all — only the Places search and the
+connections lookup below.
+
+### G — People You Know
+
+Renders below the primary supply, only when there is genuinely someone to show. Candidate IDs are
+the `approvedAttendees` of the gatherings already listed in this context; `filterToMyConnections()`
+then keeps only real friends and matches. Nobody is ever surfaced for merely sharing an interest, a
+location, or a time.
+
+Approved-only is not a display choice: `gathering_interest`'s RLS only ever exposes other people's
+*approved* rows to a non-host viewer (the same policy `getGatheringById`'s own `waitlistCount`
+comment already documents), so "Going" is the only status that is real to a non-host here — nothing
+is inferred about anyone who merely looked. Each row states its real relationship ("Friend" /
+"Match") and the real gathering they're going to, and taps through to `ViewProfile`. There is no
+"N people nearby" count and no zero-state placeholder.
+
+### Incidental cleanup
+
+The duplicated Google Places "why this place" reason line and the maps-URL builder were folded into
+shared `placeReasonLine()` / `openPlaceInMaps()` helpers, now that the main Places section and the
+expanded context's Places list both render them.
+
 ## Sep 5 2026 — "Business Web as an Operating System" Phases 4-6 (media-on-offer upload, weather
 ## digest card, Requests→Opportunities rename) — BUILT AND VERIFIED LIVE, closing the plan locked
 ## below on Sep 15 2026

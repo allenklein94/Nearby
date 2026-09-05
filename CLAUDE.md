@@ -40,7 +40,9 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Phase 8 (Discover visual hierarchy) — IN PROGRESS, see below for exact state.**
+**Phase 8 (Discover visual hierarchy + expand-in-place) — Discover itself (sections A-G) is
+DONE and pushed; only section H remains, and it is gated on the user confirming Discover works.
+See the Phase 8 section below.**
 "Business Web as an Operating System" (Phases 1-7) is fully DONE. Phases 1-6 (decline reasons,
 day-of-week availability, offer-performance funnel, media-on-offer
 upload, weather digest card, Requests→Opportunities rename) were verified live in production —
@@ -61,151 +63,39 @@ suspect. `docs/business/` must be regenerated (`npx expo export -p web`, then co
 it) and recommitted any time a business-facing screen changes — it is not auto-built by CI (no
 GitHub Actions workflow exists for this yet).
 
-### Phase 8: Discover visual hierarchy + expand-in-place (approved, in progress)
+### Phase 8: Discover visual hierarchy + expand-in-place
 
-**Status as of 2026-09-05: steps 1-2 of the build order below are DONE and pushed (commits
-`231cf20c` and `283a77bc`). Step 3 (matches helper G + expand-in-place state machine F) is NOT
-started.** The user approved a mock (an Artifact showing hero image cards vs. today's uniform
-white `card`), then approved a second round of refinements, **including building the "expand in
-place" interaction** (not deferred) — that part is still outstanding. Sections A-E below are the
-original spec and are now built (see "What actually shipped for A-E" beneath them for real
-file/line pointers and a couple of judgment calls made during the build that weren't spelled out
-in the original spec). Sections F-H are unbuilt spec, still current.
+**Sections A-G are DONE.** Full build/verification account, including every judgment call made
+along the way and the couple of real design changes that went beyond the literal spec, is at the
+top of `CLAUDE_HISTORY.md` ("Phase 8 ... sections A-G — BUILT"). Read it before changing anything
+on Discover, not "just in case".
 
-**Not verified in an actual browser/simulator** (same caveat as Phase 7 — no such tooling has
-ever been available in a session on this project). If a hero card's gradient/scrim/text layering
-looks off in practice, that's the first thing to check.
+Short version of what now exists: `DiscoverHubScreen.js` tiers notable gatherings by their real
+`fit.score` (hero / standard, no fixed slot count), names the actual matched interest in its reason
+copy, and uses real app CTA vocabulary. Tapping a notable card's **body** expands the same screen
+in place around that gathering's own context (interest tag + `gatheringTimeBadge()` bucket +
+already-applied nearby scope) — local state, no navigation; its **CTA** is a separate nested
+touchable that still opens `GatheringDetailScreen`, because joining is a real task change. A
+breadcrumb row, Android hardware back (`BackHandler`), and switching to People mode all clear it.
+Inside the context: Gatherings / Places / Perks as primary content, with a strictly secondary
+"People You Know" section showing only real friends/matches who genuinely RSVP'd to one of the
+listed gatherings. New shared primitives: `src/utils/gatheringTimeLabel.js`,
+`getMyMatches()`/`filterToMyMatches()` in `services/matchActions.js`, and
+`filterToMyConnections()` in the new `services/connections.js`.
 
-**A. Dynamic tiering by relevance score, not a hardcoded top-2.**
-`getGatheringFitReasons()` (`src/services/gatherings.js:946-988`) returns `fit.score` in a real
-0-22 range (attendance `min(count,10)` + interest match `+5` + distance-under-2mi `+3` +
-happening-today `+2` + beginner-friendly `+1` + first-timer `+1`). Today's code uses one flat
-`>= 5` cutoff. Add a second, higher cutoff (e.g. `>= 12`) to split hero (full-bleed image/
-gradient) from standard (medium score) from compact (everything else) — no fixed count of hero
-slots; a third genuinely high-scoring result becomes a third hero card.
+**Not verified running.** No simulator, device, or browser tooling has ever been available in a
+session on this project. Jest passes and the files parse; that is the whole extent of it. If a
+hero card's gradient/scrim/text layering looks off, or the nested CTA touchable inside the hero
+card doesn't register a tap, suspect those two first.
 
-**B. No arbitrary per-category colors outside the hero image fallback.** Hero cards use
-`categoryStyleFor(interest_tag)`'s color (`src/constants/gatheringCategoryStyles.js` — confirmed
-still just the 6 existing low-saturation `PALETTE` colors, meant for tints/badges) as a gradient
-fallback only when no real `coverPhotoUrls[g.id]` photo exists. Standard/compact tiers stay
-neutral — never a per-category tint on those.
-
-**C. Reason copy — must name the actual interest, never edit the shared constant.**
-`REASON_TEXT.MATCHES_INTERESTS.text` (`src/constants/recommendationReasonVocabulary.js:55`) is
-the literal generic string `"Matches your interests"`, shared verbatim across
-`gatherings.js`/`homeRecommendations.js`/`intentResolver.js` and covered by
-`recommendationReasonVocabulary.test.js` — **do not edit this shared constant.** Instead, build
-"Matches your Coffee interest"-style copy locally inside `DiscoverHubScreen.js`, using
-`g.interest_tag` (already present on every row) — confirmed DiscoverHubScreen renders
-`g.fit.reasons.join(' · ')` directly, not through the shared `ReasonList`/`categorizeReasonText`
-component, so a screen-local override is safe.
-
-**D. Time copy — reuse the app's one canonical time vocabulary, don't invent a new one.**
-Every gathering row already carries a raw `scheduled_at` timestamp
-(`SAFE_GATHERING_FIELDS`, `gatherings.js:30`). No shared "format a gathering's time into a
-display string" utility exists yet (build one, e.g. `src/utils/gatheringTimeLabel.js`, so Home
-can reuse it later) — real precedent for the `"Tonight · 7:30 PM"` shape is
-`MakeAPlanScreen.js:260`'s `` `${date} · ${time}` `` pattern. For the *bucket label* words
-themselves, reuse `GatheringsScreen.js`'s existing `DATE_OPTIONS` vocabulary (`Right Now`,
-`Starting Soon`, `Today`, `Tomorrow`, `This Weekend`, `This Week`, `Anytime`), backed by
-`utils/rightNowWindow.js`'s canonical "Right Now" window — **not** `HomeScreen.js`'s
-`PERIOD_SECTION_LABELS` (`Good Morning`/`This Afternoon`/`Tonight`/`This Weekend`), which labels
-the current viewing period, a different concept.
-
-**E. Contextual CTAs — real app vocabulary, not invented verbs.**
-For gatherings, the real button label logic (`GatheringDetailScreen.js:908`) is:
-`gathering.isFull ? 'Join Waitlist' : (gathering.is_public ? 'Join Gathering' : 'Request to Join')`.
-`getNearbyGatherings`'s rows do *not* carry a precomputed `myStatus`/`isFull` today (those are
-`getGatheringById`-only fields) — but each row *does* carry the raw `attendees` array
-(`status, user_id, created_at, profiles`) plus `capacity`/`is_public`, so DiscoverHubScreen can
-honestly derive "have I already RSVP'd" via
-`gathering.attendees.find(a => a.user_id === session.user.id)` (userId from `useAuth().session.user.id`)
-and compute `isFull` the same way `getGatheringById` does
-(`data.capacity != null && approvedAttendees.length >= data.capacity`, `gatherings.js:844`).
-"Interested"/"Waitlisted" are **state badges** for someone already RSVP'd
-(`GatheringDetailScreen.js:626,638`), never fresh CTA button labels. Tapping the CTA still
-navigates to `GatheringDetailScreen` to actually perform the join (don't duplicate that
-mutation's edge cases onto a Discover card) — consistent with the Progressive Depth doctrine:
-viewing info about a card stays in-place (see F below), but *committing* to Join/Request is a
-real task change and a real destination is correct there.
-For Perks/offers, the real CTA is **"Redeem"** (`t('brandOffers.redeem')`,
-`i18n/translations.js:301`, wired at `BrandOffersScreen.js:266-272` calling `redeemOffer()` from
-`services/brandOffers.js:1124`) — never "Accept Offer" (not a real string anywhere in this app).
-`BrandOffersScreen` also calls `getMyRedemptions()` for an already-redeemed state; Discover's own
-`getActiveOffers()` fetch carries no such flag today, so an honest "Redeemed ✓" badge on a
-Discover Perks row needs that same `getMyRedemptions()` call added to DiscoverHubScreen's load —
-not fabricated.
-
-**What actually shipped for A-E** (`src/screens/DiscoverHubScreen.js`, commit `283a77bc`,
-+ `src/utils/gatheringTimeLabel.js` from `231cf20c`; `src/components/PlaceCard.js` gained an
-optional `actionLabel`/`actionIsState` prop pair for the Perks Redeem/Redeemed state, defaulted
-off so every other `PlaceCard` call site is unchanged):
-- Real thresholds: `HERO_SCORE = 12`, `STANDARD_SCORE = 5` (replaces the old flat `>= 5`),
-  `NOTABLE_DISPLAY_CAP = 6` (a real display-sanity cap on the whole notable list, not a per-tier
-  cap — a judgment call added during the build, not in the original spec, so a day with many
-  qualifying gatherings doesn't turn the whole screen into cards).
-- The old two independent passes (`recommended` filtered on `fit.score`, `trending` sorted on
-  attendance, each blind to what the other had already picked — meaning the same gathering could
-  legitimately render twice) were replaced with **one** sorted-by-`fit.score` list
-  (`notableGatherings`); tier (hero vs. standard) is decided per-item in the render off that same
-  score, not a fixed slot count. `TRENDING_ATTENDANCE_MIN = 5` (half of the fit-score formula's
-  own attendance cap) is the real, disclosed cutoff for "trending enough to headline" in the
-  hero eyebrow / reason line. This is a real design change beyond the literal spec text in A —
-  flagged here in case a future session expected the old two-section layout to still exist.
-- New dependency: `expo-linear-gradient` (`package.json`/`package-lock.json`), used for the hero
-  image's gradient fallback and its legibility scrim.
-- CTA logic lives in `gatheringActionInfo()`/`myAttendeeStatus()` inside `DiscoverHubScreen.js`,
-  mirroring `GatheringDetailScreen.js`'s own `isFull`/`is_public` logic exactly, off each row's
-  existing `attendees`/`capacity` fields (`useAuth().session.user.id` for the current user).
-- Not done as part of A-E, deliberately out of scope: no Places-card changes (Places still uses
-  `PlaceCard`'s plain chevron — B's "standard/compact tiers stay neutral" rule was read as
-  covering gatherings only, since Places never had a fit-score to tier by).
-
-**F. Expand-in-place (approved to build now, not deferred).** Tapping a hero/standard card
-reconfigures the *existing* `DiscoverHubScreen` in place around that result's context (e.g.
-Coffee + Tonight + Nearby) — no new screen, no `navigation.navigate`. Implementation shape:
-local component state (e.g. `expandedContext: { interestTag, timeBucket }`, not a nav param) that
-swaps the normal browse list for a filtered view; a header breadcrumb (`← Coffee · Tonight ·
-Nearby`) whose back action just clears that state back to normal Discover — also wire Android's
-hardware back button (`BackHandler`) to do the same while `expandedContext` is set, so physical
-back doesn't leave the whole Discover tab. Inside the expanded state: **Gatherings / Places /
-Offers as the primary content** (filtered to that interest tag + time bucket + nearby, reusing
-data DiscoverHubScreen already fetches/can fetch — no new "people" peer tab). `GatheringDetail`
-still exists and is still where the actual Join/Request/manage/edit/attendees flow lives — this
-only removes the pointless trip there just to answer "what is this?"; committing to an action is
-still a real navigation.
-
-**G. "People You Know" — connections-only, secondary, never a peer tab.** Inside the expanded
-context, below the primary Gatherings/Places/Offers content, an optional secondary section may
-show people *already connected to the user* (accepted friends, real dating matches) who are
-independently relevant to that context (e.g. actually attending/interested in a matching
-gathering) — e.g. "2 friends are into Coffee tonight". **Hard rule, reaffirming the existing
-standing privacy rule**: never rank or surface a person merely because they share the same
-interest/location/time — only real connections, and only when they're independently relevant.
-Never a bare "N people nearby" count. Real primitives to use, don't reinvent:
-`filterToMyFriends(userIds)` (`src/services/friends.js:114`, doc'd exactly for this — "given a
-list of user IDs (e.g., everyone interested in a gathering), returns just the ones who are also
-the current person's accepted friends") already exists and does the friends half. The matches
-half needs a small new helper mirroring `getMyFriends()`'s own pattern (`friends.js:65-79`) — the
-`matches` table (`supabase/migrations/00000000000000_baseline.sql:762`, `user_a`/`user_b`, no
-status column — a row existing means matched) has no existing "get my matches as profiles"
-export anywhere to reuse; every other service inlines its own ad hoc `matches` query. Write one
-real `getMyMatches()`-equivalent, don't inline yet another copy.
-
-**H. Rest of the app, approved but explicitly sequenced — do not start until Discover itself is
-done and confirmed working**: Home (1-2 hero moments only, not a wall of imagery; reuse the
-Phase 8 time-bucket utility from D) → People (image-forward, real profile photos) → Profile
-(moderate/editorial) → Activity (lighter, timeline rows, less card-like than today) → Create
-(stays as-is, white surfaces already right) → Business dashboard (structured/data-forward, not
-the consumer Discover look). The "expand in place" pattern (F/G) is meant to generalize to these
-other surfaces too, once Discover's version is confirmed working — not before.
-
-**Where a restart should pick up**: (1) and (2) of the original build order are done (see status
-note above) — start at **(3): the `getMyMatches()` helper (G) + the expand-in-place state
-machine (F/G)**, then commit. The grounding in F/G/H above is unchanged and still current, no
-further research pass needed before writing that code. As always, check `git log` on
-`DiscoverHubScreen.js` directly rather than trusting this note blindly, in case a session after
-this one made further progress without updating it.
+**H (the only remaining Phase 8 item) — approved but explicitly gated: do not start until
+Discover's own version above is confirmed working by the user.** Roll the same treatment out in
+this order: Home (1-2 hero moments only, not a wall of imagery; reuse `gatheringTimeLabel.js`) →
+People (image-forward, real profile photos) → Profile (moderate/editorial) → Activity (lighter,
+timeline rows, less card-like than today) → Create (stays as-is, white surfaces already right) →
+Business dashboard (structured/data-forward, deliberately *not* the consumer Discover look). The
+expand-in-place pattern is meant to generalize to these surfaces too — but only after Discover's
+version is confirmed, not before.
 
 ## Standing Conventions (Locked)
 
