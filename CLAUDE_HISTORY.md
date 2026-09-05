@@ -1,3 +1,77 @@
+## Sep 5 2026 — Group Insights (Phases A-D) — BUILT
+
+A gathering-detail feature: attendees can see a real, privacy-tiered summary of who's going
+(shared interests always; an age/gender-makeup sub-block gated by group size and party type),
+plus "N of your friends are attending" folded into the existing "Why this fits you" reasons. Host
+can turn the whole makeup panel off per-gathering (shared interests still show either way — see
+Phase A's own reasoning below). Built across four commits in one session, interrupted partway
+through by a codespace restart between Phase C and Phase D landing — this file's "Active /
+unfinished work" section never got a plan entry recorded for it before the restart, so Phase D
+had to be inferred from re-reading the Phase A-C commits/diffs directly rather than from a
+recorded plan. That gap is itself the reason for this note: always write the plan to CLAUDE.md's
+Active section *before* starting multi-phase work, not just at the end.
+
+**Phase A** (commit `9ee06b2b`) — migration `supabase/migrations/20260918_gathering_group_insights.sql`:
+new `gatherings.show_group_insights` column (boolean, default true, host-controlled) and
+`get_gathering_group_insights(gathering_id)`, a SECURITY DEFINER RPC that does 100% of the
+age/gender aggregation and privacy-tiering server-side — it never returns a raw per-attendee row.
+Tiering, locked by direct product decision:
+- Fewer than 3 approved attendees → no age/gender info at all (a hard floor beyond what was
+  asked, needed to satisfy this project's "never expose info that could let an individual's
+  attributes be inferred" rule).
+- Regular gatherings: 3-9 attendees → coarse labels only ("Mostly 25-34", "Mixed group"), computed
+  as a real 60%-dominance test entirely in SQL so no count/percentage ever crosses the wire in
+  coarse mode. 10+ → precise percentages, with any bucket under 2 people silently dropped (never
+  padded, never shown) rather than exposing a single person's bucket.
+- Dating gatherings (`party_type = 'date'`): fewer than 15 → no panel at all. 15+ → coarse-only,
+  same phrasing as the regular 3-9 tier — precise percentages for dating gatherings are
+  deliberately deferred, not built.
+- Shared interests (plain names, or counts once precise) are returned regardless of tier, since
+  they aren't demographic — and regardless of `show_group_insights` too (the host toggle only
+  suppresses the age/gender sub-block, by design; see the RPC body).
+- The host toggle is enforced inside the RPC itself (`coalesce(v_show, true) is false` forces
+  `'none'` tier), not just client-side — so it holds even if a future client forgets to check it.
+
+Verified live against the Supabase project with disposable seeded attendees across all four tiers
+(none/coarse/precise/dating-coarse), the host toggle, and the single-person bucket-suppression
+case; all test rows deleted afterward with a leftover-count query confirming zero remain.
+
+**Phase B** (commit `760e7ddb`) — service/util/constants layer: `getGatheringGroupInsights()`
+(thin RPC wrapper, same shape as `getPartnerDeclinePatterns()`); `getGatheringFitReasons()` gained
+a `friendAttendeeCount` param (a real `filterToMyConnections()`-backed signal, weighted between
+interest-match and distance); `show_group_insights` threaded through `SAFE_GATHERING_FIELDS`,
+`createGathering()`, and `updateGathering()` (accepted by both functions, but nothing yet called
+them with a real value — see Phase D); new `src/utils/groupInsightsLabels.js` (+ test, pure
+formatting only, reuses `categoryStyleFor()` for interest icons) and
+`src/constants/groupInsightsVocabulary.js` (client-side mirrors of the RPC's own thresholds, for
+copy only — never used to re-derive a number the RPC didn't send). Jest 208/208 passing.
+
+**Phase C** (commit `8ca72d88`) — `GatheringDetailScreen.js` wiring: `friendAttendeeCount`
+(`filterToMyConnections` over the gathering's own approved attendees) now feeds
+`getGatheringFitReasons()`, so "N of your friends are attending" appears in the existing "Why this
+fits you" card for the first time (previously this signal only existed inside Discover's separate
+People You Know section). New "Group Insights" section placed right after "Who's Going" and
+before "What to Expect": shared interests (shown at any tier) plus an age/gender sub-block gated
+purely on the RPC's own `makeup_tier` — no client-side math or re-thresholding, the screen only
+renders what the RPC already decided. Jest 208/208 passing; no simulator/browser available
+(standing project limitation) — verified via Babel parse and manual trace of props/state only.
+
+**Phase D** (commit `35d05110`) — closed the one real gap left after Phase B: `show_group_insights`
+was fully plumbed through the service layer but no screen ever passed a real value, so a host had
+no actual way to flip the column Phase A built as "host-controlled." Added a "Show Group Insights"
+toggle to `CreateGatheringScreen`'s More Options (same switch pattern as Women-Only/Ask Local
+Businesses, default on, preview-step row shown only when turned off) and a `Switch` row to
+`EditGatheringScreen` (same pattern as Beginner Friendly, initialized from the gathering's current
+`show_group_insights` value). Jest 208/208 passing; both edited files verified to parse cleanly via
+`babel-preset-expo` (`@babel/core` invoked directly with that preset, since this repo deliberately
+has no root `babel.config.js` — see `jest.babel.config.js`'s own comment for why — so a bare
+`npx babel` CLI invocation fails on unrelated optional-chaining syntax elsewhere in the same files;
+that's a preset-resolution quirk, not a real syntax problem, confirmed by pointing `@babel/core` at
+`babel-preset-expo` explicitly).
+
+**Standing caveat, unchanged across all four phases**: none of this has been seen running. No
+simulator, device, or browser tooling has ever been available in a session on this project.
+
 ## Sep 5 2026 — Phase 8 (Discover visual hierarchy + expand-in-place), section H — BUILT
 
 Closes section H, the last remaining item of the Phase 8 plan (sections A-G closed out earlier
