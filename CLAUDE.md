@@ -13,7 +13,8 @@ This file used to grow without bound: every session appended its full build log,
 trail, and reasoning to the end, forever. By 2026-09-17 it had reached **29,860 lines / 2.46MB**
 — reloaded in full at the start of every session as project instructions. Two sessions in a row
 spent their entire budget on compaction of that giant file and made no forward progress on the
-actual work (Phases 4-6 of the plan below).
+actual work (Phases 4-6 of the "Business Web as an Operating System" plan, since closed out —
+see `CLAUDE_HISTORY.md`).
 
 **The fix**: the complete, unedited historical record — every past session's full build log,
 every audit, every locked design decision with its full original reasoning and verification
@@ -39,62 +40,14 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-### "Business Web as an Operating System" — Phases 4-6
-
-Full original plan, audit, and Phases 1-3's build/verification detail: see `CLAUDE_HISTORY.md`,
-search for "Business Web as an Operating System". Phases 1 (decline reasons), 2 (day-of-week
-availability), and 3 (offer-performance funnel) are DONE and verified live in production —
-nothing further needed there. This session's job is Phases 4-6, in the order below. **Phase 7
-(a real business web dashboard) stays explicitly NOT authorized** — do not start it without a
-fresh, explicit go-ahead naming Path A (Expo web output, reusing existing RN screens) vs. Path B
-(a separate codebase); Path A is the standing recommendation if/when this is ever picked up.
-
-**Phase 4 — real media attach on an offer.** A prior session already fully drafted the migration
-for this (found untracked on disk at session start:
-`supabase/migrations/20260917_offer_media_upload.sql`) — read it before rebuilding anything.
-Locked design: nullable `media_path`/`media_type` pair on `business_request_offers` (a business's
-own response to one specific customer request) and separately on `business_experiences` (a
-standing Signature Experience's own default creative). Reuses the app's already-established
-private-bucket-plus-signed-URL upload convention (matching `gathering-photos`/`profile-photos`),
-not a new storage pattern — one shared bucket, `business-offer-media`, `public: false`, folder-
-keyed by the real `partner_id` the caller's own `profiles.managed_partner_id` matches; an offer's
-own upload and a Signature Experience's own upload are distinguished by filename prefix
-(`offer-*`/`experience-*`), never two separate buckets. `media_type` CHECK: `image|video`,
-nullable. The Make-an-Offer modal gains an optional "Add a photo or video" step; the resulting
-offer card (both business-side and consumer-side) renders the real media **inside** the existing
-standardized offer-card wrapper — Nearby's own presentation frame is never bypassed by a
-business's own uploaded creative, the media sits inside it, never replaces it. Upload client code
-should mirror `uploadGatheringCoverPhoto()`/`getSignedGatheringPhotoUrl()` in
-`src/services/gatherings.js` (around lines 705-733 as of the last check) exactly —
-`FileSystem.readAsStringAsync` + a base64→Uint8Array decode, never `fetch().blob()` (silently
-produces 0-byte files on iOS for local file URIs — this app's own already-learned lesson).
-
-**Phase 5 — a real weather/event digest card, small and copy-only.** The underlying signal
-(business-opportunity weather-favorability) is already real and already live (Business
-Intelligence Phase 7, see `CLAUDE_HISTORY.md`) — this phase is a pure presentational
-consolidation, not a new signal. A small "🌦️ Today's Conditions" card on the Business Dashboard's
-Insights tab, showing the real, already-computed weather-favorability signal plus a real count of
-how many currently-open opportunities that signal is already boosting for this business (derived
-client-side from data the Opportunities list already has — zero new query). Never a new signal,
-never a fabricated forecast claim beyond what the existing weather RPC already honestly returns.
-
-**Phase 6 — rename "Requests" → "Opportunities."** Purely cosmetic, smallest and safest, sequence
-last. `SECTIONS` const's `requests` tab label in `BusinessDashboardScreen.js` (around lines 39-46
-as of the last check) changes from `Requests` to `Opportunities` — one line, zero logic touched.
-The section rendered *inside* that tab is already labeled "Business Opportunities," so this is
-just aligning the outer tab label with content that's already correct.
-
-**Verification convention for all three** (matching this repo's established practice): apply any
-schema change to production via the Management API, verify live with real disposable test data
-(create → verify the real behavior → delete → confirm back to baseline), then a client-side
-`@babel/core` parse + a full `npx expo export --platform ios` after each phase. A full from-
-scratch Docker migration replay (the `supabase/postgres:15.1.0.147` method, documented in
-`CLAUDE_HISTORY.md`) is the gold-standard extra step this repo has historically done for every
-schema change, but is not mandatory for a small additive change if time doesn't allow — say so
-plainly in the commit/status note either way, don't silently skip it and claim full parity.
-**No manual simulator/device run-through has ever been possible in any session on this
-project** (standing environment limitation, true for literally every feature ever shipped here)
-— don't re-state this after every phase, it's covered once, here.
+Nothing currently active. "Business Web as an Operating System" (Phases 1-6: decline reasons,
+day-of-week availability, offer-performance funnel, media-on-offer upload, weather digest card,
+Requests→Opportunities rename) is fully DONE and verified live in production — see
+`CLAUDE_HISTORY.md`, search "Business Web as an Operating System" for the full plan/audit and
+each phase's build/verification detail. **Phase 7 (a real business web dashboard) stays
+explicitly NOT authorized** — do not start it without a fresh, explicit go-ahead naming Path A
+(Expo web output, reusing existing RN screens, the standing recommendation) vs. Path B (a
+separate codebase).
 
 ## Standing Conventions (Locked)
 

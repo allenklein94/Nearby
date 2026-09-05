@@ -1,3 +1,116 @@
+## Sep 5 2026 — "Business Web as an Operating System" Phases 4-6 (media-on-offer upload, weather
+## digest card, Requests→Opportunities rename) — BUILT AND VERIFIED LIVE, closing the plan locked
+## below on Sep 15 2026
+
+This closes out the plan section immediately below (Phases 1-3 were already closed in earlier
+entries of this file; this entry covers the remaining Phases 4-6). Phase 7 (a real business web
+dashboard) remains explicitly NOT authorized, unchanged from the original plan — still gated on a
+fresh, explicit go-ahead naming Path A (Expo web output, reusing existing RN screens, the standing
+recommendation) vs. Path B (a separate codebase).
+
+**Why this entry exists in this file and not appended to the bottom of CLAUDE.md**: the session
+that split this file (see CLAUDE.md's own "Read this first" section, and the "Split CLAUDE.md"
+commit) locked a standing rule specifically to prevent CLAUDE.md's prior unbounded growth: when a
+plan/phase finishes, the full verbose account goes to the *top* of this file, and CLAUDE.md's
+active-work section shrinks to nothing or a short status line. This entry is that account for
+Phases 4-6.
+
+### Phase 4 — real media attach on an offer
+
+Four commits, landed in order:
+
+1. **`af950195` — apply + verify the drafted migration.** A prior session had already fully
+   drafted `supabase/migrations/20260917_offer_media_upload.sql` (found untracked on disk). This
+   commit applied it to production via the Management API and verified live: nullable
+   `media_path`/`media_type` added to both `business_request_offers` and `business_experiences`;
+   a new `business-offer-media` storage bucket (`public: false`, folder-keyed by `partner_id`)
+   with SELECT/INSERT/UPDATE RLS matching the existing `gathering-photos` convention;
+   `submit_business_offer`/`create_business_experience`/`update_business_experience`/
+   `admin_review_business_content_screening` all re-pointed to carry media through. Verified with
+   real disposable test data: a real offer submit stores `media_path`/`media_type` correctly, a
+   non-owner's attempt is rejected, cleanup confirmed back to baseline, exactly one signature per
+   re-pointed function (no orphaned overload).
+
+2. **`6ffe366c` — thread mediaPath/mediaType through the `screen-business-content` Edge
+   Function.** The migration and RPCs already supported the fields, but the actual production
+   submission path (this Edge Function) had no knowledge of them at all — any attached media
+   would have been silently dropped before this fix. Added parsing/re-validation of
+   `mediaPath`/`mediaType` in the `experience` and `offer_response` branches, threaded through
+   `contentSnapshot` and into the `create_business_experience`/`update_business_experience`/
+   `submit_business_offer` RPC calls. Verified: `tsc --noEmit` clean (only pre-existing expected
+   Deno-environment errors), deployed to production (version 11), `verify_jwt` intact,
+   unauthenticated request still 401s, and confirmed the live deployed bundle actually contains
+   the new `media_path_param` code via the Management API function body download.
+
+3. **`d5b5ef98` — upload service + client wrapper passthrough.** Added
+   `pickBusinessOfferMedia()`/`uploadBusinessOfferMedia()`/`getSignedBusinessOfferMediaUrl()` to
+   `businessFulfillment.js`, mirroring `uploadGatheringCoverPhoto()`'s
+   `FileSystem.readAsStringAsync` + base64→Uint8Array decode pattern exactly (never
+   `fetch().blob()`, which silently produces 0-byte files on iOS for local `file://` URIs —
+   this app's own already-learned lesson, re-applied here rather than re-learned). Uploads go to
+   the `business-offer-media` bucket, folder-keyed by `partnerId`, filename-prefixed
+   `offer-*`/`experience-*` per the locked design. Threaded `mediaPath`/`mediaType` through
+   `submitBusinessOfferResponse()`, `submitBusinessOfferResponseForScreening()`
+   (`businessFulfillment.js`), `createBusinessExperience()`, `updateBusinessExperience()`, and
+   `submitBusinessExperienceForScreening()` (`brandOffers.js`). Verified: `@babel/core`
+   `transformSync` with `babel-preset-expo`, clean on both files.
+
+4. **`e9ac28cb` — business-side UI: picker + card rendering.** Added `BusinessMediaPicker`
+   (optional "Add a photo or video" step, thumbnail + Remove once attached) to both the
+   Make-an-Offer modal and the Signature Experience create/edit modal. Uploads only happen at
+   Save/Send time so cancelling a modal never orphans a file in storage. Added
+   `BusinessOfferMediaPreview` (resolves `media_path` to a signed URL, renders it **inside** the
+   existing card wrapper — images inline, video shown as an honest "video attached" label since
+   no video player component exists elsewhere in this codebase to mirror) to: the accepted-offer
+   "Upcoming Nearby Visits" card, the offered/accepted opportunity card in "Business
+   Opportunities", and the Signature Experience list card. Also fixed
+   `handleToggleExperienceActive()` to carry the experience's own existing
+   `media_path`/`media_type` forward — without this fix, toggling an experience's visibility
+   would have silently wiped its attached media, since `updateBusinessExperience` defaults
+   `mediaPath`/`mediaType` to null. Verified: `@babel/core` `transformSync` with
+   `babel-preset-expo`, clean.
+
+5. **`76f360c0` — consumer-side media rendering.** Renders a business's own uploaded
+   offer/experience media inside the existing standardized card wrapper on the consumer side too,
+   never as a separate card: `AcceptedBusinessOfferCard.js` (shared by `GatheringDetailScreen`
+   and `DateProposalScreen`'s merged accepted-offer view), `BusinessRequestDetailScreen.js`'s own
+   richer per-offer comparison list (offered and accepted branches), `BusinessProfileScreen.js`'s
+   Signature Experiences section. Added `media_path`/`media_type` to
+   `getAcceptedOfferForRequest()`'s explicit column select (`businessFulfillment.js`) — the other
+   two queries feeding these views already select `*` so no change was needed there. Video is
+   shown as an honest "video attached" label rather than a fabricated inline player, matching the
+   business-side treatment. Verified: `@babel/core` `transformSync` with `babel-preset-expo` on
+   every touched file (clean), plus a full `npx expo export --platform ios` (2284 modules,
+   exported clean).
+
+**Disclosed gap**: no full from-scratch Docker migration replay (`supabase/postgres:15.1.0.147`)
+was run for this phase's schema change — the schema itself (bucket, RLS, RPCs) was applied and
+verified live against production with real disposable test data, and every client-touching commit
+had its own babel/tsc verification, but the gold-standard full-corpus replay was not additionally
+run this time. Stated plainly per this repo's own disclosure convention, not silently skipped.
+
+### Phase 5 — weather/event digest card (`cff719fc`, bundled with Phase 6)
+
+A small "Today's Conditions" card on the Business Dashboard's Insights tab, shown only when the
+already-live weather-favorability signal (`scoreBusinessOpportunity`'s own bonus, from Business
+Intelligence Phase 7, documented elsewhere in this file) is genuinely indoor- or outdoor-biased —
+plus a real count of how many currently-open opportunities that exact signal is boosting, derived
+client-side from data the Opportunities list already fetches (zero new query, zero new signal).
+Honestly absent on an ambiguous weather day, per the standing no-fabricated-signal rule. Verified
+via a direct babel parse; no schema/RPC touched, so no live-data verification was applicable.
+
+### Phase 6 — rename "Requests" → "Opportunities" (`cff719fc`, bundled with Phase 5)
+
+`SECTIONS`' `requests` tab label in `BusinessDashboardScreen.js` changes from "Requests" to
+"Opportunities" — one line, aligning it with the "Business Opportunities" heading already
+rendered inside that same tab. Zero logic touched. Verified via the same direct babel parse as
+Phase 5.
+
+### Net result
+
+All of Phases 1-6 of the plan below are now DONE and verified live in production. Phase 7 remains
+the only unauthorized/ungated item from the original plan.
+
 ## Sep 15 2026 — "Business Web as an Operating System" (a long external strategic reply, 6
 ## sequential "keep going" continuations plus a standalone decline-logic addendum) — audited
 ## against real code; most of it already real under different names; a real, concrete, ranked
