@@ -1,9 +1,42 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { formatOfferSummary } from '../services/businessFulfillment';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { formatOfferSummary, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { openUberToDestination } from '../utils/uberDeepLink';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+
+// Phase 4 (media upload, CLAUDE.md) -- a real uploaded offer photo,
+// rendered INSIDE this existing card, never as its own standalone card.
+// Video is shown as an honest label, not a fabricated inline player -- no
+// video player component exists elsewhere in this codebase to mirror.
+function OfferMediaPreview({ path, type, colors }) {
+  const [signedUrl, setSignedUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (path) {
+      getSignedBusinessOfferMediaUrl(path).then((url) => {
+        if (!cancelled) setSignedUrl(url);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  if (!path) return null;
+  if (type === 'video') {
+    return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>🎬 Video attached</Text>;
+  }
+  if (!signedUrl) return null;
+  return (
+    <Image
+      source={{ uri: signedUrl }}
+      style={{ width: '100%', height: 140, borderRadius: radius.md, marginTop: spacing.xs }}
+      resizeMode="cover"
+    />
+  );
+}
 
 function formatOfferTime(iso) {
   const d = new Date(iso);
@@ -52,6 +85,7 @@ export default function AcceptedBusinessOfferCard({
       )}
       {formatOfferSummary(offer) && <Text style={styles.sub}>{formatOfferSummary(offer)}</Text>}
       {offer.offer_description ? <Text style={styles.desc}>{offer.offer_description}</Text> : null}
+      <OfferMediaPreview path={offer.media_path} type={offer.media_type} colors={colors} />
       {offer.brand_partners?.latitude != null && offer.brand_partners?.longitude != null && (
         <TouchableOpacity
           onPress={() => openUberToDestination({

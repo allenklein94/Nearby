@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -17,7 +17,7 @@ import {
 } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
-import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine } from '../services/businessFulfillment';
+import { getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { businessAttributeLabel, cuisineLabel, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, experiencePriceLabel, experiencePartyTypeLabel } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
@@ -26,6 +26,40 @@ import { spacing, radius, typography } from '../theme';
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+// Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
+// uploaded creative, rendered INSIDE its existing experience card, never
+// as a standalone card. Video shown as an honest label, not a fabricated
+// inline player -- no video player component exists elsewhere in this
+// codebase to mirror.
+function ExperienceMediaPreview({ path, type, colors }) {
+  const [signedUrl, setSignedUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (path) {
+      getSignedBusinessOfferMediaUrl(path).then((url) => {
+        if (!cancelled) setSignedUrl(url);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  if (!path) return null;
+  if (type === 'video') {
+    return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>🎬 Video attached</Text>;
+  }
+  if (!signedUrl) return null;
+  return (
+    <Image
+      source={{ uri: signedUrl }}
+      style={{ width: '100%', height: 140, borderRadius: radius.md, marginTop: spacing.xs }}
+      resizeMode="cover"
+    />
+  );
 }
 
 export default function BusinessProfileScreen({ route, navigation }) {
@@ -329,6 +363,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                     ].filter(Boolean).join(' · ')}
                   </Text>
                 )}
+                <ExperienceMediaPreview path={exp.media_path} type={exp.media_type} colors={colors} />
               </View>
             ))}
           </View>

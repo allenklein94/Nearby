@@ -247,7 +247,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, offer_description, proposed_time, status, partner_id, brand_partners(name, logo_url, address, latitude, longitude)')
+    .select('id, offer_type, offer_price, offer_description, proposed_time, status, partner_id, media_path, media_type, brand_partners(name, logo_url, address, latitude, longitude)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
