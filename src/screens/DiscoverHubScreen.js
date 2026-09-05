@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { Video } from 'expo-av';
@@ -12,6 +12,9 @@ import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from 
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { getSocialForecast } from '../services/homeDashboard';
+// Phase 8 section G (CLAUDE.md) -- accepted friends UNION real matches,
+// the one shared client-side definition of this app's connected set.
+import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
@@ -156,6 +159,9 @@ export default function DiscoverHubScreen({ navigation }) {
 
   function selectMode(key) {
     setMode(key);
+    // Switching to People is a genuine surface change -- an expanded
+    // Things-to-Do context must not survive it and reappear later.
+    closeContext();
     AsyncStorage.setItem(LAST_MODE_KEY, key).catch(() => {});
   }
 
@@ -196,6 +202,68 @@ export default function DiscoverHubScreen({ navigation }) {
   // signal) so a Perks row can honestly show "Redeemed ✓" instead of always
   // "Redeem" regardless of whether the user already has.
   const [redeemedOfferIds, setRedeemedOfferIds] = useState(new Set());
+
+  // Phase 8 section F (CLAUDE.md, Discover visual hierarchy) -- "expand in
+  // place". Tapping a notable card reconfigures THIS screen around that
+  // result's own real context (its interest tag + its time bucket + the
+  // nearby scope Discover already loads under) instead of navigating away.
+  // Deliberately local component state and not a nav param: the whole
+  // point of the Progressive Depth doctrine ("don't navigate for
+  // information, navigate for tasks") is that answering "what else is like
+  // this?" is not a task change and must not push a screen. Committing to
+  // an action still navigates for real -- the card's own Join/Request CTA
+  // opens GatheringDetailScreen exactly as before, since that's where the
+  // real join mutation and all its edge cases live.
+  const [expandedContext, setExpandedContext] = useState(null);
+  const [contextPlaces, setContextPlaces] = useState([]);
+  const [loadingContextPlaces, setLoadingContextPlaces] = useState(false);
+  // Section G -- real connections only (accepted friends + real matches),
+  // and only ones independently relevant to this context (they actually
+  // RSVP'd to one of the gatherings shown). Never a proximity/interest
+  // scan over strangers -- see CLAUDE.md's standing hard privacy rule.
+  const [contextConnections, setContextConnections] = useState([]);
+  const [contextConnectionPhotos, setContextConnectionPhotos] = useState({});
+  const contextPlacesRequestId = useRef(0);
+  const contextConnectionsRequestId = useRef(0);
+
+  function openContextFor(g) {
+    // A gathering with no real interest_tag has no real context to expand
+    // into -- honest fallback to the real detail screen rather than an
+    // empty "· Tonight · Nearby" breadcrumb over a one-item list.
+    if (!g.interest_tag) {
+      navigation.navigate('GatheringDetail', { gatheringId: g.id });
+      return;
+    }
+    setContextPlaces([]);
+    setContextConnections([]);
+    setContextConnectionPhotos({});
+    setExpandedContext({
+      interestTag: g.interest_tag,
+      // gatheringTimeBadge's own vocabulary (RIGHT NOW / TODAY / TONIGHT /
+      // THIS WEEKEND / UPCOMING), not a second time system invented here.
+      timeBucket: gatheringTimeBadge(g.scheduled_at),
+      sourceGatheringId: g.id,
+    });
+  }
+
+  function closeContext() {
+    setExpandedContext(null);
+    setContextPlaces([]);
+    setContextConnections([]);
+    setContextConnectionPhotos({});
+  }
+
+  // Android hardware back clears the expanded context instead of leaving
+  // the whole Discover tab -- without this, "back" from an expanded view
+  // would feel like it skipped a level, since going in never pushed one.
+  useEffect(() => {
+    if (!expandedContext) return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      closeContext();
+      return true;
+    });
+    return () => sub.remove();
+  }, [expandedContext]);
 
   const [loadingCore, setLoadingCore] = useState(true);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
@@ -482,6 +550,107 @@ export default function DiscoverHubScreen({ navigation }) {
     : [];
   const notableGatheringIds = new Set(notableGatherings.map((g) => g.id));
 
+  // Phase 8 section F -- the expanded context's own real content, filtered
+  // out of what this screen already fetched. No new gatherings/offers query
+  // is fired to enter a context.
+  //
+  // "Nearby" in the breadcrumb is not a third filter applied here: every
+  // row in `gatherings` already came from getNearbyGatherings('wide') and
+  // every row in `offers` from getActiveOffers(lat, lng), so the scope is
+  // real and already applied -- the label names the constraint that's
+  // genuinely in force rather than claiming one that isn't.
+  const contextGatherings = expandedContext
+    ? gatherings.filter((g) => g.interest_tag === expandedContext.interestTag
+        && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket)
+    : [];
+  const contextGatheringIds = new Set(contextGatherings.map((g) => g.id));
+  // Same interest, genuinely different time. Shown as its own clearly
+  // labelled group rather than silently folded into the exact-context list
+  // above -- a "Tonight" context must never quietly list next Saturday
+  // under the same heading.
+  const contextOtherTimeGatherings = expandedContext
+    ? gatherings.filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
+    : [];
+  // target_interest_tag is the offer row's own real targeting field (the
+  // same one the Perks section above already reads) -- not a keyword guess
+  // against the offer's title.
+  const contextOffers = expandedContext
+    ? offers.filter((o) => o.target_interest_tag === expandedContext.interestTag)
+    : [];
+  // A stable dep for the connections effect below -- contextGatherings is
+  // rebuilt every render, so its identity can't be a dependency.
+  const contextGatheringKey = contextGatherings.map((g) => g.id).join(',');
+
+  // Real Google Places keyword search on the context's own interest tag
+  // ("Coffee", "Yoga"), fired only once a context is actually open --
+  // Places is a metered external API, same on-demand-only discipline the
+  // main Places effect above already follows. Deliberately NOT a
+  // hand-written interest -> place-category mapping table: searchNearbyPlaces
+  // only knows four real categories (cafe/restaurant/park/community_center),
+  // which don't cover the interest vocabulary, so mapping "Yoga" onto one of
+  // them would be an invented association. Searching the real word is the
+  // honest version.
+  useEffect(() => {
+    if (!expandedContext || !userLocation) return;
+    const thisRequestId = ++contextPlacesRequestId.current;
+    setLoadingContextPlaces(true);
+    searchNearbyPlaces(userLocation.latitude, userLocation.longitude, null, expandedContext.interestTag)
+      .then((results) => {
+        if (thisRequestId === contextPlacesRequestId.current) setContextPlaces(results);
+      })
+      .catch((e) => console.error('Discover context places failed', e))
+      .finally(() => {
+        if (thisRequestId === contextPlacesRequestId.current) setLoadingContextPlaces(false);
+      });
+  }, [expandedContext, userLocation]);
+
+  // Section G -- "People You Know". The candidate IDs are people who
+  // genuinely RSVP'd (approved) to one of the gatherings already listed in
+  // this context; filterToMyConnections then keeps only the ones the user
+  // is already connected to. Nobody is ever surfaced for merely sharing an
+  // interest, a location, or a time.
+  //
+  // Approved only, and that's not a display choice: gathering_interest's
+  // RLS only exposes other people's *approved* rows to a non-host viewer
+  // (see services/gatherings.js), so "Going" is the only status that's
+  // real here -- nothing is inferred about anyone who merely looked.
+  //
+  // contextGatherings is read inside but keyed on contextGatheringKey
+  // above rather than listed as a dependency, for the identity reason
+  // noted there.
+  useEffect(() => {
+    if (!expandedContext || !contextGatheringKey) {
+      setContextConnections([]);
+      return;
+    }
+    const attendeeIds = [...new Set(
+      contextGatherings.flatMap((g) => (g.approvedAttendees ?? []).map((a) => a.user_id))
+    )].filter((id) => id && id !== myUserId);
+    if (attendeeIds.length === 0) {
+      setContextConnections([]);
+      return;
+    }
+    const thisRequestId = ++contextConnectionsRequestId.current;
+    filterToMyConnections(attendeeIds)
+      .then(async (people) => {
+        if (thisRequestId !== contextConnectionsRequestId.current) return;
+        const withWhere = people.map((person) => ({
+          ...person,
+          gatheringTitle: contextGatherings.find((g) =>
+            (g.approvedAttendees ?? []).some((a) => a.user_id === person.id))?.title ?? null,
+        }));
+        setContextConnections(withWhere);
+        const entries = await Promise.all(withWhere.map(async (person) => [
+          person.id,
+          person.photo_url ? await getSignedPhotoUrl(person.photo_url) : null,
+        ]));
+        if (thisRequestId === contextConnectionsRequestId.current) {
+          setContextConnectionPhotos(Object.fromEntries(entries));
+        }
+      })
+      .catch((e) => console.error('Discover context connections failed', e));
+  }, [expandedContext, contextGatheringKey, myUserId]);
+
   const showGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
   const showCommunities = typeFilter === 'all' || typeFilter === 'communities';
   const showPlaces = typeFilter === 'all' || typeFilter === 'places';
@@ -577,6 +746,84 @@ export default function DiscoverHubScreen({ navigation }) {
     return { kind: 'cta', label: isFull ? 'Join Waitlist' : (g.is_public ? 'Join Gathering' : 'Request to Join') };
   }
 
+  // "TONIGHT" -> "Tonight". gatheringTimeBadge's own words, cased for a
+  // breadcrumb line instead of an all-caps eyebrow badge -- same single
+  // time vocabulary (CLAUDE.md section D), not a second one.
+  function titleCaseBadge(badge) {
+    if (!badge) return null;
+    return badge.split(' ').map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  }
+
+  const contextLabel = expandedContext
+    ? [expandedContext.interestTag, titleCaseBadge(expandedContext.timeBucket), 'Nearby'].filter(Boolean).join(' · ')
+    : null;
+
+  // The one real "why this place, right now" line, shared verbatim by the
+  // main Places section and the expanded context's own Places list rather
+  // than written out twice. Every part of it is a real Google Places
+  // Basic-Data field or this app's own real gathering count -- falls back
+  // to the address when none of them came back.
+  function placeReasonLine(p) {
+    return [
+      p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
+      priceLevelLabel(p.priceLevel),
+      p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
+      p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
+    ].filter(Boolean).join('  ·  ') || p.address;
+  }
+
+  function openPlaceInMaps(p) {
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}&query_place_id=${p.placeId}`);
+  }
+
+  // The standard gathering row inside an expanded context. Tapping it does
+  // navigate for real: from inside the context there is no further
+  // in-place depth to reveal, so opening the gathering itself is a genuine
+  // task change (join, message, see the roster) -- exactly the line
+  // CLAUDE.md's Progressive Depth doctrine draws.
+  function renderContextGatheringRow(g) {
+    const action = gatheringActionInfo(g);
+    const timeLine = gatheringTimeLine(g.scheduled_at);
+    const isSource = g.id === expandedContext?.sourceGatheringId;
+    return (
+      <TouchableOpacity
+        key={g.id}
+        style={[styles.card, isSource && styles.cardSourceHighlight]}
+        onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+        activeOpacity={0.85}
+        accessibilityLabel={`${g.title}, ${g.distanceLabel}`}
+        accessibilityRole="button"
+      >
+        {coverPhotoUrls[g.id] ? (
+          <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
+        ) : (
+          <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>{g.title}</Text>
+          {(timeLine || g.distanceLabel) && (
+            <Text style={styles.cardSubtitle} numberOfLines={1}>
+              {[timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+            </Text>
+          )}
+          {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+            <Text
+              style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
+              numberOfLines={1}
+            >
+              {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+            </Text>
+          )}
+        </View>
+        {action.kind === 'cta' ? (
+          <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+        ) : (
+          <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
+        )}
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -607,7 +854,27 @@ export default function DiscoverHubScreen({ navigation }) {
           })}
         </View>
 
-        {mode === 'things' && (
+        {/* Phase 8 section F -- while a context is open, its breadcrumb
+            replaces the search bar and type-filter chips: those controls
+            describe the normal browse list, not this filtered view, and
+            leaving them live would let someone silently contradict the
+            breadcrumb they're looking at. Back just clears the state --
+            there was never a screen pushed to pop. */}
+        {mode === 'things' && expandedContext && (
+          <View style={styles.breadcrumbRow}>
+            <TouchableOpacity
+              style={styles.breadcrumbBackButton}
+              onPress={closeContext}
+              accessibilityLabel="Back to Discover"
+              accessibilityRole="button"
+            >
+              <Text style={styles.breadcrumbBack}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.breadcrumbText} numberOfLines={1}>{contextLabel}</Text>
+          </View>
+        )}
+
+        {mode === 'things' && !expandedContext && (
           <>
             <View style={styles.searchBarWrap}>
               <Text style={styles.searchIcon}>🔍</Text>
@@ -734,6 +1001,108 @@ export default function DiscoverHubScreen({ navigation }) {
             )}
           </View>
         </View>
+      ) : expandedContext ? (
+        /* Phase 8 section F -- the same screen, reconfigured. Gatherings /
+           Places / Perks are the primary content, all three scoped to this
+           context's own real interest tag; People You Know is a strictly
+           secondary section underneath, never a peer tab. */
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.sectionHeader}>Gatherings</Text>
+          {contextGatherings.length === 0 ? (
+            <Text style={styles.emptyText}>No {expandedContext.interestTag.toLowerCase()} gatherings at this time nearby.</Text>
+          ) : (
+            contextGatherings.map(renderContextGatheringRow)
+          )}
+
+          {contextOtherTimeGatherings.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>More {expandedContext.interestTag} Nearby</Text>
+              <Text style={styles.contextGroupNote}>Same interest, a different time.</Text>
+              {contextOtherTimeGatherings.map(renderContextGatheringRow)}
+            </>
+          )}
+
+          <Text style={styles.sectionHeader}>Places</Text>
+          {!userLocation ? (
+            <Text style={styles.emptyText}>Enable location to see places nearby.</Text>
+          ) : loadingContextPlaces ? (
+            <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+          ) : contextPlaces.length === 0 ? (
+            <Text style={styles.emptyText}>No {expandedContext.interestTag.toLowerCase()} places found nearby.</Text>
+          ) : (
+            contextPlaces.slice(0, PREVIEW_COUNT).map((p) => (
+              <PlaceCard
+                key={p.placeId}
+                photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
+                icon="📍"
+                title={p.name}
+                reason={placeReasonLine(p)}
+                onPress={() => openPlaceInMaps(p)}
+                accessibilityLabel={p.name}
+              />
+            ))
+          )}
+
+          <Text style={styles.sectionHeader}>Perks</Text>
+          {contextOffers.length === 0 ? (
+            <Text style={styles.emptyText}>No {expandedContext.interestTag.toLowerCase()} perks nearby right now.</Text>
+          ) : (
+            contextOffers.map((o) => {
+              const isRedeemed = redeemedOfferIds.has(o.id);
+              return (
+                <PlaceCard
+                  key={o.id}
+                  icon="🎁"
+                  title={o.title}
+                  reason={[o.brand_partners?.name, businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
+                  onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
+                  accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
+                  actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
+                  actionIsState={isRedeemed}
+                />
+              );
+            })
+          )}
+
+          {/* Phase 8 section G -- secondary by construction: it renders
+              below the real supply above, and only when there is genuinely
+              someone to show. No "N people nearby" count, no zero-state
+              placeholder, and nobody who isn't already a real connection. */}
+          {contextConnections.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>People You Know</Text>
+              <Text style={styles.contextGroupNote}>
+                Friends and matches who are already going to one of these.
+              </Text>
+              {contextConnections.map((person) => (
+                <TouchableOpacity
+                  key={person.id}
+                  style={styles.card}
+                  onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`${person.display_name}, ${person.connection === 'friend' ? 'friend' : 'match'}${person.gatheringTitle ? `, going to ${person.gatheringTitle}` : ''}`}
+                  accessibilityRole="button"
+                >
+                  {contextConnectionPhotos[person.id] ? (
+                    <Image source={{ uri: contextConnectionPhotos[person.id] }} style={styles.connectionAvatar} />
+                  ) : (
+                    <View style={[styles.connectionAvatar, styles.connectionAvatarPlaceholder]} />
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>{person.display_name}</Text>
+                    <Text style={styles.cardSubtitle} numberOfLines={1}>
+                      {[
+                        person.connection === 'friend' ? 'Friend' : 'Match',
+                        person.gatheringTitle ? `Going to ${person.gatheringTitle}` : null,
+                      ].filter(Boolean).join(' · ')}
+                    </Text>
+                  </View>
+                  <Text style={styles.cardChevron}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+        </ScrollView>
       ) : viewStyle === 'map' && showViewToggle ? (
         <View style={{ flex: 1 }}>
           <GatheringsMapView
@@ -837,9 +1206,13 @@ export default function DiscoverHubScreen({ navigation }) {
                 <TouchableOpacity
                   key={g.id}
                   style={styles.heroCard}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                  /* Phase 8 section F -- the card body no longer navigates:
+                     tapping it expands this screen around the gathering's own
+                     context. The CTA below is its own nested touchable and
+                     still navigates, because joining is a real task change. */
+                  onPress={() => openContextFor(g)}
                   activeOpacity={0.9}
-                  accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}`}
+                  accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
                   accessibilityRole="button"
                 >
                   {coverPhotoUrls[g.id] ? (
@@ -872,9 +1245,24 @@ export default function DiscoverHubScreen({ navigation }) {
                         {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
                       </Text>
                     </View>
-                    <View style={action.kind === 'cta' ? styles.heroCta : styles.heroStatePill}>
-                      <Text style={action.kind === 'cta' ? styles.heroCtaText : styles.heroStatePillText}>{action.label}</Text>
-                    </View>
+                    {action.kind === 'cta' ? (
+                      <TouchableOpacity
+                        style={styles.heroCta}
+                        onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                        accessibilityLabel={`${action.label}: ${g.title}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.heroCtaText}>{action.label}</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      /* An already-RSVP'd state ("Going"/"Waitlisted") is a
+                         badge, not a button -- deliberately not touchable,
+                         per CLAUDE.md's "informational must not visually
+                         impersonate a button" rule. */
+                      <View style={styles.heroStatePill}>
+                        <Text style={styles.heroStatePillText}>{action.label}</Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               );
@@ -884,9 +1272,9 @@ export default function DiscoverHubScreen({ navigation }) {
               <TouchableOpacity
                 key={g.id}
                 style={styles.card}
-                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                onPress={() => openContextFor(g)}
                 activeOpacity={0.85}
-                accessibilityLabel={`${g.title}${reasonLine ? `, ${reasonLine}` : ''}`}
+                accessibilityLabel={`${g.title}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
                 accessibilityRole="button"
               >
                 {coverPhotoUrls[g.id] ? (
@@ -916,7 +1304,14 @@ export default function DiscoverHubScreen({ navigation }) {
                   )}
                 </View>
                 {action.kind === 'cta' ? (
-                  <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                    accessibilityLabel={`${action.label}: ${g.title}`}
+                    accessibilityRole="button"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+                  </TouchableOpacity>
                 ) : (
                   <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
                 )}
@@ -1036,17 +1431,8 @@ export default function DiscoverHubScreen({ navigation }) {
                     photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
                     icon="📍"
                     title={p.name}
-                    reason={
-                      [
-                        p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
-                        priceLevelLabel(p.priceLevel),
-                        p.openNow !== null ? (p.openNow ? 'Open now' : 'Closed') : null,
-                        p.gatheringCount > 0 ? `🎉 ${p.gatheringCount} gathering${p.gatheringCount === 1 ? '' : 's'} here` : null,
-                      ]
-                        .filter(Boolean)
-                        .join('  ·  ') || p.address
-                    }
-                    onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}&query_place_id=${p.placeId}`)}
+                    reason={placeReasonLine(p)}
+                    onPress={() => openPlaceInMaps(p)}
                     accessibilityLabel={p.name}
                   />
                 ))
@@ -1348,6 +1734,21 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
   },
   heroStatePillText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
+  // Phase 8 section F -- the expanded context's own header row, in the
+  // slot the search bar and filter chips occupy in normal browse mode.
+  // Neutral, not coral: it names where you are, and the only real action
+  // on it is the back arrow.
+  breadcrumbRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  breadcrumbBackButton: { paddingVertical: spacing.xs, paddingRight: spacing.xs },
+  breadcrumbBack: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
+  breadcrumbText: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  // The gathering the user actually tapped to get here, marked so it
+  // doesn't get lost among its own neighbours. A border tint only -- never
+  // coral, which is reserved for actions.
+  cardSourceHighlight: { borderColor: colors.textTertiary, borderWidth: 1.5 },
+  contextGroupNote: { color: colors.textTertiary, fontSize: 12, marginTop: -spacing.xs, marginBottom: spacing.sm },
+  connectionAvatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.md },
+  connectionAvatarPlaceholder: { backgroundColor: colors.surfaceElevated },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
   // Same "one cluster header, several lighter sub-labels underneath"
   // recipe HomeScreen.js's own "✨ Because You Like…" cluster already
