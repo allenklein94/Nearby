@@ -16,6 +16,11 @@ import { radius, spacing, typography } from '../theme';
 // standardizes on what was already the de facto shared shape there.
 export default function PlaceCard({
   photoUrl,
+  // Only needed when photoUrl came from Google's Place Photo endpoint (an
+  // iOS-app-restricted key requires this header on every request, not just
+  // a browser Referer) -- curated cover photo URLs don't need it and pass
+  // nothing here.
+  photoHeaders,
   icon = '📍',
   title,
   reason,
@@ -51,7 +56,7 @@ export default function PlaceCard({
       accessibilityRole="button"
     >
       {photoUrl ? (
-        <Image source={{ uri: photoUrl }} style={styles.image} />
+        <Image source={{ uri: photoUrl, headers: photoHeaders }} style={styles.image} />
       ) : (
         <View style={[styles.iconWrap, { backgroundColor: tintColor ? `${tintColor}20` : colors.surfaceElevated }]}>
           <Text style={styles.icon}>{icon}</Text>

@@ -1,7 +1,20 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
 
 const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
+
+// The production key is restricted to "iOS apps" in Google Cloud Console, which
+// checks this header rather than a browser Referer -- a plain fetch() never sends
+// it on its own (that's only automatic when using Google's native iOS SDKs), so
+// every REST call here and in brandOffers.js/SelectGatheringLocationScreen.js was
+// getting REQUEST_DENIED ("empty referer") until this header is attached explicitly.
+// No equivalent exists yet for Android (the same key has no Android restriction
+// configured) -- confirmed live against Google's API on 2026-09-05.
+export function getGoogleMapsRequestHeaders() {
+  const bundleId = Constants.expoConfig?.ios?.bundleIdentifier;
+  return Platform.OS === 'ios' && bundleId ? { 'X-Ios-Bundle-Identifier': bundleId } : undefined;
+}
 
 const PLACE_TYPES = {
   restaurants: 'restaurant',
@@ -18,7 +31,7 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
   const keywordParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : '';
   const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=8000&type=${placeType}${keywordParam}&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: getGoogleMapsRequestHeaders() });
   const data = await response.json();
 
   if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
@@ -101,7 +114,7 @@ export async function searchPlacesByText(query, latitude = null, longitude = nul
   const locationBias = latitude && longitude ? `&location=${latitude},${longitude}&radius=50000` : '';
   const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query.trim())}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: getGoogleMapsRequestHeaders() });
   const data = await response.json();
 
   if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
@@ -146,7 +159,7 @@ export async function getPlaceDetails(placeId) {
   const fields = 'formatted_phone_number,website,formatted_address,name,types';
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetch(url, { headers: getGoogleMapsRequestHeaders() });
   const data = await response.json();
 
   if (data.status !== 'OK') {

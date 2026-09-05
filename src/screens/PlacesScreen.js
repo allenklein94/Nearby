@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -144,7 +144,7 @@ export default function PlacesScreen({ navigation }) {
               accessibilityRole="button"
             >
               {item.photoRef ? (
-                <Image source={{ uri: getPlacePhotoUrl(item.photoRef) }} style={styles.placeImage} />
+                <Image source={{ uri: getPlacePhotoUrl(item.photoRef), headers: getGoogleMapsRequestHeaders() }} style={styles.placeImage} />
               ) : (
                 <View style={[styles.placeImage, styles.placeImagePlaceholder]} />
               )}

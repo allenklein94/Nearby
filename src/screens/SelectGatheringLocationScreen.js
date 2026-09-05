@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { getGoogleMapsRequestHeaders } from '../services/places';
 
 const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 
@@ -45,7 +46,8 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
     setSearching(true);
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchText)}&key=${GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchText)}&key=${GOOGLE_MAPS_API_KEY}`,
+        { headers: getGoogleMapsRequestHeaders() }
       );
       const result = await response.json();
 

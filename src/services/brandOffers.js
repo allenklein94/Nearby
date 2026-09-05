@@ -1,5 +1,6 @@
 import { supabase, functionUrl } from './supabase';
 import Constants from 'expo-constants';
+import { getGoogleMapsRequestHeaders } from './places';
 
 export async function getEstimatedAmountOwed(partnerId) {
   // Real per-partner contract terms (see partner_contracts), not a flat
@@ -528,7 +529,8 @@ export async function replyAsBusinessOwner(partnerId, conversationWithId, body) 
 async function geocodeAddress(address) {
   const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
   const response = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`,
+    { headers: getGoogleMapsRequestHeaders() }
   );
   const result = await response.json();
   if (result.status !== 'OK' || !result.results?.[0]) {

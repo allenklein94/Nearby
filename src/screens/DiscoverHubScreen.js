@@ -10,7 +10,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
+import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { getSocialForecast } from '../services/homeDashboard';
 // Phase 8 section G (CLAUDE.md) -- accepted friends UNION real matches,
 // the one shared client-side definition of this app's connected set.
@@ -1050,6 +1050,7 @@ export default function DiscoverHubScreen({ navigation }) {
               <PlaceCard
                 key={p.placeId}
                 photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
+                photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
                 icon="📍"
                 title={p.name}
                 reason={placeReasonLine(p)}
@@ -1454,6 +1455,7 @@ export default function DiscoverHubScreen({ navigation }) {
                   <PlaceCard
                     key={p.placeId}
                     photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
+                    photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
                     icon="📍"
                     title={p.name}
                     reason={placeReasonLine(p)}
