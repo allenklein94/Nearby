@@ -21,6 +21,12 @@ import { getBusinessEntitlements, hasEntitlement, entitlementLimit, checkLimit, 
 import { captureStoryMedia, uploadBusinessMoment } from '../services/stories';
 import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion, getBusinessAttributeSuggestions, setBusinessPrioritySignal, clearBusinessPrioritySignal, getActiveBusinessPrioritySignals } from '../services/businessIntelligence';
 import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring';
+// Phase 5 (CLAUDE.md) -- the digest card reuses the exact same canonical
+// weather-reason text scoreBusinessOpportunity() already stamps onto a
+// boosted opportunity's own reasons array, so the card never invents a
+// second wording of the identical real signal.
+import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
+import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
@@ -40,7 +46,7 @@ const SECTIONS = [
   { key: 'home', icon: '🏠', label: 'Dashboard' },
   { key: 'gatherings', icon: '🎉', label: 'Gatherings' },
   { key: 'community', icon: '🏘️', label: 'Community' },
-  { key: 'requests', icon: '🎯', label: 'Requests' },
+  { key: 'requests', icon: '🎯', label: 'Opportunities' },
   { key: 'insights', icon: '📊', label: 'Insights' },
   { key: 'business', icon: '⚙️', label: 'Business' },
 ];
@@ -258,6 +264,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
   }, [opportunities, selectedPartner, activePrioritySignals, fulfillmentPolicy, businessWeather]);
+  // Phase 5 (CLAUDE.md) -- a real count of how many currently-open
+  // opportunities the already-computed weather signal is boosting right
+  // now, derived entirely from scoredOpportunities' own already-stamped
+  // reasons (zero new query). null (not 0) when there's no real weather
+  // signal at all, so the digest card can tell "no boost happening" apart
+  // from "weather data hasn't resolved yet" -- matches this app's own
+  // "no invented numbers" convention rather than defaulting to a zero.
+  const weatherBoostedOpenCount = useMemo(() => {
+    if (!businessWeather) return null;
+    return scoredOpportunities.filter(
+      (o) =>
+        o.status === 'pending' &&
+        o.business_requests?.status === 'open' &&
+        o.opportunityReasons?.some(
+          (r) => r.label === REASON_TEXT.WEATHER_GOOD_INDOOR.text || r.label === REASON_TEXT.WEATHER_GOOD_OUTDOOR.text
+        )
+    ).length;
+  }, [scoredOpportunities, businessWeather]);
   // Business Intelligence & Opportunity Engine, Phase 3 -- a real,
   // deterministic offer-recommendation ranking, entirely client-side over
   // data this screen already has loaded (this partner's own full
@@ -2913,6 +2937,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 </View>
               ) : (
                 <Text style={styles.emptyText}>Not enough activity yet to show real insights.</Text>
+              )}
+
+              {/* Phase 5 (CLAUDE.md) -- a pure presentational digest over
+                  an already-real, already-live signal (Business
+                  Intelligence Phase 7's weather bonus inside
+                  scoreBusinessOpportunity()). Never a new signal, never a
+                  fabricated forecast claim beyond what the weather RPC
+                  already honestly returns -- honestly absent whenever
+                  today's conditions aren't genuinely biased either way. */}
+              {businessWeather && (isWeatherIndoorBiased(businessWeather) || isWeatherOutdoorBiased(businessWeather)) && (
+                <>
+                  <Text style={styles.sectionHeader}>🌦️ Today's Conditions</Text>
+                  <View style={[styles.insightsCard, { marginBottom: spacing.lg }]}>
+                    <Text style={styles.insightLine}>
+                      {isWeatherIndoorBiased(businessWeather)
+                        ? 'Weather favors indoor plans right now — your indoor-friendly opportunities are getting a small ranking boost.'
+                        : 'Great weather for outdoor plans right now — your outdoor-friendly opportunities are getting a small ranking boost.'}
+                    </Text>
+                    {weatherBoostedOpenCount !== null && (
+                      <Text style={styles.insightLine}>
+                        {weatherBoostedOpenCount > 0
+                          ? `🎯 ${weatherBoostedOpenCount} open opportunit${weatherBoostedOpenCount === 1 ? 'y is' : 'ies are'} getting this boost right now.`
+                          : 'No open opportunities are getting this boost right now.'}
+                      </Text>
+                    )}
+                  </View>
+                </>
               )}
 
               {/* Business Intelligence & Opportunity Engine, Phase 4 --
