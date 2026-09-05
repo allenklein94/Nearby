@@ -354,6 +354,16 @@ What makes them different: ${differentiator || '(none)'}`;
       const attributes = Array.isArray(body.attributes) ? body.attributes.filter((a: unknown) => ATTRIBUTE_OPTIONS.includes(a as string)) : [];
       const priceLevel = PRICE_LEVEL_OPTIONS.includes(body.priceLevel) ? body.priceLevel : null;
       const partyType = PARTY_TYPE_OPTIONS.includes(body.partyType) ? body.partyType : null;
+      // Phase 4 (media upload, CLAUDE.md) -- a real, already-uploaded
+      // storage path/type for this Signature Experience's own default
+      // creative, re-validated server-side (defense in depth over both
+      // the table's own CHECK constraint and create/update_business_
+      // experience()'s own re-check) rather than trusted raw from the
+      // client. Media itself is never a text-injection surface, so it's
+      // carried through the snapshot/RPCs unscreened, same posture as
+      // icon.
+      const mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
+      const mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
 
       // Defense in depth for the edit case -- confirm the experience being
       // edited genuinely belongs to this partner before ever screening or
@@ -379,6 +389,7 @@ Description: ${description || '(none)'}`;
 
       const contentSnapshot = {
         experienceId, title, description: description || null, icon, attributes, priceLevel, partyType,
+        mediaPath, mediaType,
       };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
@@ -407,6 +418,8 @@ Description: ${description || '(none)'}`;
             price_level_param: priceLevel,
             party_type_param: partyType,
             active_param: true,
+            media_path_param: mediaPath,
+            media_type_param: mediaType,
           });
           if (writeError) {
             console.error('screen-business-content: low-tier experience update failed', writeError);
@@ -424,6 +437,8 @@ Description: ${description || '(none)'}`;
           price_level_param: priceLevel,
           party_type_param: partyType,
           ai_suggested_param: false,
+          media_path_param: mediaPath,
+          media_type_param: mediaType,
         });
         if (writeError) {
           // The RPC's own real entitlement-cap error (ENTITLEMENT_LIMIT:
@@ -675,6 +690,11 @@ Body: ${updateBody || '(none)'}`;
     if (!offerDescription) return json({ error: 'Say what you can offer.' }, 400);
     const offerPrice = Number.isFinite(body.offerPrice) ? body.offerPrice : null;
     const proposedTime = typeof body.proposedTime === 'string' && body.proposedTime ? body.proposedTime : null;
+    // Phase 4 (media upload, CLAUDE.md) -- a real, already-uploaded photo/
+    // video for this specific offer, same re-validation/unscreened-media
+    // posture as the `experience` branch above.
+    const mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
+    const mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
     // Business Web as an Operating System, Phase 3 -- which real Signature
     // Experience (if any) a suggestion this offer was built from actually
     // came from, so the per-template performance funnel has something real
@@ -695,7 +715,7 @@ Body: ${updateBody || '(none)'}`;
     if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
     const { riskTier, matchedCategories, reasoning } = result;
 
-    const contentSnapshot = { requestId, offerType, offerDescription, offerPrice, proposedTime, experienceId };
+    const contentSnapshot = { requestId, offerType, offerDescription, offerPrice, proposedTime, experienceId, mediaPath, mediaType };
 
     const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
       partner_id_param: partnerId,
@@ -716,6 +736,7 @@ Body: ${updateBody || '(none)'}`;
       const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
         request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
         offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
+        media_path_param: mediaPath, media_type_param: mediaType,
       });
       if (writeError) {
         console.error('screen-business-content: low-tier offer_response write failed', writeError);
