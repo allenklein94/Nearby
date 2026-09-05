@@ -32,6 +32,12 @@ export default function PlaceCard({
   // renders muted instead.
   actionLabel,
   actionIsState = false,
+  // Optional real category color (e.g. categoryStyleFor(tag).color from a
+  // caller that has one, like an offer's target_interest_tag) to tint the
+  // fallback icon's background. Falls back to the neutral surfaceElevated
+  // token -- never plain colors.surface -- so a photo-less row still reads
+  // as a "functional card" instead of a blank white one.
+  tintColor,
 }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -47,7 +53,9 @@ export default function PlaceCard({
       {photoUrl ? (
         <Image source={{ uri: photoUrl }} style={styles.image} />
       ) : (
-        <Text style={styles.icon}>{icon}</Text>
+        <View style={[styles.iconWrap, { backgroundColor: tintColor ? `${tintColor}20` : colors.surfaceElevated }]}>
+          <Text style={styles.icon}>{icon}</Text>
+        </View>
       )}
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>
@@ -76,7 +84,11 @@ const getStyles = (colors, shadow) =>
       padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
     },
     image: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
-    icon: { fontSize: 32, marginRight: spacing.md },
+    iconWrap: {
+      width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    icon: { fontSize: 22 },
     info: { flex: 1 },
     title: { ...typography.headline, color: colors.textPrimary },
     reason: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },

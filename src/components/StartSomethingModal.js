@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getQuickPrompts } from '../utils/timeContext';
 import { iconNameForOption } from '../constants/quickPickIcons';
+import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
@@ -90,18 +91,27 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
           )}
           <Text style={styles.title}>{title}</Text>
           <View style={styles.grid}>
-            {options.map((item) => (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.option}
-                onPress={() => (activeCategory ? handlePickSub(item.label) : handlePick(item))}
-                accessibilityLabel={item.label}
-                accessibilityRole="button"
-              >
-                <Ionicons name={iconNameForOption(item)} size={26} color={colors.primary} style={styles.optionIcon} />
-                <Text style={styles.optionLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
+            {options.map((item) => {
+              // Same "subtle tinted background, never blank white"
+              // functional-card treatment as CreateHubScreen's own copy of
+              // this grid -- reuses each option's real category color.
+              const categoryColor = item.category ? categoryStyleFor(item.category).color : null;
+              return (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[
+                    styles.option,
+                    categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated },
+                  ]}
+                  onPress={() => (activeCategory ? handlePickSub(item.label) : handlePick(item))}
+                  accessibilityLabel={item.label}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name={iconNameForOption(item)} size={26} color={categoryColor ?? colors.textSecondary} style={styles.optionIcon} />
+                  <Text style={styles.optionLabel}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           <TouchableOpacity onPress={handleClose} style={{ marginTop: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
             <Text style={styles.cancelText}>Cancel</Text>

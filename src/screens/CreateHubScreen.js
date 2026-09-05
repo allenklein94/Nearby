@@ -7,6 +7,7 @@ import { classifyCreateRequest } from '../services/createAssistant';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { iconNameForOption } from '../constants/quickPickIcons';
+import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 
 const SOMETHING_ELSE_LABEL = 'Something Else';
 
@@ -204,19 +205,34 @@ export default function CreateHubScreen({ navigation }) {
             <>
               {activeSubCategory && <Text style={styles.gridHeader}>What kind of {activeSubCategory.label.toLowerCase()}?</Text>}
               <View style={styles.grid}>
-                {options.map((item) => (
-                  <TouchableOpacity
-                    key={item.label}
-                    style={styles.gridItem}
-                    onPress={() => (activeSubCategory ? handlePickSub(item.label) : handlePick(item))}
-                    activeOpacity={0.85}
-                    accessibilityLabel={item.label}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name={iconNameForOption(item)} size={30} color={colors.primary} style={styles.gridItemIcon} />
-                    <Text style={styles.gridItemLabel}>{item.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                {options.map((item) => {
+                  // Functional cards get a subtle tinted background, never a
+                  // blank white one -- reuses each option's own real
+                  // category color via categoryStyleFor() (never a
+                  // fabricated color, the same mapping the hero card and
+                  // CommunityDetailScreen's icon badge already use). Items
+                  // with no real category (Something Else, and the Dinner
+                  // sub-grid's cuisine leaves) fall back to the neutral
+                  // surfaceElevated token instead of reusing an unrelated
+                  // category's color.
+                  const categoryColor = item.category ? categoryStyleFor(item.category).color : null;
+                  return (
+                    <TouchableOpacity
+                      key={item.label}
+                      style={[
+                        styles.gridItem,
+                        categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated },
+                      ]}
+                      onPress={() => (activeSubCategory ? handlePickSub(item.label) : handlePick(item))}
+                      activeOpacity={0.85}
+                      accessibilityLabel={item.label}
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name={iconNameForOption(item)} size={30} color={categoryColor ?? colors.textSecondary} style={styles.gridItemIcon} />
+                      <Text style={styles.gridItemLabel}>{item.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </>
           )}
@@ -256,7 +272,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   groupHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm },
   peopleActionsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   peopleAction: {
-    flex: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, gap: 2,
   },
   peopleActionLabel: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginTop: spacing.xs },

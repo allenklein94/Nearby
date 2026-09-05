@@ -134,6 +134,22 @@ export default function DiscoverHubScreen({ navigation }) {
   const { session } = useAuth();
   const myUserId = session?.user?.id ?? null;
 
+  // A no-photo card fallback should read as a "functional card" (subtle
+  // tinted background + icon), never a blank white row -- reuses each
+  // gathering/community's own real interest_tag color via
+  // categoryStyleFor() (never a fabricated color), same convention
+  // CommunityDetailScreen's iconBadge already established. Anything with
+  // no real category (a moment/story group) falls back to the neutral
+  // surfaceElevated token, still tinted, just not category-specific.
+  function renderCardIcon(icon, interestTag) {
+    const tint = interestTag ? `${categoryStyleFor(interestTag).color}20` : colors.surfaceElevated;
+    return (
+      <View style={[styles.cardIconWrap, { backgroundColor: tint }]}>
+        <Text style={styles.cardIcon}>{icon}</Text>
+      </View>
+    );
+  }
+
   const [mode, setMode] = useState('things');
   const [peopleSubMode, setPeopleSubMode] = useState('dating');
 
@@ -790,7 +806,7 @@ export default function DiscoverHubScreen({ navigation }) {
         {coverPhotoUrls[g.id] ? (
           <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
         ) : (
-          <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+          renderCardIcon(categoryStyleFor(g.interest_tag).icon, g.interest_tag)
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.cardTitle}>{g.title}</Text>
@@ -1046,6 +1062,7 @@ export default function DiscoverHubScreen({ navigation }) {
                 <PlaceCard
                   key={o.id}
                   icon="🎁"
+                  tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                   title={o.title}
                   reason={[o.brand_partners?.name, businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
                   onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
@@ -1273,7 +1290,7 @@ export default function DiscoverHubScreen({ navigation }) {
                 {coverPhotoUrls[g.id] ? (
                   <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
                 ) : (
-                  <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                  renderCardIcon(categoryStyleFor(g.interest_tag).icon, g.interest_tag)
                 )}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{g.title}</Text>
@@ -1341,7 +1358,7 @@ export default function DiscoverHubScreen({ navigation }) {
                   {coverPhotoUrls[g.id] ? (
                     <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
                   ) : (
-                    <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                    renderCardIcon(categoryStyleFor(g.interest_tag).icon, g.interest_tag)
                   )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{g.title}</Text>
@@ -1392,7 +1409,7 @@ export default function DiscoverHubScreen({ navigation }) {
                   accessibilityLabel={c.name}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.cardIcon}>🏘️</Text>
+                  {renderCardIcon('🏘️', c.interest_tag)}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{c.name}</Text>
                     {c.description ? <Text style={styles.cardSubtitle} numberOfLines={1}>{c.description}</Text> : null}
@@ -1461,6 +1478,7 @@ export default function DiscoverHubScreen({ navigation }) {
                   <PlaceCard
                     key={o.id}
                     icon="🎁"
+                    tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                     title={o.title}
                     reason={[
                       o.brand_partners?.name,
@@ -1525,7 +1543,7 @@ export default function DiscoverHubScreen({ navigation }) {
                   accessibilityLabel={`${group.title}, ${group.stories.length} ${group.kind === 'business' ? 'moment' : 'stor'}${group.stories.length === 1 ? (group.kind === 'business' ? '' : 'y') : (group.kind === 'business' ? 's' : 'ies')}`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.cardIcon}>{group.icon}</Text>
+                  {renderCardIcon(group.icon, null)}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle}>{group.title}</Text>
                     <Text style={styles.cardSubtitle}>
@@ -1684,7 +1702,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
   },
   cardImage: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
-  cardIcon: { fontSize: 32, marginRight: spacing.md },
+  cardIconWrap: {
+    width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cardIcon: { fontSize: 22 },
   cardTitle: { ...typography.headline, color: colors.textPrimary },
   cardSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   cardChevron: { color: colors.textTertiary, fontSize: 24 },
