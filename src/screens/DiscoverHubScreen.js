@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Linking, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,7 +9,7 @@ import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped,
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
-import { getActiveOffers, getNearbyBusinesses, searchOffers } from '../services/brandOffers';
+import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel } from '../services/places';
 import { getSocialForecast } from '../services/homeDashboard';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
@@ -16,6 +17,7 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
@@ -23,6 +25,7 @@ import StoriesRow from '../components/StoriesRow';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
@@ -30,6 +33,40 @@ import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
 import { businessSignalLine } from '../constants/businessDisplaySignals';
+
+// Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
+// thresholds against getGatheringFitReasons()'s real 0-22 score range
+// (attendance capped at +10, interest match +5, distance +3, today +2,
+// beginner-friendly +1, first-timer +1). Replaces the old flat ">= 5,
+// always exactly 2 hero slots" rule: any gathering scoring at or above
+// HERO_SCORE splits into a full-bleed hero card, STANDARD_SCORE into a
+// lighter standard card -- however many genuinely qualify each day, never
+// artificially capped at a fixed count. NOTABLE_DISPLAY_CAP is a real
+// display-sanity limit (so a day with 20 qualifying gatherings doesn't
+// turn the whole screen into hero cards), not a per-tier cap.
+const HERO_SCORE = 12;
+const STANDARD_SCORE = 5;
+const NOTABLE_DISPLAY_CAP = 6;
+// A real, disclosed judgment call for "trending enough to headline" (the
+// approved-attendee count is 100% real data; only the cutoff itself is a
+// UI decision) -- half of the fit-score formula's own attendance cap, so
+// it's grounded in an existing number rather than invented from nothing.
+const TRENDING_ATTENDANCE_MIN = 5;
+
+// A lightened variant of a category's own real PALETTE color
+// (gatheringCategoryStyles.js), for the hero card's gradient fallback --
+// simple additive lightening, not real HSL math, since this only ever
+// feeds a decorative gradient endpoint. Text legibility over it is handled
+// separately by the hero card's own dark scrim (styles.heroScrim below),
+// not by this function -- this never needs to hit a real contrast ratio
+// on its own.
+function lightenHex(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + Math.round(255 * amount));
+  const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * amount));
+  const b = Math.min(255, (num & 0xff) + Math.round(255 * amount));
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
@@ -98,6 +135,8 @@ const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
 export default function DiscoverHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const { session } = useAuth();
+  const myUserId = session?.user?.id ?? null;
 
   const [mode, setMode] = useState('things');
   const [peopleSubMode, setPeopleSubMode] = useState('dating');
@@ -152,6 +191,11 @@ export default function DiscoverHubScreen({ navigation }) {
   const [businesses, setBusinesses] = useState([]);
   const [places, setPlaces] = useState([]);
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
+  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real per-offer
+  // redemption state (BrandOffersScreen's own getMyRedemptions(), not a new
+  // signal) so a Perks row can honestly show "Redeemed ✓" instead of always
+  // "Redeem" regardless of whether the user already has.
+  const [redeemedOfferIds, setRedeemedOfferIds] = useState(new Set());
 
   const [loadingCore, setLoadingCore] = useState(true);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
@@ -209,12 +253,13 @@ export default function DiscoverHubScreen({ navigation }) {
         }
       }
 
-      const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData] = await Promise.all([
+      const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData, redeemedIds] = await Promise.all([
         gatheringsPromise,
         publicCommunitiesPromise,
         myCommunitiesPromise,
         getActiveOffers(loc?.latitude ?? null, loc?.longitude ?? null),
         getNearbyBusinesses(loc?.latitude ?? null, loc?.longitude ?? null),
+        getMyRedemptions(),
       ]);
 
       const joinedCommunityIds = new Set(myCommunities.map((c) => c.id));
@@ -223,6 +268,7 @@ export default function DiscoverHubScreen({ navigation }) {
       setCommunities(publicCommunities.filter((c) => !joinedCommunityIds.has(c.id)));
       setOffers(offersData);
       setBusinesses(businessesData);
+      setRedeemedOfferIds(new Set(redeemedIds));
 
       const coverEntries = await Promise.all(
         gatheringsData.map(async (g) => {
@@ -405,7 +451,19 @@ export default function DiscoverHubScreen({ navigation }) {
       ? '☀️ Great day out — showing outdoor options first'
       : null;
 
-  const recommended = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
+  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- one real scored list,
+  // replacing the old two-independent-passes design (a separate
+  // "Recommended" pass filtering on fit.score, and a separate "Trending"
+  // pass sorting on attendance, each blind to what the other had already
+  // picked). getGatheringFitReasons()'s score formula already folds
+  // attendance, interest match, distance, and today-ness into one number,
+  // so a single sort by that score surfaces both "personalized" and
+  // "genuinely popular" gatherings without two selection passes that could
+  // otherwise pick the same gathering for two different reasons. Each
+  // qualifying gathering's tile tier (hero vs. standard) is decided
+  // per-item against HERO_SCORE below, in the render itself -- never a
+  // fixed "first N are hero" rule.
+  const notableGatherings = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
     ? filteredGatherings
         .map((g) => {
           const fit = getGatheringFitReasons(g);
@@ -418,38 +476,11 @@ export default function DiscoverHubScreen({ navigation }) {
           }
           return { ...g, fit };
         })
-        .filter((g) => g.fit.score >= 5)
+        .filter((g) => g.fit.score >= STANDARD_SCORE)
         .sort((a, b) => b.fit.score - a.fit.score)
-        .slice(0, 3)
+        .slice(0, NOTABLE_DISPLAY_CAP)
     : [];
-  const recommendedGatheringIds = new Set(recommended.map((g) => g.id));
-
-  // Same signal/threshold Home's own "🔥 Trending Near You" already uses
-  // (homeDashboard.js's trendingGatherings) — Discover had no trending
-  // section at all before this, even though the underlying gathering
-  // list is already fetched here for search.
-  //
-  // Aug 30 2026 (CLAUDE.md, second UX critique): both this list and
-  // `recommended` above draw from the exact same `filteredGatherings`
-  // array with no awareness of each other, and the plain "Gatherings"
-  // list below draws from it a third time -- a real, previously-
-  // undetected version of the same "features stacked with no
-  // cross-awareness" problem the critique found in People mode, just
-  // provable in code instead of guessed from a screenshot: the same
-  // gathering could legitimately render three separate times on the
-  // same scroll (once as a personalized pick, once as popular, once in
-  // the plain list). Trending now excludes anything Recommended already
-  // claimed -- Recommended is the stronger, more personalized signal, so
-  // it wins the dedup, same "later section excludes what an earlier,
-  // stronger one already surfaced" convention Home's own Because-You're-
-  // Into/Also-Coming-Up sections already established.
-  const trending = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
-    ? [...filteredGatherings]
-        .filter((g) => !recommendedGatheringIds.has(g.id))
-        .sort((a, b) => (b.approvedAttendees?.length ?? 0) - (a.approvedAttendees?.length ?? 0))
-        .slice(0, 3)
-    : [];
-  const trendingGatheringIds = new Set(trending.map((g) => g.id));
+  const notableGatheringIds = new Set(notableGatherings.map((g) => g.id));
 
   const showGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
   const showCommunities = typeFilter === 'all' || typeFilter === 'communities';
@@ -458,14 +489,10 @@ export default function DiscoverHubScreen({ navigation }) {
   const showViewToggle = typeFilter === 'all' || typeFilter === 'gatherings' || typeFilter === 'perks';
   const isAll = typeFilter === 'all';
 
-  // Same dedup as trending above -- whatever already surfaced as a
-  // personalized pick or a trending pick doesn't need to repeat in the
-  // plain catch-all list right below it. A no-op when Recommended/
-  // Trending are both empty (Communities/Places/Perks views, or while
-  // actively searching), so this never changes behavior anywhere else.
-  const dedupedGatherings = filteredGatherings.filter(
-    (g) => !recommendedGatheringIds.has(g.id) && !trendingGatheringIds.has(g.id)
-  );
+  // Whatever already surfaced above doesn't repeat in the plain catch-all
+  // list right below it. A no-op when `notableGatherings` is empty
+  // (Communities/Places/Perks views, or while actively searching).
+  const dedupedGatherings = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
   const gatheringsToShow = isAll ? dedupedGatherings.slice(0, PREVIEW_COUNT) : dedupedGatherings;
   const communitiesToShow = isAll ? filteredCommunities.slice(0, PREVIEW_COUNT) : filteredCommunities;
   const offersToShow = isAll ? filteredOffers.slice(0, PREVIEW_COUNT) : filteredOffers;
@@ -497,6 +524,58 @@ export default function DiscoverHubScreen({ navigation }) {
   const mapBusinesses = showPerks ? businesses : [];
 
   const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
+
+  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- the specific "why"
+  // line every notable card shows, in priority order: a real matched
+  // interest (names the actual tag, never the generic shared "Matches your
+  // interests" string), then a real high attendance count, then whatever
+  // getGatheringFitReasons() itself ranked first for anything else that
+  // still cleared STANDARD_SCORE (e.g. "Very close" / "0.3 mi away" /
+  // "Happening today").
+  function primaryReasonLine(g) {
+    if (g.matchesYourInterests && g.interest_tag) return `Matches your ${g.interest_tag} interest`;
+    const attendeeCount = g.approvedAttendees?.length ?? 0;
+    if (attendeeCount >= TRENDING_ATTENDANCE_MIN) return `${attendeeCount} attending`;
+    return g.fit.reasons[0] ?? null;
+  }
+
+  // The hero card's small eyebrow label -- same three real signals as
+  // primaryReasonLine above, just as a short badge word instead of a full
+  // sentence, falling back to the real time badge (gatheringTimeBadge)
+  // when neither a matched interest nor real popularity is what earned
+  // this gathering its spot (e.g. it qualified purely on distance/today).
+  function heroEyebrow(g) {
+    if (g.matchesYourInterests) return 'PERSONALIZED';
+    if ((g.approvedAttendees?.length ?? 0) >= TRENDING_ATTENDANCE_MIN) return 'TRENDING';
+    return gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED';
+  }
+
+  // The current user's own real RSVP status on this gathering, derived
+  // from the raw `attendees` array every gathering row already carries
+  // (enrichGatheringsWithDistanceAndSort, services/gatherings.js) -- not a
+  // new fetch. Mirrors GatheringDetailScreen's own myStatus values exactly.
+  function myAttendeeStatus(g) {
+    if (!myUserId) return null;
+    return (g.attendees ?? []).find((a) => a.user_id === myUserId)?.status ?? null;
+  }
+
+  // Real action vocabulary, reused verbatim from GatheringDetailScreen.js
+  // (its own accessibilityLabel / countdown-stat labels) rather than an
+  // invented "View"/"Explore" catch-all: someone already RSVP'd sees their
+  // real state as a badge, never a fresh CTA button; everyone else sees
+  // the real next action, including the real Join-Waitlist/Request-to-Join
+  // distinction (gathering.isFull / gathering.is_public), computed the same
+  // way GatheringDetailScreen itself computes `isFull` off approvedAttendees
+  // vs. capacity. Tapping either kind still opens GatheringDetailScreen to
+  // actually perform the join -- a real task change, not just more info.
+  function gatheringActionInfo(g) {
+    const status = myAttendeeStatus(g);
+    if (status === 'approved') return { kind: 'state', label: 'Going' };
+    if (status === 'waitlisted') return { kind: 'state', label: 'Waitlisted' };
+    if (status === 'pending') return { kind: 'state', label: 'Interested' };
+    const isFull = g.capacity != null && (g.approvedAttendees?.length ?? 0) >= g.capacity;
+    return { kind: 'cta', label: isFull ? 'Join Waitlist' : (g.is_public ? 'Join Gathering' : 'Request to Join') };
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -738,84 +817,112 @@ export default function DiscoverHubScreen({ navigation }) {
             <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
           )}
 
-          {(recommended.length > 0 || trending.length > 0) && (
+          {notableGatherings.length > 0 && (
             <Text style={styles.sectionHeader}>Recommended For You</Text>
           )}
 
-          {recommended.length > 0 && (
-            <>
-              {trending.length > 0 && <Text style={styles.subLabel}>✨ Personalized For You</Text>}
-              {recommended.map((g) => (
-                <TouchableOpacity
-                  key={g.id}
-                  style={styles.card}
-                  onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${g.title}, ${g.fit.reasons.join(', ')}`}
-                  accessibilityRole="button"
-                >
-                  {coverPhotoUrls[g.id] ? (
-                    <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
-                  ) : (
-                    <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{g.title}</Text>
-                    <Text style={styles.cardSubtitle} numberOfLines={1}>{g.fit.reasons.join(' · ')}</Text>
-                    {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
-                        Audit, "Discover needs to stop throwing away
-                        information it already has"): price/party/
-                        fullness are already fetched on every gathering
-                        row, just never rendered here before. */}
-                    {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
-                      <Text
-                        style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
-                        numberOfLines={1}
-                      >
-                        {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={styles.cardChevron}>›</Text>
-                </TouchableOpacity>
-              ))}
-            </>
-          )}
+          {/* Phase 8 (CLAUDE.md, Discover visual hierarchy) -- each
+              notableGatherings item picks its own tile tier from its own
+              real score (HERO_SCORE), instead of a fixed "first 2 are
+              hero" rule -- a day with four genuinely high-scoring
+              gatherings shows four hero cards; a quiet day shows none. */}
+          {notableGatherings.map((g) => {
+            const action = gatheringActionInfo(g);
+            const reasonLine = primaryReasonLine(g);
+            const timeLine = gatheringTimeLine(g.scheduled_at);
 
-          {trending.length > 0 && (
-            <>
-              <Text style={styles.subLabel}>🔥 Trending Near You</Text>
-              {trending.map((g) => (
+            if (g.fit.score >= HERO_SCORE) {
+              const categoryStyle = categoryStyleFor(g.interest_tag);
+              return (
                 <TouchableOpacity
                   key={g.id}
-                  style={styles.card}
+                  style={styles.heroCard}
                   onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                  activeOpacity={0.85}
-                  accessibilityLabel={`${g.title}, ${g.approvedAttendees?.length ?? 0} attending`}
+                  activeOpacity={0.9}
+                  accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}`}
                   accessibilityRole="button"
                 >
                   {coverPhotoUrls[g.id] ? (
-                    <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
+                    <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.heroImage} />
                   ) : (
-                    <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                    // Real, disclosed fallback: this app's own existing
+                    // categoryStyleFor() color/icon (never a fabricated
+                    // stock photo) filling the full card instead of sitting
+                    // inside a 32px glyph -- a real coverPhotoUrls[g.id]
+                    // photo always takes priority when one exists.
+                    <LinearGradient
+                      colors={[lightenHex(categoryStyle.color, 0.28), categoryStyle.color]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.heroImage}
+                    >
+                      <Text style={styles.heroWatermarkIcon}>{categoryStyle.icon}</Text>
+                    </LinearGradient>
                   )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{g.title}</Text>
-                    <Text style={styles.cardSubtitle}>{g.approvedAttendees?.length ?? 0} attending · {g.distanceLabel}</Text>
-                    {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
-                      <Text
-                        style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
-                        numberOfLines={1}
-                      >
-                        {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']}
+                    style={styles.heroScrim}
+                    pointerEvents="none"
+                  />
+                  <Text style={styles.heroEyebrow}>{heroEyebrow(g)}</Text>
+                  <View style={styles.heroBody}>
+                    <View style={{ flex: 1, marginRight: spacing.sm }}>
+                      <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
+                      <Text style={styles.heroMeta} numberOfLines={1}>
+                        {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
                       </Text>
-                    )}
+                    </View>
+                    <View style={action.kind === 'cta' ? styles.heroCta : styles.heroStatePill}>
+                      <Text style={action.kind === 'cta' ? styles.heroCtaText : styles.heroStatePillText}>{action.label}</Text>
+                    </View>
                   </View>
-                  <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
-              ))}
-            </>
-          )}
+              );
+            }
+
+            return (
+              <TouchableOpacity
+                key={g.id}
+                style={styles.card}
+                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                activeOpacity={0.85}
+                accessibilityLabel={`${g.title}${reasonLine ? `, ${reasonLine}` : ''}`}
+                accessibilityRole="button"
+              >
+                {coverPhotoUrls[g.id] ? (
+                  <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
+                ) : (
+                  <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{g.title}</Text>
+                  {(reasonLine || timeLine || g.distanceLabel) && (
+                    <Text style={styles.cardSubtitle} numberOfLines={1}>
+                      {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                  {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
+                      Audit, "Discover needs to stop throwing away
+                      information it already has"): price/party/
+                      fullness are already fetched on every gathering
+                      row, just never rendered here before. */}
+                  {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+                    <Text
+                      style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
+                      numberOfLines={1}
+                    >
+                      {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                </View>
+                {action.kind === 'cta' ? (
+                  <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+                ) : (
+                  <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
 
           {showGatherings && isSearching && loadingSearch && (
             <>
@@ -969,20 +1076,29 @@ export default function DiscoverHubScreen({ navigation }) {
           {showPerks && !(isSearching && loadingSearch) && offersToShow.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
-              {offersToShow.map((o) => (
-                <PlaceCard
-                  key={o.id}
-                  icon="🎁"
-                  title={o.title}
-                  reason={[
-                    o.brand_partners?.name,
-                    businessSignalLine(o.brand_partners),
-                    o.target_interest_tag ? 'Matches your interests' : null,
-                  ].filter(Boolean).join(' · ')}
-                  onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
-                  accessibilityLabel={`${o.title}, ${o.brand_partners?.name}`}
-                />
-              ))}
+              {offersToShow.map((o) => {
+                const isRedeemed = redeemedOfferIds.has(o.id);
+                return (
+                  <PlaceCard
+                    key={o.id}
+                    icon="🎁"
+                    title={o.title}
+                    reason={[
+                      o.brand_partners?.name,
+                      businessSignalLine(o.brand_partners),
+                      // Phase 8 (CLAUDE.md, Discover visual hierarchy) --
+                      // names the real matched tag, not the generic shared
+                      // "Matches your interests" string (o.target_interest_tag
+                      // is already the actual tag value on this row).
+                      o.target_interest_tag ? `Matches your ${o.target_interest_tag} interest` : null,
+                    ].filter(Boolean).join(' · ')}
+                    onPress={() => navigation.navigate('BrandOffers', { highlightOfferId: o.id })}
+                    accessibilityLabel={`${o.title}, ${o.brand_partners?.name}, ${isRedeemed ? 'already redeemed' : 'Redeem'}`}
+                    actionLabel={isRedeemed ? 'Redeemed ✓' : 'Redeem'}
+                    actionIsState={isRedeemed}
+                  />
+                );
+              })}
               {isAll && (
                 <TouchableOpacity onPress={() => navigation.navigate('BrandOffers')} accessibilityLabel="See all perks" accessibilityRole="button">
                   <Text style={styles.seeAll}>See all in Perks →</Text>
@@ -1193,6 +1309,45 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   cardTitle: { ...typography.headline, color: colors.textPrimary },
   cardSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   cardChevron: { color: colors.textTertiary, fontSize: 24 },
+  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- the standard-tier
+  // card's real next-action word (coral, an actual action) vs. the
+  // current user's own real RSVP state (muted, informational only --
+  // "coral = action, not decoration").
+  cardActionLabel: { color: colors.primary, fontWeight: '700', fontSize: 13 },
+  cardStateLabel: { color: colors.textTertiary, fontWeight: '600', fontSize: 12 },
+  // Hero tier -- full-bleed image/gradient card for a gathering whose own
+  // real score cleared HERO_SCORE. Height fits a title + one meta line +
+  // action pill over the image; text sits on styles.heroScrim, not the
+  // raw image/gradient, so legibility never depends on the image's tone.
+  heroCard: {
+    borderRadius: radius.lg, overflow: 'hidden', marginBottom: spacing.md,
+    minHeight: 132, justifyContent: 'flex-end', ...shadow.card,
+  },
+  heroImage: { ...StyleSheet.absoluteFillObject, alignItems: 'flex-end', justifyContent: 'flex-start' },
+  heroWatermarkIcon: { fontSize: 84, opacity: 0.25, marginTop: -18, marginRight: -6 },
+  heroScrim: { ...StyleSheet.absoluteFillObject },
+  heroEyebrow: {
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    color: '#FFFFFF', fontSize: 10, fontWeight: '700', letterSpacing: 0.6,
+    backgroundColor: 'rgba(0,0,0,0.32)', paddingHorizontal: spacing.sm, paddingVertical: 3,
+    borderRadius: radius.full, overflow: 'hidden',
+  },
+  heroBody: {
+    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
+    padding: spacing.md, paddingTop: spacing.xl,
+  },
+  heroTitle: { color: '#FFFFFF', fontWeight: '800', fontSize: 17, marginBottom: 2 },
+  heroMeta: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '500' },
+  heroCta: {
+    backgroundColor: colors.primary, borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
+  },
+  heroCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
+  heroStatePill: {
+    backgroundColor: 'rgba(255,255,255,0.24)', borderRadius: radius.full,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
+  },
+  heroStatePillText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
   // Same "one cluster header, several lighter sub-labels underneath"
   // recipe HomeScreen.js's own "✨ Because You Like…" cluster already

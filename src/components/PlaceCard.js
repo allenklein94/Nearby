@@ -22,6 +22,16 @@ export default function PlaceCard({
   onPress,
   accessibilityLabel,
   style,
+  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- optional, so every
+  // existing call site (Places) keeps today's plain chevron unchanged.
+  // When passed (Perks' real "Redeem"/"Redeemed ✓" state), replaces the
+  // chevron with the real next-action word instead of a generic arrow.
+  // actionIsState marks a completed/passive state ("Redeemed ✓") rather
+  // than a live action ("Redeem") -- coral is reserved for the latter
+  // (CLAUDE.md's "coral = action, not decoration" rule), so a state label
+  // renders muted instead.
+  actionLabel,
+  actionIsState = false,
 }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -49,7 +59,11 @@ export default function PlaceCard({
           </Text>
         ) : null}
       </View>
-      <Text style={styles.chevron}>›</Text>
+      {actionLabel ? (
+        <Text style={[styles.actionLabel, actionIsState && styles.actionLabelState]} numberOfLines={1}>{actionLabel}</Text>
+      ) : (
+        <Text style={styles.chevron}>›</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -67,4 +81,6 @@ const getStyles = (colors, shadow) =>
     title: { ...typography.headline, color: colors.textPrimary },
     reason: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
     chevron: { color: colors.textTertiary, fontSize: 24 },
+    actionLabel: { color: colors.primary, fontWeight: '700', fontSize: 13, marginLeft: spacing.sm },
+    actionLabelState: { color: colors.textTertiary },
   });
