@@ -380,7 +380,15 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     return (
                       <TouchableOpacity
                         key={option}
-                        style={[styles.chip, isSelected && { backgroundColor: style.color, borderColor: style.color }]}
+                        style={[
+                          styles.chip,
+                          // Every category chip, not just the selected one,
+                          // carries its own real category tint -- a "coffee"
+                          // chip should never sit blank white just because
+                          // it isn't picked yet.
+                          !isSelected && { backgroundColor: `${style.color}20`, borderColor: `${style.color}40` },
+                          isSelected && { backgroundColor: style.color, borderColor: style.color },
+                        ]}
                         onPress={() => setInterestTag(interestTag === option ? null : option)}
                         activeOpacity={0.8}
                         accessibilityLabel={`Category: ${option}`}

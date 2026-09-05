@@ -44,7 +44,11 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
                 return (
                   <TouchableOpacity
                     key={tag}
-                    style={[styles.chip, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    style={[
+                      styles.chip,
+                      !isSelected && { backgroundColor: `${style.color}20`, borderColor: `${style.color}40` },
+                      isSelected && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
                     onPress={() => toggle(tag)}
                     accessibilityRole="button"
                     accessibilityLabel={tag}
