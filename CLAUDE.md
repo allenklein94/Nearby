@@ -63,10 +63,18 @@ GitHub Actions workflow exists for this yet).
 
 ### Phase 8: Discover visual hierarchy + expand-in-place (approved, in progress)
 
-The user approved a mock (an Artifact showing hero image cards vs. today's uniform white
-`card`), then approved a second round of refinements, **including building the "expand in
-place" interaction now** (not deferred). Nothing in `DiscoverHubScreen.js` has been changed yet
-as of this writing — everything below is the grounded, resolved spec to build.
+**Status as of 2026-09-05: steps 1-2 of the build order below are DONE and pushed (commits
+`231cf20c` and `283a77bc`). Step 3 (matches helper G + expand-in-place state machine F) is NOT
+started.** The user approved a mock (an Artifact showing hero image cards vs. today's uniform
+white `card`), then approved a second round of refinements, **including building the "expand in
+place" interaction** (not deferred) — that part is still outstanding. Sections A-E below are the
+original spec and are now built (see "What actually shipped for A-E" beneath them for real
+file/line pointers and a couple of judgment calls made during the build that weren't spelled out
+in the original spec). Sections F-H are unbuilt spec, still current.
+
+**Not verified in an actual browser/simulator** (same caveat as Phase 7 — no such tooling has
+ever been available in a session on this project). If a hero card's gradient/scrim/text layering
+looks off in practice, that's the first thing to check.
 
 **A. Dynamic tiering by relevance score, not a hardcoded top-2.**
 `getGatheringFitReasons()` (`src/services/gatherings.js:946-988`) returns `fit.score` in a real
@@ -128,6 +136,31 @@ For Perks/offers, the real CTA is **"Redeem"** (`t('brandOffers.redeem')`,
 Discover Perks row needs that same `getMyRedemptions()` call added to DiscoverHubScreen's load —
 not fabricated.
 
+**What actually shipped for A-E** (`src/screens/DiscoverHubScreen.js`, commit `283a77bc`,
++ `src/utils/gatheringTimeLabel.js` from `231cf20c`; `src/components/PlaceCard.js` gained an
+optional `actionLabel`/`actionIsState` prop pair for the Perks Redeem/Redeemed state, defaulted
+off so every other `PlaceCard` call site is unchanged):
+- Real thresholds: `HERO_SCORE = 12`, `STANDARD_SCORE = 5` (replaces the old flat `>= 5`),
+  `NOTABLE_DISPLAY_CAP = 6` (a real display-sanity cap on the whole notable list, not a per-tier
+  cap — a judgment call added during the build, not in the original spec, so a day with many
+  qualifying gatherings doesn't turn the whole screen into cards).
+- The old two independent passes (`recommended` filtered on `fit.score`, `trending` sorted on
+  attendance, each blind to what the other had already picked — meaning the same gathering could
+  legitimately render twice) were replaced with **one** sorted-by-`fit.score` list
+  (`notableGatherings`); tier (hero vs. standard) is decided per-item in the render off that same
+  score, not a fixed slot count. `TRENDING_ATTENDANCE_MIN = 5` (half of the fit-score formula's
+  own attendance cap) is the real, disclosed cutoff for "trending enough to headline" in the
+  hero eyebrow / reason line. This is a real design change beyond the literal spec text in A —
+  flagged here in case a future session expected the old two-section layout to still exist.
+- New dependency: `expo-linear-gradient` (`package.json`/`package-lock.json`), used for the hero
+  image's gradient fallback and its legibility scrim.
+- CTA logic lives in `gatheringActionInfo()`/`myAttendeeStatus()` inside `DiscoverHubScreen.js`,
+  mirroring `GatheringDetailScreen.js`'s own `isFull`/`is_public` logic exactly, off each row's
+  existing `attendees`/`capacity` fields (`useAuth().session.user.id` for the current user).
+- Not done as part of A-E, deliberately out of scope: no Places-card changes (Places still uses
+  `PlaceCard`'s plain chevron — B's "standard/compact tiers stay neutral" rule was read as
+  covering gatherings only, since Places never had a fit-score to tier by).
+
 **F. Expand-in-place (approved to build now, not deferred).** Tapping a hero/standard card
 reconfigures the *existing* `DiscoverHubScreen` in place around that result's context (e.g.
 Coffee + Tonight + Nearby) — no new screen, no `navigation.navigate`. Implementation shape:
@@ -167,12 +200,12 @@ Phase 8 time-bucket utility from D) → People (image-forward, real profile phot
 the consumer Discover look). The "expand in place" pattern (F/G) is meant to generalize to these
 other surfaces too, once Discover's version is confirmed working — not before.
 
-**Where a restart should pick up**: the grounding above is complete — no further research pass
-needed before writing code. Build order: (1) `src/utils/gatheringTimeLabel.js` shared time-bucket
-formatter, (2) DiscoverHubScreen tiering + copy + CTA changes (A-E), commit, (3) the matches
-helper (G) + expand-in-place state machine (F/G), commit. Check `git log` on this file's own
-history / `DiscoverHubScreen.js` directly to see how far this actually got before assuming
-nothing is done.
+**Where a restart should pick up**: (1) and (2) of the original build order are done (see status
+note above) — start at **(3): the `getMyMatches()` helper (G) + the expand-in-place state
+machine (F/G)**, then commit. The grounding in F/G/H above is unchanged and still current, no
+further research pass needed before writing that code. As always, check `git log` on
+`DiscoverHubScreen.js` directly rather than trusting this note blindly, in case a session after
+this one made further progress without updating it.
 
 ## Standing Conventions (Locked)
 
