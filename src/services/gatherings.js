@@ -27,7 +27,7 @@ const WIDE_TIER_MAX_MILES = 15;
 // unknown, never a guessed value" convention. Added here (the one shared
 // select list every gathering-fetching function already reads from) so
 // every caller starts returning them for free, no per-call-site change.
-const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type';
+const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, scheduled_at, area, wide_area, is_public, show_on_map, women_only, hosting_partner_id, recurrence_rule, energy_level, conversation_level, group_size_feel, beginner_friendly, timeline_steps, cover_photo_path, visibility, community_id, capacity, ask_local_businesses, price_level, party_type, show_group_insights';
 
 // ask_local_businesses only ever stores the host's real consent/intent at
 // creation time -- it does NOT itself create a business_requests row. A
@@ -41,7 +41,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -82,6 +82,7 @@ export async function createGathering({ title, description, interestTag, schedul
       ask_local_businesses: askLocalBusinesses,
       price_level: priceLevel,
       party_type: partyType,
+      show_group_insights: showGroupInsights,
     })
     .select()
     .single();
@@ -647,7 +648,7 @@ export async function getAllPendingRequests() {
   return data ?? [];
 }
 
-export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps }) {
+export async function updateGathering(gatheringId, { title, description, scheduledAt, energyLevel, conversationLevel, groupSizeFeel, beginnerFriendly, timelineSteps, showGroupInsights }) {
   const { error } = await supabase
     .from('gatherings')
     .update({
@@ -659,6 +660,7 @@ export async function updateGathering(gatheringId, { title, description, schedul
       group_size_feel: groupSizeFeel,
       beginner_friendly: beginnerFriendly,
       timeline_steps: timelineSteps,
+      show_group_insights: showGroupInsights,
     })
     .eq('id', gatheringId);
 
@@ -943,7 +945,7 @@ export async function getFirstTimerAttendeeIds(gatheringId, attendeeUserIds) {
 // detail screen's "Why this fits you" section — real signals only
 // (attendance, distance, interest match, real flags), never an
 // invented percentage or preference claim.
-export function getGatheringFitReasons(gathering, { firstTimerCount = 0 } = {}) {
+export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendAttendeeCount = 0 } = {}) {
   const reasons = [];
   let score = 0;
   const attendeeCount = gathering.approvedAttendees?.length ?? 0;
@@ -958,6 +960,15 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0 } = {}) 
     // canonical text -- reused verbatim by homeRecommendations.js's own
     // scoreGathering(), so the two surfaces can never silently drift.
     reasons.push(REASON_TEXT.MATCHES_INTERESTS.text);
+  }
+  if (friendAttendeeCount > 0) {
+    // Group Insights plan (2026-09-18): a real, already-connected-only
+    // signal (filterToMyConnections() over this gathering's own approved
+    // attendees) -- weighted like a second interest match (+5), not a
+    // generic popularity count, because "someone I already know is going"
+    // is a stronger personal fit signal than a raw attendance number.
+    score += 4;
+    reasons.push(`${friendAttendeeCount} of your friends ${friendAttendeeCount === 1 ? 'is' : 'are'} attending`);
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2 && gathering.distanceLabel) {
     score += 3;
@@ -1118,6 +1129,23 @@ export async function getGatheringMeetupPoint(gatheringId) {
   const point = data?.[0];
   if (!point || point.latitude == null || point.longitude == null) return null;
   return { latitude: point.latitude, longitude: point.longitude };
+}
+
+// Group Insights plan (2026-09-18): thin wrapper over a SECURITY DEFINER
+// RPC that does 100% of the age/gender aggregation and privacy-tiering
+// server-side (never a raw per-attendee row) -- same shape as
+// getPartnerDeclinePatterns() in businessFulfillment.js. Client renders
+// whatever tier ('none'/'coarse'/'precise') comes back; it never
+// re-derives or re-thresholds anything itself.
+export async function getGatheringGroupInsights(gatheringId) {
+  const { data, error } = await supabase.rpc('get_gathering_group_insights', {
+    gathering_id_param: gatheringId,
+  });
+  if (error) {
+    console.error('getGatheringGroupInsights error', error);
+    return null;
+  }
+  return data?.[0] ?? null;
 }
 
 export async function getApprovedAttendeeCount(gatheringId) {

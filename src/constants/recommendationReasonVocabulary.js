@@ -90,6 +90,10 @@ const PATTERN_MATCHES = [
   { pattern: /^\d+ (person|people) attending$/, category: REASON_CATEGORIES.POPULARITY },
   // getGatheringFitReasons()'s real first-timer-count reason.
   { pattern: /^\d+ attendees? (is|are) also first-timers?$/, category: REASON_CATEGORIES.CONTEXT },
+  // getGatheringFitReasons()'s real friends-attending reason (Group
+  // Insights plan, 2026-09-18) -- filterToMyConnections() over the
+  // gathering's own approved attendees, never a fabricated count.
+  { pattern: /^\d+ of your friends (is|are) attending$/, category: REASON_CATEGORIES.CONTEXT },
   // getGatheringById()'s real formatted distanceLabel ("Very close" or
   // "0.3 mi away").
   { pattern: /^(Very close|\d+(\.\d+)? mi away)$/, category: REASON_CATEGORIES.DISTANCE },
