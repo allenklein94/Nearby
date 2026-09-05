@@ -669,7 +669,7 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
 // free text) or handleToggleExperienceActive() (only flips `active`,
 // carries the already-published fields forward unchanged) -- neither
 // introduces new unscreened content.
-export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType }) {
+export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType, mediaPath = null, mediaType = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -690,6 +690,8 @@ export async function submitBusinessExperienceForScreening(partnerId, { experien
       attributes: attributes ?? [],
       priceLevel: priceLevel ?? null,
       partyType: partyType ?? null,
+      mediaPath,
+      mediaType,
     }),
   });
 
@@ -868,7 +870,7 @@ export async function getBusinessExperiences(partnerId) {
   return data ?? [];
 }
 
-export async function createBusinessExperience(partnerId, { title, description, icon, attributes, priceLevel, partyType, aiSuggested = false }) {
+export async function createBusinessExperience(partnerId, { title, description, icon, attributes, priceLevel, partyType, aiSuggested = false, mediaPath = null, mediaType = null }) {
   const { data, error } = await supabase.rpc('create_business_experience', {
     partner_id_param: partnerId,
     title_param: title,
@@ -878,6 +880,8 @@ export async function createBusinessExperience(partnerId, { title, description, 
     price_level_param: priceLevel ?? null,
     party_type_param: partyType ?? null,
     ai_suggested_param: aiSuggested,
+    media_path_param: mediaPath,
+    media_type_param: mediaType,
   });
   if (error) throw error;
   return data;
@@ -887,7 +891,7 @@ export async function createBusinessExperience(partnerId, { title, description, 
 // server-side, inside the RPC itself -- matches the table's own real
 // provenance rule (a kept-unmodified suggestion stays flagged, an edited
 // one no longer honestly qualifies).
-export async function updateBusinessExperience(experienceId, { title, description, icon, attributes, priceLevel, partyType, active = true }) {
+export async function updateBusinessExperience(experienceId, { title, description, icon, attributes, priceLevel, partyType, active = true, mediaPath = null, mediaType = null }) {
   const { error } = await supabase.rpc('update_business_experience', {
     experience_id_param: experienceId,
     title_param: title,
@@ -897,6 +901,8 @@ export async function updateBusinessExperience(experienceId, { title, descriptio
     price_level_param: priceLevel ?? null,
     party_type_param: partyType ?? null,
     active_param: active,
+    media_path_param: mediaPath,
+    media_type_param: mediaType,
   });
   if (error) throw error;
 }

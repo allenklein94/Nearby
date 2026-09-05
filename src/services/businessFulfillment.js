@@ -1,5 +1,83 @@
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
+
+const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+function base64ToUint8Array(base64) {
+  const clean = base64.replace(/[^A-Za-z0-9+/]/g, '');
+  const bytes = [];
+  let buffer = 0;
+  let bits = 0;
+  for (let i = 0; i < clean.length; i++) {
+    const c = BASE64_CHARS.indexOf(clean[i]);
+    if (c === -1) continue;
+    buffer = (buffer << 6) | c;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      bytes.push((buffer >> bits) & 0xff);
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+// Phase 4 (media upload, CLAUDE.md) -- lets a business pick a photo OR
+// video for their own offer response / Signature Experience creative.
+// Single picker (mediaTypes: All) rather than separate photo/video
+// pickers -- the resulting asset.type ('image'|'video') tells us which
+// it was, matching the media_type CHECK the schema already enforces.
+export async function pickBusinessOfferMedia() {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    throw new Error('Photo library access is needed to add a photo or video.');
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.All,
+    quality: 0.7,
+    videoMaxDuration: 30,
+  });
+
+  if (result.canceled || !result.assets?.[0]) return null;
+  return result.assets[0];
+}
+
+// One shared bucket (business-offer-media), folder-keyed by the real
+// partner_id, filename-prefixed offer-*/experience-* per CLAUDE.md's
+// locked design -- kind distinguishes which prefix/caller this is for.
+// Never fetch().blob() -- silently produces 0-byte files on iOS for
+// local file:// URIs, this codebase's own already-learned lesson (see
+// uploadGatheringCoverPhoto() in gatherings.js).
+export async function uploadBusinessOfferMedia(partnerId, asset, kind) {
+  const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' });
+  if (!base64 || base64.length === 0) {
+    throw new Error('Could not read the selected file. Please try a different one.');
+  }
+
+  const bytes = base64ToUint8Array(base64);
+  const isVideo = asset.type === 'video';
+  const fileExt = isVideo ? 'mov' : (asset.uri.split('.').pop()?.split('?')[0] || 'jpg');
+  const prefix = kind === 'experience' ? 'experience' : 'offer';
+  const path = `${partnerId}/${prefix}-${Date.now()}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from('business-offer-media')
+    .upload(path, bytes, { contentType: isVideo ? 'video/quicktime' : 'image/jpeg' });
+
+  if (error) throw error;
+  return { path, mediaType: isVideo ? 'video' : 'image' };
+}
+
+export async function getSignedBusinessOfferMediaUrl(path) {
+  if (!path) return null;
+  const { data, error } = await supabase.storage
+    .from('business-offer-media')
+    .createSignedUrl(path, 3600);
+  if (error) return null;
+  return data.signedUrl;
+}
 
 // Intent Layer + Business Fulfillment, Phase 2 (see CLAUDE.md). The 1:1
 // consumer -> business request/offer/reservation lifecycle: this is the
@@ -408,7 +486,7 @@ export async function getBusinessOpportunities(partnerId) {
   return data ?? [];
 }
 
-export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null }) {
+export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null }) {
   const { data, error } = await supabase.rpc('submit_business_offer', {
     request_id_param: requestId,
     offer_type_param: offerType,
@@ -416,6 +494,8 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
     offer_price_param: offerPrice,
     proposed_time_param: proposedTime,
     experience_id_param: experienceId,
+    media_path_param: mediaPath,
+    media_type_param: mediaType,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -428,7 +508,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null }) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -448,6 +528,8 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       offerPrice,
       proposedTime,
       experienceId,
+      mediaPath,
+      mediaType,
     }),
   });
 
