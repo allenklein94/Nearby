@@ -8,6 +8,7 @@ import {
   getSignedGatheringPhotoUrl,
   getFirstTimerAttendeeIds,
   getGatheringFitReasons,
+  getGatheringGroupInsights,
   expressInterest,
   leaveGathering,
   getHostStats,
@@ -17,6 +18,8 @@ import {
   getPendingInterestCount,
   getGatheringMessageCount,
 } from '../services/gatherings';
+import { filterToMyConnections } from '../services/connections';
+import { formatPreciseBucketLine, formatInterestLine } from '../utils/groupInsightsLabels';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getGatheringOffer } from '../services/brandOffers';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
@@ -65,6 +68,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [hostPhotoUrl, setHostPhotoUrl] = useState(null);
   const [attendeePhotoUrls, setAttendeePhotoUrls] = useState({});
   const [firstTimerCount, setFirstTimerCount] = useState(0);
+  const [friendAttendeeCount, setFriendAttendeeCount] = useState(0);
+  const [groupInsights, setGroupInsights] = useState(null);
   const [offer, setOffer] = useState(null);
   const [hostStats, setHostStats] = useState(null);
   const [hostReputation, setHostReputation] = useState(null);
@@ -203,10 +208,25 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
         const firstTimers = await getFirstTimerAttendeeIds(gatheringId, g.approvedAttendees.map((a) => a.user_id));
         setFirstTimerCount(firstTimers.length);
+
+        // Group Insights plan (2026-09-18): a real, already-connected-only
+        // signal for the fit-reasons hero -- filterToMyConnections() over
+        // this gathering's own approved attendees, same helper Discover's
+        // "People You Know" section already uses.
+        const connections = await filterToMyConnections(g.approvedAttendees.map((a) => a.user_id));
+        setFriendAttendeeCount(connections.length);
       } else {
         setAttendeePhotoUrls({});
         setFirstTimerCount(0);
+        setFriendAttendeeCount(0);
       }
+
+      // Group Insights plan (2026-09-18): the RPC itself decides the tier
+      // ('none'/'coarse'/'precise') from the real approved-attendee count,
+      // the gathering's own party_type, and its host toggle -- runs
+      // regardless of attendee count so a 0/1/2-person gathering correctly
+      // gets back 'none' rather than this screen guessing.
+      setGroupInsights(await getGatheringGroupInsights(gatheringId));
     } catch (e) {
       // Enrichment data (cover photo, host stats/reputation, offer, attendee
       // photos/first-timer count) failed to load — the core gathering
@@ -341,7 +361,19 @@ export default function GatheringDetailScreen({ route, navigation }) {
   }
 
   const categoryStyle = categoryStyleFor(gathering.interest_tag);
-  const { reasons } = getGatheringFitReasons(gathering, { firstTimerCount });
+  const { reasons } = getGatheringFitReasons(gathering, { firstTimerCount, friendAttendeeCount });
+  // Group Insights plan (2026-09-18): the shared-interests line is allowed
+  // regardless of tier (it's not demographic, and the product spec's own
+  // small-group example shows plain names even when the age/gender
+  // sub-block is suppressed) -- the age/gender sub-block below is gated
+  // separately on makeup_tier.
+  const groupInsightsInterestLine = groupInsights
+    ? formatInterestLine({
+        tier: groupInsights.makeup_tier,
+        interestNames: groupInsights.interest_names,
+        interestCounts: groupInsights.interest_counts,
+      })
+    : null;
   // Persistent, computed People/Time/Place status (CLAUDE.md, Aug 29
   // 2026) -- reuses exactly the same businessRequest/acceptedBusinessOffer
   // state the merged offer card below already fetches, so this never
@@ -482,6 +514,53 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 <Text style={styles.firstTimerText}>
                   🌱 {firstTimerCount} {firstTimerCount === 1 ? "attendee's" : "attendees'"} first gathering
                 </Text>
+              )}
+            </View>
+          )}
+
+          {/* Group Insights plan (2026-09-18): an elaboration of "Who's
+              Going" above, not a competitor to the personalized "Why this
+              fits you" hero at the top of the screen. Client renders
+              whatever the RPC's own real tier decided -- no math, no
+              re-thresholding here. The interests line can appear even when
+              the age/gender sub-block is suppressed (groupInsights.
+              makeup_tier === 'none'), since shared interests aren't
+              demographic. */}
+          {(groupInsightsInterestLine || groupInsights?.makeup_tier === 'coarse' || groupInsights?.makeup_tier === 'precise') && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Group Insights</Text>
+              {groupInsightsInterestLine && (
+                <Text style={styles.groupInsightsLine}>Shared interests: {groupInsightsInterestLine}</Text>
+              )}
+              {groupInsights.makeup_tier === 'coarse' && (
+                <>
+                  {groupInsights.age_coarse_label && (
+                    <Text style={styles.groupInsightsLine}>{groupInsights.age_coarse_label}</Text>
+                  )}
+                  {groupInsights.gender_coarse_label && (
+                    <Text style={styles.groupInsightsLine}>{groupInsights.gender_coarse_label}</Text>
+                  )}
+                </>
+              )}
+              {groupInsights.makeup_tier === 'precise' && (
+                <>
+                  {groupInsights.age_buckets?.length > 0 && (
+                    <View style={styles.groupInsightsBucketGroup}>
+                      <Text style={styles.subLabel}>Age</Text>
+                      {groupInsights.age_buckets.map((b) => (
+                        <Text key={b.label} style={styles.groupInsightsLine}>{formatPreciseBucketLine(b)}</Text>
+                      ))}
+                    </View>
+                  )}
+                  {groupInsights.gender_buckets?.length > 0 && (
+                    <View style={styles.groupInsightsBucketGroup}>
+                      <Text style={styles.subLabel}>Gender</Text>
+                      {groupInsights.gender_buckets.map((b) => (
+                        <Text key={b.label} style={styles.groupInsightsLine}>{formatPreciseBucketLine(b)}</Text>
+                      ))}
+                    </View>
+                  )}
+                </>
               )}
             </View>
           )}
@@ -984,6 +1063,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeeAvatarPlaceholder: { backgroundColor: colors.border },
   attendeesText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginLeft: spacing.sm },
   firstTimerText: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm },
+  groupInsightsLine: { color: colors.textSecondary, fontSize: 14, marginBottom: 4 },
+  groupInsightsBucketGroup: { marginTop: spacing.sm },
   vibeScaleRow: { marginBottom: spacing.md },
   vibeScaleLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs },
   vibeDotsRow: { flexDirection: 'row', gap: spacing.xs },
