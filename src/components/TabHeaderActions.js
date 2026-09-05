@@ -90,11 +90,15 @@ export default function TabHeaderActions({ navigation }) {
     <View style={styles.row}>
       <TouchableOpacity
         onPress={() => navigation.navigate('Messages')}
-        style={styles.iconButton}
+        style={styles.messageButton}
         accessibilityLabel={unreadCount > 0 ? `Messages, ${unreadCount} unread` : 'Messages'}
         accessibilityRole="button"
       >
-        <Ionicons name="chatbubbles-outline" size={24} color={colors.textPrimary} />
+        {/* A tappable-and-advances-the-user action gets real coral weight
+            (CLAUDE.md's "coral = action, not decoration" rule) -- a flat
+            textPrimary outline glyph read as inert chrome, not a button.
+            Filled icon + solid coral circle instead of the bare outline. */}
+        <Ionicons name="chatbubbles" size={19} color="#fff" />
         {unreadCount > 0 && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
@@ -129,10 +133,15 @@ export default function TabHeaderActions({ navigation }) {
 const getStyles = (colors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, position: 'relative' },
   iconButton: { padding: 2 },
+  messageButton: {
+    width: 34, height: 34, borderRadius: 17, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+  },
   avatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surfaceElevated },
   badge: {
     position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16, borderRadius: 8,
     backgroundColor: colors.danger, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+    borderWidth: 1.5, borderColor: colors.background,
   },
   badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   // Matches DiscoveryScreen's own calloutBanner/calloutText/calloutDismiss
