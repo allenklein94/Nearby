@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CREATE_HUB_OPTIONS, SUB_OPTIONS } from '../components/StartSomethingModal';
 import TabHeaderActions from '../components/TabHeaderActions';
@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { iconNameForOption } from '../constants/quickPickIcons';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 
 const SOMETHING_ELSE_LABEL = 'Something Else';
 
@@ -206,30 +207,43 @@ export default function CreateHubScreen({ navigation }) {
               {activeSubCategory && <Text style={styles.gridHeader}>What kind of {activeSubCategory.label.toLowerCase()}?</Text>}
               <View style={styles.grid}>
                 {options.map((item) => {
-                  // Functional cards get a subtle tinted background, never a
-                  // blank white one -- reuses each option's own real
-                  // category color via categoryStyleFor() (never a
-                  // fabricated color, the same mapping the hero card and
-                  // CommunityDetailScreen's icon badge already use). Items
-                  // with no real category (Something Else, and the Dinner
+                  // Real curated category photo (same map GatheringDetailScreen/
+                  // GatheringsScreen already use as their cover-photo fallback)
+                  // wins whenever one exists -- a "Coffee" tile shows real
+                  // coffee, not just a tinted swatch. categoryStyleFor()'s
+                  // color still backs the tint fallback for categories with
+                  // no sourced photo (never a fabricated color). Items with
+                  // no real category (Something Else, and the Dinner
                   // sub-grid's cuisine leaves) fall back to the neutral
                   // surfaceElevated token instead of reusing an unrelated
-                  // category's color.
+                  // category's color/photo.
                   const categoryColor = item.category ? categoryStyleFor(item.category).color : null;
+                  const photoUrl = item.category ? curatedCoverPhotoFor(item.category) : null;
                   return (
                     <TouchableOpacity
                       key={item.label}
                       style={[
                         styles.gridItem,
-                        categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated },
+                        !photoUrl && (categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated }),
                       ]}
                       onPress={() => (activeSubCategory ? handlePickSub(item.label) : handlePick(item))}
                       activeOpacity={0.85}
                       accessibilityLabel={item.label}
                       accessibilityRole="button"
                     >
-                      <Ionicons name={iconNameForOption(item)} size={30} color={categoryColor ?? colors.textSecondary} style={styles.gridItemIcon} />
-                      <Text style={styles.gridItemLabel}>{item.label}</Text>
+                      {photoUrl ? (
+                        <ImageBackground source={{ uri: photoUrl }} style={styles.gridItemPhoto}>
+                          <View style={styles.gridItemPhotoScrim}>
+                            <Ionicons name={iconNameForOption(item)} size={28} color="#fff" style={styles.gridItemIcon} />
+                            <Text style={[styles.gridItemLabel, styles.gridItemLabelOnPhoto]}>{item.label}</Text>
+                          </View>
+                        </ImageBackground>
+                      ) : (
+                        <>
+                          <Ionicons name={iconNameForOption(item)} size={30} color={categoryColor ?? colors.textSecondary} style={styles.gridItemIcon} />
+                          <Text style={styles.gridItemLabel}>{item.label}</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -280,11 +294,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   gridHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   gridItem: {
-    width: '31%', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    paddingVertical: spacing.lg, alignItems: 'center', ...shadow.card,
+    width: '31%', aspectRatio: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...shadow.card,
+  },
+  gridItemPhoto: { width: '100%', height: '100%' },
+  gridItemPhotoScrim: {
+    flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.38)',
   },
   gridItemIcon: { marginBottom: spacing.xs },
   gridItemLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  gridItemLabelOnPhoto: { color: '#fff' },
   somethingElseBox: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg,

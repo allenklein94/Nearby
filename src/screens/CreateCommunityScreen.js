@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
 import { getMyManagedPartner } from '../services/brandOffers';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -126,6 +127,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
             {INTEREST_OPTIONS.map((option) => {
               const style = categoryStyleFor(option);
               const isSelected = interestTag === option;
+              const photoUrl = curatedCoverPhotoFor(option);
               return (
                 <TouchableOpacity
                   key={option}
@@ -140,7 +142,8 @@ export default function CreateCommunityScreen({ navigation, route }) {
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                 >
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{style.icon} {option}</Text>
+                  {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
+                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{photoUrl ? '' : `${style.icon} `}{option}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -197,10 +200,12 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  chipPhoto: { width: 18, height: 18, borderRadius: 9 },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   // Aug 30 2026 -- the one and only chip variant in this screen is the
   // category picker, whose selected background is categoryStyle.color

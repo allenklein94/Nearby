@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Image } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 
 const MAX_PICKS = 5;
@@ -41,6 +42,7 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
               {INTEREST_OPTIONS.map((tag) => {
                 const isSelected = selected.includes(tag);
                 const style = categoryStyleFor(tag);
+                const photoUrl = curatedCoverPhotoFor(tag);
                 return (
                   <TouchableOpacity
                     key={tag}
@@ -54,7 +56,8 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
                     accessibilityLabel={tag}
                     accessibilityState={{ selected: isSelected }}
                   >
-                    <Text style={[styles.chipText, isSelected && { color: '#fff' }]}>{style.icon} {tag}</Text>
+                    {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
+                    <Text style={[styles.chipText, isSelected && { color: '#fff' }]}>{photoUrl ? '' : `${style.icon} `}{tag}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -83,7 +86,8 @@ function getStyles(colors) {
     title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
     chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.sm },
-    chip: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    chipPhoto: { width: 18, height: 18, borderRadius: 9 },
     chipText: { ...typography.caption, color: colors.textPrimary },
     saveButton: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
     saveButtonText: { ...typography.bodyBold, color: '#fff' },

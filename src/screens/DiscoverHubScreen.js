@@ -20,6 +20,7 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
 import StoryViewerModal from '../components/StoryViewerModal';
@@ -134,14 +135,20 @@ export default function DiscoverHubScreen({ navigation }) {
   const { session } = useAuth();
   const myUserId = session?.user?.id ?? null;
 
-  // A no-photo card fallback should read as a "functional card" (subtle
-  // tinted background + icon), never a blank white row -- reuses each
+  // A no-uploaded-photo card falls back to the real curated category photo
+  // first (same map/precedent as GatheringDetailScreen's and
+  // GatheringsScreen's own cover-photo fallback -- a "Coffee" row shows
+  // real coffee, not just a tinted swatch), and only drops to a plain
+  // tinted icon block for the handful of categories with no sourced photo
+  // or no real category at all (a moment/story group) -- reuses each
   // gathering/community's own real interest_tag color via
   // categoryStyleFor() (never a fabricated color), same convention
-  // CommunityDetailScreen's iconBadge already established. Anything with
-  // no real category (a moment/story group) falls back to the neutral
-  // surfaceElevated token, still tinted, just not category-specific.
+  // CommunityDetailScreen's iconBadge already established.
   function renderCardIcon(icon, interestTag) {
+    const photoUrl = interestTag ? curatedCoverPhotoFor(interestTag) : null;
+    if (photoUrl) {
+      return <Image source={{ uri: photoUrl }} style={styles.cardImage} accessibilityLabel={`${interestTag} photo`} />;
+    }
     const tint = interestTag ? `${categoryStyleFor(interestTag).color}20` : colors.surfaceElevated;
     return (
       <View style={[styles.cardIconWrap, { backgroundColor: tint }]}>
@@ -1062,6 +1069,7 @@ export default function DiscoverHubScreen({ navigation }) {
                 <PlaceCard
                   key={o.id}
                   icon="🎁"
+                  photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
                   tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                   title={o.title}
                   reason={[o.brand_partners?.name, businessSignalLine(o.brand_partners)].filter(Boolean).join(' · ')}
@@ -1227,12 +1235,19 @@ export default function DiscoverHubScreen({ navigation }) {
                 >
                   {coverPhotoUrls[g.id] ? (
                     <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.heroImage} />
+                  ) : curatedCoverPhotoFor(g.interest_tag) ? (
+                    // Real curated category photo (same map/precedent as
+                    // GatheringDetailScreen's own cover-photo fallback) --
+                    // a host's own uploaded photo always wins when one
+                    // exists, this is the next-best real picture, not a
+                    // fabricated one.
+                    <Image source={{ uri: curatedCoverPhotoFor(g.interest_tag) }} style={styles.heroImage} accessibilityLabel={`${g.interest_tag} cover photo`} />
                   ) : (
                     // Real, disclosed fallback: this app's own existing
                     // categoryStyleFor() color/icon (never a fabricated
                     // stock photo) filling the full card instead of sitting
-                    // inside a 32px glyph -- a real coverPhotoUrls[g.id]
-                    // photo always takes priority when one exists.
+                    // inside a 32px glyph -- only reached for the handful of
+                    // categories with no sourced curated photo.
                     <LinearGradient
                       colors={[lightenHex(categoryStyle.color, 0.28), categoryStyle.color]}
                       start={{ x: 0, y: 0 }}
@@ -1478,6 +1493,7 @@ export default function DiscoverHubScreen({ navigation }) {
                   <PlaceCard
                     key={o.id}
                     icon="🎁"
+                    photoUrl={o.target_interest_tag ? curatedCoverPhotoFor(o.target_interest_tag) : null}
                     tintColor={o.target_interest_tag ? categoryStyleFor(o.target_interest_tag).color : null}
                     title={o.title}
                     reason={[

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
@@ -8,6 +8,7 @@ import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
@@ -377,6 +378,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   {group.tags.map((option) => {
                     const style = categoryStyleFor(option);
                     const isSelected = interestTag === option;
+                    const photoUrl = curatedCoverPhotoFor(option);
                     return (
                       <TouchableOpacity
                         key={option}
@@ -395,6 +397,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         accessibilityRole="button"
                         accessibilityState={{ selected: isSelected }}
                       >
+                        {/* Real curated category photo (same map used for
+                            gathering cover-photo fallbacks) as a small
+                            swatch in place of the emoji, when one's been
+                            sourced for this category -- a pill chip has no
+                            room for a full photo background, but it should
+                            still show a real picture, not just a tint. */}
+                        {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
                         {/* Aug 30 2026 -- a scoped override, not a change
                             to the shared chipTextSelected style: that
                             style is also used by 4 other chip pickers on
@@ -405,7 +414,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                             2.03-3.19:1 white-on-color contrast -- below
                             the WCAG floor). See gatheringCategoryStyles.js's
                             own CATEGORY_BUTTON_TEXT_COLOR comment. */}
-                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected, isSelected && { color: CATEGORY_BUTTON_TEXT_COLOR }]}>{style.icon} {option}</Text>
+                        <Text style={[styles.chipText, isSelected && styles.chipTextSelected, isSelected && { color: CATEGORY_BUTTON_TEXT_COLOR }]}>{photoUrl ? '' : `${style.icon} `}{option}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -927,11 +936,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.surface,
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipPhoto: { width: 18, height: 18, borderRadius: 9 },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
   helperText: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.xs },

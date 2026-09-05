@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getQuickPrompts } from '../utils/timeContext';
 import { iconNameForOption } from '../constants/quickPickIcons';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 
 const SOMETHING_ELSE = { icon: '➕', label: 'Something Else', category: null };
 
@@ -92,23 +93,35 @@ export default function StartSomethingModal({ visible, onClose, navigation, init
           <Text style={styles.title}>{title}</Text>
           <View style={styles.grid}>
             {options.map((item) => {
-              // Same "subtle tinted background, never blank white"
-              // functional-card treatment as CreateHubScreen's own copy of
-              // this grid -- reuses each option's real category color.
+              // Same "real curated category photo, never blank white"
+              // treatment as CreateHubScreen's own copy of this grid --
+              // reuses each option's own real category photo/color.
               const categoryColor = item.category ? categoryStyleFor(item.category).color : null;
+              const photoUrl = item.category ? curatedCoverPhotoFor(item.category) : null;
               return (
                 <TouchableOpacity
                   key={item.label}
                   style={[
                     styles.option,
-                    categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated },
+                    !photoUrl && (categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated }),
                   ]}
                   onPress={() => (activeCategory ? handlePickSub(item.label) : handlePick(item))}
                   accessibilityLabel={item.label}
                   accessibilityRole="button"
                 >
-                  <Ionicons name={iconNameForOption(item)} size={26} color={categoryColor ?? colors.textSecondary} style={styles.optionIcon} />
-                  <Text style={styles.optionLabel}>{item.label}</Text>
+                  {photoUrl ? (
+                    <ImageBackground source={{ uri: photoUrl }} style={styles.optionPhoto}>
+                      <View style={styles.optionPhotoScrim}>
+                        <Ionicons name={iconNameForOption(item)} size={24} color="#fff" style={styles.optionIcon} />
+                        <Text style={[styles.optionLabel, styles.optionLabelOnPhoto]}>{item.label}</Text>
+                      </View>
+                    </ImageBackground>
+                  ) : (
+                    <>
+                      <Ionicons name={iconNameForOption(item)} size={26} color={categoryColor ?? colors.textSecondary} style={styles.optionIcon} />
+                      <Text style={styles.optionLabel}>{item.label}</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -128,10 +141,15 @@ const getStyles = (colors) => StyleSheet.create({
   title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {
-    width: '31%', backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    paddingVertical: spacing.md, alignItems: 'center',
+    width: '31%', aspectRatio: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  optionPhoto: { width: '100%', height: '100%' },
+  optionPhotoScrim: {
+    flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.38)',
   },
   optionIcon: { marginBottom: spacing.xs },
   optionLabel: { color: colors.textPrimary, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  optionLabelOnPhoto: { color: '#fff' },
   cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
 });
