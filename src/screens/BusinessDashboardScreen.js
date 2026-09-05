@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import QRCode from 'react-native-qrcode-svg';
@@ -13,7 +13,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -86,6 +86,99 @@ const AVAILABILITY_STATUS_COPY = {
   expired: 'Expired',
   cancelled: 'Cancelled',
 };
+
+// Phase 4 (media upload, CLAUDE.md) -- shared optional photo/video picker
+// used by both the Make-an-Offer modal and the Signature Experience modal.
+// Renders a small thumbnail + Remove once something's attached (either a
+// not-yet-uploaded local asset, or an already-saved existingPath resolved
+// to a real signed URL), otherwise a single "Add a photo or video" button.
+function BusinessMediaPicker({ pickedAsset, existingPath, existingType, onPick, onRemove, colors }) {
+  const [existingSignedUrl, setExistingSignedUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (existingPath && !pickedAsset) {
+      getSignedBusinessOfferMediaUrl(existingPath).then((url) => {
+        if (!cancelled) setExistingSignedUrl(url);
+      });
+    } else {
+      setExistingSignedUrl(null);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [existingPath, pickedAsset]);
+
+  const hasMedia = !!(pickedAsset || existingPath);
+  const previewUri = pickedAsset?.uri ?? existingSignedUrl;
+  const mediaType = pickedAsset ? (pickedAsset.type === 'video' ? 'video' : 'image') : existingType;
+
+  if (!hasMedia) {
+    return (
+      <TouchableOpacity
+        onPress={onPick}
+        style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start', marginTop: spacing.sm }}
+        accessibilityLabel="Add a photo or video"
+        accessibilityRole="button"
+      >
+        <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>📷 Add a photo or video</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+      {previewUri && mediaType === 'image' ? (
+        <Image source={{ uri: previewUri }} style={{ width: 64, height: 64, borderRadius: radius.md }} />
+      ) : (
+        <View style={{ width: 64, height: 64, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}>
+          <Text>🎬</Text>
+        </View>
+      )}
+      <TouchableOpacity onPress={onRemove} accessibilityLabel="Remove media" accessibilityRole="button">
+        <Text style={{ color: colors.danger, fontWeight: '600' }}>Remove</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Phase 4 (media upload, CLAUDE.md) -- renders a real uploaded offer/
+// experience photo INSIDE an existing card wrapper (never its own
+// standalone card -- Nearby's own presentation frame is never bypassed).
+// Video is intentionally not rendered inline here (no video player
+// component exists elsewhere in this codebase to mirror) -- shown as a
+// small honest "🎬 Video attached" label instead of a fabricated player.
+function BusinessOfferMediaPreview({ path, type, colors }) {
+  const [signedUrl, setSignedUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (path) {
+      getSignedBusinessOfferMediaUrl(path).then((url) => {
+        if (!cancelled) setSignedUrl(url);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [path]);
+
+  if (!path) return null;
+
+  if (type === 'video') {
+    return <Text style={[{ color: colors.textSecondary, marginTop: spacing.xs }]}>🎬 Video attached</Text>;
+  }
+
+  if (!signedUrl) return null;
+
+  return (
+    <Image
+      source={{ uri: signedUrl }}
+      style={{ width: '100%', height: 140, borderRadius: radius.md, marginTop: spacing.xs }}
+      resizeMode="cover"
+    />
+  );
+}
 
 export default function BusinessDashboardScreen({ navigation, route }) {
   const { colors, shadow, isDark } = useTheme();
@@ -178,6 +271,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [expAttributesInput, setExpAttributesInput] = useState([]);
   const [expPriceLevelInput, setExpPriceLevelInput] = useState(null);
   const [expPartyTypeInput, setExpPartyTypeInput] = useState(null);
+  // Phase 4 (media upload, CLAUDE.md) -- existingMediaPath/Type is the
+  // already-saved value (preserved when editing without picking a new
+  // file); pickedMediaAsset is a not-yet-uploaded local asset, uploaded
+  // only at Save time so cancelling the modal never orphans a file.
+  const [expExistingMediaPath, setExpExistingMediaPath] = useState(null);
+  const [expExistingMediaType, setExpExistingMediaType] = useState(null);
+  const [expPickedMediaAsset, setExpPickedMediaAsset] = useState(null);
   const [savingExperience, setSavingExperience] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -376,6 +476,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md, finding 3).
   const [offerProposedTime, setOfferProposedTime] = useState(null);
   const [showOfferTimePicker, setShowOfferTimePicker] = useState(false);
+  // Phase 4 (media upload, CLAUDE.md) -- an offer response's own optional
+  // photo/video, uploaded only at Send time (never orphans a file on
+  // Cancel).
+  const [offerPickedMediaAsset, setOfferPickedMediaAsset] = useState(null);
   const [redemptionCodeInput, setRedemptionCodeInput] = useState('');
   const [confirmingCode, setConfirmingCode] = useState(false);
   const [respondingToRequestId, setRespondingToRequestId] = useState(null);
@@ -973,6 +1077,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setExpAttributesInput(existing?.attributes ?? []);
     setExpPriceLevelInput(existing?.price_level ?? existing?.priceLevel ?? null);
     setExpPartyTypeInput(existing?.party_type ?? existing?.partyType ?? null);
+    setExpExistingMediaPath(existing?.media_path ?? null);
+    setExpExistingMediaType(existing?.media_type ?? null);
+    setExpPickedMediaAsset(null);
     if (fromSuggestionId) {
       // Editing a suggestion is itself how it gets "addressed" -- whatever
       // ends up saved, this specific suggestion shouldn't linger in the
@@ -996,6 +1103,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!selectedPartner || !expTitleInput.trim()) return;
     setSavingExperience(true);
     try {
+      let mediaPath = expExistingMediaPath;
+      let mediaType = expExistingMediaType;
+      if (expPickedMediaAsset) {
+        const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, expPickedMediaAsset, 'experience');
+        mediaPath = uploaded.path;
+        mediaType = uploaded.mediaType;
+      }
+
       const result = await submitBusinessExperienceForScreening(selectedPartner.id, {
         experienceId: editingExperienceId ?? null,
         title: expTitleInput.trim(),
@@ -1004,6 +1119,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         attributes: expAttributesInput,
         priceLevel: expPriceLevelInput,
         partyType: expPartyTypeInput,
+        mediaPath,
+        mediaType,
       });
 
       if (result.published) {
@@ -1082,6 +1199,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         priceLevel: experience.price_level,
         partyType: experience.party_type,
         active: !experience.active,
+        mediaPath: experience.media_path ?? null,
+        mediaType: experience.media_type ?? null,
       });
       await loadExperiences(selectedPartner.id);
     } catch (e) {
@@ -1247,6 +1366,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferProposedTime(null);
     setShowOfferTimePicker(false);
     setSelectedExperienceIdInput(null);
+    setOfferPickedMediaAsset(null);
   }
 
   // Business Intelligence & Opportunity Engine, Phase 3: tapping a real
@@ -1309,6 +1429,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
     setRespondingOpportunityId(offerModalRequestId);
     try {
+      let mediaPath = null;
+      let mediaType = null;
+      if (offerPickedMediaAsset) {
+        const uploaded = await uploadBusinessOfferMedia(selectedPartner.id, offerPickedMediaAsset, 'offer');
+        mediaPath = uploaded.path;
+        mediaType = uploaded.mediaType;
+      }
+
       const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
       const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, offerModalRequestId, {
         offerType: offerTypeInput,
@@ -1316,6 +1444,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         offerPrice: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         proposedTime: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
         experienceId: selectedExperienceIdInput,
+        mediaPath,
+        mediaType,
       });
 
       if (result.published) {
@@ -2568,6 +2698,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               formatOfferSummary(o),
                             ].filter(Boolean).join(' · ')}
                           </Text>
+                          <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                         </View>
                       );
                     })}
@@ -2756,9 +2887,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         </View>
                       )}
                       {o.status !== 'pending' && (
-                        <Text style={styles.breakdownText}>
-                          {{ offered: 'You made an offer', accepted: 'They accepted your offer!', declined: 'You declined', expired: 'No longer open', cancelled: 'They cancelled', completed: 'Completed' }[o.status] ?? o.status}
-                        </Text>
+                        <>
+                          <Text style={styles.breakdownText}>
+                            {{ offered: 'You made an offer', accepted: 'They accepted your offer!', declined: 'You declined', expired: 'No longer open', cancelled: 'They cancelled', completed: 'Completed' }[o.status] ?? o.status}
+                          </Text>
+                          <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                        </>
                       )}
                     </View>
                     );
@@ -3650,6 +3784,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           !exp.active ? 'Hidden from your public profile' : null,
                         ].filter(Boolean).join(' · ') || 'No price or party details set'}
                       </Text>
+                      <BusinessOfferMediaPreview path={exp.media_path} type={exp.media_type} colors={colors} />
                       <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
                         <TouchableOpacity onPress={() => openExperienceModal(exp)} accessibilityLabel={`Edit ${exp.title}`} accessibilityRole="button">
                           <Text style={styles.messageMemberLink}>✏️ Edit</Text>
@@ -4305,6 +4440,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Photo or Video (optional)</Text>
+              <BusinessMediaPicker
+                colors={colors}
+                pickedAsset={expPickedMediaAsset}
+                existingPath={expExistingMediaPath}
+                existingType={expExistingMediaType}
+                onPick={async () => {
+                  try {
+                    const asset = await pickBusinessOfferMedia();
+                    if (asset) setExpPickedMediaAsset(asset);
+                  } catch (e) {
+                    Alert.alert('Error', e.message);
+                  }
+                }}
+                onRemove={() => {
+                  setExpPickedMediaAsset(null);
+                  setExpExistingMediaPath(null);
+                  setExpExistingMediaType(null);
+                }}
+              />
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSaveExperience}
@@ -4534,6 +4689,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 onChangeText={setOfferPriceInput}
                 keyboardType="decimal-pad"
                 accessibilityLabel="Offer price, optional"
+              />
+              <BusinessMediaPicker
+                colors={colors}
+                pickedAsset={offerPickedMediaAsset}
+                existingPath={null}
+                existingType={null}
+                onPick={async () => {
+                  try {
+                    const asset = await pickBusinessOfferMedia();
+                    if (asset) setOfferPickedMediaAsset(asset);
+                  } catch (e) {
+                    Alert.alert('Error', e.message);
+                  }
+                }}
+                onRemove={() => setOfferPickedMediaAsset(null)}
               />
               <TouchableOpacity
                 style={styles.submitButton}
