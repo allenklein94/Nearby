@@ -58,9 +58,18 @@ rather than silent failure. Verified: `expo export -p web` builds clean, output 
 under the `/Nearby/business/` base path via a local static server, no secrets in the built
 bundle. **Not verified in an actual browser** — no browser/simulator tooling was available in
 that session; if something looks visually off on the deployed site, that's the first thing to
-suspect. `docs/business/` must be regenerated (`npx expo export -p web`, then copy `dist/*` over
-it) and recommitted any time a business-facing screen changes — it is not auto-built by CI (no
-GitHub Actions workflow exists for this yet).
+suspect. `docs/business/` must be regenerated (`NEARBY_WEB_EXPORT_BASE_URL=/Nearby/business npx
+expo export -p web`, then copy `dist/*` over it) and recommitted any time a business-facing
+screen changes — it is not auto-built by CI (no GitHub Actions workflow exists for this yet).
+
+**2026-09-05 fix**: `experiments.baseUrl` was originally a static value in `app.json`, which is a
+*global* Expo config field, not web-scoped — `@expo/cli`'s asset-copying code applies it to every
+platform's build, not just web. This broke native iOS archive builds (`ENOTDIR` copying assets
+into a bogus `Nearby.app/Nearby/business/assets/...` path during "Bundle React Native code and
+images"). Fixed by moving config to `app.config.js`, which only injects `experiments.baseUrl`
+when the `NEARBY_WEB_EXPORT_BASE_URL` env var is set — i.e. only during the docs/business export
+command above, never during a native EAS build. Do not put `baseUrl` back into `app.json` as a
+static value.
 
 ## Standing Conventions (Locked)
 
