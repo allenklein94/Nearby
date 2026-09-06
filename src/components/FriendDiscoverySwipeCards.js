@@ -22,7 +22,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // mutual-friends/bio, never a dating-oriented proximity/compatibility
 // readout. Distance is a coarse bucket from the RPC (never exact miles),
 // matching the locked "no location-discovery tool" decision.
-export default function FriendDiscoverySwipeCards({ data, photoUrls, onSwipe }) {
+export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, compatibilityColor, onSwipe }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -101,6 +101,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onSwipe }) 
 
       <Animated.View style={[styles.card, cardStyle]} {...panResponder.panHandlers}>
         <Image source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }} style={styles.avatar} />
+        {onlineStatuses[item.id] && <View style={styles.onlineDot} />}
         <Animated.View style={[styles.stampLike, { opacity: likeOpacity }]}>
           <Text style={styles.stampLikeText}>LIKE</Text>
         </Animated.View>
@@ -111,6 +112,12 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onSwipe }) 
         <View style={styles.cardBody}>
           <View style={styles.nameRow}>
             <Text style={styles.name}>{item.display_name}</Text>
+            {item.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
+            {typeof item.compatScore === 'number' && compatibilityColor && (
+              <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatScore) }]}>
+                <Text style={[styles.compatText, { color: compatibilityColor(item.compatScore) }]}>🤝 {item.compatScore}% Match</Text>
+              </View>
+            )}
             {item.distance_bucket && <Text style={styles.distance}>{item.distance_bucket}</Text>}
           </View>
           {sharedBits.length > 0 && (
@@ -168,6 +175,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   cardBehind: { top: 8, opacity: 0.6, transform: [{ scale: 0.96 }] },
   avatar: { width: '100%', height: 340, backgroundColor: colors.surfaceElevated },
+  // Same treatment as SwipeableDiscoveryCards.js's own onlineDot/
+  // verifiedBadge/compatBadge/compatText -- values copied verbatim so the
+  // two surfaces read as the same product, per this file's own established
+  // "verbatim, not approximated" convention.
+  onlineDot: {
+    position: 'absolute', top: spacing.md, right: spacing.md,
+    width: 16, height: 16, borderRadius: 8, backgroundColor: colors.success, borderWidth: 2.5, borderColor: colors.surface,
+  },
   stampLike: {
     position: 'absolute', top: 40, left: 24, borderWidth: 3, borderColor: colors.success,
     borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 4, transform: [{ rotate: '-15deg' }],
@@ -179,8 +194,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   stampSkipText: { color: colors.danger, fontWeight: '800', fontSize: 20, letterSpacing: 1 },
   cardBody: { padding: spacing.md },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs, flexWrap: 'wrap' },
   name: { ...typography.headline, color: colors.textPrimary },
+  verifiedBadge: { color: colors.success, fontSize: 16, fontWeight: '700' },
+  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  compatText: { fontSize: 11, fontWeight: '700' },
   distance: { ...typography.small, color: colors.textTertiary },
   // sharedText itself keeps its own marginBottom -- sharedRow adds no
   // margin of its own, matching ReasonList.js's own "don't double the

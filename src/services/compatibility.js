@@ -3,6 +3,20 @@ export function calculateCompatibility(myProfile, theirProfile) {
   return report.score;
 }
 
+// Friend Discovery parity (CLAUDE.md, item 2): the friend-side equivalent
+// of a "match %" -- get_friend_discovery_candidates() already returns three
+// real counts (shared interests/communities/mutual friends) but never blends
+// them into one score. Interests weighted highest since they're the
+// strongest voluntary signal; each count is capped before weighting so one
+// outlier (e.g. 20 mutual friends) can't single-handedly saturate the score.
+export function calculateFriendCompatibility({ shared_interest_count = 0, shared_community_count = 0, mutual_friend_count = 0 } = {}) {
+  const interestScore = Math.min(shared_interest_count, 5) / 5;
+  const communityScore = Math.min(shared_community_count, 3) / 3;
+  const mutualScore = Math.min(mutual_friend_count, 5) / 5;
+  const score = interestScore * 0.5 + communityScore * 0.25 + mutualScore * 0.25;
+  return Math.round(score * 100);
+}
+
 // Taxonomy audit, 2026-08-24/25 (see CLAUDE.md): basics.relationship_goals
 // used to be a real, separately-answered field here, labeled "Looking
 // For" -- the identical label relationship_intention's own Discovery

@@ -8,6 +8,8 @@ import {
   recordFriendDiscoverySwipe,
 } from '../services/friendDiscovery';
 import { getSignedPhotoUrl } from '../services/photos';
+import { getOnlineStatuses } from '../services/presenceStatus';
+import { calculateFriendCompatibility } from '../services/compatibility';
 import FriendDiscoverySwipeCards from '../components/FriendDiscoverySwipeCards';
 import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import LoadErrorState from '../components/LoadErrorState';
@@ -57,6 +59,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   const [enabled, setEnabled] = useState(false);
   const [candidates, setCandidates] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
+  const [onlineStatuses, setOnlineStatuses] = useState({});
   const [matchModal, setMatchModal] = useState(null); // { theirName, theirPhotoUrl, matchId }
   const [togglingOn, setTogglingOn] = useState(false);
   // Taxonomy audit Phase 3: purely client-side filters over the already-
@@ -64,6 +67,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   // back on every candidate row, just never exposed as a filter before.
   const [interestFilters, setInterestFilters] = useState([]);
   const [distanceFilter, setDistanceFilter] = useState(null);
+  // Quick filters parity with Dating's own Verified Only/Online Now chips
+  // (DiscoveryScreen.js) -- same client-side-over-the-fetched-batch
+  // approach the two filters above already use, no RPC change.
+  const [verifiedOnlyFilter, setVerifiedOnlyFilter] = useState(false);
+  const [onlineOnlyFilter, setOnlineOnlyFilter] = useState(false);
   // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
   // 2026), item 4: the two chip rows below used to render always-visible,
   // unlike Dating's own collapsible accordion sections
@@ -100,6 +108,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           })
         );
         setPhotoUrls(Object.fromEntries(urlEntries));
+        setOnlineStatuses(results.length > 0 ? await getOnlineStatuses(results.map((item) => item.id)) : {});
       }
       setLoadError(false);
     } catch (e) {
@@ -171,12 +180,25 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     setInterestFilters((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   }
 
-  const filteredCandidates = candidates.filter((c) => {
+  // Same 3-line thresholds DiscoveryScreen.js's own compatibilityColor()
+  // uses -- kept local rather than shared since it's just a colors lookup,
+  // not real logic worth extracting into its own module.
+  function compatibilityColor(score) {
+    if (score >= 70) return colors.success;
+    if (score >= 40) return colors.primary;
+    return colors.textTertiary;
+  }
+
+  const candidatesWithScore = candidates.map((c) => ({ ...c, compatScore: calculateFriendCompatibility(c) }));
+
+  const filteredCandidates = candidatesWithScore.filter((c) => {
     const matchesInterest = interestFilters.length === 0 || (c.interests ?? []).some((i) => interestFilters.includes(i));
     const matchesDistance = !distanceFilter || c.distance_bucket === distanceFilter;
-    return matchesInterest && matchesDistance;
+    const matchesVerified = !verifiedOnlyFilter || c.photo_verified;
+    const matchesOnline = !onlineOnlyFilter || onlineStatuses[c.id];
+    return matchesInterest && matchesDistance && matchesVerified && matchesOnline;
   });
-  const filtersActive = interestFilters.length > 0 || !!distanceFilter;
+  const filtersActive = interestFilters.length > 0 || !!distanceFilter || verifiedOnlyFilter || onlineOnlyFilter;
 
   // Real values only, never an invented distance number -- distanceFilter
   // is already one of DISTANCE_BUCKETS' own real strings ("Nearby", "A few
@@ -187,6 +209,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     ...interestFilters.slice(0, 2),
     ...(interestFilters.length > 2 ? [`+${interestFilters.length - 2}`] : []),
     ...(distanceFilter ? [distanceFilter] : []),
+    ...(verifiedOnlyFilter ? ['Verified'] : []),
+    ...(onlineOnlyFilter ? ['Online'] : []),
   ];
   const filterSummary = filterSummaryParts.length > 0 ? filterSummaryParts.join(' · ') : 'All';
 
@@ -327,6 +351,27 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                   );
                 })}
               </View>
+              <Text style={[styles.accordionSubLabel, { marginTop: spacing.sm }]}>Quick Filters</Text>
+              <View style={styles.filterChipRow}>
+                <TouchableOpacity
+                  style={[styles.filterChip, verifiedOnlyFilter && styles.filterChipActive]}
+                  onPress={() => setVerifiedOnlyFilter((prev) => !prev)}
+                  accessibilityLabel="Verified Only"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: verifiedOnlyFilter }}
+                >
+                  <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>Verified Only</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterChip, onlineOnlyFilter && styles.filterChipActive]}
+                  onPress={() => setOnlineOnlyFilter((prev) => !prev)}
+                  accessibilityLabel="Online Now"
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: onlineOnlyFilter }}
+                >
+                  <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>Online Now</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>
@@ -339,7 +384,13 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           </Text>
         </View>
       ) : (
-        <FriendDiscoverySwipeCards data={filteredCandidates} photoUrls={photoUrls} onSwipe={handleSwipe} />
+        <FriendDiscoverySwipeCards
+          data={filteredCandidates}
+          photoUrls={photoUrls}
+          onlineStatuses={onlineStatuses}
+          compatibilityColor={compatibilityColor}
+          onSwipe={handleSwipe}
+        />
       )}
 
       <FriendMatchCelebrationModal
