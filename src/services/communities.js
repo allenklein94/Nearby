@@ -196,11 +196,47 @@ export async function leaveCommunity(communityId) {
 
 // Creator-only, matching the real "Creator can delete their community" RLS
 // policy already in place (baseline.sql) -- a raw delete against the row
-// itself, the same shape cancelGathering() already uses for gatherings.
-// community_members/community_messages/gatherings.community_id all cascade
-// or null out via their own FK constraints, so no manual cleanup needed here.
+// itself. community_members/community_messages/gatherings.community_id all
+// cascade or null out via their own FK constraints, so no manual cleanup
+// needed here. Only reachable from the UI once a community is already
+// cancelled (see cancelCommunity below) -- this is the further, optional
+// "permanently scrub it" step, not the primary cancellation path.
 export async function deleteCommunity(communityId) {
   const { error } = await supabase.from('communities').delete().eq('id', communityId);
+  if (error) throw error;
+}
+
+// authenticated has no raw UPDATE grant on communities at all (verified
+// live) -- every write, including the pre-existing updateCommunityArea()
+// below, goes through a SECURITY DEFINER RPC.
+export async function updateCommunity(communityId, { name, description, interestTag, isPublic }) {
+  const { error } = await supabase.rpc('update_community', {
+    community_id_param: communityId,
+    name_param: name,
+    description_param: description ?? '',
+    interest_tag_param: interestTag ?? null,
+    is_public_param: isPublic,
+  });
+  if (error) throw error;
+}
+
+export async function pauseCommunity(communityId) {
+  const { error } = await supabase.rpc('pause_community', { community_id_param: communityId });
+  if (error) throw error;
+}
+
+export async function resumeCommunity(communityId) {
+  const { error } = await supabase.rpc('resume_community', { community_id_param: communityId });
+  if (error) throw error;
+}
+
+// Soft-cancels the community (status -> 'cancelled'): notifies every
+// member via push, cascades to any still-open business_requests/offers
+// tied to it, but keeps membership/message history intact -- the
+// cancelled state itself is the de-facto archive. deleteCommunity() above
+// remains available afterward as a further, optional hard-delete step.
+export async function cancelCommunity(communityId) {
+  const { error } = await supabase.rpc('cancel_community', { community_id_param: communityId });
   if (error) throw error;
 }
 

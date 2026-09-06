@@ -1091,8 +1091,13 @@ export async function stopRecurringSeries(gatheringId) {
   if (error) throw error;
 }
 
+// Still a real delete under the hood (via the cancel_gathering RPC), so
+// the existing notify_gathering_cancelled / deactivate_offer_on_gathering_
+// delete BEFORE DELETE triggers keep firing unchanged. The RPC adds the
+// ownership/existence/not-already-past guard and cascades any still-open
+// business_requests/offers tied to this gathering.
 export async function cancelGathering(gatheringId) {
-  const { error } = await supabase.from('gatherings').delete().eq('id', gatheringId);
+  const { error } = await supabase.rpc('cancel_gathering', { gathering_id_param: gatheringId });
   if (error) throw error;
 }
 
