@@ -40,23 +40,35 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Category/place/business taxonomy expansion (15 groups/63 tags) — fully DONE (2026-09-06),
-picked up mid-stream after a codespace restart and shipped this session.** Gathering/community
-categories (`gatheringCategories.js`), Places browsing (`placeCategories.js`, new), and business
-categories (`BusinessPartnerApplyScreen.js`, `businessCategoryClassifier.js`) all now share one
-15-category taxonomy (was 6 groups/26 tags for gatherings, a separate 5-vertical list for
-business). `brand_partners.category`/`business_partner_requests.category` widened via migration
-`20260922_business_category_taxonomy_expansion.sql`, verified live. Found and fixed 3 real bugs
-left by the interrupted prior session that would have broken production on arrival: the
-migration's `update_business_profile()` rewrite targeted a stale 8-arg signature instead of the
-real live 11-arg one (would have left every profile edit still enforcing the old category list);
-three Edge Functions (`submit-business-application`, `screen-business-content`,
-`business-onboarding-assistant`) still validated/suggested against the old 6-value list; a couple
-of smaller stale references (a Google-type-to-category guess table, a dead import, a stale
-migration-filename comment, two literal old values in a disposable live-verify script). Full
-build/verification detail: `CLAUDE_HISTORY.md`, search "Category/place/business taxonomy
-expansion." `docs/business/` regenerated and recommitted (BusinessDashboardScreen imports from a
-changed file).
+**Category/place/business taxonomy expansion (19 groups/75 tags) — fully DONE (2026-09-06),
+picked up mid-stream after a codespace restart and shipped this session, then extended same-day
+per direct user follow-up.** Gathering/community categories (`gatheringCategories.js`), Places
+browsing (`placeCategories.js`, new), and business categories (`BusinessPartnerApplyScreen.js`,
+`businessCategoryClassifier.js`) all now share one 19-category taxonomy (was 6 groups/26 tags for
+gatherings, a separate 5-vertical list for business; first pass landed 15 groups/63 tags, then a
+same-day follow-up added Stay & Getaway/Health & Personal Care/Education & Classes/Attractions &
+Things to See). `brand_partners.category`/`business_partner_requests.category` widened via two
+migrations (`20260922_business_category_taxonomy_expansion.sql`,
+`20260923_business_category_taxonomy_v2_new_majors.sql`), both verified live. Found and fixed 3
+real bugs left by the interrupted prior session that would have broken production on arrival: the
+first migration's `update_business_profile()` rewrite targeted a stale 8-arg signature instead of
+the real live 11-arg one; three Edge Functions (`submit-business-application`,
+`screen-business-content`, `business-onboarding-assistant`) still validated/suggested against the
+old 6-value list; a couple of smaller stale references (a Google-type-to-category guess table, a
+dead import, a stale migration-filename comment, two literal old values in a disposable
+live-verify script). Full build/verification detail: `CLAUDE_HISTORY.md`, search "Category/place/
+business taxonomy expansion." `docs/business/` regenerated and recommitted twice
+(BusinessDashboardScreen imports from a changed file).
+
+**Standing direction, not yet built**: the user's stated product vision (saved to memory,
+`project_intent_engine_vision`) is that this taxonomy should power a free-text intent engine
+underneath Discover's existing "what do you want to do?" ask box (`intentResolver.js`), never
+become the app's primary category-picker navigation. Proposed next layers (subcategories, a
+general semantic-tag layer, a cross-category occasion layer, multi-classification businesses,
+cross-category "Experiences" assembly) are real future work but were explicitly deferred — the
+user picked "add the new major categories" as the one scoped piece to build this session. Check
+with the user before starting any of the larger pieces; see the memory file for full detail on
+each.
 
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with

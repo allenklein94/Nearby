@@ -1,3 +1,76 @@
+## Sep 6 2026 — Category/place/business taxonomy expansion, v2: 4 new major categories — BUILT,
+## VERIFIED LIVE
+
+Same day as the 15-category expansion below, immediately after it shipped, the user pushed back
+hard on categories becoming Nearby's primary navigation UI and laid out a much larger
+architectural vision: categories/subcategories/tags should power a free-text intent engine
+underneath Discover's existing "what do you want to do?" ask box, never force a category-picker
+drill-down. That full vision (a proposed 4-layer taxonomy, multi-classification businesses,
+cross-category "Experiences"/occasion concepts, several more proposed major categories) was saved
+to memory (`project_intent_engine_vision`) rather than built wholesale — per this project's own
+feature-freeze convention, the user was asked which single piece to build first via
+`AskUserQuestion`, and picked "add the new major categories" (the smallest, most contained option
+offered, alongside occasion-layer wiring, business multi-classification, and cross-category intent
+assembly as the other three choices).
+
+**What shipped**: 4 new major categories bringing the taxonomy from 15 groups/63 tags to 19
+groups/75 tags — 🏨 Stay & Getaway, 🩺 Health & Personal Care, 🎓 Education & Classes, 🎟️
+Attractions & Things to See (a 5th proposed category, Beach & Water, was left as a future Outdoors
+subcategory rather than a new major, per the user's own lean in that direction).
+
+- `gatheringCategories.js`'s `CATEGORY_GROUPS`: new groups `stay_getaway` (leaf tags: Weekend
+  Getaway, Staycation, Road Trip), `health_personal_care` (zero leaf tags, matching the existing
+  Home & Local Services/Auto & Transportation precedent — nobody hosts a "gathering" about a
+  dental appointment; deliberately real for Places/Business self-classification but never meant
+  to become an algorithmically-recommended surface, per direct user guidance about privacy/
+  regulatory/appropriateness concerns specific to medical services), `education_classes`
+  (Workshops, Lectures, Cooking Class, Study Group, Language Exchange, Tech Meetup — the first two
+  moved here from Arts, Culture & Learning), `attractions_things_to_see` (Museums, Zoos,
+  Aquariums, Landmarks, Amusement Park, Sightseeing — Museums moved here from Arts, Culture &
+  Learning). Moving a tag between groups is purely a client-side UI-grouping change — confirmed
+  (again, as this file's own header comment already established for the first taxonomy pass) that
+  `interest_tag` is never DB-constrained to a per-group enum, only matched by exact string
+  equality against the flat vocabulary, so no stored gathering/community data was affected by
+  these moves.
+- `gatheringCategoryStyles.js`: hand-authored icon/color for all 12 new leaf tags, plus 4 new
+  `GROUP_FALLBACK_STYLES` entries.
+- `placeCategories.js`: 4 new `PLACE_CATEGORIES` entries and `PLACE_TYPES` mappings to real Google
+  Places types — `lodging` (Stay & Getaway), `health` (Health & Personal Care), `school`
+  (Education & Classes), `tourist_attraction` (Attractions & Things to See, deliberately reusing
+  Travel & Experiences' own type — the same "reuse a real type across two categories when they
+  genuinely overlap" precedent the first pass already set for Dating & Social/Food & Drink's
+  shared `restaurant`).
+- `businessCategoryClassifier.js`: new `KEYWORDS_BY_CATEGORY` entries for all 4 categories;
+  `hotel`/`resort` moved from `travel_experiences` to `stay_getaway`, `tutoring` moved from
+  `family_kids` to `education_classes`, `class`/`workshop` moved from `arts_culture_learning` to
+  `education_classes` — each to a more precise home, matching the same "move, don't duplicate"
+  discipline as the gathering-tag moves above.
+- `services/places.js`'s `GOOGLE_TYPE_TO_BUSINESS_CATEGORY`: added `dentist`/`doctor`/`pharmacy`/
+  `physiotherapist`/`hospital` → `health_personal_care`, `lodging`/`rv_park` → `stay_getaway`,
+  `school` → `education_classes` (moved off `family_kids`), `zoo`/`aquarium`/`tourist_attraction`
+  → `attractions_things_to_see` (moved off `family_kids`/`travel_experiences`) — each Google type
+  key maps to exactly one category in this table, so these moved rather than duplicated.
+- New migration `20260923_business_category_taxonomy_v2_new_majors.sql`: widens both
+  `brand_partners_category_check`/`business_partner_requests_category_check` CHECK constraints to
+  the 19-value list (pure addition, no remap needed — no existing category value was renamed this
+  pass) and re-`create or replace`s `update_business_profile()`'s inline guard against the real
+  live 11-arg signature (the exact lesson learned and documented in the first taxonomy pass's own
+  bugfix, applied correctly from the start this time).
+- Three Edge Functions (`submit-business-application`, `screen-business-content`,
+  `business-onboarding-assistant`) updated to the same 19-value vocabulary, including
+  `business-onboarding-assistant`'s prompt text gaining real example mappings for the 4 new
+  categories.
+- `docs/business/` (Expo web export) regenerated and recommitted a second time the same day.
+
+**Verification**: a throwaway Jest test file (`src/constants/__temp_check.test.js`, written,
+run, then deleted — never committed) confirmed no duplicate leaf tags across all 19 groups (75
+total, all unique), every group has a matching `PLACE_TYPES` entry, and `PLACE_CATEGORIES` keys
+exactly match `CATEGORY_GROUPS` keys. All 208 real Jest tests still pass. Live against production
+(Management API, before and after applying the migration): confirmed both CHECK constraints now
+list all 19 values and `update_business_profile` still has exactly one overload (the 11-arg one —
+no duplicate created this time). New bundle confirmed to contain the new category strings
+(`grep -c stay_getaway`) and confirmed clean of secret-shaped strings before committing.
+
 ## Sep 6 2026 — Category/place/business taxonomy expansion to 15 groups/63 tags — BUILT, VERIFIED LIVE
 
 A direct, explicit user request for a full local-discovery taxonomy. This work was started in a
