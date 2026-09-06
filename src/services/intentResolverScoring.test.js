@@ -10,6 +10,7 @@ const {
   priceAndPartyBonus,
   attributeAndCuisineBonus,
   accommodatesPartyTypeBonus,
+  occasionBonus,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
@@ -126,6 +127,26 @@ describe('accommodatesPartyTypeBonus', () => {
   it('awards nothing when the business never declared any accommodated party types', () => {
     expect(accommodatesPartyTypeBonus({ accommodates_party_types: [] }, 'date')).toBe(0);
     expect(accommodatesPartyTypeBonus({ accommodates_party_types: null }, 'date')).toBe(0);
+  });
+});
+
+// Intent engine vision, first increment (2026-09-06).
+describe('occasionBonus', () => {
+  it('awards a bonus when the ask names a real occasion the business declared it wants', () => {
+    expect(occasionBonus({ priority_occasions: ['birthday', 'date_night'] }, 'birthday')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when the ask implied no real occasion', () => {
+    expect(occasionBonus({ priority_occasions: ['birthday'] }, null)).toBe(0);
+  });
+
+  it('awards nothing for a real mismatch, never a fabricated match', () => {
+    expect(occasionBonus({ priority_occasions: ['business_meal'] }, 'birthday')).toBe(0);
+  });
+
+  it('awards nothing when the business never declared any priority occasions', () => {
+    expect(occasionBonus({ priority_occasions: [] }, 'birthday')).toBe(0);
+    expect(occasionBonus({ priority_occasions: null }, 'birthday')).toBe(0);
   });
 });
 

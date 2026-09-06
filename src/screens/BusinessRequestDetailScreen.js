@@ -121,6 +121,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     // "flexible" (PICK_DATE_KEY alone means nothing without the ISO
     // string next to it).
     prefillPickedDateISO: route.params?.prefillPickedDateISO ?? null,
+    prefillOccasion: route.params?.prefillOccasion ?? null,
     prefillSubmissionId: route.params?.prefillSubmissionId ?? null,
     gatheringId: route.params?.gatheringId ?? null,
     gatheringTitle: route.params?.gatheringTitle ?? null,

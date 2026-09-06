@@ -167,6 +167,26 @@ export function accommodatesPartyTypeBonus(row, partyType) {
   return accommodates.includes(partyType) ? SCORE_HAPPENING_NOW : 0;
 }
 
+// Intent engine vision, first increment (2026-09-06, CLAUDE.md's Active
+// section / memory project_intent_engine_vision): create-assistant's own
+// classification has extracted a real occasion (birthday/anniversary/
+// date_night/celebration/casual_hangout/business_meal/family_gathering)
+// from the ask's free text since the "Intelligent demand inbox" Phase 1
+// pass (Sep 3 2026) -- but until now, resolveIntent() silently dropped it
+// on the floor instead of ever scoring against it. A business's own real
+// brand_partners.priority_occasions (what it says it wants more of) is the
+// one existing signal to match against -- same shape as
+// attributeAndCuisineBonus() above: a real, non-fabricated match earns a
+// flat SCORE_HAPPENING_NOW bonus, never a hard filter (a business that
+// hasn't declared any priority occasion is never excluded, just not
+// boosted), and never awarded when the ask itself implied no real
+// occasion (occasion null is the common case).
+export function occasionBonus(row, occasion) {
+  if (!occasion) return 0;
+  const priorityOccasions = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
+  return priorityOccasions.includes(occasion) ? SCORE_HAPPENING_NOW : 0;
+}
+
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

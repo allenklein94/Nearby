@@ -725,7 +725,7 @@ export default function HomeScreen({ navigation }) {
           proceedToCreation(result, typedText, submissionId);
         }
       } else {
-        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null });
+        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
         // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
         // Scenario D): a real, deterministic person-shaped-phrase check,
         // never a fabricated resolver candidate -- appends one honest
@@ -803,6 +803,9 @@ export default function HomeScreen({ navigation }) {
         prefillPartySize: classifyResult?.partySize ?? null,
         prefillBudgetMax: classifyResult?.budgetMax ?? null,
         prefillDateWindow: classifyResult?.dateWindow ?? null,
+        // Intent engine vision, first increment (2026-09-06) -- see
+        // goAskBusiness()'s own comment below for the full reasoning.
+        prefillOccasion: classifyResult?.occasion ?? null,
         matchedAvailability: item.matchedAvailability ?? null,
       });
     } else if (item.type === 'business_policy_match') {
@@ -819,6 +822,7 @@ export default function HomeScreen({ navigation }) {
         prefillPartySize: classifyResult?.partySize ?? null,
         prefillBudgetMax: classifyResult?.budgetMax ?? null,
         prefillDateWindow: classifyResult?.dateWindow ?? null,
+        prefillOccasion: classifyResult?.occasion ?? null,
         matchedAvailability: null,
       });
     }
@@ -1087,6 +1091,13 @@ export default function HomeScreen({ navigation }) {
       prefillPartySize: classifyResult.partySize ?? null,
       prefillBudgetMax: classifyResult.budgetMax ?? null,
       prefillDateWindow: classifyResult.dateWindow ?? null,
+      // Intent engine vision, first increment (2026-09-06): create-assistant
+      // already extracts this from the same typed text every other prefill
+      // field above comes from -- just never threaded through to this
+      // screen before. Still only a prefill, same as every field above --
+      // AskBusinessScreen's own occasion chips remain fully editable/
+      // deselectable, this never silently commits anything.
+      prefillOccasion: classifyResult.occasion ?? null,
       prefillSubmissionId: submissionId ?? null,
     });
   }

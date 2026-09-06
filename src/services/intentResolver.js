@@ -30,6 +30,7 @@ import {
   priceAndPartyBonus,
   attributeAndCuisineBonus,
   accommodatesPartyTypeBonus,
+  occasionBonus,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -250,7 +251,7 @@ async function resolvePerks(category, location) {
 // that requires submitting a fresh ask and waiting. This is what makes
 // the business path a real candidate instead of a dead end -- see the
 // integration audit for the gap this closes.
-async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType) {
+async function resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion) {
   if (!location) return [];
   // Universal Signal Remediation Pass, P0 item 2 (CLAUDE.md, Aug 28 2026):
   // a real hard feasibility filter now, not just relevance -- a posting
@@ -292,6 +293,12 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // business's own real accommodates_party_types now propagates all the
     // way to a consumer-facing ranking bonus, not just its public profile.
     score += accommodatesPartyTypeBonus(row, partyType);
+    // Intent engine vision, first increment (2026-09-06): a business that
+    // has declared this exact occasion among its own real
+    // priority_occasions is a genuinely stronger match than one that
+    // hasn't -- same "real signal, flat bonus, never a filter" shape as
+    // the two bonuses above.
+    score += occasionBonus(row, occasion);
     return {
       type: 'business_availability',
       id: row.id,
@@ -368,8 +375,14 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
 // creates or commits to anything. `partySize` is optional (create-assistant's
 // own best-effort classification, already collected upstream, never a new
 // fetch) -- only used to bound the weaker policy-only tier's own eligibility
-// check against a real business's stated party-size range.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null }) {
+// check against a real business's stated party-size range. `occasion` is
+// the same shape (create-assistant's own best-effort WHY-signal, already
+// extracted since the "Intelligent demand inbox" pass but never actually
+// threaded through here until the Intent engine vision's first increment,
+// 2026-09-06) -- only ever a ranking bonus against a business's own real,
+// declared priority_occasions (resolveBusinessAvailability), never a
+// filter and never written anywhere.
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, partyType = null, attributes = [], cuisine = null, occasion = null }) {
   // Resolved once, up front, before any branch runs in parallel below —
   // not a check-only call. getNearbyGatherings() (called from
   // resolveGatherings) already calls Location.requestForegroundPermissionsAsync()
@@ -426,7 +439,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion),
     resolvePolicyOnlyBusinesses(location, partySize),
   ]);
 

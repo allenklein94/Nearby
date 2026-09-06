@@ -191,10 +191,15 @@ export default function AskBusinessScreen({ navigation, route }) {
   // cuisine (solo-only, since party size/budget are already solo-only
   // here), a gathering or a confirmed date can honestly have an occasion
   // too ("birthday dinner for the gathering"), so this isn't gated on
-  // isSoloMode. Never inferred here -- create-assistant's own extraction
-  // is the one place a best-effort guess happens, and this screen never
-  // pre-fills it from that guess without the user seeing/confirming it.
-  const [occasionInput, setOccasionInput] = useState(null);
+  // isSoloMode. Never inferred *here* -- create-assistant's own extraction
+  // is the one place a best-effort guess happens. Intent engine vision,
+  // first increment (2026-09-06): that guess now genuinely prefills this
+  // field (route.params?.prefillOccasion, from HomeScreen's own intent-box
+  // flow) -- same "AI suggests, never silently commits" pattern every
+  // other prefilled field on this screen (category/partySize/budgetMax/
+  // dateWindow) already follows: fully visible as a normal selected chip,
+  // fully editable/deselectable, the user still reviews before submitting.
+  const [occasionInput, setOccasionInput] = useState(route.params?.prefillOccasion ?? null);
   const isSoloMode = !gatheringId && !matchId && !communityId;
 
   // Per the locked design (CLAUDE.md, Aug 24 2026): every field genuinely
@@ -302,6 +307,7 @@ export default function AskBusinessScreen({ navigation, route }) {
         prefillDateWindow: dateWindow,
         prefillPickedDateISO: dateWindow === PICK_DATE_KEY && pickedDate ? pickedDate.toISOString() : null,
         prefillRadiusMiles: radiusMiles,
+        prefillOccasion: occasionInput,
         prefillSubmissionId: submissionId,
         gatheringId,
         gatheringTitle,
