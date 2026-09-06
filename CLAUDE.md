@@ -60,15 +60,40 @@ live-verify script). Full build/verification detail: `CLAUDE_HISTORY.md`, search
 business taxonomy expansion." `docs/business/` regenerated and recommitted twice
 (BusinessDashboardScreen imports from a changed file).
 
-**Standing direction, not yet built**: the user's stated product vision (saved to memory,
+**Standing direction, partially built**: the user's stated product vision (saved to memory,
 `project_intent_engine_vision`) is that this taxonomy should power a free-text intent engine
 underneath Discover's existing "what do you want to do?" ask box (`intentResolver.js`), never
-become the app's primary category-picker navigation. Proposed next layers (subcategories, a
-general semantic-tag layer, a cross-category occasion layer, multi-classification businesses,
-cross-category "Experiences" assembly) are real future work but were explicitly deferred — the
-user picked "add the new major categories" as the one scoped piece to build this session. Check
-with the user before starting any of the larger pieces; see the memory file for full detail on
-each.
+become the app's primary category-picker navigation. **First increment of layer 4 (occasion)
+shipped 2026-09-06**: create-assistant's already-extracted `occasion` (birthday/anniversary/
+date_night/celebration/casual_hangout/business_meal/family_gathering) now threads through
+`resolveIntent()` → `resolveBusinessAvailability()` → new `occasionBonus()` in
+`intentResolverScoring.js`, scored against a business's own real `brand_partners
+.priority_occasions` (flat bonus, never a filter, same shape as the existing attribute/cuisine/
+party-type bonuses). `search_active_business_availability()` migration
+(`20260924_business_availability_priority_occasions.sql`) adds `priority_occasions` to its return
+columns — verified live. The same extracted occasion now also genuinely prefills
+AskBusinessScreen's existing occasion chips end to end (Home → AskBusiness →
+BusinessRequestDetail), fully visible/editable, never silently committed. **First increment of layer 2 (subcategory) also shipped 2026-09-06**, per direct user pick when
+asked which piece to build next: a business's own durable self-classification
+(`brand_partners.subcategory` / `business_partner_requests.subcategory`, both new columns) can
+now hold a finer, real leaf-tag value under whichever major `category` the business already
+picked — reuses `gatheringCategories.js`'s existing ~75-tag vocabulary directly (via the new
+`subcategoryOptionsFor()` export), no second taxonomy invented. Wired into
+`BusinessPartnerApplyScreen.js` (new applications), `BusinessDashboardScreen.js` (edit-profile
+picker + profile-header display + defaulting the "Post Availability" category picker from the
+business's own subcategory), `update_business_profile()`/`approve_business_partner_request()`
+RPCs, and `screen-business-content`'s business_profile branch — every existing write path that
+touches a business's category was individually re-checked and updated so none of them silently
+null out subcategory on an unrelated edit (see this migration's own header comment,
+`20260925_business_subcategory_layer.sql`, for the full per-callsite audit). Deliberately manual-
+pick only this pass — neither `businessCategoryClassifier.js` nor the AI onboarding assistant
+suggests a subcategory yet, and it is not yet wired into `intentResolver.js`'s own matching
+(the existing per-posting `business_availability.category` leaf tag already covers fine-grained
+matching; this field's role so far is durable identity/display, not a new resolver signal).
+Remaining layers (a general semantic-tag layer beyond `businessAttributes.js`, multi-
+classification businesses, cross-category "Experiences" assembly) are real future work,
+explicitly not started. Check with the user before starting any of those larger pieces; see the
+memory file for full detail on each.
 
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with
@@ -218,6 +243,16 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
   folder in filename order via `psql -v ON_ERROR_STOP=1`) is the gold-standard extra proof this
   repo has historically done, but isn't mandatory for every small change — disclose plainly
   whether it was done, don't silently skip and claim parity.
+- **`CREATE OR REPLACE FUNCTION` creates a second overload instead of replacing the original
+  whenever the parameter list changes at all — even with an unchanged return type**, not only
+  the already-documented RETURNS TABLE column-list case. Adding a new trailing default
+  parameter to an existing function (discovered 2026-09-06 adding `update_business_profile`'s
+  `subcategory_param`) leaves the old signature live and independently callable side by side
+  with the new one, silently defeating the change for any caller still resolving to the old
+  overload. Always re-check `pg_get_function_identity_arguments` for the function name right
+  after any such migration; if more than one row comes back, `drop function` the old exact
+  signature explicitly, and add that same explicit drop into the migration file itself before
+  its `create or replace` so a from-scratch replay lands in the same single-overload state.
 - **A new Postgres function defaults to PUBLIC execute access** — always explicitly
   `revoke ... from public, anon` unless it's genuinely meant to be public. Rate-limit/counter
   triggers use `SELECT ... FOR UPDATE` to avoid race conditions. Privileged `profiles` columns

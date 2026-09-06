@@ -8,7 +8,7 @@ import { searchPlacesByText, getPlaceDetails } from '../services/places';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
-import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, subcategoryOptionsFor } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -72,6 +72,13 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   const [description, setDescription] = useState('');
   const [contactInfo, setContactInfo] = useState('');
   const [category, setCategory] = useState(null);
+  // Intent engine vision, layer 2 (subcategory) first increment
+  // (2026-09-06): the business's own real, finer self-classification --
+  // reuses gatheringCategories.js's existing leaf-tag vocabulary per
+  // major, no new taxonomy. Manual pick only this pass -- neither
+  // classifyBusinessDescription() nor Google Places' own category guess
+  // below suggests it yet, a disclosed, deliberate scope boundary.
+  const [subcategory, setSubcategory] = useState(null);
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -133,7 +140,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     setClassifying(true);
     try {
       const result = await classifyBusinessDescription(description);
-      if (result.category) setCategory(result.category);
+      if (result.category) {
+        setCategory(result.category);
+        setSubcategory(null);
+      }
       setAttributes(result.attributes ?? []);
       if (result.cuisine) setCuisine(result.cuisine);
       setPriorityOccasions(result.priorityOccasions ?? []);
@@ -177,7 +187,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
       if (details) {
         setPhone(details.phone ?? '');
         setWebsite(details.website ?? '');
-        if (details.category) setCategory(details.category);
+        if (details.category) {
+          setCategory(details.category);
+          setSubcategory(null);
+        }
         if (details.address) setAddress(details.address);
       }
     } catch (e) {
@@ -212,6 +225,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         business_description: description.trim() || null,
         contact_info: contactInfo.trim() || null,
         category,
+        subcategory,
         website: website.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
@@ -386,7 +400,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               <TouchableOpacity
                 key={c.key}
                 style={[styles.chip, category === c.key && styles.chipActive]}
-                onPress={() => setCategory(category === c.key ? null : c.key)}
+                onPress={() => {
+                  setCategory(category === c.key ? null : c.key);
+                  setSubcategory(null);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel={c.label}
                 accessibilityState={{ selected: category === c.key }}
@@ -395,6 +412,26 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          {subcategoryOptionsFor(category).length > 0 ? (
+            <>
+              <Text style={styles.label}>More specifically? (optional)</Text>
+              <View style={styles.chipRow}>
+                {subcategoryOptionsFor(category).map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    style={[styles.chip, subcategory === s && styles.chipActive]}
+                    onPress={() => setSubcategory(subcategory === s ? null : s)}
+                    accessibilityRole="button"
+                    accessibilityLabel={s}
+                    accessibilityState={{ selected: subcategory === s }}
+                  >
+                    <Text style={[styles.chipText, subcategory === s && styles.chipTextActive]}>{s}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : null}
 
           <Text style={styles.label}>What's your business great for? (optional)</Text>
           <View style={styles.chipRow}>

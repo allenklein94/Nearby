@@ -564,11 +564,17 @@ export async function updateBusinessAddress(partnerId, address) {
     longitude_param: longitude,
     logo_url_param: current?.logo_url ?? null,
     category_param: current?.category ?? null,
+    // Intent engine vision, layer 2 (subcategory) first increment
+    // (2026-09-06): update_business_profile's subcategory_param follows
+    // category_param's own non-coalesce contract -- must always be
+    // re-passed or it gets silently nulled out, same reasoning
+    // category_param already required above.
+    subcategory_param: current?.subcategory ?? null,
   });
   if (error) throw error;
 }
 
-export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine, differentiator }) {
+export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine, differentiator, subcategory }) {
   const current = await getBusinessProfile(partnerId);
   let latitude = current?.latitude ?? null;
   let longitude = current?.longitude ?? null;
@@ -604,6 +610,11 @@ export async function updateBusinessProfile(partnerId, { name, description, addr
     // (null) means "leave whatever's already there," never silently
     // wipes it.
     differentiator_param: differentiator ?? null,
+    // Intent engine vision, layer 2 (subcategory) first increment
+    // (2026-09-06): same non-coalesce contract as category_param above --
+    // every caller of this wrapper must pass its own current/intended
+    // subcategory (or explicitly null to clear it), never omit it.
+    subcategory_param: subcategory ?? null,
   });
   if (error) throw error;
 }
@@ -629,7 +640,7 @@ export async function updateBusinessProfile(partnerId, { name, description, addr
 // what to say to the owner per tier, this never throws for an honest
 // medium/uncertain/high result (those are real, expected outcomes, not
 // failures) -- it only throws for a genuine network/auth/server error.
-export async function submitBusinessProfileForScreening(partnerId, { name, description, logoUrl, category, attributes, cuisine, differentiator }) {
+export async function submitBusinessProfileForScreening(partnerId, { name, description, logoUrl, category, attributes, cuisine, differentiator, subcategory }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -650,6 +661,7 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
       attributes: attributes ?? [],
       cuisine: cuisine ?? null,
       differentiator: differentiator ?? null,
+      subcategory: subcategory ?? null,
     }),
   });
 

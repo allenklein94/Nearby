@@ -182,6 +182,7 @@ export default function MyBusinessApplicationScreen({ navigation }) {
             <Text style={styles.detailsHeader}>Your Application</Text>
             <DetailRow label="Business Name" value={request.business_name} styles={styles} />
             {categoryLabel ? <DetailRow label="Category" value={categoryLabel} styles={styles} /> : null}
+            {request.subcategory ? <DetailRow label="Subcategory" value={request.subcategory} styles={styles} /> : null}
             {request.business_description ? <DetailRow label="Description" value={request.business_description} styles={styles} /> : null}
             {request.website ? <DetailRow label="Website" value={request.website} styles={styles} /> : null}
             {request.phone ? <DetailRow label="Phone" value={request.phone} styles={styles} /> : null}

@@ -69,6 +69,30 @@ const CATEGORY_OPTIONS = [
 ];
 const ATTRIBUTE_OPTIONS = ['outdoor_seating', 'date_friendly', 'group_friendly', 'live_music', 'kid_friendly', 'quiet', 'casual', 'upscale'];
 const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american', 'french', 'mediterranean', 'indian', 'thai', 'seafood', 'other'];
+// Intent engine vision, layer 2 (subcategory) first increment
+// (2026-09-06): the same real per-major leaf-tag sets
+// update_business_profile's own new subcategory_param validation block
+// enforces (20260925_business_subcategory_layer.sql) -- re-validated here
+// for the same reason CATEGORY_OPTIONS/ATTRIBUTE_OPTIONS/CUISINE_OPTIONS
+// already are, so a malformed/invented value never reaches the RPC.
+const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
+  food_drink: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour'],
+  activities_recreation: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling'],
+  entertainment_nightlife: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife'],
+  dating_social: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts'],
+  arts_culture_learning: ['Reading', 'Art', 'Photography', 'Crafts'],
+  shopping: ['Farmers Markets', 'Thrift & Vintage'],
+  wellness_beauty: ['Meditation', 'Spa Day', 'Self-Care'],
+  family_kids: ['Family Playdate', 'Kids Activity'],
+  outdoors_nature: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking'],
+  pets: ['Dogs', 'Cats', 'Dog Meetup'],
+  business_networking: ['Networking', 'Coworking'],
+  community_volunteering: ['Volunteering', 'Faith & Spirituality', 'Fundraiser'],
+  travel_experiences: ['Travel', 'Day Trip'],
+  stay_getaway: ['Weekend Getaway', 'Staycation', 'Road Trip'],
+  education_classes: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
+  attractions_things_to_see: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
+};
 // Same real vocabularies create_business_experience()/update_business_
 // experience()'s own CHECK constraints already enforce.
 const PRICE_LEVEL_OPTIONS = ['free', '$', '$$', '$$$'];
@@ -239,6 +263,10 @@ serve(async (req) => {
       const category = CATEGORY_OPTIONS.includes(body.category) ? body.category : null;
       const attributes = Array.isArray(body.attributes) ? body.attributes.filter((a: unknown) => ATTRIBUTE_OPTIONS.includes(a as string)) : [];
       const cuisine = category === 'food_drink' && CUISINE_OPTIONS.includes(body.cuisine) ? body.cuisine : null;
+      // Must genuinely belong to this same category's own real subcategory
+      // set -- never carried through if it belonged to a different major
+      // (e.g. the category chip changed in the same edit).
+      const subcategory = category && (SUBCATEGORY_OPTIONS_BY_CATEGORY[category] ?? []).includes(body.subcategory) ? body.subcategory : null;
 
       // Address/lat/lng are deliberately never taken from the client here --
       // this screening path never edits location (that's the separate,
@@ -290,7 +318,7 @@ What makes them different: ${differentiator || '(none)'}`;
 
       const contentSnapshot = {
         name, description: description || null, address, logoUrl, category,
-        attributes, cuisine, differentiator: differentiator || null,
+        attributes, cuisine, differentiator: differentiator || null, subcategory,
       };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
@@ -326,6 +354,7 @@ What makes them different: ${differentiator || '(none)'}`;
           attributes_param: attributes,
           cuisine_param: cuisine,
           differentiator_param: differentiator || null,
+          subcategory_param: subcategory,
         });
         if (writeError) {
           console.error('screen-business-content: low-tier write failed', writeError);

@@ -37,7 +37,7 @@ import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cu
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
-import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { INTEREST_OPTIONS, subcategoryOptionsFor } from '../constants/gatheringCategories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -198,6 +198,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [editCategoryInput, setEditCategoryInput] = useState(null);
   const [editAttributesInput, setEditAttributesInput] = useState([]);
   const [editCuisineInput, setEditCuisineInput] = useState(null);
+  // Intent engine vision, layer 2 (subcategory) first increment
+  // (2026-09-06).
+  const [editSubcategoryInput, setEditSubcategoryInput] = useState(null);
   const [editDifferentiatorInput, setEditDifferentiatorInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
@@ -750,6 +753,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         attributes: editAttributesInput,
         cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
         differentiator: editDifferentiatorInput.trim() || null,
+        subcategory: editSubcategoryInput,
       });
 
       if (result.published) {
@@ -762,6 +766,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           attributes: editAttributesInput,
           cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
           differentiator: editDifferentiatorInput.trim() || null,
+          subcategory: editSubcategoryInput,
         }));
         setEditProfileModalVisible(false);
         Alert.alert('Saved', 'Your business profile has been updated.');
@@ -1002,6 +1007,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         attributes: merged,
         cuisine: selectedPartner.cuisine,
         differentiator: selectedPartner.differentiator,
+        // Category is unchanged here -- must re-pass the current
+        // subcategory or updateBusinessProfile's non-coalesce contract
+        // would silently null it out on this unrelated attributes-only
+        // write.
+        subcategory: selectedPartner.subcategory,
       });
       setSelectedPartner((prev) => ({ ...prev, attributes: merged }));
       // Business Intelligence & Opportunity Engine, Phase 1 -- close out
@@ -1608,7 +1618,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // unchanged, and every field stays editable before Post, same as the
   // blank-start path.
   function openPostAvailabilityModal(prefill) {
-    const category = prefill?.category ?? null;
+    // Intent engine vision, layer 2 (subcategory) first increment
+    // (2026-09-06): a real Demand Near You prefill (occasion/period-
+    // specific) still wins when present; otherwise default to the
+    // business's own declared subcategory rather than leaving this blank
+    // -- a genuine, real starting point instead of nothing, still fully
+    // editable/clearable before Post like every other field here.
+    const category = prefill?.category ?? selectedPartner?.subcategory ?? null;
     const period = prefill?.dominantPeriod ?? null;
     setAvailabilityTitleInput(
       category ? (period ? `${category} available this ${period}` : `${category} available`) : ''
@@ -2308,6 +2324,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         setEditAttributesInput(selectedPartner?.attributes ?? []);
                         setEditCuisineInput(selectedPartner?.cuisine ?? null);
                         setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
+                        setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
                         setEditProfileModalVisible(true);
                       }}
                       accessibilityLabel="Complete your business profile"
@@ -3343,7 +3360,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
                   <Text style={styles.breakdownText}>
                     {selectedPartner?.category
-                      ? BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category
+                      ? (BUSINESS_CATEGORIES.find((c) => c.key === selectedPartner.category)?.label ?? selectedPartner.category) +
+                        (selectedPartner?.subcategory ? ` · ${selectedPartner.subcategory}` : '')
                       : 'No category set — pick one so customers can find you by category.'}
                   </Text>
                   {selectedPartner?.description ? (
@@ -3379,6 +3397,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setEditAttributesInput(selectedPartner?.attributes ?? []);
                       setEditCuisineInput(selectedPartner?.cuisine ?? null);
                       setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
+                      setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
                       setEditProfileModalVisible(true);
                     }}
                     style={{ marginTop: spacing.sm }}
@@ -3498,6 +3517,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setEditAttributesInput(selectedPartner?.attributes ?? []);
                       setEditCuisineInput(selectedPartner?.cuisine ?? null);
                       setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
+                      setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
                       setEditProfileModalVisible(true);
                     }}
                     accessibilityLabel="Edit space and amenities"
@@ -4322,7 +4342,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <TouchableOpacity
                     key={c.key}
                     style={[styles.chip, editCategoryInput === c.key && styles.chipSelected]}
-                    onPress={() => setEditCategoryInput(editCategoryInput === c.key ? null : c.key)}
+                    onPress={() => {
+                      setEditCategoryInput(editCategoryInput === c.key ? null : c.key);
+                      setEditSubcategoryInput(null);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={c.label}
                     accessibilityState={{ selected: editCategoryInput === c.key }}
@@ -4331,6 +4354,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              {subcategoryOptionsFor(editCategoryInput).length > 0 && (
+                <>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>More Specifically</Text>
+                  <View style={styles.chipRow}>
+                    {subcategoryOptionsFor(editCategoryInput).map((s) => (
+                      <TouchableOpacity
+                        key={s}
+                        style={[styles.chip, editSubcategoryInput === s && styles.chipSelected]}
+                        onPress={() => setEditSubcategoryInput(editSubcategoryInput === s ? null : s)}
+                        accessibilityRole="button"
+                        accessibilityLabel={s}
+                        accessibilityState={{ selected: editSubcategoryInput === s }}
+                      >
+                        <Text style={[styles.chipText, editSubcategoryInput === s && styles.chipTextSelected]}>{s}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
               {/* "Business Story" plan: reframed from a plain "Attributes"
                   checkbox list to "Why People Choose Us" -- same real
                   vocabulary/RPC, just named for what it actually is. */}

@@ -137,3 +137,16 @@ export const PERSONAL_INTEREST_OPTIONS = INTEREST_OPTIONS.filter((tag) => tag !=
 export function groupForTag(tag) {
   return CATEGORY_GROUPS.find((g) => g.tags.includes(tag)) ?? null;
 }
+
+// Intent engine vision, layer 2 (subcategory) first increment
+// (2026-09-06): a business's own durable self-classification
+// (brand_partners.subcategory) reuses this exact same leaf-tag vocabulary
+// per major, rather than inventing a second one -- this is the one shared
+// lookup both BusinessPartnerApplyScreen and BusinessDashboardScreen use
+// to render the right subcategory chips once a major category is picked.
+// Three majors (home_local_services, auto_transportation,
+// health_personal_care) genuinely have none yet -- an honest empty list,
+// not a bug, per this file's own comment above on why.
+export function subcategoryOptionsFor(categoryKey) {
+  return CATEGORY_GROUPS.find((g) => g.key === categoryKey)?.tags ?? [];
+}
