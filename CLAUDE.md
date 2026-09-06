@@ -40,6 +40,18 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Quick Filters real customization (select + set values + reorder) — fully DONE (2026-09-06),
+external UX critique item 9.** Dating's Customize screen used to only reorder/show-hide a fixed 3
+booleans; now a shared catalog (`src/constants/quickFilterCatalog.js`) + one generic
+`QuickFilterCustomizeScreen` (mode-driven) gives Dating a real settable Match % threshold plus a
+new Shared Interests filter, and gives Friends its own first-time Customize affordance over its 4
+real dimensions. Migration `20260921_quick_filter_customization.sql` applied and verified live.
+Not tested in a running app (no simulator tooling available this session). Full build detail:
+`CLAUDE_HISTORY.md`, search "Quick Filters: real select+set-values+reorder customization." The
+same critique's items 10 (Messages button visual weight) and 11 (People→Dating/Friends
+hierarchy) were both found already fully shipped by prior Aug 23/30 2026 work — no code change
+needed for those two.
+
 **Discover/People-Friends parity plan — fully DONE (2026-09-06).** All 4 items (Discover mode
 filters in-place, Friends mode mirrors Dating's architecture, Add Friend bug, generalized "Plan
 Something" flow) shipped. Full build/verification detail: `CLAUDE_HISTORY.md`, search "Discover/

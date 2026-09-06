@@ -1,3 +1,69 @@
+## Sep 6 2026 — Quick Filters: real select+set-values+reorder customization — BUILT, VERIFIED LIVE
+## (external UX critique item 9)
+
+Quick Filters' "Customize" screen used to only reorder/show-hide the same fixed 3 booleans
+(Verified/Match %/Online) — not real customization, just filter ordering, per direct user
+critique. Replaced with a shared catalog (`src/constants/quickFilterCatalog.js`) and one generic
+`QuickFilterCustomizeScreen`, driven by a `mode` route param, reused by both Dating and Friends
+rather than two copies of the same screen.
+
+**Design:**
+- **Dating** gains a real settable value — Match % threshold (50/60/70/80/90%, generalizing what
+  was a hardcoded `< 70` in `DiscoveryScreen.js`'s filter predicate) — plus one new real filter,
+  Shared Interests (boolean, backed by the `sharedInterests` array `proximity.js` already computes
+  per candidate — no new query). Combined with the existing Verified/Online booleans, that's 4 real
+  catalog entries: select which show, set Match %'s threshold, reorder.
+- **Age Range and the Advanced (Premium) fields were deliberately left out of the catalog.** They
+  already have first-class, always-live controls elsewhere in `FiltersModal` (the Advanced Filters
+  section); adding them a second time as a separately-configured Quick Filter preset would create
+  two disagreeing sources of truth for the same value the moment someone edited one without the
+  other. Distance was also left out for Dating — `getNearbyMatches`/`getBrowseMatches` never
+  compute a real per-candidate distance value the way Friends' `distance_bucket` does, and CLAUDE.md's
+  "no invented numbers, no fabricated signals" rule rules out adding a filter with nothing real
+  behind it.
+- **Friends** gets the same Customize affordance for the first time — it never had one. Its 4 real
+  dimensions (Interests tag multiselect, a real `distance_bucket` single-select, Verified, Online)
+  already get their *values* set live in `FriendDiscoveryScreen`'s existing filter accordion (tap a
+  tag, tap a bucket) — so unlike Dating, Customize here only needs to control which of the 4
+  sections show and in what order; forcing them into Dating's "pre-set a value, then toggle" model
+  would have been a real regression from picking tags/buckets contextually whenever you want.
+  This is the honest version of "same mechanics, configured differently": both modes' catalogs
+  carry a `kind` per entry, but only Dating's `highCompat` is `'threshold'` (a real settable value);
+  Friends' `'liveMultiselect'`/`'liveSelect'` entries say plainly that the value is set elsewhere.
+- New profile columns (`20260921_quick_filter_customization.sql`): `quick_filter_config` jsonb
+  (Dating's threshold value), `friend_quick_filter_order`/`friend_quick_filter_visible` text[]
+  (new for Friends, defaulting to all 4 in their original order so existing users see identical
+  behavior on first load), `friend_quick_filter_config` jsonb (unused today, reserved for the day
+  Friends gains its own `'threshold'`-kind entry — declared now so a future migration isn't needed
+  just to add one). All four are plain additive columns with real defaults, written through the
+  same self-row UPDATE path the pre-existing `quick_filter_order`/`quick_filter_visible` columns
+  already used — no new RLS policy or grant needed.
+- `FriendDiscoveryScreen`'s quick-filter-order fetch is wrapped in its own inner try/catch, non-
+  fatal, matching this file's own established "supplementary chrome should never block the real
+  screen" convention (`TabHeaderActions.js`, this screen's own swipe-retry) — a failed fetch here
+  falls back to showing all 4 sections in their default order rather than failing the whole screen.
+
+**Verification:** migration applied live via the Supabase Management API
+(`enmosvippabmuqslzrox`) and confirmed via `information_schema.columns` — all 4 new columns
+present with the expected `jsonb`/`text[]` types and defaults. All 6 touched/added files
+(`QuickFilterCustomizeScreen.js`, `FriendDiscoveryScreen.js`, `DiscoveryScreen.js`,
+`FiltersModal.js`, `quickFilterCatalog.js`, `RootNavigator.js`) confirmed syntactically valid via
+`@babel/core` + `babel-preset-expo` (the project has no root `babel.config.js` by design — see
+that file's own header comment — so this used the same preset Metro itself resolves, not a
+substitute config). **Not tested in a running app/simulator** — no simulator/device tooling was
+available in this session, consistent with this project's standing limitation (see "Reference"
+section of CLAUDE.md). The live-data round-trip (an actual write-then-read through the new
+columns from the app itself) is unverified beyond the schema-level check above; if the customize
+screen misbehaves in practice, that's the first thing to check.
+
+Two companion items from the same critique (10: make the Messages/Matches header button visually
+prominent; 11: keep the People → Dating/Friends hierarchy unambiguous) were both found already
+fully addressed by the Aug 23 and Aug 30 2026 work in `TabHeaderActions.js` and
+`DiscoverHubScreen.js` respectively (filled `chatbubbles` icon on a solid coral circle with an
+unread badge; the Dating/Friends sub-toggle already renders directly beneath, and visually
+subordinate to, the People toggle) — confirmed by re-reading both files rather than re-doing
+already-shipped work.
+
 ## Sep 6 2026 — Host cancellation lifecycle for Communities and Gatherings — BUILT, VERIFIED LIVE
 ## (CLAUDE.md items 5 & 6, agreed same day; plan closed out)
 
