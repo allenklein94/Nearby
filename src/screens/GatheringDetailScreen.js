@@ -17,6 +17,8 @@ import {
   getApprovedAttendeeCount,
   getPendingInterestCount,
   getGatheringMessageCount,
+  cancelGathering,
+  stopRecurringSeries,
 } from '../services/gatherings';
 import { filterToMyConnections } from '../services/connections';
 import { formatPreciseBucketLine, formatInterestLine } from '../utils/groupInsightsLabels';
@@ -329,6 +331,67 @@ export default function GatheringDetailScreen({ route, navigation }) {
               Alert.alert('Error', e.message);
             }
             setLeaving(false);
+          },
+        },
+      ]
+    );
+  }
+
+  // Host cancellation lifecycle (2026-09-06 CLAUDE.md item 6) -- the
+  // detail screen previously had no Cancel action at all, only the
+  // hosting-tab list row (GatheringsScreen.js's confirmCancelGathering,
+  // same recurring-series branching preserved here verbatim).
+  function confirmCancelGatheringInDetail() {
+    if (gathering.recurrence_rule) {
+      Alert.alert(
+        `Cancel "${gathering.title}"?`,
+        'This is a recurring gathering. Do you want to cancel just this one, or stop the whole series?',
+        [
+          { text: 'Keep It', style: 'cancel' },
+          {
+            text: 'Just This One',
+            onPress: async () => {
+              try {
+                await cancelGathering(gatheringId);
+                navigation.goBack();
+              } catch (e) {
+                Alert.alert('Error', e.message);
+              }
+            },
+          },
+          {
+            text: 'Stop The Whole Series',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await stopRecurringSeries(gatheringId);
+                await load();
+                Alert.alert('Series Stopped', "This one will still happen as scheduled, but no future ones will be created.");
+              } catch (e) {
+                Alert.alert('Error', e.message);
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    Alert.alert(
+      `Cancel "${gathering.title}"?`,
+      "This cancels the gathering and notifies everyone who's approved to attend. Any open business requests tied to it are cancelled too. This can't be undone.",
+      [
+        { text: 'Keep It', style: 'cancel' },
+        {
+          text: 'Cancel Gathering',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelGathering(gatheringId);
+              navigation.goBack();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
           },
         },
       ]
@@ -746,6 +809,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   accessibilityRole="button"
                 >
                   <Text style={styles.hostBannerLink}>✏️ Edit Gathering →</Text>
+                </TouchableOpacity>
+              )}
+              {new Date(gathering.scheduled_at) >= new Date() && (
+                <TouchableOpacity
+                  onPress={confirmCancelGatheringInDetail}
+                  style={{ marginTop: spacing.xs }}
+                  accessibilityLabel="Cancel gathering"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.hostBannerLink, { color: colors.danger }]}>Cancel Gathering</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity

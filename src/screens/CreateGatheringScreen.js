@@ -192,7 +192,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
     if (myCommunities.length > 0 || loadingCommunities) return;
     setLoadingCommunities(true);
     const list = await getMyCommunities();
-    setMyCommunities(list);
+    // Scheduling a new gathering under a paused/cancelled community makes
+    // no sense -- getMyCommunities() is member-scoped so RLS won't filter
+    // this for us the way it does for public discovery.
+    setMyCommunities(list.filter((c) => c.status === 'active'));
     setLoadingCommunities(false);
   }
 

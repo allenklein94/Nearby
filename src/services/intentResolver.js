@@ -134,7 +134,7 @@ async function resolveCommunities(category, location, myCity) {
   if (!category) return [];
   const mine = await getMyCommunities();
   return mine
-    .filter((c) => c.interest_tag === category)
+    .filter((c) => c.interest_tag === category && c.status === 'active')
     .map((c) => ({
       type: 'community',
       id: c.id,
@@ -175,7 +175,7 @@ export async function resolveCommunityIntent({ category, rawText }) {
   const myIds = new Set(mine.map((c) => c.id));
 
   const joined = mine
-    .filter((c) => c.interest_tag === category)
+    .filter((c) => c.interest_tag === category && c.status === 'active')
     .map((c) => ({
       type: 'community',
       id: c.id,

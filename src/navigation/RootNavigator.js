@@ -27,6 +27,7 @@ import CreateHubScreen from '../screens/CreateHubScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import CommunitiesScreen from '../screens/CommunitiesScreen';
 import CreateCommunityScreen from '../screens/CreateCommunityScreen';
+import EditCommunityScreen from '../screens/EditCommunityScreen';
 import CommunityDetailScreen from '../screens/CommunityDetailScreen';
 import CommunityChatScreen from '../screens/CommunityChatScreen';
 import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
@@ -487,6 +488,7 @@ export default function RootNavigator() {
             <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={{ headerShown: true, title: 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: 'Edit Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen
               name="CommunityChat"

@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAr
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { supabase } from '../services/supabase';
-import { getMyCommunities, joinCommunity, leaveCommunity, deleteCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
+import { getMyCommunities, joinCommunity, leaveCommunity, deleteCommunity, pauseCommunity, resumeCommunity, cancelCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
 import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
 import { getBusinessRequestForCommunity, getAcceptedOfferForRequest } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
@@ -280,6 +280,58 @@ export default function CommunityDetailScreen({ route, navigation }) {
     );
   }
 
+  function confirmPauseCommunity() {
+    Alert.alert(
+      `Pause "${community.name}"?`,
+      "New members can't join and it disappears from public discovery while paused. Existing members keep their access, and you can resume anytime.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Pause Community',
+          onPress: async () => {
+            try {
+              await pauseCommunity(communityId);
+              load();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  async function handleResumeCommunity() {
+    try {
+      await resumeCommunity(communityId);
+      load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+  }
+
+  function confirmCancelCommunity() {
+    Alert.alert(
+      `Cancel "${community.name}"?`,
+      `This notifies all ${memberCount} member${memberCount === 1 ? '' : 's'} that the community is cancelled. Membership and message history are kept, and any open business requests tied to this community are cancelled too. This can't be undone (though you can still delete it permanently afterward).`,
+      [
+        { text: 'Keep It', style: 'cancel' },
+        {
+          text: 'Cancel Community',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await cancelCommunity(communityId);
+              load();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   function formatDate(iso) {
     return new Date(iso).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
@@ -310,19 +362,20 @@ export default function CommunityDetailScreen({ route, navigation }) {
         </View>
         <Text style={styles.title}>{community.name}</Text>
         <Text style={styles.meta}>{memberCount} member{memberCount === 1 ? '' : 's'} · {community.is_public ? 'Public' : 'Private'}</Text>
+        {community.status === 'paused' && (
+          <Text style={styles.statusNotice}>⏸️ This community is paused by its creator.</Text>
+        )}
+        {community.status === 'cancelled' && (
+          <Text style={styles.statusNotice}>This community has been cancelled.</Text>
+        )}
         {(community.area_label || community.area_city) && (
           <Text style={styles.areaText}>
             📍 {community.area_label || [community.area_city, community.area_region].filter(Boolean).join(', ')}
           </Text>
         )}
         {community.description ? <Text style={styles.description}>{community.description}</Text> : null}
-        {canEditArea && (
-          <TouchableOpacity onPress={openAreaModal} accessibilityLabel="Edit Community Area" accessibilityRole="button" style={{ marginBottom: spacing.md }}>
-            <Text style={styles.editAreaLink}>{community.area_city || community.area_label ? 'Edit Community Area' : '+ Add a Community Area'}</Text>
-          </TouchableOpacity>
-        )}
 
-        {!isCreator && (
+        {!isCreator && community.status !== 'cancelled' && (
           <TouchableOpacity
             style={[styles.joinButton, isMember && styles.leaveButton]}
             onPress={handleJoinLeave}
@@ -340,17 +393,65 @@ export default function CommunityDetailScreen({ route, navigation }) {
             button (leaving your own community makes no sense) and, until
             now, no Delete option either, despite the real "Creator can
             delete their community" RLS policy already existing (baseline.sql)
-            -- this was a missing UI affordance, not a missing capability. */}
+            -- this was a missing UI affordance, not a missing capability.
+            Host cancellation lifecycle (2026-09-06 CLAUDE.md item 5): Edit /
+            Pause-or-Resume / Cancel / Delete, each gated by community.status
+            so only the transitions that are actually valid from the current
+            state are ever shown. */}
         {isCreator && (
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={confirmDeleteCommunity}
-            activeOpacity={0.85}
-            accessibilityLabel={`Delete ${community.name}`}
-            accessibilityRole="button"
-          >
-            <Text style={styles.deleteButtonText}>Delete Community</Text>
-          </TouchableOpacity>
+          <View style={styles.manageSection}>
+            <Text style={styles.manageSectionLabel}>Manage Community</Text>
+
+            <TouchableOpacity
+              onPress={() => navigation.navigate('EditCommunity', { community })}
+              accessibilityLabel="Edit Community"
+              accessibilityRole="button"
+              style={styles.manageLinkRow}
+            >
+              <Text style={styles.manageLink}>✏️ Edit Community</Text>
+            </TouchableOpacity>
+
+            {canEditArea && (
+              <TouchableOpacity onPress={openAreaModal} accessibilityLabel="Edit Community Area" accessibilityRole="button" style={styles.manageLinkRow}>
+                <Text style={styles.manageLink}>{community.area_city || community.area_label ? 'Edit Community Area' : '+ Add a Community Area'}</Text>
+              </TouchableOpacity>
+            )}
+
+            {community.status === 'active' && (
+              <TouchableOpacity onPress={confirmPauseCommunity} accessibilityLabel="Pause Community" accessibilityRole="button" style={styles.manageLinkRow}>
+                <Text style={styles.manageLink}>⏸️ Pause Community</Text>
+              </TouchableOpacity>
+            )}
+            {community.status === 'paused' && (
+              <TouchableOpacity onPress={handleResumeCommunity} accessibilityLabel="Resume Community" accessibilityRole="button" style={styles.manageLinkRow}>
+                <Text style={styles.manageLink}>▶️ Resume Community</Text>
+              </TouchableOpacity>
+            )}
+
+            {community.status !== 'cancelled' && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={confirmCancelCommunity}
+                activeOpacity={0.85}
+                accessibilityLabel={`Cancel ${community.name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.deleteButtonText}>Cancel Community</Text>
+              </TouchableOpacity>
+            )}
+
+            {community.status === 'cancelled' && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={confirmDeleteCommunity}
+                activeOpacity={0.85}
+                accessibilityLabel={`Delete ${community.name} permanently`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.deleteButtonText}>Delete Community Permanently</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {community.hosting_partner_id && myManagedPartner?.id === community.hosting_partner_id ? (
@@ -797,6 +898,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   viewToggleTextActive: { color: '#fff' },
   areaText: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.xs },
   editAreaLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  statusNotice: { color: colors.textTertiary, fontSize: 13, fontWeight: '600', marginBottom: spacing.xs },
+  manageSection: { marginTop: spacing.sm, marginBottom: spacing.lg },
+  manageSectionLabel: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
+  manageLinkRow: { marginBottom: spacing.md },
+  manageLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   modalTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },

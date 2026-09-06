@@ -420,7 +420,7 @@ export default function GatheringsScreen({ navigation, route }) {
 
     Alert.alert(
       `Cancel "${gathering.title}"?`,
-      "This removes the gathering completely. Anyone who expressed interest won't be notified automatically.",
+      "This cancels the gathering and notifies everyone who's approved to attend. Any open business requests tied to it are cancelled too. This can't be undone.",
       [
         { text: 'Keep It', style: 'cancel' },
         {

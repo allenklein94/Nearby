@@ -84,7 +84,7 @@ export async function getMyCommunities() {
 
   const { data, error } = await supabase
     .from('community_members')
-    .select('community_id, role, communities(id, name, description, interest_tag, is_public, cover_photo_url, creator_id, hosting_partner_id, area_city, area_region, area_label, area_lat, area_lng)')
+    .select('community_id, role, communities(id, name, description, interest_tag, is_public, status, cover_photo_url, creator_id, hosting_partner_id, area_city, area_region, area_label, area_lat, area_lng)')
     .eq('user_id', myId);
 
   if (error) {
