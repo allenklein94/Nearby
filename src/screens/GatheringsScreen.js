@@ -33,30 +33,12 @@ import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoo
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { getSocialForecast } from '../services/homeDashboard';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
-import { isWithinRightNowWindow } from '../utils/rightNowWindow';
+import { DATE_OPTIONS, matchesDateFilter } from '../utils/gatheringDateFilter';
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-
-const DATE_OPTIONS = [
-  { key: 'anytime', label: 'Anytime' },
-  { key: 'now', label: 'Right Now' },
-  { key: 'soon', label: 'Starting Soon' },
-  { key: 'today', label: 'Today' },
-  { key: 'tomorrow', label: 'Tomorrow' },
-  { key: 'weekend', label: 'This Weekend' },
-  { key: 'week', label: 'This Week' },
-];
-
-// Universal Signal Remediation Pass, P2 item 8 (CLAUDE.md, Aug 28 2026):
-// this "Right Now" window is now the one real canonical definition of
-// "now" across the app -- see utils/rightNowWindow.js's own header
-// comment for the full story, including a real, disclosed mismatch this
-// pass found (and deliberately left unfixed, out of scope) between this
-// window and homeDashboard.js's differently-named `happeningNow` signal,
-// which this comment used to (inaccurately) call "the same."
 
 // Real Free/$/$$/$$$ filter options, backed by gatherings.price_level --
 // mirrors CreateGatheringScreen's own PRICE_OPTIONS chip labels.
@@ -77,65 +59,6 @@ const PARTY_TYPE_FILTER_OPTIONS = [
   { key: 'groups', label: '👨‍👩‍👧‍👦 Big Group' },
   { key: 'date', label: '💕 A Date Idea' },
 ];
-
-// "Starting Soon" -- a real, narrower window than "Right Now"'s symmetric
-// +/- window: starts in the next 90 minutes and hasn't started yet. Folded
-// into the existing "When" accordion rather than a second Availability
-// section, per CLAUDE.md's own reasoning ("Right Now" already is an honest
-// "Open now" -- this is the genuinely distinct addition).
-const SOON_WINDOW_MS = 90 * 60 * 1000;
-
-function matchesDateFilter(scheduledAt, filterKey) {
-  if (filterKey === 'anytime') return true;
-  const date = new Date(scheduledAt);
-  const now = new Date();
-
-  if (filterKey === 'now') {
-    return isWithinRightNowWindow(scheduledAt, now);
-  }
-
-  if (filterKey === 'soon') {
-    return date.getTime() > now.getTime() && date.getTime() <= now.getTime() + SOON_WINDOW_MS;
-  }
-
-  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const todayStart = startOfDay(now);
-
-  if (filterKey === 'today') {
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-    return date >= todayStart && date < tomorrowStart;
-  }
-
-  if (filterKey === 'tomorrow') {
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-    const dayAfterStart = new Date(tomorrowStart);
-    dayAfterStart.setDate(dayAfterStart.getDate() + 1);
-    return date >= tomorrowStart && date < dayAfterStart;
-  }
-
-  if (filterKey === 'weekend') {
-    const dayOfWeek = todayStart.getDay();
-    // Sunday (0) is already inside the current weekend -- (6 - 0 + 7) % 7
-    // would wrap all the way to next Saturday, silently excluding the rest
-    // of today. Same fix as intentResolverScoring.js's matchesDateWindow.
-    const daysUntilSaturday = dayOfWeek === 0 ? -1 : 6 - dayOfWeek;
-    const saturdayStart = new Date(todayStart);
-    saturdayStart.setDate(saturdayStart.getDate() + daysUntilSaturday);
-    const mondayStart = new Date(saturdayStart);
-    mondayStart.setDate(mondayStart.getDate() + 2);
-    return date >= saturdayStart && date < mondayStart;
-  }
-
-  if (filterKey === 'week') {
-    const weekEnd = new Date(todayStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-    return date >= todayStart && date < weekEnd;
-  }
-
-  return true;
-}
 
 export default function GatheringsScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();

@@ -22,6 +22,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
+import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
@@ -71,6 +72,21 @@ const TYPE_FILTERS = [
   { key: 'communities', label: 'Communities' },
   { key: 'places', label: 'Places' },
   { key: 'perks', label: 'Perks' },
+];
+
+// Discover/People-Friends parity plan, item 1 (CLAUDE.md): these used to
+// navigate away to a separate GatheringsScreen with initialDateFilter --
+// now they toggle DiscoverHubScreen's own quickDateFilter state and
+// filter this screen's content in place, the same "transform, don't
+// navigate" principle the Dating|Friends People toggle already
+// established. A subset of DATE_OPTIONS (utils/gatheringDateFilter.js) --
+// "Starting Soon"/"Tomorrow"/"Anytime" stay Gatherings-screen-only, this
+// row is deliberately just the handful worth a persistent quick-tap here.
+const QUICK_DATE_FILTERS = [
+  { key: 'now', icon: '⚡', label: 'Happening Now' },
+  { key: 'today', icon: '🌅', label: 'Today' },
+  { key: 'weekend', icon: '🌴', label: 'This Weekend' },
+  { key: 'week', icon: '📅', label: 'This Week' },
 ];
 
 const PLACE_CATEGORIES = [
@@ -203,6 +219,17 @@ export default function DiscoverHubScreen({ navigation }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  // Discover/People-Friends parity plan, item 1: 'anytime' is
+  // matchesDateFilter's real no-op key, so untouched behavior is
+  // unaffected by default. Reset whenever the user switches type tabs
+  // (setTypeTab below) so a date filter picked while on "All" never keeps
+  // silently narrowing a different tab whose own chips to clear it aren't
+  // visible on.
+  const [quickDateFilter, setQuickDateFilter] = useState('anytime');
+  function setTypeTab(key) {
+    setTypeFilter(key);
+    setQuickDateFilter('anytime');
+  }
   const [viewStyle, setViewStyle] = useState('list');
   const [placesCategory, setPlacesCategory] = useState('coffee');
   const [userLocation, setUserLocation] = useState(null);
@@ -499,7 +526,13 @@ export default function DiscoverHubScreen({ navigation }) {
   // (searchedGatherings/searchedCommunities, populated by the debounced
   // effect above) once actively searching, instead of client-side
   // .filter().includes() over the full already-fetched browse lists.
-  const filteredGatherings = isSearching ? searchedGatherings : gatherings;
+  // Discover/People-Friends parity plan, item 1: the quick date chips
+  // filter this same already-fetched/-searched list in place -- every
+  // downstream derivation below (notableGatherings, dedupedGatherings,
+  // gatheringsToShow, the map view) reads from this one variable, so
+  // applying it here is the single place that needs to change.
+  const filteredGatherings = (isSearching ? searchedGatherings : gatherings)
+    .filter((g) => matchesDateFilter(g.scheduled_at, quickDateFilter));
   const filteredCommunities = isSearching ? searchedCommunities : communities;
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
@@ -917,7 +950,7 @@ export default function DiscoverHubScreen({ navigation }) {
                     <TouchableOpacity
                       key={f.key}
                       style={[styles.filterChip, active && styles.filterChipActive]}
-                      onPress={() => setTypeFilter(f.key)}
+                      onPress={() => setTypeTab(f.key)}
                       accessibilityLabel={f.label}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
@@ -1137,38 +1170,29 @@ export default function DiscoverHubScreen({ navigation }) {
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {isAll && (
-            <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
-              <TouchableOpacity
-                style={styles.quickTimeCard}
-                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'now' })}
-                activeOpacity={0.85}
-                accessibilityLabel="Gatherings happening right now"
-                accessibilityRole="button"
-              >
-                <Text style={styles.quickTimeCardIcon}>⚡</Text>
-                <Text style={styles.quickTimeCardText}>Happening Now</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.quickTimeCard}
-                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })}
-                activeOpacity={0.85}
-                accessibilityLabel="Gatherings happening today"
-                accessibilityRole="button"
-              >
-                <Text style={styles.quickTimeCardIcon}>🌅</Text>
-                <Text style={styles.quickTimeCardText}>Today</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.quickTimeCard}
-                onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'week' })}
-                activeOpacity={0.85}
-                accessibilityLabel="Gatherings happening this week"
-                accessibilityRole="button"
-              >
-                <Text style={styles.quickTimeCardIcon}>📅</Text>
-                <Text style={styles.quickTimeCardText}>This Week</Text>
-              </TouchableOpacity>
-            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
+              {QUICK_DATE_FILTERS.map((f) => {
+                const active = quickDateFilter === f.key;
+                return (
+                  <TouchableOpacity
+                    key={f.key}
+                    style={[styles.quickTimeCard, active && styles.quickTimeCardActive]}
+                    // Tapping the already-active chip clears it, mirroring
+                    // Friend Discovery's own distance-filter toggle
+                    // behavior -- a real "off" state, not just re-selecting
+                    // the same filter.
+                    onPress={() => setQuickDateFilter(active ? 'anytime' : f.key)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={f.label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                  >
+                    <Text style={styles.quickTimeCardIcon}>{f.icon}</Text>
+                    <Text style={[styles.quickTimeCardText, active && styles.quickTimeCardTextActive]}>{f.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           )}
 
           {weatherBanner && (
@@ -1689,11 +1713,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   viewToggleIcon: { fontSize: 15 },
   quickTimeCard: {
-    flex: 1, alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md,
+    alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
   },
+  quickTimeCardActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   quickTimeCardIcon: { fontSize: 22, marginBottom: 4 },
   quickTimeCardText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
+  quickTimeCardTextActive: { color: colors.primary },
   weatherBanner: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.md,
