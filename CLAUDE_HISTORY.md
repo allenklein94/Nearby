@@ -1,3 +1,122 @@
+## Sep 6 2026 — Category/place/business taxonomy expansion to 15 groups/63 tags — BUILT, VERIFIED LIVE
+
+A direct, explicit user request for a full local-discovery taxonomy. This work was started in a
+prior session and interrupted mid-stream by a codespace restart (a known failure mode for this
+project — see `[[project_nearby_restart_prone]]`/memory); this session picked up the uncommitted
+working tree exactly as left, audited it for correctness before shipping, found and fixed three
+real latent bugs the interrupted session hadn't caught, then committed/pushed/verified live.
+
+**What shipped, as found already-written and reviewed intact:**
+- `src/constants/gatheringCategories.js`'s `CATEGORY_GROUPS` grew from 6 groups/26 tags to 15
+  groups/63 tags: Food & Drink, Activities & Recreation, Entertainment & Nightlife, Dating &
+  Social, Arts/Culture/Learning, Shopping, Wellness & Beauty, Family & Kids, Outdoors & Nature,
+  Pets, Home & Local Services, Auto & Transportation, Business & Networking, Community &
+  Volunteering, Travel & Experiences. `INTEREST_OPTIONS` is now derived (`flatMap`) from
+  `CATEGORY_GROUPS` rather than hand-duplicated. Two groups (Home & Local Services, Auto &
+  Transportation) deliberately have zero gathering leaf tags — nobody hosts a "gathering" about a
+  car wash — an honest reflection of what a gathering is, not a gap. This stays one flat leaf-tag
+  list (never restructured into major/subcategory DB columns) specifically because it's matched
+  by exact string equality across ~10 SQL functions and 4+ client call sites.
+- `src/constants/gatheringCategoryStyles.js` gained hand-authored icon/color entries for all ~37
+  new tags, plus a new two-tier fallback (`categoryStyleFor`): an unmapped tag first tries its
+  parent group's icon via the new `GROUP_FALLBACK_STYLES`/`groupForTag()`, before dropping to the
+  fully generic default — this tier didn't exist before (every tag had its own entry pre-
+  expansion, so the generic fallback was rare).
+- New `src/constants/placeCategories.js`: the canonical source for Places browsing
+  (`PlacesScreen.js`, `DiscoverHubScreen.js`'s embedded Places tab), mirroring the same 15
+  category keys/icons/labels for one consistent visual taxonomy, but deliberately a *separate*
+  mapping from `CATEGORY_GROUPS` — Places comes from live Google Places `type` data, not
+  gatherings. `PLACE_TYPES` maps each of the 15 keys to one real representative Google Places
+  `type` (Nearby Search accepts exactly one per call); two categories (Business & Networking,
+  Community & Volunteering) have no well-matched Google type and honestly fall back to
+  `point_of_interest` rather than fabricating one.
+- `BusinessPartnerApplyScreen.js`'s `BUSINESS_CATEGORIES` (the business-signup category picker)
+  now derives from `CATEGORY_GROUPS` (`...CATEGORY_GROUPS.map(...)`) plus one `other` value not
+  in that list, replacing a hand-typed, independent 6-value copy — so the three taxonomies
+  (gatherings, places, business) can't drift apart again.
+- `src/constants/businessCategoryClassifier.js` (the pure-function, no-AI keyword classifier that
+  suggests a category from a business's own name/description) reworked its
+  `KEYWORDS_BY_CATEGORY` from the old 5 verticals to the new 15 keys, with matching test updates
+  in `businessCategoryClassifier.test.js`.
+- `CreateGatheringScreen.js`'s `googlePlaceCategoryFor()` (maps a gathering's interest tag to a
+  Google Places search category for venue suggestions) simplified from a hand-maintained keyword
+  list to `groupForTag(interestTag)?.key ?? 'food_drink'` — every tag already belongs to exactly
+  one of the 15 groups, and `placeCategories.js` maps that same key straight to a real Google
+  type, so there's no need to re-derive one separately.
+- `DiscoverHubScreen.js`/`PlacesScreen.js`/`services/places.js` all switched their local
+  4-category (`coffee`/`restaurants`/`parks`/`hubs`) arrays to import the shared 15-category
+  `PLACE_CATEGORIES`/`PLACE_TYPES` from the new `placeCategories.js` file instead of keeping their
+  own copies.
+- New migration `20260922_business_category_taxonomy_expansion.sql`: widens
+  `brand_partners.category` / `business_partner_requests.category` from the original 6-value
+  CHECK constraint (`20260811_business_partner_category.sql`) to the 15-value one, with an
+  explicit, documented one-time remap of existing rows to their nearest new-taxonomy equivalent
+  (e.g. `fitness_wellness` → `wellness_beauty`, `retail_shopping` → `shopping`) — a business owner
+  can always correct this afterward via their existing Edit Profile category picker, same as the
+  original migration already treats category as owner-correctable. `business_partner_requests`
+  never had its own CHECK constraint before this (only client-side validation) — this migration
+  adds a real one for the first time.
+
+**Three real bugs found and fixed this session, before shipping (the interrupted prior session's
+work would have broken production on arrival otherwise):**
+1. **`update_business_profile()`'s rewrite targeted the wrong, stale function signature.** The
+   migration as left by the interrupted session did `create or replace function
+   update_business_profile(... 8 args ...)` with a comment claiming this "same signature as
+   20260811 (8 args)" needed no drop-first. But the *actual live* function (confirmed via the
+   Management API against production before touching anything) has an 11-arg signature —
+   `20260903_business_dna_goals_pulse.sql` had already dropped-and-recreated it with
+   `attributes_param text[]`, `cuisine_param text`, `differentiator_param text` added, and that's
+   the one `src/services/brandOffers.js`'s `updateBusinessProfile()` (the real Edit Profile save
+   path, used far more than the 8-arg `updateBusinessAddress()`) actually calls. Shipped as
+   originally written, this would have created a dead, unused 8-arg overload while the real
+   11-arg one — the one every profile edit actually hits — kept enforcing the *old* 6-value
+   category check, rejecting every new category a business owner tried to pick. Fixed by
+   rewriting section 4 of the migration to `create or replace` the real 11-arg signature,
+   preserving every other line (attribute/cuisine/differentiator validation, the actual `update`
+   statement) byte-for-byte from `20260903`'s version, changing only the category list.
+2. **Three Edge Functions still validated/suggested against the old 6-value list**,
+   independently of the Postgres CHECK constraint: `submit-business-application/index.ts` (the
+   public web business-application entry point — would have rejected any of the 9 new categories
+   from a real applicant with "Invalid category" before the row ever reached an admin),
+   `screen-business-content/index.ts` (re-validates against `update_business_profile`'s own
+   vocabulary before applying a low-risk AI-screened profile edit — same rejection risk for any
+   new-category edit that passed content screening), and `business-onboarding-assistant/index.ts`
+   (the AI category-suggestion-from-description feature — would have only ever been able to
+   suggest one of the 6 old values, silently never suggesting any of the 9 new ones, plus its
+   prompt's own inline examples still described the old vocabulary to the model). All three
+   updated to the same 15-value list; `business-onboarding-assistant`'s prompt text also rewritten
+   with real example mappings for the new categories.
+3. **Two smaller latent issues**: `services/places.js`'s `GOOGLE_TYPE_TO_BUSINESS_CATEGORY` (a
+   heuristic that guesses a business's likely category from Google Places `types` when an
+   applicant searches for their business by name) still mapped Google types onto the old 5
+   verticals — expanded to real mappings across all 15 new categories instead. And
+   `DiscoverHubScreen.js` had gained an unused `import { CATEGORY_GROUPS } from
+   '../constants/gatheringCategories'` with no actual call site — removed as dead code. Also
+   fixed a stale comment in `BusinessPartnerApplyScreen.js` pointing at a wrong migration filename
+   (`20260907_...` instead of the real `20260922_...`), and updated two literal old-taxonomy
+   category values (`fitness_wellness`, `retail_shopping`) in the disposable
+   `scripts/live-verify/ai-trust-engine.js` test script so a future re-run of that script doesn't
+   fail against the new CHECK constraint.
+
+**Verification, live against production** (Management API, before and after applying the
+migration): confirmed the live `update_business_profile` had exactly one real overload (the
+11-arg one) before writing the fix, applied the corrected migration, then re-queried to confirm
+both `brand_partners_category_check` and `business_partner_requests_category_check` now list all
+15 new values (and no longer list the old 5 verticals), confirmed `update_business_profile` still
+has exactly one overload (the 11-arg one, not a stray dead 8-arg duplicate), and round-tripped a
+disposable `begin; update ...; select ...; rollback; select ...;` against the one real
+`brand_partners` row in production to confirm a new category value (`activities_recreation`) is
+now accepted and the constraint's own definition (`pg_get_constraintdef`) no longer contains any
+old value. All 208 Jest tests pass (7 in `businessCategoryClassifier.test.js`, updated for the new
+category names). `docs/business/` (the Expo web export of the business dashboard) was regenerated
+via `NEARBY_WEB_EXPORT_BASE_URL=/Nearby/business npx expo export -p web` and recommitted, since
+`BusinessDashboardScreen.js` (part of that export) imports `BUSINESS_CATEGORIES` from the changed
+`BusinessPartnerApplyScreen.js` — confirmed the old built bundle had the stale category strings
+baked in and the new one doesn't, and grepped the new bundle for known secret-shaped strings
+(`sbp_`, `SUPABASE_SERVICE_ROLE`, `sk-ant`) to confirm none leaked in before committing. **Not
+verified in an actual browser/simulator** — no such tooling was available this session, consistent
+with every other session on this project.
+
 ## Sep 6 2026 — Quick Filters: real select+set-values+reorder customization — BUILT, VERIFIED LIVE
 ## (external UX critique item 9)
 

@@ -40,6 +40,24 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Category/place/business taxonomy expansion (15 groups/63 tags) — fully DONE (2026-09-06),
+picked up mid-stream after a codespace restart and shipped this session.** Gathering/community
+categories (`gatheringCategories.js`), Places browsing (`placeCategories.js`, new), and business
+categories (`BusinessPartnerApplyScreen.js`, `businessCategoryClassifier.js`) all now share one
+15-category taxonomy (was 6 groups/26 tags for gatherings, a separate 5-vertical list for
+business). `brand_partners.category`/`business_partner_requests.category` widened via migration
+`20260922_business_category_taxonomy_expansion.sql`, verified live. Found and fixed 3 real bugs
+left by the interrupted prior session that would have broken production on arrival: the
+migration's `update_business_profile()` rewrite targeted a stale 8-arg signature instead of the
+real live 11-arg one (would have left every profile edit still enforcing the old category list);
+three Edge Functions (`submit-business-application`, `screen-business-content`,
+`business-onboarding-assistant`) still validated/suggested against the old 6-value list; a couple
+of smaller stale references (a Google-type-to-category guess table, a dead import, a stale
+migration-filename comment, two literal old values in a disposable live-verify script). Full
+build/verification detail: `CLAUDE_HISTORY.md`, search "Category/place/business taxonomy
+expansion." `docs/business/` regenerated and recommitted (BusinessDashboardScreen imports from a
+changed file).
+
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with
 someone" — but as of 2026-09-06 no push notification is ever sent for a crossed-paths sighting.
