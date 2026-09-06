@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from './supabase';
+import { PLACE_TYPES } from '../constants/placeCategories';
 
 const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 
@@ -15,13 +16,6 @@ export function getGoogleMapsRequestHeaders() {
   const bundleId = Constants.expoConfig?.ios?.bundleIdentifier;
   return Platform.OS === 'ios' && bundleId ? { 'X-Ios-Bundle-Identifier': bundleId } : undefined;
 }
-
-const PLACE_TYPES = {
-  restaurants: 'restaurant',
-  parks: 'park',
-  coffee: 'cafe',
-  hubs: 'community_center',
-};
 
 // Real venues from Google Places, not invented or gathering-derived
 // data — this is genuine place discovery, distinct from (and
@@ -54,6 +48,12 @@ export async function searchNearbyPlaces(latitude, longitude, category, keyword 
     latitude: p.geometry?.location?.lat,
     longitude: p.geometry?.location?.lng,
     photoRef: p.photos?.[0]?.photo_reference ?? null,
+    // Kept (previously discarded here even though Google returns it, and
+    // it's already read elsewhere in this file — see
+    // GOOGLE_TYPE_TO_BUSINESS_CATEGORY below) so a future subcategory-level
+    // refinement within one major category can reuse Google's own real
+    // per-place types client-side instead of another network round trip.
+    types: p.types ?? [],
   }));
 
   // Cross-reference against gatherings the app already knows about
@@ -137,12 +137,25 @@ export async function searchPlacesByText(query, latitude = null, longitude = nul
 // confidently covered returns null, and the applicant picks manually rather than
 // getting handed a wrong category. Matches this codebase's own established
 // "don't fabricate a signal the data doesn't clearly support" convention.
+// Updated 2026-09-06 alongside the 15-category taxonomy expansion
+// (gatheringCategories.js / placeCategories.js) -- these keys must match
+// BUSINESS_CATEGORIES (BusinessPartnerApplyScreen.js) and the CHECK
+// constraint in supabase/migrations/20260922_business_category_taxonomy_expansion.sql.
 const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {
-  restaurant: 'food_drink', cafe: 'food_drink', bar: 'food_drink', bakery: 'food_drink', food: 'food_drink',
-  gym: 'fitness_wellness', spa: 'fitness_wellness', yoga_studio: 'fitness_wellness',
-  clothing_store: 'retail_shopping', store: 'retail_shopping', shopping_mall: 'retail_shopping', shoe_store: 'retail_shopping',
-  art_gallery: 'arts_entertainment', movie_theater: 'arts_entertainment', night_club: 'arts_entertainment', museum: 'arts_entertainment',
-  lawyer: 'professional_services', accounting: 'professional_services', real_estate_agency: 'professional_services', insurance_agency: 'professional_services',
+  restaurant: 'food_drink', cafe: 'food_drink', bar: 'food_drink', bakery: 'food_drink', food: 'food_drink', meal_takeaway: 'food_drink',
+  gym: 'activities_recreation', stadium: 'activities_recreation', bowling_alley: 'activities_recreation',
+  night_club: 'entertainment_nightlife', movie_theater: 'entertainment_nightlife', casino: 'entertainment_nightlife',
+  art_gallery: 'arts_culture_learning', museum: 'arts_culture_learning', library: 'arts_culture_learning',
+  clothing_store: 'shopping', store: 'shopping', shopping_mall: 'shopping', shoe_store: 'shopping', jewelry_store: 'shopping', book_store: 'shopping',
+  spa: 'wellness_beauty', yoga_studio: 'wellness_beauty', hair_care: 'wellness_beauty', beauty_salon: 'wellness_beauty',
+  school: 'family_kids', amusement_park: 'family_kids', zoo: 'family_kids',
+  park: 'outdoors_nature', campground: 'outdoors_nature',
+  pet_store: 'pets', veterinary_care: 'pets',
+  plumber: 'home_local_services', electrician: 'home_local_services', locksmith: 'home_local_services', moving_company: 'home_local_services', home_goods_store: 'home_local_services',
+  car_repair: 'auto_transportation', car_dealer: 'auto_transportation', gas_station: 'auto_transportation', car_wash: 'auto_transportation',
+  lawyer: 'business_networking', accounting: 'business_networking', real_estate_agency: 'business_networking', insurance_agency: 'business_networking',
+  church: 'community_volunteering', hindu_temple: 'community_volunteering', mosque: 'community_volunteering', synagogue: 'community_volunteering',
+  lodging: 'travel_experiences', travel_agency: 'travel_experiences', tourist_attraction: 'travel_experiences',
 };
 
 function guessCategoryFromTypes(types = []) {

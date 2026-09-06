@@ -3,15 +3,9 @@ import { View, Text, TouchableOpacity, FlatList, Image, StyleSheet, SafeAreaView
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { PLACE_CATEGORIES as CATEGORIES } from '../constants/placeCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-
-const CATEGORIES = [
-  { key: 'coffee', icon: '☕', label: 'Coffee Shops' },
-  { key: 'restaurants', icon: '🍽️', label: 'Restaurants' },
-  { key: 'parks', icon: '🌳', label: 'Parks' },
-  { key: 'hubs', icon: '🏛️', label: 'Community Hubs' },
-];
 
 // This screen is reached as a top-level stack push (not a bottom tab),
 // headerShown: false in RootNavigator -- the same "reachable, but no
@@ -21,7 +15,7 @@ const CATEGORIES = [
 export default function PlacesScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [category, setCategory] = useState('coffee');
+  const [category, setCategory] = useState('food_drink');
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [locationDenied, setLocationDenied] = useState(false);

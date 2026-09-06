@@ -21,6 +21,7 @@ import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolver
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
+import { PLACE_CATEGORIES } from '../constants/placeCategories';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
@@ -87,13 +88,6 @@ const QUICK_DATE_FILTERS = [
   { key: 'today', icon: '🌅', label: 'Today' },
   { key: 'weekend', icon: '🌴', label: 'This Weekend' },
   { key: 'week', icon: '📅', label: 'This Week' },
-];
-
-const PLACE_CATEGORIES = [
-  { key: 'coffee', icon: '☕', label: 'Coffee' },
-  { key: 'restaurants', icon: '🍽️', label: 'Restaurants' },
-  { key: 'parks', icon: '🌳', label: 'Parks' },
-  { key: 'hubs', icon: '🏛️', label: 'Hubs' },
 ];
 
 const PREVIEW_COUNT = 3;
@@ -231,7 +225,7 @@ export default function DiscoverHubScreen({ navigation }) {
     setQuickDateFilter('anytime');
   }
   const [viewStyle, setViewStyle] = useState('list');
-  const [placesCategory, setPlacesCategory] = useState('coffee');
+  const [placesCategory, setPlacesCategory] = useState('food_drink');
   const [userLocation, setUserLocation] = useState(null);
 
   const [gatherings, setGatherings] = useState([]);

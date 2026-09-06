@@ -1,3 +1,5 @@
+import { groupForTag } from './gatheringCategories';
+
 const PALETTE = [
   '#E8A87C',
   '#C38D9E',
@@ -33,16 +35,96 @@ export const CATEGORY_STYLES = {
   Meditation: { icon: '🕯️', color: PALETTE[4] },
   Running: { icon: '🏃', color: PALETTE[3] },
   'Faith & Spirituality': { icon: '🙏', color: PALETTE[5] },
-  // Added for the category/filter taxonomy pass (CLAUDE.md) -- the one
-  // whole group with no prior coverage at all. Deliberately not added to
-  // gatheringIndoorOutdoor.js (a date can honestly be either) or
-  // gatheringCoverPhotos.js (no verified real image sourced this pass --
-  // falls back to this icon/color block, same as 'Faith & Spirituality').
   Dating: { icon: '💗', color: PALETTE[1] },
+
+  // 2026-09-06 -- added alongside the 15-category taxonomy expansion
+  // (CLAUDE.md / gatheringCategories.js). Same per-tag hand-authored
+  // discipline as every entry above -- no new tag goes without a real
+  // icon/color, even though categoryStyleFor() below now also has a
+  // group-level fallback tier for any tag that somehow arrives unmapped.
+  Brunch: { icon: '🥐', color: PALETTE[0] },
+  Bakeries: { icon: '🥖', color: PALETTE[3] },
+  'Bars & Lounges': { icon: '🍸', color: PALETTE[1] },
+  Breweries: { icon: '🍺', color: PALETTE[4] },
+  'Food Trucks': { icon: '🌮', color: PALETTE[2] },
+  'Happy Hour': { icon: '🍹', color: PALETTE[5] },
+
+  Pickleball: { icon: '🏓', color: PALETTE[0] },
+  Tennis: { icon: '🎾', color: PALETTE[2] },
+  Cycling: { icon: '🚴', color: PALETTE[3] },
+  Swimming: { icon: '🏊', color: PALETTE[4] },
+  Climbing: { icon: '🧗', color: PALETTE[1] },
+  Golf: { icon: '⛳', color: PALETTE[2] },
+  Bowling: { icon: '🎳', color: PALETTE[5] },
+
+  Karaoke: { icon: '🎙️', color: PALETTE[1] },
+  Comedy: { icon: '😂', color: PALETTE[3] },
+  Trivia: { icon: '🧠', color: PALETTE[4] },
+  Nightlife: { icon: '🌃', color: PALETTE[5] },
+
+  'Speed Dating': { icon: '⏱️', color: PALETTE[1] },
+  'Singles Events': { icon: '💘', color: PALETTE[3] },
+  'Group Hangouts': { icon: '👯', color: PALETTE[0] },
+
+  Crafts: { icon: '🧵', color: PALETTE[2] },
+  Workshops: { icon: '🛠️', color: PALETTE[4] },
+  Lectures: { icon: '🎓', color: PALETTE[1] },
+
+  'Farmers Markets': { icon: '🥕', color: PALETTE[2] },
+  'Thrift & Vintage': { icon: '🧥', color: PALETTE[5] },
+
+  'Spa Day': { icon: '🧖', color: PALETTE[3] },
+  'Self-Care': { icon: '🛁', color: PALETTE[4] },
+
+  'Family Playdate': { icon: '👨‍👩‍👧‍👦', color: PALETTE[0] },
+  'Kids Activity': { icon: '🧸', color: PALETTE[1] },
+
+  Camping: { icon: '🏕️', color: PALETTE[2] },
+  Fishing: { icon: '🎣', color: PALETTE[4] },
+  Kayaking: { icon: '🛶', color: PALETTE[5] },
+
+  'Dog Meetup': { icon: '🐾', color: PALETTE[0] },
+
+  Networking: { icon: '🧑‍💼', color: PALETTE[3] },
+  Coworking: { icon: '💻', color: PALETTE[5] },
+
+  Fundraiser: { icon: '🎗️', color: PALETTE[1] },
+
+  'Day Trip': { icon: '🗺️', color: PALETTE[3] },
+};
+
+// Falls back through two tiers: an unmapped tag first tries to inherit its
+// parent group's icon/color (via groupForTag, so it at least matches its
+// category's visual identity) before dropping to the fully generic default.
+// This tier didn't exist before the 15-category expansion, when every tag
+// had its own hand-authored entry above and the generic fallback was rare.
+const GROUP_FALLBACK_STYLES = {
+  food_drink: { icon: '🍔' },
+  activities_recreation: { icon: '🏃' },
+  entertainment_nightlife: { icon: '🎵' },
+  dating_social: { icon: '❤️' },
+  arts_culture_learning: { icon: '🎨' },
+  shopping: { icon: '🛍️' },
+  wellness_beauty: { icon: '💆' },
+  family_kids: { icon: '👨‍👩‍👧' },
+  outdoors_nature: { icon: '🌳' },
+  pets: { icon: '🐕' },
+  home_local_services: { icon: '🏠' },
+  auto_transportation: { icon: '🚗' },
+  business_networking: { icon: '💼' },
+  community_volunteering: { icon: '🤝' },
+  travel_experiences: { icon: '✈️' },
 };
 
 export function categoryStyleFor(interestTag) {
-  return CATEGORY_STYLES[interestTag] || { icon: '🎉', color: PALETTE[0] };
+  if (CATEGORY_STYLES[interestTag]) return CATEGORY_STYLES[interestTag];
+
+  const group = groupForTag(interestTag);
+  if (group && GROUP_FALLBACK_STYLES[group.key]) {
+    return { icon: GROUP_FALLBACK_STYLES[group.key].icon, color: PALETTE[0] };
+  }
+
+  return { icon: '🎉', color: PALETTE[0] };
 }
 
 // Aug 30 2026 -- "Join Gathering"/"I'm Interested"/etc. buttons read as

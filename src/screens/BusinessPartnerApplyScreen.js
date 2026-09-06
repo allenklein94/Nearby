@@ -8,15 +8,19 @@ import { searchPlacesByText, getPlaceDetails } from '../services/places';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
+import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
+// 2026-09-06: expanded from a hand-typed 6-value list to the same 15
+// major categories as CATEGORY_GROUPS (gatheringCategories.js) and
+// PLACE_CATEGORIES (placeCategories.js) -- derived directly from
+// CATEGORY_GROUPS so all three can never drift out of sync again, plus the
+// one value with no equivalent there ('other'). Keys must stay in sync
+// with the CHECK constraint in
+// supabase/migrations/20260922_business_category_taxonomy_expansion.sql.
 export const BUSINESS_CATEGORIES = [
-  { key: 'food_drink', label: '☕ Food & Drink' },
-  { key: 'fitness_wellness', label: '💪 Fitness & Wellness' },
-  { key: 'retail_shopping', label: '🛍️ Retail & Shopping' },
-  { key: 'arts_entertainment', label: '🎨 Arts & Entertainment' },
-  { key: 'professional_services', label: '💼 Professional Services' },
+  ...CATEGORY_GROUPS.map((g) => ({ key: g.key, label: `${g.icon} ${g.label}` })),
   { key: 'other', label: '✨ Other' },
 ];
 

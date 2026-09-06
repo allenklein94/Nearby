@@ -60,7 +60,12 @@ const DAILY_AI_LIMIT = 150;
 // CHECK constraints) -- re-validated here so a malformed/invented value
 // can never reach the RPC, matching create-assistant's own convention of
 // never trusting a client-supplied enum value.
-const CATEGORY_OPTIONS = ['food_drink', 'fitness_wellness', 'retail_shopping', 'arts_entertainment', 'professional_services', 'other'];
+const CATEGORY_OPTIONS = [
+  'food_drink', 'activities_recreation', 'entertainment_nightlife', 'dating_social',
+  'arts_culture_learning', 'shopping', 'wellness_beauty', 'family_kids',
+  'outdoors_nature', 'pets', 'home_local_services', 'auto_transportation',
+  'business_networking', 'community_volunteering', 'travel_experiences', 'other',
+];
 const ATTRIBUTE_OPTIONS = ['outdoor_seating', 'date_friendly', 'group_friendly', 'live_music', 'kid_friendly', 'quiet', 'casual', 'upscale'];
 const CUISINE_OPTIONS = ['italian', 'mexican', 'japanese', 'chinese', 'american', 'french', 'mediterranean', 'indian', 'thai', 'seafood', 'other'];
 // Same real vocabularies create_business_experience()/update_business_

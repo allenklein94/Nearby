@@ -109,7 +109,7 @@ async function main() {
     // ---------- Level 1: real, fresh ai_inferred suggestion auto-applies ----------
     const suggestResult = await runSqlAs(
       ownerId,
-      `select record_business_attribute_suggestion('${partnerId}', 'category', 'fitness_wellness', 'ai_inferred', 'test: keyword match') as id;`
+      `select record_business_attribute_suggestion('${partnerId}', 'category', 'wellness_beauty', 'ai_inferred', 'test: keyword match') as id;`
     );
     suggestionId = suggestResult?.[0]?.id;
     assert(!!suggestionId, 'record_business_attribute_suggestion() returns a real suggestion id');
@@ -118,7 +118,7 @@ async function main() {
       `select bp.category, bas.status from brand_partners bp, business_attribute_suggestions bas
        where bp.id = '${partnerId}' and bas.id = '${suggestionId}';`
     );
-    assert(afterSuggest?.category === 'fitness_wellness', 'Level 1 auto-applied the real category change immediately (opted in via ai_trust_level>=1)');
+    assert(afterSuggest?.category === 'wellness_beauty', 'Level 1 auto-applied the real category change immediately (opted in via ai_trust_level>=1)');
     assert(afterSuggest?.status === 'confirmed', 'the underlying suggestion is correctly flipped to confirmed, not left "suggested"');
 
     const [actionRow] = await runSql(
@@ -159,7 +159,7 @@ async function main() {
     // ---------- Level 1: business_confirmed never auto-applies, even opted in ----------
     const confirmedSuggest = await runSqlAs(
       ownerId,
-      `select record_business_attribute_suggestion('${partnerId}', 'category', 'retail_shopping', 'business_confirmed', null) as id;`
+      `select record_business_attribute_suggestion('${partnerId}', 'category', 'shopping', 'business_confirmed', null) as id;`
     );
     const confirmedSuggestId = confirmedSuggest?.[0]?.id;
     const [afterConfirmedSuggest] = await runSql(

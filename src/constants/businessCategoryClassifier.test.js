@@ -20,9 +20,9 @@ describe('classifyBusinessCategory', () => {
     expect(result.matchedKeywords).toContain('coffee');
   });
 
-  it('classifies a clear fitness_wellness name correctly', () => {
+  it('classifies a clear wellness_beauty name correctly', () => {
     const result = classifyBusinessCategory({ name: 'Downtown Yoga Studio', description: 'A wellness space.' });
-    expect(result.category).toBe('fitness_wellness');
+    expect(result.category).toBe('wellness_beauty');
   });
 
   it('classifies using description text, not just the name', () => {
@@ -31,15 +31,15 @@ describe('classifyBusinessCategory', () => {
   });
 
   it('returns null on a genuine tie between two equally-matched categories', () => {
-    // "studio" alone appears in fitness_wellness, arts_entertainment, and
-    // professional_services keyword lists -- a real, deliberately
-    // ambiguous word with no other disambiguating keyword present.
+    // "studio" alone appears in activities_recreation, arts_culture_learning,
+    // and wellness_beauty keyword lists -- a real, deliberately ambiguous
+    // word with no other disambiguating keyword present.
     const result = classifyBusinessCategory({ name: 'The Studio', description: '' });
     expect(result).toBeNull();
   });
 
   it('breaks a tie in favor of the category with strictly more real keyword hits', () => {
     const result = classifyBusinessCategory({ name: 'The Yoga Studio', description: 'A calm gym and wellness space.' });
-    expect(result.category).toBe('fitness_wellness');
+    expect(result.category).toBe('wellness_beauty');
   });
 });

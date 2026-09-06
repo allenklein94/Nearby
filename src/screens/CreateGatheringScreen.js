@@ -9,7 +9,7 @@ import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
-import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, groupForTag } from '../constants/gatheringCategories';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -61,16 +61,13 @@ const CAPACITY_OPTIONS = [
 ];
 
 
-// Real venue category mapping — same PLACE_CATEGORIES key set
-// DiscoverHubScreen's Places filter already uses (coffee/restaurants/
-// parks/hubs), since that's what searchNearbyPlaces (Google Places)
-// actually accepts. A gathering category with no obvious match falls
-// back to "hubs" rather than guessing.
+// Real venue category mapping — every interest tag belongs to exactly one
+// of the 15 CATEGORY_GROUPS (gatheringCategories.js), and placeCategories.js
+// maps that same group key straight to a real Google Places type, so this
+// just resolves the tag's own group rather than re-deriving one from a
+// separate hand-maintained keyword list.
 function googlePlaceCategoryFor(interestTag) {
-  if (interestTag === 'Coffee') return 'coffee';
-  if (['Foodie', 'Wine', 'Cooking'].includes(interestTag)) return 'restaurants';
-  if (['Outdoors', 'Hiking', 'Running', 'Yoga', 'Sports'].includes(interestTag)) return 'parks';
-  return 'hubs';
+  return groupForTag(interestTag)?.key ?? 'food_drink';
 }
 
 // Plain equirectangular approximation, not a Distance Matrix API call —

@@ -27,7 +27,12 @@ const DAILY_AI_LIMIT = 150;
 // (20260913_business_partner_request_ai_fields.sql). A hallucinated/
 // invented value from the model is silently dropped, never reaches the
 // client.
-const VALID_CATEGORIES = ['food_drink', 'fitness_wellness', 'retail_shopping', 'arts_entertainment', 'professional_services', 'other'];
+const VALID_CATEGORIES = [
+  'food_drink', 'activities_recreation', 'entertainment_nightlife', 'dating_social',
+  'arts_culture_learning', 'shopping', 'wellness_beauty', 'family_kids',
+  'outdoors_nature', 'pets', 'home_local_services', 'auto_transportation',
+  'business_networking', 'community_volunteering', 'travel_experiences', 'other',
+];
 const VALID_ATTRIBUTES = [
   'outdoor_seating', 'date_friendly', 'group_friendly', 'live_music',
   'kid_friendly', 'quiet', 'casual', 'upscale',
@@ -87,7 +92,7 @@ ${text.slice(0, 800)}
 </business_description>
 
 Extract these fields, each best-effort and optional -- never guess a value the text doesn't genuinely imply:
-- category: one value from this exact list: ${JSON.stringify(VALID_CATEGORIES)} -- pick the closest real match (e.g. a restaurant/cafe/bar is "food_drink", a gym/yoga studio/spa is "fitness_wellness", a shop/boutique is "retail_shopping", a gallery/theater/venue is "arts_entertainment", a consultant/agency/studio-for-hire is "professional_services"), or "other" if genuinely none fit. Only leave this null if the description gives no real clue at all.
+- category: one value from this exact list: ${JSON.stringify(VALID_CATEGORIES)} -- pick the closest real match (e.g. a restaurant/cafe/bar is "food_drink", a gym/fitness studio is "activities_recreation", a club/movie theater/arcade is "entertainment_nightlife", a matchmaking/singles service is "dating_social", a gallery/museum/class is "arts_culture_learning", a shop/boutique/market is "shopping", a spa/salon/yoga studio is "wellness_beauty", a daycare/kids activity is "family_kids", a park/trail/outdoor outfitter is "outdoors_nature", a pet store/groomer/vet is "pets", a home-services provider (plumber, cleaner, landscaper) is "home_local_services", an auto shop/car wash/mechanic is "auto_transportation", a consultant/agency/coworking space is "business_networking", a nonprofit/community org/place of worship is "community_volunteering", a travel agency/tour operator/hotel is "travel_experiences"), or "other" if genuinely none fit. Only leave this null if the description gives no real clue at all.
 - attributes: an array of zero or more values from this exact list: ${JSON.stringify(VALID_ATTRIBUTES)} -- only include one when the text genuinely names that specific quality (e.g. "patio"/"outdoor seating" implies "outdoor_seating", "great for a date night" implies "date_friendly", "family-friendly"/"kids menu" implies "kid_friendly", "quiet atmosphere" implies "quiet", "casual" implies "casual", "upscale"/"fine dining"/"elegant" implies "upscale", "live music"/"live bands" implies "live_music", "great for groups"/"large parties" implies "group_friendly"). An empty array is the common, correct answer when nothing specific was named -- never guess to fill this in.
 - cuisine: one value from this exact list: ${JSON.stringify(VALID_CUISINES)} if a specific food cuisine was named (e.g. "Italian" is "italian", "sushi"/"Japanese" is "japanese", "tacos"/"Mexican" is "mexican", "seafood" is "seafood"), or null if this business isn't food-related or no specific cuisine was named. Never guess a cuisine from the word "restaurant" or "cafe" alone.
 - priorityOccasions: an array of zero or more values from this exact list: ${JSON.stringify(VALID_OCCASIONS)} -- only include one when the text genuinely says this business caters to or wants more of that specific occasion (e.g. "great for birthday parties" implies "birthday", "perfect for anniversaries" implies "anniversary", "date night spot" implies "date_night", "we host celebrations" implies "celebration", "casual hangout"/"come relax" implies "casual_hangout", "corporate events"/"business lunches" implies "business_meal", "family gatherings"/"reunions" implies "family_gathering"). An empty array is the common, correct answer when no specific occasion was named -- never guess to fill this in.

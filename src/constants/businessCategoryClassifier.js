@@ -2,8 +2,9 @@
 // category suggestion, never an LLM call and never a new classification
 // service. Same "pure function, no I/O, fully testable" shape as
 // businessExperienceSuggestions.js/gatheringIndoorOutdoor.js elsewhere in
-// this app. Reuses the exact 6-value BUSINESS_CATEGORIES vocabulary
-// (BusinessPartnerApplyScreen.js) -- no new taxonomy.
+// this app. Reuses the same 15-value BUSINESS_CATEGORIES vocabulary
+// (BusinessPartnerApplyScreen.js, expanded 2026-09-06 alongside the
+// gatheringCategories.js taxonomy expansion) -- no separate taxonomy.
 //
 // This only ever compares a business's own real name/description text
 // against real keyword lists -- it never invents a category from nothing,
@@ -13,10 +14,20 @@
 
 const KEYWORDS_BY_CATEGORY = {
   food_drink: ['coffee', 'cafe', 'café', 'restaurant', 'bakery', 'bar', 'brewery', 'diner', 'bistro', 'kitchen', 'eatery', 'pizzeria', 'grill', 'tea', 'juice', 'deli', 'pub', 'winery', 'taco', 'sushi', 'donut', 'ice cream'],
-  fitness_wellness: ['gym', 'yoga', 'fitness', 'studio', 'pilates', 'wellness', 'spa', 'massage', 'crossfit', 'martial arts', 'boxing', 'climbing', 'nutrition', 'personal training', 'health club'],
-  retail_shopping: ['shop', 'store', 'boutique', 'market', 'retail', 'outfitters', 'goods', 'apparel', 'bookstore', 'gift shop', 'thrift', 'consignment'],
-  arts_entertainment: ['gallery', 'theater', 'theatre', 'cinema', 'museum', 'studio', 'venue', 'arcade', 'bowling', 'music hall', 'comedy club', 'art space', 'performance'],
-  professional_services: ['salon', 'barbershop', 'spa', 'clinic', 'office', 'consulting', 'law firm', 'accounting', 'agency', 'studio', 'practice', 'services'],
+  activities_recreation: ['gym', 'fitness', 'studio', 'crossfit', 'martial arts', 'boxing', 'climbing', 'personal training', 'health club', 'cycling', 'tennis', 'bowling', 'swim'],
+  entertainment_nightlife: ['cinema', 'theater', 'theatre', 'arcade', 'bowling alley', 'comedy club', 'music hall', 'night club', 'nightclub', 'karaoke', 'venue', 'performance'],
+  dating_social: ['singles', 'matchmaking', 'speed dating'],
+  arts_culture_learning: ['gallery', 'museum', 'art space', 'studio', 'class', 'workshop', 'library'],
+  shopping: ['shop', 'store', 'boutique', 'market', 'retail', 'outfitters', 'goods', 'apparel', 'bookstore', 'gift shop', 'thrift', 'consignment'],
+  wellness_beauty: ['yoga', 'studio', 'spa', 'massage', 'salon', 'barbershop', 'nails', 'skin care', 'facial', 'wellness', 'meditation', 'beauty'],
+  family_kids: ['daycare', 'kids', 'children', 'playground', 'preschool', 'tutoring', 'birthday party'],
+  outdoors_nature: ['park', 'trail', 'hiking', 'camping', 'outdoor'],
+  pets: ['pet', 'veterinary', 'vet clinic', 'grooming', 'kennel'],
+  home_local_services: ['plumbing', 'electrician', 'hvac', 'cleaning service', 'landscaping', 'handyman', 'moving company', 'storage'],
+  auto_transportation: ['auto', 'car wash', 'tire', 'mechanic', 'garage', 'detailing', 'car repair'],
+  business_networking: ['office', 'consulting', 'law firm', 'accounting', 'agency', 'practice', 'coworking', 'networking'],
+  community_volunteering: ['nonprofit', 'charity', 'volunteer', 'community center', 'church', 'temple', 'mosque', 'synagogue'],
+  travel_experiences: ['tour', 'travel agency', 'excursion', 'sightseeing', 'hotel', 'resort'],
 };
 
 // Real keyword collision handling: a word like "studio" appears in more
