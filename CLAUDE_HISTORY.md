@@ -1,3 +1,105 @@
+## Sep 6 2026 — Host cancellation lifecycle for Communities and Gatherings — BUILT, VERIFIED LIVE
+## (CLAUDE.md items 5 & 6, agreed same day; plan closed out)
+
+Replaced the raw hard-`.delete()`-riding-on-RLS "cancellation" for both entities with a real
+state machine, per direct user spec: Communities get "Manage Community" (Edit / Pause / Cancel /
+Delete-or-Archive) with real consequences stated in the confirmation; Gatherings get "Manage
+Gathering" (Edit / Cancel) with real attendee notifications, framed explicitly as a lifecycle
+issue, not a show/hide-button patch.
+
+**Design, locked after research (see the prior "Research done, implementation not yet planned"
+entry this replaces in CLAUDE.md's active-work section for the original findings this built on):**
+- Communities gained a real `status` column (`active`/`paused`/`cancelled`) because Pause is a
+  genuinely reversible persistent state with no other representation. Cancel is soft
+  (`status='cancelled'`) — the cancelled state itself is the de-facto "archive"; a genuine hard
+  delete (`deleteCommunity()`, unchanged) stays available as a further, optional step, gated in
+  the UI to only appear once already cancelled.
+- Gatherings deliberately did **not** get a status column — the existing hard-delete +
+  `BEFORE DELETE` trigger mechanism (`notify_gathering_cancelled`,
+  `deactivate_offer_on_gathering_delete`) already correctly notifies attendees; a soft-cancel
+  column would have rippled into every gathering list/feed/search/matches/recurring-series query
+  (a much higher fan-out entity than communities), which nothing asked for. `cancel_gathering()`
+  instead centralizes the ownership/guard check and performs the same real delete server-side, so
+  both existing triggers keep firing completely unchanged.
+- New RPCs (`pause_community`, `resume_community`, `cancel_community`, `update_community`,
+  `cancel_gathering`) all mirror `cancel_business_request()`'s established idiom
+  (`select ... for update` for ownership+lock, a status/existence guard exception, then a trusted
+  transition) from `20260814_business_fulfillment.sql`.
+- Two real, previously-undocumented gaps found and closed in the same migration, not treated as
+  separate work: (1) neither cancel path touched `business_requests`/`business_request_offers`
+  tied to the gathering/community — both new RPCs now cascade-cancel any still-`open`/`pending`/
+  `offered` rows, mirroring `cancel_business_request()`'s own two-step cascade; (2)
+  `GatheringsScreen.js`'s existing non-recurring cancel copy ("Anyone who expressed interest
+  won't be notified automatically") was factually wrong — `notify_gathering_cancelled` already
+  unconditionally pushes every approved attendee — fixed to state the real consequence.
+- Bonus hardening folded into the same migration: `communities`' UPDATE RLS policy had no
+  `with check` at all, so a creator's raw client update could already silently rewrite
+  `creator_id` itself. Closed with the same shape fix the `20260816_rls_sweep_identity_column_
+  guards.sql` migration already applied to other tables.
+- **Real finding from live verification, not assumed:** `authenticated` has **no raw UPDATE
+  grant on `communities` at all** — confirmed via `has_table_privilege('authenticated',
+  'public.communities', 'UPDATE')` returning `false` live in production. Every write to this
+  table, including the pre-existing `update_community_area()`, already had to go through a
+  SECURITY DEFINER RPC; the original plan's `updateCommunity()` sketched as a plain client
+  `.update()` would not have worked. Added `update_community(community_id_param, name_param,
+  description_param, interest_tag_param, is_public_param)` (creator-only, same file) to match the
+  established convention before writing any client code against it.
+- `EditCommunityScreen.js` was built as a genuinely separate new file (not a dual-mode branch of
+  `CreateCommunityScreen.js`) after directly reading both `CreateGatheringScreen.js` and
+  `EditGatheringScreen.js` and confirming the real codebase precedent is two separate files, not
+  branched reuse — overriding an earlier planning-agent recommendation to dual-mode it.
+
+**Migration**: `supabase/migrations/20260920_community_gathering_cancellation_lifecycle.sql` (plus
+one follow-up `update_community` function added to the same file after the grant-gap discovery
+above, applied to production as a standalone `create or replace` before the file was ever
+committed with a stale version). Applied via the Management API SQL endpoint; confirmed live via
+`information_schema.columns`, `pg_proc`, and `pg_policies` queries that the column, all six new
+functions, and both rewritten policies actually landed as written.
+
+**Verified live against production (`enmosvippabmuqslzrox`) with disposable test data** (two
+throwaway `auth.users`/`profiles` rows, one community, one gathering, one `business_requests` row
+pointed at each), using `set_config('request.jwt.claims', ...)` + `set_config('role',
+'authenticated', true)` to impersonate each side through the Management API's raw SQL endpoint
+(confirmed this genuinely enforces RLS, not just superuser bypass, by observing the paused
+community correctly disappear from a member-only-vs-discovery visibility check):
+- `pause_community` → `status='paused'`, confirmed via re-select. `resume_community` → reverted.
+- `update_community` → name/description/interest_tag/is_public all applied correctly.
+- `cancel_community` → `status='cancelled'`; linked `business_requests` row flipped to
+  `'cancelled'`; the push fired successfully — confirmed a `net._http_response` row with
+  `status_code=200` at the matching timestamp. Re-running `cancel_community` on the same row
+  correctly raised `"This community is already cancelled."`.
+- Attempting a raw `UPDATE communities SET status=...` as the `authenticated` role failed outright
+  with a table-level permission error (not merely an RLS revert) — stronger than the guard trigger
+  alone would have provided, confirming the no-UPDATE-grant finding above.
+- `cancel_gathering` as a non-host correctly raised `"Gathering not found."` (ownership check via
+  `for update` doubling as existence check); as the real host, the gathering row was actually
+  deleted, its linked `business_requests` row flipped to `'cancelled'` first, and two `200`
+  responses appeared in `net._http_response` (both pre-existing triggers fired unchanged).
+  Attempting to cancel a past-dated disposable gathering correctly raised "This gathering has
+  already happened and can no longer be cancelled."
+- All disposable rows deleted afterward.
+
+**Not done**: no full from-scratch Docker replay this session (recommended given the blast radius
+of touching two central tables and rewriting two RLS policies, but the live disposable-data
+verification above — which is what actually proves the RLS/trigger/RPC interaction — was treated
+as the higher-value, mandatory check and was completed in full). Disclosed here per this repo's
+own verification-discipline convention rather than silently claiming full parity.
+
+**Files**: new migration above; `src/services/communities.js` (`updateCommunity`,
+`pauseCommunity`, `resumeCommunity`, `cancelCommunity` added; `getMyCommunities()`'s explicit
+column list widened to include `status`); `src/services/gatherings.js` (`cancelGathering()` now
+calls the new RPC instead of a raw delete, same signature, both existing call sites unaffected);
+`src/screens/CommunityDetailScreen.js` (new "Manage Community" section replacing the old
+Delete-only button, status banner for non-creators, Join/Leave gated off once cancelled); new
+`src/screens/EditCommunityScreen.js`; `src/screens/GatheringDetailScreen.js` (new "Cancel
+Gathering" host-banner action, previously entirely absent from this screen); `src/screens/
+GatheringsScreen.js` (copy fix only); `src/screens/CreateGatheringScreen.js` and `src/services/
+intentResolver.js` (both filter `getMyCommunities()`'s member-scoped results to `status ===
+'active'`, since RLS's discovery-tightening only covers the non-member branch). Verified all
+touched JS files parse cleanly (`@babel/parser` with jsx/optionalChaining/nullishCoalescing
+plugins — this repo's standing static-check substitute for simulator/device testing, which has
+never been available in any session) and the full Jest suite (208 tests, 17 suites) still passes.
+
 ## Sep 6 2026 — Discover/People-Friends parity plan, item 1 — BUILT (plan fully closed out)
 
 Last remaining item of the parity plan (commit `2f5a0f26`). "Happening Now"/"Today"/"This Week"
