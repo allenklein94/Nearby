@@ -40,6 +40,38 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Discover/People-Friends parity plan (agreed 2026-09-06, re-recorded after a codespace restart
+lost the original session before it was written down here — see `[[project_nearby_restart_prone]]`
+in memory; nothing on this plan had been built when it was rediscovered)**. Three items, user-
+confirmed:
+1. **Discover mode filters in-place** — "Happening Now / Today / This Weekend / etc." should
+   transform the content of the existing Discover screen (`DiscoverHubScreen.js`) the same way
+   People's Dating/Friends toggle does, not push to a separate "Happening Nearby" screen. User
+   explicitly scheduled this as "the first Thursday task" — i.e. deliberately not immediate; don't
+   start without asking, since a scheduling note like this may still be live. **Not started.**
+2. **Friends mode mirrors Dating mode** — `DiscoveryScreen.js`'s Dating side (cards, match %,
+   filters, crossed paths, online/verified) should be the same structural architecture `FriendsScreen.js`/
+   `FriendDiscoveryScreen.js` uses for Friends, just reconfigured (friend-oriented presentation,
+   friend compatibility/signals, no romantic language), with its own visual identity/icon but not
+   a separate screen architecture. **Not started** — current `FriendsScreen.js`/
+   `FriendDiscoveryScreen.js` do not reuse `DiscoveryScreen.js`'s architecture at all. Note while
+   scoping this: there is currently **no messaging channel for accepted friends at all** —
+   `respondToFriendRequest()` never creates a `matches` row, and `ViewProfileScreen.js`'s Message
+   button only ever shows when a real `matches` row exists (dating-only). Giving a friend's
+   profile a working "Message" action (part of the user's stated ideal end state: Message / Plan
+   Something / Friends ✓) requires designing a real friend-to-friend messaging channel — a
+   genuinely new piece of schema/architecture, not a relabel — flag this to the user before
+   building rather than silently shipping a dead-end button.
+3. **Add Friend bug — FIXED 2026-09-06.** `ViewProfileScreen.js` showed "🤝 Add Friend" regardless
+   of real friendship state, so an already-accepted friend (or an already-pending request) still
+   saw the button and got the raw `sendFriendRequest()` duplicate-key error on tap. Fixed: `load()`
+   now fetches the real `friendships` row status (previously fetched only to gate the compatibility
+   report, then discarded) and renders one of — accepted → static "✓ Friends" pill; pending, sent
+   by viewer → disabled "✓ Request Sent"; pending, received from the other person → Accept/Decline
+   buttons wired to `respondToFriendRequest()`; no row → the original "Add Friend" button. Verified
+   by static parse only (`@babel/parser`, jsx+optionalChaining+nullishCoalescing) — **no
+   simulator/device run**, per this project's standing no-simulator-tooling limitation.
+
 **Phase 8 (Discover visual hierarchy + expand-in-place) is fully DONE, including section H.**
 Full account moved to `CLAUDE_HISTORY.md` ("Phase 8 ... section H — BUILT").
 "Business Web as an Operating System" (Phases 1-7) is fully DONE. Phases 1-6 (decline reasons,

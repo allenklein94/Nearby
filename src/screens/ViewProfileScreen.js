@@ -11,7 +11,7 @@ import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
-import { sendFriendRequest, getMutualFriends } from '../services/friends';
+import { sendFriendRequest, respondToFriendRequest, getMutualFriends } from '../services/friends';
 import { getHostStats, getHostReputation } from '../services/gatherings';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
@@ -70,7 +70,16 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [lightboxPhotoRef, setLightboxPhotoRef] = useState(null);
   const [myUserId, setMyUserId] = useState(null);
   const [sendingFriendRequest, setSendingFriendRequest] = useState(false);
-  const [friendRequestSent, setFriendRequestSent] = useState(false);
+  // Real status of the friendships row between the viewer and this profile --
+  // null (no row), 'accepted', 'pending_sent' (viewer is requested_by),
+  // 'pending_received' (the other person is requested_by). Bug fix: this
+  // screen used to only track whether *this session* had just sent a
+  // request, never the real existing status, so an already-accepted friend
+  // (or an already-pending request from a previous visit) still showed "Add
+  // Friend" and threw the DB's own duplicate-key error on tap.
+  const [friendshipStatus, setFriendshipStatus] = useState(null);
+  const [friendshipId, setFriendshipId] = useState(null);
+  const [respondingToFriendRequest, setRespondingToFriendRequest] = useState(false);
   const [matchId, setMatchId] = useState(null);
   const [mutualFriends, setMutualFriends] = useState([]);
   const [hostStats, setHostStats] = useState(null);
@@ -147,14 +156,27 @@ export default function ViewProfileScreen({ route, navigation }) {
         // to Matches and Chat. Check the friendship table directly,
         // since this screen doesn't have a match-source field to rely
         // on the way those two did.
+        // Real friendship status (any row, not just 'accepted') so the
+        // Add Friend button below can reflect it honestly instead of
+        // always offering to send a request regardless of existing state.
         const { data: friendship } = await supabase
           .from('friendships')
-          .select('id')
-          .eq('status', 'accepted')
+          .select('id, status, requested_by')
           .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
           .maybeSingle();
 
-        if (!friendship) {
+        if (friendship?.status === 'accepted') {
+          setFriendshipStatus('accepted');
+          setFriendshipId(friendship.id);
+        } else if (friendship?.status === 'pending') {
+          setFriendshipStatus(friendship.requested_by === myId ? 'pending_sent' : 'pending_received');
+          setFriendshipId(friendship.id);
+        } else {
+          setFriendshipStatus(null);
+          setFriendshipId(null);
+        }
+
+        if (friendship?.status !== 'accepted') {
           const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
           const report = generateCompatibilityReport(myProfile, data);
           setCompatibilityReport(report);
@@ -198,12 +220,25 @@ export default function ViewProfileScreen({ route, navigation }) {
     setSendingFriendRequest(true);
     try {
       await sendFriendRequest(userId);
-      setFriendRequestSent(true);
+      setFriendshipStatus('pending_sent');
       Alert.alert('Friend request sent', `${profile.display_name} will see your request.`);
     } catch (e) {
       Alert.alert('Error', e.message);
     }
     setSendingFriendRequest(false);
+  }
+
+  async function handleRespondToFriendRequest(accept) {
+    if (!friendshipId) return;
+    setRespondingToFriendRequest(true);
+    try {
+      await respondToFriendRequest(friendshipId, accept);
+      setFriendshipStatus(accept ? 'accepted' : null);
+      if (accept) setCompatibilityReport(null);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setRespondingToFriendRequest(false);
   }
 
   function openLightbox(uri, photoId) {
@@ -349,18 +384,53 @@ export default function ViewProfileScreen({ route, navigation }) {
             )}
           </View>
 
-          {!isOwnProfile && (
+          {!isOwnProfile && friendshipStatus === 'accepted' && (
+            <View style={[styles.addFriendButton, styles.addFriendButtonSent]}>
+              <Text style={styles.addFriendButtonText}>✓ Friends</Text>
+            </View>
+          )}
+
+          {!isOwnProfile && friendshipStatus === 'pending_sent' && (
+            <View style={[styles.addFriendButton, styles.addFriendButtonSent]}>
+              <Text style={styles.addFriendButtonText}>✓ Request Sent</Text>
+            </View>
+          )}
+
+          {!isOwnProfile && friendshipStatus === 'pending_received' && (
+            <View style={styles.friendRequestRow}>
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={() => handleRespondToFriendRequest(true)}
+                disabled={respondingToFriendRequest}
+                activeOpacity={0.85}
+                accessibilityLabel={`Accept ${profile.display_name}'s friend request`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.messageButtonText}>Accept Friend Request</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addFriendButton}
+                onPress={() => handleRespondToFriendRequest(false)}
+                disabled={respondingToFriendRequest}
+                activeOpacity={0.85}
+                accessibilityLabel={`Decline ${profile.display_name}'s friend request`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.addFriendButtonText}>Decline</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {!isOwnProfile && friendshipStatus === null && (
             <TouchableOpacity
-              style={[styles.addFriendButton, friendRequestSent && styles.addFriendButtonSent]}
+              style={styles.addFriendButton}
               onPress={handleAddFriend}
-              disabled={sendingFriendRequest || friendRequestSent}
+              disabled={sendingFriendRequest}
               activeOpacity={0.85}
-              accessibilityLabel={friendRequestSent ? 'Friend request sent' : `Add ${profile.display_name} as a friend`}
+              accessibilityLabel={`Add ${profile.display_name} as a friend`}
               accessibilityRole="button"
             >
-              <Text style={styles.addFriendButtonText}>
-                {friendRequestSent ? '✓ Request Sent' : '🤝 Add Friend'}
-              </Text>
+              <Text style={styles.addFriendButtonText}>🤝 Add Friend</Text>
             </TouchableOpacity>
           )}
 
@@ -608,6 +678,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   addFriendButtonSent: { borderColor: colors.success },
   addFriendButtonText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  friendRequestRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
   messageButton: {
     alignSelf: 'flex-start', backgroundColor: colors.primary,
     borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
