@@ -2,9 +2,11 @@
 // category suggestion, never an LLM call and never a new classification
 // service. Same "pure function, no I/O, fully testable" shape as
 // businessExperienceSuggestions.js/gatheringIndoorOutdoor.js elsewhere in
-// this app. Reuses the same 15-value BUSINESS_CATEGORIES vocabulary
+// this app. Reuses the same 19-value BUSINESS_CATEGORIES vocabulary
 // (BusinessPartnerApplyScreen.js, expanded 2026-09-06 alongside the
-// gatheringCategories.js taxonomy expansion) -- no separate taxonomy.
+// gatheringCategories.js taxonomy expansion, then again the same day to
+// add Stay & Getaway/Health & Personal Care/Education & Classes/
+// Attractions & Things to See) -- no separate taxonomy.
 //
 // This only ever compares a business's own real name/description text
 // against real keyword lists -- it never invents a category from nothing,
@@ -17,17 +19,29 @@ const KEYWORDS_BY_CATEGORY = {
   activities_recreation: ['gym', 'fitness', 'studio', 'crossfit', 'martial arts', 'boxing', 'climbing', 'personal training', 'health club', 'cycling', 'tennis', 'bowling', 'swim'],
   entertainment_nightlife: ['cinema', 'theater', 'theatre', 'arcade', 'bowling alley', 'comedy club', 'music hall', 'night club', 'nightclub', 'karaoke', 'venue', 'performance'],
   dating_social: ['singles', 'matchmaking', 'speed dating'],
-  arts_culture_learning: ['gallery', 'museum', 'art space', 'studio', 'class', 'workshop', 'library'],
+  arts_culture_learning: ['gallery', 'museum', 'art space', 'studio', 'library'],
   shopping: ['shop', 'store', 'boutique', 'market', 'retail', 'outfitters', 'goods', 'apparel', 'bookstore', 'gift shop', 'thrift', 'consignment'],
   wellness_beauty: ['yoga', 'studio', 'spa', 'massage', 'salon', 'barbershop', 'nails', 'skin care', 'facial', 'wellness', 'meditation', 'beauty'],
-  family_kids: ['daycare', 'kids', 'children', 'playground', 'preschool', 'tutoring', 'birthday party'],
+  family_kids: ['daycare', 'kids', 'children', 'playground', 'preschool', 'birthday party'],
   outdoors_nature: ['park', 'trail', 'hiking', 'camping', 'outdoor'],
   pets: ['pet', 'veterinary', 'vet clinic', 'grooming', 'kennel'],
   home_local_services: ['plumbing', 'electrician', 'hvac', 'cleaning service', 'landscaping', 'handyman', 'moving company', 'storage'],
   auto_transportation: ['auto', 'car wash', 'tire', 'mechanic', 'garage', 'detailing', 'car repair'],
   business_networking: ['office', 'consulting', 'law firm', 'accounting', 'agency', 'practice', 'coworking', 'networking'],
   community_volunteering: ['nonprofit', 'charity', 'volunteer', 'community center', 'church', 'temple', 'mosque', 'synagogue'],
-  travel_experiences: ['tour', 'travel agency', 'excursion', 'sightseeing', 'hotel', 'resort'],
+  travel_experiences: ['tour', 'travel agency', 'excursion', 'sightseeing'],
+  // Added this same day, alongside the 4 new major categories -- 'hotel'/
+  // 'resort' moved here from travel_experiences (a more precise home), and
+  // 'tutoring' moved here from family_kids (tutoring isn't inherently a
+  // kids-only service).
+  stay_getaway: ['hotel', 'resort', 'inn', 'motel', 'bed and breakfast', 'vacation rental', 'glamping'],
+  // Deliberately medical-specific, distinct from wellness_beauty's spa/
+  // salon/yoga words -- per direct user guidance, this category should
+  // never become an algorithmically-recommended surface the way a
+  // restaurant is, but a business can still self-classify here.
+  health_personal_care: ['dentist', 'dental', 'physical therapy', 'chiropractic', 'chiropractor', 'medical', 'clinic', 'pharmacy', 'optometrist', 'urgent care'],
+  education_classes: ['school', 'academy', 'tutoring', 'class', 'classes', 'workshop', 'lessons', 'learning center', 'driving school'],
+  attractions_things_to_see: ['zoo', 'aquarium', 'amusement park', 'theme park', 'landmark', 'observation deck', 'tourist attraction'],
 };
 
 // Real keyword collision handling: a word like "studio" appears in more

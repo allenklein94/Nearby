@@ -91,6 +91,24 @@ export const CATEGORY_STYLES = {
   Fundraiser: { icon: '🎗️', color: PALETTE[1] },
 
   'Day Trip': { icon: '🗺️', color: PALETTE[3] },
+
+  // 2026-09-06, same day as the tags above -- the second, follow-up
+  // taxonomy pass adding Stay & Getaway/Health & Personal Care/Education &
+  // Classes/Attractions & Things to See (gatheringCategories.js).
+  'Weekend Getaway': { icon: '🧳', color: PALETTE[3] },
+  Staycation: { icon: '🛋️', color: PALETTE[0] },
+  'Road Trip': { icon: '🚙', color: PALETTE[2] },
+
+  'Cooking Class': { icon: '🍳', color: PALETTE[1] },
+  'Study Group': { icon: '📖', color: PALETTE[4] },
+  'Language Exchange': { icon: '🗣️', color: PALETTE[2] },
+  'Tech Meetup': { icon: '💻', color: PALETTE[5] },
+
+  Zoos: { icon: '🦁', color: PALETTE[0] },
+  Aquariums: { icon: '🐠', color: PALETTE[4] },
+  Landmarks: { icon: '🗽', color: PALETTE[3] },
+  'Amusement Park': { icon: '🎡', color: PALETTE[1] },
+  Sightseeing: { icon: '🔭', color: PALETTE[2] },
 };
 
 // Falls back through two tiers: an unmapped tag first tries to inherit its
@@ -114,6 +132,10 @@ const GROUP_FALLBACK_STYLES = {
   business_networking: { icon: '💼' },
   community_volunteering: { icon: '🤝' },
   travel_experiences: { icon: '✈️' },
+  stay_getaway: { icon: '🏨' },
+  health_personal_care: { icon: '🩺' },
+  education_classes: { icon: '🎓' },
+  attractions_things_to_see: { icon: '🎟️' },
 };
 
 export function categoryStyleFor(interestTag) {

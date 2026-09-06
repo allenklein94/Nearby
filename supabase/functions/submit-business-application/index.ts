@@ -27,9 +27,10 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-// Same 15 real keys BusinessPartnerApplyScreen.js's own BUSINESS_CATEGORIES
+// Same 19 real keys BusinessPartnerApplyScreen.js's own BUSINESS_CATEGORIES
 // exports (expanded 2026-09-06 alongside the gatheringCategories.js taxonomy
-// expansion -- supabase/migrations/20260922_business_category_taxonomy_expansion.sql)
+// expansion -- supabase/migrations/20260922_business_category_taxonomy_expansion.sql,
+// then again the same day to 19 -- 20260923_business_category_taxonomy_v2_new_majors.sql)
 // -- re-validated here so a malformed/hallucinated category value can never
 // reach the row a real admin later reviews.
 const VALID_CATEGORIES = [
@@ -48,6 +49,10 @@ const VALID_CATEGORIES = [
   'business_networking',
   'community_volunteering',
   'travel_experiences',
+  'stay_getaway',
+  'health_personal_care',
+  'education_classes',
+  'attractions_things_to_see',
   'other',
 ];
 

@@ -10,22 +10,39 @@
 // Dating & Social, Arts/Culture/Learning, Shopping, Wellness & Beauty,
 // Family & Kids, Outdoors & Nature, Pets, Home & Local Services, Auto &
 // Transportation, Business & Networking, Community & Volunteering, Travel
-// & Experiences). This vocabulary is matched by exact string equality
-// against gatherings.interest_tag / communities.interest_tag /
+// & Experiences), then to 19 groups the same day per direct user follow-up
+// request adding Stay & Getaway, Health & Personal Care, Education &
+// Classes, and Attractions & Things to See -- see this same day's "Intent
+// engine vision" project note (memory) for the fuller architectural
+// direction this sits inside: categories/subcategories/tags are meant to
+// power a free-text intent engine underneath, never become the primary
+// navigation UI themselves. This vocabulary is matched by exact string
+// equality against gatherings.interest_tag / communities.interest_tag /
 // business_requests.category / business_availability.category /
 // brand_offers.target_interest_tag / profiles.interests across ~10 SQL
 // functions and 4+ client call sites (confirmed via full blast-radius
-// research before this expansion) -- it stays ONE flat leaf-tag list, never
-// restructured into major/subcategory columns, so every one of those exact-
-// match comparisons keeps working unchanged. CATEGORY_GROUPS below is
-// purely a browsing/UI grouping layered on top of that same flat list.
+// research before the first expansion pass) -- it stays ONE flat leaf-tag
+// list, never restructured into major/subcategory columns, so every one of
+// those exact-match comparisons keeps working unchanged. CATEGORY_GROUPS
+// below is purely a browsing/UI grouping layered on top of that same flat
+// list -- moving a tag between groups (as this pass does for Museums/
+// Workshops/Lectures, into their own more precise new homes) changes
+// nothing about the tag's own string value or any stored data referencing
+// it, only which group it displays under.
 //
-// Home & Local Services and Auto & Transportation deliberately have NO
-// leaf tags -- nobody hosts a "gathering" about a car wash or a plumbing
-// job. Those two categories are real for Places/Business browsing (see
-// src/constants/placeCategories.js and brand_partners.category) but
-// legitimately thin-to-empty for gatherings/communities. That's an honest
-// reflection of what a gathering actually is, not a gap to paper over.
+// Home & Local Services, Auto & Transportation, and (added this pass)
+// Health & Personal Care deliberately have NO leaf tags -- nobody hosts a
+// "gathering" about a car wash, a plumbing job, or a dental appointment.
+// Health & Personal Care in particular is intentionally real for Places/
+// Business browsing (a chiropractor or dentist can self-classify) but
+// deliberately excluded from ever being a gathering/recommendation-engine
+// category -- per the same direct user guidance, medical services carry
+// real privacy/regulatory/appropriateness considerations a restaurant or
+// event recommendation doesn't. These three categories are real for
+// Places/Business browsing (see src/constants/placeCategories.js and
+// brand_partners.category) but legitimately thin-to-empty for gatherings/
+// communities. That's an honest reflection of what a gathering actually
+// is, not a gap to paper over.
 export const CATEGORY_GROUPS = [
   {
     key: 'food_drink', icon: '🍔', label: 'Food & Drink',
@@ -45,7 +62,7 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Learning',
-    tags: ['Reading', 'Art', 'Photography', 'Museums', 'Crafts', 'Workshops', 'Lectures'],
+    tags: ['Reading', 'Art', 'Photography', 'Crafts'],
   },
   {
     key: 'shopping', icon: '🛍️', label: 'Shopping',
@@ -86,6 +103,22 @@ export const CATEGORY_GROUPS = [
   {
     key: 'travel_experiences', icon: '✈️', label: 'Travel & Experiences',
     tags: ['Travel', 'Day Trip'],
+  },
+  {
+    key: 'stay_getaway', icon: '🏨', label: 'Stay & Getaway',
+    tags: ['Weekend Getaway', 'Staycation', 'Road Trip'],
+  },
+  {
+    key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care',
+    tags: [],
+  },
+  {
+    key: 'education_classes', icon: '🎓', label: 'Education & Classes',
+    tags: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
+  },
+  {
+    key: 'attractions_things_to_see', icon: '🎟️', label: 'Attractions & Things to See',
+    tags: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
   },
 ];
 

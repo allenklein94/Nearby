@@ -138,9 +138,16 @@ export async function searchPlacesByText(query, latitude = null, longitude = nul
 // getting handed a wrong category. Matches this codebase's own established
 // "don't fabricate a signal the data doesn't clearly support" convention.
 // Updated 2026-09-06 alongside the 15-category taxonomy expansion
-// (gatheringCategories.js / placeCategories.js) -- these keys must match
+// (gatheringCategories.js / placeCategories.js), then again the same day
+// for the 4 new majors (Stay & Getaway/Health & Personal Care/Education &
+// Classes/Attractions & Things to See) -- these keys must match
 // BUSINESS_CATEGORIES (BusinessPartnerApplyScreen.js) and the CHECK
-// constraint in supabase/migrations/20260922_business_category_taxonomy_expansion.sql.
+// constraint in supabase/migrations/20260923_business_category_taxonomy_v2_new_majors.sql.
+// `school` moved from family_kids to education_classes, and `zoo`/
+// `tourist_attraction` moved from family_kids/travel_experiences to
+// attractions_things_to_see -- each Google type maps to exactly one
+// category here, so these move to their more precise new home rather than
+// staying duplicated.
 const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {
   restaurant: 'food_drink', cafe: 'food_drink', bar: 'food_drink', bakery: 'food_drink', food: 'food_drink', meal_takeaway: 'food_drink',
   gym: 'activities_recreation', stadium: 'activities_recreation', bowling_alley: 'activities_recreation',
@@ -148,14 +155,18 @@ const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {
   art_gallery: 'arts_culture_learning', museum: 'arts_culture_learning', library: 'arts_culture_learning',
   clothing_store: 'shopping', store: 'shopping', shopping_mall: 'shopping', shoe_store: 'shopping', jewelry_store: 'shopping', book_store: 'shopping',
   spa: 'wellness_beauty', yoga_studio: 'wellness_beauty', hair_care: 'wellness_beauty', beauty_salon: 'wellness_beauty',
-  school: 'family_kids', amusement_park: 'family_kids', zoo: 'family_kids',
+  amusement_park: 'family_kids',
   park: 'outdoors_nature', campground: 'outdoors_nature',
   pet_store: 'pets', veterinary_care: 'pets',
   plumber: 'home_local_services', electrician: 'home_local_services', locksmith: 'home_local_services', moving_company: 'home_local_services', home_goods_store: 'home_local_services',
   car_repair: 'auto_transportation', car_dealer: 'auto_transportation', gas_station: 'auto_transportation', car_wash: 'auto_transportation',
   lawyer: 'business_networking', accounting: 'business_networking', real_estate_agency: 'business_networking', insurance_agency: 'business_networking',
   church: 'community_volunteering', hindu_temple: 'community_volunteering', mosque: 'community_volunteering', synagogue: 'community_volunteering',
-  lodging: 'travel_experiences', travel_agency: 'travel_experiences', tourist_attraction: 'travel_experiences',
+  travel_agency: 'travel_experiences',
+  lodging: 'stay_getaway', rv_park: 'stay_getaway',
+  dentist: 'health_personal_care', doctor: 'health_personal_care', pharmacy: 'health_personal_care', physiotherapist: 'health_personal_care', hospital: 'health_personal_care',
+  school: 'education_classes',
+  zoo: 'attractions_things_to_see', aquarium: 'attractions_things_to_see', tourist_attraction: 'attractions_things_to_see',
 };
 
 function guessCategoryFromTypes(types = []) {

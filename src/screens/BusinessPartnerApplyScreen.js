@@ -12,13 +12,14 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-// 2026-09-06: expanded from a hand-typed 6-value list to the same 15
-// major categories as CATEGORY_GROUPS (gatheringCategories.js) and
-// PLACE_CATEGORIES (placeCategories.js) -- derived directly from
+// 2026-09-06: expanded from a hand-typed 6-value list to the same 15 (then,
+// same day, 19) major categories as CATEGORY_GROUPS (gatheringCategories.js)
+// and PLACE_CATEGORIES (placeCategories.js) -- derived directly from
 // CATEGORY_GROUPS so all three can never drift out of sync again, plus the
 // one value with no equivalent there ('other'). Keys must stay in sync
-// with the CHECK constraint in
-// supabase/migrations/20260922_business_category_taxonomy_expansion.sql.
+// with the CHECK constraint in supabase/migrations/20260922_business_
+// category_taxonomy_expansion.sql and 20260923_business_category_
+// taxonomy_v2_new_majors.sql.
 export const BUSINESS_CATEGORIES = [
   ...CATEGORY_GROUPS.map((g) => ({ key: g.key, label: `${g.icon} ${g.label}` })),
   { key: 'other', label: '✨ Other' },
