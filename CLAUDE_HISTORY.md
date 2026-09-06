@@ -1,3 +1,77 @@
+## Sep 6 2026 — Discover/People-Friends parity plan, items 2 & 4 — BUILT
+
+Two items from the parity plan (item 1, Discover mode filters in-place, is still not started —
+see CLAUDE.md's Active section). Both items below are pure client-side + one small additive
+migration, no simulator/device testing available (standing project limitation) — verified by
+static parse (`@babel/parser`) plus, for the one schema change, live against production with
+disposable test data.
+
+**Item 2 — Friend Discovery structural parity with Dating** (commit `7b6bf0e7`). Two research
+passes (Explore agents) first mapped the exact gap between `DiscoveryScreen.js` (Dating) and
+`FriendDiscoveryScreen.js`/`FriendDiscoverySwipeCards.js` (Friends): Friends already shared
+Dating's header chrome and accordion filter *visual language* (from the Aug 24 2026 pass), but
+had zero verified/online badges (data plumbing for both was already sitting half-wired,
+uncommitted, from an interrupted prior session — `photo_verified` had been added to
+`get_friend_discovery_candidates()` via `supabase/migrations/20260919_friend_discovery_verified_status.sql`
+but never rendered; `getOnlineStatuses` was imported but never called), no compatibility-score
+equivalent, and no Verified/Online quick filters. Closed all three:
+- Applied the pending migration to prod via the Supabase Management API; verified live
+  (disposable auth.users + profiles rows, one verified/one not, queried the RPC under each user's
+  JWT context via `set_config('request.jwt.claim.sub', ...)`, confirmed correct `photo_verified`
+  values came back for both test and real profiles) then cleaned up.
+- `FriendDiscoveryScreen.js` now calls `getOnlineStatuses()` after fetching candidates and passes
+  the map down; `FriendDiscoverySwipeCards.js` renders a verified checkmark and online dot,
+  styled identically to `SwipeableDiscoveryCards.js`'s own treatment.
+- New `calculateFriendCompatibility()` (`src/services/compatibility.js`) blends the RPC's three
+  real counts (shared interests/communities/mutual friends, each capped before weighting so no
+  single outlier saturates the score) into a 0-100 score, rendered as a "🤝 NN% Match" badge using
+  the same threshold-based `compatibilityColor()` logic Dating uses locally (kept as a duplicated
+  3-line local function in `FriendDiscoveryScreen.js` too — not worth extracting for that size).
+- Verified Only / Online Now toggle chips added into the *existing* Filters accordion (not
+  swapped for `FiltersModal` — the accordion was already the established "same architecture, own
+  presentation" pattern here per its own Aug 28 2026 comments, and replacing a working component
+  wasn't worth the churn).
+- Explicitly left out, as a documented decision not an oversight: Crossed Paths/proximity
+  (Friend Discovery was originally, deliberately built without a location-discovery concept),
+  list/card view toggle, pagination, undo-banner, Notice/Wave two-tier action — none named in the
+  request, and the shared swipe engine they'd require touching (`SwipeableDiscoveryCards.js`) is a
+  live dating surface with no device-testing safety net.
+
+**Item 4 — "Plan Something" generalized from dating-only to friends too** (uncommitted at this
+write — see commit history for the actual hash). A second Explore pass traced the full existing
+"plan with a business" pipeline (`DateProposalScreen.js` → `AskBusinessScreen.js` →
+`BusinessRequestDetailScreen.js` → `accept_business_offer` RPC) and found it was **already 100%
+schema/RPC-agnostic to romantic vs. friend** — `business_requests`, `business_request_offers`,
+`date_proposals`, and every RPC in the chain (`propose_date`, `respond_to_date_proposal`,
+`create_business_request_for_match`, `accept_business_offer`) key only off match participancy,
+never `source_friendship_id`. The entire gate was two client-side `isRomanticMatch` checks. Fixed:
+- `MatchesScreen.js`: the active-plans fetch (`getMyActivePlansByMatch`) now includes
+  friend-sourced match ids too (still excludes gathering-sourced matches — a gathering's own
+  "plan" is the linked gathering itself, a separate, deliberate design, untouched here). The
+  per-row "Plan" button now takes friend matches straight to `DateProposal` (💌 for romantic, 🤝
+  for friend) instead of dumping them into the general 12-item together-menu; the persistent
+  People/Time/Place progress row now applies to friend matches too once a plan is started.
+- `ViewProfileScreen.js`'s accepted-friend "🤝 Plan Something" button now also goes straight to
+  `DateProposal` instead of through Chat's together-menu.
+- `ChatScreen.js`'s together-menu `'plantogether'` item is no longer gated on `isRomanticMatch` —
+  shown to all matches, label swapping between "💌 Plan Something Together" and "🎯 Plan Something
+  Together".
+- `DateProposalScreen.js`: derives `isRomanticMatch` locally (same `source_gathering_id`/
+  `source_friendship_id` check `ChatScreen.js`/`MatchesScreen.js` already use) purely to swap the
+  one romantic-flavored string left in the whole pipeline (`AcceptedBusinessOfferCard`'s kicker,
+  "❤️ Your date is set" → "🎉 Plan confirmed" for friends). Added a `PLAN_QUICK_CATEGORIES` icon
+  quick-pick row (🍽️ Dinner / ☕ Coffee / 🏃 Fitness / 🎨 Something fun / 🎵 Music / 🌴 Outdoors / ✨
+  Surprise me) above the existing free-text box — tapping one fills the (still-editable) text box
+  with a template and sets a local `selectedCategory`, threaded into `AskBusiness`'s existing
+  `prefillCategory` param on both "Find Somewhere to Go" buttons. This is a session-local
+  convenience only (resets if the screen unmounts before that tap) since `AskBusinessScreen`'s own
+  category chips stay fully editable regardless — deliberately not persisted server-side (would
+  have needed a new `date_proposals.category` column + RPC param; judged not worth it for a
+  convenience default).
+- No separate "invite" step was needed or built: both match participants can already view a
+  match-sourced `business_requests` row and its offers (existing RLS), same as dating today; only
+  the original requester can accept an offer, also unchanged from dating's existing behavior.
+
 ## Sep 5 2026 — Group Insights (Phases A-D) — BUILT
 
 A gathering-detail feature: attendees can see a real, privacy-tiered summary of who's going

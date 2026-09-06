@@ -95,17 +95,18 @@ export default function MatchesScreen({ navigation }) {
       );
       setPhotoUrls(Object.fromEntries(urlEntries));
 
-      // Persistent plan-completion status (CLAUDE.md, Aug 29 2026) --
-      // scoped to romantic matches only, since a friend/gathering-sourced
-      // match's own "plan" is either the linked gathering itself (already
-      // visible on GatheringDetailScreen) or the general "Do Something
-      // Together" menu, neither of which is a date_proposals row.
-      // Supplementary, non-fatal -- a failure here shouldn't block the
-      // rest of the match list from rendering.
-      const romanticMatchIds = data
-        .filter((m) => !m.source_gathering_id && !m.source_friendship_id)
+      // Persistent plan-completion status (CLAUDE.md, Aug 29 2026;
+      // widened to friend-sourced matches -- Discover/People-Friends
+      // parity plan, item 4 -- since date_proposals/business_requests are
+      // already match-participant-agnostic). Still excludes
+      // gathering-sourced matches: that match's own "plan" is the linked
+      // gathering itself (already visible on GatheringDetailScreen), not
+      // a date_proposals row. Supplementary, non-fatal -- a failure here
+      // shouldn't block the rest of the match list from rendering.
+      const planEligibleMatchIds = data
+        .filter((m) => !m.source_gathering_id)
         .map((m) => m.id);
-      getMyActivePlansByMatch(romanticMatchIds)
+      getMyActivePlansByMatch(planEligibleMatchIds)
         .then(setActivePlansByMatch)
         .catch((e) => console.error('getMyActivePlansByMatch failed', e));
 
@@ -314,8 +315,14 @@ export default function MatchesScreen({ navigation }) {
           // proposal or a business request exists), so an untouched match
           // still shows the plain "start a plan" button rather than a row
           // of three ○'s nobody asked to see.
-          const activePlan = isRomanticMatch ? activePlansByMatch[item.id] : null;
-          const planStarted = isRomanticMatch && hasStartedMatchPlan({
+          // Discover/People-Friends parity plan, item 4: the real Plan
+          // Something flow (propose -> accept -> find a business ->
+          // offer) is agnostic to romantic vs. friend at the schema/RPC
+          // level, so it's offered to both -- only a gathering-sourced
+          // match keeps its separate "plan lives on the gathering" model.
+          const canStartPlan = !item.source_gathering_id;
+          const activePlan = canStartPlan ? activePlansByMatch[item.id] : null;
+          const planStarted = canStartPlan && hasStartedMatchPlan({
             proposalStatus: activePlan?.proposal?.status ?? null,
             businessRequest: activePlan?.businessRequest ?? null,
           });
@@ -377,23 +384,21 @@ export default function MatchesScreen({ navigation }) {
                 </View>
                 <Text style={styles.sub}>{subLabel}</Text>
               </TouchableOpacity>
-              {isRomanticMatch && !planStarted ? (
+              {canStartPlan && !planStarted ? (
                 <TouchableOpacity
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('DateProposal', { matchId: item.id, matchName: other?.display_name })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Plan a date with ${other?.display_name}, get offers from nearby businesses`}
+                  accessibilityLabel={`Plan something with ${other?.display_name}, get offers from nearby businesses`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.planDateButtonText}>💌 Plan</Text>
+                  <Text style={styles.planDateButtonText}>{isRomanticMatch ? '💌 Plan' : '🤝 Plan'}</Text>
                 </TouchableOpacity>
-              ) : isRomanticMatch ? null : (
-                // A friend/gathering-sourced match had no "start
-                // something" entry point at all before this -- the real
-                // "Do Something Together" menu (12 real destinations,
-                // including a shared-interest -> local-business flow) was
-                // always available, just a screen deeper inside Chat with
-                // no visible link from the match list itself.
+              ) : canStartPlan ? null : (
+                // A gathering-sourced match's own "plan" is the linked
+                // gathering itself -- the general "Do Something Together"
+                // menu (12 real destinations) is still its only entry
+                // point from the match list.
                 <TouchableOpacity
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('Chat', { matchId: item.id, openTogetherMenu: true })}

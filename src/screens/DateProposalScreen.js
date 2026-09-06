@@ -22,6 +22,24 @@ const TERMINAL_STATUS_COPY = {
   withdrawn: 'Withdrawn',
 };
 
+// Discover/People-Friends parity plan, item 4: a quick "what do you want
+// to do" entry point instead of a blank text box, using the same 26-tag
+// vocabulary AskBusinessScreen's own category chips already use (via
+// `prefillCategory`) so a pick here lands on an already-selected chip
+// there. "Something fun"/"Surprise me" intentionally map to no single tag
+// (category: null) -- AskBusinessScreen already treats a null category as
+// a real, well-supported "send to any nearby business" request, not a
+// missing value.
+const PLAN_QUICK_CATEGORIES = [
+  { key: 'dinner', emoji: '🍽️', label: 'Dinner', category: 'Foodie', planText: 'Dinner sometime?' },
+  { key: 'coffee', emoji: '☕', label: 'Coffee', category: 'Coffee', planText: 'Coffee sometime?' },
+  { key: 'fitness', emoji: '🏃', label: 'Fitness', category: 'Fitness', planText: 'Want to work out together?' },
+  { key: 'fun', emoji: '🎨', label: 'Something fun', category: null, planText: 'Want to do something fun?' },
+  { key: 'music', emoji: '🎵', label: 'Music', category: 'Music', planText: 'Want to check out some music?' },
+  { key: 'outdoors', emoji: '🌴', label: 'Outdoors', category: 'Outdoors', planText: 'Want to get outside?' },
+  { key: 'surprise', emoji: '✨', label: 'Surprise me', category: null, planText: 'Surprise me — you pick!' },
+];
+
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4). The
 // one real screen for the locked Match -> Proposal -> Other person
 // accepts -> Dating Experience -> Business Request shape -- renders
@@ -37,6 +55,7 @@ export default function DateProposalScreen({ navigation, route }) {
   const matchName = route.params?.matchName ?? 'your match';
 
   const [myId, setMyId] = useState(null);
+  const [isRomanticMatch, setIsRomanticMatch] = useState(true);
   const [proposal, setProposal] = useState(null);
   const [businessRequest, setBusinessRequest] = useState(null);
   const [acceptedOffer, setAcceptedOffer] = useState(null);
@@ -44,6 +63,13 @@ export default function DateProposalScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [planText, setPlanText] = useState('');
+  // Discover/People-Friends parity plan, item 4: which quick-category chip
+  // (if any) the proposer tapped, purely a session-local convenience
+  // carried into "Find Somewhere to Go"'s prefillCategory -- not persisted
+  // server-side, so it resets if this screen unmounts before that button
+  // is tapped. AskBusinessScreen's own category chips stay fully editable
+  // regardless, so this is a nicety, not something a plan depends on.
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -52,6 +78,17 @@ export default function DateProposalScreen({ navigation, route }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const uid = sessionData?.session?.user?.id;
       setMyId(uid ?? null);
+
+      // Same derivation ChatScreen.js/MatchesScreen.js already use --
+      // needed here only for the one romantic-flavored string below
+      // (AcceptedBusinessOfferCard's kicker); everything else on this
+      // screen is already match-type-agnostic.
+      const { data: matchRow } = await supabase
+        .from('matches')
+        .select('source_gathering_id, source_friendship_id')
+        .eq('id', matchId)
+        .single();
+      setIsRomanticMatch(!matchRow?.source_gathering_id && !matchRow?.source_friendship_id);
 
       const latest = await getLatestDateProposal(matchId);
       setProposal(latest);
@@ -192,7 +229,7 @@ export default function DateProposalScreen({ navigation, route }) {
               acceptedOffer || businessRequest
                 ? () => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })
                 : proposal?.status === 'accepted'
-                ? () => navigation.navigate('AskBusiness', { matchId, matchName })
+                ? () => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: selectedCategory })
                 : undefined
             }
             style={{ marginBottom: spacing.lg }}
@@ -255,7 +292,7 @@ export default function DateProposalScreen({ navigation, route }) {
                 // two hand-copied blocks.
                 <AcceptedBusinessOfferCard
                   offer={acceptedOffer}
-                  kicker="❤️ Your date is set"
+                  kicker={isRomanticMatch ? '❤️ Your date is set' : '🎉 Plan confirmed'}
                   bordered={false}
                   onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                 />
@@ -271,7 +308,7 @@ export default function DateProposalScreen({ navigation, route }) {
               ) : (
                 <TouchableOpacity
                   style={styles.primaryButton}
-                  onPress={() => navigation.navigate('AskBusiness', { matchId, matchName })}
+                  onPress={() => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: selectedCategory })}
                   accessibilityLabel="Find somewhere to go"
                   accessibilityRole="button"
                 >
@@ -283,13 +320,38 @@ export default function DateProposalScreen({ navigation, route }) {
 
           {showProposeForm && (
             <>
-              <Text style={styles.label}>What do you have in mind?</Text>
+              <Text style={styles.label}>What do you want to do?</Text>
+              <View style={styles.quickCategoryRow}>
+                {PLAN_QUICK_CATEGORIES.map((qc) => {
+                  const selected = selectedCategory === qc.category && planText === qc.planText;
+                  return (
+                    <TouchableOpacity
+                      key={qc.key}
+                      style={[styles.quickCategoryChip, selected && styles.quickCategoryChipSelected]}
+                      onPress={() => {
+                        setSelectedCategory(qc.category);
+                        setPlanText(qc.planText);
+                      }}
+                      accessibilityLabel={qc.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={styles.quickCategoryEmoji}>{qc.emoji}</Text>
+                      <Text style={[styles.quickCategoryLabel, selected && styles.quickCategoryLabelSelected]}>{qc.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={styles.label}>Or say it your way</Text>
               <TextInput
                 style={styles.textArea}
                 placeholder="Dinner Friday around 7?"
                 placeholderTextColor={colors.textTertiary}
                 value={planText}
-                onChangeText={setPlanText}
+                onChangeText={(text) => {
+                  setPlanText(text);
+                  setSelectedCategory(null);
+                }}
                 multiline
                 accessibilityLabel="What do you have in mind?"
               />
@@ -315,6 +377,16 @@ const getStyles = (colors) => StyleSheet.create({
   heading: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   label: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.md },
+  quickCategoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.xs },
+  quickCategoryChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radius.full,
+    paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  quickCategoryChipSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  quickCategoryEmoji: { fontSize: 14 },
+  quickCategoryLabel: { ...typography.small, color: colors.textSecondary },
+  quickCategoryLabelSelected: { color: colors.primary, fontWeight: '600' },
   textArea: {
     ...typography.body, color: colors.textPrimary, backgroundColor: colors.surface,
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,

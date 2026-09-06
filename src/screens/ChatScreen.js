@@ -533,14 +533,14 @@ export default function ChatScreen({ route, navigation }) {
     { key: 'courage', text: '🦁 Help Me Say It', onPress: showCourageMenu },
     { key: 'datenight', text: '🌆 Suggest a Date Night', onPress: suggestDateNight },
     // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4):
-    // the real Match -> Proposal -> Dating Experience -> Business Request
-    // bridge -- a genuinely dating-context feature, gated on
-    // isRomanticMatch the same way "Ask them out"/"Say I'm interested"
-    // already are just above, not offered in a friend/gathering-sourced
-    // chat where it wouldn't make sense.
-    ...(isRomanticMatch
-      ? [{ key: 'plantogether', text: '💌 Plan Something Together', onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) }]
-      : []),
+    // the real Match -> Proposal -> Dating/Friend Experience -> Business
+    // Request bridge. Discover/People-Friends parity plan, item 4: this
+    // used to be gated to isRomanticMatch only, but propose_date/
+    // create_business_request_for_match/accept_business_offer all key off
+    // match participancy alone, never romantic-vs-friend -- so it's
+    // offered here regardless, with the label swapping to match context
+    // the same way "Ask them out" etc. stay romantic-only just above.
+    { key: 'plantogether', text: isRomanticMatch ? '💌 Plan Something Together' : '🎯 Plan Something Together', onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) },
   ];
 
   async function suggestDateNight() {

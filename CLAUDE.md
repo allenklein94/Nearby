@@ -40,43 +40,18 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Discover/People-Friends parity plan (agreed 2026-09-06, re-recorded after a codespace restart
-lost the original session before it was written down here — see `[[project_nearby_restart_prone]]`
-in memory; nothing on this plan had been built when it was rediscovered)**. Three items, user-
-confirmed:
+**Discover/People-Friends parity plan (agreed 2026-09-06)**. Item 1 is the only piece left:
 1. **Discover mode filters in-place** — "Happening Now / Today / This Weekend / etc." should
    transform the content of the existing Discover screen (`DiscoverHubScreen.js`) the same way
    People's Dating/Friends toggle does, not push to a separate "Happening Nearby" screen. User
    explicitly scheduled this as "the first Thursday task" — i.e. deliberately not immediate; don't
    start without asking, since a scheduling note like this may still be live. **Not started.**
-2. **Friends mode mirrors Dating mode** — `DiscoveryScreen.js`'s Dating side (cards, match %,
-   filters, crossed paths, online/verified) should be the same structural architecture `FriendsScreen.js`/
-   `FriendDiscoveryScreen.js` uses for Friends, just reconfigured (friend-oriented presentation,
-   friend compatibility/signals, no romantic language), with its own visual identity/icon but not
-   a separate screen architecture. **In progress** — current `FriendsScreen.js`/
-   `FriendDiscoveryScreen.js` do not reuse `DiscoveryScreen.js`'s architecture at all.
-   **Correction (verified live 2026-09-06, disposable test users + friendship, cleaned up after):**
-   an earlier note here claimed no friend-messaging channel exists — that was wrong. A live trigger
-   (`on_friendship_accepted_create_match` → `create_match_on_friendship_accepted()`, baseline
-   schema) already creates a real `matches` row (`source_friendship_id` set) the instant a
-   friendship is accepted, and `ChatScreen.js` already treats a friend-sourced match correctly as
-   non-romantic (skips "women message first" gating and the dating-only "Plan Something Together" →
-   DateProposal item, keeps the rest of the together-menu — Shared Playlist, Plan a Trip, Suggest an
-   Activity, etc.). `ViewProfileScreen.js`'s Message button already queries `matches` with no
-   source filter, so it already picks up a friend-sourced match. No new schema/backend needed for
-   messaging — the real remaining gaps are (a) `ViewProfileScreen.js` doesn't refresh `matchId`
-   after an in-place Accept (only picks up the new match on next profile load), and (b) no
-   profile-level "Plan Something" shortcut into the together-menu exists yet (today it's Chat-only,
-   behind the 🎯 header icon).
-3. **Add Friend bug — FIXED 2026-09-06.** `ViewProfileScreen.js` showed "🤝 Add Friend" regardless
-   of real friendship state, so an already-accepted friend (or an already-pending request) still
-   saw the button and got the raw `sendFriendRequest()` duplicate-key error on tap. Fixed: `load()`
-   now fetches the real `friendships` row status (previously fetched only to gate the compatibility
-   report, then discarded) and renders one of — accepted → static "✓ Friends" pill; pending, sent
-   by viewer → disabled "✓ Request Sent"; pending, received from the other person → Accept/Decline
-   buttons wired to `respondToFriendRequest()`; no row → the original "Add Friend" button. Verified
-   by static parse only (`@babel/parser`, jsx+optionalChaining+nullishCoalescing) — **no
-   simulator/device run**, per this project's standing no-simulator-tooling limitation.
+
+Items 2 (Friends mode mirrors Dating's structural architecture — cards, compatibility score,
+filters, verified/online badges), 3 (Add Friend bug), and 4 (a real "Plan Something" flow — icon
+quick-pick → propose → accept → find a business — generalized from dating-only to friend matches
+too) are all **done**. Full build/verification detail: `CLAUDE_HISTORY.md`, "Discover/
+People-Friends parity plan, items 2 & 4" (Sep 6 2026) and "Add Friend bug" (search Sep 6 2026).
 
 **Phase 8 (Discover visual hierarchy + expand-in-place) is fully DONE, including section H.**
 Full account moved to `CLAUDE_HISTORY.md` ("Phase 8 ... section H — BUILT").

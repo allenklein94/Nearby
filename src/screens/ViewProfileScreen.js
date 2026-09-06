@@ -456,17 +456,15 @@ export default function ViewProfileScreen({ route, navigation }) {
               >
                 <Text style={styles.messageButtonText}>💬 Message</Text>
               </TouchableOpacity>
-              {/* Same non-romantic "🤝 Plan" shortcut MatchesScreen already
-                  offers for a friend/gathering-sourced match -- opens
-                  ChatScreen's existing together-menu directly rather than
-                  duplicating its option list here. Friends only: a romantic
-                  match's own "Plan Something Together" already lives inside
-                  Chat's together-menu (the 💌 item), gated on isRomanticMatch
-                  there, so it isn't offered as a second profile-level shortcut. */}
+              {/* Discover/People-Friends parity plan, item 4: goes straight
+                  to the real "Plan Something Together" flow (propose ->
+                  accept -> find a business), the same direct shortcut
+                  MatchesScreen's romantic "💌 Plan" button already uses --
+                  no longer routed through Chat's general together-menu. */}
               {friendshipStatus === 'accepted' && (
                 <TouchableOpacity
                   style={styles.addFriendButton}
-                  onPress={() => navigation.navigate('Chat', { matchId, openTogetherMenu: true })}
+                  onPress={() => navigation.navigate('DateProposal', { matchId, matchName: profile.display_name })}
                   activeOpacity={0.85}
                   accessibilityLabel={`Plan something with ${profile.display_name}`}
                   accessibilityRole="button"
