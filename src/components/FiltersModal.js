@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal, SafeAreaView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
 
 // Aug 30 2026 (CLAUDE.md, external UX critique response): this used to be
 // the Advanced Filters (Premium-only) modal alone -- a caller would only
@@ -16,11 +17,21 @@ import { typography, spacing, radius } from '../theme';
 // section is optional -- gated on its own driving prop being passed -- so
 // this stays a real, reusable component, not hardcoded to Dating's exact
 // shape, even though DiscoveryScreen.js is still its only caller.
-const QUICK_FILTER_CONFIG = {
-  verified: { label: '✓ Verified Only', a11y: 'Filter to only photo-verified profiles' },
-  highCompat: { label: '🎯 70%+ Match', a11y: 'Filter to 70 percent compatible or higher' },
-  online: { label: '🟢 Online Now', a11y: 'Filter to only people online now' },
-};
+//
+// Sep 6 2026 (CLAUDE.md, external UX critique item 9): the fixed 3-entry
+// inline map here used to be the *only* customization surface -- Customize
+// could only reorder/show-hide these same 3. The real catalog (now shared
+// with QuickFilterCustomizeScreen, quickFilterCatalog.js) can include a
+// configurable value (Match %'s threshold) -- the chip label reflects
+// whatever the user actually set in Customize, defaulting to the catalog's
+// default when unset.
+function quickFilterChipLabel(info, quickFilterConfig) {
+  if (info.kind === 'threshold') {
+    const value = quickFilterConfig?.[info.key]?.value ?? info.defaultValue;
+    return `${info.icon} ${value}${info.unit ?? ''}+ Match`;
+  }
+  return `${info.icon} ${info.label}`;
+}
 
 const DISCOVERY_MODE_HELP = {
   crossedPaths: "People you've actually been near recently (about 35 feet, with the app open).",
@@ -45,6 +56,7 @@ export default function FiltersModal({
   onToggleIntention,
   quickFilterOrder,
   quickFilterVisible,
+  quickFilterConfig,
   quickFilters,
   onToggleQuickFilter,
   onCustomizeQuickFilters,
@@ -183,19 +195,20 @@ export default function FiltersModal({
               </View>
               <View style={styles.chipsWrap}>
                 {quickFilterOrder.filter((key) => quickFilterVisible?.includes(key)).map((key) => {
-                  const config = QUICK_FILTER_CONFIG[key];
-                  if (!config) return null;
+                  const info = DATING_QUICK_FILTER_CATALOG.find((f) => f.key === key);
+                  if (!info) return null;
                   const active = !!quickFilters?.[key];
+                  const label = quickFilterChipLabel(info, quickFilterConfig);
                   return (
                     <TouchableOpacity
                       key={key}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleQuickFilter(key)}
-                      accessibilityLabel={config.a11y}
+                      accessibilityLabel={info.a11y ?? label}
                       accessibilityRole="button"
                       accessibilityState={{ selected: active }}
                     >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{config.label}</Text>
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
                     </TouchableOpacity>
                   );
                 })}

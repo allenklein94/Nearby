@@ -14,6 +14,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
+import { DATING_DEFAULT_ORDER, DATING_DEFAULT_VISIBLE, DATING_DEFAULT_CONFIG } from '../constants/quickFilterCatalog';
 import ReportBlockModal from '../components/ReportBlockModal';
 import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import DatingPreferencesPromptModal from '../components/DatingPreferencesPromptModal';
@@ -105,6 +106,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [highCompatOnly, setHighCompatOnly] = useState(false);
   const [onlineOnly, setOnlineOnly] = useState(false);
+  const [sharedInterestsOnly, setSharedInterestsOnly] = useState(false);
   const [filtersModalVisible, setFiltersModalVisible] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
@@ -116,8 +118,9 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showDatingPrefsPrompt, setShowDatingPrefsPrompt] = useState(false);
-  const [quickFilterOrder, setQuickFilterOrder] = useState(['verified', 'highCompat', 'online']);
-  const [quickFilterVisible, setQuickFilterVisible] = useState(['verified', 'highCompat', 'online']);
+  const [quickFilterOrder, setQuickFilterOrder] = useState(DATING_DEFAULT_ORDER);
+  const [quickFilterVisible, setQuickFilterVisible] = useState(DATING_DEFAULT_VISIBLE);
+  const [quickFilterConfig, setQuickFilterConfig] = useState(DATING_DEFAULT_CONFIG);
   const undoTimeoutRef = useRef(null);
   const undoOpacity = useRef(new Animated.Value(0)).current;
 
@@ -147,9 +150,10 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set, gender_identity, interested_in_genders').eq('id', myId).single();
+      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, quick_filter_config, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set, gender_identity, interested_in_genders').eq('id', myId).single();
       if (mine?.quick_filter_order) setQuickFilterOrder(mine.quick_filter_order);
       if (mine?.quick_filter_visible) setQuickFilterVisible(mine.quick_filter_visible);
+      if (mine?.quick_filter_config) setQuickFilterConfig({ ...DATING_DEFAULT_CONFIG, ...mine.quick_filter_config });
       setMyProfile(mine);
       setViewStyle(mine?.discovery_view_style ?? 'list');
 
@@ -406,16 +410,18 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     return colors.textTertiary;
   }
 
+  const matchThreshold = quickFilterConfig?.highCompat?.value ?? 70;
   const advancedFilterCount = Object.values(advancedFilters).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
   const ageFilterActive = ageRangeFilter.min !== 18 || ageRangeFilter.max !== 99;
   const totalActiveCount = advancedFilterCount + (ageFilterActive ? 1 : 0);
-  const anyFilterActive = intentionFilter.length > 0 || verifiedOnly || highCompatOnly || onlineOnly || totalActiveCount > 0;
-  const activeQuickCount = [verifiedOnly, highCompatOnly, onlineOnly].filter(Boolean).length;
+  const anyFilterActive = intentionFilter.length > 0 || verifiedOnly || highCompatOnly || onlineOnly || sharedInterestsOnly || totalActiveCount > 0;
+  const activeQuickCount = [verifiedOnly, highCompatOnly, onlineOnly, sharedInterestsOnly].filter(Boolean).length;
 
   const filteredNearby = nearby.filter((item) => {
     if (verifiedOnly && !item.profiles?.photo_verified) return false;
-    if (highCompatOnly && (item.compatibilityScore === null || item.compatibilityScore < 70)) return false;
+    if (highCompatOnly && (item.compatibilityScore === null || item.compatibilityScore < matchThreshold)) return false;
     if (onlineOnly && !onlineStatuses[item.otherUserId]) return false;
+    if (sharedInterestsOnly && !(item.sharedInterests?.length > 0)) return false;
     if (intentionFilter.length > 0) {
       const intentions = Array.isArray(item.profiles?.relationship_intention) ? item.profiles.relationship_intention : [];
       if (!intentionFilter.some((f) => intentions.includes(f))) return false;
@@ -754,18 +760,21 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         ))}
         quickFilterOrder={quickFilterOrder}
         quickFilterVisible={quickFilterVisible}
-        quickFilters={{ verified: verifiedOnly, highCompat: highCompatOnly, online: onlineOnly }}
+        quickFilterConfig={quickFilterConfig}
+        quickFilters={{ verified: verifiedOnly, highCompat: highCompatOnly, online: onlineOnly, sharedInterests: sharedInterestsOnly }}
         onToggleQuickFilter={(key) => {
           if (key === 'verified') setVerifiedOnly((v) => !v);
           if (key === 'highCompat') setHighCompatOnly((v) => !v);
           if (key === 'online') setOnlineOnly((v) => !v);
+          if (key === 'sharedInterests') setSharedInterestsOnly((v) => !v);
         }}
-        onCustomizeQuickFilters={() => { setFiltersModalVisible(false); navigation.navigate('QuickFilterCustomize'); }}
+        onCustomizeQuickFilters={() => { setFiltersModalVisible(false); navigation.navigate('QuickFilterCustomize', { mode: 'dating' }); }}
         onClearFreeFilters={() => {
           setIntentionFilter([]);
           setVerifiedOnly(false);
           setHighCompatOnly(false);
           setOnlineOnly(false);
+          setSharedInterestsOnly(false);
         }}
         fields={DISCOVERY_FILTER_FIELDS}
         activeFilters={advancedFilters}

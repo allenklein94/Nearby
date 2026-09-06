@@ -10,10 +10,12 @@ import {
 import { getSignedPhotoUrl } from '../services/photos';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { calculateFriendCompatibility } from '../services/compatibility';
+import { supabase } from '../services/supabase';
 import FriendDiscoverySwipeCards from '../components/FriendDiscoverySwipeCards';
 import FriendMatchCelebrationModal from '../components/FriendMatchCelebrationModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quickFilterCatalog';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -84,6 +86,14 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   // accordion headers) -- the filter *logic* below is completely
   // unchanged, this is presentation only.
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  // Sep 6 2026 (CLAUDE.md, external UX critique item 9): real "select
+  // filters, set values, reorder" parity with Dating's own Quick Filters
+  // (QuickFilterCustomizeScreen, quickFilterCatalog.js) -- for Friends,
+  // "set values" already happens live above (tap tags, tap a distance
+  // bucket), so Customize here only needs to control which of these 4
+  // sections show and in what order.
+  const [quickFilterOrder, setQuickFilterOrder] = useState(FRIEND_DEFAULT_ORDER);
+  const [quickFilterVisible, setQuickFilterVisible] = useState(FRIEND_DEFAULT_VISIBLE);
 
   // Wave 2B of the full-system acceptance audit (see
   // PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found this had zero
@@ -95,6 +105,24 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     try {
       const isOn = await isOpenToFriendDiscovery();
       setEnabled(isOn);
+
+      // Supplementary chrome (which filter sections show/their order),
+      // never worth failing the whole screen over -- same non-fatal
+      // convention TabHeaderActions.js and this file's own swipe-retry
+      // already use.
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (userId) {
+          const { data: mine } = await supabase.from('profiles')
+            .select('friend_quick_filter_order, friend_quick_filter_visible')
+            .eq('id', userId).single();
+          if (mine?.friend_quick_filter_order) setQuickFilterOrder(mine.friend_quick_filter_order);
+          if (mine?.friend_quick_filter_visible) setQuickFilterVisible(mine.friend_quick_filter_visible);
+        }
+      } catch (e) {
+        console.error('load friend quick filter config failed', e);
+      }
 
       if (isOn) {
         const results = await getFriendDiscoveryCandidates(20);
@@ -315,63 +343,101 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           </TouchableOpacity>
           {filtersExpanded && (
             <View style={styles.accordionBody}>
-              <Text style={styles.accordionSubLabel}>Interests</Text>
-              <View style={styles.filterChipRow}>
-                {PERSONAL_INTEREST_OPTIONS.map((tag) => {
-                  const selected = interestFilters.includes(tag);
+              {quickFilterOrder.filter((key) => quickFilterVisible.includes(key)).map((key) => {
+                if (key === 'interests') {
                   return (
-                    <TouchableOpacity
-                      key={tag}
-                      style={[styles.filterChip, selected && styles.filterChipActive]}
-                      onPress={() => toggleInterestFilter(tag)}
-                      accessibilityLabel={tag}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                    >
-                      <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
-                    </TouchableOpacity>
+                    <View key={key}>
+                      <Text style={styles.accordionSubLabel}>Interests</Text>
+                      <View style={styles.filterChipRow}>
+                        {PERSONAL_INTEREST_OPTIONS.map((tag) => {
+                          const selected = interestFilters.includes(tag);
+                          return (
+                            <TouchableOpacity
+                              key={tag}
+                              style={[styles.filterChip, selected && styles.filterChipActive]}
+                              onPress={() => toggleInterestFilter(tag)}
+                              accessibilityLabel={tag}
+                              accessibilityRole="button"
+                              accessibilityState={{ selected }}
+                            >
+                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{tag}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
                   );
-                })}
-              </View>
-              <Text style={[styles.accordionSubLabel, { marginTop: spacing.sm }]}>Distance</Text>
-              <View style={styles.filterChipRow}>
-                {DISTANCE_BUCKETS.map((bucket) => {
-                  const selected = distanceFilter === bucket;
+                }
+                if (key === 'distance') {
                   return (
-                    <TouchableOpacity
-                      key={bucket}
-                      style={[styles.filterChip, selected && styles.filterChipActive]}
-                      onPress={() => setDistanceFilter(selected ? null : bucket)}
-                      accessibilityLabel={bucket}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                    >
-                      <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
-                    </TouchableOpacity>
+                    <View key={key} style={{ marginTop: spacing.sm }}>
+                      <Text style={styles.accordionSubLabel}>Distance</Text>
+                      <View style={styles.filterChipRow}>
+                        {DISTANCE_BUCKETS.map((bucket) => {
+                          const selected = distanceFilter === bucket;
+                          return (
+                            <TouchableOpacity
+                              key={bucket}
+                              style={[styles.filterChip, selected && styles.filterChipActive]}
+                              onPress={() => setDistanceFilter(selected ? null : bucket)}
+                              accessibilityLabel={bucket}
+                              accessibilityRole="button"
+                              accessibilityState={{ selected }}
+                            >
+                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{bucket}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
                   );
-                })}
-              </View>
-              <Text style={[styles.accordionSubLabel, { marginTop: spacing.sm }]}>Quick Filters</Text>
-              <View style={styles.filterChipRow}>
-                <TouchableOpacity
-                  style={[styles.filterChip, verifiedOnlyFilter && styles.filterChipActive]}
-                  onPress={() => setVerifiedOnlyFilter((prev) => !prev)}
-                  accessibilityLabel="Verified Only"
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: verifiedOnlyFilter }}
-                >
-                  <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>Verified Only</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.filterChip, onlineOnlyFilter && styles.filterChipActive]}
-                  onPress={() => setOnlineOnlyFilter((prev) => !prev)}
-                  accessibilityLabel="Online Now"
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: onlineOnlyFilter }}
-                >
-                  <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>Online Now</Text>
-                </TouchableOpacity>
-              </View>
+                }
+                if (key === 'verified') {
+                  return (
+                    <View key={key} style={{ marginTop: spacing.sm }}>
+                      <Text style={styles.accordionSubLabel}>Verified</Text>
+                      <View style={styles.filterChipRow}>
+                        <TouchableOpacity
+                          style={[styles.filterChip, verifiedOnlyFilter && styles.filterChipActive]}
+                          onPress={() => setVerifiedOnlyFilter((prev) => !prev)}
+                          accessibilityLabel="Verified Only"
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: verifiedOnlyFilter }}
+                        >
+                          <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>Verified Only</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                }
+                if (key === 'online') {
+                  return (
+                    <View key={key} style={{ marginTop: spacing.sm }}>
+                      <Text style={styles.accordionSubLabel}>Online</Text>
+                      <View style={styles.filterChipRow}>
+                        <TouchableOpacity
+                          style={[styles.filterChip, onlineOnlyFilter && styles.filterChipActive]}
+                          onPress={() => setOnlineOnlyFilter((prev) => !prev)}
+                          accessibilityLabel="Online Now"
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: onlineOnlyFilter }}
+                        >
+                          <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>Online Now</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                }
+                return null;
+              })}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('QuickFilterCustomize', { mode: 'friends' })}
+                accessibilityLabel="Customize which filters show and their order"
+                accessibilityRole="button"
+                style={{ marginTop: spacing.md }}
+              >
+                <Text style={styles.customizeLink}>⚙️ Customize</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -447,6 +513,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   filterChipText: { ...typography.small, color: colors.textSecondary },
   filterChipTextActive: { color: colors.primary, fontWeight: '600' },
+  customizeLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   explainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl },
   explainerEmoji: { fontSize: 48, marginBottom: spacing.md },
   explainerTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.sm },
