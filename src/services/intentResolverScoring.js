@@ -187,6 +187,24 @@ export function occasionBonus(row, occasion) {
   return priorityOccasions.includes(occasion) ? SCORE_HAPPENING_NOW : 0;
 }
 
+// Intent engine vision, layer 2 (subcategory) -- third increment
+// (2026-09-06): a business's own durable brand_partners.subcategory
+// (e.g. "Coffee" under food_drink) is the exact same leaf-tag vocabulary
+// `category` already is here -- gatherings.interest_tag/business_
+// requests.category/business_availability.category all already share it,
+// so this is a direct value comparison, no mapping needed. Genuinely
+// stronger than the existing category-match-on-row.category bonus above
+// (intentResolver.js's own `if (category && row.category ...)` check):
+// that one only fires when THIS SPECIFIC posting happened to be tagged
+// with a matching category, while this fires whenever the business's own
+// standing identity says it's specifically this, even if the posting
+// itself is untagged or tagged with something else. Same "real signal,
+// flat bonus, never a filter" shape as every other bonus here.
+export function subcategoryBonus(row, category) {
+  if (!category || !row.subcategory) return 0;
+  return row.subcategory === category ? SCORE_HAPPENING_NOW : 0;
+}
+
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

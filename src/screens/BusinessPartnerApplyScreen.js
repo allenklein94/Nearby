@@ -142,7 +142,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
       const result = await classifyBusinessDescription(description);
       if (result.category) {
         setCategory(result.category);
-        setSubcategory(null);
+        // The server already only ever returns a subcategory that
+        // genuinely belongs to this same result's own category, so it's
+        // safe to set together here rather than clearing it.
+        setSubcategory(result.subcategory ?? null);
       }
       setAttributes(result.attributes ?? []);
       if (result.cuisine) setCuisine(result.cuisine);

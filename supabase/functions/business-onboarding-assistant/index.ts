@@ -51,6 +51,32 @@ const VALID_OCCASIONS = [
   'birthday', 'anniversary', 'date_night', 'celebration', 'casual_hangout',
   'business_meal', 'family_gathering', 'other',
 ];
+// Intent engine vision, layer 2 (subcategory) -- second increment
+// (2026-09-06): the same real per-major leaf-tag sets update_business_
+// profile's own subcategory_param validation enforces
+// (20260925_business_subcategory_layer.sql), hardcoded here for the same
+// "never trust the model's raw value" reason every other vocabulary above
+// already is. Keyed by the SAME category value this function itself
+// extracts, so subcategory is always validated against whichever category
+// this same call just chose, never a stale/different one.
+const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
+  food_drink: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour'],
+  activities_recreation: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling'],
+  entertainment_nightlife: ['Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife'],
+  dating_social: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts'],
+  arts_culture_learning: ['Reading', 'Art', 'Photography', 'Crafts'],
+  shopping: ['Farmers Markets', 'Thrift & Vintage'],
+  wellness_beauty: ['Meditation', 'Spa Day', 'Self-Care'],
+  family_kids: ['Family Playdate', 'Kids Activity'],
+  outdoors_nature: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking'],
+  pets: ['Dogs', 'Cats', 'Dog Meetup'],
+  business_networking: ['Networking', 'Coworking'],
+  community_volunteering: ['Volunteering', 'Faith & Spirituality', 'Fundraiser'],
+  travel_experiences: ['Travel', 'Day Trip'],
+  stay_getaway: ['Weekend Getaway', 'Staycation', 'Road Trip'],
+  education_classes: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
+  attractions_things_to_see: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
+};
 
 serve(async (req) => {
   try {
@@ -97,8 +123,9 @@ Extract these fields, each best-effort and optional -- never guess a value the t
 - attributes: an array of zero or more values from this exact list: ${JSON.stringify(VALID_ATTRIBUTES)} -- only include one when the text genuinely names that specific quality (e.g. "patio"/"outdoor seating" implies "outdoor_seating", "great for a date night" implies "date_friendly", "family-friendly"/"kids menu" implies "kid_friendly", "quiet atmosphere" implies "quiet", "casual" implies "casual", "upscale"/"fine dining"/"elegant" implies "upscale", "live music"/"live bands" implies "live_music", "great for groups"/"large parties" implies "group_friendly"). An empty array is the common, correct answer when nothing specific was named -- never guess to fill this in.
 - cuisine: one value from this exact list: ${JSON.stringify(VALID_CUISINES)} if a specific food cuisine was named (e.g. "Italian" is "italian", "sushi"/"Japanese" is "japanese", "tacos"/"Mexican" is "mexican", "seafood" is "seafood"), or null if this business isn't food-related or no specific cuisine was named. Never guess a cuisine from the word "restaurant" or "cafe" alone.
 - priorityOccasions: an array of zero or more values from this exact list: ${JSON.stringify(VALID_OCCASIONS)} -- only include one when the text genuinely says this business caters to or wants more of that specific occasion (e.g. "great for birthday parties" implies "birthday", "perfect for anniversaries" implies "anniversary", "date night spot" implies "date_night", "we host celebrations" implies "celebration", "casual hangout"/"come relax" implies "casual_hangout", "corporate events"/"business lunches" implies "business_meal", "family gatherings"/"reunions" implies "family_gathering"). An empty array is the common, correct answer when no specific occasion was named -- never guess to fill this in.
+- subcategory: a real, more specific single value describing exactly what kind of business this is, ONLY from the list matching whatever value you picked for category above, from this exact map (each key is a possible category value, each value is its own allowed subcategory list): ${JSON.stringify(SUBCATEGORY_OPTIONS_BY_CATEGORY)}. Pick the one entry from that specific category's own list that the text most clearly and specifically names (e.g. category "food_drink" with a description naming espresso/lattes/coffee shop is subcategory "Coffee" from that category's list; a description just saying "restaurant" with nothing more specific stays null). Leave this null whenever category is null, or category has no list above (a handful of categories genuinely have none), or nothing in the text is specific enough to confidently pick one real entry -- never guess just to fill this in, and never pick a value from a different category's list than the one you chose above.
 
-Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"priorityOccasions":<array of strings>}`;
+Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"priorityOccasions":<array of strings>,"subcategory":<string or null>}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -137,9 +164,16 @@ Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<strin
     const priorityOccasions = Array.isArray(parsed?.priorityOccasions)
       ? Array.from(new Set(parsed.priorityOccasions.filter((o) => VALID_OCCASIONS.includes(o)))).slice(0, 8)
       : [];
+    // Must genuinely belong to THIS same call's own resolved category --
+    // re-validated against category, not against whatever raw category
+    // string the model may have echoed, so a stale/mismatched pair can
+    // never reach the client.
+    const subcategory = category && (SUBCATEGORY_OPTIONS_BY_CATEGORY[category] ?? []).includes(parsed?.subcategory)
+      ? parsed.subcategory
+      : null;
 
     return new Response(
-      JSON.stringify({ category, attributes, cuisine, priorityOccasions }),
+      JSON.stringify({ category, attributes, cuisine, priorityOccasions, subcategory }),
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (err) {

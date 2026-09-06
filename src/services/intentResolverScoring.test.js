@@ -11,6 +11,7 @@ const {
   attributeAndCuisineBonus,
   accommodatesPartyTypeBonus,
   occasionBonus,
+  subcategoryBonus,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
@@ -147,6 +148,26 @@ describe('occasionBonus', () => {
   it('awards nothing when the business never declared any priority occasions', () => {
     expect(occasionBonus({ priority_occasions: [] }, 'birthday')).toBe(0);
     expect(occasionBonus({ priority_occasions: null }, 'birthday')).toBe(0);
+  });
+});
+
+// Intent engine vision, layer 2 (subcategory) -- third increment
+// (2026-09-06).
+describe('subcategoryBonus', () => {
+  it('awards a bonus when the ask names the exact leaf tag the business declared as its own subcategory', () => {
+    expect(subcategoryBonus({ subcategory: 'Coffee' }, 'Coffee')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when the ask implied no category', () => {
+    expect(subcategoryBonus({ subcategory: 'Coffee' }, null)).toBe(0);
+  });
+
+  it('awards nothing for a real mismatch, never a fabricated match', () => {
+    expect(subcategoryBonus({ subcategory: 'Bakeries' }, 'Coffee')).toBe(0);
+  });
+
+  it('awards nothing when the business never declared a subcategory', () => {
+    expect(subcategoryBonus({ subcategory: null }, 'Coffee')).toBe(0);
   });
 });
 

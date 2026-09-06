@@ -85,11 +85,19 @@ business's own subcategory), `update_business_profile()`/`approve_business_partn
 RPCs, and `screen-business-content`'s business_profile branch — every existing write path that
 touches a business's category was individually re-checked and updated so none of them silently
 null out subcategory on an unrelated edit (see this migration's own header comment,
-`20260925_business_subcategory_layer.sql`, for the full per-callsite audit). Deliberately manual-
-pick only this pass — neither `businessCategoryClassifier.js` nor the AI onboarding assistant
-suggests a subcategory yet, and it is not yet wired into `intentResolver.js`'s own matching
-(the existing per-posting `business_availability.category` leaf tag already covers fine-grained
-matching; this field's role so far is durable identity/display, not a new resolver signal).
+`20260925_business_subcategory_layer.sql`, for the full per-callsite audit). **Both deferred pieces closed out the same day, per direct "keep going"**:
+(1) the AI onboarding assistant (`business-onboarding-assistant` Edge Function,
+`classifyBusinessDescription()`) now also extracts a best-effort `subcategory` alongside
+category/attributes/cuisine/priorityOccasions, validated against that same call's own resolved
+category so it can never mismatch majors — still manual-confirm like every other AI-suggested
+field on that screen. (2) `search_active_business_availability()` now also returns
+`brand_partners.subcategory`, and a new `subcategoryBonus()` in `intentResolverScoring.js` scores
+it as a flat bonus in `resolveBusinessAvailability()` — a business's own *standing* identity
+match now counts even when the specific posting itself is untagged or tagged differently,
+distinct from (and additive to) the existing per-posting `row.category` match right above it in
+that same function. Deliberately still NOT touched: `businessCategoryClassifier.js`'s
+deterministic keyword classifier (inventing ~75 leaf-tag keyword lists is a real content/taste
+decision better left for the user to weigh in on, not a mechanical extension like the two above).
 Remaining layers (a general semantic-tag layer beyond `businessAttributes.js`, multi-
 classification businesses, cross-category "Experiences" assembly) are real future work,
 explicitly not started. Check with the user before starting any of those larger pieces; see the

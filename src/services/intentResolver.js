@@ -31,6 +31,7 @@ import {
   attributeAndCuisineBonus,
   accommodatesPartyTypeBonus,
   occasionBonus,
+  subcategoryBonus,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -299,6 +300,10 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // hasn't -- same "real signal, flat bonus, never a filter" shape as
     // the two bonuses above.
     score += occasionBonus(row, occasion);
+    // Intent engine vision, layer 2 (subcategory) -- third increment
+    // (2026-09-06): the business's own standing identity, not just this
+    // one posting's own row.category (already scored a few lines above).
+    score += subcategoryBonus(row, category);
     return {
       type: 'business_availability',
       id: row.id,
