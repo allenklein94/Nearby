@@ -98,10 +98,35 @@ distinct from (and additive to) the existing per-posting `row.category` match ri
 that same function. Deliberately still NOT touched: `businessCategoryClassifier.js`'s
 deterministic keyword classifier (inventing ~75 leaf-tag keyword lists is a real content/taste
 decision better left for the user to weigh in on, not a mechanical extension like the two above).
-Remaining layers (a general semantic-tag layer beyond `businessAttributes.js`, multi-
-classification businesses, cross-category "Experiences" assembly) are real future work,
-explicitly not started. Check with the user before starting any of those larger pieces; see the
-memory file for full detail on each.
+**Layer 3 (general semantic tags) first increment shipped 2026-09-27, per direct user pick of
+scope (expand the existing `businessAttributes.js` vocabulary + wire it into ranking, keep the
+flat text[] structure, no new tags schema) — and the same pass folded in the "Hobbies & Interests
+should be a semantic tag layer, not a category" item too, per direct "yes, fold it in."**
+`BUSINESS_ATTRIBUTE_OPTIONS` grew from 8 to 18 values: 5 general quality/vibe tags
+(`specialty_coffee`, `laptop_friendly`, `dog_friendly`, `waterfront`, `late_night`) and 5
+hobby-adjacent tags (`board_game_friendly`, `photography_friendly`, `book_lovers`,
+`craft_friendly`, `fitness_focused`) — any business in any category can self-tag "good for board
+games," which is how a hobby mention in an ask reaches a matching business across categories
+(the vision doc's own photography example) without a new category-fan-out mechanism. No new
+resolver code was needed for ranking itself — `attributeAndCuisineBonus()`
+(`intentResolverScoring.js`) already scores any overlap between an ask's extracted attributes and
+a business's own `row.attributes` generically, vocabulary-agnostic by construction, so widening
+the array was sufficient. Every touch point that validates/suggests/extracts this vocabulary was
+updated together: `brand_partners`/`business_requests` `attributes` CHECK constraints
+(`20260927_business_semantic_tags_expansion.sql`, applied and verified live with disposable test
+data), `update_business_profile()`/`create_business_request()` (re-`CREATE OR REPLACE`d on their
+unchanged signatures — confirmed single-overload before and after), `businessAttributes.js`'s
+display vocabulary, `businessAttributeExtraction.js`'s deterministic "Teach Nearby" keyword list
+(new Jest coverage added), and all three Edge Functions that had their own hardcoded copies
+(`create-assistant`, `business-onboarding-assistant`, `screen-business-content`) — including each
+one's own AI-prompt examples, since a value merely being in the valid-list enum without a
+worked example rarely gets chosen. All three functions redeployed via `npx supabase functions
+deploy <name> --project-ref enmosvippabmuqslzrox` and confirmed live via the Management API's
+function-body endpoint (new tag strings present in the deployed bundle). Deliberately did NOT add
+a separate "romantic" value — `date_friendly` already names that same real quality. Multi-
+classification businesses and cross-category "Experiences" assembly remain real future work,
+explicitly not started — check with the user before starting either; see the memory file
+(`project_intent_engine_vision`) for full detail.
 
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with

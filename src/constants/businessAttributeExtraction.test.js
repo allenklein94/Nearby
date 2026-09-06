@@ -34,4 +34,17 @@ describe('extractAttributesFromText', () => {
     expect(result).not.toContain('live_music');
     expect(result).not.toContain('kid_friendly');
   });
+
+  it('extracts the intent engine vision layer-3 semantic/hobby tags', () => {
+    expect(extractAttributesFromText('We pour specialty coffee and have fast wifi.')).toEqual(
+      expect.arrayContaining(['specialty_coffee', 'laptop_friendly'])
+    );
+    expect(extractAttributesFromText('Dogs welcome on our lakeside patio.')).toEqual(
+      expect.arrayContaining(['dog_friendly', 'waterfront', 'outdoor_seating'])
+    );
+    expect(extractAttributesFromText('Weekly board game night, open late.')).toEqual(
+      expect.arrayContaining(['board_game_friendly', 'late_night'])
+    );
+    expect(extractAttributesFromText('A cozy bookstore with a reading nook.')).toContain('book_lovers');
+  });
 });

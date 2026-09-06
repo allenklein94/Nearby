@@ -5,6 +5,20 @@
 // 20260825_dating_prefs_backfill_and_business_attributes.sql) -- keep
 // these two in sync with the migration's own arrays if either ever
 // changes.
+//
+// Intent engine vision, layer 3 (semantic tags) -- first increment
+// (2026-09-06/27, see 20260927_business_semantic_tags_expansion.sql and
+// memory project_intent_engine_vision): 10 new values appended per direct
+// user pick -- keep this same flat structure, don't invent a new tags
+// schema. The last 5 (board_game_friendly through fitness_focused) fold
+// in the vision doc's "Hobbies & Interests should be a semantic tag
+// layer, not a category" item -- any business in any category can
+// self-tag "good for board games," which lets a hobby mention in an ask
+// surface a matching business across categories (a coffee shop, a bar, a
+// dedicated game cafe) via attributeAndCuisineBonus()'s existing generic
+// overlap scoring, without a new category-fan-out mechanism. Deliberately
+// no separate "romantic" value -- date_friendly already names that same
+// real quality.
 export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'outdoor_seating', label: 'Outdoor Seating', icon: '🌤️' },
   { key: 'date_friendly', label: 'Date-Friendly', icon: '💕' },
@@ -14,6 +28,16 @@ export const BUSINESS_ATTRIBUTE_OPTIONS = [
   { key: 'quiet', label: 'Quiet', icon: '🤫' },
   { key: 'casual', label: 'Casual', icon: '👕' },
   { key: 'upscale', label: 'Upscale', icon: '🎩' },
+  { key: 'specialty_coffee', label: 'Specialty Coffee', icon: '☕' },
+  { key: 'laptop_friendly', label: 'Laptop-Friendly', icon: '💻' },
+  { key: 'dog_friendly', label: 'Dog-Friendly', icon: '🐕' },
+  { key: 'waterfront', label: 'Waterfront', icon: '🌊' },
+  { key: 'late_night', label: 'Late-Night', icon: '🌙' },
+  { key: 'board_game_friendly', label: 'Board Game Friendly', icon: '🎲' },
+  { key: 'photography_friendly', label: 'Photography-Friendly', icon: '📸' },
+  { key: 'book_lovers', label: 'Book Lovers', icon: '📚' },
+  { key: 'craft_friendly', label: 'Craft-Friendly', icon: '🧶' },
+  { key: 'fitness_focused', label: 'Fitness-Focused', icon: '💪' },
 ];
 
 export const CUISINE_OPTIONS = [

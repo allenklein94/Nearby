@@ -16,6 +16,18 @@ const KEYWORDS_BY_ATTRIBUTE = {
   quiet: ['quiet', 'calm', 'peaceful', 'low-key'],
   casual: ['casual', 'laid-back', 'relaxed', 'easygoing'],
   upscale: ['upscale', 'fancy', 'elegant', 'high-end', 'fine dining'],
+  // Intent engine vision, layer 3 (semantic tags) -- see businessAttributes.js's
+  // own header comment for the full lineage/rationale of these 10.
+  specialty_coffee: ['specialty coffee', 'espresso', 'latte', 'pour over', 'pour-over', 'artisan coffee', 'third wave coffee'],
+  laptop_friendly: ['laptop', 'wifi', 'wi-fi', 'work-friendly', 'coworking', 'study spot'],
+  dog_friendly: ['dog friendly', 'dog-friendly', 'pet friendly', 'pet-friendly', 'dogs welcome'],
+  waterfront: ['waterfront', 'lakeside', 'beachfront', 'on the water', 'harbor view', 'ocean view', 'bay view'],
+  late_night: ['late night', 'late-night', 'open late', 'after hours', 'until midnight'],
+  board_game_friendly: ['board game', 'board games', 'tabletop', 'game night'],
+  photography_friendly: ['photogenic', 'instagrammable', 'photo spot', 'scenic backdrop', 'great for photos'],
+  book_lovers: ['bookstore', 'book club', 'reading nook', 'book lovers'],
+  craft_friendly: ['craft', 'crafting', 'diy workshop', 'make your own'],
+  fitness_focused: ['fitness', 'workout', 'gym', 'training session', 'active lifestyle'],
 };
 
 // Returns real attribute keys (a subset of BUSINESS_ATTRIBUTE_OPTIONS)
