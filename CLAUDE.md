@@ -40,6 +40,41 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
+2026 external UX critique asked for copy like "we'll let you know when you cross paths with
+someone" — but as of 2026-09-06 no push notification is ever sent for a crossed-paths sighting.
+`report-presence` (the Edge Function both foreground `reportPresence()` and the background
+location task call — `src/services/proximity.js`) silently upserts a row into `sightings` and
+stops there; nothing calls `send-push` or writes a row a client would surface as a notification.
+The copy was fixed to stop promising this (see item below) — the actual capability is still
+missing. **Per direct user decision (2026-09-06): do not bolt a push call directly onto
+`report-presence`'s sighting-insert path** — build it as a real notification event layer instead
+(`sighting created → notification event → preference/quiet-hours check → push → deep link to that
+sighting`), the same shape this app will eventually want for gathering activity, match activity,
+business offers, reservation updates, and friend activity — not a one-off trigger wired straight
+into the sightings table. Scope for whoever picks this up: respect notification
+preferences/quiet-hours (check what's already enforced for other push types in
+`services/notifications.js` first — reuse that, don't build a second preference check), dedupe
+so a lingering sighting doesn't re-notify repeatedly, deep-link to the actual sighting, and test
+foreground/background/terminated delivery. Not urgent, but real — flag rather than silently drop.
+
+**Quick Filters customization copy — Crossed Paths "keep the app open" wording fixed, DONE
+(2026-09-06), external UX critique item 12.** Real background location detection already exists
+(`startBackgroundPresenceReporting`, a registered background task, started on login in
+`RootNavigator.js`) — "keep the app open" was outdated, unnecessarily discouraging friction. Both
+`discovery.emptyText` and `discovery.radiusInfoText` (`src/i18n/translations.js`, all 11 locales)
+reworded to state what's actually true: no need to keep the app open, background checking exists,
+but — per the backlog item above — the copy stops short of promising a push notification, since
+none exists yet.
+
+**Branded loading treatment — DONE (2026-09-06), external UX critique item 13.** New
+`src/components/BrandedLoader.js` (the app's real splash mark + a subtle coral sweep, not a
+generic spinner) now replaces `RootNavigator.js`'s session/profile boot gate, which used to be a
+bare `return null` (a blank screen) — the one loading moment every app open passes through.
+Deliberately scoped to that one spot rather than replacing all 16 existing `SkeletonCard` call
+sites — those are still the right treatment for in-list "more items loading," per direct user
+steer not to use the branded treatment everywhere.
+
 **Quick Filters real customization (select + set values + reorder) — fully DONE (2026-09-06),
 external UX critique item 9.** Dating's Customize screen used to only reorder/show-hide a fixed 3
 booleans; now a shared catalog (`src/constants/quickFilterCatalog.js`) + one generic

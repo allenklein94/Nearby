@@ -13,6 +13,7 @@ import { startBackgroundPresenceReporting } from '../services/proximity';
 import { initPurchases } from '../services/purchases';
 import { getActivityBadgeCount } from '../services/homeDashboard';
 import { getMyManagedPartner } from '../services/brandOffers';
+import BrandedLoader from '../components/BrandedLoader';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import OnboardingQuestionsScreen from '../screens/OnboardingQuestionsScreen';
 import OnboardingLocationScreen from '../screens/OnboardingLocationScreen';
@@ -364,7 +365,12 @@ export default function RootNavigator() {
     return () => subscription.remove();
   }, [session, profileComplete]);
 
-  if (loading || (session && profileLoading)) return null;
+  // Sep 6 2026 (CLAUDE.md, external UX critique item 13): this used to be
+  // a bare blank screen while the session/profile check resolves -- the
+  // one moment every single app open passes through, and the most natural
+  // place for the new branded loading treatment (BrandedLoader.js) rather
+  // than a generic spinner.
+  if (loading || (session && profileLoading)) return <BrandedLoader />;
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>
