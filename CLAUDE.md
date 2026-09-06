@@ -53,15 +53,21 @@ confirmed:
    filters, crossed paths, online/verified) should be the same structural architecture `FriendsScreen.js`/
    `FriendDiscoveryScreen.js` uses for Friends, just reconfigured (friend-oriented presentation,
    friend compatibility/signals, no romantic language), with its own visual identity/icon but not
-   a separate screen architecture. **Not started** — current `FriendsScreen.js`/
-   `FriendDiscoveryScreen.js` do not reuse `DiscoveryScreen.js`'s architecture at all. Note while
-   scoping this: there is currently **no messaging channel for accepted friends at all** —
-   `respondToFriendRequest()` never creates a `matches` row, and `ViewProfileScreen.js`'s Message
-   button only ever shows when a real `matches` row exists (dating-only). Giving a friend's
-   profile a working "Message" action (part of the user's stated ideal end state: Message / Plan
-   Something / Friends ✓) requires designing a real friend-to-friend messaging channel — a
-   genuinely new piece of schema/architecture, not a relabel — flag this to the user before
-   building rather than silently shipping a dead-end button.
+   a separate screen architecture. **In progress** — current `FriendsScreen.js`/
+   `FriendDiscoveryScreen.js` do not reuse `DiscoveryScreen.js`'s architecture at all.
+   **Correction (verified live 2026-09-06, disposable test users + friendship, cleaned up after):**
+   an earlier note here claimed no friend-messaging channel exists — that was wrong. A live trigger
+   (`on_friendship_accepted_create_match` → `create_match_on_friendship_accepted()`, baseline
+   schema) already creates a real `matches` row (`source_friendship_id` set) the instant a
+   friendship is accepted, and `ChatScreen.js` already treats a friend-sourced match correctly as
+   non-romantic (skips "women message first" gating and the dating-only "Plan Something Together" →
+   DateProposal item, keeps the rest of the together-menu — Shared Playlist, Plan a Trip, Suggest an
+   Activity, etc.). `ViewProfileScreen.js`'s Message button already queries `matches` with no
+   source filter, so it already picks up a friend-sourced match. No new schema/backend needed for
+   messaging — the real remaining gaps are (a) `ViewProfileScreen.js` doesn't refresh `matchId`
+   after an in-place Accept (only picks up the new match on next profile load), and (b) no
+   profile-level "Plan Something" shortcut into the together-menu exists yet (today it's Chat-only,
+   behind the 🎯 header icon).
 3. **Add Friend bug — FIXED 2026-09-06.** `ViewProfileScreen.js` showed "🤝 Add Friend" regardless
    of real friendship state, so an already-accepted friend (or an already-pending request) still
    saw the button and got the raw `sendFriendRequest()` duplicate-key error on tap. Fixed: `load()`

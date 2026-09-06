@@ -234,7 +234,18 @@ export default function ViewProfileScreen({ route, navigation }) {
     try {
       await respondToFriendRequest(friendshipId, accept);
       setFriendshipStatus(accept ? 'accepted' : null);
-      if (accept) setCompatibilityReport(null);
+      if (accept) {
+        setCompatibilityReport(null);
+        // on_friendship_accepted_create_match (baseline schema) just created
+        // a real matches row for this pair -- refresh matchId so Message/Plan
+        // Something appear immediately, not only on the next profile visit.
+        const { data: match } = await supabase
+          .from('matches')
+          .select('id')
+          .or(`and(user_a.eq.${myUserId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myUserId})`)
+          .maybeSingle();
+        setMatchId(match?.id ?? null);
+      }
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -435,15 +446,35 @@ export default function ViewProfileScreen({ route, navigation }) {
           )}
 
           {!isOwnProfile && matchId && (
-            <TouchableOpacity
-              style={styles.messageButton}
-              onPress={() => navigation.navigate('Chat', { matchId })}
-              activeOpacity={0.85}
-              accessibilityLabel={`Message ${profile.display_name}`}
-              accessibilityRole="button"
-            >
-              <Text style={styles.messageButtonText}>💬 Message</Text>
-            </TouchableOpacity>
+            <View style={styles.friendRequestRow}>
+              <TouchableOpacity
+                style={styles.messageButton}
+                onPress={() => navigation.navigate('Chat', { matchId })}
+                activeOpacity={0.85}
+                accessibilityLabel={`Message ${profile.display_name}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.messageButtonText}>💬 Message</Text>
+              </TouchableOpacity>
+              {/* Same non-romantic "🤝 Plan" shortcut MatchesScreen already
+                  offers for a friend/gathering-sourced match -- opens
+                  ChatScreen's existing together-menu directly rather than
+                  duplicating its option list here. Friends only: a romantic
+                  match's own "Plan Something Together" already lives inside
+                  Chat's together-menu (the 💌 item), gated on isRomanticMatch
+                  there, so it isn't offered as a second profile-level shortcut. */}
+              {friendshipStatus === 'accepted' && (
+                <TouchableOpacity
+                  style={styles.addFriendButton}
+                  onPress={() => navigation.navigate('Chat', { matchId, openTogetherMenu: true })}
+                  activeOpacity={0.85}
+                  accessibilityLabel={`Plan something with ${profile.display_name}`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.addFriendButtonText}>🤝 Plan Something</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
 
           {!isOwnProfile && (
