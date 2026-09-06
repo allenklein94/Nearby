@@ -40,18 +40,37 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Discover/People-Friends parity plan (agreed 2026-09-06)**. Item 1 is the only piece left:
-1. **Discover mode filters in-place** — "Happening Now / Today / This Weekend / etc." should
-   transform the content of the existing Discover screen (`DiscoverHubScreen.js`) the same way
-   People's Dating/Friends toggle does, not push to a separate "Happening Nearby" screen. User
-   explicitly scheduled this as "the first Thursday task" — i.e. deliberately not immediate; don't
-   start without asking, since a scheduling note like this may still be live. **Not started.**
+**Discover/People-Friends parity plan — fully DONE (2026-09-06).** All 4 items (Discover mode
+filters in-place, Friends mode mirrors Dating's architecture, Add Friend bug, generalized "Plan
+Something" flow) shipped. Full build/verification detail: `CLAUDE_HISTORY.md`, search "Discover/
+People-Friends parity plan."
 
-Items 2 (Friends mode mirrors Dating's structural architecture — cards, compatibility score,
-filters, verified/online badges), 3 (Add Friend bug), and 4 (a real "Plan Something" flow — icon
-quick-pick → propose → accept → find a business — generalized from dating-only to friend matches
-too) are all **done**. Full build/verification detail: `CLAUDE_HISTORY.md`, "Discover/
-People-Friends parity plan, items 2 & 4" (Sep 6 2026) and "Add Friend bug" (search Sep 6 2026).
+**Host cancellation lifecycle for Communities and Gatherings (agreed 2026-09-06)** — user-
+confirmed, explicitly framed as a real lifecycle/state-machine issue, not a show/hide-button
+patch. Two items:
+5. **Communities**: a "Manage Community" surface with Edit / Pause / Cancel Community /
+   Delete-or-Archive (whichever is appropriate), cancellation gated behind a confirmation that
+   states real consequences.
+6. **Gatherings**: a "Manage Gathering" surface with Edit / Cancel Gathering, with real attendee
+   notifications.
+
+**Research done, implementation not yet planned/started.** Key findings (full detail:
+`CLAUDE_HISTORY.md` once the plan is written up) — neither `communities` nor `gatherings` has any
+lifecycle column today (no `status`/`is_active`/`cancelled_at`/anything); both tables' "delete"
+today (`deleteCommunity()`, `cancelGathering()`) is a raw hard `.delete()` off existing creator/
+host-only RLS policies, not a status transition. Gathering cancel already cascades a real push
+notification to every approved attendee via an existing `BEFORE DELETE` trigger
+(`notify_gathering_cancelled`) — but that only fires because it's a real row delete today; a
+move to a soft-cancel `status` column would need to carry that notify logic into a new RPC
+instead. Communities have zero notification fan-out on delete today (no trigger exists at all).
+The established in-app precedent for "the requester can cancel this, and it cascades sanely" is
+`cancel_business_request()` (`supabase/migrations/20260814_business_fulfillment.sql`) — a
+SECURITY DEFINER RPC doing `select ... for update` (ownership check + row lock combined), a
+status-guard exception, then a status-column transition on the parent and its still-cancellable
+children only. No monetary/payment entanglement exists anywhere yet (`business_payments.status`
+is hard-locked to `'not_required'` pending a real payment processor), so a gathering cancel does
+not need a refund path today — only sane status transitions on any attached `business_requests`/
+`business_request_offers`/`business_reservations` rows.
 
 **Phase 8 (Discover visual hierarchy + expand-in-place) is fully DONE, including section H.**
 Full account moved to `CLAUDE_HISTORY.md` ("Phase 8 ... section H — BUILT").

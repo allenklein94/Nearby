@@ -1,3 +1,27 @@
+## Sep 6 2026 — Discover/People-Friends parity plan, item 1 — BUILT (plan fully closed out)
+
+Last remaining item of the parity plan (commit `2f5a0f26`). "Happening Now"/"Today"/"This Week"
+quick chips on `DiscoverHubScreen.js` used to `navigation.navigate('Gatherings', {
+initialDateFilter })` — pushing to a separate screen instead of transforming the current one in
+place, the exact anti-pattern already fixed for People's Dating/Friends toggle and named
+explicitly in this plan item.
+
+- Extracted `GatheringsScreen.js`'s own local `DATE_OPTIONS`/`matchesDateFilter` (the real
+  `isWithinRightNowWindow`-backed Right Now/Today/Tomorrow/This Weekend/This Week bucket logic
+  already driving its own "When" filter) into a new shared `src/utils/gatheringDateFilter.js`,
+  moved verbatim (confirmed via diff — pure relocation, zero logic change) so a second,
+  independently-typed copy of "what counts as today/this weekend" can never quietly drift from
+  the original the way this codebase's own taxonomy-audit history has been bitten by before.
+- `DiscoverHubScreen.js` gained a `quickDateFilter` state (default `'anytime'`, `matchesDateFilter`'s
+  real no-op key) applied once, at the single `filteredGatherings` variable every downstream
+  section (Recommended, the map view, the plain list) already reads from — so every one of them
+  picked up the new filter for free. Tapping the already-active chip clears it (mirrors Friend
+  Discovery's own distance-filter toggle). Added "This Weekend" as a genuinely new 4th chip
+  (previously entirely absent from this screen despite being one of the filters this plan item
+  named). The filter resets whenever the user switches Discover's All/Gatherings/Communities/
+  Places/Perks tabs, since the chips to clear it live only on the "All" tab.
+- Verified by static parse only (`@babel/parser`) — no simulator/device run, standing limitation.
+
 ## Sep 6 2026 — Discover/People-Friends parity plan, items 2 & 4 — BUILT
 
 Two items from the parity plan (item 1, Discover mode filters in-place, is still not started —
