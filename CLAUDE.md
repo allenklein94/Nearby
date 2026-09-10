@@ -274,7 +274,14 @@ needed for those two.
 **Discover/People-Friends parity plan — fully DONE (2026-09-06).** All 4 items (Discover mode
 filters in-place, Friends mode mirrors Dating's architecture, Add Friend bug, generalized "Plan
 Something" flow) shipped. Full build/verification detail: `CLAUDE_HISTORY.md`, search "Discover/
-People-Friends parity plan."
+People-Friends parity plan." **Follow-up fix, 2026-09-10**: the Add Friend bug's original fix
+(real friendship-status lookup + Friends ✓/Message/Plan Something rendering) was correct but had
+one remaining gap — `ViewProfileScreen.js` used a plain `useEffect(load, [])`, so revisiting an
+already-mounted `ViewProfile` route (React Navigation reuses rather than remounts it — e.g.
+profile → Chat → that same person's profile again via the chat header) never re-ran `load()`,
+leaving `friendshipStatus`/`matchId` frozen at whatever they were on first mount. Switched to
+`useFocusEffect` (this codebase's own established pattern) so it's always freshly read on every
+focus. See `src/screens/ViewProfileScreen.js`'s own comment at the fix site for the full account.
 
 **Host cancellation lifecycle for Communities and Gatherings — fully DONE (2026-09-06).** Both
 items shipped: Communities got a real `status` column (active/paused/cancelled) with a "Manage
