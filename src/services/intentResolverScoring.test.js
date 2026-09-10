@@ -12,6 +12,7 @@ const {
   accommodatesPartyTypeBonus,
   occasionBonus,
   subcategoryBonus,
+  secondaryCategoryBonus,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
@@ -168,6 +169,31 @@ describe('subcategoryBonus', () => {
 
   it('awards nothing when the business never declared a subcategory', () => {
     expect(subcategoryBonus({ subcategory: null }, 'Coffee')).toBe(0);
+  });
+});
+
+// Intent engine vision, multi-classification businesses (resumed
+// 2026-09-10).
+describe('secondaryCategoryBonus', () => {
+  it('awards a bonus when the ask names a leaf tag in the business\'s own secondary categories array', () => {
+    expect(secondaryCategoryBonus({ categories: ['Music', 'Nightlife'] }, 'Music')).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when the ask implied no category', () => {
+    expect(secondaryCategoryBonus({ categories: ['Music'] }, null)).toBe(0);
+  });
+
+  it('awards nothing for a real mismatch, never a fabricated match', () => {
+    expect(secondaryCategoryBonus({ categories: ['Music'] }, 'Coffee')).toBe(0);
+  });
+
+  it('awards nothing when the business has no secondary categories', () => {
+    expect(secondaryCategoryBonus({ categories: [] }, 'Coffee')).toBe(0);
+    expect(secondaryCategoryBonus({ categories: null }, 'Coffee')).toBe(0);
+  });
+
+  it('awards only one flat bonus regardless of how many entries match, never per-tag', () => {
+    expect(secondaryCategoryBonus({ categories: ['Music', 'Coffee', 'Wine'] }, 'Coffee')).toBe(SCORE_HAPPENING_NOW);
   });
 });
 

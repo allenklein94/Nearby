@@ -201,6 +201,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // Intent engine vision, layer 2 (subcategory) first increment
   // (2026-09-06).
   const [editSubcategoryInput, setEditSubcategoryInput] = useState(null);
+  // Intent engine vision, multi-classification businesses (resumed
+  // 2026-09-10) -- secondary, cross-major self-classification, distinct
+  // from editSubcategoryInput (one leaf tag under the primary major).
+  const [editCategoriesInput, setEditCategoriesInput] = useState([]);
   const [editDifferentiatorInput, setEditDifferentiatorInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
@@ -754,6 +758,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
         differentiator: editDifferentiatorInput.trim() || null,
         subcategory: editSubcategoryInput,
+        categories: editCategoriesInput,
       });
 
       if (result.published) {
@@ -767,6 +772,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           cuisine: editCategoryInput === 'food_drink' ? editCuisineInput : null,
           differentiator: editDifferentiatorInput.trim() || null,
           subcategory: editSubcategoryInput,
+          categories: editCategoriesInput,
         }));
         setEditProfileModalVisible(false);
         Alert.alert('Saved', 'Your business profile has been updated.');
@@ -900,6 +906,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         attributes: selectedPartner.attributes ?? [],
         cuisine: selectedPartner.cuisine,
         differentiator: selectedPartner.differentiator,
+        // Secondary categories are independent of the primary major this
+        // AI suggestion is changing -- carry the business's own current
+        // value forward unchanged, same reasoning attributes/cuisine
+        // above already follow.
+        categories: selectedPartner.categories ?? [],
       });
       setSelectedPartner((prev) => ({ ...prev, category: categorySuggestion.category }));
       setCategorySuggestion(null);
@@ -1008,10 +1019,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         cuisine: selectedPartner.cuisine,
         differentiator: selectedPartner.differentiator,
         // Category is unchanged here -- must re-pass the current
-        // subcategory or updateBusinessProfile's non-coalesce contract
-        // would silently null it out on this unrelated attributes-only
-        // write.
+        // subcategory/categories or updateBusinessProfile's non-coalesce
+        // contract would silently null them out on this unrelated
+        // attributes-only write.
         subcategory: selectedPartner.subcategory,
+        categories: selectedPartner.categories ?? [],
       });
       setSelectedPartner((prev) => ({ ...prev, attributes: merged }));
       // Business Intelligence & Opportunity Engine, Phase 1 -- close out
@@ -2325,6 +2337,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         setEditCuisineInput(selectedPartner?.cuisine ?? null);
                         setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
                         setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
+                        setEditCategoriesInput(selectedPartner?.categories ?? []);
                         setEditProfileModalVisible(true);
                       }}
                       accessibilityLabel="Complete your business profile"
@@ -3364,6 +3377,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         (selectedPartner?.subcategory ? ` · ${selectedPartner.subcategory}` : '')
                       : 'No category set — pick one so customers can find you by category.'}
                   </Text>
+                  {(selectedPartner?.categories ?? []).length > 0 && (
+                    <Text style={[styles.breakdownText, { marginTop: spacing.xs }]}>
+                      Also: {selectedPartner.categories.join(', ')}
+                    </Text>
+                  )}
                   {selectedPartner?.description ? (
                     <Text style={styles.offerDescription}>{selectedPartner.description}</Text>
                   ) : (
@@ -3398,6 +3416,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setEditCuisineInput(selectedPartner?.cuisine ?? null);
                       setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
                       setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
+                      setEditCategoriesInput(selectedPartner?.categories ?? []);
                       setEditProfileModalVisible(true);
                     }}
                     style={{ marginTop: spacing.sm }}
@@ -3518,6 +3537,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       setEditCuisineInput(selectedPartner?.cuisine ?? null);
                       setEditDifferentiatorInput(selectedPartner?.differentiator ?? '');
                       setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
+                      setEditCategoriesInput(selectedPartner?.categories ?? []);
                       setEditProfileModalVisible(true);
                     }}
                     accessibilityLabel="Edit space and amenities"
@@ -4373,6 +4393,39 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </View>
                 </>
               )}
+              {/* Intent engine vision, multi-classification businesses
+                  (resumed 2026-09-10) -- a secondary, cross-major
+                  self-classification, distinct from the single primary
+                  subcategory above (e.g. a food_drink bar that's also an
+                  entertainment_nightlife live-music venue). Reuses the
+                  same flat 75-tag vocabulary as INTEREST_OPTIONS-as-flat-
+                  chip-list pattern the Temporary Boost picker above
+                  already uses, but as a real multi-select toggle. */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Also Classify As (optional)</Text>
+              <Text style={styles.helperText}>
+                Also show up under any of these, in addition to your main category above.
+              </Text>
+              <View style={styles.chipRow}>
+                {INTEREST_OPTIONS.map((c) => {
+                  const selected = editCategoriesInput.includes(c);
+                  return (
+                    <TouchableOpacity
+                      key={c}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => {
+                        setEditCategoriesInput((prev) =>
+                          prev.includes(c) ? prev.filter((v) => v !== c) : [...prev, c]
+                        );
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={c}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
               {/* "Business Story" plan: reframed from a plain "Attributes"
                   checkbox list to "Why People Choose Us" -- same real
                   vocabulary/RPC, just named for what it actually is. */}

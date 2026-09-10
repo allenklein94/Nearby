@@ -125,77 +125,25 @@ deploy <name> --project-ref enmosvippabmuqslzrox` and confirmed live via the Man
 function-body endpoint (new tag strings present in the deployed bundle). Deliberately did NOT add
 a separate "romantic" value — `date_friendly` already names that same real quality.
 
-**IN PROGRESS (resume here Thursday): multi-classification businesses, per direct user "keep
-going" + explicit scope pick (2026-09-06 session, cut short mid-work by weekly usage limit, NOT a
-restart this time — this is a genuine paused handoff).** User-approved design: keep `category`
-(major) and `subcategory` (one leaf tag) exactly as-is; add a new `categories text[]` secondary-
-classification array to `brand_partners`/`business_partner_requests`, reusing the *same* curated
-75-tag flat leaf vocabulary `subcategory` already validates against (`gatheringCategories.js`'s
-`INTEREST_OPTIONS`) — never a freeform array, never restricted to the business's own primary
-major's subset (the point is cross-major: a food_drink bar that's also an entertainment_nightlife
-live-music venue). Matching hierarchy user specified: primary category match > subcategory match
-> secondary category match ≈ semantic tag/occasion match — secondary category is meant to be one
-more flat bonus tier (same shape/weight as the existing `subcategoryBonus()`/`occasionBonus()`/
-`attributeAndCuisineBonus()`), capped so it can never outrank a real subcategory match just by
-having more tags set.
-
-**Already DONE and verified live this session** (all in `20260928_business_multi_classification.sql`,
-applied to production and confirmed via live disposable-test-data round-trips — DB layer is fully
-finished, nothing further needed there):
-- Bundled bug fix found while scoping this, independently real and worth knowing about even
-  outside this feature: `business_requests.category`, `business_availability.category`, and
-  `business_priority_signals.category` were all still CHECK-constrained to the *pre-expansion*
-  26-tag list from before the 2026-09-06 taxonomy expansion to 75 tags/19 majors — never widened
-  when that expansion shipped, even though `AskBusinessScreen.js`'s category chips and
-  `BusinessDashboardScreen.js`'s priority-boost picker both already render the full new 75-tag
-  list. Picking most of the ~49 new tags in either screen and submitting has been failing at the
-  DB level with a raw constraint error since that expansion shipped. Fixed: all three constraints
-  now allow the real, current 75-tag list.
-- `brand_partners.categories` / `business_partner_requests.categories` columns added, CHECK-
-  constrained to the same 75-tag list.
-- `update_business_profile()` gained a new trailing `categories_param text[]` (old 12-arg
-  overload explicitly dropped first, confirmed single-overload after).
-- `approve_business_partner_request()` now copies `categories` through from the request row.
-- `search_active_business_availability()` now also returns `categories` (old signature explicitly
-  dropped first since a `RETURNS TABLE` column-list change is itself a return-type change
-  Postgres won't apply via plain `CREATE OR REPLACE`).
-
-**NOT yet done — this is the actual resume point Thursday**, in the order it makes sense to do
-them (nothing below has been started, no code changes yet, only the DB is ahead of the client):
-1. `create-assistant/index.ts`'s `VALID_CATEGORIES` is a separate hardcoded copy still stuck on
-   the same stale 26-tag list as the bug above (the client-side symptom of that same drift, for
-   the AI ask-classification path specifically) — widen it to the real 75-tag list, matching this
-   file's own established "hardcoded copy, re-validated server-side" pattern for every other
-   vocab list in it. Needs redeploying (`npx supabase functions deploy create-assistant
-   --project-ref enmosvippabmuqslzrox`) and re-verifying live via the Management API's
-   function-body endpoint, same as layer 3's session did for the three functions it touched.
-2. `intentResolverScoring.js`: add `secondaryCategoryBonus(row, category)` — same shape as
-   `subcategoryBonus()` immediately above it in that file, but checking array membership
-   (`category = any(row.categories)`) instead of equality, flat `SCORE_HAPPENING_NOW` bonus.
-3. `intentResolver.js`'s `resolveBusinessAvailability()`: call the new bonus alongside the
-   existing `subcategoryBonus(row, category)` line.
-4. `src/services/brandOffers.js`'s `updateBusinessProfile()` (and its sibling
-   `updateBusinessAddress()`, which must keep re-passing every non-coalescing field or the RPC
-   silently nulls it out, same trap `subcategory_param` already required — was mid-read of this
-   exact file when the session was cut off): thread a new `categories` param through to
-   `categories_param` in the `supabase.rpc('update_business_profile', ...)` call.
-5. UI, three screens, following the exact same per-callsite pattern the subcategory layer used
-   (see that migration's own header comment for the template): `BusinessPartnerApplyScreen.js`
-   (new-application chip picker + include `categories` in its direct `business_partner_requests`
-   insert), `BusinessDashboardScreen.js` (edit-profile chip picker, using the same
-   `INTEREST_OPTIONS`-as-flat-chip-list pattern its own priority-boost picker already uses at
-   line ~3652 + profile-header display), `BusinessProfileScreen.js` (public-facing display).
-6. Jest coverage for `secondaryCategoryBonus()` in `intentResolverScoring.test.js`.
-7. Update this section + the `project_intent_engine_vision` memory file to record it DONE once
-   shipped (same close-out pattern every prior increment in this section followed).
-
-Deliberately deferred, not part of this increment: an AI-suggestion for `categories` in
-`business-onboarding-assistant` (subcategory's own AI-suggestion piece was explicitly built as a
-separate same-day follow-up last time, not the first pass — follow that precedent here too).
+**Multi-classification businesses — fully DONE (2026-09-10), resumed after a genuine paused
+handoff (2026-09-06 session cut short by weekly usage limit).** `brand_partners`/
+`business_partner_requests` gained a `categories text[]` secondary, cross-major classification
+array (reusing the same 75-tag `INTEREST_OPTIONS` vocabulary `subcategory` already uses) —
+DB layer (`20260928_business_multi_classification.sql`), resolver scoring
+(`secondaryCategoryBonus()` in `intentResolverScoring.js`, same flat-bonus weight as
+`occasionBonus()`/`attributeAndCuisineBonus()`, capped so more tags can never outrank a real
+subcategory match), every write path (`brandOffers.js`, `screen-business-content`,
+`BusinessDashboardScreen.js`, `BusinessPartnerApplyScreen.js`), and the public
+`BusinessProfileScreen.js` display all shipped and verified live. Bundled fix: `create-assistant`'s
+own hardcoded `VALID_CATEGORIES` copy was found stale a second time (still the pre-expansion
+26-tag list) and widened to the real 75-tag list, redeployed and confirmed live. Full build/
+verification detail: `CLAUDE_HISTORY.md`, search "multi-classification businesses."
 
 **Still after that**: cross-category "Experiences" assembly remains the one fully-unstarted piece
-of the vision — check with the user before starting it; see the memory file
-(`project_intent_engine_vision`) for full detail on both remaining pieces.
+of the intent-engine vision, plus an AI-suggestion for `categories` in
+`business-onboarding-assistant` (deliberately deferred, same precedent `subcategory`'s own
+AI-suggestion piece set) — check with the user before starting either; see the memory file
+(`project_intent_engine_vision`) for full detail.
 
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with

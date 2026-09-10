@@ -13,21 +13,37 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 // safety net, never surfaced or marketed as a limit.
 const DAILY_AI_LIMIT = 150;
 
-// Hardcoded copy of the shared canonical 26-tag gatheringCategories.js list
-// (src/constants/gatheringCategories.js's INTEREST_OPTIONS) -- the model's
-// returned category is re-validated against this server-side so a
-// hallucinated/invented tag never reaches the client.
+// Hardcoded copy of the shared canonical 75-tag gatheringCategories.js list
+// (src/constants/gatheringCategories.js's INTEREST_OPTIONS, flattened from
+// its 19 CATEGORY_GROUPS) -- the model's returned category is re-validated
+// against this server-side so a hallucinated/invented tag never reaches the
+// client.
 //
 // Taxonomy audit Phase 4 (CLAUDE.md, Aug 25 2026): this list was found to
-// be stale -- the *old* 24-tag list, missing "Faith & Spirituality" and
-// "Dating" -- the identical class of drift the whole taxonomy audit exists
-// to catch, just never checked in this one deployed Edge Function since
-// it's not a client file. Fixed alongside the price/party extension below.
+// be stale once already (the old 24-tag list, missing "Faith &
+// Spirituality" and "Dating") and fixed to the then-current 26-tag list.
+// Intent engine vision, multi-classification businesses resume (CLAUDE.md,
+// Sep 10 2026): found stale a second time, still stuck on that 26-tag list
+// through the 2026-09-06 taxonomy expansion to 75 tags/19 majors -- widened
+// to match INTEREST_OPTIONS exactly. Keep this array in sync with that file
+// if the taxonomy ever changes again.
 const VALID_CATEGORIES = [
-  'Travel', 'Coffee', 'Hiking', 'Music', 'Movies', 'Foodie', 'Fitness',
-  'Reading', 'Art', 'Gaming', 'Photography', 'Yoga', 'Dancing', 'Cooking',
-  'Wine', 'Dogs', 'Cats', 'Outdoors', 'Sports', 'Concerts', 'Museums',
-  'Volunteering', 'Meditation', 'Running', 'Faith & Spirituality', 'Dating',
+  'Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour',
+  'Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling',
+  'Music', 'Movies', 'Gaming', 'Dancing', 'Concerts', 'Karaoke', 'Comedy', 'Trivia', 'Nightlife',
+  'Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts',
+  'Reading', 'Art', 'Photography', 'Crafts',
+  'Farmers Markets', 'Thrift & Vintage',
+  'Meditation', 'Spa Day', 'Self-Care',
+  'Family Playdate', 'Kids Activity',
+  'Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking',
+  'Dogs', 'Cats', 'Dog Meetup',
+  'Networking', 'Coworking',
+  'Volunteering', 'Faith & Spirituality', 'Fundraiser',
+  'Travel', 'Day Trip',
+  'Weekend Getaway', 'Staycation', 'Road Trip',
+  'Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup',
+  'Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing',
 ];
 
 // Taxonomy audit Phase 4: real values matching gatherings.price_level/

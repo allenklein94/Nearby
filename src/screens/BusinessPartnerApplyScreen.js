@@ -8,7 +8,7 @@ import { searchPlacesByText, getPlaceDetails } from '../services/places';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
-import { CATEGORY_GROUPS, subcategoryOptionsFor } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, subcategoryOptionsFor, INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -79,6 +79,12 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   // classifyBusinessDescription() nor Google Places' own category guess
   // below suggests it yet, a disclosed, deliberate scope boundary.
   const [subcategory, setSubcategory] = useState(null);
+  // Intent engine vision, multi-classification businesses (resumed
+  // 2026-09-10): a secondary, cross-major self-classification array --
+  // distinct from subcategory (one leaf tag under the primary major).
+  // Manual pick only this pass, same disclosed scope boundary subcategory
+  // itself started with -- no AI suggestion for this field yet.
+  const [categories, setCategories] = useState([]);
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -123,6 +129,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
 
   function toggleOccasion(key) {
     setPriorityOccasions((prev) => (prev.includes(key) ? prev.filter((o) => o !== key) : [...prev, key]));
+  }
+
+  function toggleCategory(key) {
+    setCategories((prev) => (prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]));
   }
 
   // "Intelligent demand inbox" Phase 3: the real, optional AI fast-path --
@@ -229,6 +239,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         contact_info: contactInfo.trim() || null,
         category,
         subcategory,
+        categories,
         website: website.trim() || null,
         phone: phone.trim() || null,
         address: address.trim() || null,
@@ -435,6 +446,27 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               </View>
             </>
           ) : null}
+
+          {/* Intent engine vision, multi-classification businesses
+              (resumed 2026-09-10) -- a secondary, cross-major
+              self-classification, distinct from the single subcategory
+              above (e.g. a food_drink bar that's also an entertainment_
+              nightlife live-music venue). */}
+          <Text style={styles.label}>Also Classify As (optional)</Text>
+          <View style={styles.chipRow}>
+            {INTEREST_OPTIONS.map((c) => (
+              <TouchableOpacity
+                key={c}
+                style={[styles.chip, categories.includes(c) && styles.chipActive]}
+                onPress={() => toggleCategory(c)}
+                accessibilityRole="button"
+                accessibilityLabel={c}
+                accessibilityState={{ selected: categories.includes(c) }}
+              >
+                <Text style={[styles.chipText, categories.includes(c) && styles.chipTextActive]}>{c}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text style={styles.label}>What's your business great for? (optional)</Text>
           <View style={styles.chipRow}>

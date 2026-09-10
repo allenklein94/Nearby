@@ -1,3 +1,113 @@
+## Sep 10 2026 — Intent engine vision, multi-classification businesses: client/resolver wiring —
+## BUILT, VERIFIED LIVE (resumed paused session)
+
+Picked up exactly where a 2026-09-06 session was cut off mid-work by the weekly usage limit (a
+genuine paused handoff, not a restart — the DB layer, `20260928_business_multi_classification.sql`,
+was already fully shipped and verified live; only the client/resolver wiring remained). Completed
+every item in that session's own numbered resume list, in order, then committed and pushed.
+
+**1. `create-assistant/index.ts`'s `VALID_CATEGORIES` widened from the stale 26-tag list to the
+real 75-tag list** (`gatheringCategories.js`'s `INTEREST_OPTIONS`, flattened from its 19
+`CATEGORY_GROUPS`) — this was the second time this exact hardcoded copy had gone stale (first
+caught/fixed in the Aug 25 2026 taxonomy audit, at the old 26-tag list; never re-widened when the
+taxonomy itself grew to 75 tags on 2026-09-06). Redeployed via `npx supabase functions deploy
+create-assistant --project-ref enmosvippabmuqslzrox`; verified live by fetching the deployed
+bundle from the Management API's `/functions/create-assistant/body` endpoint (now an ESZIP
+archive rather than a plain script — `strings` on the downloaded bundle, not a raw text grep,
+confirmed both "Sightseeing" and "Faith & Spirituality" are present in the deployed
+`VALID_CATEGORIES` array).
+
+**2. `secondaryCategoryBonus(row, category)` added to `intentResolverScoring.js`**, immediately
+after `subcategoryBonus()`. Per the user's own specified matching hierarchy (primary category
+match > subcategory match > secondary category match ≈ semantic-tag/occasion match), this sits at
+the same `SCORE_HAPPENING_NOW` weight as `occasionBonus()`/`attributeAndCuisineBonus()` — and,
+per the same session's own "capped so it can never outrank a real subcategory match just by
+having more tags set" instruction, it's implemented as a single flat boolean check
+(`row.categories.includes(category)`), never a per-matching-tag sum, so a business can't out-rank
+a real subcategory match just by listing more secondary tags. Jest coverage added
+(`intentResolverScoring.test.js`), including an explicit "only one flat bonus regardless of how
+many entries match" case. Full suite: 222/222 passing.
+
+**3. Wired into `intentResolver.js`'s `resolveBusinessAvailability()`** — `score +=
+secondaryCategoryBonus(row, category)` added right after the existing `subcategoryBonus()` line.
+
+**4. `src/services/brandOffers.js` threaded `categories` through both RPC call sites**:
+`updateBusinessAddress()` (re-passes `current?.categories ?? []`, following the exact same
+non-coalescing-contract trap `subcategory_param` already required — confirmed live via
+`pg_get_function_identity_arguments` that `update_business_profile`'s real production signature
+is still a single 13-arg overload ending in `categories_param text[]`, matching exactly) and
+`updateBusinessProfile()` (new `categories` destructured param → `categories_param`).
+`submitBusinessProfileForScreening()` also gained a `categories` param, threaded into
+`screen-business-content`'s JSON body.
+
+**5. `screen-business-content/index.ts`'s `business_profile` branch** gained a new
+`ALL_LEAF_TAGS` constant (the flat union of every major's own `SUBCATEGORY_OPTIONS_BY_CATEGORY`
+entry — i.e. the same 75-tag vocabulary, unlike `subcategory` this is deliberately validated
+against the *whole* vocabulary, not just the current category's own subset, since secondary
+classification is explicitly meant to be cross-major). `categories` is re-validated against it,
+carried through the `contentSnapshot` audit record, and included in the low-tier immediate-publish
+RPC call (`categories_param: categories`). Medium/uncertain/high tiers behave identically to every
+other field on this branch (held for human review / rejected, nothing written yet).
+
+**6. Two existing `updateBusinessProfile()` call sites in `BusinessDashboardScreen.js` updated to
+re-pass `categories`** so neither one silently nulls it out on an unrelated write:
+`handleConfirmCategorySuggestion()` (AI category-suggestion confirm — carries the business's own
+current `categories` forward unchanged, since a suggested *major* category change doesn't
+invalidate the separate secondary-classification array) and `handleConfirmTeachNearby()`
+(attributes-only write). Note: `handleConfirmCategorySuggestion()` was found to *not* re-pass
+`subcategory` either (pre-existing, out of scope for this session) — left as-is since changing
+the primary major there genuinely should invalidate the old subcategory (it belonged to the
+previous major), so that's arguably correct behavior, not a bug; not touched.
+
+**7. Real Edit Profile UI built** — `BusinessDashboardScreen.js` gained `editCategoriesInput`
+state (reset alongside `editSubcategoryInput` at all three places the Edit Profile modal opens: a
+welcome-card step, the profile-header edit button, and the space/amenities edit button — the
+Edit tool's exact-match replace only caught two of the three on the first pass since the
+welcome-card block has deeper JSX nesting/indentation; caught and fixed the third by hand), a new
+"Also Classify As (optional)" chip section in the Edit Profile modal (a genuine multi-select
+toggle over the full `INTEREST_OPTIONS` 75-tag flat list, positioned right after the existing
+subcategory chips, following that section's own established pattern rather than the
+single-select `boostCategoryInput` pattern used elsewhere on this screen), a profile-header
+"Also: ..." display line, and `handleSaveProfile()` now sends/receives `categories` through
+`submitBusinessProfileForScreening()`.
+
+**8. `BusinessPartnerApplyScreen.js`** — new `categories` state + `toggleCategory()`, a matching
+"Also Classify As (optional)" chip section after the subcategory picker (same `INTEREST_OPTIONS`
+flat-list multi-select shape), and `categories` included in the direct
+`business_partner_requests` insert. Deliberately manual-pick only, same disclosed scope boundary
+`subcategory` itself started with in its own first increment — no AI-suggestion piece for this
+field yet (this session's own resume plan explicitly named that same deferral, mirroring
+subcategory's own precedent of shipping the AI-suggestion piece as a separate same-day follow-up,
+not the first pass).
+
+**9. `BusinessProfileScreen.js` (public-facing display) — genuinely new, not merely restoring
+something subcategory's own increment had already done.** Investigated and confirmed
+`BusinessProfileScreen.js` never displayed `category`/`subcategory` at all before this session
+(only `attributes`/`cuisine` render there, in the "Why People Choose Us" section) — this was
+already true before this session started, not something this session broke. Added a new "Also:
+..." line (reusing the existing `meta` text style) right below the business name/follower-count
+header, so a real consumer now sees the same secondary-classification signal the resolver itself
+scores via `secondaryCategoryBonus()`. `getBusinessProfile()` already does `select('*')`, so no
+service-layer change was needed for this screen to receive the column.
+
+**Verified live before considering this done**: `update_business_profile`'s real production
+signature (`pg_get_function_identity_arguments`) is a single 13-arg overload ending in
+`categories_param text[]` — matches the client's own arg name exactly, no drift.
+`search_active_business_availability`'s real return type
+(`pg_get_function_result`) includes `categories text[]` as its final column — matches
+`row.categories` as read in `secondaryCategoryBonus()`. `brand_partners.categories` and
+`business_partner_requests.categories` both confirmed present as `ARRAY`-type columns via
+`information_schema.columns`. Full Jest suite (222 tests, 17 suites) passing. Not verified in an
+actual running app — no simulator/device tooling available this session, consistent with every
+prior session on this project.
+
+Deliberately deferred, unchanged from the prior session's own scope note: an AI-suggestion for
+`categories` in `business-onboarding-assistant` (`classifyBusinessDescription()`) was not built —
+follows the same "manual pick first, AI-suggestion as a later separate pass" precedent
+`subcategory` itself set. Cross-category "Experiences" assembly remains the one fully-unstarted
+piece of the whole intent-engine vision — see memory `project_intent_engine_vision` for what that
+would involve; check with the user before starting it (feature-freeze convention).
+
 ## Sep 6 2026 — Category/place/business taxonomy expansion, v2: 4 new major categories — BUILT,
 ## VERIFIED LIVE
 

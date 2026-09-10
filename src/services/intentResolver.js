@@ -32,6 +32,7 @@ import {
   accommodatesPartyTypeBonus,
   occasionBonus,
   subcategoryBonus,
+  secondaryCategoryBonus,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -304,6 +305,15 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // (2026-09-06): the business's own standing identity, not just this
     // one posting's own row.category (already scored a few lines above).
     score += subcategoryBonus(row, category);
+    // Intent engine vision, multi-classification businesses (resumed
+    // 2026-09-10): the business's own secondary categories array -- a
+    // cross-major self-classification distinct from both row.category
+    // (this posting's own tag) and row.subcategory (the business's single
+    // primary-major leaf tag), scored at the same flat weight as
+    // occasionBonus()/attributeAndCuisineBonus() per the user's own
+    // specified hierarchy (primary category > subcategory > secondary
+    // category ≈ semantic tag/occasion).
+    score += secondaryCategoryBonus(row, category);
     return {
       type: 'business_availability',
       id: row.id,

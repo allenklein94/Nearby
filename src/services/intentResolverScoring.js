@@ -205,6 +205,26 @@ export function subcategoryBonus(row, category) {
   return row.subcategory === category ? SCORE_HAPPENING_NOW : 0;
 }
 
+// Intent engine vision, multi-classification businesses (resumed
+// 2026-09-10, CLAUDE.md's Active section / memory
+// project_intent_engine_vision): a business's own secondary
+// brand_partners.categories array (cross-major self-classification -- e.g.
+// a food_drink bar that's also an entertainment_nightlife live-music venue)
+// reuses the exact same flat leaf-tag vocabulary category/subcategory
+// already do. Per the user's own specified matching hierarchy (primary
+// category match > subcategory match > secondary category match ≈
+// semantic-tag/occasion match), this sits at the SAME weight as
+// occasionBonus()/attributeAndCuisineBonus() above -- deliberately never
+// SCORE_HAPPENING_NOW-per-matching-tag, only ever one flat bonus regardless
+// of how many entries in `categories` happen to match, so a business can
+// never out-rank a real subcategoryBonus() match just by listing more
+// secondary tags.
+export function secondaryCategoryBonus(row, category) {
+  if (!category) return 0;
+  const secondaryCategories = Array.isArray(row.categories) ? row.categories : [];
+  return secondaryCategories.includes(category) ? SCORE_HAPPENING_NOW : 0;
+}
+
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

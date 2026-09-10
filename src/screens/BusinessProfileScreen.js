@@ -254,6 +254,15 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </Text>
         )}
 
+        {/* Intent engine vision, multi-classification businesses (resumed
+            2026-09-10) -- the business's own secondary, cross-major
+            self-classification (brand_partners.categories), so a real
+            consumer sees the same "also" identity the resolver itself now
+            scores (secondaryCategoryBonus, intentResolverScoring.js). */}
+        {(partner.categories ?? []).length > 0 && (
+          <Text style={styles.meta}>Also: {partner.categories.join(', ')}</Text>
+        )}
+
         {partner.description ? <Text style={styles.description}>{partner.description}</Text> : null}
 
         {/* Phase 1 -- Business DNA: the owner's own real, free-text "what

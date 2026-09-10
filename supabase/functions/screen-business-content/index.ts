@@ -96,6 +96,15 @@ const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   education_classes: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
   attractions_things_to_see: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
 };
+// Intent engine vision, multi-classification businesses (resumed
+// 2026-09-10): the flat union of every major's own leaf tags above --
+// unlike subcategory (must belong to the business's own primary major),
+// brand_partners.categories is deliberately cross-major (a food_drink bar
+// that's also an entertainment_nightlife live-music venue), so it's
+// validated against the whole vocabulary, not just the current category's
+// own subset. Same 75-tag vocabulary 20260928_business_multi_
+// classification.sql's own CHECK constraint enforces.
+const ALL_LEAF_TAGS: string[] = Object.values(SUBCATEGORY_OPTIONS_BY_CATEGORY).flat();
 // Same real vocabularies create_business_experience()/update_business_
 // experience()'s own CHECK constraints already enforce.
 const PRICE_LEVEL_OPTIONS = ['free', '$', '$$', '$$$'];
@@ -270,6 +279,10 @@ serve(async (req) => {
       // set -- never carried through if it belonged to a different major
       // (e.g. the category chip changed in the same edit).
       const subcategory = category && (SUBCATEGORY_OPTIONS_BY_CATEGORY[category] ?? []).includes(body.subcategory) ? body.subcategory : null;
+      // Cross-major secondary classification -- deliberately not scoped to
+      // the current category's own subset, matching brand_partners.
+      // categories' own real CHECK constraint.
+      const categories = Array.isArray(body.categories) ? body.categories.filter((c: unknown) => ALL_LEAF_TAGS.includes(c as string)) : [];
 
       // Address/lat/lng are deliberately never taken from the client here --
       // this screening path never edits location (that's the separate,
@@ -321,7 +334,7 @@ What makes them different: ${differentiator || '(none)'}`;
 
       const contentSnapshot = {
         name, description: description || null, address, logoUrl, category,
-        attributes, cuisine, differentiator: differentiator || null, subcategory,
+        attributes, cuisine, differentiator: differentiator || null, subcategory, categories,
       };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
@@ -358,6 +371,7 @@ What makes them different: ${differentiator || '(none)'}`;
           cuisine_param: cuisine,
           differentiator_param: differentiator || null,
           subcategory_param: subcategory,
+          categories_param: categories,
         });
         if (writeError) {
           console.error('screen-business-content: low-tier write failed', writeError);
