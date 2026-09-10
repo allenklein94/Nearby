@@ -1,3 +1,222 @@
+## Sep 10 2026 — Unified Crossed Paths across Dating and Friends — BUILT, VERIFIED
+
+Full locked design and research (recorded verbatim below, exactly as written before
+implementation started, commit `c45f2bec`) plus what was actually shipped afterward in the same
+session, commit `e4c3af50` (pushed to `main`).
+
+**What shipped, following the "Concrete plan" below step by step**:
+1. `get_shared_gathering_partners()` (`supabase/migrations/20260930_shared_gathering_crossed_
+   paths.sql`) — already drafted before this note was first written; applied to production and
+   functionally verified this session via disposable rolled-back transactions (`BEGIN` /
+   `ROLLBACK`, three test gatherings + `gathering_interest` rows using two real existing profile
+   ids as a throwaway pair, a third real profile as host to satisfy the "can't express interest in
+   your own gathering" trigger): confirmed the positive case (shared past approved attendance ->
+   one row returned), the symmetric case (same result queried as either party), and both negative
+   cases (a future-scheduled gathering and a `pending`-status attendee do NOT produce a row) — all
+   in one final query showing exactly the one genuine pair and none of the negative-case rows.
+   `select count(*) from gatherings where title like 'CROSSED-PATHS-TEST%'` returned 0 afterward,
+   confirming the rollback left no residue. Grants confirmed `authenticated` only (no `anon`/
+   `public`).
+2. New `src/services/crossedPathsSignals.js` — deliberately has **no supabase/React Native
+   import at all**, unlike nearly every other service file in this codebase, so its pure functions
+   are unit-testable directly under plain Node with no mocking (confirmed empirically this
+   session: requiring `services/supabase.js` under the project's actual Jest config throws
+   `SyntaxError: Cannot use import statement outside a module` on `react-native-url-polyfill`,
+   which is why `intentResolverScoring.js`/`experienceAssembly.js` already keep this same split
+   and why this new file follows it too). Exports: `mergeCrossedPathsSignals()` (the pure merge,
+   gathering always overwrites proximity for the same pair while preserving the proximity entry's
+   own `last_seen_at`/`sightingId`/lat-lng fields), `formatCrossedPathsTime()` (full, list-view
+   formatter — moved out of `DiscoveryScreen.js`, byte-identical logic), `formatCrossedPathsTime
+   Short()` (the card-view formatter — moved out of `SwipeableDiscoveryCards.js`, byte-identical
+   logic; these were two real, independently-duplicated formatters, not one, so both were kept
+   rather than force-merged into one shape), `gatheringReasonText()` (new shared "You were both at
+   {title} · {time}" copy), and `filterFriendCrossedPathsCandidates()` (a pure exclusion-set
+   membership filter Friends' own I/O layer calls with precomputed sets, so the eligibility *logic*
+   is unit-testable without touching the database). 16 new Jest tests in
+   `crossedPathsSignals.test.js` (merge priority/symmetry/multi-pair/empty/malformed-row cases,
+   filter inclusion/exclusion/default-excludes-everyone cases, both time formatters' edge cases,
+   `gatheringReasonText`'s null/no-time-clause cases) — full suite 252/252 passing.
+3. `proximity.js`'s `getNearbyMatches()` now calls a local `getSharedGatheringPartners()` wrapper
+   (kept local rather than shared, since it's I/O not pure logic — `friendDiscovery.js` calls the
+   same RPC independently rather than importing this wrapper, since the two service files
+   deliberately don't import each other), merges it with the existing sightings query via
+   `mergeCrossedPathsSignals()`, and layers the exact same pre-existing dating-specific
+   exclusion (blocks/accepted-friends/existing-matches) and eligibility (gender/age/ethnicity/
+   hair/eye/height preference) filtering on top, unchanged. Each returned item now carries a real
+   `crossedPathsReason`; a gathering-only match gets a synthetic-but-stable `id` of
+   `gathering-{gatheringId}-{otherUserId}` (never reuses a real sighting id) since it has no real
+   sighting row to key off of. `last_seen_at` stays present (null for a gathering-only match) —
+   confirmed `homeDashboard.js`'s two read sites (`.sort(...last_seen_at...)` for the most-recent
+   widget, `.filter(p => new Date(p.last_seen_at) > lastVisit)` for the "N new people" count) both
+   degrade honestly on a null value (`new Date(null)` sorts as epoch/1970, never `>` a real
+   `lastVisit`) rather than crashing or fabricating.
+4. New `getFriendCrossedPaths()` in `friendDiscovery.js` — same sightings+gatherings merge, gated
+   on the caller's own `open_to_friend_discovery` (mirrors the RPC's own `v_i_opted_in` check),
+   then `filterFriendCrossedPathsCandidates()` against a real exclusion set (blocks both
+   directions, any `friendships` row in any status either direction, any `matches` row, anyone
+   already swiped via `friend_discovery_swipes`) and a real `openToFriendDiscoveryUserIds` set —
+   mirrors `get_friend_discovery_candidates`'s exclusion rule exactly, per the plan below.
+   `shared_interest_count`/`shared_community_count`/`mutual_friend_count` are computed in JS
+   (community/friendship membership queries batched via `Promise.all`, matching this file's
+   existing multi-query style) so `calculateFriendCompatibility` — already built for exactly this
+   input shape — works unmodified. `distance_bucket` is always `null` here (never computed/
+   invented) since this pool comes from real proximity/gathering signals, not the `wide_area` grid
+   Browse's own RPC buckets from — every candidate always carries a real `crossedPathsReason`
+   instead.
+5. `FriendDiscoveryScreen.js` gained a Browse | Crossed Paths mode switch (two `TouchableOpacity`
+   chips built from this screen's own existing `filterChip`/`filterChipActive` tokens, not a new
+   visual language) — it previously had no Crossed Paths pool at all, Browse-only. Browse stays
+   the default so nothing changes for someone who hasn't tried the new mode. The Distance quick-
+   filter chip row is hidden in Crossed Paths mode (that pool's `distance_bucket` is always null,
+   so showing the filter would just silently exclude everything) and `distanceFilter` is reset on
+   switching into Crossed Paths mode so a stale Browse-side selection can't do the same thing
+   invisibly.
+6. Render call sites all branch on the real `crossedPathsReason` instead of assuming proximity:
+   `DiscoveryScreen.js`'s FlatList `renderItem` (🗓️ gathering copy when present, else today's
+   exact "📍 Within about 35 feet · Crossed paths {time}" copy, unchanged for Browse),
+   `SwipeableDiscoveryCards.js` (see the real pre-existing bug fixed below), and
+   `FriendDiscoverySwipeCards.js` (new `crossedPathsText`, shown only when a candidate actually
+   carries `crossedPathsReason` — Browse-mode Friends candidates never have this field at all, so
+   no mode prop was needed there, just a presence check).
+   **Bug fixed in the same pass** (found during research, confirmed still live before fixing):
+   `SwipeableDiscoveryCards.js` (the swipe-card view) was hardcoding "📍 Within about 35 feet"
+   *unconditionally*, even when it was actually rendering Browse-mode data with no real proximity
+   signal at all — a real fabricated-signal bug, since `discoveryMode` was never threaded into
+   that component. Fixed by adding a `discoveryMode` prop (default `'crossedPaths'` for
+   backward compat) and branching identically to how the list view already did: Browse ->
+   "🔎 Matches your filters", gathering reason present -> "🗓️ You were both at ...", otherwise
+   today's existing proximity copy.
+7. Jest coverage: see item 2 above (16 tests, full suite 252/252 passing). All 7 touched/new JS
+   files were also parse-checked directly with `@babel/parser` (jsx + optionalChaining +
+   nullishCoalescingOperator + classProperties plugins) since this sandbox has no Expo/RN babel
+   config at the project root to run a full bundler check against, and no simulator/device
+   available to actually exercise the screens.
+8. Live verification: see item 1 above (the RPC itself). The new client-side merge/filter logic
+   (`crossedPathsSignals.js`) is covered by its own unit tests instead of a live call, per its
+   explicitly-pure, I/O-free design. `getNearbyMatches()`/`getFriendCrossedPaths()` themselves were
+   **not** exercised against a live authenticated session this session (no simulator/device
+   available, matching this project's standing "no simulator/device testing has ever been
+   available in any session" note) — this is a real gap flagged honestly, not silently skipped:
+   if something looks wrong in the running app, this is the first place to suspect (a typo in a
+   `.select()` field list, a wrong `.or()` filter string against real PostgREST syntax, etc. would
+   not have been caught by parsing or by the pure-function tests).
+
+**Locked design and research, exactly as recorded before implementation started (commit
+`c45f2bec`)**:
+
+**IN PROGRESS (design decided, zero code written yet) — Unified Crossed Paths across Dating and
+Friends.** Started from an external UX critique review (numbered items being walked through with
+the user one at a time, item-2-level detail). Two items already resolved this same review pass,
+no code needed: item 1 ("Happening Now/Today/This Weekend should filter Discover in place, not
+navigate away") was already fully shipped 2026-09-06 (`quickDateFilter` in
+`DiscoverHubScreen.js`, commit `2f5a0f26`) — confirmed live, nothing to do. Item 2 ("Friends mode
+should mirror Dating's architecture") is **mostly** already true (verified live 2026-09-10:
+`FriendDiscoveryScreen.js`/`FriendDiscoverySwipeCards.js` already share Dating's card chrome,
+compat-score badges, verified/online dots, and the same customizable Quick Filters system) —
+**except** Friends has no Crossed-Paths mode at all, only a single Browse-style pool
+(`getFriendDiscoveryCandidates`). That gap is this active item.
+
+**Locked design (user's own explicit call, after I proposed a separate Friends-only Crossed-Paths
+feature and they pushed back)**: ONE Crossed Paths mechanism/component shared by Dating and
+Friends, not two parallel features — Things-to-Do mode stays untouched (never was a people-
+surface). Signal priority, ranked by confidence, same for both modes:
+  1. **Shared gathering attendance** (both users were approved attendees of the same real PAST
+     gathering) — the strongest, PREFERRED explanation when it exists. Copy: "You were both at
+     {gathering title} · {relative time}".
+  2. **Repeated proximity** (the existing `sightings` table, i.e. today's live Dating Crossed
+     Paths mechanism) — shown ONLY as a fallback when no shared gathering exists for that pair.
+     Copy stays today's existing "📍 Within about 35 feet · Crossed paths {time} ago".
+  3. (Explicitly future/not-now: shared place/activity context.)
+  4. **Never**: raw "N people near you" with no explained reason — the user was explicit that
+     proximity alone "can feel a little creepy if the user doesn't know why," while a named
+     shared gathering "is a real-world social connection... explains why Nearby thinks this
+     person is relevant."
+Gathering attendance must never be silently treated as equivalent to/interchangeable with
+proximity — the UI must communicate which one a given match is based on, not blend them into one
+generic "you crossed paths" line.
+
+**Research already done this session (verified against live code, not yet against production DB)**:
+- `gathering_interest` has a real `checked_in_at` column, but it's sparse (optional, most
+  attendees never explicitly check in) — NOT used as the "attended" bar. This codebase's own
+  established convention for "attended a gathering" (confirmed via
+  `get_business_member_gathering_history`/`get_business_top_members`,
+  `00000000000000_baseline.sql`) is `gathering_interest.status = 'approved'` on a gathering whose
+  `scheduled_at` is already in the past — that's the bar the new shared-gathering-attendance query
+  should use too, for consistency, not `checked_in_at`.
+- `sightings` (`user_a, user_b, last_seen_at, first_seen_at, expires_at` — 48h expiry) already IS
+  a real reciprocal-detection signal, not a live "who's nearby now" lookup — worth knowing before
+  assuming it needs replacing; it's being kept as the fallback tier, not deprecated.
+- `proximity.js`'s `getNearbyMatches()` (today's Dating Crossed Paths) is the function to extend:
+  currently queries `sightings` only, returns
+  `{ id: sighting.id, otherUserId, last_seen_at, profiles, sharedInterests, compatibilityScore }`,
+  applies dating-specific exclusion (blocks both directions, accepted friendships) and eligibility
+  (gender/age/ethnicity/hair/eye/height preferences) client-side, no RPC.
+- `homeDashboard.js`'s `getHomeDashboard()` calls `getNearbyMatches()` directly and reads
+  `.last_seen_at` off each result (most-recent-sighting widget, "N new people since last visit"
+  count) — whatever the new merged candidate shape ends up being, `last_seen_at` must stay
+  present (null is fine for a gathering-only candidate with no real sighting; that just means it
+  won't count toward that widget's "new" tally, which is an acceptable, honest, non-fabricating
+  degradation, not something to also fix this pass).
+- Found a real, pre-existing, small bug while reading the render path: `SwipeableDiscoveryCards.js`
+  (the swipe-card view, as opposed to the plain list view) hardcodes "📍 Within about 35 feet" in
+  its card copy UNCONDITIONALLY, even when the data passed in is actually Browse-mode data (no
+  real sightings-based proximity at all) — `discoveryMode` isn't threaded into that component
+  today. Fixing this is now in-scope for this same pass, since the same conditional-copy logic
+  needed for gathering-vs-proximity-vs-neither is the correct fix for this too (must not show a
+  fabricated proximity claim for a Browse or gathering-only candidate either).
+- `get_friend_discovery_candidates` (Friends' existing Browse RPC,
+  `20260816_friend_discovery.sql`) is the exclusion-rule precedent to mirror for the new Friends
+  Crossed Paths: requires the CANDIDATE (not just the caller) to have `open_to_friend_discovery =
+  true`, excludes blocks (either direction), any existing `friendships` row in ANY status
+  (accepted/pending/declined, either direction — one EXISTS check covers all three), any existing
+  dating `matches` row, and anyone already swiped via `friend_discovery_swipes`. The new Friends
+  Crossed Paths function should apply this same exclusion set, just sourced from the merged
+  sightings+shared-gatherings pool instead of the wide `profiles` scan `get_friend_discovery_
+  candidates` does.
+
+**Concrete plan, not yet built (next steps for whoever picks this up)**:
+1. New migration: SQL RPC `get_shared_gathering_partners()` (SECURITY DEFINER, no args, scoped to
+   `auth.uid()`) — one row per other user, their single MOST RECENT shared past gathering
+   (`gathering_id`, `gathering_title`, `scheduled_at`), using the `status = 'approved'` +
+   `scheduled_at < now()` bar on both sides, `distinct on (other_user_id) ... order by
+   other_user_id, scheduled_at desc`. Grant `authenticated` only.
+2. New shared client module (e.g. `src/services/crossedPathsSignals.js`): fetch both raw sources
+   (existing sightings query, new RPC) and a pure `mergeCrossedPathsSignals()` that unions by
+   otherUserId, attaching one `crossedPathsReason` object per candidate
+   (`{ type: 'gathering', gatheringId, gatheringTitle, scheduledAt }` when a shared gathering
+   exists for that pair, else `{ type: 'proximity', lastSeenAt }`) — gathering always wins when
+   both exist for the same pair, never blended.
+3. Extend `getNearbyMatches()` (`proximity.js`) to source candidates from this merged union
+   instead of sightings alone, keep its existing dating-specific eligibility/exclusion filtering
+   layered on top unchanged, keep `last_seen_at` present (real value or null) for
+   `homeDashboard.js` backward compat, add `crossedPathsReason` to each returned item.
+4. New `getFriendCrossedPaths()` in `friendDiscovery.js` — same merge, friend-specific eligibility
+   mirroring `get_friend_discovery_candidates`'s exclusion set (see above) plus
+   `calculateFriendCompatibility` scoring instead of `calculateCompatibility`.
+5. Add the same Browse | Crossed Paths toggle `DiscoveryScreen.js` already has to
+   `FriendDiscoveryScreen.js` (currently has neither the toggle nor any Crossed-Paths pool at
+   all) — same UI chrome, no new visual language.
+6. Update all four render call-sites to branch on `item.crossedPathsReason.type` instead of
+   unconditionally assuming proximity: `DiscoveryScreen.js`'s FlatList `renderItem`,
+   `SwipeableDiscoveryCards.js` (also fixing the Browse-mode false-proximity-copy bug found
+   above, by threading a `discoveryMode`/reason-aware prop through), and the two Friends
+   equivalents (`FriendDiscoveryScreen.js` list rendering, `FriendDiscoverySwipeCards.js`).
+   Gathering-based copy: "You were both at {title} · {relative time}" (reuse
+   `formatCrossedPathsTime`, currently duplicated between `DiscoveryScreen.js` and
+   `SwipeableDiscoveryCards.js` — worth actually consolidating into one shared util while
+   touching both files anyway). Proximity-based copy stays exactly as today's existing Dating
+   text. Never show "within about 35 feet" for a candidate whose only real signal is a shared
+   gathering.
+7. Jest coverage for `mergeCrossedPathsSignals()` (pure, easy to unit test the "gathering wins
+   when both exist" rule) and for the friend-eligibility filtering logic, same pattern as
+   `intentResolverScoring.test.js`.
+8. Verify the new RPC live against production with disposable test data (two test users, a real
+   past gathering both attended) before considering this done, per this repo's own migration-
+   verification discipline.
+
+Nothing has been implemented yet as of this note — no migration file, no new service file, no
+screen edits. Pick up at step 1.
+
 ## Sep 10 2026 — Intent engine vision, cross-category "Experiences" assembly, first increment —
 ## BUILT, VERIFIED (last fully-unstarted piece of the vision)
 
