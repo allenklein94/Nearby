@@ -298,7 +298,12 @@ Community" section (Edit / Pause-Resume / Cancel / Delete-Permanently-once-cance
 kept their delete-based mechanism but gained a `cancel_gathering` RPC and a "Cancel Gathering"
 action in the detail screen that was previously missing entirely. Verified live against
 production with disposable test data. Full build/verification detail: `CLAUDE_HISTORY.md`, search
-"Host cancellation lifecycle."
+"Host cancellation lifecycle." **2026-09-10 parity follow-up**: user re-asked for this exact spec
+verbatim (unaware it had already shipped); confirmed still live and correct on re-read (including
+that gathering cancellation fires a real push via `notify_gathering_cancelled()`, not just a DB
+row), then closed the one real cosmetic gap — `GatheringDetailScreen.js`'s Edit/Cancel links now
+sit under their own "Manage Gathering" label (new `manageSectionLabel` style, mirroring
+Communities' own "Manage Community" label) instead of loose inside the general host banner.
 
 **Phase 8 (Discover visual hierarchy + expand-in-place) is fully DONE, including section H.**
 Full account moved to `CLAUDE_HISTORY.md` ("Phase 8 ... section H — BUILT").

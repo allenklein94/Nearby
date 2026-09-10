@@ -801,25 +801,31 @@ export default function GatheringDetailScreen({ route, navigation }) {
               >
                 <Text style={styles.hostBannerLink}>Manage attendees →</Text>
               </TouchableOpacity>
+              {/* Host cancellation lifecycle parity (2026-09-10 follow-up):
+                  Communities already group Edit/Pause/Cancel under a
+                  "Manage Community" label -- this label makes Gatherings'
+                  own equivalent (Edit/Cancel) visually match, same links,
+                  same behavior, just now grouped and named to match. */}
               {new Date(gathering.scheduled_at) >= new Date() && (
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('EditGathering', { gathering })}
-                  style={{ marginTop: spacing.xs }}
-                  accessibilityLabel="Edit gathering"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.hostBannerLink}>✏️ Edit Gathering →</Text>
-                </TouchableOpacity>
-              )}
-              {new Date(gathering.scheduled_at) >= new Date() && (
-                <TouchableOpacity
-                  onPress={confirmCancelGatheringInDetail}
-                  style={{ marginTop: spacing.xs }}
-                  accessibilityLabel="Cancel gathering"
-                  accessibilityRole="button"
-                >
-                  <Text style={[styles.hostBannerLink, { color: colors.danger }]}>Cancel Gathering</Text>
-                </TouchableOpacity>
+                <>
+                  <Text style={styles.manageSectionLabel}>Manage Gathering</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('EditGathering', { gathering })}
+                    style={{ marginTop: spacing.xs }}
+                    accessibilityLabel="Edit gathering"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.hostBannerLink}>✏️ Edit Gathering →</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={confirmCancelGatheringInDetail}
+                    style={{ marginTop: spacing.xs }}
+                    accessibilityLabel="Cancel gathering"
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.hostBannerLink, { color: colors.danger }]}>Cancel Gathering</Text>
+                  </TouchableOpacity>
+                </>
               )}
               <TouchableOpacity
                 onPress={() => setInviteModalVisible(true)}
@@ -1200,6 +1206,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   hostBannerText: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.xs },
   hostBannerLink: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  manageSectionLabel: {
+    ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase',
+    letterSpacing: 0.5, marginTop: spacing.md, marginBottom: spacing.xs,
+  },
   countdownRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
     borderRadius: radius.lg, paddingVertical: spacing.sm, width: '100%', marginVertical: spacing.sm,
