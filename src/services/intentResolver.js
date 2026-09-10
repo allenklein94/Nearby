@@ -6,6 +6,7 @@ import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, sea
 import { getSocialForecast } from './homeDashboard';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+import { assembleExperience } from './experienceAssembly';
 // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): the identical
 // shared, canonical weather-reason text homeRecommendations.js's own
 // weatherAdjustment() uses -- closes a real, confirmed duplication where
@@ -320,6 +321,16 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       partnerId: row.partner_id,
       title: `${row.partner_name} has availability`,
       subtitle: row.price != null ? `${row.title} · $${row.price}` : row.title,
+      // Intent engine vision -- Experiences assembly, first increment
+      // (2026-09-10): the row's own real category/subcategory/categories,
+      // carried onto the candidate itself (not just used internally for
+      // scoring above) so assembleExperience() (experienceAssembly.js) can
+      // bucket this candidate into a template component without a second
+      // fetch -- a pure client-side regrouping of this same already-scored
+      // candidate list, same shape as HomeScreen's own groupIntentResultsByType().
+      category: row.category ?? null,
+      subcategory: row.subcategory ?? null,
+      categories: row.categories ?? [],
       matchedAvailability: {
         // Finding 5 fix (CLAUDE.md): the specific business_availability row
         // itself -- threaded through AskBusinessScreen's submit call so this
@@ -480,5 +491,17 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   );
 
   deduped.sort((a, b) => b.score - a.score);
-  return deduped.slice(0, RESULT_CAP);
+
+  // Intent engine vision -- cross-category "Experiences" assembly, first
+  // increment (2026-09-10): a pure regrouping of this same already-scored,
+  // already-deduped candidate pool, computed BEFORE the RESULT_CAP slice
+  // below so a genuinely strong match further down the ranked list still
+  // gets a real chance to fill a component -- never limited to just the
+  // flat list's own top few. Returns null whenever the ask carries no real
+  // occasion, the occasion has no defined template, or no component found
+  // genuine matching inventory; callers only ever render an Experience
+  // section when this is truthy.
+  const experience = assembleExperience(occasion, deduped);
+
+  return { items: deduped.slice(0, RESULT_CAP), experience };
 }

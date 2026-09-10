@@ -1,3 +1,122 @@
+## Sep 10 2026 — Intent engine vision, cross-category "Experiences" assembly, first increment —
+## BUILT, VERIFIED (last fully-unstarted piece of the vision)
+
+Same session as the multi-classification businesses close-out above. After that shipped, the user
+said "finish what you didn't start," referring to the two remaining deferred pieces of the intent
+engine vision. The AI-suggestion gap for `categories` was closed first (small, precedented — see
+its own entry above). This is the second, much larger piece: cross-category "Experiences"
+assembly, which the vision doc itself flagged as "a meaningfully bigger lift" with no locked
+design. Rather than guess an architecture, the user was asked via `AskUserQuestion` to pick a
+scope among four concrete options (occasion-triggered template fan-out / AI-suggested category
+list / business-side Experience bundles / not now). They picked the first (template fan-out) but
+gave detailed, verbatim design guidance worth preserving in full for anyone picking this up cold —
+the load-bearing points: build it as an **extensible, data-driven framework**, not one-off
+hardcoded logic; templates are **"recommendation recipes," never rigid itineraries** — never force
+a component that has no genuine real match, just drop it; **never invent combinations** — Nearby
+assembles real independent supply, it doesn't fabricate an itinerary or require businesses to
+pre-package bundles (that's explicitly the *not-yet* piece, called out as Option 3 and declined
+for this pass); and the whole thing must **surface inline inside the existing ask-box/Discover
+flow**, never as a new screen.
+
+This session was itself interrupted once mid-implementation by the user asking "did you put this
+plan in md?" — it hadn't been yet (two new files were already written, `intentResolver.js` was
+already mid-edit with a return-shape change, but `HomeScreen.js`, the one real caller, had NOT
+been updated to match — a real, temporarily-broken intermediate state). Per the user's own choice
+when asked how to proceed, the exact in-progress state was written to CLAUDE.md as an IN PROGRESS
+resume note *before* continuing, then the user confirmed "yes" to keep going. That resume note is
+being replaced by this entry now that the work is actually finished, verified, and committed —
+see this file's own now-superseded IN PROGRESS section (git history) for the blow-by-blow if ever
+needed.
+
+**Design landed on**: `assembleExperience()` is a **pure, client-side regrouping** of
+`resolveIntent()`'s own already-fetched, already-scored `business_availability` candidates — the
+exact same "regroup what's already real, fetch/compute nothing new" shape HomeScreen.js's own
+`groupIntentResultsByType()` (the existing cross-type tier-grouping used when 2+ distinct result
+types come back) already uses for its own purpose. No second network call, no duplicated scoring
+formula, no fabricated combination: each candidate's own real `category`/`subcategory`/
+`categories` (row-level fields not previously carried onto the *returned* candidate object,
+only used internally for scoring) decides which template component it belongs to, and its own
+already-computed `.score` (from `resolveBusinessAvailability()`'s existing formula, completely
+unchanged) is reused as-is to rank items within a component. This satisfies "preserve the
+existing resolver, taxonomy, privacy rules, ranking, and business matching" literally — nothing
+about how a candidate is found or scored changed; only a new post-processing regrouping step was
+added on top of results that already existed.
+
+**What shipped**:
+- New `src/constants/experienceTemplates.js` — `EXPERIENCE_TEMPLATES` keyed by a real, already-
+  extracted `occasion` (`business_requests.occasion`'s own vocabulary): `date_night`,
+  `anniversary`, `birthday`, `celebration`, `family_gathering`. Each template names an ordered
+  list of components (e.g. date_night: 🍽️ Dinner → 🎵 Something to Do → 🍰 Finish the Night), each
+  keyed to a real leaf-tag category list drawn from `gatheringCategories.js`'s own
+  `INTEREST_OPTIONS` vocabulary (the exact same tags `business_availability.category`/
+  `brand_partners.subcategory`/`categories` already use — no new taxonomy). Deliberately left
+  `casual_hangout`/`business_meal`/`other` without a template — single-purpose asks with no safe
+  default multi-part shape, matching the "never force a multi-part answer" design. Component
+  category lists are written non-overlapping *within* a template (dessert tags never also appear
+  under Dinner) so one real posting is never eligible for two components of the same experience by
+  construction, not just by the dedup logic below.
+- New `src/services/experienceAssembly.js` — `assembleExperience(occasion, candidates)`: looks up
+  the template, then for each component in order filters the (still-unclaimed) candidate pool by
+  whether the candidate's own `category`/`subcategory`/any entry in `categories` matches that
+  component's list; a component with zero matches is skipped entirely (never padded); matched
+  candidates are marked claimed (defense in depth against overlap, on top of the non-overlapping
+  template lists) and sorted by their own already-computed score, capped at 3 per component.
+  Returns `null` whenever there's no template, no candidates, or literally no component found any
+  match — callers only ever render a section when this is truthy. Deliberately
+  `business_availability`-only this pass; other candidate types don't yet carry the three fields
+  this buckets on, and adding one is meant to be a small additive follow-up to that type's own
+  resolver branch, not a rework of this function or of the template shape.
+- `src/services/intentResolver.js`: `resolveBusinessAvailability()`'s returned candidate objects
+  now also carry `category`/`subcategory`/`categories` (the row's own real values) at the top
+  level (previously used only internally for the score computation a few lines above, never
+  exposed on the returned object) — this is what lets `assembleExperience()` bucket candidates
+  without a second fetch. `resolveIntent()` now calls `assembleExperience(occasion, deduped)`
+  *before* the existing `RESULT_CAP` slice (so a strong match further down the full ranked pool
+  still gets a real shot at filling a component, not limited to just the flat list's own top 4),
+  and its **return shape changed** from a flat array to `{ items: deduped.slice(0, RESULT_CAP),
+  experience }`.
+- `src/screens/HomeScreen.js` — the one real caller of `resolveIntent()` (confirmed via a
+  repo-wide grep before starting, so this is a complete, not partial, list of call sites needing
+  the shape change): destructures `{ items: resolved, experience }`, threads `experience` into
+  `setIntentResults({...})`. Render: a new "✨ <Experience Title>" section (title +
+  each component's own label + its items, reusing the existing `renderIntentResultItem()` — an
+  Experience-component item is the exact same `business_availability` candidate shape the flat
+  list already renders, nothing new to render) appears above the existing distinctTypes/grouped/
+  flat rendering; that existing rendering now operates on `remainingItems` (the flat `items` list
+  minus anything in `experience.claimedIds`) so a business already shown under "Dinner" is never
+  also repeated in the plain list below it, and that whole flat/grouped block is skipped entirely
+  if nothing remains after filtering.
+- New `src/services/experienceAssembly.test.js` — 8 tests covering: null for an unrecognized/no
+  occasion, null for no candidates, real component assembly with correct per-component score
+  ordering, dropping an empty component instead of forcing one, null when literally nothing
+  matched, never double-claiming one candidate across two components, ignoring non-
+  `business_availability` candidate types, and the per-component 3-item cap.
+
+**Verification**: full Jest suite 230/230 passing (18 suites — 222 pre-existing + 8 new). Neither
+`HomeScreen.js` nor `intentResolver.js` has Jest coverage of its own (RN/expo-dependent, matching
+this codebase's long-standing "no simulator/device testing available" constraint) — both were
+instead parsed with `@babel/parser` directly (JSX + TypeScript + modern syntax plugins enabled) to
+confirm no syntax errors, since this repo's actual Jest/babel config (`jest.babel.config.js`,
+deliberately `@babel/preset-env` only, no JSX plugin, to avoid ever touching Metro's own separate
+config resolution) can't parse JSX at all. A repo-wide grep confirmed `HomeScreen.js` is the only
+real caller of `resolveIntent()` needing the return-shape update — `intentOutcomes.js` only
+mentions it in a comment. **Not verified in an actual running app** — no simulator/device tooling
+available this session, consistent with every prior session on this project; if something looks
+visually off (spacing, the new heading style, the component grouping), that's the first thing to
+suspect.
+
+**Deliberately deferred, per the user's own explicit scope pick**: business-side Experience
+bundles (Option 3 — businesses pre-packaging a cross-category deal) remain unbuilt; the user was
+explicit this session's increment should assemble real independent supply itself, not require
+that. AI-suggested category lists (Option 2) also unbuilt — the fixed-template approach was
+chosen instead. Extending `assembleExperience()`'s candidate pool beyond `business_availability`
+(gatherings especially) is a natural next follow-up per the framework's own stated
+extensibility, but wasn't part of this increment's scope and wasn't started.
+
+This closes out the last fully-unstarted piece of the intent-engine vision named in
+`project_intent_engine_vision` (memory) — both proposed pieces (cross-category Experiences and
+the categories AI-suggestion gap) are now shipped as of this session.
+
 ## Sep 10 2026 — Intent engine vision, multi-classification businesses: client/resolver wiring —
 ## BUILT, VERIFIED LIVE (resumed paused session)
 

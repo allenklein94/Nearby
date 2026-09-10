@@ -139,11 +139,34 @@ own hardcoded `VALID_CATEGORIES` copy was found stale a second time (still the p
 26-tag list) and widened to the real 75-tag list, redeployed and confirmed live. Full build/
 verification detail: `CLAUDE_HISTORY.md`, search "multi-classification businesses."
 
-**Still after that**: cross-category "Experiences" assembly remains the one fully-unstarted piece
-of the intent-engine vision, plus an AI-suggestion for `categories` in
-`business-onboarding-assistant` (deliberately deferred, same precedent `subcategory`'s own
-AI-suggestion piece set) — check with the user before starting either; see the memory file
-(`project_intent_engine_vision`) for full detail.
+**AI-suggestion for `categories` in `business-onboarding-assistant` — also DONE (2026-09-10),
+same session, direct user follow-up ("finish what you didn't start").** Mirrors subcategory's own
+AI-suggestion precedent: `classifyBusinessDescription()` now also extracts a best-effort
+`categories` array, validated against the full 75-tag vocabulary and de-duped against whatever
+`subcategory` it also picked (avoids double-counting the same real signal across
+`subcategoryBonus()`/`secondaryCategoryBonus()`). Wired into `BusinessPartnerApplyScreen.js`'s
+existing manual chip picker + AI-summary banner. Redeployed and verified live.
+
+**Cross-category "Experiences" assembly, first increment — fully DONE (2026-09-10), same session,
+per direct user "finish what you didn't start" + detailed design guidance given verbatim when
+asked to pick a scope via `AskUserQuestion`.** An extensible, data-driven "recommendation recipe"
+framework — `experienceTemplates.js` names, per real already-extracted `occasion`
+(date_night/anniversary/birthday/celebration/family_gathering), an ordered list of components
+(e.g. 🍽️ Dinner → 🎵 Something to Do → 🍰 Finish the Night), each keyed to real leaf-tag categories
+from the existing 75-tag vocabulary. `assembleExperience()` (`experienceAssembly.js`) is a PURE,
+client-side regrouping of `resolveIntent()`'s own already-fetched, already-scored
+`business_availability` candidates — same "regroup what's already real, nothing new fetched or
+computed" shape `HomeScreen.js`'s own `groupIntentResultsByType()` already uses. A component with
+no genuine match is silently dropped, never forced — a recipe, not a rigid itinerary; nothing is
+ever invented. Wired inline into the existing ask-box result flow (`HomeScreen.js`) as a new
+section above the flat list, with claimed items filtered out of that flat list so nothing repeats.
+Jest coverage added (8 tests, `experienceAssembly.test.js`); full suite 230/230 passing. Business-
+side Experience bundles (a business pre-packaging its own cross-category deal) and extending
+supply sources beyond `business_availability` (gatherings, etc.) were both explicitly out of scope
+for this increment. Full build/verification detail: `CLAUDE_HISTORY.md`, search "Experiences
+assembly." This was the last fully-unstarted piece of the intent-engine vision — both deferred
+pieces named at the top of this session (this, and the `categories` AI-suggestion above) are now
+shipped.
 
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with

@@ -725,7 +725,13 @@ export default function HomeScreen({ navigation }) {
           proceedToCreation(result, typedText, submissionId);
         }
       } else {
-        const resolved = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
+        // Intent engine vision -- Experiences assembly, first increment
+        // (2026-09-10): resolveIntent() now also returns `experience`, a
+        // pure regrouping of these same candidates into a real cross-
+        // category "recommendation recipe" section (assembleExperience(),
+        // experienceAssembly.js) -- null whenever there's no real occasion,
+        // no template for it, or no genuine matching inventory.
+        const { items: resolved, experience } = await resolveIntent({ category: result.category, dateWindow: result.dateWindow, rawText: typedText, partySize: result.partySize ?? null, priceLevel: result.priceLevel ?? null, partyType: result.partyType ?? null, attributes: result.attributes ?? [], cuisine: result.cuisine ?? null, occasion: result.occasion ?? null });
         // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
         // Scenario D): a real, deterministic person-shaped-phrase check,
         // never a fabricated resolver candidate -- appends one honest
@@ -743,7 +749,7 @@ export default function HomeScreen({ navigation }) {
           intentKind: result.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
         });
         if (items.length > 0) {
-          setIntentResults({ items, classifyResult: result, typedText, submissionId });
+          setIntentResults({ items, experience, classifyResult: result, typedText, submissionId });
         } else {
           setIntentEmptyFallback({ classifyResult: result, typedText, submissionId });
         }
@@ -1214,23 +1220,49 @@ export default function HomeScreen({ navigation }) {
                     : 'Nearby doesn\'t search for individual people directly — gatherings and communities are how you meet people here. Here\'s what\'s already happening that might fit.'}
                 </Text>
               )}
+              {/* Intent engine vision -- cross-category "Experiences"
+                  assembly, first increment (2026-09-10): a real, already-
+                  scored cross-category "recommendation recipe" section,
+                  computed purely by regrouping the same candidates the flat
+                  list below already has (assembleExperience(),
+                  experienceAssembly.js) -- never a second fetch, never a
+                  fabricated combination. Renders only when resolveIntent()
+                  found genuine matching inventory for at least one
+                  component; a claimed item is filtered out of the flat/
+                  grouped list below so it's never shown twice. */}
+              {intentResults.experience && (
+                <View style={{ marginBottom: spacing.md }}>
+                  <Text style={styles.intentResultsHeading}>{intentResults.experience.title}</Text>
+                  {intentResults.experience.components.map((component) => (
+                    <View key={component.key} style={{ marginBottom: spacing.sm }}>
+                      <Text style={styles.intentGroupLabel}>{component.label}</Text>
+                      {component.items.map((item) => renderIntentResultItem(item))}
+                    </View>
+                  ))}
+                </View>
+              )}
               {(() => {
+                const claimedIds = intentResults.experience?.claimedIds ?? [];
+                const remainingItems = claimedIds.length > 0
+                  ? intentResults.items.filter((i) => !claimedIds.includes(i.id))
+                  : intentResults.items;
+                if (remainingItems.length === 0) return null;
                 // Friend Discovery, alone: never framed as "N ways to make
                 // this happen" (that heading implies real existing supply,
                 // not a navigation action) or as "Already happening near
                 // you" (it isn't). Only reachable when resolveIntent()
                 // genuinely found nothing else for a person-shaped ask.
-                if (intentResults.items.length === 1 && intentResults.items[0].type === 'friend_discovery') {
+                if (remainingItems.length === 1 && remainingItems[0].type === 'friend_discovery') {
                   return (
                     <>
                       <Text style={styles.intentResultsHeading}>{INTENT_RESULT_TYPE_LABELS.friend_discovery}</Text>
-                      {renderIntentResultItem(intentResults.items[0])}
+                      {renderIntentResultItem(remainingItems[0])}
                     </>
                   );
                 }
-                const distinctTypes = new Set(intentResults.items.map((i) => i.type)).size;
+                const distinctTypes = new Set(remainingItems.map((i) => i.type)).size;
                 if (distinctTypes >= 2) {
-                  const grouped = groupIntentResultsByType(intentResults.items);
+                  const grouped = groupIntentResultsByType(remainingItems);
                   return (
                     <>
                       <Text style={styles.intentResultsHeading}>
@@ -1250,7 +1282,7 @@ export default function HomeScreen({ navigation }) {
                 return (
                   <>
                     <Text style={styles.intentResultsHeading}>Already happening near you</Text>
-                    {intentResults.items.map((item) => renderIntentResultItem(item))}
+                    {remainingItems.map((item) => renderIntentResultItem(item))}
                   </>
                 );
               })()}
