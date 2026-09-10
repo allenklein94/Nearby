@@ -8,6 +8,8 @@ import {
   proposeDate,
   respondToDateProposal,
   withdrawDateProposal,
+  searchNearbyForPlan,
+  createBusinessRequestForMatch,
 } from '../services/dateProposals';
 import { getAcceptedOfferForRequest, getOpenOfferCounts } from '../services/businessFulfillment';
 import LoadErrorState from '../components/LoadErrorState';
@@ -64,12 +66,26 @@ export default function DateProposalScreen({ navigation, route }) {
   const [loadError, setLoadError] = useState(false);
   const [planText, setPlanText] = useState('');
   // Discover/People-Friends parity plan, item 4: which quick-category chip
-  // (if any) the proposer tapped, purely a session-local convenience
-  // carried into "Find Somewhere to Go"'s prefillCategory -- not persisted
-  // server-side, so it resets if this screen unmounts before that button
-  // is tapped. AskBusinessScreen's own category chips stay fully editable
-  // regardless, so this is a nicety, not something a plan depends on.
+  // (if any) the proposer tapped -- also now persisted server-side on the
+  // proposal itself (date_proposals.category, external UX critique reply
+  // item 4, 2026-09-10) precisely so the OTHER person's device (which
+  // never had this local state) can still prefill "Find Somewhere to Go"
+  // correctly. This local copy remains the live, editable source of truth
+  // while composing a new proposal.
   const [selectedCategory, setSelectedCategory] = useState(null);
+  // External UX critique reply, item 4 (CLAUDE.md, 2026-09-10): which
+  // quick-category chip is currently "active" (drives whether "Find
+  // something nearby" shows at all) -- distinct from selectedCategory
+  // since two chips ("Something fun"/"Surprise me") both use category:
+  // null but are still real, distinct active selections.
+  const [activeChipKey, setActiveChipKey] = useState(null);
+  const [searchingNearby, setSearchingNearby] = useState(false);
+  const [nearbyResults, setNearbyResults] = useState(null);
+  // The real business_availability posting the proposer chose from real
+  // search results, if any -- carried into proposeDate() so the plan is
+  // tied to an actual place, not just a category. Never fabricated: only
+  // ever set from a genuine searchNearbyForPlan() result the user tapped.
+  const [selectedAvailabilityId, setSelectedAvailabilityId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -138,8 +154,12 @@ export default function DateProposalScreen({ navigation, route }) {
     }
     setSubmitting(true);
     try {
-      await proposeDate(matchId, planText.trim());
+      await proposeDate(matchId, planText.trim(), selectedAvailabilityId, selectedCategory);
       setPlanText('');
+      setSelectedCategory(null);
+      setActiveChipKey(null);
+      setNearbyResults(null);
+      setSelectedAvailabilityId(null);
       await load();
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
@@ -147,10 +167,54 @@ export default function DateProposalScreen({ navigation, route }) {
     setSubmitting(false);
   }
 
+  // External UX critique reply, item 4 (CLAUDE.md, 2026-09-10): finds real
+  // nearby businesses/offers matching the active category -- read-only,
+  // contacts no business, matching Home's own "browsing is free" intent-
+  // box precedent. category is intentionally null for "Something fun"/
+  // "Surprise me" -- a real broad browse, not a missing filter.
+  async function handleFindNearby() {
+    setSearchingNearby(true);
+    setNearbyResults(null);
+    try {
+      const results = await searchNearbyForPlan(selectedCategory);
+      setNearbyResults(results);
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setSearchingNearby(false);
+  }
+
+  function handleChooseNearby(result) {
+    const chip = PLAN_QUICK_CATEGORIES.find((qc) => qc.key === activeChipKey);
+    const label = chip ? chip.label : 'Plan';
+    setPlanText(`${label} at ${result.partner_name}${result.title ? ` — ${result.title}` : ''}`);
+    setSelectedAvailabilityId(result.id);
+    setNearbyResults(null);
+  }
+
+  // External UX critique reply, item 4: when the proposer already found
+  // and chose a specific real place, accepting the plan should mean the
+  // plan is created around that place immediately -- "invite person ->
+  // plan created," not a second manual "Find Somewhere to Go" search. Any
+  // failure here (location permission denied, the place no longer fits by
+  // now) degrades honestly: the plan is still accepted either way, and
+  // the existing "Find Somewhere to Go ->" manual button still renders
+  // below once load() reflects that no businessRequest exists yet.
   async function handleRespond(accept) {
     setSubmitting(true);
     try {
       await respondToDateProposal(proposal.id, accept);
+      if (accept && proposal?.availability_id) {
+        try {
+          await createBusinessRequestForMatch({
+            matchId,
+            text: proposal.plan_text,
+            category: proposal.category,
+          });
+        } catch (e) {
+          console.error('auto-create business request for accepted plan failed', e);
+        }
+      }
       await load();
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
@@ -229,7 +293,7 @@ export default function DateProposalScreen({ navigation, route }) {
               acceptedOffer || businessRequest
                 ? () => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })
                 : proposal?.status === 'accepted'
-                ? () => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: selectedCategory })
+                ? () => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory })
                 : undefined
             }
             style={{ marginBottom: spacing.lg }}
@@ -308,7 +372,7 @@ export default function DateProposalScreen({ navigation, route }) {
               ) : (
                 <TouchableOpacity
                   style={styles.primaryButton}
-                  onPress={() => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: selectedCategory })}
+                  onPress={() => navigation.navigate('AskBusiness', { matchId, matchName, prefillCategory: proposal?.category ?? selectedCategory })}
                   accessibilityLabel="Find somewhere to go"
                   accessibilityRole="button"
                 >
@@ -323,7 +387,7 @@ export default function DateProposalScreen({ navigation, route }) {
               <Text style={styles.label}>What do you want to do?</Text>
               <View style={styles.quickCategoryRow}>
                 {PLAN_QUICK_CATEGORIES.map((qc) => {
-                  const selected = selectedCategory === qc.category && planText === qc.planText;
+                  const selected = activeChipKey === qc.key;
                   return (
                     <TouchableOpacity
                       key={qc.key}
@@ -331,6 +395,9 @@ export default function DateProposalScreen({ navigation, route }) {
                       onPress={() => {
                         setSelectedCategory(qc.category);
                         setPlanText(qc.planText);
+                        setActiveChipKey(qc.key);
+                        setNearbyResults(null);
+                        setSelectedAvailabilityId(null);
                       }}
                       accessibilityLabel={qc.label}
                       accessibilityRole="button"
@@ -342,6 +409,63 @@ export default function DateProposalScreen({ navigation, route }) {
                   );
                 })}
               </View>
+
+              {/* External UX critique reply, item 4: the real "find a real
+                  place before inviting" step -- shows once a chip is
+                  active, searches real live supply, and never fabricates a
+                  result. Choosing one composes planText from the real
+                  posting and carries its id through to propose_date(). */}
+              {activeChipKey && (
+                <View style={{ marginBottom: spacing.md }}>
+                  <TouchableOpacity
+                    style={styles.findNearbyButton}
+                    onPress={handleFindNearby}
+                    disabled={searchingNearby}
+                    accessibilityLabel="Find something nearby"
+                    accessibilityRole="button"
+                  >
+                    {searchingNearby ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Text style={styles.findNearbyButtonText}>🔎 Find something nearby</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  {nearbyResults && nearbyResults.length === 0 && (
+                    <Text style={styles.nearbyEmptyText}>
+                      No real nearby options right now — you can still send a text invite below.
+                    </Text>
+                  )}
+
+                  {nearbyResults && nearbyResults.length > 0 && (
+                    <View style={styles.nearbyResultsList}>
+                      {nearbyResults.map((result) => (
+                        <TouchableOpacity
+                          key={result.id}
+                          style={[styles.nearbyResultCard, selectedAvailabilityId === result.id && styles.nearbyResultCardSelected]}
+                          onPress={() => handleChooseNearby(result)}
+                          accessibilityLabel={`Choose ${result.partner_name}`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.nearbyResultTitle}>{result.partner_name}</Text>
+                          {!!result.title && <Text style={styles.nearbyResultSubtitle}>{result.title}</Text>}
+                          <Text style={styles.nearbyResultMeta}>
+                            {[
+                              result.offer_type,
+                              result.price != null ? `$${result.price}` : null,
+                              result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
+                              result.remaining_capacity != null ? `${result.remaining_capacity} spots left` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
               <Text style={styles.label}>Or say it your way</Text>
               <TextInput
                 style={styles.textArea}
@@ -351,6 +475,9 @@ export default function DateProposalScreen({ navigation, route }) {
                 onChangeText={(text) => {
                   setPlanText(text);
                   setSelectedCategory(null);
+                  setActiveChipKey(null);
+                  setNearbyResults(null);
+                  setSelectedAvailabilityId(null);
                 }}
                 multiline
                 accessibilityLabel="What do you have in mind?"
@@ -392,6 +519,22 @@ const getStyles = (colors) => StyleSheet.create({
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, minHeight: 90, textAlignVertical: 'top',
   },
+  findNearbyButton: {
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary,
+    paddingVertical: spacing.sm, alignItems: 'center', backgroundColor: colors.primaryMuted,
+    marginBottom: spacing.sm,
+  },
+  findNearbyButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
+  nearbyEmptyText: { ...typography.caption, color: colors.textTertiary, fontStyle: 'italic' },
+  nearbyResultsList: { gap: spacing.xs },
+  nearbyResultCard: {
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.sm,
+  },
+  nearbyResultCardSelected: { borderColor: colors.primary, borderWidth: 1.5, backgroundColor: colors.primaryMuted },
+  nearbyResultTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  nearbyResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  nearbyResultMeta: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
   priorPlanCard: {
     backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.lg,

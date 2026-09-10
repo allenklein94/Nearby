@@ -40,114 +40,14 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**IN PROGRESS — "Plan" should mean planning something in the real world, not a generic toolbox
-(external UX critique reply, item 4, 2026-09-10).** DB migration written, applied to production,
-and functionally verified live (positive + 2 negative cases, all in rolled-back transactions, no
-residue) — **client-side changes (`dateProposals.js`, `DateProposalScreen.js`) not yet written.**
-Pick up there.
-
-**The ask, verbatim**: hitting "Plan" on a match should feel like "Plan Something Together → What
-do you want to do? → [category chips]" (already existed) → **"Find something nearby" → real
-businesses/places/activities/offers → choose → invite person → plan created** — i.e. the proposer
-should find and choose a *specific real place* BEFORE sending the invite, not after the other
-person accepts an abstract text idea. The user called this "probably one of the most important
-product corrections," restating the product thesis: "connect people → create something → connect
-it to a real business/place."
-
-**What already existed (confirmed via code read, not a fabricated gap)**: `DateProposalScreen.js`
-already renders exactly "Plan Something Together" / "What do you want to do?" with 7 real quick-
-category chips (Dinner/Coffee/Fitness/Something fun/Music/Outdoors/Surprise me — Discover/
-Friends-parity-plan item 4, shipped 2026-09-06). What was missing: those chips only ever filled
-`planText` with a generic sentence ("Dinner sometime?") — there was no step where the proposer
-actually saw real nearby supply before inviting. The order was propose (freeform text only) →
-other person accepts → *only then* manually navigate to `AskBusinessScreen` to search. A deeper,
-previously-undiscovered gap found while investigating: `create_business_request_for_match` (the
-RPC `AskBusinessScreen`'s "Find Somewhere to Go" calls once a plan is accepted) was the *only*
-`create_business_request*` variant with no `preferred_availability_id_param` at all — every other
-variant (`create_business_request`, i.e. the solo path) already supports binding to one specific
-already-found `business_availability` posting (`20260822_availability_preferred_binding.sql`), but
-the match path could never do this — a match-sourced request always broadcast generically, never
-could bind to a specific chosen place. This is the real root cause behind the toolbox feeling.
-
-**Locked design**: reuse existing infra, no new UI-search framework and no new "browse" RPC —
-`searchActiveBusinessAvailability()` (`businessFulfillment.js`, wraps `search_active_business_
-availability`, already used by Home's intent box) is read-only and already exactly "find real
-nearby businesses/offers by category," so calling it directly from the Plan screen is legitimate
-(browsing contacts no business — matches Home's own established precedent — so this doesn't touch
-the locked Match ≠ Date gate: a business is still never actually asked/reserved until the *other*
-person explicitly accepts). The human-readable plan text stays the single source of truth shown to
-both people (no new display path needed, no RLS problem to solve, since `business_availability`
-has owner-only SELECT RLS and a plain client read of it by a non-owner would return nothing) — a
-chosen posting composes into `planText` (e.g. "Dinner at Tony's Trattoria") exactly like today's
-freeform text, plus two new **machine-readable** fields carried on the proposal so the *accepting*
-device (which never had the proposer's local search-session state) can act on the same choice:
-`date_proposals.availability_id` (nullable FK to `business_availability`, `on delete set null`)
-and `date_proposals.category` (nullable text, persists the picked quick-category chip across
-devices — today's `selectedCategory` was explicitly documented as "session-local... resets if this
-screen unmounts," which silently fails once the ACCEPTING person, not the proposer, is the one who
-ends up triggering "Find Somewhere to Go").
-
-**DB migration — DONE, applied, verified live (`20261001_plan_something_real_supply.sql`)**:
-- `date_proposals` gains the two nullable columns above.
-- `propose_date(match_id_param, plan_text_param, availability_id_param default null, category_param
-  default null)` — old 2-arg signature explicitly dropped first (per this repo's own "added param
-  = new overload" convention). If `availability_id_param` is given, does a basic honest liveness
-  check (`status = 'active' and ends_at > now()`) — not the full feasibility re-check (party size,
-  radius) `_match_request_to_availability` does later at actual claim time, just enough to reject
-  inviting someone to a place that's already gone by propose time. Stores both new columns.
-- `create_business_request_for_match` — **signature unchanged** (still the real 11-arg shape from
-  `20260912_business_request_occasion.sql`), so this was a safe plain `CREATE OR REPLACE`, body-
-  only. It already does `select * into v_proposal from date_proposals where ... status='accepted'`
-  — the body now threads `v_proposal.availability_id` into `_match_request_to_availability`'s own
-  existing `preferred_availability_id_param` slot (9th positional arg, `party_size_param` 2 as the
-  10th — both already existed on that function since `20260828_business_availability_party_size_
-  feasibility.sql`, just never wired from the match path), and uses `coalesce(category_param,
-  v_proposal.category)` for the stored request's own category so either side's device produces the
-  same real category. Explicit caller-passed `category_param` still wins over the stored fallback,
-  matching this codebase's existing prefill-vs-explicit precedent everywhere else.
-- **Verified live in rolled-back transactions** (disposable `brand_partners`/`business_availability`/
-  `matches` rows, two real existing profile ids as the disposable pair, all confirmed rolled back
-  with zero residue afterward): (1) positive case — propose with a real live posting bound + a
-  category → accept → `create_business_request_for_match` → resulting `business_request_offers`
-  row has `status = 'offered'` and `availability_id` equal to the exact chosen posting, immediately,
-  no generic broadcast, no fabricated match; (2) a second propose attempt while one is still
-  pending is correctly rejected (unrelated existing guard, confirmed not broken by the new params);
-  (3) proposing with an already-expired posting's id is correctly rejected before any row is
-  created.
-
-**Client-side — NOT YET BUILT, pick up here**:
-1. `src/services/dateProposals.js`: `proposeDate(matchId, planText, availabilityId = null, category
-   = null)` — thread the two new params to the RPC. Consider a new `searchNearbyForPlan(category)`
-   helper here (device location + `searchActiveBusinessAvailability`), mirroring
-   `createBusinessRequestForMatch`'s own existing location-permission pattern in this same file.
-2. `src/screens/DateProposalScreen.js`'s propose-form step: after a quick-category chip is tapped,
-   add a **"🔎 Find something nearby"** action that calls the new search helper and shows real
-   results (partner_name, title, offer_type/price, distance_miles, remaining_capacity) in a simple
-   list — tapping one sets `planText` to a composed real string (e.g. "Dinner at {partner_name}")
-   and stores the chosen `availabilityId` + `category` in local state; an honest empty state
-   ("No real nearby options right now — you can still send a text invite below") when nothing
-   real comes back, never a fabricated placeholder. "Surprise me"/"Something fun" naturally search
-   with `category: null` (the RPC already treats null as "no category filter," so this is a real
-   broad browse, not a special case). The existing freeform "Or say it your way" text box stays
-   exactly as-is (no availability/category attached) — this is additive, not a replacement.
-3. `handlePropose()`: pass the stored `availabilityId`/`category` into `proposeDate()`.
-4. `handleRespond(accept)`: when accepting AND the loaded `proposal.availability_id` is present,
-   automatically call `createBusinessRequestForMatch` right after a successful accept (using the
-   *accepting* device's own location — same permission flow that function already has) instead of
-   requiring a manual "Find Somewhere to Go" tap — this is the literal "invite person → plan
-   created" step from the ask. On any failure (permission denied, place no longer fits by then),
-   degrade honestly: don't block the accepted state, just let the existing "Find Somewhere to Go →"
-   manual button still render (already the current fallback branch when `businessRequest` is null).
-5. The existing "Find Somewhere to Go →" button's `prefillCategory` should read `proposal?.category
-   ?? selectedCategory` instead of only local `selectedCategory` state, since the accepting device's
-   local state is always null (only the proposer's own session ever sets it) — today's code passes
-   only `selectedCategory`, which is a real, if minor, pre-existing prefill gap for whichever side
-   didn't originate the proposal.
-6. No Jest coverage planned for this one (the new logic is UI wiring + already-verified RPC calls,
-   not new pure functions) — real coverage is the live RPC verification already done above.
-
-**Standing reminder for whoever resumes**: don't re-verify the migration (already done, see above)
-— start at client step 1.
+**"Plan" means a real place, not a generic toolbox — fully DONE (2026-09-10)**, external UX
+critique reply item 4. DB migration (`20261001_plan_something_real_supply.sql`) and all client
+work (`dateProposals.js`, `DateProposalScreen.js`) shipped: proposing a plan now offers a real "🔎
+Find something nearby" search over live business availability before the invite is sent, and
+accepting a plan with a chosen place auto-creates the bound business request instead of requiring
+a second manual step. Full build/verification detail: `CLAUDE_HISTORY.md`, search `"Plan" means a
+real place`. Not exercised in a running app (no simulator/device tooling this session, standing
+note) — full Jest suite (252/252) and a direct babel-transform syntax check both pass.
 
 **Unified Crossed Paths across Dating and Friends — fully DONE (2026-09-10).** ONE Crossed Paths
 mechanism shared by Dating and Friends, preferring real shared-past-gathering attendance

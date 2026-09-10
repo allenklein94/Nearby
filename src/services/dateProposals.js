@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { supabase } from './supabase';
+import { searchActiveBusinessAvailability } from './businessFulfillment';
 
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4): the
 // locked Match -> Proposal -> Other person accepts -> Dating Experience ->
@@ -9,10 +10,41 @@ import { supabase } from './supabase';
 // server-side (propose_date/respond_to_date_proposal/withdraw_date_
 // proposal), never just by hiding the wrong button client-side.
 
-export async function proposeDate(matchId, planText) {
+// External UX critique reply, item 4 (CLAUDE.md, 2026-09-10): "Plan"
+// should mean planning something real, not a generic toolbox. Read-only,
+// contacts no business -- same "browsing is free, asking is the real
+// action" precedent Home's own intent box already established -- so this
+// is safe to call before the other person has accepted anything. category
+// null (the "Surprise me"/"Something fun" chips) is a real, intentional
+// broad browse, not a missing value -- search_active_business_availability
+// already treats a null category_param as "no category filter."
+export async function searchNearbyForPlan(category) {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') {
+    throw new Error('Location access is needed to find nearby places.');
+  }
+  const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  return searchActiveBusinessAvailability({
+    category,
+    latitude: location.coords.latitude,
+    longitude: location.coords.longitude,
+    radiusMiles: 15,
+  });
+}
+
+// availabilityId/category (2026-09-10): when the proposer used "Find
+// something nearby" and chose a specific real posting, these carry that
+// choice through to the OTHER person's device -- which never had the
+// proposer's own local search-session state -- so accepting can bind the
+// resulting business request to that exact place immediately, and "Find
+// Somewhere to Go" prefills correctly regardless of who taps it. Both
+// stay null for today's plain freeform-text invite, unchanged.
+export async function proposeDate(matchId, planText, availabilityId = null, category = null) {
   const { data, error } = await supabase.rpc('propose_date', {
     match_id_param: matchId,
     plan_text_param: planText,
+    availability_id_param: availabilityId,
+    category_param: category,
   });
   if (error) throw new Error(error.message);
   return data; // { proposalId, status }
