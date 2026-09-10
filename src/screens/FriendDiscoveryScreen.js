@@ -5,6 +5,7 @@ import {
   isOpenToFriendDiscovery,
   setOpenToFriendDiscovery,
   getFriendDiscoveryCandidates,
+  getFriendCrossedPaths,
   recordFriendDiscoverySwipe,
 } from '../services/friendDiscovery';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -94,6 +95,12 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   // sections show and in what order.
   const [quickFilterOrder, setQuickFilterOrder] = useState(FRIEND_DEFAULT_ORDER);
   const [quickFilterVisible, setQuickFilterVisible] = useState(FRIEND_DEFAULT_VISIBLE);
+  // Unified Crossed Paths, step 5 (CLAUDE.md, 2026-09-10): Friends gains
+  // the same Browse | Crossed Paths mode switch Dating already has --
+  // this screen previously had only a single Browse-style pool
+  // (getFriendDiscoveryCandidates). Browse stays the default so existing
+  // behavior is unchanged for anyone who hasn't tried the new mode yet.
+  const [discoveryMode, setDiscoveryMode] = useState('browse');
 
   // Wave 2B of the full-system acceptance audit (see
   // PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found this had zero
@@ -125,7 +132,9 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       }
 
       if (isOn) {
-        const results = await getFriendDiscoveryCandidates(20);
+        const results = discoveryMode === 'crossedPaths'
+          ? await getFriendCrossedPaths()
+          : await getFriendDiscoveryCandidates(20);
         setCandidates(results);
 
         const urlEntries = await Promise.all(
@@ -144,7 +153,16 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
       setLoadError(true);
     }
     setLoading(false);
-  }, []);
+  }, [discoveryMode]);
+
+  function switchDiscoveryMode(mode) {
+    if (mode === discoveryMode) return;
+    setDiscoveryMode(mode);
+    // Crossed Paths candidates never carry a real distance bucket -- a
+    // stale filter value from Browse would otherwise silently exclude
+    // every result.
+    if (mode === 'crossedPaths') setDistanceFilter(null);
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -326,6 +344,31 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
     <Container style={styles.container}>
       <Header />
 
+      {/* Unified Crossed Paths, step 5 (CLAUDE.md, 2026-09-10): same
+          two-mode choice Dating's own Discover surface offers, using this
+          screen's own existing filterChip visual language rather than
+          inventing a new switcher control. */}
+      <View style={styles.modeSwitchRow}>
+        <TouchableOpacity
+          style={[styles.modeSwitchButton, discoveryMode === 'browse' && styles.modeSwitchButtonActive]}
+          onPress={() => switchDiscoveryMode('browse')}
+          accessibilityLabel="Browse — a wider pool matching your filters"
+          accessibilityRole="button"
+          accessibilityState={{ selected: discoveryMode === 'browse' }}
+        >
+          <Text style={[styles.modeSwitchText, discoveryMode === 'browse' && styles.modeSwitchTextActive]}>🔎 Browse</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modeSwitchButton, discoveryMode === 'crossedPaths' && styles.modeSwitchButtonActive]}
+          onPress={() => switchDiscoveryMode('crossedPaths')}
+          accessibilityLabel="Crossed Paths — people you've actually crossed paths with or shared a gathering with"
+          accessibilityRole="button"
+          accessibilityState={{ selected: discoveryMode === 'crossedPaths' }}
+        >
+          <Text style={[styles.modeSwitchText, discoveryMode === 'crossedPaths' && styles.modeSwitchTextActive]}>📍 Crossed Paths</Text>
+        </TouchableOpacity>
+      </View>
+
       {candidates.length > 0 && (
         <View style={styles.accordionContainer}>
           <TouchableOpacity
@@ -369,6 +412,12 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
                   );
                 }
                 if (key === 'distance') {
+                  // Crossed Paths candidates never carry a real distance
+                  // bucket (they come from proximity/gathering signals,
+                  // not the wide_area grid Browse's own RPC buckets) --
+                  // showing this filter there would just filter
+                  // everything out against a value that's always null.
+                  if (discoveryMode === 'crossedPaths') return null;
                   return (
                     <View key={key} style={{ marginTop: spacing.sm }}>
                       <Text style={styles.accordionSubLabel}>Distance</Text>
@@ -486,6 +535,18 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
+  // Unified Crossed Paths, step 5: same two-button switcher shape used
+  // elsewhere in this app for a binary mode choice, built from this
+  // screen's own filterChip/filterChipActive tokens rather than a new
+  // visual language.
+  modeSwitchRow: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
+  modeSwitchButton: {
+    flex: 1, alignItems: 'center', borderRadius: radius.full, paddingVertical: spacing.sm,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+  },
+  modeSwitchButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  modeSwitchText: { ...typography.small, color: colors.textSecondary, fontWeight: '600' },
+  modeSwitchTextActive: { color: colors.primary },
   // Taxonomy Post-Implementation Audit remediation (CLAUDE.md, Aug 28
   // 2026), item 4: values copied verbatim from DiscoveryScreen.js's own
   // accordionContainer/accordionHeader/accordionHeaderLabel/

@@ -11,6 +11,7 @@ import { typography, spacing, radius } from '../theme';
 // from get_friend_discovery_candidates()) so the leading icon matches
 // the same category glyph wherever that category appears app-wide.
 import { REASON_CATEGORIES, REASON_CATEGORY_ICONS } from '../constants/recommendationReasonVocabulary';
+import { gatheringReasonText, formatCrossedPathsTimeShort } from '../services/crossedPathsSignals';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
@@ -91,6 +92,20 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
     sharedBits.push({ text: `${item.mutual_friend_count} mutual friend${item.mutual_friend_count === 1 ? '' : 's'}`, category: REASON_CATEGORIES.CONTEXT });
   }
 
+  // Unified Crossed Paths, step 6 (CLAUDE.md, 2026-09-10): only present
+  // on a real Crossed Paths candidate (never on a Browse-mode one) --
+  // gathering attendance is always the preferred, real explanation when
+  // it exists; a proximity-only match gets today's existing Dating
+  // Crossed Paths wording, never blended together.
+  const crossedPathsText = item.crossedPathsReason?.type === 'gathering'
+    ? gatheringReasonText(item.crossedPathsReason)
+    : item.crossedPathsReason?.type === 'proximity'
+      ? (() => {
+          const time = formatCrossedPathsTimeShort(item.crossedPathsReason.lastSeenAt);
+          return `Crossed paths${time ? ` ${time}` : ''}`;
+        })()
+      : null;
+
   return (
     <View style={styles.stackContainer}>
       {nextItem && (
@@ -120,6 +135,11 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
             )}
             {item.distance_bucket && <Text style={styles.distance}>{item.distance_bucket}</Text>}
           </View>
+          {crossedPathsText && (
+            <Text style={styles.crossedPathsText}>
+              {item.crossedPathsReason?.type === 'gathering' ? '🗓️ ' : '📍 '}{crossedPathsText}
+            </Text>
+          )}
           {sharedBits.length > 0 && (
             <View style={styles.sharedRow}>
               <Ionicons
@@ -203,6 +223,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // sharedText itself keeps its own marginBottom -- sharedRow adds no
   // margin of its own, matching ReasonList.js's own "don't double the
   // gap" convention.
+  crossedPathsText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.xs },
   sharedRow: { flexDirection: 'row', alignItems: 'center' },
   sharedIcon: { marginRight: 4 },
   sharedText: { ...typography.small, color: colors.primary, fontWeight: '600', marginBottom: spacing.xs },

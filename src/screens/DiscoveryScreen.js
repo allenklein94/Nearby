@@ -3,6 +3,7 @@ import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, RefreshControl, Alert, Animated, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
+import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
 import { checkAndCountBrowseView } from '../services/browseLimits';
 import { getOnlineStatuses } from '../services/presenceStatus';
 import { generateCompatibilityReport } from '../services/compatibility';
@@ -38,28 +39,6 @@ const DISCOVERY_FILTER_FIELDS = [
   ...BASICS_FIELDS.filter((f) => f.type === 'select'),
   { key: 'ethnicity', label: 'Ethnicity', icon: '🌍', options: ETHNICITY_OPTIONS, topLevel: true },
 ];
-
-function formatCrossedPathsTime(iso) {
-  if (!iso) return null;
-  const then = new Date(iso);
-  const diffMs = Date.now() - then.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  const dateTimeStamp = then.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
-    ', ' + then.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
-  let relative;
-  if (diffMins < 1) relative = 'Just now';
-  else if (diffMins < 60) relative = `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
-  else if (diffHours < 24) relative = `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
-  else if (diffDays === 1) relative = 'Yesterday';
-  else if (diffDays < 7) relative = `${diffDays} days ago`;
-  else relative = null;
-
-  return relative ? `${relative} (${dateTimeStamp})` : dateTimeStamp;
-}
 
 function calculateAge(birthdateString) {
   if (!birthdateString) return null;
@@ -570,6 +549,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             onReport={(id, name) => setReportTarget({ id, name })}
             compatibilityColor={compatibilityColor}
             onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
+            discoveryMode={discoveryMode}
           />
         )
       ) : (
@@ -604,6 +584,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         }
         renderItem={({ item, index }) => {
           const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
+          const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason, formatCrossedPathsTime);
           return (
           <AnimatedListItem index={index}>
           <View style={styles.card}>
@@ -644,6 +625,10 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
               {discoveryMode === 'browse' ? (
                 <View style={styles.proximityRow}>
                   <Text style={styles.proximityText}>🔎 Matches your filters</Text>
+                </View>
+              ) : gatheringText ? (
+                <View style={styles.proximityRow}>
+                  <Text style={styles.proximityText}>🗓️ {gatheringText}</Text>
                 </View>
               ) : (
                 <View style={styles.proximityRow}>

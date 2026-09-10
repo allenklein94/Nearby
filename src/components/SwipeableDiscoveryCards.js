@@ -4,27 +4,26 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { formatCrossedPathsTimeShort, gatheringReasonText } from '../services/crossedPathsSignals';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
-
-function formatCrossedPathsTime(iso) {
-  if (!iso) return null;
-  const then = new Date(iso);
-  const diffMins = Math.floor((Date.now() - then.getTime()) / (1000 * 60));
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins} min ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return null;
-}
 
 // A genuinely optional alternative to the list view — swipe right to
 // send a Notice, swipe left to move on with no action taken. Wave
 // stays as an explicit button rather than a swipe direction, since
 // it's premium-limited and shouldn't be triggerable by accident.
+//
+// `discoveryMode` (CLAUDE.md, 2026-09-10 fix): previously this card
+// showed a hardcoded "📍 Within about 35 feet" line unconditionally,
+// even when the data passed in was actually Browse-mode data (no real
+// proximity signal at all) -- a fabricated-signal bug. Now branches the
+// same way the list view (DiscoveryScreen.js) already does: Browse mode
+// shows "🔎 Matches your filters", Crossed Paths mode shows the real
+// per-candidate reason (shared gathering attendance when it exists,
+// proximity sighting otherwise) -- never both, never a guess.
 export default function SwipeableDiscoveryCards({
-  data, photoUrls, onlineStatuses, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore,
+  data, photoUrls, onlineStatuses, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths',
 }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -110,7 +109,8 @@ export default function SwipeableDiscoveryCards({
 
   const item = data[currentIndex];
   const nextItem = data[currentIndex + 1];
-  const crossedPathsTime = formatCrossedPathsTime(item.last_seen_at);
+  const crossedPathsTime = formatCrossedPathsTimeShort(item.last_seen_at);
+  const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason);
 
   const cardStyle = {
     transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
@@ -151,7 +151,11 @@ export default function SwipeableDiscoveryCards({
             )}
           </View>
           <Text style={styles.proximityText}>
-            📍 Within about 35 feet{crossedPathsTime ? ` · ${crossedPathsTime}` : ''}
+            {discoveryMode === 'browse'
+              ? '🔎 Matches your filters'
+              : gatheringText
+                ? `🗓️ ${gatheringText}`
+                : `📍 Within about 35 feet${crossedPathsTime ? ` · ${crossedPathsTime}` : ''}`}
           </Text>
           <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
         </View>

@@ -21,6 +21,25 @@ import * as TaskManager from 'expo-task-manager';
 import { supabase, functionUrl } from './supabase';
 import { calculateCompatibility } from './compatibility';
 import { getMyActiveLiveTrackingSession } from './liveTracking';
+import { mergeCrossedPathsSignals } from './crossedPathsSignals';
+
+// Unified Crossed Paths, step 3 (CLAUDE.md, 2026-09-10): the shared-
+// gathering-attendance half of the signal union -- see
+// get_shared_gathering_partners() (20260930_shared_gathering_crossed_
+// paths.sql) and crossedPathsSignals.js's own header comment for the
+// full locked design. Kept local to this file (not in the shared pure
+// module) since it's a real supabase RPC call, not pure logic --
+// friendDiscovery.js's own getFriendCrossedPaths() calls the same RPC
+// independently rather than sharing this wrapper, since the two
+// services deliberately don't import from each other.
+async function getSharedGatheringPartners() {
+  const { data, error } = await supabase.rpc('get_shared_gathering_partners');
+  if (error) {
+    console.error('getSharedGatheringPartners error', error);
+    return [];
+  }
+  return data ?? [];
+}
 
 const BACKGROUND_LOCATION_TASK = 'nearby-background-location-task';
 
@@ -256,7 +275,23 @@ export async function getNearbyMatches() {
     console.error('getNearbyMatches error', error);
     return [];
   }
-  if (!sightings || sightings.length === 0) return [];
+
+  const gatheringPartners = await getSharedGatheringPartners();
+
+  // Unified Crossed Paths (CLAUDE.md, 2026-09-10): the candidate pool is
+  // now the union of real proximity sightings and real shared-past-
+  // gathering attendance, not sightings alone -- mergeCrossedPathsSignals
+  // prefers the gathering explanation over proximity whenever both are
+  // real for the same pair, never blending them. Every filter below
+  // (matches/blocks/friends exclusion, then dating eligibility) applies
+  // identically to both signal types.
+  const sightingSignals = (sightings ?? []).map((s) => ({
+    otherUserId: s.user_a === userId ? s.user_b : s.user_a,
+    last_seen_at: s.last_seen_at,
+    sightingId: s.id,
+  }));
+  const merged = mergeCrossedPathsSignals(sightingSignals, gatheringPartners);
+  if (merged.length === 0) return [];
 
   const { data: existingMatches } = await supabase
     .from('matches')
@@ -267,11 +302,11 @@ export async function getNearbyMatches() {
     (existingMatches ?? []).map((m) => (m.user_a === userId ? m.user_b : m.user_a))
   );
 
-  const otherUserIds = sightings
-    .map((s) => (s.user_a === userId ? s.user_b : s.user_a))
-    .filter((id) => !matchedUserIds.has(id) && !excludedUserIds.has(id));
+  const eligible = merged.filter((m) => !matchedUserIds.has(m.otherUserId) && !excludedUserIds.has(m.otherUserId));
 
-  if (otherUserIds.length === 0) return [];
+  if (eligible.length === 0) return [];
+
+  const otherUserIds = eligible.map((m) => m.otherUserId);
 
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
@@ -285,10 +320,9 @@ export async function getNearbyMatches() {
 
   const profileById = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]));
 
-  return sightings
-    .map((s) => {
-      const otherUserId = s.user_a === userId ? s.user_b : s.user_a;
-      const otherProfile = profileById[otherUserId] ?? null;
+  return eligible
+    .map((m) => {
+      const otherProfile = profileById[m.otherUserId] ?? null;
 
       const sharedInterests = otherProfile
         ? (otherProfile.interests ?? []).filter((i) => (myProfile?.interests ?? []).includes(i))
@@ -297,12 +331,19 @@ export async function getNearbyMatches() {
       const compatibilityScore = otherProfile ? calculateCompatibility(myProfile, otherProfile) : null;
 
       return {
-        id: s.id,
-        last_seen_at: s.last_seen_at,
-        otherUserId,
+        // A gathering-only candidate has no real sighting row to key off
+        // of -- falls back to a synthetic-but-stable id so FlatList/
+        // photoUrls keying still works. Never reuses a real sighting id
+        // for a gathering-only match.
+        id: m.sightingId ?? `gathering-${m.crossedPathsReason.gatheringId}-${m.otherUserId}`,
+        last_seen_at: m.last_seen_at,
+        sightingLat: m.sightingLat,
+        sightingLng: m.sightingLng,
+        otherUserId: m.otherUserId,
         profiles: otherProfile,
         sharedInterests,
         compatibilityScore,
+        crossedPathsReason: m.crossedPathsReason,
       };
     })
     .filter((item) => item.profiles !== null)
