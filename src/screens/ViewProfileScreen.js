@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, FlatList, Dimensions, TouchableOpacity, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getExtraPhotos } from '../services/extraPhotos';
@@ -84,9 +85,29 @@ export default function ViewProfileScreen({ route, navigation }) {
   const [mutualFriends, setMutualFriends] = useState([]);
   const [hostStats, setHostStats] = useState(null);
   const [hostReputation, setHostReputation] = useState(null);
-  useEffect(() => {
-    load();
-  }, []);
+  // Item 3 (external UX critique reply, 2026-09-10): a real bug, not just a
+  // duplicate-fetch nit. This used to be a plain `useEffect(load, [])` --
+  // fine on first mount, but this screen is a single shared route
+  // ('ViewProfile' in RootNavigator.js) that React Navigation reuses rather
+  // than remounts whenever it's navigated back to while still present in
+  // the stack (e.g. profile -> Messages -> the same person's profile again,
+  // via a chat header/avatar tap). `[]` deps meant `load()` never ran again
+  // on that second visit, so friendshipStatus/matchId stayed frozen at
+  // whatever they were the first time the screen ever mounted -- if that
+  // was before the friend request existed or was accepted, the button kept
+  // showing "Add Friend" forever for that navigation session, and tapping
+  // it hit sendFriendRequest's own real duplicate-key error ("You've
+  // already sent or received a friend request..."), even though the two
+  // people were already friends. useFocusEffect re-runs load() every time
+  // this screen regains focus -- including the reused-instance case, since
+  // React Navigation fires a real focus event when navigating back to an
+  // already-mounted-but-unfocused screen -- so the friendship/match state
+  // shown is always freshly read, never stale from an earlier visit.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [userId])
+  );
 
   async function load() {
     try {
