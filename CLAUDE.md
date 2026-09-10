@@ -40,6 +40,107 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**IN PROGRESS — Discover UX cleanup, items 8 & 9 (external UX critique reply, 2026-09-10).**
+Item 9 needed no code (locked decision: leave as-is). Item 8's locked design below is written but
+**not yet built — pick up at "Item 8: build steps."**
+
+**Item 9 (Quick Filters real customization) — decided CLOSED, no further work.** User was asked
+directly (AskUserQuestion) whether to fold Age/Intent/Lifestyle (already live, always-on controls
+in the separate `FiltersModal`) into the Quick Filters `Customize` screen, and whether to build a
+real distance/radius filter for Dating discovery (which today has none — Dating is driven by real
+proximity/crossed-paths sightings, not a search radius; only Friends discovery has a real distance
+bucket). **Explicit answers, both "leave as-is"**: Age/Intent/Lifestyle stay solely in the Filters
+modal (a single source of truth was already the right call from the 2026-09-06 build — "not adding
+something is actually the better product decision," user's words); Dating stays proximity-based on
+purpose ("Crossed Paths... rather than 'this person happens to be within 10 miles'" — user's
+words) and gets no radius filter, matching Friends' own intentionally different model. **No code
+changes follow from item 9** — today's already-shipped `quickFilterCatalog.js` /
+`QuickFilterCustomizeScreen.js` (Verified/Match %/Online/Shared Interests for Dating; Interests/
+Distance/Verified/Online for Friends) is the final, locked shape.
+
+**Item 8 (remove the separate Stories row from People, fold the signal into each avatar) — locked
+design, not yet built.** The ask: People currently shows a separate horizontal `StoriesRow`
+(`src/components/StoriesRow.js`, rendered once at `DiscoverHubScreen.js:1009`, above the Dating|
+Friends sub-toggle and both embedded discovery screens) — a second, competing discovery system
+eating vertical space. User wants the story signal folded directly onto each person's own avatar
+in the real Discover feed instead (Instagram comparison), never a separate row.
+
+**Confirmed while investigating (real constraint, not just a UI question)**: `stories` table RLS
+only ever lets you SELECT a story that's public, your own, or from someone you're already
+connected to (match/accepted friend/shared gathering) — `00000000000000_baseline.sql` around line
+5829. Discover/swipe candidates are by definition people you are *not yet* connected to, so a ring
+on a Discover card will only ever light up for a candidate's **public** story (the "Public — Anyone"
+option `StoriesRow`'s own post flow already offers) — never a private one. That's correct and
+intentional, not a bug to route around: it's the same content already visible today, just
+surfaced on the card instead of a separate row, and doesn't touch the locked "no stranger
+discovery via intent" rule (a public story on an already-surfaced candidate is not new stranger
+surfacing).
+
+**Also confirmed**: today's Discover "avatar" is not a small circular thumbnail the way Instagram's
+is — it's the large, full-width cover photo at the top of each card (`DiscoveryScreen.js`'s list
+view: `avatar: {width:'100%', height:280}` at line 851; `SwipeableDiscoveryCards.js`'s swipe deck
+uses the same big-photo shape). In both, tapping that photo already calls
+`navigation.navigate('ViewProfile', ...)` / `onViewProfile(...)` today — a real, working,
+already-tested tap target. `cardBody` (name/verified badge/compat badge/bio) below the photo is
+currently **not** its own tappable area at all.
+
+**Decisions locked via AskUserQuestion, verbatim outcomes**:
+1. **Tap behavior**: "Tap avatar/story ring → opens Story Viewer. Tap name/bio/card area → opens
+   profile. No extra badge or third tap target." (user's words, option 1 of 3 offered).
+2. **Where "Post Your Story" moves**: a small camera/+ icon in the People header, next to the
+   Dating|Friends sub-toggle — "very small... not a big 'Add Story' button... don't make it another
+   prominent card or CTA" (user's words, option 1 of 2 offered).
+
+**How those decisions map onto the real big-photo card shape (my own call, not re-asked — a
+straightforward implementation detail, not a product ambiguity)**: the big cover photo *is* "the
+avatar" the user means, so:
+   - The cover photo gets a colored ring-style border (reusing `StoriesRow`'s own
+     `ringUnviewed`/`ringViewed` color tokens: `colors.textPrimary` for unviewed, `colors.border`
+     for already-viewed) only when that candidate has a real, RLS-visible public story — same
+     "colored border = ring" visual language `StoriesRow` already established, just applied to a
+     rounded-rect photo instead of a small circle (this card already has `overflow:hidden` +
+     `borderRadius: radius.lg`, so a 2.5px colored border reads the same way).
+   - Tapping the cover photo: if that candidate has a visible story, opens `StoryViewerModal`
+     (already exists, reused as-is) instead of the profile. If they don't, tapping it keeps
+     today's exact behavior (opens the profile) — a real fallback, never a dead tap.
+   - `cardBody` becomes newly tappable (wrapped in its own `TouchableOpacity`) → always opens the
+     profile, regardless of story presence — this is what keeps "view profile" one tap away even
+     when the photo itself is now bound to the story viewer.
+
+**Item 8: build steps, pick up here**:
+1. New `getStoryPresenceForUsers(userIds)` in `src/services/stories.js` — same grouping/
+   `hasUnviewed` shape `getVisibleStoriesGrouped()` already returns (reused as-is by
+   `StoryViewerModal`), but scoped to an explicit candidate id list (`user_id in (...)`) instead of
+   "everyone visible to me." RLS does the real filtering work for free (only public/connected rows
+   ever come back) — no new privacy logic to write.
+2. `DiscoveryScreen.js` (list view) and `SwipeableDiscoveryCards.js` (swipe deck): after loading a
+   page of candidates, call `getStoryPresenceForUsers(candidateIds)` once (same
+   `Promise.all`/batch pattern `photoUrls` signed-URL loading already uses), keyed by
+   `otherUserId`. Apply the ring border to the cover photo when present; wire the photo's
+   `onPress` to open `StoryViewerModal` with that candidate's group when present, else keep the
+   existing `navigation.navigate('ViewProfile', ...)` / `onViewProfile(...)` call. Wrap `cardBody`
+   in a new `TouchableOpacity` → always `ViewProfile`/`onViewProfile`.
+3. `FriendDiscoverySwipeCards.js`: same three changes, mirrored — confirmed `FriendDiscoveryScreen.js`
+   has no separate list view of its own, it always renders through this one component, so this is
+   the only other file needed to cover Friends. People covers both Dating and Friends sub-modes,
+   so both need the ring for this to actually replace `StoriesRow` for the whole tab, not just
+   half of it.
+4. Remove `<StoriesRow />` from `DiscoverHubScreen.js:1009` (`mode === 'people'` branch) entirely.
+5. Add the new small camera/+ "Post Story" icon to `DiscoverHubScreen.js`'s People header, next to
+   the existing `peopleSubToggleRow` (Dating|Friends chips) — reuse `StoriesRow.js`'s own existing
+   `handlePost()` logic (`captureStoryMedia()` + the "Matches & Friends Only" vs "Public — Anyone"
+   audience `Alert.alert`) rather than rewriting it; `StoriesRow.js` itself can most likely be
+   deleted afterward once nothing imports it anymore (confirm no other screen embeds it before
+   deleting — the separate "Public Stories Near You" row on the Explore/All tab,
+   `DiscoverHubScreen.js:1198`, is a different component/data source, `getPublicStoriesGrouped()`,
+   and is explicitly OUT of scope here — it's not "People," user's ask was specifically about the
+   People tab's row).
+6. No DB migration needed — `stories`/`story_views` tables and their RLS are unchanged; this is a
+   pure client read-pattern change (a new query shape, not new access).
+7. No Jest coverage planned (UI wiring + an existing RLS-backed query reused in a new shape, no
+   new pure function) — consistent with this repo's own precedent for similar wiring-only
+   increments (see the "Plan" means a real place entry above, item 6 of that plan).
+
 **"Plan" means a real place, not a generic toolbox — fully DONE (2026-09-10)**, external UX
 critique reply item 4. DB migration (`20261001_plan_something_real_supply.sql`) and all client
 work (`dateProposals.js`, `DateProposalScreen.js`) shipped: proposing a plan now offers a real "🔎
