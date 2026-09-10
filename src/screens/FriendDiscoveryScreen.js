@@ -10,6 +10,8 @@ import {
 } from '../services/friendDiscovery';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getOnlineStatuses } from '../services/presenceStatus';
+import { getStoryPresenceForUsers } from '../services/stories';
+import StoryViewerModal from '../components/StoryViewerModal';
 import { calculateFriendCompatibility } from '../services/compatibility';
 import { supabase } from '../services/supabase';
 import FriendDiscoverySwipeCards from '../components/FriendDiscoverySwipeCards';
@@ -63,6 +65,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
   const [candidates, setCandidates] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
   const [onlineStatuses, setOnlineStatuses] = useState({});
+  // Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): same treatment as
+  // DiscoveryScreen.js's own storyByUserId -- keyed by candidate id (this
+  // screen's own candidates already use plain `id`, not `otherUserId`).
+  const [storyByUserId, setStoryByUserId] = useState({});
+  const [viewingStoryGroup, setViewingStoryGroup] = useState(null);
   const [matchModal, setMatchModal] = useState(null); // { theirName, theirPhotoUrl, matchId }
   const [togglingOn, setTogglingOn] = useState(false);
   // Taxonomy audit Phase 3: purely client-side filters over the already-
@@ -146,6 +153,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         );
         setPhotoUrls(Object.fromEntries(urlEntries));
         setOnlineStatuses(results.length > 0 ? await getOnlineStatuses(results.map((item) => item.id)) : {});
+        setStoryByUserId(results.length > 0 ? await getStoryPresenceForUsers(results.map((item) => item.id)) : {});
       }
       setLoadError(false);
     } catch (e) {
@@ -503,6 +511,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           data={filteredCandidates}
           photoUrls={photoUrls}
           onlineStatuses={onlineStatuses}
+          storyByUserId={storyByUserId}
+          onViewStory={setViewingStoryGroup}
           compatibilityColor={compatibilityColor}
           onSwipe={handleSwipe}
         />
@@ -518,6 +528,12 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           if (matchId) navigation.navigate('Chat', { matchId });
         }}
         onDismiss={() => setMatchModal(null)}
+      />
+
+      <StoryViewerModal
+        visible={!!viewingStoryGroup}
+        group={viewingStoryGroup}
+        onClose={() => setViewingStoryGroup(null)}
       />
     </Container>
   );

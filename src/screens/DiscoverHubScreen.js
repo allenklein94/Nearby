@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped, getBusinessMomentsGrouped } from '../services/stories';
+import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
@@ -28,7 +28,6 @@ import { lightenHex } from '../utils/colorUtils';
 import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
-import StoriesRow from '../components/StoriesRow';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
@@ -210,6 +209,13 @@ export default function DiscoverHubScreen({ navigation }) {
   const [gatheringStoryViewer, setGatheringStoryViewer] = useState(null);
   const [storyPhotoUrls, setStoryPhotoUrls] = useState({});
   const [viewerTarget, setViewerTarget] = useState(null);
+  // Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): the People tab's
+  // Stories row is gone (its signal now lives on each candidate's own
+  // avatar in DiscoveryScreen/SwipeableDiscoveryCards/
+  // FriendDiscoverySwipeCards) -- this is its replacement "post a story"
+  // entry point, moved to a small header icon per the user's own explicit
+  // pick ("very small... don't make it another prominent card or CTA").
+  const [postingStory, setPostingStory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -732,6 +738,46 @@ export default function DiscoverHubScreen({ navigation }) {
     setCreatingFromSearch(false);
   }
 
+  // Discover UX cleanup item 8: the People tab's removed StoriesRow's own
+  // "Your Story" flow, moved verbatim (same camera capture + audience
+  // choice) rather than rewritten -- StoriesRow.js's handlePost() is the
+  // source of truth this was copied from.
+  async function handlePostStory() {
+    setPostingStory(true);
+    try {
+      const captured = await captureStoryMedia();
+      if (!captured) {
+        setPostingStory(false);
+        return;
+      }
+
+      Alert.alert(
+        'Who can see this?',
+        '',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => setPostingStory(false) },
+          {
+            text: 'Matches & Friends Only',
+            onPress: async () => {
+              await uploadStory(myUserId, captured.uri, captured.type, false);
+              setPostingStory(false);
+            },
+          },
+          {
+            text: 'Public — Anyone',
+            onPress: async () => {
+              await uploadStory(myUserId, captured.uri, captured.type, true);
+              setPostingStory(false);
+            },
+          },
+        ]
+      );
+    } catch (e) {
+      Alert.alert('Error', e.message);
+      setPostingStory(false);
+    }
+  }
+
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
   const mapBusinesses = showPerks ? businesses : [];
 
@@ -1006,7 +1052,6 @@ export default function DiscoverHubScreen({ navigation }) {
         // embedded screens in a flex sibling, not inside a ScrollView.
         <View style={{ flex: 1 }}>
           <View style={styles.peopleFixedArea}>
-            <StoriesRow />
             {/* Aug 30 2026 (CLAUDE.md, external UX critique response): this
                 inner Dating/Friends choice used to reuse the outer
                 Things-to-Do/People toggle's own full-width equal-weight
@@ -1016,24 +1061,42 @@ export default function DiscoverHubScreen({ navigation }) {
                 lighter, auto-width chip treatment instead, so the visual
                 hierarchy matches the real one: outer mode first, inner
                 sub-mode clearly secondary. Same PEOPLE_SUBMODES data, same
-                selectPeopleSubMode() handler -- style-only change. */}
-            <View style={styles.peopleSubToggleRow}>
-              {PEOPLE_SUBMODES.map((pm) => {
-                const active = peopleSubMode === pm.key;
-                return (
-                  <TouchableOpacity
-                    key={pm.key}
-                    style={[styles.peopleSubToggleButton, active && styles.peopleSubToggleButtonActive]}
-                    onPress={() => selectPeopleSubMode(pm.key)}
-                    accessibilityLabel={pm.label}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Text style={styles.peopleSubToggleIcon}>{pm.icon}</Text>
-                    <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{pm.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+                selectPeopleSubMode() handler -- style-only change.
+                Discover UX cleanup item 8 (2026-09-10): the separate
+                Stories row that used to sit above this is gone -- its
+                signal now lives on each candidate's own avatar in the
+                embedded Dating/Friends screens below. This small camera
+                icon is its replacement "post a story" entry point, per the
+                user's own explicit pick: small, not another prominent
+                card or CTA. */}
+            <View style={[styles.peopleSubToggleRow, { justifyContent: 'space-between', alignItems: 'center' }]}>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                {PEOPLE_SUBMODES.map((pm) => {
+                  const active = peopleSubMode === pm.key;
+                  return (
+                    <TouchableOpacity
+                      key={pm.key}
+                      style={[styles.peopleSubToggleButton, active && styles.peopleSubToggleButtonActive]}
+                      onPress={() => selectPeopleSubMode(pm.key)}
+                      accessibilityLabel={pm.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                    >
+                      <Text style={styles.peopleSubToggleIcon}>{pm.icon}</Text>
+                      <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{pm.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <TouchableOpacity
+                style={styles.postStoryButton}
+                onPress={handlePostStory}
+                disabled={postingStory}
+                accessibilityLabel="Post a story"
+                accessibilityRole="button"
+              >
+                {postingStory ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.postStoryButtonIcon}>📷</Text>}
+              </TouchableOpacity>
             </View>
           </View>
           <View style={{ flex: 1 }}>
@@ -1681,9 +1744,18 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   peopleSubToggleIcon: { fontSize: 13 },
   peopleSubToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
   peopleSubToggleTextActive: { color: colors.primary },
+  // Discover UX cleanup item 8: deliberately small and plain (no fill, no
+  // coral) -- a utility icon, not a primary action, per the user's own
+  // "don't make it another prominent card or CTA."
+  postStoryButton: {
+    width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface,
+  },
+  postStoryButtonIcon: { fontSize: 15 },
   // The non-scrolling header area above People mode's embedded Dating/
-  // Friends content (Stories + the sub-toggle) -- same horizontal padding
-  // as the outer `header`/`scrollContent` blocks so it lines up visually.
+  // Friends content (the Dating|Friends sub-toggle + post-story icon) --
+  // same horizontal padding as the outer `header`/`scrollContent` blocks
+  // so it lines up visually.
   peopleFixedArea: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   searchBarWrap: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,

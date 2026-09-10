@@ -23,7 +23,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // per-candidate reason (shared gathering attendance when it exists,
 // proximity sighting otherwise) -- never both, never a guess.
 export default function SwipeableDiscoveryCards({
-  data, photoUrls, onlineStatuses, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths',
+  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths',
 }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -111,6 +111,7 @@ export default function SwipeableDiscoveryCards({
   const nextItem = data[currentIndex + 1];
   const crossedPathsTime = formatCrossedPathsTimeShort(item.last_seen_at);
   const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason);
+  const storyGroup = storyByUserId[item.otherUserId] ?? null;
 
   const cardStyle = {
     transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }],
@@ -128,8 +129,22 @@ export default function SwipeableDiscoveryCards({
       )}
 
       <Animated.View style={[styles.card, cardStyle]} {...panResponder.panHandlers}>
-        <TouchableOpacity activeOpacity={0.95} onPress={() => onViewProfile(item.otherUserId)}>
-          <Image source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }} style={styles.avatar} />
+        {/* Discover UX cleanup item 8: the avatar is the real story
+            affordance -- a ring when a visible (in practice, public)
+            story exists, tapping it opens that story directly instead of
+            the profile. No story, no ring: today's existing "tap opens
+            profile" behavior, unchanged. Profile is still one tap away
+            below via cardBody regardless of story presence. */}
+        <TouchableOpacity
+          activeOpacity={0.95}
+          onPress={() => (storyGroup ? onViewStory(storyGroup) : onViewProfile(item.otherUserId))}
+          accessibilityLabel={storyGroup ? `View ${item.profiles?.display_name}'s story` : `View ${item.profiles?.display_name}'s profile`}
+          accessibilityRole="button"
+        >
+          <Image
+            source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }}
+            style={[styles.avatar, storyGroup && (storyGroup.hasUnviewed ? styles.avatarRingUnviewed : styles.avatarRingViewed)]}
+          />
           {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
 
           <Animated.View style={[styles.stampLike, { opacity: likeOpacity }]}>
@@ -140,7 +155,13 @@ export default function SwipeableDiscoveryCards({
           </Animated.View>
         </TouchableOpacity>
 
-        <View style={styles.cardBody}>
+        <TouchableOpacity
+          style={styles.cardBody}
+          activeOpacity={0.95}
+          onPress={() => onViewProfile(item.otherUserId)}
+          accessibilityLabel={`View ${item.profiles?.display_name}'s profile`}
+          accessibilityRole="button"
+        >
           <View style={styles.nameRow}>
             <Text style={styles.name}>{item.profiles?.display_name}</Text>
             {item.profiles?.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
@@ -158,7 +179,7 @@ export default function SwipeableDiscoveryCards({
                 : `📍 Within about 35 feet${crossedPathsTime ? ` · ${crossedPathsTime}` : ''}`}
           </Text>
           <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
-        </View>
+        </TouchableOpacity>
       </Animated.View>
 
       <View style={styles.buttonRow}>
@@ -210,6 +231,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   cardBehind: { top: 8, opacity: 0.6, transform: [{ scale: 0.96 }] },
   avatar: { width: '100%', height: 420, backgroundColor: colors.surfaceElevated },
+  avatarRingUnviewed: { borderWidth: 2.5, borderColor: colors.textPrimary },
+  avatarRingViewed: { borderWidth: 2.5, borderColor: colors.border },
   onlineDot: {
     position: 'absolute', top: spacing.md, right: spacing.md,
     width: 16, height: 16, borderRadius: 8, backgroundColor: colors.success, borderWidth: 2.5, borderColor: colors.surface,

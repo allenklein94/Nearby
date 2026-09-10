@@ -6,6 +6,8 @@ import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/
 import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
 import { checkAndCountBrowseView } from '../services/browseLimits';
 import { getOnlineStatuses } from '../services/presenceStatus';
+import { getStoryPresenceForUsers } from '../services/stories';
+import StoryViewerModal from '../components/StoryViewerModal';
 import { generateCompatibilityReport } from '../services/compatibility';
 import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidenceMode';
 import { isPremium } from '../services/purchases';
@@ -74,6 +76,14 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [onlineStatuses, setOnlineStatuses] = useState({});
+  // Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): the Stories signal
+  // now lives on each candidate's own avatar instead of a separate row --
+  // keyed by otherUserId so a card can do a plain O(1) lookup. In
+  // practice this will only ever be non-empty for a candidate's PUBLIC
+  // story (real RLS on `stories`; candidates aren't yet connections), which
+  // is the correct, intended result, not a gap.
+  const [storyByUserId, setStoryByUserId] = useState({});
+  const [viewingStoryGroup, setViewingStoryGroup] = useState(null);
   const [undoState, setUndoState] = useState(null);
   const [myProfile, setMyProfile] = useState(null);
   const [myUserId, setMyUserId] = useState(null);
@@ -122,6 +132,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     const otherUserIds = results.map((item) => item.otherUserId);
     const statuses = await getOnlineStatuses(otherUserIds);
     setOnlineStatuses(statuses);
+    setStoryByUserId(await getStoryPresenceForUsers(otherUserIds));
 
     isPremium().then(setIsUserPremium).catch(() => setIsUserPremium(false));
 
@@ -181,6 +192,10 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
       })
     );
     setPhotoUrls((prev) => ({ ...prev, ...Object.fromEntries(urlEntries) }));
+
+    const otherUserIds = results.map((item) => item.otherUserId);
+    const storyPresence = await getStoryPresenceForUsers(otherUserIds);
+    setStoryByUserId((prev) => (offset === 0 ? storyPresence : { ...prev, ...storyPresence }));
 
     if (offset === 0) {
       setNearby(results);
@@ -543,6 +558,8 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             data={filteredNearby}
             photoUrls={photoUrls}
             onlineStatuses={onlineStatuses}
+            storyByUserId={storyByUserId}
+            onViewStory={setViewingStoryGroup}
             onNotice={handleCardNotice}
             onWave={handleCardWave}
             onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId, viewContext: 'dating' })}
@@ -585,25 +602,50 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         renderItem={({ item, index }) => {
           const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
           const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason, formatCrossedPathsTime);
+          const storyGroup = storyByUserId[item.otherUserId] ?? null;
           return (
           <AnimatedListItem index={index}>
           <View style={styles.card}>
+            {/* Discover UX cleanup item 8: the avatar itself is now the
+                real story affordance -- a ring when a visible (in
+                practice, public) story exists, and tapping it opens that
+                story directly instead of the profile. No story, no ring:
+                exactly today's existing "tap opens profile" behavior,
+                unchanged. Profile is still always one tap away below via
+                cardBody, regardless of story presence. */}
             <TouchableOpacity
               style={styles.tappableProfileArea}
-              onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })}
+              onPress={() =>
+                storyGroup
+                  ? setViewingStoryGroup(storyGroup)
+                  : navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })
+              }
               activeOpacity={0.9}
-              accessibilityLabel={`View ${item.profiles?.display_name}'s profile${onlineStatuses[item.otherUserId] ? ', online now' : ''}`}
+              accessibilityLabel={
+                storyGroup
+                  ? `View ${item.profiles?.display_name}'s story`
+                  : `View ${item.profiles?.display_name}'s profile${onlineStatuses[item.otherUserId] ? ', online now' : ''}`
+              }
               accessibilityRole="button"
             >
               <View>
                 <Image
                   source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }}
-                  style={styles.avatar}
+                  style={[
+                    styles.avatar,
+                    storyGroup && (storyGroup.hasUnviewed ? styles.avatarRingUnviewed : styles.avatarRingViewed),
+                  ]}
                 />
                 {onlineStatuses[item.otherUserId] && <View style={styles.onlineDot} />}
               </View>
             </TouchableOpacity>
-            <View style={styles.cardBody}>
+            <TouchableOpacity
+              style={styles.cardBody}
+              onPress={() => navigation.navigate('ViewProfile', { userId: item.otherUserId, viewContext: 'dating' })}
+              activeOpacity={0.95}
+              accessibilityLabel={`View ${item.profiles?.display_name}'s profile`}
+              accessibilityRole="button"
+            >
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.profiles?.display_name}</Text>
                 {item.profiles?.photo_verified && (
@@ -679,7 +721,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
                   <Text style={styles.moreButtonText}>⋯</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
           </AnimatedListItem>
         );
@@ -722,6 +764,12 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         }}
         reportedUserId={reportTarget?.id}
         reportedUserName={reportTarget?.name}
+      />
+
+      <StoryViewerModal
+        visible={!!viewingStoryGroup}
+        group={viewingStoryGroup}
+        onClose={() => setViewingStoryGroup(null)}
       />
 
       <CompatibilityReportModal
@@ -849,6 +897,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   tappableProfileArea: { width: '100%' },
   avatar: { width: '100%', height: 280, backgroundColor: colors.surfaceElevated },
+  // Discover UX cleanup item 8: same "colored border = ring" visual
+  // language StoriesRow.js already established (ringUnviewed/ringViewed),
+  // just applied to this card's own big cover photo instead of a small
+  // circle -- the card already clips to radius.lg, so a colored border
+  // here reads the same way.
+  avatarRingUnviewed: { borderWidth: 2.5, borderColor: colors.textPrimary },
+  avatarRingViewed: { borderWidth: 2.5, borderColor: colors.border },
   onlineDot: {
     position: 'absolute', top: spacing.md, right: spacing.md,
     width: 16, height: 16, borderRadius: 8,

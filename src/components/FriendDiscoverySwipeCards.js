@@ -23,7 +23,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // mutual-friends/bio, never a dating-oriented proximity/compatibility
 // readout. Distance is a coarse bucket from the RPC (never exact miles),
 // matching the locked "no location-discovery tool" decision.
-export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, compatibilityColor, onSwipe }) {
+export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -71,6 +71,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
 
   const item = data[currentIndex];
   const nextItem = data[currentIndex + 1];
+  const storyGroup = storyByUserId[item.id] ?? null;
   const cardStyle = { transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }] };
   const likeOpacity = position.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
   const skipOpacity = position.x.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
@@ -115,7 +116,27 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
       )}
 
       <Animated.View style={[styles.card, cardStyle]} {...panResponder.panHandlers}>
-        <Image source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }} style={styles.avatar} />
+        {/* Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): this deck
+            has no "view profile" tap at all today (Like/Pass buttons only)
+            -- adding one is a separate product decision, out of scope
+            here. Only the real addition: a story ring + tap-to-view when a
+            visible (in practice, public) story exists; no story, no
+            change from today's plain, non-tappable avatar. */}
+        {storyGroup ? (
+          <TouchableOpacity
+            activeOpacity={0.95}
+            onPress={() => onViewStory(storyGroup)}
+            accessibilityLabel={`View ${item.display_name}'s story`}
+            accessibilityRole="button"
+          >
+            <Image
+              source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }}
+              style={[styles.avatar, storyGroup.hasUnviewed ? styles.avatarRingUnviewed : styles.avatarRingViewed]}
+            />
+          </TouchableOpacity>
+        ) : (
+          <Image source={{ uri: photoUrls[item.id] || 'https://placehold.co/200' }} style={styles.avatar} />
+        )}
         {onlineStatuses[item.id] && <View style={styles.onlineDot} />}
         <Animated.View style={[styles.stampLike, { opacity: likeOpacity }]}>
           <Text style={styles.stampLikeText}>LIKE</Text>
@@ -195,6 +216,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   cardBehind: { top: 8, opacity: 0.6, transform: [{ scale: 0.96 }] },
   avatar: { width: '100%', height: 340, backgroundColor: colors.surfaceElevated },
+  avatarRingUnviewed: { borderWidth: 2.5, borderColor: colors.textPrimary },
+  avatarRingViewed: { borderWidth: 2.5, borderColor: colors.border },
   // Same treatment as SwipeableDiscoveryCards.js's own onlineDot/
   // verifiedBadge/compatBadge/compatText -- values copied verbatim so the
   // two surfaces read as the same product, per this file's own established

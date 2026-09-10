@@ -242,6 +242,65 @@ export async function getVisibleStoriesGrouped() {
   }));
 }
 
+// Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): folds the Stories
+// signal onto each candidate's own avatar instead of a separate row. Takes
+// an explicit candidate id list (the current page of Discover/swipe cards)
+// rather than "everyone visible to me" -- same query shape as
+// getVisibleStoriesGrouped(), just scoped narrower. RLS on `stories`
+// already only ever returns a public story, your own, or one from someone
+// you're already connected to (match/accepted friend/shared gathering) --
+// Discover candidates are by definition not yet connected, so in practice
+// this will only ever surface a candidate's PUBLIC story. That's the real,
+// intended result, not a gap to work around: it's the same content
+// already visible today, just read in a new shape, never new stranger
+// surfacing. Returns a map keyed by userId (not an array) so a caller can
+// do a plain O(1) `storyByUserId[otherUserId]` lookup per card.
+export async function getStoryPresenceForUsers(userIds) {
+  if (!userIds || userIds.length === 0) return {};
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return {};
+
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, user_id, media_path, media_type, created_at, expires_at, profiles(display_name, photo_url)')
+    .in('user_id', userIds)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.error('getStoryPresenceForUsers error', error);
+    return {};
+  }
+  if (!data || data.length === 0) return {};
+
+  const { data: viewedRows } = await supabase
+    .from('story_views')
+    .select('story_id')
+    .eq('viewer_id', myId);
+  const viewedIds = new Set((viewedRows ?? []).map((v) => v.story_id));
+
+  const grouped = {};
+  for (const story of data) {
+    if (!grouped[story.user_id]) {
+      grouped[story.user_id] = {
+        userId: story.user_id,
+        displayName: story.profiles?.display_name,
+        photoUrl: story.profiles?.photo_url,
+        stories: [],
+      };
+    }
+    grouped[story.user_id].stories.push({ ...story, viewed: viewedIds.has(story.id) });
+  }
+
+  const result = {};
+  for (const [userId, group] of Object.entries(grouped)) {
+    result[userId] = { ...group, hasUnviewed: group.stories.some((s) => !s.viewed) };
+  }
+  return result;
+}
+
 export async function markStoryViewed(storyId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
