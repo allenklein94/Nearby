@@ -35,6 +35,7 @@ import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiences
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, businessAttributeLabel, cuisineLabel, AVAILABILITY_PULSE_OPTIONS, availabilityPulseLabel, availabilityPulseIcon, isAvailabilityPulseFresh, EXPERIENCE_PRICE_OPTIONS, EXPERIENCE_PARTY_TYPE_OPTIONS, experiencePriceLabel, experiencePartyTypeLabel, ACCOMMODATE_PARTY_TYPE_OPTIONS, PRIORITY_TIME_WINDOW_OPTIONS, priorityTimeWindowLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
+import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS, subcategoryOptionsFor } from '../constants/gatheringCategories';
@@ -419,6 +420,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityPriceInput, setAvailabilityPriceInput] = useState('');
   const [availabilityCapacityInput, setAvailabilityCapacityInput] = useState('');
   const [availabilityDurationKey, setAvailabilityDurationKey] = useState('2h');
+  // Business-side Experience Bundles (2026-09-10, direct user request): both
+  // optional, and only meaningful together -- clearing the occasion also
+  // clears any ticked components (enforced client-side here, and again by
+  // the RPC/CHECK constraint layer, same belt-and-suspenders pattern every
+  // other business-declared vocabulary in this schema already follows).
+  const [availabilityBundleOccasionInput, setAvailabilityBundleOccasionInput] = useState(null);
+  const [availabilityBundleComponentsInput, setAvailabilityBundleComponentsInput] = useState([]);
   const [postingAvailability, setPostingAvailability] = useState(false);
   const [cancelingAvailabilityId, setCancelingAvailabilityId] = useState(null);
   // "The Offer System" Phase 2 (see CLAUDE.md's own plan, Gap 2): a real,
@@ -1647,7 +1655,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setAvailabilityPriceInput('');
     setAvailabilityCapacityInput('');
     setAvailabilityDurationKey('2h');
+    setAvailabilityBundleOccasionInput(null);
+    setAvailabilityBundleComponentsInput([]);
     setPostAvailabilityModalVisible(true);
+  }
+
+  // Business-side Experience Bundles (2026-09-10): picking a different
+  // occasion invalidates any already-ticked components (they're keyed to
+  // the PREVIOUS occasion's own template, e.g. "food"/"family_fun" only
+  // exist under family_gathering) -- always reset, never carry stale keys
+  // forward silently.
+  function handleSelectBundleOccasion(occasion) {
+    setAvailabilityBundleOccasionInput((prev) => (prev === occasion ? null : occasion));
+    setAvailabilityBundleComponentsInput([]);
+  }
+
+  function toggleBundleComponent(key) {
+    setAvailabilityBundleComponentsInput((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
   }
 
   // Decision 6, Phase 3 -- same three-branch screening shape as the other
@@ -1675,6 +1701,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         capacity: Number.isFinite(capacityNum) && capacityNum > 0 ? capacityNum : null,
         durationHours: duration?.hours ?? null,
+        bundleOccasion: availabilityBundleOccasionInput,
+        bundleComponents: availabilityBundleComponentsInput,
       });
 
       if (result.published) {
@@ -5008,6 +5036,61 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              {/* Business-side Experience Bundles (2026-09-10, direct user
+                  request): entirely optional -- posting a normal single-
+                  category availability (the existing flow above) is
+                  unaffected either way. Only shown for occasions the
+                  intent-engine's own Experiences section actually has a
+                  template for (bundleableOccasions() -- casual_hangout/
+                  business_meal/other have no components to bundle). */}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>
+                Package this as an Experience Bundle? (optional)
+              </Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.sm }]}>
+                If this one posting covers multiple parts of a night out by itself
+                (e.g. dinner + live music + dessert), tell us which occasion and
+                parts it covers -- we'll show it as a complete package instead of
+                just one piece.
+              </Text>
+              <View style={styles.chipRow}>
+                {bundleableOccasions().map((occasion) => (
+                  <TouchableOpacity
+                    key={occasion}
+                    style={[styles.chip, availabilityBundleOccasionInput === occasion && styles.chipSelected]}
+                    onPress={() => handleSelectBundleOccasion(occasion)}
+                    accessibilityRole="button"
+                    accessibilityLabel={occasionLabel(occasion)}
+                    accessibilityState={{ selected: availabilityBundleOccasionInput === occasion }}
+                  >
+                    <Text style={[styles.chipText, availabilityBundleOccasionInput === occasion && styles.chipTextSelected]}>
+                      {occasionLabel(occasion)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {availabilityBundleOccasionInput && (
+                <>
+                  <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>
+                    Which parts does this one posting cover? (pick at least 2)
+                  </Text>
+                  <View style={styles.chipRow}>
+                    {experienceComponentOptionsForOccasion(availabilityBundleOccasionInput).map((component) => (
+                      <TouchableOpacity
+                        key={component.key}
+                        style={[styles.chip, availabilityBundleComponentsInput.includes(component.key) && styles.chipSelected]}
+                        onPress={() => toggleBundleComponent(component.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={component.label}
+                        accessibilityState={{ selected: availabilityBundleComponentsInput.includes(component.key) }}
+                      >
+                        <Text style={[styles.chipText, availabilityBundleComponentsInput.includes(component.key) && styles.chipTextSelected]}>
+                          {component.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
               <TouchableOpacity
                 style={[styles.submitButton, { marginTop: spacing.md }]}
                 onPress={handlePostAvailability}

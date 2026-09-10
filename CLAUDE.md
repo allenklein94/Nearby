@@ -160,13 +160,52 @@ computed" shape `HomeScreen.js`'s own `groupIntentResultsByType()` already uses.
 no genuine match is silently dropped, never forced — a recipe, not a rigid itinerary; nothing is
 ever invented. Wired inline into the existing ask-box result flow (`HomeScreen.js`) as a new
 section above the flat list, with claimed items filtered out of that flat list so nothing repeats.
-Jest coverage added (8 tests, `experienceAssembly.test.js`); full suite 230/230 passing. Business-
-side Experience bundles (a business pre-packaging its own cross-category deal) and extending
-supply sources beyond `business_availability` (gatherings, etc.) were both explicitly out of scope
-for this increment. Full build/verification detail: `CLAUDE_HISTORY.md`, search "Experiences
-assembly." This was the last fully-unstarted piece of the intent-engine vision — both deferred
-pieces named at the top of this session (this, and the `categories` AI-suggestion above) are now
-shipped.
+Jest coverage added (8 tests, `experienceAssembly.test.js`); full suite 230/230 passing. Full
+build/verification detail: `CLAUDE_HISTORY.md`, search "Experiences assembly." This was the last
+fully-unstarted piece of the intent-engine vision — both deferred pieces named at the top of this
+session (this, and the `categories` AI-suggestion above) are now shipped.
+
+**Both of this increment's own deliberately-deferred pieces — fully DONE (2026-09-10), same day,
+direct user follow-up ("finish business side experience bundles and extending the assembly beyond
+business_availability").** (1) `assembleExperience()` now also includes real `gathering`
+candidates, not just `business_availability` — `resolveGatherings()` (`intentResolver.js`) carries
+the gathering's own real `interest_tag` as `category` onto its candidate object, the exact same
+field shape `resolveBusinessAvailability`'s candidates already carry, so a genuinely matching
+gathering (e.g. a live-music gathering filling "Something to Do") now fills a component
+identically to a business posting — `community`/`perk`/etc. still carry no such field and remain
+excluded, a real, not-yet-done, separate follow-up. (2) Business-side Experience Bundles: a
+business can now explicitly self-declare, on ONE of its own live `business_availability`
+postings, that it covers MULTIPLE components of one specific occasion's template all by itself
+(e.g. a restaurant's own "Date Night Package" bundling dinner + live music + dessert) — two new
+columns (`bundle_occasion`, `bundle_components`), both business-typed with no AI involved,
+validated against a flat CHECK vocabulary (union of every template's component keys, interpreted
+contextually per-occasion at read time, same precedent `brand_partners.categories`/`attributes`
+already set) plus matching validation in `post_business_availability` (now 11 args — old 9-arg
+signature explicitly dropped per this repo's own overload-trap convention) and in
+`admin_review_business_content_screening`'s MEDIUM/UNCERTAIN raw-insert branch (the *other* write
+path into this table — confirmed via `pg_get_functiondef` this is the only other one).
+`search_active_business_availability` (4th column-list change now, same drop-first discipline)
+returns both new fields; `resolveBusinessAvailability` carries them as
+`bundleOccasion`/`bundleComponents` on the candidate. `experienceAssembly.js`'s
+`assembleExperience()` pulls a genuine bundle (bundleOccasion matches the ask's own occasion AND
+at least 2 of that occasion's own real component keys are covered) out and claims it as one whole
+unit *before* the normal per-component loop runs, so it's presented as its own "✨ One place has
+it all" unit (`HomeScreen.js`) rather than competing for a single component slot; a posting that
+only ticked one box is just a normal single-component candidate, no special casing needed.
+Migration `20260929_business_experience_bundles.sql` — schema, all three functions, and every
+CHECK constraint verified live against production inside rolled-back transactions (valid bundle
+insert + both admin-approve and low-tier RPC write paths + all three invalid-input rejections:
+bad occasion, bad component, components-without-occasion). `screen-business-content` Edge
+Function redeployed and confirmed live via the Management API's function-body endpoint (new
+vocabulary strings present in the deployed bundle) — its own body-parsing glue was verified by
+code review + bundle-content confirmation, not exercised via a live authenticated HTTP call (no
+test user session available this session). Business owner picks the bundle occasion + components
+via new chip pickers in `BusinessDashboardScreen.js`'s existing "Post Availability" modal, entirely
+optional, resets cleanly if the occasion is changed. Jest suite extended to 14 tests
+(`experienceAssembly.test.js`); full suite 236/236 passing. Deliberately NOT built: Signature
+Experiences (`business_experiences` — a different, older, single-category showcase concept never
+wired into the intent resolver at all) gaining its own bundle concept — out of scope, not implied
+by this change.
 
 **BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
 2026 external UX critique asked for copy like "we'll let you know when you cross paths with

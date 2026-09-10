@@ -687,7 +687,7 @@ export async function postBusinessAvailability({ category = null, title, descrip
 // publish, whether that's this call's own LOW-tier path or a later admin
 // approval -- avoids ever baking a submission-time window that would go
 // stale during a MEDIUM/UNCERTAIN hold.
-export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15 }) {
+export async function submitBusinessAvailabilityForScreening(partnerId, { category = null, title, description = null, offerType = null, price = null, capacity = null, durationHours = null, radiusMiles = 15, bundleOccasion = null, bundleComponents = [] }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -709,6 +709,8 @@ export async function submitBusinessAvailabilityForScreening(partnerId, { catego
       capacity,
       durationHours,
       radiusMiles,
+      bundleOccasion,
+      bundleComponents,
     }),
   });
 

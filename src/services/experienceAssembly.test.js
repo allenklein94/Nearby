@@ -13,7 +13,21 @@ function businessCandidate(overrides) {
     category: null,
     subcategory: null,
     categories: [],
+    bundleOccasion: null,
+    bundleComponents: [],
     matchedAvailability: {},
+    score: 0,
+    ...overrides,
+  };
+}
+
+function gatheringCandidate(overrides) {
+  return {
+    type: 'gathering',
+    id: 'default-gathering-id',
+    title: 'Some Gathering',
+    subtitle: null,
+    category: null,
     score: 0,
     ...overrides,
   };
@@ -73,9 +87,21 @@ describe('assembleExperience', () => {
     expect(result.components.find((c) => c.key === 'something_to_do')).toBeUndefined();
   });
 
-  it('ignores non-business_availability candidate types (business_availability-only this pass)', () => {
+  it('includes a genuinely matching gathering candidate in a component, same as a business_availability candidate', () => {
     const candidates = [
-      { type: 'gathering', id: 'g1', score: 10 },
+      gatheringCandidate({ id: 'music-gathering-1', category: 'Music', score: 10 }),
+      businessCandidate({ id: 'dinner-1', category: 'Foodie', score: 5 }),
+    ];
+    const result = assembleExperience('date_night', candidates);
+    const somethingToDo = result.components.find((c) => c.key === 'something_to_do');
+    expect(somethingToDo.items.map((i) => i.id)).toEqual(['music-gathering-1']);
+    expect(result.claimedIds.sort()).toEqual(['dinner-1', 'music-gathering-1'].sort());
+  });
+
+  it('still ignores candidate types not on the eligible-types list (community/perk/etc.), even one that happens to carry a matching category', () => {
+    const candidates = [
+      { type: 'community', id: 'c1', score: 10 },
+      { type: 'perk', id: 'p1', category: 'Music', score: 10 },
       businessCandidate({ id: 'dinner-1', category: 'Foodie', score: 5 }),
     ];
     const result = assembleExperience('date_night', candidates);
@@ -88,5 +114,72 @@ describe('assembleExperience', () => {
     );
     const result = assembleExperience('date_night', candidates);
     expect(result.components.find((c) => c.key === 'dinner').items.length).toBe(3);
+  });
+
+  describe('business-side Experience Bundles', () => {
+    it('surfaces a real bundle candidate covering >=2 components as its own unit, claimed whole', () => {
+      const candidates = [
+        businessCandidate({
+          id: 'bundle-1', category: 'Foodie', score: 5,
+          bundleOccasion: 'date_night', bundleComponents: ['dinner', 'something_to_do', 'finish_the_night'],
+        }),
+      ];
+      const result = assembleExperience('date_night', candidates);
+      expect(result.bundles.map((b) => b.id)).toEqual(['bundle-1']);
+      expect(result.bundles[0].componentLabels).toEqual(['🍽️ Dinner', '🎵 Something to Do', '🍰 Finish the Night']);
+      expect(result.components).toEqual([]);
+      expect(result.claimedIds).toEqual(['bundle-1']);
+    });
+
+    it('never lets a claimed bundle also compete for a single component under its own category', () => {
+      const candidates = [
+        businessCandidate({
+          id: 'bundle-1', category: 'Foodie', score: 5,
+          bundleOccasion: 'date_night', bundleComponents: ['dinner', 'something_to_do'],
+        }),
+        businessCandidate({ id: 'dinner-2', category: 'Wine', score: 1 }),
+      ];
+      const result = assembleExperience('date_night', candidates);
+      const dinner = result.components.find((c) => c.key === 'dinner');
+      expect(dinner.items.map((i) => i.id)).toEqual(['dinner-2']);
+    });
+
+    it('does not treat a posting that only ticked one component as a bundle -- it competes normally for that one component instead', () => {
+      const candidates = [
+        businessCandidate({
+          id: 'single-1', category: 'Foodie', score: 5,
+          bundleOccasion: 'date_night', bundleComponents: ['dinner'],
+        }),
+      ];
+      const result = assembleExperience('date_night', candidates);
+      expect(result.bundles).toEqual([]);
+      expect(result.components.find((c) => c.key === 'dinner').items.map((i) => i.id)).toEqual(['single-1']);
+    });
+
+    it('ignores a bundle declared for a different occasion than the one being assembled', () => {
+      const candidates = [
+        businessCandidate({
+          id: 'bundle-1', category: 'Foodie', score: 5,
+          bundleOccasion: 'celebration', bundleComponents: ['dinner', 'something_fun'],
+        }),
+      ];
+      const result = assembleExperience('date_night', candidates);
+      expect(result.bundles).toEqual([]);
+      // Falls through to normal per-component matching on its own real category.
+      expect(result.components.find((c) => c.key === 'dinner').items.map((i) => i.id)).toEqual(['bundle-1']);
+    });
+
+    it('returns a real (non-null) result from bundles alone, even with zero per-component matches', () => {
+      const candidates = [
+        businessCandidate({
+          id: 'bundle-1', category: null, score: 5,
+          bundleOccasion: 'family_gathering', bundleComponents: ['food', 'family_fun'],
+        }),
+      ];
+      const result = assembleExperience('family_gathering', candidates);
+      expect(result).not.toBeNull();
+      expect(result.bundles.map((b) => b.id)).toEqual(['bundle-1']);
+      expect(result.components).toEqual([]);
+    });
   });
 });

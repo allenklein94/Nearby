@@ -112,6 +112,13 @@ const PARTY_TYPE_OPTIONS = ['solo', 'friends', 'groups', 'date'];
 // Same real vocabulary business_request_offers/business_availability's
 // own offer_type CHECK constraints already enforce.
 const OFFER_TYPE_OPTIONS = ['standard', 'discount', 'perk', 'upgrade', 'alt_time'];
+// Business-side Experience Bundles (2026-09-10): the same real vocabulary
+// post_business_availability()'s own new validation enforces
+// (20260929_business_experience_bundles.sql) -- re-validated here for the
+// same "never trust a client-supplied enum value" reason every other
+// vocabulary above is.
+const BUNDLE_OCCASION_OPTIONS = ['date_night', 'anniversary', 'birthday', 'celebration', 'family_gathering'];
+const BUNDLE_COMPONENT_OPTIONS = ['dinner', 'something_to_do', 'finish_the_night', 'something_fun', 'sweet_treat', 'food', 'family_fun'];
 const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response'];
 
 function json(body: unknown, status = 200) {
@@ -622,6 +629,13 @@ Description: ${description || '(none)'}`;
       const capacity = Number.isFinite(body.capacity) ? body.capacity : null;
       const durationHours = Number.isFinite(body.durationHours) ? body.durationHours : null;
       const radiusMiles = Number.isFinite(body.radiusMiles) ? body.radiusMiles : 15;
+      // Business-side Experience Bundles (2026-09-10): optional, business-
+      // typed (no AI involved), re-validated the same way every other
+      // client-supplied enum on this branch already is.
+      const bundleOccasion = BUNDLE_OCCASION_OPTIONS.includes(body.bundleOccasion) ? body.bundleOccasion : null;
+      const bundleComponents = bundleOccasion && Array.isArray(body.bundleComponents)
+        ? body.bundleComponents.filter((c: unknown) => BUNDLE_COMPONENT_OPTIONS.includes(c as string))
+        : [];
 
       const contentBlock = `Title: ${title}
 Description: ${description || '(none)'}`;
@@ -630,7 +644,10 @@ Description: ${description || '(none)'}`;
       if (!result) return json({ error: 'Could not screen this content right now.' }, 500);
       const { riskTier, matchedCategories, reasoning } = result;
 
-      const contentSnapshot = { title, description: description || null, category, offerType, price, capacity, durationHours, radiusMiles };
+      const contentSnapshot = {
+        title, description: description || null, category, offerType, price, capacity, durationHours, radiusMiles,
+        bundleOccasion, bundleComponents,
+      };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
         partner_id_param: partnerId,
@@ -656,6 +673,7 @@ Description: ${description || '(none)'}`;
           category_param: category, title_param: title, description_param: description || null,
           offer_type_param: offerType, price_param: price, capacity_param: capacity,
           starts_at_param: startsAt.toISOString(), ends_at_param: endsAt.toISOString(), radius_miles_param: radiusMiles,
+          bundle_occasion_param: bundleOccasion, bundle_components_param: bundleComponents,
         });
         if (writeError) {
           console.error('screen-business-content: low-tier availability write failed', writeError);

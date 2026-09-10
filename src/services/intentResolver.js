@@ -86,6 +86,13 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // Matches GatheringDetailScreen's own established "🔒 Full —
       // N/M spots taken" copy, not a new visual language invented here.
       subtitle: isFull ? `🔒 Full — Join Waitlist (${attendeeCount}/${gathering.capacity} spots taken)` : (reasons[0] ?? null),
+      // Intent engine vision -- Experiences assembly, extended to gatherings
+      // (2026-09-10): the gathering's own real interest_tag, carried onto
+      // the candidate itself the same way resolveBusinessAvailability
+      // already carries row.category -- so experienceAssembly.js can bucket
+      // a real gathering into a template component (e.g. a live-music
+      // gathering filling "Something to Do") without a second fetch.
+      category: gathering.interest_tag ?? null,
       capacity: gathering.capacity ?? null,
       attendeeCount,
       isFull,
@@ -331,6 +338,14 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
       category: row.category ?? null,
       subcategory: row.subcategory ?? null,
       categories: row.categories ?? [],
+      // Business-side Experience Bundles (2026-09-10, direct user request):
+      // the business's own explicit self-declaration that this ONE posting
+      // covers multiple components of this exact occasion's template by
+      // itself -- read by assembleExperience() (experienceAssembly.js) to
+      // present it as a single "one business has your whole night covered"
+      // unit instead of competing for just one component slot.
+      bundleOccasion: row.bundle_occasion ?? null,
+      bundleComponents: row.bundle_components ?? [],
       matchedAvailability: {
         // Finding 5 fix (CLAUDE.md): the specific business_availability row
         // itself -- threaded through AskBusinessScreen's submit call so this

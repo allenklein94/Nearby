@@ -69,3 +69,21 @@ export const EXPERIENCE_TEMPLATES = {
 export function experienceTemplateForOccasion(occasion) {
   return EXPERIENCE_TEMPLATES[occasion] ?? null;
 }
+
+// Business-side Experience Bundles (2026-09-10, direct user request): the
+// occasions a business can actually package a bundle for are exactly the
+// occasions that have a real template above -- bundling for casual_hangout/
+// business_meal/other would have no components to cover, so those are
+// never offered as bundle options in the first place.
+export function bundleableOccasions() {
+  return Object.keys(EXPERIENCE_TEMPLATES);
+}
+
+// The real component keys/labels a business can tick when packaging a
+// bundle for a specific occasion -- null when that occasion has no
+// template (caller should hide the bundle picker entirely in that case).
+export function experienceComponentOptionsForOccasion(occasion) {
+  const template = EXPERIENCE_TEMPLATES[occasion];
+  if (!template) return null;
+  return template.components.map(({ key, label }) => ({ key, label }));
+}

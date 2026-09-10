@@ -1233,6 +1233,23 @@ export default function HomeScreen({ navigation }) {
               {intentResults.experience && (
                 <View style={{ marginBottom: spacing.md }}>
                   <Text style={styles.intentResultsHeading}>{intentResults.experience.title}</Text>
+                  {/* Business-side Experience Bundles (2026-09-10): a single
+                      business that explicitly declared it covers multiple
+                      parts of this exact occasion by itself -- rendered as
+                      its own "one business has it all" unit, ahead of the
+                      per-component cross-business recipe below, using the
+                      same generic renderIntentResultItem every other
+                      business_availability result already uses (tapping it
+                      still lands on AskBusiness prefilled from this exact
+                      posting, unchanged). */}
+                  {(intentResults.experience.bundles ?? []).map((bundle) => (
+                    <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
+                      <Text style={styles.intentGroupLabel}>
+                        ✨ One place has it all: {bundle.componentLabels.join(' + ')}
+                      </Text>
+                      {renderIntentResultItem(bundle)}
+                    </View>
+                  ))}
                   {intentResults.experience.components.map((component) => (
                     <View key={component.key} style={{ marginBottom: spacing.sm }}>
                       <Text style={styles.intentGroupLabel}>{component.label}</Text>
