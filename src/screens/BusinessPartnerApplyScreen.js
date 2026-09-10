@@ -160,6 +160,13 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
       setAttributes(result.attributes ?? []);
       if (result.cuisine) setCuisine(result.cuisine);
       setPriorityOccasions(result.priorityOccasions ?? []);
+      // Intent engine vision, multi-classification businesses -- AI-
+      // suggestion follow-up (2026-09-10): same "AI suggests, never
+      // silently commits" shape as every other field here -- this only
+      // pre-fills the same editable chip picker the manual "Also Classify
+      // As" section below already reads/writes, nothing is submitted
+      // until Submit Application.
+      setCategories(result.categories ?? []);
       setAiSummary(result);
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -392,6 +399,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
                   aiSummary.attributes?.length ? aiSummary.attributes.map((a) => businessAttributeLabel(a)).join(', ') : null,
                   aiSummary.cuisine ? cuisineLabel(aiSummary.cuisine) : null,
                   aiSummary.priorityOccasions?.length ? aiSummary.priorityOccasions.map((o) => occasionLabel(o)).join(', ') : null,
+                  aiSummary.categories?.length ? `Also: ${aiSummary.categories.join(', ')}` : null,
                 ].filter(Boolean).join(' · ') || "Nothing specific stood out — feel free to fill in the fields below yourself."}
               </Text>
               <Text style={styles.confirmSubtitle}>Edit anything below before submitting.</Text>

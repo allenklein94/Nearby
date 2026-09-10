@@ -83,6 +83,16 @@ const SUBCATEGORY_OPTIONS_BY_CATEGORY: Record<string, string[]> = {
   education_classes: ['Workshops', 'Lectures', 'Cooking Class', 'Study Group', 'Language Exchange', 'Tech Meetup'],
   attractions_things_to_see: ['Museums', 'Zoos', 'Aquariums', 'Landmarks', 'Amusement Park', 'Sightseeing'],
 };
+// Intent engine vision, multi-classification businesses -- AI-suggestion
+// follow-up (2026-09-10, same day the manual-pick feature itself shipped,
+// mirroring subcategory's own "manual pick first, AI suggestion as a
+// separate same-day follow-up" precedent). The flat union of every
+// major's own leaf tags above -- unlike subcategory (must belong to
+// THIS call's own resolved category), brand_partners.categories is
+// deliberately cross-major, so it's validated against the whole
+// vocabulary, matching that same real CHECK constraint
+// (20260928_business_multi_classification.sql).
+const ALL_LEAF_TAGS: string[] = Object.values(SUBCATEGORY_OPTIONS_BY_CATEGORY).flat();
 
 serve(async (req) => {
   try {
@@ -130,8 +140,9 @@ Extract these fields, each best-effort and optional -- never guess a value the t
 - cuisine: one value from this exact list: ${JSON.stringify(VALID_CUISINES)} if a specific food cuisine was named (e.g. "Italian" is "italian", "sushi"/"Japanese" is "japanese", "tacos"/"Mexican" is "mexican", "seafood" is "seafood"), or null if this business isn't food-related or no specific cuisine was named. Never guess a cuisine from the word "restaurant" or "cafe" alone.
 - priorityOccasions: an array of zero or more values from this exact list: ${JSON.stringify(VALID_OCCASIONS)} -- only include one when the text genuinely says this business caters to or wants more of that specific occasion (e.g. "great for birthday parties" implies "birthday", "perfect for anniversaries" implies "anniversary", "date night spot" implies "date_night", "we host celebrations" implies "celebration", "casual hangout"/"come relax" implies "casual_hangout", "corporate events"/"business lunches" implies "business_meal", "family gatherings"/"reunions" implies "family_gathering"). An empty array is the common, correct answer when no specific occasion was named -- never guess to fill this in.
 - subcategory: a real, more specific single value describing exactly what kind of business this is, ONLY from the list matching whatever value you picked for category above, from this exact map (each key is a possible category value, each value is its own allowed subcategory list): ${JSON.stringify(SUBCATEGORY_OPTIONS_BY_CATEGORY)}. Pick the one entry from that specific category's own list that the text most clearly and specifically names (e.g. category "food_drink" with a description naming espresso/lattes/coffee shop is subcategory "Coffee" from that category's list; a description just saying "restaurant" with nothing more specific stays null). Leave this null whenever category is null, or category has no list above (a handful of categories genuinely have none), or nothing in the text is specific enough to confidently pick one real entry -- never guess just to fill this in, and never pick a value from a different category's list than the one you chose above.
+- categories: an array of zero or more ADDITIONAL, genuinely different real values from this exact flat list (spanning every major, not just the one you picked above): ${JSON.stringify(ALL_LEAF_TAGS)} -- this is for a business that authentically spans more than one kind of thing (e.g. a bar that also hosts live music nights is both "food_drink" for category and additionally "Music" or "Nightlife" here; a bookstore that's also a coffee shop is "shopping" for category and additionally "Coffee" here). Only include a value when the text itself genuinely and specifically names that other, distinct thing the business also is -- never restate the same subcategory value you already picked above, never pad this out with loosely related guesses, and leave it an empty array (the common, correct answer) when the business is really just the one thing category/subcategory already describe.
 
-Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"priorityOccasions":<array of strings>,"subcategory":<string or null>}`;
+Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<string or null>,"attributes":<array of strings>,"cuisine":<string or null>,"priorityOccasions":<array of strings>,"subcategory":<string or null>,"categories":<array of strings>}`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -177,9 +188,23 @@ Reply with ONLY valid JSON in this exact shape, nothing else: {"category":<strin
     const subcategory = category && (SUBCATEGORY_OPTIONS_BY_CATEGORY[category] ?? []).includes(parsed?.subcategory)
       ? parsed.subcategory
       : null;
+    // Cross-major secondary classification -- deliberately validated
+    // against the whole vocabulary, not just this call's own resolved
+    // category's subset (see ALL_LEAF_TAGS comment above). Deduped, and
+    // the redundant case (model echoing the same value it already picked
+    // as subcategory) is dropped rather than trusted -- the prompt asks
+    // for genuinely additional values, but this is real defense in depth
+    // against exactly the double-counting resolveBusinessAvailability's
+    // own subcategoryBonus()/secondaryCategoryBonus() would otherwise
+    // both award for one real signal. Capped at 5 -- this is meant to
+    // surface a few genuinely-implied additional identities, not an
+    // exhaustive tag dump.
+    const categories = Array.isArray(parsed?.categories)
+      ? Array.from(new Set(parsed.categories.filter((c) => ALL_LEAF_TAGS.includes(c) && c !== subcategory))).slice(0, 5)
+      : [];
 
     return new Response(
-      JSON.stringify({ category, attributes, cuisine, priorityOccasions, subcategory }),
+      JSON.stringify({ category, attributes, cuisine, priorityOccasions, subcategory, categories }),
       { headers: { 'Content-Type': 'application/json' } },
     );
   } catch (err) {
