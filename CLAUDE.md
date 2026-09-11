@@ -40,6 +40,33 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 40 ("categories should be the fallback, not the primary burden") — audited, one real
+concrete gap closed (2026-09-11).** User's own stated hierarchy: intent/search first, categories
+second, manual filtering third — categories still matter for discovery/SEO/business matching/
+structured data, but shouldn't be the primary burden a consumer has to navigate. Audited every
+consumer-facing discovery surface against this directly (not from memory): Home's ask box and
+Discover's own search (item 39) already lead with intent; Discover's default Things-To-Do view
+(item 14) already leads with Happening Now/Today/Weekend before its Categories row; Gatherings
+already puts its search bar above its own collapsible filter accordion; Create leads with quick-
+picks + free text ("Something Else"), never a forced category tree. `AskBusinessScreen`/
+`BusinessPartnerApplyScreen`'s own required category fields are deliberately out of scope — those
+are structured-data capture on a form the user already opened with clear intent, exactly the
+"business matching, structured data" carve-out the item's own text names. `CommunitiesScreen.js`
+has no category browsing at all to begin with (flagged separately, out of scope, by item 26's own
+audit) — nothing to fix there for this item either. The one real, concrete violation found:
+`PlacesScreen.js` (reached via Discover's "See all places" link) had 19 category chips as the
+*only* way in, no search box at all, even though `searchNearbyPlaces()` already supports a keyword
+param the parent Discover screen already uses. Fixed: added a real, debounced search box above the
+chips. While actively searching, category stops acting as a hard type filter (Google's Nearby
+Search ANDs type+keyword together, so a stale "Coffee" chip would silently zero out an unrelated
+search) — mirrors Discover's own existing choice for its "All" tab keyword search. Tapping a
+category chip while searching switches back to plain category-browse mode (clearing the search)
+rather than combining into a confusing hybrid state. Empty-state copy, the loading caption, and the
+item 26 "Ask Nearby Businesses" escape-hatch prefill all now reflect the real search text when one
+was active. Full Jest suite 280/280 passing; `PlacesScreen.js` transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note). Commit: `87855fb0`.
+
 **Item 39 ("search should understand the same language as the Intent Box") — fully DONE
 (2026-09-11).** Connected to item 14. The real gap: Discover's unified search box only ever did a
 literal ILIKE substring match over titles/descriptions/tags (`searchGatherings`/
