@@ -40,6 +40,29 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Thursday plan item 27 (one ontology, not category = X on one screen and category = Y on
+another) — audit-only, fully DONE, no code changes needed (2026-09-11).** Direct restatement of
+the standing `project_intent_engine_vision` memory's own vision. Code-verified, not guessed from
+memory: checked all 12 pipeline stages the critique named (user interests, intent, Discover,
+Gatherings, Communities, Businesses, Events, Recommendations, Notifications, Search, Matching,
+Business offers) against the actual current code. **Bottom line: the ontology is already unified
+everywhere data actually gets matched** — gatherings/communities/perks/business postings/
+recommendations/notifications/search/compatibility all read the same `interest_tag`/
+`profiles.interests`/`categories` values, sourced from the one `INTEREST_OPTIONS`/`CATEGORY_GROUPS`
+list (`gatheringCategories.js`). "Events" isn't a distinct concept anywhere in the schema — folded
+into Gatherings' `interest_tag`, matching the vision doc's own "Events should be cross-category,
+not a category" note, so there's nothing to fragment. Three low-risk nits found, none live bugs:
+(1) `brandOffers.js` matches interests via a per-item `.toLowerCase()` string loop instead of the
+array-containment operator (`@>`/`&&`) every other matcher uses — cosmetic, would only bite on a
+future casing mismatch; (2) `BUSINESS_CATEGORIES` (the business-major-category list) is a
+hand-maintained array that currently mirrors `CATEGORY_GROUPS`'s majors rather than being derived
+from it — in sync today, nothing enforces it stays that way; (3) `businessCategoryClassifier.js`'s
+free-text keyword map is necessarily its own hardcoded dictionary (classifies prose into
+`BUSINESS_CATEGORIES`), inheriting nit (2)'s same caveat. None of the three were fixed — all are
+maintenance-burden observations, not fragmentation a user could ever actually hit, and fixing (2)
+would mean choosing whether `BUSINESS_CATEGORIES` should just become `CATEGORY_GROUPS`'s own major
+keys, which is a real (if small) design call better posed to the user than silently done.
+
 **Thursday plan item 26 (consistent "escape hatch" — never dead-end a search) — fully DONE
 (2026-09-11).** An audit of every genuine "searched/browsed and found nothing, no path forward"
 moment beyond item 25's own sweep. Most surfaces already had a real escape hatch, some predating
