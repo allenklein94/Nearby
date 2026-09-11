@@ -40,6 +40,41 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 36 ("one intent → action pattern everywhere") — IN PROGRESS, started 2026-09-11.** User's
+framing: I want something → Nearby understands → shows options → I choose → Nearby helps make it
+happen — applied as an audit against 4 example chains (dinner → restaurants → friends/match →
+availability → plan → reservation; tonight → events/options → invite people → plan; meet people →
+Dating/Friends → relevant people → connect → plan something; build something → Community/
+Gathering → create → attract people → connect businesses). Full plan, the 4 chains, and audit
+rules: `PRODUCT_AUDIT/INTENT_ACTION_PATTERN_2026-09-11.md`. A background fork is tracing each
+chain through the real current code (resolveIntent/experienceAssembly/DateProposalScreen/
+CreateHubScreen/CreateGatheringScreen/CreateCommunityScreen + the relationship-state/Plan-Together
+entry points from items 21/32/33), fixing contained gaps where a chain drops the user onto a
+disconnected screen, and flagging (not executing) anything that looks like real structural/
+navigation-architecture work. **If resuming after a restart**: check `git log` for commits
+referencing "item 36" or the tracker file above for what landed before the interruption — nothing
+should be assumed done until confirmed via `git log`/the tracker file's own findings section, per
+this project's own restart-recovery convention.
+
+**Thursday plan items 34 & 35 (contextual loading states; "why am I here?" 7-question coherence
+audit across Discover/People/Create/Plan) — fully DONE (2026-09-11).** Full findings:
+`PRODUCT_AUDIT/DISCOVER_PEOPLE_CREATE_PLAN_COHERENCE_2026-09-11.md`. Item 34: 10 files gained real
+contextual loading copy ("Finding things nearby…", "Finding people who match…", "Finding
+availability…", "Building your options…") on genuine in-flight fetch/search moments that
+previously had bare spinners — `HomeScreen.js` (intent resolution + Surprise Me),
+`DiscoverHubScreen.js` (6 spinners), `FriendDiscoveryScreen.js` (mode-aware), `GatheringsScreen.js`
+(+ all 11 locale translations of its generic "Loading..." initial-load string),
+`PlacesScreen.js`, `CommunityDetailScreen.js`, `CreateGatheringScreen.js`,
+`CreateHubScreen.js`, `DateProposalScreen.js`. Item 35: ran the user's own 7-question test against
+all 14 screens in this cluster; verified (not just re-trusted) that items 8-33's prior work still
+holds, specifically hunted for state-lost-on-return (Q6) and duplicated-navigation (Q4) bugs —
+none found. No architecture-level consolidation proposal raised: this cluster's current
+state-driven shape (DiscoverHubScreen mode/sub-mode/expand-in-place, CreateHubScreen's inline
+assistant, FiltersModal/QuickFilterCustomize as in-place layers) was already built specifically to
+avoid screen proliferation in prior sessions, not something this pass needed to fix. Full Jest
+suite 280/280 passing; all touched files transform-checked clean. Not exercised in a running app
+(no simulator/device tooling this session, standing note). Commits: `0bca8420`, `94277779`.
+
 **Thursday plan items 32 & 33 (standardize relationship states; standardize action-verb
 semantics) — fully DONE (2026-09-11).** Two global audits requested directly by the user, each
 run as a background research fork (to survey the whole codebase without blowing up context),
