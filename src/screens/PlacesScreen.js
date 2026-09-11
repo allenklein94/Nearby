@@ -112,6 +112,9 @@ export default function PlacesScreen({ navigation }) {
         <View style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📍</Text>
           <Text style={styles.emptyText}>Enable location to discover places nearby.</Text>
+          <TouchableOpacity onPress={load} accessibilityLabel="Enable location" accessibilityRole="button">
+            <Text style={styles.emptyActionText}>Enable Location →</Text>
+          </TouchableOpacity>
         </View>
       ) : loadError ? (
         <View style={styles.emptyState}>
@@ -127,6 +130,24 @@ export default function PlacesScreen({ navigation }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🔍</Text>
               <Text style={styles.emptyText}>Nothing found nearby in this category.</Text>
+              {/* Item 26 escape hatch: a real place can't be "created" the
+                  way a gathering/community can, but a user can ask
+                  businesses directly -- same AskBusinessScreen the Create
+                  tab's own "With businesses" row (item 20) and Home's
+                  ask-box fallback already use. Free-text prefill only --
+                  PLACE_CATEGORIES and AskBusinessScreen's own leaf-tag
+                  category chips are deliberately separate vocabularies
+                  (see placeCategories.js's header comment), so this never
+                  silently pre-selects a chip that might not actually match. */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('AskBusiness', {
+                  prefillText: `Looking for ${CATEGORIES.find((c) => c.key === category)?.label || 'something'} nearby`,
+                })}
+                accessibilityLabel="Ask nearby businesses"
+                accessibilityRole="button"
+              >
+                <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
+              </TouchableOpacity>
             </View>
           }
           renderItem={({ item }) => (
@@ -201,4 +222,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, paddingHorizontal: spacing.lg },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
+  emptyActionText: { color: colors.primary, fontWeight: '700', marginTop: spacing.md },
 });

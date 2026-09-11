@@ -1755,6 +1755,28 @@ export default function DiscoverHubScreen({ navigation }) {
                       <Text style={styles.emptyActionText}>← Browse Everything</Text>
                     </TouchableOpacity>
                   ) : null}
+                  {/* Item 26 escape hatch: a real place can't be "created"
+                      the way a gathering/community can, but a user can ask
+                      businesses directly -- same AskBusinessScreen the
+                      Create tab's own "With businesses" row (item 20) and
+                      Home's ask-box fallback already use. Only ever a free-
+                      text prefill (the place category taxonomy and
+                      AskBusinessScreen's own leaf-tag category chips are
+                      deliberately separate vocabularies -- see
+                      placeCategories.js's own header comment -- so this
+                      never silently pre-selects a chip that might not
+                      actually match). */}
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('AskBusiness', {
+                      prefillText: isSearching
+                        ? `Looking for "${searchQuery.trim()}" nearby`
+                        : `Looking for ${PLACE_CATEGORIES.find((c) => c.key === placesCategory)?.label || 'something'} nearby`,
+                    })}
+                    accessibilityLabel="Ask nearby businesses"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.emptyActionText}>Ask Nearby Businesses →</Text>
+                  </TouchableOpacity>
                 </>
               ) : (
                 placesToShow.map((p) => (
