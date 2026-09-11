@@ -1103,10 +1103,25 @@ export default function GatheringsScreen({ navigation, route }) {
                     style={[styles.interestButton, { backgroundColor: categoryStyle.color, flex: 1 }]}
                     onPress={() => setIntentModalGathering(item)}
                     activeOpacity={0.85}
-                    accessibilityLabel={`Express interest in ${item.title}`}
+                    accessibilityLabel={
+                      item.capacity != null && (item.approvedAttendees?.length ?? 0) >= item.capacity
+                        ? 'Join Waitlist'
+                        : (item.is_public ? 'Join Gathering' : 'Request to Join')
+                    }
                     accessibilityRole="button"
                   >
-                    <Text style={styles.interestButtonText}>{t('gatherings.imInterested')}</Text>
+                    {/* Action-verb audit (item 33, 2026-09-11): this used to
+                        always say "I'm Interested" regardless of the real
+                        gathering state, while GatheringDetailScreen's
+                        identical action already used the real three-way
+                        Join Gathering/Request to Join/Join Waitlist label
+                        for the exact same underlying gathering_interest
+                        insert -- same computation now applied here too. */}
+                    <Text style={styles.interestButtonText}>
+                      {item.capacity != null && (item.approvedAttendees?.length ?? 0) >= item.capacity
+                        ? 'Join Waitlist'
+                        : (item.is_public ? 'Join Gathering' : 'Request to Join')}
+                    </Text>
                   </TouchableOpacity>
                   {myFriendIds.size > 0 && (
                     <TouchableOpacity
@@ -1482,6 +1497,12 @@ export default function GatheringsScreen({ navigation, route }) {
           setIntentModalGathering(null);
           if (gathering) handleExpressInterest(gathering.id);
         }}
+        confirmLabel={
+          intentModalGathering?.capacity != null &&
+          (intentModalGathering?.approvedAttendees?.length ?? 0) >= intentModalGathering.capacity
+            ? 'Join Waitlist'
+            : (intentModalGathering?.is_public ? 'Join Gathering' : 'Request to Join')
+        }
       />
       <StoryViewerModal
         visible={!!mapStoryViewerTarget}

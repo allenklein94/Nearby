@@ -145,7 +145,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                 You don't have a gathering or community to attach a business partner to yet.
               </Text>
               <TouchableOpacity style={styles.emptyLink} onPress={() => navigation.navigate('CreateGathering')}>
-                <Text style={styles.emptyLinkText}>🎉 Start a Gathering</Text>
+                <Text style={styles.emptyLinkText}>🎉 Host a Gathering</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.emptyLink} onPress={() => navigation.navigate('CreateCommunity')}>
                 <Text style={styles.emptyLinkText}>👥 Create a Community</Text>

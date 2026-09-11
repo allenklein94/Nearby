@@ -636,10 +636,10 @@ export default function CommunityDetailScreen({ route, navigation }) {
                       setBusinessHelpChooserOpen(false);
                       navigation.navigate('RequestBusinessPartner', { targetType: 'community', targetId: communityId, targetTitle: community?.name });
                     }}
-                    accessibilityLabel="Ask a specific business"
+                    accessibilityLabel="Request a specific business"
                     accessibilityRole="button"
                   >
-                    <Text style={styles.businessHelpChooserOptionTitle}>🎯 Ask a specific business</Text>
+                    <Text style={styles.businessHelpChooserOptionTitle}>🎯 Request a specific business</Text>
                     <Text style={styles.businessHelpChooserOptionSub}>You already have a place in mind.</Text>
                   </TouchableOpacity>
                   <TouchableOpacity

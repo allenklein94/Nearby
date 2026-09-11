@@ -929,10 +929,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
                             setBusinessHelpChooserOpen(false);
                             navigation.navigate('RequestBusinessPartner', { targetType: 'gathering', targetId: gatheringId, targetTitle: gathering.title });
                           }}
-                          accessibilityLabel="Ask a specific business"
+                          accessibilityLabel="Request a specific business"
                           accessibilityRole="button"
                         >
-                          <Text style={styles.businessHelpChooserOptionTitle}>🎯 Ask a specific business</Text>
+                          <Text style={styles.businessHelpChooserOptionTitle}>🎯 Request a specific business</Text>
                           <Text style={styles.businessHelpChooserOptionSub}>You already have a place in mind.</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -965,10 +965,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     quickStartCategory: gathering.interest_tag,
                   })}
                   style={{ marginTop: spacing.xs }}
-                  accessibilityLabel="Start a community from this gathering"
+                  accessibilityLabel="Create a community from this gathering"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.hostBannerLink}>🏘️ Start a Community from This Gathering →</Text>
+                  <Text style={styles.hostBannerLink}>🏘️ Create a Community from This Gathering →</Text>
                 </TouchableOpacity>
               )}
             </View>

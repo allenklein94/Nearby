@@ -431,15 +431,21 @@ export default function MatchesScreen({ navigation }) {
                 // A gathering-sourced match's own "plan" is the linked
                 // gathering itself -- the general "Do Something Together"
                 // menu (12 real destinations) is still its only entry
-                // point from the match list.
+                // point from the match list. Action-verb audit (item 33,
+                // 2026-09-11): this used to say "Plan" too, identical to
+                // the direct-to-DateProposal button above, even though it
+                // opens a 12-option menu instead -- relabeled to match its
+                // real destination (the menu's own title, ChatScreen.js's
+                // "Do Something Together") so the label always predicts
+                // the behavior.
                 <TouchableOpacity
                   style={styles.planDateButton}
                   onPress={() => navigation.navigate('Chat', { matchId: item.id, openTogetherMenu: true })}
                   activeOpacity={0.85}
-                  accessibilityLabel={`Start something with ${other?.display_name}`}
+                  accessibilityLabel={`Do something with ${other?.display_name}`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.planDateButtonText}>🤝 Plan</Text>
+                  <Text style={styles.planDateButtonText}>🤝 Do Something</Text>
                 </TouchableOpacity>
               )}
               <Text style={styles.chevron}>›</Text>
