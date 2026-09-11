@@ -40,6 +40,27 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Thursday plan item 26 (consistent "escape hatch" — never dead-end a search) — fully DONE
+(2026-09-11).** An audit of every genuine "searched/browsed and found nothing, no path forward"
+moment beyond item 25's own sweep. Most surfaces already had a real escape hatch, some predating
+this session: `DiscoverHubScreen.js`'s unified search already routes a true "nothing matched
+anywhere" search through `classifyCreateRequest()` into a real Create It flow (`nothingMatchedAnywhere`,
+built 2026-08-27); `GatheringsScreen.js`'s search-empty state already offers a prefilled "Start a
+[term] Gathering" (item 25 batch 2); `CommunitiesScreen.js` has no free-text search to dead-end on
+at all; Home's ask-box and `CreateHubScreen.js`'s "With businesses" row already cover the
+business-request escape hatch (items 4/20). Two real gaps found, both in Places (a Google-
+Places-backed browse — a place can't be "created" the way a gathering/community can, so the right
+escape hatch is asking businesses directly, not creating supply): `DiscoverHubScreen.js`'s
+embedded Places section and the dedicated `PlacesScreen.js`'s "Nothing found nearby" state both
+gained an "Ask Nearby Businesses →" action into `AskBusinessScreen`, free-text prefill only
+(`PLACE_CATEGORIES` and `AskBusinessScreen`'s own leaf-tag category chips are deliberately
+separate vocabularies — see `placeCategories.js`'s header comment — so this never silently
+pre-selects a chip that might not actually match); `PlacesScreen.js`'s location-denied state had
+no action at all (a hard dead end), fixed with a real "Enable Location →" button re-running the
+screen's own existing permission flow. Full suite 258/258 passing; both touched files
+transform-checked clean. Not exercised in a running app (no simulator/device tooling this
+session, standing note). Commit: `3f197cd5`.
+
 **Thursday plan item 25 (empty states need real next-actions) — fully DONE (2026-09-11).** An
 audit fork inventoried the app's empty states; four batches closed every real gap it found across
 the highest-visibility surfaces:
