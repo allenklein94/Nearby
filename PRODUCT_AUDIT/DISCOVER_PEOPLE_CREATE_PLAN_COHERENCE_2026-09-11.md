@@ -86,6 +86,52 @@ Verified: full Jest suite 280/280 passing; all 10 touched files transform-checke
 `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
 available this session, standing note).
 
-### Item 35 — "Why am I here?" audit
+### Item 35 — "Why am I here?" audit — DONE, no dead-end/duplication bugs found
 
-(in progress)
+Ran the 7-question check against every screen in the RootNavigator's Discover/People/Create/Plan
+cluster: DiscoverHubScreen, DiscoveryScreen, FriendDiscoveryScreen/FriendDiscoverySwipeCards,
+SwipeableDiscoveryCards, GatheringsScreen, GatheringDetailScreen, CommunitiesScreen,
+CommunityDetailScreen, PlacesScreen, CreateHubScreen, CreateGatheringScreen, HomeScreen,
+MatchesScreen, DateProposalScreen. This cluster has already been through 10+ targeted audits this
+month (items 8/9/14/18-26/30-33) that each covered slices of these same 7 questions under
+different names (empty-state escape hatches = Q5, relationship-state/verb consistency = Q7,
+navigation depth = Q4/duplicated-navigation) — this pass re-verified those are still true by
+reading the current code (not re-trusting old notes) and specifically hunted for the one class of
+bug those audits' own methodology could miss: **Q6, state lost on return.**
+
+**Q6 check (the ViewProfileScreen-shaped bug class — mounted screen not refreshing/preserving
+state on refocus):** every screen in this cluster already uses `useFocusEffect` (not a bare
+`useEffect(fn, [])`) for its own data reload, confirmed by direct grep + read, **except**
+`PlacesScreen`, `CreateHubScreen`, `CreateGatheringScreen` — all three legitimately don't need it
+(Places is a leaf browse screen with no other-party state to go stale; the two Create screens are
+forms/wizards where reloading on refocus would be actively wrong — it would either wipe in-
+progress input or silently overwrite it). Checked that reload-on-focus calls (`DiscoverHubScreen`,
+`GatheringDetailScreen`, etc.) only refresh their own data-fetch state, not unrelated local UI
+state (search query, expanded-category context, scroll position) — confirmed by reading each
+`load()`/`loadCore()` body. No new instance of the bug class found.
+
+**Q4/duplicated-navigation check:** grepped every `navigation.navigate('DateProposal'|'GroupPlan'
+|'MakeAPlan', ...)` call across the whole screens+components tree (7 call sites). All three
+routes are used for one single, consistent purpose each with consistent params (DateProposal
+always takes `matchId`, GroupPlan always `proposalId`, MakeAPlan always `offerId`/`partnerId`) —
+no duplicated/divergent path to the same real action found beyond what items 21/33 already fixed.
+
+**Terminology spot-check beyond items 32/33's own scope:** grepped "Browse"/"Explore" usage across
+the cluster (7 hits) — all are generic escape-hatch copy ("Browse Other Categories", "Explore
+Things To Do →"), not competing with "Discover" as this app's own named action-verb the way item
+33's "Plan" vs "Do Something" collision was. Not a real inconsistency; left as-is.
+
+**Verdict per the 7 questions, all 14 screens:** all answer cleanly. No screen in this cluster
+currently dead-ends, silently resets user context on return, or reaches the same real action via
+two inconsistent paths. This isn't a surprise given how much of this exact ground items 8-33
+already covered — this pass's job was to verify that work actually holds under the specific "why
+am I here" lens rather than assume it does, and it does.
+
+**No architecture-level consolidation proposal is being raised.** The system-level goal ("Nearby
+doesn't need more screens, it needs better connected screens") is already the explicit, named
+design principle behind this cluster's current shape — DiscoverHubScreen's mode/sub-mode/
+expand-in-place state (Phase 8), CreateHubScreen's inline "Something Else" assistant, FiltersModal
+as an in-place layer rather than a destination (item 19), QuickFilterCustomize as a `presentation:
+'modal'` rather than a full push (item 19) — these were all *already* built as state-driven
+surfaces in prior sessions specifically to avoid screen proliferation, not organically arrived at.
+Nothing found in this pass rises to the level of "these two screens should really be one."
