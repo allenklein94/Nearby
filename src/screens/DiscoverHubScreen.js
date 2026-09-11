@@ -17,7 +17,7 @@ import { getSocialForecast } from '../services/homeDashboard';
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
-import { recordIntentSelection } from '../services/intentOutcomes';
+import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
@@ -258,6 +258,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
     AsyncStorage.setItem(LAST_PEOPLE_SUBMODE_KEY, key).catch(() => {});
   }
 
+  // Item 46 (CLAUDE.md, "personalization should determine what appears
+  // first"): null until a real, qualifying (3+ occurrences) recurring
+  // search category is found in the caller's own intent_submissions
+  // history -- stays null forever for a cold-start user, which is exactly
+  // what lets the "{Category} Near You" section below render only when
+  // it's genuinely earned (item 47).
+  const [topSearchedCategory, setTopSearchedCategory] = useState(null);
   const [gatheringStories, setGatheringStories] = useState([]);
   // Real business-authored moments (CLAUDE.md items 11/13) -- the honest,
   // buildable version of "going live to promote a business": a real
@@ -380,6 +387,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
     });
   }
 
+  // Item 46's "{Category} Near You" section's own "See all" -- the exact
+  // same single-interestTag expand-in-place shape openContextFor() above
+  // already uses for one gathering's own tag, just entered directly by
+  // the personalized category itself rather than via a specific tile.
+  function openTopCategoryContext() {
+    setContextPlaces([]);
+    setContextConnections([]);
+    setContextConnectionPhotos({});
+    setExpandedContext({ interestTag: topSearchedCategory.category });
+  }
+
   function closeContext() {
     setExpandedContext(null);
     setContextPlaces([]);
@@ -446,6 +464,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       loadGatheringStories();
       loadBusinessMoments();
       loadCore();
+      getMyTopSearchedCategory().then(setTopSearchedCategory);
     }, [])
   );
 
@@ -680,6 +699,27 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return { ...g, fit };
   }
 
+  // Item 46 (CLAUDE.md, "personalization should determine what appears
+  // first"): a real, earned personalized section -- only renders when
+  // topSearchedCategory is non-null (3+ real past searches for this
+  // exact category, per getMyTopSearchedCategory()) AND real matching
+  // supply genuinely exists nearby right now. No date-window constraint
+  // (unlike Happening Now/Today/This Weekend below): this section
+  // answers "what," specifically for this one person, not "when." Goes
+  // first in render order, ahead of every other section -- literally
+  // "personalization determines what appears first" -- so its ids are
+  // excluded from every section below it, the same "don't repeat what a
+  // more prominent section already showed" chain those sections already
+  // apply to each other.
+  const topCategoryGatherings = isAll && !isSearching && topSearchedCategory
+    ? filteredGatherings
+        .filter((g) => g.interest_tag === topSearchedCategory.category)
+        .map(scoreGathering)
+        .sort((a, b) => b.fit.score - a.fit.score)
+        .slice(0, TIME_SECTION_CAP)
+    : [];
+  const topCategoryIds = new Set(topCategoryGatherings.map((g) => g.id));
+
   // P1 UX critique reply item 14 (CLAUDE.md, "Things To Do needs a UX
   // pass"): the default "All" landing view no longer has its own flat
   // "Recommended For You" pass -- it's replaced below by the real
@@ -714,7 +754,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // notable-vs-flat).
   const happeningNowGatherings = isAll && !isSearching
     ? filteredGatherings
-        .filter((g) => matchesDateFilter(g.scheduled_at, 'now'))
+        .filter((g) => matchesDateFilter(g.scheduled_at, 'now') && !topCategoryIds.has(g.id))
         .map(scoreGathering)
         .sort((a, b) => b.fit.score - a.fit.score)
         .slice(0, HAPPENING_NOW_CAP)
@@ -722,7 +762,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const happeningNowIds = new Set(happeningNowGatherings.map((g) => g.id));
 
   const todayQualifying = isAll && !isSearching
-    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'today') && !happeningNowIds.has(g.id))
+    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'today') && !topCategoryIds.has(g.id) && !happeningNowIds.has(g.id))
     : [];
   const todayGatherings = todayQualifying
     .map(scoreGathering)
@@ -732,7 +772,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const todayIds = new Set(todayGatherings.map((g) => g.id));
 
   const weekendQualifying = isAll && !isSearching
-    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'weekend') && !happeningNowIds.has(g.id) && !todayIds.has(g.id))
+    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'weekend') && !topCategoryIds.has(g.id) && !happeningNowIds.has(g.id) && !todayIds.has(g.id))
     : [];
   const weekendGatherings = weekendQualifying
     .map(scoreGathering)
@@ -1674,6 +1714,27 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <ActivityIndicator color={colors.primary} />
               <Text style={styles.loadingCaption}>Finding things nearby…</Text>
             </View>
+          )}
+
+          {/* Item 46 (CLAUDE.md, "personalization should determine what
+              appears first"): goes first, ahead of Happening Now/Today/
+              This Weekend, and only when it's genuinely earned -- a real
+              3+-occurrence recurring search category (getMyTopSearchedCategory())
+              AND real matching supply nearby. A cold-start user (item 47,
+              "don't over-personalize too early") sees nothing here at all
+              and falls straight through to the same honest Happening Now/
+              Today/This Weekend/Categories hierarchy every user already
+              gets -- never a fabricated "we know what you like." */}
+          {topCategoryGatherings.length > 0 && (
+            <>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>{topSearchedCategory.category} Near You</Text>
+                <TouchableOpacity onPress={openTopCategoryContext} accessibilityLabel={`See all ${topSearchedCategory.category} nearby`} accessibilityRole="button">
+                  <Text style={styles.seeAllInline}>See all →</Text>
+                </TouchableOpacity>
+              </View>
+              {topCategoryGatherings.map(renderGatheringTile)}
+            </>
           )}
 
           {/* P1 UX critique reply item 14 ("Things To Do needs a UX pass",

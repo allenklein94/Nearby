@@ -43,6 +43,35 @@ export function findRecurringIntentPattern(rows, now = new Date()) {
   return best;
 }
 
+// Item 46 (CLAUDE.md, "personalization should determine what appears
+// first"): a broader sibling of findRecurringIntentPattern() above --
+// that one is deliberately narrow (a specific day-of-week + time-window
+// + category combo, 3+ times, matching right now). This one just asks
+// "what category has this person genuinely searched for over and over,
+// regardless of when" -- the real signal behind "someone who constantly
+// looks for fitness should see Fitness near you." Same MIN_OCCURRENCES
+// threshold (a real, stated floor, not a fabricated one) and the same
+// "return null, never a guess, when nothing qualifies" discipline --
+// that null is exactly what lets the caller fall back honestly to
+// Discover's existing Happening Now/Today/This Weekend/Categories
+// hierarchy per item 47 ("don't over-personalize too early").
+export function findTopSearchedCategory(rows, minOccurrences = MIN_OCCURRENCES) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+
+  const counts = new Map();
+  for (const row of rows) {
+    if (!row?.category) continue;
+    counts.set(row.category, (counts.get(row.category) ?? 0) + 1);
+  }
+
+  let best = null;
+  for (const [category, count] of counts.entries()) {
+    if (count < minOccurrences) continue;
+    if (!best || count > best.count) best = { category, count };
+  }
+  return best;
+}
+
 const PERIOD_PLACEHOLDER_SUFFIX = {
   morning: 'this morning?',
   afternoon: 'this afternoon?',

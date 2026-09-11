@@ -1,7 +1,7 @@
 // 10/10 roadmap Part 8: technical validation. Unit tests for
 // intentPatterns.js's pure functions (Part 7's Home progressive
 // personalization).
-const { findRecurringIntentPattern, formatSmartPlaceholder } = require('./intentPatterns');
+const { findRecurringIntentPattern, formatSmartPlaceholder, findTopSearchedCategory } = require('./intentPatterns');
 
 // A known Friday evening -- 2026-08-14 is a Friday. Time chosen well past
 // 18:00 local so getTimePeriod(now) reliably reads 'evening'.
@@ -51,6 +51,45 @@ describe('findRecurringIntentPattern', () => {
       fridayRow(2),
     ];
     expect(findRecurringIntentPattern(rows, FRIDAY_EVENING)).toBeNull();
+  });
+});
+
+describe('findTopSearchedCategory', () => {
+  it('returns null with no rows', () => {
+    expect(findTopSearchedCategory([])).toBeNull();
+  });
+
+  it('returns null when the top category shows up fewer than 3 times', () => {
+    const rows = [{ category: 'Fitness' }, { category: 'Fitness' }];
+    expect(findTopSearchedCategory(rows)).toBeNull();
+  });
+
+  it('finds the real top category at 3+ occurrences, regardless of day/time', () => {
+    const rows = [
+      { category: 'Fitness', created_at: '2026-01-01T09:00:00Z' },
+      { category: 'Fitness', created_at: '2026-03-15T22:00:00Z' },
+      { category: 'Fitness', created_at: '2026-06-20T14:00:00Z' },
+      { category: 'Coffee', created_at: '2026-01-01T09:00:00Z' },
+    ];
+    expect(findTopSearchedCategory(rows)).toEqual({ category: 'Fitness', count: 3 });
+  });
+
+  it('picks the higher count when two categories both qualify', () => {
+    const rows = [
+      ...Array(3).fill({ category: 'Coffee' }),
+      ...Array(5).fill({ category: 'Fitness' }),
+    ];
+    expect(findTopSearchedCategory(rows)).toEqual({ category: 'Fitness', count: 5 });
+  });
+
+  it('ignores rows with no category', () => {
+    const rows = [{ category: null }, { category: null }, { category: null }];
+    expect(findTopSearchedCategory(rows)).toBeNull();
+  });
+
+  it('respects a custom minOccurrences threshold', () => {
+    const rows = [{ category: 'Fitness' }, { category: 'Fitness' }];
+    expect(findTopSearchedCategory(rows, 2)).toEqual({ category: 'Fitness', count: 2 });
   });
 });
 

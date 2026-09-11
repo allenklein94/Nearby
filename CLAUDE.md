@@ -40,6 +40,50 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Items 46 & 47 ("personalization should determine what appears first" / "don't
+over-personalize too early") — first real increment shipped (2026-09-11).** Paired ask: Discover
+should genuinely reorder itself around a real, earned behavioral signal ("someone who constantly
+searches fitness should see Fitness near you"), but must never fabricate personalization for a
+user with no real history yet (explicit cold-start fallback list given: Popular nearby/Happening
+today/Friends are interested/Based on your selected interests). Built on top of the "10/10
+roadmap" Part 7 infrastructure already in place (`intent_submissions`, RLS-scoped to each user's
+own rows) rather than inventing new instrumentation, per the user's own "the architecture you've
+been building makes this possible."
+
+Shipped: a new pure `findTopSearchedCategory()` (`src/utils/intentPatterns.js`) — a broader
+sibling of the existing day/time-scoped `findRecurringIntentPattern()` (used for Home's smart
+placeholder): counts a caller's own real `intent_submissions.category` history with no day/time
+constraint, returns the top category at 3+ real occurrences (same `MIN_OCCURRENCES` floor, same
+"null means honestly unknown" discipline), or `null` for anyone who doesn't qualify yet. Wrapped
+by `getMyTopSearchedCategory()` (`src/services/intentOutcomes.js`, same query shape as the
+existing `getMyIntentPatterns()`). Wired into `DiscoverHubScreen.js`: when a real qualifying
+category exists AND real matching gatherings genuinely exist nearby, a "{Category} Near You"
+section renders **first** — ahead of Happening Now/Today/This Weekend/Categories — with a "See
+all →" reusing the exact same single-`interestTag` expand-in-place mechanism a single gathering
+tile's own context already used (no new navigation surface). Its ids are excluded from every
+section below it, extending the exclusion chain those sections already apply to each other, so
+nothing repeats. For a cold-start user (no qualifying history), the section simply doesn't
+render — the screen falls straight through to the exact same Happening Now/Today/This
+Weekend/Categories hierarchy every user already sees (item 14), with no fabricated "we know what
+you like." Audited item 47's own prescribed fallback list against what's already real and
+present rather than inventing new sections for it: "Happening today" already exists verbatim as
+the Today section; "Based on your selected interests" and "Friends are interested" are already
+real, itemized per-tile reasons every gathering tile surfaces via `getGatheringFitReasons()`
+(`REASON_TEXT.MATCHES_INTERESTS`, `"N of your friends are attending"`) rather than needing to be
+their own separate top-level sections; "Popular nearby" is effectively what the existing
+fit-score-sorted tiers already surface. New Jest coverage (6 tests) for
+`findTopSearchedCategory()`; full suite 286/286 passing; all three touched files transform-
+checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no
+simulator/device tooling this session, standing note) — this reads real per-user data
+(`intent_submissions`), so behavior can't be confirmed against a live account this session.
+Deliberately NOT built this pass, disclosed rather than silently skipped: the "someone who mainly
+uses Friends should have Friends content prioritized" example from item 46. Discover's People
+tab already defaults to whichever of Dating/Friends was last actually selected
+(`LAST_PEOPLE_SUBMODE_KEY` in AsyncStorage) — a real behavioral signal already in place, not
+fabricated — but that's "last used," not a true frequency-weighted "mainly uses," which would
+need new durable server-side usage-frequency instrumentation this session didn't build. A real,
+disclosed fast-follow, not a fabricated stopgap.
+
 **Item 44 ("give each screen ONE visual hero") — fully DONE (2026-09-11).** Direct continuation
 of the "Things To Do feels busy" observation, reframed by the user as a visual-hierarchy problem
 rather than a content problem: Discover's Things-mode header had title, subtitle, a full-width

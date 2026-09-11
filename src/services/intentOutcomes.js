@@ -4,7 +4,7 @@
 // outcome always means "unknown," never a default negative.
 import { supabase } from './supabase';
 import * as Location from 'expo-location';
-import { findRecurringIntentPattern, formatSmartPlaceholder } from '../utils/intentPatterns';
+import { findRecurringIntentPattern, formatSmartPlaceholder, findTopSearchedCategory } from '../utils/intentPatterns';
 import { getTimePeriod } from '../utils/timeContext';
 
 // Same coarse-bucketing convention already established for profiles.wide_area
@@ -170,6 +170,31 @@ export async function getMyIntentPatterns() {
     return { ...pattern, placeholderText };
   } catch (e) {
     console.error('getMyIntentPatterns failed', e);
+    return null;
+  }
+}
+
+// Item 46 (CLAUDE.md, "personalization should determine what appears
+// first"): the real signal behind Discover's own "{Category} Near You"
+// personalized section -- same query shape as getMyIntentPatterns()
+// above (RLS-scoped to the caller's own rows, most recent 200, fire-
+// and-forget-shaped), just handed to findTopSearchedCategory() instead
+// of the narrower day/time-scoped findRecurringIntentPattern(). Returns
+// null (never a guess) for a caller with no qualifying history yet --
+// Discover's own screen falls back to its existing Happening Now/Today/
+// This Weekend/Categories hierarchy in that case, per item 47.
+export async function getMyTopSearchedCategory() {
+  try {
+    const { data, error } = await supabase
+      .from('intent_submissions')
+      .select('category, created_at')
+      .not('category', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return findTopSearchedCategory(data ?? []);
+  } catch (e) {
+    console.error('getMyTopSearchedCategory failed', e);
     return null;
   }
 }
