@@ -152,7 +152,70 @@ No code was changed this pass — audit-only, findings above are read-direct-fro
 inferred. Full Jest suite untouched (still 280/280 from the prior pass); nothing to
 transform-check since no files were edited.
 
-## Chain 1 fix — BUILDING (2026-09-11), user picked "pre-submission companion picker"
+## Chain 1 fix — REDESIGNED to "invite-after-submitting" (2026-09-11), superseding the
+## pre-submission plan below before any code/schema landed
+
+The pre-submission design below was locked, then a build fork was launched against it — but
+before it committed anything, the user reviewed and changed direction. **This section is the
+current locked design.** The original pre-submission plan is kept underneath, struck from
+current effect, as a record of what was considered and why it was rejected — do not build it.
+
+**Why the change**: pre-submission forces "who are you going with?" before the user has even
+seen the restaurant — friction on the single most basic case ("I want dinner" as a pure solo
+ask). The better shape keeps business discovery/request as the core transaction and makes social
+participation an optional layer attached *after*, not a gate in front of it:
+
+> Intent → restaurant/business discovery → business request → optional social invitation.
+
+**The flow**:
+1. User says "want dinner."
+2. Nearby resolves and presents the restaurant/business (unchanged, existing intent resolution).
+3. User submits the request — **exactly today's existing solo `AskBusinessScreen` flow,
+   unchanged, no new required step, no friend/match picker gating submission.**
+4. The confirmation / `BusinessRequestDetailScreen` gains an unobtrusive **"Invite someone"**
+   action (not a required step, not a gate).
+5. Tapping it opens a picker over the user's real existing connected set — accepted friends AND
+   active matches (the audit's own gap: today's only related mechanism,
+   `create_business_request_for_match`, is match-only; this must cover both).
+6. User selects a person → a real invitation is sent, using the **existing group-plan
+   participant / mutual-consent architecture** wherever it already fits — not a parallel
+   social-request system. **Audit the existing participant/invitation/consent/business-request
+   primitives first** (`group_plan_proposals`, `group_plan_participants`,
+   `propose_group_plan`/`respond_to_group_plan`/`confirm_group_plan`, and whatever
+   `create_business_request_for_match` already does for the match-only reverse case) and reuse
+   what already exists rather than inventing new mechanics — this is likely the same
+   auto-create-a-companion-request-row idea from the superseded plan below (to satisfy
+   `group_plan_participants.source_request_id`), just triggered post-submission instead of
+   pre-submission.
+7. Invitee accepts/declines via the existing respond-to-invite flow.
+8. If accepted, the request becomes a shared/group request under the existing participant model
+   — same downstream mechanics (`confirm_group_plan`, etc.) as any other group plan, no special
+   casing needed there.
+
+**User-facing concept**: "Invite someone." Never surface "convert to group request" or any
+implementation-level language to the user — that's a backend mechanic, not a user concept.
+
+**Hard constraints** (unchanged from the original plan, restated because they still apply):
+- Real connections only — accepted friends and active matches, never a stranger. This is the
+  standing "no stranger discovery via intent" rule; this flow must never become one.
+- Consent is mandatory — being invited is never itself acceptance; use the existing
+  pending/accepted/declined mutual-consent shape.
+- **No new screen/navigation destination unless truly unavoidable** — prefer an inline action, a
+  sheet, or reuse of an existing picker pattern (e.g. whatever `InviteFriendsModal` or the
+  match/friend list UI already used elsewhere in this codebase provides) over a new route.
+- Audit before building: read the real current `group_plan_proposals`/`group_plan_participants`/
+  `business_requests` schema and the real current bodies of `propose_group_plan`,
+  `respond_to_group_plan`, `confirm_group_plan`, and `create_business_request_for_match` (live,
+  via `pg_get_functiondef` — not migration-file grep, per this repo's own convention) before
+  writing any new migration, so the new mechanism is additive/reused, not a parallel system.
+
+Status: build fork was redirected mid-flight to this design before it had committed anything
+under the old plan — see git log for what actually landed.
+
+---
+
+<details>
+<summary>Superseded: original pre-submission plan (not being built — kept for record)</summary>
 
 User confirmed: build the fix, pre-submission shape (pick a friend/match to bring *before*
 submitting the business request) rather than post-submission invite — matches the chain's own
@@ -192,4 +255,4 @@ so it's reviewable/correctable):
   if it doesn't already surface `group_plan_participants` state — check before building anything
   new here; group-plan-linked requests may already render this generically.
 
-Status: fix in progress, see git log / this file's own next update for what actually landed.
+</details>
