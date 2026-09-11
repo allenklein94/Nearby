@@ -311,6 +311,27 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </>
         )}
 
+        {/* Convergence pass P1 (CLAUDE.md, "Make a Plan / Business = The
+            Grove") -- the real new entry point for planning something at a
+            specific business that has no live standing offer right now.
+            When a real active offer does exist, that offer's own row on
+            the Perks section below already gets its own "Make a plan"
+            treatment in the resolver-driven flow (Home's perk
+            recommendation) -- this button is the honest general case,
+            reachable regardless of whether a perk happens to be live.
+            Item 37 (context-aware primary CTA): "Plan Here" is the real
+            primary action on a business profile -- coral -- not "Follow",
+            which is a passive subscribe action and stays secondary below. */}
+        <TouchableOpacity
+          style={styles.planHereButton}
+          onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
+          activeOpacity={0.85}
+          accessibilityLabel={`Plan something at ${partner.name}`}
+          accessibilityRole="button"
+        >
+          <Text style={styles.planHereButtonText}>📅 Plan Here</Text>
+        </TouchableOpacity>
+
         <View style={styles.actionRow}>
           <TouchableOpacity
             style={[styles.followButton, following && styles.followingButton]}
@@ -333,24 +354,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
             <Text style={styles.messageButtonText}>💬 Message</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Convergence pass P1 (CLAUDE.md, "Make a Plan / Business = The
-            Grove") -- the real new entry point for planning something at a
-            specific business that has no live standing offer right now.
-            When a real active offer does exist, that offer's own row on
-            the Perks section below already gets its own "Make a plan"
-            treatment in the resolver-driven flow (Home's perk
-            recommendation) -- this button is the honest general case,
-            reachable regardless of whether a perk happens to be live. */}
-        <TouchableOpacity
-          style={styles.planHereButton}
-          onPress={() => navigation.navigate('MakeAPlan', { partnerId })}
-          activeOpacity={0.85}
-          accessibilityLabel={`Make a plan at ${partner.name}`}
-          accessibilityRole="button"
-        >
-          <Text style={styles.planHereButtonText}>📅 Make a Plan Here</Text>
-        </TouchableOpacity>
 
         {/* "Business Story" plan, Phase 6 -- the actual consumer-facing
             payoff: real, curated things this business can be come to for,
@@ -488,17 +491,22 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attributeChip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderWidth: 1, borderColor: colors.border },
   attributeChipText: { ...typography.small, color: colors.textSecondary },
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  followButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', ...shadow.button },
-  followingButton: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  followButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  // Item 37: Follow is a passive subscribe action, not the primary CTA --
+  // outlined in both states, never filled coral. "Plan Here" (below) is
+  // the real primary action on this screen.
+  followButton: { flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
+  followingButton: { backgroundColor: colors.surface, borderColor: colors.border },
+  followButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
   followingButtonText: { color: colors.textSecondary },
   messageButton: { flex: 1, borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center' },
   messageButtonText: { color: colors.primary, fontWeight: '700', fontSize: 15 },
+  // Item 37: the real primary, context-aware CTA for "looking at a
+  // business" -- filled coral, same treatment followButton used to have.
   planHereButton: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: radius.full, paddingVertical: 14,
-    alignItems: 'center', marginBottom: spacing.lg, backgroundColor: colors.surface,
+    borderRadius: radius.full, paddingVertical: 14,
+    alignItems: 'center', marginBottom: spacing.lg, backgroundColor: colors.primary, ...shadow.button,
   },
-  planHereButtonText: { color: colors.textPrimary, fontWeight: '700', fontSize: 15 },
+  planHereButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   section: { marginBottom: spacing.lg },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   repLine: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs },

@@ -1876,17 +1876,20 @@ export default function DiscoverHubScreen({ navigation }) {
             <View style={styles.createItCard}>
               <Text style={styles.createItTitle}>Don't see what you're looking for?</Text>
               <Text style={styles.createItSubtitle}>Tell Nearby what you want to do.</Text>
+              {/* Item 37 (context-aware primary CTA): "looking at search
+                  results" with nothing real to show -- the primary action
+                  is creating the thing itself, in the user's own words. */}
               <TouchableOpacity
                 style={styles.createItButton}
                 onPress={handleCreateItFromSearch}
                 disabled={creatingFromSearch}
-                accessibilityLabel="Create it"
+                accessibilityLabel="Create what you're looking for"
                 accessibilityRole="button"
               >
                 {creatingFromSearch ? (
                   <ActivityIndicator color={colors.surface} />
                 ) : (
-                  <Text style={styles.createItButtonText}>Create it →</Text>
+                  <Text style={styles.createItButtonText}>Create What You're Looking For →</Text>
                 )}
               </TouchableOpacity>
             </View>

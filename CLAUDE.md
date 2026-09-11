@@ -40,6 +40,29 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 37 ("make the primary CTA context-aware") — fully DONE (2026-09-11).** Full findings:
+`PRODUCT_AUDIT/CONTEXT_AWARE_PRIMARY_CTA_2026-09-11.md`. Audited all 6 named contexts by reading
+each screen's real button JSX + styles to check which button is *visually* primary (filled coral)
+vs secondary, not just which exists. Two real gaps found and fixed: `ViewProfileScreen.js` had
+"💬 Message" as the coral primary and "🤝 Plan Something" as the outlined secondary once connected
+as both friend and match — swapped, and renamed to "🤝 Plan Together" to match the user's wording
+(only when `friendshipStatus === 'accepted'`; a pure dating match still shows Message as primary,
+correctly, since nothing else is actionable yet). `BusinessProfileScreen.js` had "+ Follow" as the
+coral primary and "📅 Make a Plan Here" as the *weakest*-styled button on the screen (gray outline)
+— swapped, renamed to "📅 Plan Here"; Follow is now always outlined, never filled, in both states.
+Community (`CommunityDetailScreen.js`) and Gathering (`GatheringDetailScreen.js`) were already
+correct — no changes. "Event" is not a distinct concept anywhere in this schema (folds into
+Gathering per item 27's own same-day audit) — flagged rather than fabricating a parallel UI state
+with no real data distinction behind it. Search results: `DiscoverHubScreen.js`'s existing
+"nothing matched anywhere" escape hatch (item 26) was already coral-primary and correctly gated
+(empty-state only, never alongside real results) — renamed "Create it →" to "Create What You're
+Looking For →" to match the user's wording; `GatheringsScreen.js`'s own more-specific "+ Start a
+{term} Gathering" CTA was deliberately left as-is (more informative for its single-type context).
+Full Jest suite 280/280 passing (no test files touched); all three touched files
+(`ViewProfileScreen.js`, `BusinessProfileScreen.js`, `DiscoverHubScreen.js`) transform-checked
+clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device
+tooling this session, standing note).
+
 **Gathering-interest threshold push ("3 people nearby are planning X") — fully DONE (2026-09-11).**
 The one explicitly-named deferred piece from item 17's own migration
 (`20261004_recommended_for_you_push.sql`'s header comment): a brand-new gathering has zero
