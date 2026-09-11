@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
+import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { typography, spacing, radius } from '../theme';
 
 function toE164(rawInput) {
@@ -85,6 +86,25 @@ export default function SettingsScreen({ navigation, route }) {
   const [notifyCrossedPaths, setNotifyCrossedPaths] = useState(true);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
+  // External UX critique item 17 follow-up (2026-09-11): the "this matches
+  // you" push controls used to be their own navigation destination
+  // (RecommendationPreferencesScreen). Per direct product direction --
+  // "fewer screens, not more; put a preference where the user encounters
+  // the thing it controls" -- that screen is gone. These 4 fields per
+  // category are now an inline expand-in-place panel
+  // (RecommendationCustomizePanel) right under each row's own toggle,
+  // expandedRecPanel holding which one (if any) is open.
+  const [expandedRecPanel, setExpandedRecPanel] = useState(null); // null | 'things_to_do' | 'nearby_opportunities'
+  const [myInterests, setMyInterests] = useState([]);
+  const [ttdFrequency, setTtdFrequency] = useState('few_per_day');
+  const [ttdDistance, setTtdDistance] = useState(15);
+  const [ttdTimePref, setTtdTimePref] = useState('anytime');
+  const [ttdCategories, setTtdCategories] = useState(null); // null = all of myInterests qualify
+  const [noFrequency, setNoFrequency] = useState('few_per_day');
+  const [noDistance, setNoDistance] = useState(15);
+  const [noTimePref, setNoTimePref] = useState('anytime');
+  const [noCategories, setNoCategories] = useState(null);
+
   const [changingPhone, setChangingPhone] = useState(false);
   const [newPhoneInput, setNewPhoneInput] = useState('');
   const [otp, setOtp] = useState('');
@@ -144,6 +164,15 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyPlans(data.notify_plans ?? true);
       setNotifyNearbyOpportunities(data.notify_nearby_opportunities ?? true);
       setNotifyCrossedPaths(data.notify_crossed_paths ?? true);
+      setMyInterests(data.interests ?? []);
+      setTtdFrequency(data.notify_things_to_do_frequency ?? 'few_per_day');
+      setTtdDistance(data.notify_things_to_do_max_distance_miles === undefined ? 15 : data.notify_things_to_do_max_distance_miles);
+      setTtdTimePref(data.notify_things_to_do_time_pref ?? 'anytime');
+      setTtdCategories(data.notify_things_to_do_categories ?? null);
+      setNoFrequency(data.notify_nearby_opportunities_frequency ?? 'few_per_day');
+      setNoDistance(data.notify_nearby_opportunities_max_distance_miles === undefined ? 15 : data.notify_nearby_opportunities_max_distance_miles);
+      setNoTimePref(data.notify_nearby_opportunities_time_pref ?? 'anytime');
+      setNoCategories(data.notify_nearby_opportunities_categories ?? null);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
@@ -180,6 +209,21 @@ export default function SettingsScreen({ navigation, route }) {
       setter(!value);
       Alert.alert('Error', error.message);
     }
+  }
+
+  async function saveRecPref(column, value, setter) {
+    setter(value);
+    const { error } = await supabase.from('profiles').update({ [column]: value }).eq('id', userId);
+    if (error) {
+      Alert.alert('Error', error.message);
+    }
+  }
+
+  function toggleRecCategory(tag, selectedCategories, column, setter) {
+    const current = selectedCategories ?? myInterests;
+    const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
+    const finalValue = next.length === myInterests.length ? null : next;
+    saveRecPref(column, finalValue, setter);
   }
 
   async function sendPhoneChangeOtp() {
@@ -585,14 +629,33 @@ export default function SettingsScreen({ navigation, route }) {
             />
           </View>
           {notifyThingsToDo && (
-            <TouchableOpacity
-              style={styles.customizeLink}
-              onPress={() => navigation.navigate('RecommendationPreferences', { mode: 'things_to_do' })}
-              accessibilityLabel="Customize Things To Do notifications"
-              accessibilityRole="button"
-            >
-              <Text style={styles.customizeLinkText}>⚙️ Frequency, categories, distance & time</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.customizeLink}
+                onPress={() => setExpandedRecPanel(expandedRecPanel === 'things_to_do' ? null : 'things_to_do')}
+                accessibilityLabel="Customize Things To Do notifications"
+                accessibilityRole="button"
+                accessibilityState={{ expanded: expandedRecPanel === 'things_to_do' }}
+              >
+                <Text style={styles.customizeLinkText}>
+                  {expandedRecPanel === 'things_to_do' ? '⚙️ Hide frequency, categories, distance & time' : '⚙️ Frequency, categories, distance & time'}
+                </Text>
+              </TouchableOpacity>
+              {expandedRecPanel === 'things_to_do' && (
+                <RecommendationCustomizePanel
+                  colors={colors}
+                  myInterests={myInterests}
+                  frequency={ttdFrequency}
+                  distance={ttdDistance}
+                  timePref={ttdTimePref}
+                  selectedCategories={ttdCategories}
+                  onChangeFrequency={(v) => saveRecPref('notify_things_to_do_frequency', v, setTtdFrequency)}
+                  onChangeDistance={(v) => saveRecPref('notify_things_to_do_max_distance_miles', v, setTtdDistance)}
+                  onChangeTimePref={(v) => saveRecPref('notify_things_to_do_time_pref', v, setTtdTimePref)}
+                  onToggleCategory={(tag) => toggleRecCategory(tag, ttdCategories, 'notify_things_to_do_categories', setTtdCategories)}
+                />
+              )}
+            </>
           )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>
@@ -635,14 +698,33 @@ export default function SettingsScreen({ navigation, route }) {
             />
           </View>
           {notifyNearbyOpportunities && (
-            <TouchableOpacity
-              style={styles.customizeLink}
-              onPress={() => navigation.navigate('RecommendationPreferences', { mode: 'nearby_opportunities' })}
-              accessibilityLabel="Customize Nearby Opportunities notifications"
-              accessibilityRole="button"
-            >
-              <Text style={styles.customizeLinkText}>⚙️ Frequency, categories, distance & time</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.customizeLink}
+                onPress={() => setExpandedRecPanel(expandedRecPanel === 'nearby_opportunities' ? null : 'nearby_opportunities')}
+                accessibilityLabel="Customize Nearby Opportunities notifications"
+                accessibilityRole="button"
+                accessibilityState={{ expanded: expandedRecPanel === 'nearby_opportunities' }}
+              >
+                <Text style={styles.customizeLinkText}>
+                  {expandedRecPanel === 'nearby_opportunities' ? '⚙️ Hide frequency, categories, distance & time' : '⚙️ Frequency, categories, distance & time'}
+                </Text>
+              </TouchableOpacity>
+              {expandedRecPanel === 'nearby_opportunities' && (
+                <RecommendationCustomizePanel
+                  colors={colors}
+                  myInterests={myInterests}
+                  frequency={noFrequency}
+                  distance={noDistance}
+                  timePref={noTimePref}
+                  selectedCategories={noCategories}
+                  onChangeFrequency={(v) => saveRecPref('notify_nearby_opportunities_frequency', v, setNoFrequency)}
+                  onChangeDistance={(v) => saveRecPref('notify_nearby_opportunities_max_distance_miles', v, setNoDistance)}
+                  onChangeTimePref={(v) => saveRecPref('notify_nearby_opportunities_time_pref', v, setNoTimePref)}
+                  onToggleCategory={(tag) => toggleRecCategory(tag, noCategories, 'notify_nearby_opportunities_categories', setNoCategories)}
+                />
+              )}
+            </>
           )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>

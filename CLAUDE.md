@@ -68,11 +68,18 @@ all 8 real cases (genuine match fires; wrong interest/too far/stale presence/pri
 all correctly suppressed; the frequency cap holds a user at exactly 3 for `few_per_day`; a
 business's own linked profile is never pushed about its own posting) before applying for real —
 confirmed live afterward (triggers, all 8 new columns, `recommendation_push_log` all present).
-Client: `RecommendationPreferencesScreen.js` (new, mode-driven, mirrors
-`QuickFilterCustomizeScreen.js`'s own precedent) reached via a new "⚙️ Frequency, categories,
-distance & time" link under each of the two existing Settings toggles; `notifications.js` routes
-both new push types (`recommended_gathering` → `GatheringDetail`; `recommended_business_availability`
-→ the Discover tab, since no per-posting consumer detail screen exists yet). Deliberately NOT
+Client, original shape: a standalone `RecommendationPreferencesScreen.js`, reached via a new
+"⚙️ Frequency, categories, distance & time" link under each of the two existing Settings toggles.
+**Refactored same day (2026-09-11), direct user pushback**: a whole navigation destination for 4
+rows of controls fought this app's own "fewer screens, contextual disclosure" direction (the
+Progressive Depth doctrine in Standing Conventions below). The screen is gone; its content is now
+`src/components/RecommendationCustomizePanel.js`, an inline expand-in-place panel rendered
+directly under each Settings toggle's own "Customize" link (local `expandedRecPanel` state in
+`SettingsScreen.js`, no navigation). Same columns/behavior, same "categories = only your own
+already-declared interests" scoping — purely a presentation change, not a data-model change.
+`notifications.js` routes both new push types (`recommended_gathering` → `GatheringDetail`;
+`recommended_business_availability` → the Discover tab, since no per-posting consumer detail
+screen exists yet). Deliberately NOT
 built, disclosed rather than silently skipped: the "3 people nearby are planning X" social-proof
 copy variant from the user's own example — a brand-new gathering has zero attendees at the moment
 its own INSERT trigger fires, so that needs its own separate trigger on `gathering_interest`
