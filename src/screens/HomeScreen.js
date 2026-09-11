@@ -6,7 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
-import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
+import { resolveIntent, resolveCommunityIntent, navigateToIntentResultItem, buildFriendDiscoveryResultItem } from '../services/intentResolver';
 import { runSurpriseMe, pickNextFromPool, findConnectedPerson, suggestionCandidateKeys, moodToParams } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
@@ -97,19 +97,9 @@ const INTENT_RESULT_TYPE_LABELS = {
   friend_discovery: '💗 Meet new people',
 };
 
-// A synthetic result item (not a real resolveIntent() candidate) --
-// appended only when detectFriendDiscoveryIntent(typedText) is true.
-// Copy matches FriendDiscoveryScreen's own header subtitle verbatim, not
-// re-worded, so the same promise ("separate from dating") is stated
-// identically wherever it appears.
-function buildFriendDiscoveryResultItem(category) {
-  return {
-    type: 'friend_discovery',
-    id: 'friend-discovery',
-    title: category ? `Meet people who like ${category}` : 'Meet new people nearby',
-    subtitle: 'People nearby who are also here to make friends — separate from dating.',
-  };
-}
+// buildFriendDiscoveryResultItem moved to services/intentResolver.js
+// (Item 39, CLAUDE.md) so Discover's own search box can build the
+// identical synthetic result -- imported above.
 
 function groupIntentResultsByType(items) {
   const order = [];
@@ -786,66 +776,13 @@ export default function HomeScreen({ navigation }) {
       resultTitle: item.title,
       submissionId,
     });
-    if (item.type === 'gathering') {
-      navigation.navigate('GatheringDetail', { gatheringId: item.id });
-    } else if (item.type === 'perk') {
-      // C2: a real, honest "found because of what they asked for" signal
-      // for the business -- fire-and-forget, never blocks navigation, and
-      // never routes the consumer through BusinessProfileScreen (they
-      // still land on BrandOffers exactly as before this change).
-      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-      navigation.navigate('BrandOffers', { highlightOfferId: item.id });
-    } else if (item.type === 'friend_request') {
-      navigation.navigate('ViewProfile', { userId: item.userId });
-    } else if (item.type === 'community') {
-      navigation.navigate('CommunityDetail', { communityId: item.id });
-    } else if (item.type === 'friend_discovery') {
-      // P1 remediation (CLAUDE.md, Aug 28 Full Coherence Audit,
-      // Scenario D) -- never a stranger's profile from this screen, a
-      // real navigation to the already-safe, explicitly opt-in Friend
-      // Discovery surface (its own screen handles the not-yet-enabled
-      // explainer/opt-in state, nothing to prefill here).
-      navigation.navigate('FriendDiscovery');
-    } else if (item.type === 'business_availability') {
-      // A business already declared these terms in advance -- tapping
-      // this doesn't submit anything by itself (same "review before
-      // commit" discipline every other result type here already follows,
-      // e.g. tapping a gathering navigates to its detail rather than
-      // auto-joining) -- it lands on the real ask screen, prefilled from
-      // both the original intent and the specific posting matched, so
-      // submitting there is very likely to land as an immediate real
-      // offer rather than a cold ask.
-      // C2: same real discovery signal as the perk branch above.
-      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-      navigation.navigate('AskBusiness', {
-        prefillText: typedText ?? '',
-        prefillCategory: classifyResult?.category ?? null,
-        prefillPartySize: classifyResult?.partySize ?? null,
-        prefillBudgetMax: classifyResult?.budgetMax ?? null,
-        prefillDateWindow: classifyResult?.dateWindow ?? null,
-        // Intent engine vision, first increment (2026-09-06) -- see
-        // goAskBusiness()'s own comment below for the full reasoning.
-        prefillOccasion: classifyResult?.occasion ?? null,
-        matchedAvailability: item.matchedAvailability ?? null,
-      });
-    } else if (item.type === 'business_policy_match') {
-      // A business's own standing willingness, not a specific posting to
-      // bind -- there's no matchedAvailability here, and no way to force
-      // this exact business as the winner: the real match (or not) happens
-      // inside _match_request_to_policy() when the request is actually
-      // submitted, ranked among every other eligible policy the same way.
-      // C2: same real discovery signal as the two branches above.
-      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
-      navigation.navigate('AskBusiness', {
-        prefillText: typedText ?? '',
-        prefillCategory: classifyResult?.category ?? null,
-        prefillPartySize: classifyResult?.partySize ?? null,
-        prefillBudgetMax: classifyResult?.budgetMax ?? null,
-        prefillDateWindow: classifyResult?.dateWindow ?? null,
-        prefillOccasion: classifyResult?.occasion ?? null,
-        matchedAvailability: null,
-      });
-    }
+    // Item 39 (CLAUDE.md): this per-type routing switch used to be
+    // inlined here -- extracted to navigateToIntentResultItem()
+    // (intentResolver.js) so Discover's own search box, which needed the
+    // identical routing (a gathering result always lands on
+    // GatheringDetail regardless of which search box found it), doesn't
+    // hand-roll a second copy that could quietly drift from this one.
+    navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
   }
 
   // Extracted so the multi-option grouped view (layer 4) and the

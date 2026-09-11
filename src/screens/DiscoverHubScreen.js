@@ -16,6 +16,8 @@ import { getSocialForecast } from '../services/homeDashboard';
 // the one shared client-side definition of this app's connected set.
 import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
+import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
+import { recordIntentSelection } from '../services/intentOutcomes';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
@@ -88,6 +90,43 @@ const TYPE_FILTERS = [
 ];
 
 const PREVIEW_COUNT = 3;
+
+// Item 39 (CLAUDE.md): Discover-local emoji equivalents of HomeScreen's own
+// INTENT_RESULT_ICONS (Ionicons names) -- this screen's whole visual
+// language is already emoji-based (🔍, ✕, etc.), never Ionicons, so this
+// mirrors that instead of introducing a new icon system just for this
+// block. Same real 🟢/🟡 confirmed-vs-standing-willingness hierarchy as
+// Home's own labels, not a different signal.
+const INTENT_SEARCH_TYPE_EMOJI = {
+  gathering: '🎉',
+  community: '🏘️',
+  friend_request: '👥',
+  perk: '🎁',
+  business_availability: '🟢',
+  business_policy_match: '🟡',
+  friend_discovery: '💗',
+};
+
+// Honest labels for the real dateWindow bucket create-assistant returns --
+// never a specific date invented from it (a "weekend" bucket genuinely
+// means "Saturday or Sunday," so it renders as "This weekend," not a
+// fabricated single day). No entry for 'flexible' -- that's the "no real
+// timing signal" case, so no tag renders for it at all.
+const INTENT_SEARCH_DATE_LABELS = {
+  now: 'Right now',
+  today: 'Today',
+  tonight: 'Tonight',
+  tomorrow: 'Tomorrow',
+  weekend: 'This weekend',
+};
+
+function intentSearchDateLabel(dateWindow) {
+  return INTENT_SEARCH_DATE_LABELS[dateWindow] ?? null;
+}
+
+function intentSearchFallbackTitle(classifyResult) {
+  return classifyResult?.category ? `${classifyResult.category} Ideas` : 'Ideas For You';
+}
 
 // Aug 24 2026 (CLAUDE.md): Discover is now the real 🔎 bottom tab (it
 // used to be a pushed screen reachable only via a single buried
@@ -216,6 +255,19 @@ export default function DiscoverHubScreen({ navigation }) {
   const [postingStory, setPostingStory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Item 39 (CLAUDE.md, "search should understand the same language as the
+  // intent box"): a real, natural-language understanding of the same typed
+  // search -- explicit-submit only (onSubmitEditing), not debounced on
+  // every keystroke like the literal search below, since it costs a real
+  // LLM round trip (runIntentSearch -> classifyCreateRequest) each time,
+  // same reasoning HomeScreen's own ask box already follows ("Find it" is
+  // a button press, never a live-typing call). intentSearchRequestId
+  // guards against a stale response landing after the query text has
+  // already moved on, same pattern searchRequestId/placesRequestId below
+  // already use for the exact same race.
+  const [intentSearch, setIntentSearch] = useState(null);
+  const [intentSearching, setIntentSearching] = useState(false);
+  const intentSearchRequestId = useRef(0);
   const [typeFilter, setTypeFilter] = useState('all');
   function setTypeTab(key) {
     setTypeFilter(key);
@@ -818,6 +870,70 @@ export default function DiscoverHubScreen({ navigation }) {
   const nothingMatchedAnywhere = isSearching && !loadingSearch
     && filteredGatherings.length === 0 && filteredCommunities.length === 0 && filteredOffers.length === 0;
 
+  // Item 39: explicit-submit (Enter/Search key), not the live debounce the
+  // literal keyword search above uses -- see intentSearchRequestId's own
+  // comment for why. A "business_partner" classification has no results
+  // concept (matches HomeScreen's own proceedToCreation for that intent)
+  // so it routes straight to creation instead of ever setting intentSearch.
+  async function handleUnderstandSearch() {
+    const typedText = searchQuery.trim();
+    if (typedText.length < 2) return;
+    const thisRequestId = ++intentSearchRequestId.current;
+    setIntentSearching(true);
+    try {
+      const result = await runIntentSearch(typedText);
+      if (thisRequestId !== intentSearchRequestId.current) return;
+      if (result.outcome === 'business_partner') {
+        setIntentSearch(null);
+        routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
+      } else {
+        setIntentSearch(result);
+      }
+    } catch (e) {
+      console.error('Discover intent search failed', e);
+    }
+    if (thisRequestId === intentSearchRequestId.current) setIntentSearching(false);
+  }
+
+  function handleIntentSearchResultTap(item) {
+    const { classifyResult, typedText, submissionId } = intentSearch ?? {};
+    recordIntentSelection({
+      rawText: typedText,
+      category: classifyResult?.category ?? null,
+      dateWindow: classifyResult?.dateWindow ?? null,
+      resultType: item.type,
+      resultId: item.id ?? null,
+      resultTitle: item.title,
+      submissionId,
+    });
+    // Deliberately doesn't clear intentSearch, unlike HomeScreen's own
+    // handleIntentResultTap -- this is a search results screen, not a
+    // one-shot ask box, so returning here after viewing a result should
+    // still show the same understood block, same as the literal keyword
+    // search results right below it never disappear on their own either.
+    navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
+  }
+
+  function renderIntentSearchResultRow(item) {
+    return (
+      <TouchableOpacity
+        key={`${item.type}-${item.id}`}
+        style={styles.intentSearchResultRow}
+        onPress={() => handleIntentSearchResultTap(item)}
+        activeOpacity={0.85}
+        accessibilityLabel={item.title}
+        accessibilityRole="button"
+      >
+        <Text style={styles.intentSearchResultEmoji}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{item.title}</Text>
+          {item.subtitle ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+        </View>
+        <Text style={styles.intentSearchResultChevron}>›</Text>
+      </TouchableOpacity>
+    );
+  }
+
   async function handleCreateItFromSearch() {
     const typedText = searchQuery.trim();
     if (!typedText) return;
@@ -1230,14 +1346,32 @@ export default function DiscoverHubScreen({ navigation }) {
               <Text style={styles.searchIcon}>🔍</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search gatherings, communities, places, perks"
+                placeholder='Search, or try "something fun Saturday"'
                 placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
-                onChangeText={setSearchQuery}
-                accessibilityLabel="Search Discover"
+                onChangeText={(t) => {
+                  setSearchQuery(t);
+                  // Item 39: the previous "understood as" block described
+                  // the old text -- invalidate it (and any in-flight
+                  // request for it) the moment the text changes, same
+                  // discipline searchRequestId/placesRequestId already use.
+                  intentSearchRequestId.current += 1;
+                  setIntentSearch(null);
+                }}
+                onSubmitEditing={handleUnderstandSearch}
+                returnKeyType="search"
+                accessibilityLabel="Search Discover, or describe what you want in plain English"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchQuery('');
+                    intentSearchRequestId.current += 1;
+                    setIntentSearch(null);
+                  }}
+                  accessibilityLabel="Clear search"
+                  accessibilityRole="button"
+                >
                   <Text style={styles.searchClear}>✕</Text>
                 </TouchableOpacity>
               )}
@@ -1625,6 +1759,62 @@ export default function DiscoverHubScreen({ navigation }) {
                 ))}
               </ScrollView>
             </>
+          )}
+
+          {/* Item 39 ("search should understand the same language as the
+              intent box"): a real natural-language understanding of the
+              submitted search, not just the literal ILIKE substring match
+              every section below still separately does. "something fun
+              with my girlfriend Saturday" has no title/tag it could ever
+              literally match, so it used to fall straight through to
+              "nothing matched anywhere" -- runIntentSearch() (the same
+              classify+resolve pipeline Home's own ask box uses) now checks
+              real existing supply first. Purely additive: the literal
+              per-section results below are untouched and still render
+              alongside this, so a genuine title match still shows up
+              there too. */}
+          {isSearching && intentSearching && (
+            <View style={styles.intentSearchLoadingRow}>
+              <ActivityIndicator color={colors.primary} size="small" />
+              <Text style={styles.intentSearchLoadingText}>Understanding "{searchQuery.trim()}"…</Text>
+            </View>
+          )}
+          {isSearching && !intentSearching && intentSearch?.outcome === 'results' && (
+            <View style={styles.intentSearchBlock}>
+              <Text style={styles.intentSearchTitle}>
+                {intentSearch.experience?.title ?? intentSearchFallbackTitle(intentSearch.classifyResult)}
+              </Text>
+              <View style={styles.intentSearchTagsRow}>
+                <Text style={styles.intentSearchTag}>📍 Nearby</Text>
+                {intentSearchDateLabel(intentSearch.classifyResult?.dateWindow) && (
+                  <Text style={styles.intentSearchTag}>📅 {intentSearchDateLabel(intentSearch.classifyResult.dateWindow)}</Text>
+                )}
+                {intentSearch.classifyResult?.partyType === 'date' && <Text style={styles.intentSearchTag}>❤️ For two</Text>}
+                {intentSearch.classifyResult?.partyType === 'groups' && <Text style={styles.intentSearchTag}>👨‍👩‍👧‍👦 Big group</Text>}
+                {intentSearch.classifyResult?.partyType === 'friends' && <Text style={styles.intentSearchTag}>👥 Bring friends</Text>}
+                {intentSearch.classifyResult?.partyType === 'solo' && <Text style={styles.intentSearchTag}>🧍 Solo</Text>}
+              </View>
+              {intentSearch.experience ? (
+                <>
+                  {(intentSearch.experience.bundles ?? []).map((bundle) => (
+                    <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
+                      <Text style={styles.intentSearchGroupLabel}>
+                        ✨ One place has it all: {bundle.componentLabels.join(' + ')}
+                      </Text>
+                      {renderIntentSearchResultRow(bundle)}
+                    </View>
+                  ))}
+                  {intentSearch.experience.components.map((component) => (
+                    <View key={component.key} style={{ marginBottom: spacing.sm }}>
+                      <Text style={styles.intentSearchGroupLabel}>{component.label}</Text>
+                      {component.items.map(renderIntentSearchResultRow)}
+                    </View>
+                  ))}
+                </>
+              ) : (
+                intentSearch.items.map(renderIntentSearchResultRow)
+              )}
+            </View>
           )}
 
           {/* The dedicated Gatherings tab's own real scored/tiered list
@@ -2162,6 +2352,25 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyText: { color: colors.textTertiary, marginBottom: spacing.lg },
   emptyTextTight: { color: colors.textTertiary, marginBottom: spacing.xs },
   loadingCaption: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },
+  // Item 39: the "understood as" panel -- a real box (not just a section
+  // header) so it visually reads as one distinct interpretation of the
+  // search, not another flat list section like Gatherings/Communities
+  // below it.
+  intentSearchLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  intentSearchLoadingText: { ...typography.caption, color: colors.textTertiary },
+  intentSearchBlock: {
+    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginTop: spacing.md, marginBottom: spacing.md,
+  },
+  intentSearchTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
+  intentSearchTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
+  intentSearchTag: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
+  intentSearchGroupLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs },
+  intentSearchResultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
+  intentSearchResultEmoji: { fontSize: 18, marginRight: spacing.sm },
+  intentSearchResultTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '600' },
+  intentSearchResultSubtitle: { ...typography.caption, color: colors.textTertiary },
+  intentSearchResultChevron: { color: colors.textTertiary, fontSize: 18 },
   emptyActionText: { color: colors.primary, fontWeight: '700', marginBottom: spacing.lg },
   storyRing: { alignItems: 'center', width: 64 },
   storyAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#e1306c', marginBottom: 4, backgroundColor: colors.surfaceElevated },

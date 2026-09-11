@@ -1,9 +1,11 @@
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
-import { getActiveOffers } from './brandOffers';
+import { getActiveOffers, logBusinessProfileView } from './brandOffers';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses } from './businessFulfillment';
 import { getSocialForecast } from './homeDashboard';
+import { classifyCreateRequest } from './createAssistant';
+import { recordIntentSubmission } from './intentOutcomes';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { assembleExperience } from './experienceAssembly';
@@ -35,6 +37,7 @@ import {
   subcategoryBonus,
   secondaryCategoryBonus,
   getBusinessAvailabilityReasons,
+  detectFriendDiscoveryIntent,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -526,4 +529,147 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const experience = assembleExperience(occasion, deduped);
 
   return { items: deduped.slice(0, RESULT_CAP), experience };
+}
+
+// A synthetic result item (not a real resolveIntent() candidate) --
+// appended only when detectFriendDiscoveryIntent(typedText) is true.
+// Moved here (Item 39, CLAUDE.md) from HomeScreen.js, which had it as a
+// private, unexported helper -- now shared so Discover's own search box
+// can append the identical "meet people" fallback that Home's ask box
+// already does, instead of silently doing without it. Copy matches
+// FriendDiscoveryScreen's own header subtitle verbatim, not re-worded, so
+// the same promise ("separate from dating") is stated identically
+// wherever it appears. HomeScreen.js now imports this instead of keeping
+// its own copy.
+export function buildFriendDiscoveryResultItem(category) {
+  return {
+    type: 'friend_discovery',
+    id: 'friend-discovery',
+    title: category ? `Meet people who like ${category}` : 'Meet new people nearby',
+    subtitle: 'People nearby who are also here to make friends — separate from dating.',
+  };
+}
+
+// Item 39 (CLAUDE.md, "search should understand the same language as the
+// intent box"): the one real gap the audit found was Discover's own
+// unified search box, which only ever did a literal ILIKE substring match
+// over titles/descriptions/tags (searchGatherings/searchPublicCommunities/
+// searchOffers) -- a real, non-literal ask like "something fun with my
+// girlfriend Saturday" has no title/tag it could ever literally match, so
+// it always fell straight through to "nothing matched anywhere" -> Create
+// It, never actually understood. This function is that understanding
+// layer, callable from any search surface, not just Home's own ask box --
+// composes the exact same classifyCreateRequest()/resolveIntent()/
+// resolveCommunityIntent()/detectFriendDiscoveryIntent() calls, with the
+// same branching semantics, HomeScreen's own handleHomeIntentSubmit
+// already uses inline. Deliberately NOT a refactor of HomeScreen's own
+// implementation into a call to this function -- that inline code is
+// mature, already correctly handles several Home-specific concerns
+// interleaved with it (Surprise Me clearing, RSVP nudges), and has no
+// automated test coverage in a codebase with no simulator/device testing
+// available -- extracting it now would be a real regression risk for no
+// behavioral gain, since both call sites end up composing the identical
+// underlying functions either way. A future session can fold
+// handleHomeIntentSubmit into this same function once that refactor can
+// actually be verified; until then, "the same language" is guaranteed by
+// both going through the same classify/resolve calls with the same
+// params, not by one single call site.
+//
+// Returns one of three shapes, discriminated by `outcome`:
+// - 'business_partner': no existing-supply concept to check (matches
+//   handleHomeIntentSubmit's own business_partner branch) -- the caller
+//   should route straight to RequestBusinessPartner.
+// - 'results': items.length > 0 -- items/experience ready to render, same
+//   shape resolveIntent()/resolveCommunityIntent() already return.
+// - 'empty': genuinely checked and found nothing -- the caller's own
+//   "ask nearby businesses fresh" / "create it yourself" fallback applies.
+export async function runIntentSearch(typedText) {
+  const classifyResult = await classifyCreateRequest(typedText);
+
+  if (classifyResult.intent === 'business_partner') {
+    const submissionId = await recordIntentSubmission({
+      rawText: typedText, category: classifyResult.category ?? null, dateWindow: classifyResult.dateWindow ?? null,
+      intentKind: 'business_partner', hadAnyResult: false, reachedBusinessFallback: false,
+    });
+    return { outcome: 'business_partner', classifyResult, typedText, submissionId, items: [], experience: null };
+  }
+
+  if (classifyResult.intent === 'community') {
+    const resolved = await resolveCommunityIntent({ category: classifyResult.category, rawText: typedText });
+    const submissionId = await recordIntentSubmission({
+      rawText: typedText, category: classifyResult.category ?? null, dateWindow: classifyResult.dateWindow ?? null,
+      intentKind: 'community', hadAnyResult: resolved.length > 0, reachedBusinessFallback: false,
+    });
+    return {
+      outcome: resolved.length > 0 ? 'results' : 'empty',
+      classifyResult, typedText, submissionId, items: resolved, experience: null,
+    };
+  }
+
+  const { items: resolved, experience } = await resolveIntent({
+    category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
+    partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null,
+    partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
+    cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null,
+  });
+  const items = detectFriendDiscoveryIntent(typedText)
+    ? [...resolved, buildFriendDiscoveryResultItem(classifyResult.category)]
+    : resolved;
+  const submissionId = await recordIntentSubmission({
+    rawText: typedText, category: classifyResult.category ?? null, dateWindow: classifyResult.dateWindow ?? null,
+    intentKind: classifyResult.intent, hadAnyResult: items.length > 0, reachedBusinessFallback: items.length === 0,
+  });
+  return {
+    outcome: items.length > 0 ? 'results' : 'empty',
+    classifyResult, typedText, submissionId, items, experience,
+  };
+}
+
+// Pure routing: given a resolveIntent()/runIntentSearch() result item,
+// navigates to its real matching destination. Extracted (Item 39,
+// CLAUDE.md) from HomeScreen.js's own handleIntentResultTap, which had
+// this identical switch inlined -- Discover's own search box needed the
+// exact same routing (a gathering result should always land on
+// GatheringDetail regardless of which search box found it), and hand-
+// rolling a second copy is exactly the kind of drift item 39 itself warns
+// about. `typedText`/`classifyResult` are only used by the two business_*
+// branches, to prefill AskBusinessScreen the same way every other entry
+// point into it already does -- both are safely omittable for a context
+// that doesn't have them (e.g. Surprise Me's own restricted result set,
+// which never reaches these two types in the first place).
+export function navigateToIntentResultItem(navigation, item, { typedText, classifyResult } = {}) {
+  if (item.type === 'gathering') {
+    navigation.navigate('GatheringDetail', { gatheringId: item.id });
+  } else if (item.type === 'perk') {
+    if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+    navigation.navigate('BrandOffers', { highlightOfferId: item.id });
+  } else if (item.type === 'friend_request') {
+    navigation.navigate('ViewProfile', { userId: item.userId });
+  } else if (item.type === 'community') {
+    navigation.navigate('CommunityDetail', { communityId: item.id });
+  } else if (item.type === 'friend_discovery') {
+    navigation.navigate('FriendDiscovery');
+  } else if (item.type === 'business_availability') {
+    if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+    navigation.navigate('AskBusiness', {
+      prefillText: typedText ?? '',
+      prefillCategory: classifyResult?.category ?? null,
+      prefillPartySize: classifyResult?.partySize ?? null,
+      prefillBudgetMax: classifyResult?.budgetMax ?? null,
+      prefillDateWindow: classifyResult?.dateWindow ?? null,
+      prefillOccasion: classifyResult?.occasion ?? null,
+      matchedAvailability: item.matchedAvailability ?? null,
+    });
+  } else if (item.type === 'business_policy_match') {
+    if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+    navigation.navigate('AskBusiness', {
+      prefillText: typedText ?? '',
+      prefillCategory: classifyResult?.category ?? null,
+      prefillPartySize: classifyResult?.partySize ?? null,
+      prefillBudgetMax: classifyResult?.budgetMax ?? null,
+      prefillDateWindow: classifyResult?.dateWindow ?? null,
+      prefillOccasion: classifyResult?.occasion ?? null,
+      matchedAvailability: null,
+    });
+  }
 }
