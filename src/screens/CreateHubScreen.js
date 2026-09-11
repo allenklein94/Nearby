@@ -45,6 +45,20 @@ const WITH_PEOPLE_ACTIONS = [
   { icon: 'heart-outline', label: 'Plan a Date', subtitle: 'Turn a match into a real plan', route: 'Messages' },
   { icon: 'people-outline', label: 'Meet New People', subtitle: 'Make new friends nearby', route: 'FriendDiscovery' },
 ];
+
+// Thursday plan item 20 ("Create should be the inverse of Discover"): the
+// user's own named list of Create actions included "Ask Businesses"
+// alongside Create a Gathering/Build a Community -- and this screen really
+// had no path to it. AskBusinessScreen (the real "post a request, any
+// business can respond" flow -- distinct from the Phase 7 "Request a
+// Business Partner" affiliate flow that was deliberately removed from
+// here) was only ever reachable *from* an existing gathering/community/
+// match/Home-ask context, never as its own top-level "make something
+// happen" action the way Create a Gathering already is. Navigated with no
+// params -- a genuinely blank ask, same as every route.params?. fallback
+// AskBusinessScreen.js already has; there's no prior typed-ask context to
+// prefill from here the way HomeScreen's own entry points have.
+
 export default function CreateHubScreen({ navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -171,6 +185,19 @@ export default function CreateHubScreen({ navigation }) {
                   </TouchableOpacity>
                 ))}
               </View>
+              <Text style={styles.groupHeader}>With businesses</Text>
+              <TouchableOpacity
+                style={styles.peopleAction}
+                onPress={() => navigation.navigate('AskBusiness')}
+                activeOpacity={0.85}
+                accessibilityLabel="Ask Nearby Businesses"
+                accessibilityRole="button"
+              >
+                <Ionicons name="storefront-outline" size={22} color={colors.primary} />
+                <Text style={styles.peopleActionLabel}>Ask Nearby Businesses</Text>
+                <Text style={styles.peopleActionSubtitle}>Post what you need, businesses respond</Text>
+              </TouchableOpacity>
+
               <Text style={styles.groupHeader}>Something to do</Text>
             </>
           )}
