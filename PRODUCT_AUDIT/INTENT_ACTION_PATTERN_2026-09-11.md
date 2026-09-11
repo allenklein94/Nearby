@@ -1,6 +1,7 @@
 # Item 36 — "One intent → action pattern everywhere"
 
-Status: IN PROGRESS, started 2026-09-11.
+Status: DONE, 2026-09-11. All 4 chains verified end-to-end; the one real gap found (chain 1) is
+built, verified live, and committed. See "Chain 1 fix — BUILT" below for what shipped.
 
 ## User's framing (verbatim)
 

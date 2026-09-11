@@ -40,21 +40,32 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Item 36 ("one intent → action pattern everywhere") — IN PROGRESS, started 2026-09-11.** User's
-framing: I want something → Nearby understands → shows options → I choose → Nearby helps make it
-happen — applied as an audit against 4 example chains (dinner → restaurants → friends/match →
-availability → plan → reservation; tonight → events/options → invite people → plan; meet people →
-Dating/Friends → relevant people → connect → plan something; build something → Community/
-Gathering → create → attract people → connect businesses). Full plan, the 4 chains, and audit
-rules: `PRODUCT_AUDIT/INTENT_ACTION_PATTERN_2026-09-11.md`. A background fork is tracing each
-chain through the real current code (resolveIntent/experienceAssembly/DateProposalScreen/
-CreateHubScreen/CreateGatheringScreen/CreateCommunityScreen + the relationship-state/Plan-Together
-entry points from items 21/32/33), fixing contained gaps where a chain drops the user onto a
-disconnected screen, and flagging (not executing) anything that looks like real structural/
-navigation-architecture work. **If resuming after a restart**: check `git log` for commits
-referencing "item 36" or the tracker file above for what landed before the interruption — nothing
-should be assumed done until confirmed via `git log`/the tracker file's own findings section, per
-this project's own restart-recovery convention.
+**Item 36 ("one intent → action pattern everywhere") — fully DONE (2026-09-11).** User's framing:
+I want something → Nearby understands → shows options → I choose → Nearby helps make it happen —
+audited against 4 example chains (dinner → restaurants → friends/match → availability → plan →
+reservation; tonight → events/options → invite people → plan; meet people → Dating/Friends →
+relevant people → connect → plan something; build something → Community/Gathering → create →
+attract people → connect businesses). Full detail: `PRODUCT_AUDIT/INTENT_ACTION_PATTERN_2026-09-11.md`.
+Chains 2 ("tonight"), 3 ("meet people"), and 4 ("build something") were already complete
+end-to-end, verified by reading the real code paths (not re-trusted from memory). Chain 1
+("dinner") had one real gap: resolving "dinner" landed on a fully solo `AskBusinessScreen` with
+no way to deliberately bring a specific connected friend/match. **Initial design (pre-submission
+companion picker) was locked, a build fork started against it, then the user reviewed and
+redirected to a different shape before anything was committed** — nothing from that original plan
+ever touched production; full clean slate. **Shipped design**: submission stays exactly as-is
+(solo, no gate, zero added friction); an unobtrusive "👤 Invite Someone" expand-in-place section
+on `BusinessRequestDetailScreen.js` (also literally the post-submit confirmation screen) lets the
+owner invite a real connected friend or match *after* submitting, reusing the existing group-plan
+consent architecture (`group_plan_proposals`/`group_plan_participants`/`respond_to_group_plan`/
+`confirm_group_plan`, all read live via `pg_get_functiondef` before building, none modified) via a
+new `invite_to_business_request` RPC (`20261007_invite_to_business_request.sql`) that auto-creates
+a never-fanned-out placeholder request on the invitee's behalf to satisfy the participants table's
+own FK, then relies on the existing generic accept/decline/confirm flow for everything downstream.
+Verified live via a disposable rolled-back transaction (real friend/match invited while a stranger
+is silently skipped; idempotent re-invite rejection; a blocked pair excluded despite being
+connected; existing `respond_to_group_plan` confirmed fully generic over the new row shape), then
+applied for real. Full Jest suite 280/280 passing throughout; every touched file transform-checked
+clean. Not exercised in a running app — no simulator/device tooling available this session.
 
 **Thursday plan items 34 & 35 (contextual loading states; "why am I here?" 7-question coherence
 audit across Discover/People/Create/Plan) — fully DONE (2026-09-11).** Full findings:
