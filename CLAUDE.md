@@ -40,6 +40,31 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 41 ("make 'People' about people, not dating") — audited, one real concrete gap closed
+(2026-09-11).** User's ask: keep "People" as the parent label over Dating|Friends (explicitly likes
+this architecture because it leaves room for more social-relationship types later without
+restructuring) — but don't add anything new now, just make sure "People" doesn't silently mean
+"Dating." Audited the app directly (not from memory) for exactly this conflation. The outer
+architecture already matches what the user described, built in prior sessions: Discover's People
+mode already has a real, visually co-equal Dating|Friends toggle (`DISCOVER_MODES`/
+`PEOPLE_SUBMODES` in `DiscoverHubScreen.js`), a neutral 👥 icon (not a heart), and no other
+top-level "People" label exists anywhere else in the app to fix. No restructuring needed or done —
+Groups/Communities deliberately NOT added as sub-modes now, per the user's own explicit
+instruction. Found one real, concrete violation: `HomeScreen.js`'s "Quick Stats" card showed "N
+people nearby" (neutral icon, generic label) backed by a real count
+(`dashboard.nearbyPeopleCount` ← `getNearbyMatches()` in `homeDashboard.js`) that's actually
+dating-preference-filtered (show_me/age range/ethnicity/hair/eye color/interested_in_genders) —
+tapping it routed straight to the standalone, dating-only `DiscoveryScreen` (`'Nearby'` stack
+route) with no visible path to Friends at all. Fixed: gave `DiscoverHubScreen` an
+`initialMode`/`initialPeopleSubMode` route param pair (an explicit navigation intent wins over the
+remembered last-used mode for that one visit, falling back to AsyncStorage as before when absent)
+and pointed the Quick Stats card at Discover's own real People > Dating|Friends toggle instead of
+the walled-off legacy screen — same real Dating content pre-selected (the count itself is
+unchanged, still accurate), but Friends is now one tap away rather than absent. No new query, no
+relabeling of the count, no new screens. Full Jest suite 280/280 passing; both touched files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no
+simulator/device tooling this session, standing note). Commit: `4161c6d0`.
+
 **Item 40 ("categories should be the fallback, not the primary burden") — audited, one real
 concrete gap closed (2026-09-11).** User's own stated hierarchy: intent/search first, categories
 second, manual filtering third — categories still matter for discovery/SEO/business matching/
