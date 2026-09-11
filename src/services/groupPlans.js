@@ -86,6 +86,24 @@ export async function proposeGroupPlan(sourceRequestId, inviteeSourceRequestIds)
   return data; // proposal id
 }
 
+// Item 36 chain 1 ("I want dinner" -> restaurants -> friends/match ->
+// availability -> plan -> reservation, CLAUDE.md): the counterpart to
+// proposeGroupPlan() above for the far more common case -- inviting a
+// specific connected friend or match into a request you've ALREADY
+// submitted, rather than only merging with someone who happened to
+// already have their own open request in the same category. Reuses the
+// exact same underlying group-plan consent architecture (see
+// invite_to_business_request's own migration comment,
+// 20261007_invite_to_business_request.sql).
+export async function inviteToBusinessRequest(requestId, inviteeIds) {
+  const { data, error } = await supabase.rpc('invite_to_business_request', {
+    request_id_param: requestId,
+    invitee_ids_param: inviteeIds,
+  });
+  if (error) throw new Error(error.message);
+  return data; // { proposalId, invitedCount }
+}
+
 export async function respondToGroupPlan(proposalId, accept) {
   const { data, error } = await supabase.rpc('respond_to_group_plan', {
     proposal_id_param: proposalId,

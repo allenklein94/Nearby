@@ -210,7 +210,76 @@ implementation-level language to the user — that's a backend mechanic, not a u
   writing any new migration, so the new mechanism is additive/reused, not a parallel system.
 
 Status: build fork was redirected mid-flight to this design before it had committed anything
-under the old plan — see git log for what actually landed.
+under the old plan — nothing from the superseded pre-submission plan was ever built or applied to
+production; this redesign is a genuinely clean slate.
+
+## Chain 1 fix — BUILT (2026-09-11)
+
+**Live schema audit performed first** (`pg_get_functiondef`, not migration-file grep, per this
+repo's own convention): read the real current `business_requests`/`group_plan_proposals`/
+`group_plan_participants` column sets and CHECK constraints, and the real bodies of
+`propose_group_plan`, `respond_to_group_plan`, `confirm_group_plan`, `create_business_request`,
+and `create_business_request_for_match`. Two corrections to the earlier assumption surfaced by
+this audit: (1) `group_plan_participants.status` default/CHECK values are
+`invited`/`accepted`/`declined`/`left`, not `pending` as originally assumed; (2) the real
+notification-preference column every existing group-plan push already gates on is
+`notify_planning`, not `notify_social`. Also confirmed `respond_to_group_plan`/`confirm_group_plan`
+are fully generic over how a `group_plan_participants` row was created — neither needed to change.
+
+**New migration**: `supabase/migrations/20261007_invite_to_business_request.sql` — a new
+`invite_to_business_request(request_id_param, invitee_ids_param uuid[])` SECURITY DEFINER RPC.
+Finds-or-creates the wrapping `group_plan_proposals` row for the caller's own open request (a
+second call reuses the same proposal rather than duplicating it), validates each invitee is a
+real accepted friend or active match (not a stranger, not blocked) — silently skipping anyone
+who isn't, same posture `propose_group_plan` already uses for a stale candidate — and, for each
+eligible invitee, auto-creates a placeholder `business_requests` row on their behalf (to satisfy
+`group_plan_participants.source_request_id`'s NOT NULL constraint) that is deliberately **never**
+fanned out to businesses (no `_business_request_fanout`/`_match_request_to_availability`/
+`_match_request_to_policy` calls) — pure bookkeeping until they actually accept and
+`confirm_group_plan` creates the real merged request. Sends a real push gated on
+`notify_planning`. `revoke ... from public, anon` / `grant ... to authenticated`, matching every
+sibling function's own grant shape.
+
+**Verified live** via a disposable rolled-back transaction (the full `CREATE FUNCTION` + test
+cases in one transaction, then rolled back) exercising: a real friend/match invited while an
+unrelated stranger in the same call is silently skipped (invited count = 1, not 2); the
+companion's placeholder request created with zero business offers (confirms it was never fanned
+out); re-inviting an already-invited person on the same request correctly rejected (idempotent,
+reuses the same proposal); a blocked pair excluded even though they're a real friend+match; and
+`respond_to_group_plan` (existing, untouched) accepting the new participant row generically,
+flipping it from `invited` to `accepted`. Then applied for real and confirmed via
+`pg_get_function_identity_arguments` that only one overload exists.
+
+**Client**: `src/services/groupPlans.js` gained `inviteToBusinessRequest(requestId, inviteeIds)`,
+a thin RPC wrapper mirroring `proposeGroupPlan`'s own shape (no test needed — matches this
+codebase's own precedent that thin RPC wrappers aren't unit tested, only pure logic functions
+are). `BusinessRequestDetailScreen.js` — which is also literally the screen `AskBusinessScreen`
+navigates to right after submitting (the "confirmation" the redesign asked for and this screen
+are the same place) — gained an inline "👤 Invite Someone" expand-in-place section (Progressive
+Depth doctrine: no new screen/navigation destination), reusing the exact same candidate-row/
+button visual treatment the pre-existing "Make It a Group Plan" section right above it already
+established. The connections list reuses `getConnectedPeopleWithInterests()` (already built for
+Surprise Me, item 28) — deduped real accepted friends + active matches, never a stranger. Gated
+on `request.status === 'open' && requester_id === me && category && !group_plan_id` (won't show
+on someone else's request, a closed request, or a request that's already the resulting row of an
+already-confirmed group plan). Selecting people and tapping "Send Invite →" calls the new RPC and
+navigates to the existing `GroupPlanScreen` (`navigation.navigate`, not `.replace` — unlike the
+"Make It a Group Plan" flow, the underlying request doesn't change identity, so back should
+return here) — from there, the existing, unmodified `respond_to_group_plan`/`set_group_plan_budget`/
+`confirm_group_plan` machinery handles the rest with zero further changes needed.
+
+**Verification**: full Jest suite 280/280 passing (unchanged — no regressions); both touched
+files (`groupPlans.js`, `BusinessRequestDetailScreen.js`) transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app — no simulator/device tooling
+available in this environment.
+
+**Known minor overlap, not fixed, not a bug**: `groupPlanCandidates` (existing "Make It a Group
+Plan" — people who already have their own open request in the same category) and the new
+`connections` list (this fix — any real friend/match, invite-fresh) are not deduplicated against
+each other. Someone could theoretically appear in both. Picking them via either path works
+correctly on its own; picking them via both would just hit the RPC's own idempotent
+unique-participant handling on the second attempt (silent no-op, not a crash). Not worth the
+added complexity of cross-filtering two independently-useful lists for this edge case.
 
 ---
 

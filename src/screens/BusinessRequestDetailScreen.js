@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Act
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
-import { getGroupPlanCandidates, proposeGroupPlan } from '../services/groupPlans';
+import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
+import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { createBusinessPaymentIntent, isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from '../services/stripeConnect';
 import { openUberToDestination } from '../utils/uberDeepLink';
@@ -171,6 +172,18 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [selectedCandidateIds, setSelectedCandidateIds] = useState([]);
   const [myPendingGroupPlanId, setMyPendingGroupPlanId] = useState(null);
   const [proposingGroupPlan, setProposingGroupPlan] = useState(false);
+  // Item 36 chain 1 (CLAUDE.md): "Invite someone" -- deliberately separate
+  // from groupPlanCandidates above. That list only ever covers people who
+  // already, coincidentally, have their own open request in this same
+  // category; this covers ANY real connection (accepted friend or active
+  // match), invited directly into THIS request via invite_to_business_
+  // request -- the actual gap the chain-1 audit found. An inline
+  // expand-in-place section (Progressive Depth doctrine), not a new
+  // screen.
+  const [showInviteSomeone, setShowInviteSomeone] = useState(false);
+  const [connections, setConnections] = useState([]);
+  const [selectedInviteeIds, setSelectedInviteeIds] = useState([]);
+  const [invitingSomeone, setInvitingSomeone] = useState(false);
   // Offer System outcome capture (CLAUDE.md, Aug 23 2026): the real "did it
   // go well?" step, asked right after a real completeBusinessReservation()
   // success -- never before, matching GatheringFeedbackModal's own "only
@@ -255,6 +268,21 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         setGroupPlanCandidates([]);
       }
 
+      // Item 36 chain 1: who could the owner invite into this exact
+      // request? Real connections only, gated the same way as the
+      // candidates list above (own, still-open, real-category request),
+      // plus excluding a request that's already the resulting row of a
+      // confirmed group plan -- invite_to_business_request only makes
+      // sense pre-confirmation.
+      if (result.request.status === 'open' && result.request.requester_id === uid && result.request.category && !result.request.group_plan_id) {
+        getConnectedPeopleWithInterests()
+          .then((people) => setConnections(people))
+          .catch((e) => console.error('getConnectedPeopleWithInterests failed', e));
+      } else {
+        setConnections([]);
+        setShowInviteSomeone(false);
+      }
+
       // Is this exact request itself an invite someone else sent the
       // caller, still waiting on a response?
       if (uid) {
@@ -302,6 +330,30 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setProposingGroupPlan(false);
+  }
+
+  function toggleInviteeSelection(id) {
+    setSelectedInviteeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function handleInviteSomeone() {
+    if (selectedInviteeIds.length === 0) return;
+    setInvitingSomeone(true);
+    try {
+      const { proposalId } = await inviteToBusinessRequest(requestId, selectedInviteeIds);
+      recordIntentSelection({
+        rawText: null,
+        category: request?.category ?? null,
+        dateWindow: request?.date ?? null,
+        resultType: 'group_plan_proposed',
+        resultId: proposalId,
+        resultTitle: `Invited someone — ${request?.category ?? 'shared request'}`,
+      });
+      navigation.navigate('GroupPlan', { proposalId });
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setInvitingSomeone(false);
   }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -660,6 +712,47 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </View>
         )}
 
+        {request.status === 'open' && !isGroupPlanRequest && connections.length > 0 && !showInviteSomeone && (
+          <TouchableOpacity
+            style={styles.inviteSomeoneLink}
+            onPress={() => setShowInviteSomeone(true)}
+            accessibilityLabel="Invite someone to this request"
+            accessibilityRole="button"
+          >
+            <Text style={styles.inviteSomeoneLinkText}>👤 Invite Someone →</Text>
+          </TouchableOpacity>
+        )}
+
+        {request.status === 'open' && !isGroupPlanRequest && showInviteSomeone && (
+          <View style={styles.groupPlanSection}>
+            <Text style={styles.groupPlanSectionTitle}>👤 Invite Someone</Text>
+            <Text style={styles.helperText}>Bring a friend or match along. They'll have to say yes first — nobody gets added without agreeing.</Text>
+            {connections.map((c) => {
+              const selected = selectedInviteeIds.includes(c.id);
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={[styles.candidateRow, selected && styles.candidateRowSelected]}
+                  onPress={() => toggleInviteeSelection(c.id)}
+                  accessibilityLabel={`${selected ? 'Remove' : 'Add'} ${c.name ?? 'this person'} to the invite`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {c.name ?? 'Someone you know'}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              style={[styles.groupPlanButton, selectedInviteeIds.length === 0 && styles.groupPlanButtonDisabled]}
+              onPress={handleInviteSomeone}
+              disabled={selectedInviteeIds.length === 0 || invitingSomeone}
+              accessibilityLabel="Send invite"
+              accessibilityRole="button"
+            >
+              {invitingSomeone ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Send Invite →</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {request.status === 'open' && (
           <TouchableOpacity onPress={handleCancel} disabled={cancelling} accessibilityLabel="Cancel this request" accessibilityRole="button">
             <Text style={styles.cancelLink}>{cancelling ? 'Cancelling…' : 'Cancel Request'}</Text>
@@ -711,6 +804,8 @@ const getStyles = (colors) => StyleSheet.create({
   groupPlanBannerText: { ...typography.body, color: colors.textPrimary, marginBottom: spacing.xs },
   groupPlanBannerButton: { alignSelf: 'flex-start' },
   groupPlanBannerButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
+  inviteSomeoneLink: { marginTop: spacing.lg, alignSelf: 'flex-start' },
+  inviteSomeoneLinkText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   groupPlanSection: { marginTop: spacing.lg, marginBottom: spacing.md },
   groupPlanSectionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
   helperText: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
