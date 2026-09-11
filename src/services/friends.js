@@ -1,5 +1,70 @@
 import { supabase } from './supabase';
 
+// Relationship-state audit (external UX critique item 32, 2026-09-11): the
+// one canonical place to derive a real person's relationship to the
+// viewer -- blocked (either direction), friendship status (accepted /
+// pending_sent / pending_received / none), and whether a real matches row
+// (and therefore a messaging channel) exists. This logic used to live only
+// inline in ViewProfileScreen.js, the sole consumer, with nothing else in
+// the codebase reusing it -- extracted so the next screen that needs
+// relationship state has a real canonical function to call instead of
+// reinventing (and possibly getting wrong) its own copy, which is exactly
+// the failure mode item 32 asked to prevent.
+export async function getRelationshipStatus(otherUserId) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId || myId === otherUserId) {
+    return { blocked: false, friendshipStatus: null, friendshipId: null, matchId: null };
+  }
+
+  const { data: blockedByMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', myId)
+    .eq('blocked_id', otherUserId)
+    .maybeSingle();
+  const { data: blockedMe } = await supabase
+    .from('blocks')
+    .select('id')
+    .eq('blocker_id', otherUserId)
+    .eq('blocked_id', myId)
+    .maybeSingle();
+
+  if (blockedByMe || blockedMe) {
+    return { blocked: true, friendshipStatus: null, friendshipId: null, matchId: null };
+  }
+
+  const { data: friendship } = await supabase
+    .from('friendships')
+    .select('id, status, requested_by')
+    .or(`and(user_a.eq.${myId},user_b.eq.${otherUserId}),and(user_a.eq.${otherUserId},user_b.eq.${myId})`)
+    .maybeSingle();
+
+  let friendshipStatus = null;
+  let friendshipId = null;
+  if (friendship?.status === 'accepted') {
+    friendshipStatus = 'accepted';
+    friendshipId = friendship.id;
+  } else if (friendship?.status === 'pending') {
+    friendshipStatus = friendship.requested_by === myId ? 'pending_sent' : 'pending_received';
+    friendshipId = friendship.id;
+  }
+
+  // A "Message" action only ever makes sense when a real matches row
+  // exists -- a plain accepted friendship has no messaging channel behind
+  // it at all (respondToFriendRequest() never creates one directly; the
+  // real messaging channel comes from on_friendship_accepted_create_match,
+  // a DB trigger that inserts a real matches row the moment a friend
+  // request is accepted).
+  const { data: match } = await supabase
+    .from('matches')
+    .select('id')
+    .or(`and(user_a.eq.${myId},user_b.eq.${otherUserId}),and(user_a.eq.${otherUserId},user_b.eq.${myId})`)
+    .maybeSingle();
+
+  return { blocked: false, friendshipStatus, friendshipId, matchId: match?.id ?? null };
+}
+
 export async function getMutualFriends(otherUserId) {
   const { data, error } = await supabase.rpc('get_mutual_friends', { other_user_id: otherUserId });
   if (error) {

@@ -12,7 +12,7 @@ import CompatibilityReportModal from '../components/CompatibilityReportModal';
 import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
-import { sendFriendRequest, respondToFriendRequest, getMutualFriends } from '../services/friends';
+import { sendFriendRequest, respondToFriendRequest, getMutualFriends, getRelationshipStatus } from '../services/friends';
 import { getHostStats, getHostReputation } from '../services/gatherings';
 import { getSignedVoiceIntroUrl } from '../services/voiceNotes';
 import VoicePlayButton from '../components/VoicePlayButton';
@@ -113,24 +113,21 @@ export default function ViewProfileScreen({ route, navigation }) {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
+      // Relationship-state audit (item 32, 2026-09-11): a single canonical
+      // getRelationshipStatus() call now covers the blocked check below
+      // AND the friendship/match state used further down, instead of two
+      // separate inline query blocks that used to duplicate the same
+      // blocks-table logic. See src/services/friends.js for the shared
+      // definition.
+      let relationship = { blocked: false, friendshipStatus: null, friendshipId: null, matchId: null };
       if (myId && myId !== userId) {
         getMutualFriends(userId).then(setMutualFriends);
         getHostStats(userId).then(setHostStats);
         getHostReputation(userId).then(setHostReputation);
-        const { data: blockedByMe } = await supabase
-          .from('blocks')
-          .select('id')
-          .eq('blocker_id', myId)
-          .eq('blocked_id', userId)
-          .maybeSingle();
-        const { data: blockedMe } = await supabase
-          .from('blocks')
-          .select('id')
-          .eq('blocker_id', userId)
-          .eq('blocked_id', myId)
-          .maybeSingle();
 
-        if (blockedByMe || blockedMe) {
+        relationship = await getRelationshipStatus(userId);
+
+        if (relationship.blocked) {
           setProfile(null);
           setLoadError(false);
           setLoading(false);
@@ -174,47 +171,19 @@ export default function ViewProfileScreen({ route, navigation }) {
       if (myId && !ownProfile && data) {
         // A dating-style compatibility score doesn't make sense for a
         // friend's profile — same reasoning as the fix already applied
-        // to Matches and Chat. Check the friendship table directly,
-        // since this screen doesn't have a match-source field to rely
-        // on the way those two did.
-        // Real friendship status (any row, not just 'accepted') so the
-        // Add Friend button below can reflect it honestly instead of
-        // always offering to send a request regardless of existing state.
-        const { data: friendship } = await supabase
-          .from('friendships')
-          .select('id, status, requested_by')
-          .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
-          .maybeSingle();
+        // to Matches and Chat. relationship was already computed above
+        // (before the profile fetch, so the blocked-check early return
+        // could use it) via the shared getRelationshipStatus() -- reused
+        // here rather than re-querying friendships/matches a second time.
+        setFriendshipStatus(relationship.friendshipStatus);
+        setFriendshipId(relationship.friendshipId);
+        setMatchId(relationship.matchId);
 
-        if (friendship?.status === 'accepted') {
-          setFriendshipStatus('accepted');
-          setFriendshipId(friendship.id);
-        } else if (friendship?.status === 'pending') {
-          setFriendshipStatus(friendship.requested_by === myId ? 'pending_sent' : 'pending_received');
-          setFriendshipId(friendship.id);
-        } else {
-          setFriendshipStatus(null);
-          setFriendshipId(null);
-        }
-
-        if (friendship?.status !== 'accepted') {
+        if (relationship.friendshipStatus !== 'accepted') {
           const { data: myProfile } = await supabase.from('profiles').select('interests, basics, favorite_tracks').eq('id', myId).single();
           const report = generateCompatibilityReport(myProfile, data);
           setCompatibilityReport(report);
         }
-
-        // A "Message" button only ever shows when a real matches row
-        // exists — a plain accepted friendship has no messaging channel
-        // behind it at all (respondToFriendRequest() never creates a
-        // matches row, confirmed elsewhere in this codebase), so showing
-        // Message unconditionally for any connection would be a second
-        // broken promise, not a real feature.
-        const { data: match } = await supabase
-          .from('matches')
-          .select('id')
-          .or(`and(user_a.eq.${myId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myId})`)
-          .maybeSingle();
-        setMatchId(match?.id ?? null);
       }
 
       navigation.setOptions({
@@ -254,18 +223,20 @@ export default function ViewProfileScreen({ route, navigation }) {
     setRespondingToFriendRequest(true);
     try {
       await respondToFriendRequest(friendshipId, accept);
-      setFriendshipStatus(accept ? 'accepted' : null);
       if (accept) {
         setCompatibilityReport(null);
         // on_friendship_accepted_create_match (baseline schema) just created
-        // a real matches row for this pair -- refresh matchId so Message/Plan
-        // Something appear immediately, not only on the next profile visit.
-        const { data: match } = await supabase
-          .from('matches')
-          .select('id')
-          .or(`and(user_a.eq.${myUserId},user_b.eq.${userId}),and(user_a.eq.${userId},user_b.eq.${myUserId})`)
-          .maybeSingle();
-        setMatchId(match?.id ?? null);
+        // a real matches row for this pair -- re-derive relationship state
+        // via the same canonical getRelationshipStatus() load() uses, so
+        // Message/Plan Something appear immediately, not only on the next
+        // profile visit.
+        const relationship = await getRelationshipStatus(userId);
+        setFriendshipStatus(relationship.friendshipStatus);
+        setFriendshipId(relationship.friendshipId);
+        setMatchId(relationship.matchId);
+      } else {
+        setFriendshipStatus(null);
+        setFriendshipId(null);
       }
     } catch (e) {
       Alert.alert('Error', e.message);
