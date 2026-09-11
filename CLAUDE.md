@@ -40,6 +40,50 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Items 48 & 49 ("notifications need a reason + action" / "don't notify about things you can't
+act on") — fully DONE (2026-09-11).** Picked up in-flight, uncommitted work from an interrupted
+prior session: `get_business_availability_by_id()` (`supabase/migrations/
+20261010_business_availability_by_id.sql`) was already written AND already applied live in
+production, but never wired into the client — this was the single biggest violation. A background
+audit fork then surveyed all 59 live push-sending Postgres functions in production against both
+rules, cross-referenced against `notifications.js`'s `routeNotificationTap()` switch (full report:
+`PRODUCT_AUDIT/NOTIFICATION_REASON_ACTION_AUDIT_2026-09-11.md`). Found and fixed 6 concrete gaps,
+all now shipped: (1) `recommended_business_availability` taps now fetch the specific matched
+posting via the new RPC and land on `AskBusinessScreen` pre-filled with it (`matchedAvailability`,
+same shape `intentResolver.js` already builds), falling back to the generic Discover tab only when
+the slot's genuinely gone (expired/inactive) by the time it's tapped; (2)
+`notify_gathering_interest`'s push now includes `gathering_id` in its payload (was already
+computed, just never passed through) so a host's tap lands on the specific gathering instead of a
+generic browse; (3) `submit_social_offer()`/`respond_to_social_offer()` now resolve and include the
+real `group_plan_proposals.id` via `resulting_request_id` (a social offer's only real
+consumer-facing surface is `GroupPlanScreen`, keyed by `proposalId`) — a request created outside
+the group-plan flow honestly yields no `proposal_id`, no fabricated destination; (4-6) added
+tap-routing cases for four notification types that previously had **none at all** (tap did
+literally nothing): `community_cancelled` (→ Communities browse, same "row's gone" shape as its
+`gathering_cancelled` sibling), `business_offer_withdrawn` (→ `BusinessRequestDetail`, same
+destination as its `business_offer_received` sibling), `date_proposal`/`date_proposal_response`
+(→ `DateProposalScreen`, already keyed by the `match_id` both payloads already carried). Everything
+else surveyed (the large majority) was already correctly reason-bearing and actionable — no changes
+needed there; full function-by-function table in the audit report. Migration
+(`20261011_notification_reason_action_fixes.sql`) verified live via disposable rolled-back
+transactions (confirmed `gathering_id` now flows into the queued push payload; confirmed the
+`proposal_id` lookup resolves correctly for a request with a real originating group plan) before
+being treated as done; `get_business_availability_by_id()` itself was separately verified live the
+same way (an active posting returns full data, an expired one honestly returns nothing). Full Jest
+suite 292/292 passing throughout; all touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — push notifications specifically can't be end-to-end verified without a real
+device token. Commits: `760c0fef`, `d72a189c`.
+
+**Item 50 ("state consistency audit") — in progress, launched 2026-09-11.** Direct user ask: enumerate every entity's real state machine (Friendship, Gathering,
+Community, Business request/offer, Match, and any other genuine status column found) and verify
+DB CHECK constraints → backend RPC transitions → client rendering all agree, the same shape as
+item 32's already-shipped Friendship/Match/block audit
+(`PRODUCT_AUDIT/RELATIONSHIP_STATE_MATRIX_2026-09-11.md`) but extended to the rest of the schema.
+A background audit fork is running against live production schema; report will land at
+`PRODUCT_AUDIT/STATE_CONSISTENCY_AUDIT_2026-09-11.md`. Update this entry once that lands and any
+concrete fixes are made.
+
 **Items 46 & 47 ("personalization should determine what appears first" / "don't
 over-personalize too early") — first real increment shipped (2026-09-11).** Paired ask: Discover
 should genuinely reorder itself around a real, earned behavioral signal ("someone who constantly
