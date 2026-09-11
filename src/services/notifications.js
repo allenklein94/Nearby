@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { navigationRef } from '../navigation/RootNavigator';
+import { getBusinessAvailabilityById } from './businessFulfillment';
 
 // A push tap can arrive (via getLastNotificationResponseAsync, below) before
 // the authenticated stack is mounted — e.g. the app was fully closed and the
@@ -88,7 +89,7 @@ export async function updateBadgeCount(userId) {
 // to work independent of any specific screen already being mounted —
 // that's why it uses the exported navigationRef rather than a
 // component-level navigation prop.
-export function routeNotificationTap(data) {
+export async function routeNotificationTap(data) {
   if (!data) return;
   if (!navigationRef.isReady()) {
     AsyncStorage.setItem(PENDING_NOTIFICATION_TAP_KEY, JSON.stringify(data));
@@ -137,12 +138,42 @@ export function routeNotificationTap(data) {
         navigationRef.navigate('Gatherings');
       }
       break;
-    // Same recommendation push, business-availability-sourced
-    // (notify_matching_business_availability()). There is no dedicated
-    // per-posting consumer detail screen in this app yet -- lands on the
-    // Things-To-Do hub to browse, same honest "no exact deep-link" shape
-    // this file already uses for group_intent_signal below.
+    // Item 49 (CLAUDE.md, "don't notify users about things they can't
+    // actually act on"): this push already names a specific matched
+    // posting (availability_id/partner_id), and a real consumer action
+    // already exists for one -- AskBusinessScreen's "matchedAvailability"
+    // banner + bound submit, the same shape resolveBusinessAvailability()
+    // (intentResolver.js) already builds for the intent-search path.
+    // get_business_availability_by_id() (SECURITY DEFINER, since
+    // business_availability itself has owner-only SELECT RLS) fetches that
+    // one row so the tap lands on the actual matched posting, pre-filled,
+    // rather than a generic browse tab. A stale tap (the slot already
+    // expired/filled by the time it's opened) genuinely returns null --
+    // falls back to the same honest generic Discover landing rather than
+    // crashing or showing a broken screen.
     case 'recommended_business_availability':
+      if (data.availability_id) {
+        try {
+          const posting = await getBusinessAvailabilityById(data.availability_id);
+          if (posting) {
+            navigationRef.navigate('AskBusiness', {
+              matchedAvailability: {
+                availabilityId: posting.id,
+                partnerName: posting.partner_name,
+                title: posting.title,
+                description: posting.description,
+                offerType: posting.offer_type,
+                price: posting.price,
+                attributes: posting.attributes ?? [],
+                cuisine: posting.cuisine,
+              },
+            });
+            break;
+          }
+        } catch (e) {
+          // Fall through to the generic landing below.
+        }
+      }
       navigationRef.navigate('MainTabs', { screen: 'Discover' });
       break;
     case 'gathering_cancelled':
@@ -271,7 +302,7 @@ export async function consumePendingNotificationTap() {
   const raw = await AsyncStorage.getItem(PENDING_NOTIFICATION_TAP_KEY);
   if (!raw) return;
   await AsyncStorage.removeItem(PENDING_NOTIFICATION_TAP_KEY);
-  routeNotificationTap(JSON.parse(raw));
+  await routeNotificationTap(JSON.parse(raw));
 }
 
 // Call once, high in the component tree (App.js), to start listening

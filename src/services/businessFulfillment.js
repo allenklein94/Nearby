@@ -821,6 +821,23 @@ export async function searchActiveBusinessAvailability({ category = null, latitu
 // the same narrow read-only RPC shape, not a broadened policy. Callers must
 // rank/label this below a confirmed business_availability match -- never
 // "Available," always "may be available."
+// Item 49 (CLAUDE.md, "don't notify users about things they can't actually
+// act on"): looks up ONE business_availability posting by id, for a
+// recommended_business_availability push tap to land on the specific
+// matched posting (see notifications.js's routeNotificationTap) instead of
+// a generic browse tab. Backed by get_business_availability_by_id(), a
+// narrow SECURITY DEFINER RPC (business_availability itself has owner-only
+// SELECT RLS) filtered to status='active' and ends_at > now() -- a stale
+// notification tapped after the slot's already gone returns null, an
+// honest empty state, never dead inventory presented as live.
+export async function getBusinessAvailabilityById(availabilityId) {
+  const { data, error } = await supabase.rpc('get_business_availability_by_id', {
+    availability_id_param: availabilityId,
+  });
+  if (error) throw new Error(error.message);
+  return data?.[0] ?? null;
+}
+
 export async function searchPolicyOnlyBusinesses({ latitude = null, longitude = null, radiusMiles = 15, partySize = null } = {}) {
   const { data, error } = await supabase.rpc('search_policy_only_businesses', {
     latitude_param: latitude,
