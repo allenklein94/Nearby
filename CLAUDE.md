@@ -40,6 +40,33 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 44 ("give each screen ONE visual hero") — fully DONE (2026-09-11).** Direct continuation
+of the "Things To Do feels busy" observation, reframed by the user as a visual-hierarchy problem
+rather than a content problem: Discover's Things-mode header had title, subtitle, a full-width
+two-box mode toggle, and a bordered search pill all competing at roughly the same visual weight
+before any real content appeared. Per the user's own mock (Discover / "What are you looking
+for?" / [search] / Things to Do | People / content), made the search bar the screen's one real
+hero and demoted everything else around it, without reordering or removing any control (all
+still fully functional, same conditional logic for breadcrumb/expandedContext untouched):
+(1) Things mode's subtitle copy changed from the disconnected status line "What's happening
+nearby." to a real lead-in question, "What are you looking for?", so title+subtitle+search now
+reads as one intentional block instead of three separate elements. (2) The outer Things to Do |
+People mode toggle (`modeToggleRow`/`modeToggleButton`) — previously two full-width, bordered,
+filled boxes, the same visual weight class as the search bar and filter chips — is now a plain
+auto-width text-tab treatment (thin colored underline on the active tab, no box or fill),
+reading as clearly secondary navigation. Left the People sub-mode's own inner Dating|Friends
+toggle (`peopleSubToggleRow`) untouched — it was already given a lighter treatment than the
+outer toggle in the Aug 30 2026 fix, and that relationship still holds (arguably more clearly
+now, since the two no longer share the same box-chrome family at all). (3) The search bar itself
+(`searchBarWrap`/`searchInput`) got a modest bump in physical presence — taller input, slightly
+bigger font, a touch heavier border, and the same `shadow.card` elevation this codebase already
+uses to mark other "look here" surfaces — so it visually reads as the obvious place for the eye
+to land. Filter chips/view toggle below it were left as-is; they were already a light chip row,
+not part of the actual clutter. Full Jest suite 280/280 passing; `DiscoverHubScreen.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
+(no simulator/device tooling this session, standing note) — this is a styling-weight change with
+no layout/behavior change, but if anything reads visually off, this is the first place to check.
+
 **Item 43 ("consider eliminating unnecessary section headers") — fully DONE (2026-09-11).**
 Direct continuation of the "Things To Do feels busy" observation: a title on its own line,
 content, then a separate "See all in X →" link on its own line below the content adds a full

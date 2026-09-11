@@ -136,8 +136,13 @@ function intentSearchFallbackTitle(classifyResult) {
 // exclusion/safety rules); this is a navigation-only grouping, not a
 // combined candidate pool. "Everyone" is still deliberately absent —
 // there's no real merged pool to show under that label.
+// Item 44 (CLAUDE.md, "give each screen ONE visual hero"): Things mode's
+// subtitle is now a real lead-in question for the search bar directly
+// beneath it ("What are you looking for?"), not a disconnected status
+// line -- title+subtitle+search now read as one hero block instead of
+// three separate elements each pulling their own weight.
 const DISCOVER_MODES = [
-  { key: 'things', icon: '🔎', label: 'Things to Do', subtitle: "What's happening nearby." },
+  { key: 'things', icon: '🔎', label: 'Things to Do', subtitle: 'What are you looking for?' },
   { key: 'people', icon: '👥', label: 'People', subtitle: "Who's around you." },
 ];
 // Aug 24 2026 (CLAUDE.md, direct follow-up): People mode itself now gets the
@@ -2161,16 +2166,23 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
-  modeToggleRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md },
+  // Item 44 (CLAUDE.md, "give each screen ONE visual hero"): this used to
+  // be two full-width, bordered, filled boxes -- the same visual weight
+  // class as the search bar and filter chips below it, so the header read
+  // as several equally-loud controls instead of one. The search bar is
+  // now the screen's one hero; this is a plain, auto-width text-tab
+  // treatment (an underline marks the active mode, no box/fill) so it
+  // reads as clearly secondary navigation, the way the mock's plain
+  // "Things to Do | People" line does.
+  modeToggleRow: { flexDirection: 'row', gap: spacing.lg, marginBottom: spacing.md },
   modeToggleButton: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1.5,
-    borderColor: colors.border, paddingVertical: spacing.sm + 2, gap: 6,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: spacing.xs, gap: 6, borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
-  modeToggleButtonActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
-  modeToggleIcon: { fontSize: 16 },
-  modeToggleText: { color: colors.textSecondary, fontWeight: '700', fontSize: 14 },
-  modeToggleTextActive: { color: colors.primary },
+  modeToggleButtonActive: { borderBottomColor: colors.primary },
+  modeToggleIcon: { fontSize: 15 },
+  modeToggleText: { color: colors.textTertiary, fontWeight: '600', fontSize: 14 },
+  modeToggleTextActive: { color: colors.primary, fontWeight: '700' },
   // Aug 30 2026 (CLAUDE.md, external UX critique response): the People
   // mode's own inner Dating/Friends choice -- a real, deliberately lighter
   // treatment than the outer mode toggle above (auto-width pill chips,
@@ -2199,12 +2211,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // same horizontal padding as the outer `header`/`scrollContent` blocks
   // so it lines up visually.
   peopleFixedArea: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  // Item 44: the screen's one visual hero -- taller, a slightly heavier
+  // border, and a subtle card shadow, so it reads as the obvious place for
+  // the eye to land instead of one pill among several similar ones.
   searchBarWrap: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
-    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md,
+    borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md,
+    ...shadow.card,
   },
-  searchIcon: { fontSize: 14, marginRight: spacing.sm },
-  searchInput: { flex: 1, color: colors.textPrimary, paddingVertical: spacing.sm, fontSize: 14 },
+  searchIcon: { fontSize: 16, marginRight: spacing.sm },
+  searchInput: { flex: 1, color: colors.textPrimary, paddingVertical: spacing.md, fontSize: 15 },
   searchClear: { color: colors.textTertiary, fontSize: 16, paddingLeft: spacing.sm },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   filterChip: {
