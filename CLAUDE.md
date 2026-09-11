@@ -40,6 +40,72 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**STOPPING POINT (2026-09-11, session hit its usage limit mid-build) — Thursday plan item 28
+("Surprise Me") IN PROGRESS, not yet committed.** Items 25, 26, 27 below are all fully done and
+pushed (`ab06cf16`/`84aa29e5`/`3f197cd5`/`07a90a81`/`f542ec59` — confirm with `git log`, should
+all be on `origin/main`). Item 28 is a real, explicit, direct user request ("we want 28 built now
+as well") — user answered 4 scoping questions in detail first; their exact answers are the locked
+spec below, do not re-derive or re-ask.
+
+**Restart instructions**: run `git status` first. As of this note, `src/services/surpriseMe.js`
+(272 lines) and `src/services/surpriseMe.test.js` (155 lines) exist as UNTRACKED, UNCOMMITTED
+files — a background build was mid-flight when the session stopped. Read both files in full and
+check them against the locked spec below before doing anything else: confirm the mood→param
+mapping table matches the spec's intent, confirm `assembleExperience`-or-fallback-to-top-candidate
+logic is correct, confirm the friend/match enrichment only reads `profiles.interests` via
+whatever safe pattern `DiscoveryScreen.js`/`FriendDiscoverySwipeCards.js` already use for
+cross-profile interest reads (never a new RLS policy). `HomeScreen.js` had NOT yet been touched as
+of this note — the Surprise Me UI (button beside the ask box + inline quick-picker sheet + result
+card) still needs to be built/wired against whatever `surpriseMe.js` already exports. If the two
+existing files look wrong or incomplete against the spec, it's fine to revise or rewrite them —
+they were never committed, so nothing is locked in yet.
+
+**Locked spec (from the user's own direct answers, 2026-09-11 — do not deviate without asking)**:
+1. **Entry point**: a small, visually secondary "Surprise Me ✨" action attached directly to
+   Home's existing ask box (`intentSection`/`intentInputRow` in `HomeScreen.js`, ~line 1190) — NOT
+   a new screen, NOT a new Discover mode, NOT competing visually with the coral "Find it" primary
+   action. Hierarchy stays "Intent → Surprise Me → recommendation," not a 5th top-level concept.
+2. **People/privacy (hard rule, non-negotiable)**: assemble the real recommendation FIRST from
+   real supply (activity/place/business/event); only THEN optionally enrich with "You could go
+   with {name}" if an existing accepted friend (`getMyFriends()`) or match (`getMyMatches()`) has
+   a real, verifiable link to that specific suggestion (their own `profiles.interests` contains
+   the suggestion's category — never fabricated, never forced, never a stranger). If no connected
+   person qualifies, show the recommendation with no people component — do not weaken the standing
+   no-stranger-discovery-via-intent rule under any circumstance.
+3. **Inputs**: quick pickers only, no free text, no new screen — an inline sheet/popover off the
+   Surprise Me action itself (reuse whatever pattern `FiltersModal` or similar already uses for
+   in-place presentation). When: Now/Today/This Weekend → `gatheringDateFilter.js`'s real
+   `DATE_OPTIONS` keys (`'now'`/`'today'`/`'weekend'`, confirmed exact strings — do not invent
+   different ones). Mood: Social/Chill/Active/Foodie/Date/Something New, mapped to REAL existing
+   vocabulary only (`occasion`/`partyType`/`attributes`/category-tag values already in
+   `gatheringCategories.js`/`businessAttributes.js`/`experienceTemplates.js` — Date should map to
+   `occasion: 'date_night'`, which already has a real `EXPERIENCE_TEMPLATES` entry; Something New
+   should bias category selection toward tags OUTSIDE the user's own current `profiles.interests`
+   for genuine novelty). Where: fully automatic — `resolveIntent()` already fetches device
+   location internally, Surprise Me must NOT add its own separate location prompt/code.
+4. **Output**: ONE assembled suggestion (never a list to browse) + "Shuffle Again." Prefer
+   `assembleExperience(occasion, candidates)` when the mood's occasion has a real template and it
+   returns a genuine multi-component/bundle result; otherwise fall back to the single best-scored
+   real candidate from `resolveIntent()`'s own `items` — never force an Activity→Place→Business
+   shape when the real supply doesn't support it (a single Place, or Event+Venue, or Activity+
+   Business are all valid complete outputs on their own). Shuffle Again re-rolls within an
+   already-fetched real candidate pool (fetch a reasonable pool once per Surprise Me tap, e.g. by
+   querying 2-3 categories from the mood's pool and merging/deduping) rather than hitting the
+   network on every shuffle tap; only re-fetch if that pool is genuinely exhausted. Never invent
+   an alternative that isn't backed by a real returned candidate.
+
+Also respect this session's other standing conventions while finishing: no invented/fabricated
+signals ever, coral reserved for the primary action per surface (Surprise Me is secondary on Home;
+inside its own result card a "View"/"Plan This" action can be coral, Shuffle Again should be
+secondary/outlined), AI never infers date/time (the When picker and Mood chips are deterministic
+UI selections, not AI-parsed text), this should need no new DB migration (pure client-side reuse
+of `resolveIntent`/`assembleExperience`/`getMyFriends`/`getMyMatches`/existing `profiles.interests`
+reads — if finishing this reveals a genuine need for a new migration or RLS policy, stop and flag
+it rather than shipping a schema change unreviewed). Commit in small focused steps as this repo
+always does, run the full Jest suite before each commit (was 258/258 as of item 27), babel-
+transform-check every touched file, and end with one CLAUDE.md doc commit for item 28 (matching
+the style of the item 25/26/27 entries directly below this one) before pushing everything.
+
 **Thursday plan item 27 (one ontology, not category = X on one screen and category = Y on
 another) — audit-only, fully DONE, no code changes needed (2026-09-11).** Direct restatement of
 the standing `project_intent_engine_vision` memory's own vision. Code-verified, not guessed from
