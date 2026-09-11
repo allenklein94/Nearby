@@ -47,7 +47,20 @@ export async function classifyCreateRequest(text) {
 // completion CTA share one routing rule instead of two that could drift.
 // An `unclear` classification falls through to CreateGathering with the raw
 // typed text as a literal title, matching this app's existing "never a dead
-// end" convention for the identical case.
+// end" convention for the identical case. This is a deliberately different
+// call than CreateHubScreen's own separate "Something Else" free-text box
+// makes for the same `unclear` classification (see its own comment) --
+// both callers here (Home's proceedToCreation, Discover's completion CTA)
+// only ever reach `unclear` after the user has already seen and explicitly
+// rejected every real matching result resolveIntent() found ("None of
+// these? Create it yourself"), so by that point they've genuinely chosen to
+// create something themselves and CreateGathering is the right landing
+// spot. CreateHubScreen's box has no such results-review step -- an
+// `unclear` ask there hasn't been shown to mean "start a gathering" at all
+// (item 38, CLAUDE.md), so it routes to Ask Nearby Businesses instead. Do
+// not make CreateHubScreen call this function without also giving it a
+// real results-review step first, or the two contexts' intent will drift
+// back into meaning something they aren't.
 export function routeClassifiedIntentToCreation(navigation, result, typedText) {
   if (result.intent === 'gathering') {
     navigation.navigate('CreateGathering', { quickStartTitle: result.title, quickStartCategory: result.category });

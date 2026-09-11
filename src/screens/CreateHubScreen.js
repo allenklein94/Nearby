@@ -117,11 +117,31 @@ export default function CreateHubScreen({ navigation }) {
       } else if (result.intent === 'business_partner') {
         navigation.navigate('RequestBusinessPartner', { initialBusinessQuery: result.businessName ?? '' });
       } else {
-        // "unclear" still proceeds into the gathering flow with the
-        // typed text as a literal title and no category — the user
-        // already told us it's *something* by tapping this tile,
-        // rather than a dead-end error.
-        navigation.navigate('CreateGathering', { quickStartTitle: typedText, quickStartCategory: null });
+        // Item 38 ("don't force the user to know the app's terminology"):
+        // "unclear" used to fall through to CreateGathering with the raw
+        // typed text as a literal title -- so "Can someone find me a good
+        // place for dinner?" (a real, valid ask that correctly classifies
+        // as "unclear" since it doesn't describe hosting or starting
+        // anything) got force-fit into "you're creating a gathering called
+        // 'Can someone find me a good place for dinner?'", a nonsensical
+        // object for what the user actually asked for. create-assistant's
+        // own prompt now extracts category/partySize/dateWindow/budgetMax/
+        // occasion regardless of intent specifically so this branch can
+        // route to the real matching product object instead: Ask Nearby
+        // Businesses (AskBusinessScreen), the same "post what you need,
+        // businesses respond" flow this screen's own "With businesses" row
+        // already offers -- prefilled exactly the same way HomeScreen's own
+        // goAskBusiness()/business_availability branches already prefill it
+        // from an identical classifyResult shape. Still just a prefill: the
+        // user reviews/edits every field before anything is ever submitted.
+        navigation.navigate('AskBusiness', {
+          prefillText: typedText,
+          prefillCategory: result.category ?? null,
+          prefillPartySize: result.partySize ?? null,
+          prefillBudgetMax: result.budgetMax ?? null,
+          prefillDateWindow: result.dateWindow ?? null,
+          prefillOccasion: result.occasion ?? null,
+        });
       }
       resetGrid();
     } catch (e) {
