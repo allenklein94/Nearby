@@ -151,3 +151,45 @@ shape is a genuinely separate build, not folded into this pass.
 No code was changed this pass — audit-only, findings above are read-direct-from-code, not
 inferred. Full Jest suite untouched (still 280/280 from the prior pass); nothing to
 transform-check since no files were edited.
+
+## Chain 1 fix — BUILDING (2026-09-11), user picked "pre-submission companion picker"
+
+User confirmed: build the fix, pre-submission shape (pick a friend/match to bring *before*
+submitting the business request) rather than post-submission invite — matches the chain's own
+literal order (restaurants → friends/match → availability → plan → reservation): choose the
+restaurant, then name a companion, then the request goes out already as a 2-person ask.
+
+**Locked design** (decided by Claude, since the user delegated "just build it" — documented here
+so it's reviewable/correctable):
+
+- `group_plan_participants` requires every participant to have their **own**
+  `source_request_id` (a real row in `business_requests`) — confirmed via
+  `supabase/migrations/20260815_v3_group_plans_phase_d.sql` schema + every `propose_group_plan`
+  revision's own insert shape (`proposal_id, user_id, source_request_id, party_size, status`).
+  Rather than inventing a parallel participant mechanism, the new RPC auto-creates the
+  companion's own `business_requests` row on their behalf (same category/details as the
+  requester's ask, clearly owned by the companion, not the requester) as part of the same
+  transaction — so it reuses the exact same table shape and downstream code
+  (`respond_to_group_plan`, `confirm_group_plan`, etc.) with zero changes needed there.
+- Consent is mandatory: a named companion is inserted as `status = 'pending'`, exactly like
+  every existing group-plan invite — never auto-accepted. They get a real notification (gated on
+  `notify_social`, per item 29's categories) and must explicitly accept via the existing
+  `respond_to_group_plan` flow before they're a real participant. This mirrors this app's own
+  standing "AI/system suggests, a human confirms" and mutual-consent conventions — being *named*
+  by someone else is never itself consent.
+- Only real connections are eligible: the companion picker only ever lists accepted friends and
+  active matches (reuse `getRelationshipStatus`/existing friend+match list services) — never a
+  stranger, per the standing "no stranger discovery via intent" rule.
+- New RPC name: `create_business_request_with_companions` (or whatever the builder finds fits
+  the existing naming convention once the live schema is re-checked) — requester's own request +
+  proposal + requester-as-accepted-participant + one pending participant row (and matching
+  auto-created `business_requests` row) per named companion, all in one transaction.
+- Client: `AskBusinessScreen` gains an optional "Bring someone?" step before submit (reusing
+  `InviteFriendsModal`'s existing friend/match list UI pattern) — skippable, defaults to today's
+  existing solo-request behavior when nobody is picked, so this is additive, not a rewrite of the
+  existing solo path.
+- `BusinessRequestDetailScreen` should show real per-companion status (pending/accepted/declined)
+  if it doesn't already surface `group_plan_participants` state — check before building anything
+  new here; group-plan-linked requests may already render this generically.
+
+Status: fix in progress, see git log / this file's own next update for what actually landed.
