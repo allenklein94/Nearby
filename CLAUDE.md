@@ -40,6 +40,43 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Thursday plan item 25 (empty states need real next-actions) — fully DONE (2026-09-11).** An
+audit fork inventoried the app's empty states; four batches closed every real gap it found across
+the highest-visibility surfaces:
+- **Batch 1** (`61cf05db`) — People/Matches/Friends: `DiscoveryScreen.js`'s browse-filtered/
+  crossed-paths-filtered/first-visit empty states merged into one `renderPeopleEmptyState()` with
+  real Adjust Filters/Invite Friends/Adjust Preferences actions; `FriendDiscoveryScreen.js` got a
+  real Clear Filters action; `FriendDiscoverySwipeCards.js` got Invite Friends;
+  `MatchesScreen.js` got Explore Things To Do + Invite Friends; `FriendsScreen.js` got a direct
+  Meet New People action and its "no circles yet" modal now opens the real New Circle modal
+  instead of pointing back at the screen it's already on.
+- **Batch 2** (`56ded70b`) — Discover/Communities/Gatherings: `DiscoverHubScreen.js`'s category
+  drill-down and all 4 unified-search empty states got real actions, including a genuine new
+  `enableLocation()` (`requestForegroundPermissionsAsync` — `loadCore()` previously only ever
+  checked existing permission, never prompted); `CommunitiesScreen.js` got a real Create a
+  Community button; fixed a real bug in `GatheringsScreen.js` where the Nearby tab's "+ Start a
+  Gathering" button was wrongly gated on a search/filter being set and so never rendered for the
+  true first-visit empty state its own copy promised it to.
+- **Batch 3** (`2ae744ae`) — `ActivityScreen.js`'s "Nothing new yet" got Explore Things To Do +
+  Discover People actions (`notices.emptyText` checked and confirmed an orphaned, uncalled
+  translation key — nothing to fix there).
+- **Batch 4** (`ab06cf16`) — `BusinessDashboardScreen.js`: most of the 10 flagged empty states
+  already sat beside a real always-visible action button, or are genuinely passive received-not-
+  created displays (requests inbox, aggregated demand, offer performance, insights, missed/
+  declined history) where forcing a CTA would be a fabricated action — left as honest empty
+  states per this repo's no-fabricated-signals convention. Two were real gaps; fixing them
+  surfaced a real pre-existing bug — both copy blocks promised "create one from the Create tab
+  and it'll show up here," but `getMyBusinessGatherings()`/`communities.js` scope this section to
+  `hosting_partner_id` = this business, and no create flow anywhere in the codebase
+  (`CreateGatheringScreen.js`, `CreateCommunityScreen.js`) ever sets that column — the promise was
+  already false. Softened the copy to drop the unfulfillable claim and pointed the new action at a
+  real destination instead; wiring an actual business-hosted create path is flagged in-code as a
+  separate, bigger feature, not silently built.
+
+Full suite 258/258 passing throughout; every touched file transform-checked clean under
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note).
+
 **"Thursday plan" (external UX critique items 18-24, "one connected system" objective) — fully
 DONE (2026-09-11).** User's overarching ask: Nearby should feel like one connected system
 (Discover → find people → decide to do it → create a plan → connect a business/place → go do
