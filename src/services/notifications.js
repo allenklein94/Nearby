@@ -183,6 +183,14 @@ export async function routeNotificationTap(data) {
     case 'first_mission_reminder':
       navigationRef.navigate('Gatherings');
       break;
+    // Item 49 audit fix: community_cancelled previously had no case at all
+    // (tap did nothing) despite carrying a real, specific reason. Same
+    // honest "row's gone, land on browse" shape as gathering_cancelled
+    // above — cancel_community() doesn't delete the row, but there's no
+    // dedicated post-cancellation detail view to land on either way.
+    case 'community_cancelled':
+      navigationRef.navigate('Communities');
+      break;
     case 'friend_request':
     case 'friend_accepted':
       navigationRef.navigate('Friends');
@@ -240,6 +248,11 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('BusinessProfile', { partnerId: data.partner_id });
       }
       break;
+    // Item 49 audit fix: business_offer_withdrawn previously had no case at
+    // all (tap did nothing) despite naming the real business and request.
+    // Same destination as its sibling business_offer_received below -- it's
+    // the same request object, just a different state change on it.
+    case 'business_offer_withdrawn':
     case 'business_offer_received':
       if (data.request_id) {
         navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id });
@@ -287,8 +300,30 @@ export async function routeNotificationTap(data) {
     case 'group_plan_offer_pending':
     case 'group_plan_reservation_confirmed':
     case 'group_plan_removed':
+    // Item 49 audit fix: a social offer only ever exists on a request that
+    // came out of a group plan (GroupPlanScreen is the only screen that
+    // ever calls submit_social_offer/respond_to_social_offer), so it
+    // belongs in this same family now that submit_social_offer()/
+    // respond_to_social_offer() also resolve and include the real
+    // proposal_id (20261011_notification_reason_action_fixes.sql). A
+    // request created outside the group-plan flow correctly yields no
+    // proposal_id -- the tap does nothing rather than guessing, same as
+    // any other case here with a missing id.
+    case 'social_offer_received':
+    case 'social_offer_responded':
       if (data.proposal_id) {
         navigationRef.navigate('GroupPlan', { proposalId: data.proposal_id });
+      }
+      break;
+    // Item 49 audit fix: date_proposal/date_proposal_response previously
+    // had no case at all (tap did nothing) despite naming the real
+    // proposer/outcome. Both already carry match_id; DateProposalScreen is
+    // keyed by matchId and fetches the latest proposal itself, so no new
+    // lookup is needed.
+    case 'date_proposal':
+    case 'date_proposal_response':
+      if (data.match_id) {
+        navigationRef.navigate('DateProposal', { matchId: data.match_id });
       }
       break;
     default:
