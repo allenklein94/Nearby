@@ -18,6 +18,8 @@ import { filterToMyConnections } from '../services/connections';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
 import { recordIntentSelection, getMyTopSearchedCategory } from '../services/intentOutcomes';
+import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
+import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
 import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
@@ -237,11 +239,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
         .catch(() => {});
     }
     if (!route.params?.initialPeopleSubMode) {
-      AsyncStorage.getItem(LAST_PEOPLE_SUBMODE_KEY)
-        .then((saved) => {
-          if (saved === 'dating' || saved === 'friends') setPeopleSubMode(saved);
-        })
-        .catch(() => {});
+      // Item 46 follow-up ("mainly uses Friends should have Friends
+      // content prioritized"): the remembered last-used value used to be
+      // the whole story -- a single anomalous visit to the other mode
+      // could flip the default immediately. Now a real, durable usage-
+      // frequency signal (profiles.people_submode_dating_uses/
+      // friends_uses) gets a say too, via the same pure decision
+      // function (resolveDefaultPeopleSubMode) this codebase's other
+      // scoring logic already follows -- it only overrides the
+      // remembered value once usage is clearly, durably skewed; below
+      // that it defers to the exact same last-used/default behavior as
+      // before.
+      Promise.all([
+        AsyncStorage.getItem(LAST_PEOPLE_SUBMODE_KEY).catch(() => null),
+        getMyPeopleSubModeUsage(),
+      ]).then(([lastUsedSubMode, { datingUses, friendsUses }]) => {
+        setPeopleSubMode(resolveDefaultPeopleSubMode({ datingUses, friendsUses, lastUsedSubMode }));
+      });
     }
   }, []);
 
@@ -256,6 +270,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   function selectPeopleSubMode(key) {
     setPeopleSubMode(key);
     AsyncStorage.setItem(LAST_PEOPLE_SUBMODE_KEY, key).catch(() => {});
+    // Item 46 follow-up: a real, durable server-side usage count, not
+    // just the local "last used" value above -- see
+    // peopleSubModePreference.js for how this feeds back into the
+    // default next time.
+    recordPeopleSubModeUse(key);
   }
 
   // Item 46 (CLAUDE.md, "personalization should determine what appears

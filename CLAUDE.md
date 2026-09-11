@@ -76,13 +76,30 @@ fit-score-sorted tiers already surface. New Jest coverage (6 tests) for
 checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no
 simulator/device tooling this session, standing note) — this reads real per-user data
 (`intent_submissions`), so behavior can't be confirmed against a live account this session.
-Deliberately NOT built this pass, disclosed rather than silently skipped: the "someone who mainly
-uses Friends should have Friends content prioritized" example from item 46. Discover's People
-tab already defaults to whichever of Dating/Friends was last actually selected
-(`LAST_PEOPLE_SUBMODE_KEY` in AsyncStorage) — a real behavioral signal already in place, not
-fabricated — but that's "last used," not a true frequency-weighted "mainly uses," which would
-need new durable server-side usage-frequency instrumentation this session didn't build. A real,
-disclosed fast-follow, not a fabricated stopgap.
+**Follow-up, same day, per direct user request ("build that durable frequency signal... you
+never finished earlier"): the deferred "mainly uses Friends" piece is now also DONE.** Shipped
+real, durable, server-side usage-frequency tracking replacing the "last used" AsyncStorage-only
+proxy as the sole signal. `20261009_people_submode_usage_tracking.sql` adds two plain counter
+columns (`profiles.people_submode_dating_uses`/`people_submode_friends_uses`, same "counter
+columns on profiles" pattern already used elsewhere in this schema) and a narrow, self-scoped
+`record_people_submode_use(submode)` RPC (SECURITY DEFINER, `REVOKE ... FROM public, anon` per
+this repo's own standing convention — verified live via `information_schema.role_routine_grants`
+after a first attempt only revoked from `public` and left `anon` still granted, a real instance
+of the exact gotcha that convention exists to catch). New pure
+`resolveDefaultPeopleSubMode()` (`src/utils/peopleSubModePreference.js`, 6 Jest tests) only lets
+the real usage counts override the remembered last-used value once there's a genuine, durable
+skew (5+ combined real uses, not a tie) — below that threshold it defers to the exact same
+last-used/default behavior as before, same "don't over-personalize too early" discipline as item
+47. `DiscoverHubScreen.js`'s `selectPeopleSubMode()` now calls the new
+`recordPeopleSubModeUse()` (`src/services/peopleSubModeUsage.js`) alongside its existing
+AsyncStorage write; the mount effect now reads both the remembered value and the real counts
+(`getMyPeopleSubModeUsage()`) in parallel and feeds both into the pure resolver. Verified live via
+two disposable rolled-back transactions (a real counter-increment assertion, and an invalid-
+submode rejection) before and after applying for real, plus a live grants check that caught and
+fixed the `anon`-grant gap. Full Jest suite 292/292 passing; all three touched/new files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
+(no simulator/device tooling this session, standing note) — this reads/writes real per-user data,
+so behavior can't be confirmed against a live account this session.
 
 **Item 44 ("give each screen ONE visual hero") — fully DONE (2026-09-11).** Direct continuation
 of the "Things To Do feels busy" observation, reframed by the user as a visual-hierarchy problem
