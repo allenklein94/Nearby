@@ -63,4 +63,91 @@ re-discover the next step. Specifically per chain:
 
 ## Findings / fixes so far
 
-(pending)
+Traced all 4 chains through the actual current code (not re-derived from memory). **Chains 2, 3,
+and 4 already complete end-to-end** — built across prior sessions, verified by reading the real
+code paths below. **Chain 1 has one real, structural gap**, documented as a proposal rather than
+built (see rules above — this needs new DB/RPC work, not a small connecting fix).
+
+### Chain 2 — "something to do tonight" — already complete, no fix needed
+
+`detectFriendDiscoveryIntent`/`resolveIntent` → gathering results (`HomeScreen.js`) → tap →
+`GatheringDetail` → real "🤝 Invite friends" action (`InviteFriendsModal`, already wired in 3
+places on that screen depending on host/attendee/invite-only state) → RSVP. Full loop, no gap.
+
+### Chain 3 — "meet people" — already complete, no fix needed
+
+Home's ask box already classifies a genuine "I want to meet people" ask via
+`detectFriendDiscoveryIntent()` → a real synthetic `friend_discovery` result item
+(`buildFriendDiscoveryResultItem()`) → tap → `FriendDiscoveryScreen` (the real, explicitly
+opt-in friend-discovery surface, never a stranger's profile directly). Connect (friend accept /
+dating match) → both `FriendsScreen` and `ViewProfileScreen` already surface a real "Plan
+Something" action once the relationship is `accepted` (items 21/31/32/33). One asymmetry noted,
+not fixed (optional polish, not a dead end): a new dating match gets a proactive
+`MatchCelebrationModal` with an inline "Plan Together" button; accepting a friend request has no
+equivalent proactive moment — the Plan Something action exists and is reachable immediately, just
+not surfaced in-the-moment. Not a "stops short" bug per this audit's own scope (Q3/Q4 both answer
+cleanly — a real action exists and leads somewhere coherent), so left as a disclosed opportunity
+rather than built speculatively.
+
+### Chain 4 — "build something" — already complete, no fix needed
+
+Gatherings: `CreateGatheringScreen` → `GatheringConfirmationScreen` (a dedicated post-create
+screen, not a bare drop-off) with real Share/Invite-a-friend/Invite-a-circle actions
+(`sendInvite`), plus `businessesAsked` already surfaced from the create flow itself (connecting a
+business at creation time, not a separate afterthought step). Communities:
+`CreateCommunityScreen` → `CommunityDetailScreen` directly, which already has its own "🤝 Invite
+Friends" action (same `InviteFriendsModal`) and, per item 33's own fix this session, a working
+"Ask..."/"Request a specific business" chooser. Both halves of "attract people / connect
+businesses where appropriate" are real and already wired.
+
+### Chain 1 — "I want dinner" — real structural gap, PROPOSAL (not built)
+
+The order in the user's own chain is restaurants → **friends/match** → availability → plan →
+reservation — i.e., discover the restaurant first, then loop in a specific person. Traced this
+exact path: Home's ask box resolving "dinner" → a `business_availability` result → tap → lands on
+`AskBusinessScreen` with **no matchId/gatheringId/communityId** (`HomeScreen.js`'s
+`handleIntentResultTap`, business_availability branch) → `submitBusinessRequest()` (the fully solo
+path) → `BusinessRequestDetailScreen`.
+
+**The only way a second person ever enters this specific flow today is
+`getGroupPlanCandidates()`/`proposeGroupPlan()`** — and it only surfaces people who **already,
+coincidentally, have their own separate open business request in the same category** (confirmed
+by reading `propose_group_plan`'s own client wrapper in `groupPlans.js`: its own header comment
+states plainly "every candidate participant still has to come from a real, already-open
+business_requests row belonging to someone the caller is genuinely connected to" — this is a
+deliberate existing design decision, not an oversight). There is no way to deliberately pick one
+specific already-connected friend or match and invite them into your own open (or already-
+accepted) personal request.
+
+The *other* real mechanism that would seem to cover this, `createBusinessRequestForMatch()` /
+`create_business_request_for_match` (used by `DateProposalScreen`'s "Find something nearby"), only
+runs in the **reverse** direction — you have to start from an existing dating match and propose a
+plan first, then the business search binds to that match. It's also match-only (`matches.id`),
+not usable for a friend at all — friends have no equivalent binding RPC. So today, "restaurant
+first, then invite someone" and "invite a friend (not just a dating match) to a business plan at
+all" are both genuinely unbuilt for the forward direction the user described.
+
+**Why this isn't being built in this pass**: closing it for real needs either (a) a new RPC
+letting a request owner invite a specific connected friend/match directly (bypassing the
+"they must already have their own open request" requirement `propose_group_plan` currently
+enforces by design), or (b) extending `create_business_request_for_match`-style binding to accept
+a friendship as well as a match, plus new UI (a friend/match picker on `AskBusinessScreen` and/or
+`BusinessRequestDetailScreen`). Either is real schema/RPC work and a real product decision (does
+inviting someone into an already-submitted solo request retroactively convert it into a group
+request? does it require the same mutual-consent shape `group_plan_participants` already
+enforces?) — exactly the kind of call this pass's own rules say to surface, not execute
+unilaterally.
+
+**Proposal for the user's review**: add a "Bring someone?" step — either a pre-submission
+friend/match picker on `AskBusinessScreen` (skip the coincidental-matching group-plan path
+entirely for a deliberate invite, submit directly as a 2-person request) or a post-submission
+"Invite a friend to this request" action on `BusinessRequestDetailScreen` reusing
+`InviteFriendsModal`'s existing friend-list UI, wired to a new RPC that adds the invitee straight
+into `group_plan_participants` without requiring them to already have their own request. Either
+shape is a genuinely separate build, not folded into this pass.
+
+## Verification
+
+No code was changed this pass — audit-only, findings above are read-direct-from-code, not
+inferred. Full Jest suite untouched (still 280/280 from the prior pass); nothing to
+transform-check since no files were edited.
