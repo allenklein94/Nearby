@@ -2050,7 +2050,22 @@ export default function HomeScreen({ navigation }) {
             caption style every other section already uses. */}
         <Text style={styles.sectionHeader}>Quick Stats</Text>
         <View style={styles.card}>
-          <TouchableOpacity style={styles.cardRow} onPress={() => navigation.navigate('Nearby')} accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`} accessibilityRole="button">
+          {/* Item 41 ("make People about people, not dating"): this count
+              is real, but it's a dating-filtered signal (getNearbyMatches()
+              in homeDashboard.js) -- this used to route straight to the
+              standalone, dating-only DiscoveryScreen ('Nearby'), a walled-
+              off destination with no visible Friends option at all, despite
+              the plain "people nearby" label implying something more
+              general. Now lands on Discover's own real People > Dating|
+              Friends toggle instead (same Dating content pre-selected, so
+              this is the same real destination as before), with Friends
+              one tap away rather than absent. */}
+          <TouchableOpacity
+            style={styles.cardRow}
+            onPress={() => navigation.navigate('Discover', { initialMode: 'people', initialPeopleSubMode: 'dating' })}
+            accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`}
+            accessibilityRole="button"
+          >
             <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
             <Text style={styles.cardText}>{dashboard?.nearbyPeopleCount ?? 0} people nearby</Text>
             <Text style={styles.cardChevron}>›</Text>

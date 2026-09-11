@@ -175,7 +175,7 @@ const LAST_PEOPLE_SUBMODE_KEY = 'discover_last_people_submode';
 // scorer already used by Home's bestPick and GatheringDetailScreen)
 // rather than a new LLM call, matching this codebase's existing
 // no-new-API-cost convention.
-export default function DiscoverHubScreen({ navigation }) {
+export default function DiscoverHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const { session } = useAuth();
@@ -203,20 +203,42 @@ export default function DiscoverHubScreen({ navigation }) {
     );
   }
 
-  const [mode, setMode] = useState('things');
-  const [peopleSubMode, setPeopleSubMode] = useState('dating');
+  // Item 41 ("make People about people, not dating"): a caller can now
+  // deep-link straight into a specific mode/sub-mode (initialMode/
+  // initialPeopleSubMode route params) instead of the remembered
+  // last-used one -- closes the real gap where Home's own "N people
+  // nearby" Quick Stats card used to route straight to the standalone,
+  // dating-only DiscoveryScreen (`navigate('Nearby')`), a walled-off
+  // single-purpose destination with no visible Friends option at all,
+  // even though the count itself is a real dating-filtered signal
+  // (getNearbyMatches()). It now lands here instead, on the same real
+  // People > Dating|Friends toggle every other People entry point already
+  // uses, pre-selected to Dating (still the same real destination content)
+  // but with Friends one tap away -- see HomeScreen.js's own call site.
+  const [mode, setMode] = useState(() => route.params?.initialMode ?? 'things');
+  const [peopleSubMode, setPeopleSubMode] = useState(() => route.params?.initialPeopleSubMode ?? 'dating');
 
   useEffect(() => {
-    AsyncStorage.getItem(LAST_MODE_KEY)
-      .then((saved) => {
-        if (saved === 'things' || saved === 'people') setMode(saved);
-      })
-      .catch(() => {});
-    AsyncStorage.getItem(LAST_PEOPLE_SUBMODE_KEY)
-      .then((saved) => {
-        if (saved === 'dating' || saved === 'friends') setPeopleSubMode(saved);
-      })
-      .catch(() => {});
+    // An explicit navigation intent (a route param) wins over the
+    // remembered last-used mode for this one visit -- only fall back to
+    // AsyncStorage's own memory when the caller didn't ask for something
+    // specific, same as every other quickStart-style prefill in this
+    // codebase leaves the remembered/default state alone once a real
+    // param is present.
+    if (!route.params?.initialMode) {
+      AsyncStorage.getItem(LAST_MODE_KEY)
+        .then((saved) => {
+          if (saved === 'things' || saved === 'people') setMode(saved);
+        })
+        .catch(() => {});
+    }
+    if (!route.params?.initialPeopleSubMode) {
+      AsyncStorage.getItem(LAST_PEOPLE_SUBMODE_KEY)
+        .then((saved) => {
+          if (saved === 'dating' || saved === 'friends') setPeopleSubMode(saved);
+        })
+        .catch(() => {});
+    }
   }, []);
 
   function selectMode(key) {
