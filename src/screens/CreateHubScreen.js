@@ -262,6 +262,19 @@ export default function CreateHubScreen({ navigation }) {
               >
                 <Text style={styles.secondaryLinkText}>👥 Create a Community</Text>
               </TouchableOpacity>
+              {/* A real, distinct entry point (not a rename of the one above):
+                  this creates a recurring gathering (gatherings.recurring_series_id),
+                  never a communities row -- deliberately not labeled "Start a
+                  Community" so it can't be mistaken for the button right above
+                  it, which creates a genuinely different entity. */}
+              <TouchableOpacity
+                style={styles.secondaryLink}
+                onPress={() => navigation.navigate('CreateGathering', { quickStartRecurring: true })}
+                accessibilityLabel="Start a weekly meetup"
+                accessibilityRole="button"
+              >
+                <Text style={styles.secondaryLinkText}>🔁 Start a Weekly Meetup</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>

@@ -135,10 +135,17 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [popularPlaces, setPopularPlaces] = useState(null);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
 
-  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  // "Start a Weekly Meetup" (CreateHubScreen's own "build something bigger"
+  // section) deep-links here with quickStartRecurring instead of the usual
+  // quickStartTitle/quickStartCategory -- title/category are still unknown,
+  // so the "What" step isn't skipped, but "Repeats: Weekly" is pre-selected
+  // AND the "More options" section that holds it is pre-expanded so the
+  // user actually sees the real, editable state they're about to publish
+  // rather than a choice silently sitting collapsed out of view.
+  const [showMoreOptions, setShowMoreOptions] = useState(() => !!route.params?.quickStartRecurring);
   const [showOnMap, setShowOnMap] = useState(true);
   const [womenOnly, setWomenOnly] = useState(false);
-  const [recurrenceRule, setRecurrenceRule] = useState(null);
+  const [recurrenceRule, setRecurrenceRule] = useState(() => (route.params?.quickStartRecurring ? 'weekly' : null));
   const [capacityOption, setCapacityOption] = useState('no_limit');
   const [capacityCustom, setCapacityCustom] = useState(15);
   // CLAUDE.md, Aug 23-24 2026 locked decision: an explicit, unticked-by-

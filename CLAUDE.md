@@ -40,6 +40,27 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Build Something Bigger" section, external UX critique item 16 — fully DONE (2026-09-11).**
+`CreateHubScreen.js`'s "Want to build something bigger?" section used to promise more than its
+one real button ("Create a Community") delivered. Per direct user pick (via `AskUserQuestion`,
+two rounds — first the overall approach, then the exact label for the new button): added a
+second, genuinely distinct entry point, "🔁 Start a Weekly Meetup," which deep-links into
+`CreateGathering` with `quickStartRecurring: true` — pre-selects "Repeats: Weekly" (and
+pre-expands the "More options" section that setting lives in, so it's visibly selected rather
+than silently sitting collapsed) while leaving the "What" step un-skipped and every field fully
+editable, same "prefill but confirm" shape every other quick-pick path on this screen already
+uses. Deliberately did NOT add "Host an Event" (redundant — the icon grid above this section
+already does exactly that) or "Become a Local Organizer" (no organizer role/dashboard/workflow
+exists anywhere in this codebase — would have been a fabricated feature). Deliberately did NOT
+label the new button "Start a Community" despite that being the user's first instinct — it
+creates a recurring *gathering* (`gatherings.recurring_series_id`), never a `communities` row,
+and labeling it "Start a Community" right next to the real "Create a Community" button (a
+genuinely different entity) would have had two adjacent buttons both saying "community" produce
+two different kinds of thing. Full Jest suite 252/252 passing; a direct `@babel/core` +
+`babel-preset-expo` transform check passed clean on both touched files
+(`CreateHubScreen.js`, `CreateGatheringScreen.js`). Not exercised in a running app (no simulator/
+device tooling this session, standing note).
+
 **Taxonomy-aware search — fully DONE (2026-09-11).** Closed a real gap: `searchGatherings()`/
 `searchPublicCommunities()`/`search_offer_ids()` used to only match title/description (name/
 description for communities), completely blind to `interest_tag`/`target_interest_tag` — a
