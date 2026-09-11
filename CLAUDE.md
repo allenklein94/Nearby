@@ -40,6 +40,34 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 38 ("don't force the user to know the app's terminology") — fully DONE (2026-09-11).**
+Picked up a genuine in-flight, uncommitted change found at session start: `create-assistant`'s
+prompt (the Edge Function behind `CreateHubScreen.js`'s "Something Else" free-text box) had
+already been edited to extract `category`/`partySize`/`dateWindow`/`budgetMax`/`priceLevel`/
+`partyType`/`attributes`/`cuisine`/`occasion` regardless of classified intent — previously
+`category` was only ever extracted for `gathering`/`community` — with a comment noting an
+"unclear" request like "can someone find me a good place for dinner?" correctly classifies as
+unclear (it doesn't describe hosting/starting anything) but Nearby should still search relevantly
+for it. That half was done; the client side wasn't: `CreateHubScreen.js`'s own `handleAskAssistant()`
+still routed every "unclear" classification into `CreateGathering` with the raw typed text as a
+literal title — exactly the terminology-forcing bug the item describes (the user says "find me a
+place," the app forces them into "create a gathering called 'find me a place'"). Fixed: that branch
+now routes to `AskBusinessScreen` instead, prefilled from the same `classifyResult` shape
+HomeScreen's own `goAskBusiness()`/`business_availability` branches already use to prefill the
+identical screen — the real matching product object, never auto-submitted. Deliberately left
+`routeClassifiedIntentToCreation()` (Home's "None of these? Create it yourself" / Discover's
+completion CTA) unchanged and documented why in its own comment: both of its callers only reach
+"unclear" after the user already saw and rejected every real match `resolveIntent()` found, so
+CreateGathering is the correct, already-informed landing spot there — a genuinely different context
+from CreateHubScreen's first-touch box, which has no results-review step at all. The first example
+in the item ("get 6 people together for dinner Friday" → a gathering) was already correctly handled
+by existing `gathering`-intent routing; not changed. Edge Function redeployed
+(`npx supabase functions deploy create-assistant`) and confirmed live via the Management API's
+function-body endpoint (new prompt strings present in the deployed bundle). Full Jest suite 280/280
+passing; both touched client files transform-checked clean via `@babel/core` + `babel-preset-expo`.
+Not exercised in a running app (no simulator/device tooling this session, standing note). Commit:
+`e7d7e6ba`.
+
 **Item 37 ("make the primary CTA context-aware") — fully DONE (2026-09-11).** Full findings:
 `PRODUCT_AUDIT/CONTEXT_AWARE_PRIMARY_CTA_2026-09-11.md`. Audited all 6 named contexts by reading
 each screen's real button JSX + styles to check which button is *visually* primary (filled coral)
