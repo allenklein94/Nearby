@@ -40,6 +40,36 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Gathering-interest threshold push ("3 people nearby are planning X") — fully DONE (2026-09-11).**
+The one explicitly-named deferred piece from item 17's own migration
+(`20261004_recommended_for_you_push.sql`'s header comment): a brand-new gathering has zero
+attendees at the moment its own creation trigger fires, so the "X people nearby are planning
+this" social-proof copy needed its own separate trigger on real accumulating interest, not
+gathering creation. Shipped as `notify_gathering_interest_threshold()`
+(`20261008_gathering_interest_threshold_push.sql`), an `AFTER INSERT` trigger on
+`gathering_interest` mirroring `notify_group_intent_threshold()`'s own "fire exactly once, at the
+real threshold crossing" shape — fires only when a gathering's real interest-row count hits
+exactly 3 (any status; a real gathering_interest row already means real expressed intent, not
+confirmed attendance), never again for the 4th/5th/etc. person. Recipients are the exact same
+interest-matched, presence-based, distance/time-pref/frequency-gated population
+`notify_matching_things_to_do()` already computes for gathering creation, reused rather than
+re-derived, minus the host and minus anyone who already has their own interest row for that
+gathering; shares `recommendation_push_log`'s `source_type='gathering'` bucket and therefore the
+same daily frequency cap as the creation-time push (one shared budget per user, not a second
+independent one). No client changes needed — reuses the exact same `recommended_gathering` push
+type `notifications.js` already routes to `GatheringDetail`. Verified live via a disposable
+rolled-back transaction before applying for real — a first version of the test used one
+multi-row `INSERT ... VALUES (a),(b),(c)` for the 3 interest rows and incorrectly showed 3 pushes
+instead of 1 (all 3 AFTER-ROW triggers in one multi-row statement see the same final
+post-statement count, since PostgreSQL fires AFTER ROW triggers only once every row in the
+statement is already inserted) — re-verified with 3 separate single-row INSERTs, which is what
+the app's real `join_gathering` RPC actually does (one row per user action), and got the correct
+result: exactly one push, to the correct candidate, with the already-interested/wrong-interest/
+host candidates all correctly excluded, and no re-fire at a 4th interest row. Confirmed live
+afterward via `pg_proc`/`pg_trigger`. Full Jest suite 280/280 passing (no client files touched).
+Not exercised in a running app or against a real device (no simulator/device tooling available
+this session, standing note).
+
 **Item 36 ("one intent → action pattern everywhere") — fully DONE (2026-09-11).** User's framing:
 I want something → Nearby understands → shows options → I choose → Nearby helps make it happen —
 audited against 4 example chains (dinner → restaurants → friends/match → availability → plan →
