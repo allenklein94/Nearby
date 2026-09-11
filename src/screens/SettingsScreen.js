@@ -63,27 +63,27 @@ export default function SettingsScreen({ navigation, route }) {
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
 
-  const [notifyMessages, setNotifyMessages] = useState(true);
-  const [notifyWaves, setNotifyWaves] = useState(true);
-  // Sep 3 2026 ("global onboarding -> product wiring" master plan,
-  // CLAUDE.md, Phase C) -- the one real, previously fully-ungated push
-  // (notify_business_update -> every follower, no preference check) now
-  // has a real toggle.
-  const [notifyBusinessesOffers, setNotifyBusinessesOffers] = useState(true);
-  // Sep 13 2026 (Phase E of the same master plan) -- the real 7-category
-  // taxonomy replacing the old single, overloaded "New Matches" toggle
-  // (which gated three different real concepts: dating matches, gathering
-  // approvals, and friend requests, none of them cleanly). Two categories
-  // (Things To Do / Nearby Opportunities) are real, honest placeholders --
-  // no consumer-facing push exists for either yet, matching
-  // notify_businesses_offers' own Phase C precedent of shipping the column
-  // before there's a live push to gate.
-  const [notifyThingsToDo, setNotifyThingsToDo] = useState(true);
-  const [notifyFriends, setNotifyFriends] = useState(true);
-  const [notifyDating, setNotifyDating] = useState(true);
-  const [notifyPlans, setNotifyPlans] = useState(true);
-  const [notifyNearbyOpportunities, setNotifyNearbyOpportunities] = useState(true);
-  const [notifyCrossedPaths, setNotifyCrossedPaths] = useState(true);
+  // External UX critique item 29 (2026-09-11): "notifications should be an
+  // intelligent layer, not a firehose" -- the growing pile of individual
+  // per-feature toggles (notify_friends/dating/messages/waves/plans/
+  // things_to_do/nearby_opportunities/crossed_paths/businesses_offers,
+  // several generations of one-off additions) is replaced with 6 named
+  // categories the user actually chose: Social, Discovery, Proximity,
+  // Planning, Business, Community. Every push-sending function in the
+  // database was individually re-gated onto these 6 columns (including a
+  // dozen real, previously *ungated* business-side pushes found during
+  // this audit) -- see the migration's own header comment for the full
+  // per-function mapping. Discovery is the one category with real
+  // sub-preferences underneath it (frequency/distance/time/categories,
+  // still separately tracked per the Things To Do / Nearby Opportunities
+  // domains from item 17) -- those are unchanged, only their plain on/off
+  // master switch collapsed into notify_discovery below.
+  const [notifySocial, setNotifySocial] = useState(true);
+  const [notifyDiscovery, setNotifyDiscovery] = useState(true);
+  const [notifyProximity, setNotifyProximity] = useState(true);
+  const [notifyPlanning, setNotifyPlanning] = useState(true);
+  const [notifyBusiness, setNotifyBusiness] = useState(true);
+  const [notifyCommunity, setNotifyCommunity] = useState(true);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   // External UX critique item 17 follow-up (2026-09-11): the "this matches
@@ -155,15 +155,12 @@ export default function SettingsScreen({ navigation, route }) {
 
     const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (data) {
-      setNotifyMessages(data.notify_messages ?? true);
-      setNotifyWaves(data.notify_waves ?? true);
-      setNotifyBusinessesOffers(data.notify_businesses_offers ?? true);
-      setNotifyThingsToDo(data.notify_things_to_do ?? true);
-      setNotifyFriends(data.notify_friends ?? true);
-      setNotifyDating(data.notify_dating ?? true);
-      setNotifyPlans(data.notify_plans ?? true);
-      setNotifyNearbyOpportunities(data.notify_nearby_opportunities ?? true);
-      setNotifyCrossedPaths(data.notify_crossed_paths ?? true);
+      setNotifySocial(data.notify_social ?? true);
+      setNotifyDiscovery(data.notify_discovery ?? true);
+      setNotifyProximity(data.notify_proximity ?? true);
+      setNotifyPlanning(data.notify_planning ?? true);
+      setNotifyBusiness(data.notify_business ?? true);
+      setNotifyCommunity(data.notify_community ?? true);
       setMyInterests(data.interests ?? []);
       setTtdFrequency(data.notify_things_to_do_frequency ?? 'few_per_day');
       setTtdDistance(data.notify_things_to_do_max_distance_miles === undefined ? 15 : data.notify_things_to_do_max_distance_miles);
@@ -620,15 +617,31 @@ export default function SettingsScreen({ navigation, route }) {
         <Text style={styles.groupHeader} accessibilityRole="header">{t('settings.notifications')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>🎯 Things To Do</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>💬 Social</Text>
+              <Text style={styles.helperText}>Friend requests, matches, messages, and waves.</Text>
+            </View>
             <Switch
-              value={notifyThingsToDo}
-              onValueChange={(v) => toggleNotifPref('notify_things_to_do', v, setNotifyThingsToDo)}
+              value={notifySocial}
+              onValueChange={(v) => toggleNotifPref('notify_social', v, setNotifySocial)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about nearby things to do"
+              accessibilityLabel="Notify me about social activity -- friend requests, matches, messages, and waves"
             />
           </View>
-          {notifyThingsToDo && (
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>🎯 Discovery</Text>
+              <Text style={styles.helperText}>A new gathering or business that matches your interests.</Text>
+            </View>
+            <Switch
+              value={notifyDiscovery}
+              onValueChange={(v) => toggleNotifPref('notify_discovery', v, setNotifyDiscovery)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me when something new matches my interests"
+            />
+          </View>
+          {notifyDiscovery && (
             <>
               <TouchableOpacity
                 style={styles.customizeLink}
@@ -638,7 +651,7 @@ export default function SettingsScreen({ navigation, route }) {
                 accessibilityState={{ expanded: expandedRecPanel === 'things_to_do' }}
               >
                 <Text style={styles.customizeLinkText}>
-                  {expandedRecPanel === 'things_to_do' ? '⚙️ Hide frequency, categories, distance & time' : '⚙️ Frequency, categories, distance & time'}
+                  {expandedRecPanel === 'things_to_do' ? '⚙️ Hide Things To Do frequency, categories, distance & time' : '⚙️ Things To Do: frequency, categories, distance & time'}
                 </Text>
               </TouchableOpacity>
               {expandedRecPanel === 'things_to_do' && (
@@ -655,50 +668,6 @@ export default function SettingsScreen({ navigation, route }) {
                   onToggleCategory={(tag) => toggleRecCategory(tag, ttdCategories, 'notify_things_to_do_categories', setTtdCategories)}
                 />
               )}
-            </>
-          )}
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>🤝 Friends</Text>
-            <Switch
-              value={notifyFriends}
-              onValueChange={(v) => toggleNotifPref('notify_friends', v, setNotifyFriends)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about friend requests and friend activity"
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>💘 Dating</Text>
-            <Switch
-              value={notifyDating}
-              onValueChange={(v) => toggleNotifPref('notify_dating', v, setNotifyDating)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about new dating matches"
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>📅 Plans</Text>
-            <Switch
-              value={notifyPlans}
-              onValueChange={(v) => toggleNotifPref('notify_plans', v, setNotifyPlans)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about gathering interest and approvals"
-            />
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>🌟 Nearby Opportunities</Text>
-            <Switch
-              value={notifyNearbyOpportunities}
-              onValueChange={(v) => toggleNotifPref('notify_nearby_opportunities', v, setNotifyNearbyOpportunities)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about nearby opportunities"
-            />
-          </View>
-          {notifyNearbyOpportunities && (
-            <>
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => setExpandedRecPanel(expandedRecPanel === 'nearby_opportunities' ? null : 'nearby_opportunities')}
@@ -707,7 +676,7 @@ export default function SettingsScreen({ navigation, route }) {
                 accessibilityState={{ expanded: expandedRecPanel === 'nearby_opportunities' }}
               >
                 <Text style={styles.customizeLinkText}>
-                  {expandedRecPanel === 'nearby_opportunities' ? '⚙️ Hide frequency, categories, distance & time' : '⚙️ Frequency, categories, distance & time'}
+                  {expandedRecPanel === 'nearby_opportunities' ? '⚙️ Hide Nearby Opportunities frequency, categories, distance & time' : '⚙️ Nearby Opportunities: frequency, categories, distance & time'}
                 </Text>
               </TouchableOpacity>
               {expandedRecPanel === 'nearby_opportunities' && (
@@ -728,42 +697,54 @@ export default function SettingsScreen({ navigation, route }) {
           )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>👋 Crossed Paths</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>👋 Proximity</Text>
+              <Text style={styles.helperText}>When you cross paths with someone nearby.</Text>
+            </View>
             <Switch
-              value={notifyCrossedPaths}
-              onValueChange={(v) => toggleNotifPref('notify_crossed_paths', v, setNotifyCrossedPaths)}
+              value={notifyProximity}
+              onValueChange={(v) => toggleNotifPref('notify_proximity', v, setNotifyProximity)}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Notify me when I cross paths with someone nearby"
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>{t('settings.messages')}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>📅 Planning</Text>
+              <Text style={styles.helperText}>Gathering interest, approvals, and reminders as your plans come up.</Text>
+            </View>
             <Switch
-              value={notifyMessages}
-              onValueChange={(v) => toggleNotifPref('notify_messages', v, setNotifyMessages)}
+              value={notifyPlanning}
+              onValueChange={(v) => toggleNotifPref('notify_planning', v, setNotifyPlanning)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about new messages"
+              accessibilityLabel="Notify me about plans I'm making -- gathering interest, approvals, and reminders"
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>{t('settings.waves')}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>🏪 Business</Text>
+              <Text style={styles.helperText}>A place you've interacted with has an offer or update -- or, if you manage a business, activity on your own listings.</Text>
+            </View>
             <Switch
-              value={notifyWaves}
-              onValueChange={(v) => toggleNotifPref('notify_waves', v, setNotifyWaves)}
+              value={notifyBusiness}
+              onValueChange={(v) => toggleNotifPref('notify_business', v, setNotifyBusiness)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about Waves"
+              accessibilityLabel="Notify me about business offers and updates"
             />
           </View>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Business updates</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>🏘️ Community</Text>
+              <Text style={styles.helperText}>New activity in a community you're part of.</Text>
+            </View>
             <Switch
-              value={notifyBusinessesOffers}
-              onValueChange={(v) => toggleNotifPref('notify_businesses_offers', v, setNotifyBusinessesOffers)}
+              value={notifyCommunity}
+              onValueChange={(v) => toggleNotifPref('notify_community', v, setNotifyCommunity)}
               trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel="Notify me about updates from businesses I follow"
+              accessibilityLabel="Notify me about activity in my communities"
             />
           </View>
         </View>
