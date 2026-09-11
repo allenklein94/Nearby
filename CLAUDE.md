@@ -40,6 +40,43 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 39 ("search should understand the same language as the Intent Box") — fully DONE
+(2026-09-11).** Connected to item 14. The real gap: Discover's unified search box only ever did a
+literal ILIKE substring match over titles/descriptions/tags (`searchGatherings`/
+`searchPublicCommunities`/`searchOffers`, plus item 26's own earlier taxonomy-aware tag matching)
+— a genuine non-literal ask like "something fun with my girlfriend Saturday" has no title/tag it
+could ever literally match, so it always fell straight through to "nothing matched anywhere" ->
+Create It, never actually understood, unlike Home's own ask box. Shipped `runIntentSearch()`
+(`src/services/intentResolver.js`) — composes the same `classifyCreateRequest()`/`resolveIntent()`/
+`resolveCommunityIntent()`/`detectFriendDiscoveryIntent()` calls, same branching semantics,
+HomeScreen's own `handleHomeIntentSubmit` already uses inline. `DiscoverHubScreen.js`'s search box
+now runs a query through it on explicit submit (Enter/Search key — not the live per-keystroke
+debounce the literal search still uses, since this costs a real LLM round trip, same reasoning
+Home's own box already follows) and renders an "understood as" panel above the existing literal-
+match sections: a real title (an assembled Experience's own title when one genuinely applies, e.g.
+"✨ Your Date Night", else a category-based fallback), honest tag chips (📍 Nearby, 📅 the real
+dateWindow bucket, ❤️/👥/🧍 from partyType), then the real matching gatherings/communities/perks/
+businesses. Purely additive — literal per-section results are untouched and still render alongside
+it. Also extracted `navigateToIntentResultItem()` (the per-type routing switch both HomeScreen's
+`handleIntentResultTap` and Discover's own new result rows need identically) and
+`buildFriendDiscoveryResultItem()` out of `HomeScreen.js` into the same shared module — HomeScreen
+now imports both instead of keeping its own copies (mechanical extraction, verified same resulting
+behavior via diff), so the two search surfaces share one routing rule instead of two that could
+drift. Deliberately did NOT fold `handleHomeIntentSubmit` itself into `runIntentSearch()` — that
+inline code has several Home-specific concerns interleaved (Surprise Me clearing, RSVP nudges) and
+no automated coverage in a codebase with no simulator/device testing available, so refactoring it
+now would be real regression risk for no behavioral gain; both call sites already compose the
+identical underlying functions with the same params, which is what "the same language" actually
+requires. `create-assistant`'s prompt gained two small real gaps closed as part of this: a plain
+"Saturday"/"Sunday" (no other timing word) now explicitly maps to the existing "weekend" bucket
+(previously undefined behavior), and "with my girlfriend"/"with my boyfriend" were added as
+explicit `partyType` examples alongside "with my partner" — both additions to already-existing
+bucket vocabulary, not new specific-date inference, consistent with the standing "AI never infers
+or assigns a specific date/time from free text" rule. Edge Function redeployed and confirmed live
+via the Management API's function-body endpoint. Full Jest suite 280/280 passing; all four touched
+files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running
+app (no simulator/device tooling this session, standing note). Commit: `62612669`.
+
 **Item 38 ("don't force the user to know the app's terminology") — fully DONE (2026-09-11).**
 Picked up a genuine in-flight, uncommitted change found at session start: `create-assistant`'s
 prompt (the Edge Function behind `CreateHubScreen.js`'s "Something Else" free-text box) had
