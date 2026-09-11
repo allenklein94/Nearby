@@ -661,6 +661,33 @@ export default function ProfileScreen({ navigation, route }) {
           </View>
         )}
 
+        {/* External UX critique item 31 (2026-09-11): "Profile should be
+            about ME" -- identity, interests, plans, communities, activity,
+            in that order. Identity (the snapshot card above) already led;
+            Plans/Connections/Story already followed, but interests
+            themselves only ever showed up as an editable chooser far down
+            inside "Edit Your Profile" -- there was no read-only "this is
+            what I'm into" summary near the top the way there already is
+            for plans/connections. Same chip treatment ViewProfileScreen
+            already uses to show a real *other* person's interests
+            (read-only, primary-tinted) -- not the toggleable chooser
+            further down, which stays exactly where it is as the actual
+            editing tool. Tapping through goes to that same chooser via the
+            snapshot card's own "Edit Profile ›" link above; no duplicate
+            edit affordance needed here. */}
+        {interests.length > 0 && (
+          <>
+            <Text style={styles.sectionLabel} accessibilityRole="header">My Interests</Text>
+            <View style={styles.chipsWrap}>
+              {interests.map((interest) => (
+                <View key={interest} style={styles.interestSummaryChip}>
+                  <Text style={styles.interestSummaryChipText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
         {/* Aug 23 2026 IA pass (CLAUDE.md): "Your Plans" pulled out as its
             own leading section — "what am I actually doing" is a more
             important question than "who am I connected to," per direct
@@ -1480,6 +1507,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  // Read-only "My Interests" summary chip -- same treatment
+  // ViewProfileScreen already uses to display a real other person's
+  // interests, distinct from the toggleable chip/chipSelected pair above.
+  interestSummaryChip: {
+    backgroundColor: colors.primaryMuted, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+  },
+  interestSummaryChipText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   chipTextSelected: { color: '#fff' },
   button: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button, marginTop: spacing.sm },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
