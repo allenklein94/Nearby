@@ -40,6 +40,27 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Things To Do needs a UX pass" — external UX critique item 14 — fully DONE (2026-09-11).**
+`DiscoverHubScreen.js`'s default "All" Things-to-Do landing view (the one item 14 was about) no
+longer shows a single quick-date-chip toggle silently reshaping one flat "Recommended For You"
+list underneath it. It now shows four real, always-visible, consistently positioned sections in
+the order the critique asked for — Happening Now (a small horizontal set), Today, This Weekend,
+Categories — answering "where do I want to go / what do I want to do / when do I want to do it?"
+directly instead of via a wall of independent tiles. All three time sections reuse the exact same
+real date-bucket logic already earmarked for this in `utils/gatheringDateFilter.js`'s own header
+comment (`matchesDateFilter`, the identical logic the dedicated Gatherings screen's own "When"
+filter uses) and the same fit-scoring/hero-tiering already built (`getGatheringFitReasons`,
+`HERO_SCORE`/`STANDARD_SCORE`, extracted into a shared `renderGatheringTile()` so the tile
+treatment isn't tripled); each tier excludes whatever a more-urgent tier already showed so nothing
+repeats. Categories is a real browse row over this codebase's own single canonical 19-group
+taxonomy (`CATEGORY_GROUPS`, `constants/gatheringCategories.js`) — no invented list — reusing the
+existing Phase 8 "expand in place" mechanism (generalized: `expandedContext` now supports a whole
+category's tags, not just one gathering's own tag+time-bucket). The dedicated "Gatherings" tab and
+the search-results view are both untouched (their own prior flat-list/notable-gatherings behavior
+preserved exactly) — this only reshapes the default landing view. Full Jest suite 252/252 passing;
+a `@babel/core` + `babel-preset-expo` transform check passed on the touched file. Not exercised in
+a running app (no simulator/device tooling this session, standing note).
+
 **Discover UX cleanup items 8 & 9 — fully DONE (2026-09-10)**, external UX critique reply. Item 8:
 the People tab's separate Stories row is gone; the signal now lives on each candidate's own avatar
 (a colored ring in `DiscoveryScreen.js`/`SwipeableDiscoveryCards.js`/`FriendDiscoverySwipeCards.js`,

@@ -22,6 +22,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { PLACE_CATEGORIES } from '../constants/placeCategories';
+import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
@@ -59,6 +60,18 @@ const NOTABLE_DISPLAY_CAP = 6;
 // it's grounded in an existing number rather than invented from nothing.
 const TRENDING_ATTENDANCE_MIN = 5;
 
+// P1 UX critique reply item 14 (CLAUDE.md, "Things To Do needs a UX pass"):
+// real caps for the new Happening Now / Today / This Weekend hierarchy that
+// replaces the old single quick-date-chip-driven flat list below -- see
+// this file's own header note at DISCOVER_MODES for the fuller rationale.
+// Happening Now is deliberately small ("a small horizontal set" per the
+// critique's own mock); Today/This Weekend get a slightly deeper vertical
+// cap with a real "see more" link to the dedicated Gatherings screen
+// (reusing its existing initialDateFilter param) once there's genuinely
+// more than the cap.
+const HAPPENING_NOW_CAP = 6;
+const TIME_SECTION_CAP = 4;
+
 // A lightened variant of a category's own real PALETTE color
 // (gatheringCategoryStyles.js), for the hero card's gradient fallback --
 // simple additive lightening, not real HSL math, since this only ever
@@ -72,21 +85,6 @@ const TYPE_FILTERS = [
   { key: 'communities', label: 'Communities' },
   { key: 'places', label: 'Places' },
   { key: 'perks', label: 'Perks' },
-];
-
-// Discover/People-Friends parity plan, item 1 (CLAUDE.md): these used to
-// navigate away to a separate GatheringsScreen with initialDateFilter --
-// now they toggle DiscoverHubScreen's own quickDateFilter state and
-// filter this screen's content in place, the same "transform, don't
-// navigate" principle the Dating|Friends People toggle already
-// established. A subset of DATE_OPTIONS (utils/gatheringDateFilter.js) --
-// "Starting Soon"/"Tomorrow"/"Anytime" stay Gatherings-screen-only, this
-// row is deliberately just the handful worth a persistent quick-tap here.
-const QUICK_DATE_FILTERS = [
-  { key: 'now', icon: '⚡', label: 'Happening Now' },
-  { key: 'today', icon: '🌅', label: 'Today' },
-  { key: 'weekend', icon: '🌴', label: 'This Weekend' },
-  { key: 'week', icon: '📅', label: 'This Week' },
 ];
 
 const PREVIEW_COUNT = 3;
@@ -219,17 +217,10 @@ export default function DiscoverHubScreen({ navigation }) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
-  // Discover/People-Friends parity plan, item 1: 'anytime' is
-  // matchesDateFilter's real no-op key, so untouched behavior is
-  // unaffected by default. Reset whenever the user switches type tabs
-  // (setTypeTab below) so a date filter picked while on "All" never keeps
-  // silently narrowing a different tab whose own chips to clear it aren't
-  // visible on.
-  const [quickDateFilter, setQuickDateFilter] = useState('anytime');
   function setTypeTab(key) {
     setTypeFilter(key);
-    setQuickDateFilter('anytime');
   }
+  const isAll = typeFilter === 'all';
   const [viewStyle, setViewStyle] = useState('list');
   const [placesCategory, setPlacesCategory] = useState('food_drink');
   const [userLocation, setUserLocation] = useState(null);
@@ -286,6 +277,25 @@ export default function DiscoverHubScreen({ navigation }) {
       // THIS WEEKEND / UPCOMING), not a second time system invented here.
       timeBucket: gatheringTimeBadge(g.scheduled_at),
       sourceGatheringId: g.id,
+    });
+  }
+
+  // P1 UX critique reply item 14: the new "Categories" browse row's own
+  // entry point into the exact same expand-in-place mechanism Section F
+  // already built -- generalized to scope by a whole CATEGORY_GROUPS
+  // group's real tags instead of one gathering's own single interest_tag,
+  // and deliberately with no timeBucket constraint (Categories answers
+  // "what," not "when" -- Happening Now/Today/This Weekend already own
+  // the time axis). contextGatherings/contextOffers/the places-search
+  // effect below all branch on categoryTags being present.
+  function openCategoryContext(group) {
+    setContextPlaces([]);
+    setContextConnections([]);
+    setContextConnectionPhotos({});
+    setExpandedContext({
+      categoryTags: group.tags,
+      categoryLabel: group.label,
+      categoryIcon: group.icon,
     });
   }
 
@@ -526,13 +536,7 @@ export default function DiscoverHubScreen({ navigation }) {
   // (searchedGatherings/searchedCommunities, populated by the debounced
   // effect above) once actively searching, instead of client-side
   // .filter().includes() over the full already-fetched browse lists.
-  // Discover/People-Friends parity plan, item 1: the quick date chips
-  // filter this same already-fetched/-searched list in place -- every
-  // downstream derivation below (notableGatherings, dedupedGatherings,
-  // gatheringsToShow, the map view) reads from this one variable, so
-  // applying it here is the single place that needs to change.
-  const filteredGatherings = (isSearching ? searchedGatherings : gatherings)
-    .filter((g) => matchesDateFilter(g.scheduled_at, quickDateFilter));
+  const filteredGatherings = isSearching ? searchedGatherings : gatherings;
   const filteredCommunities = isSearching ? searchedCommunities : communities;
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
@@ -580,24 +584,81 @@ export default function DiscoverHubScreen({ navigation }) {
   // qualifying gathering's tile tier (hero vs. standard) is decided
   // per-item against HERO_SCORE below, in the render itself -- never a
   // fixed "first N are hero" rule.
-  const notableGatherings = !isSearching && (typeFilter === 'all' || typeFilter === 'gatherings')
+  // Shared by notableGatherings (below, the dedicated Gatherings tab's own
+  // unchanged behavior) and the new Happening Now/Today/This Weekend
+  // sections (P1 UX critique reply item 14) -- one real scoring function
+  // instead of three copies of the same weather-bonus branch.
+  function scoreGathering(g) {
+    const fit = getGatheringFitReasons(g);
+    if (weatherIndoorBias && isIndoorCategory(g.interest_tag)) {
+      fit.score += WEATHER_BONUS;
+      fit.reasons = [...fit.reasons, 'Good for the weather'];
+    } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
+      fit.score += WEATHER_BONUS;
+      fit.reasons = [...fit.reasons, 'Great weather for it'];
+    }
+    return { ...g, fit };
+  }
+
+  // P1 UX critique reply item 14 (CLAUDE.md, "Things To Do needs a UX
+  // pass"): the default "All" landing view no longer has its own flat
+  // "Recommended For You" pass -- it's replaced below by the real
+  // Happening Now/Today/This Weekend hierarchy. The dedicated Gatherings
+  // tab's own experience (a real scored/tiered list) is untouched.
+  const notableGatherings = !isSearching && typeFilter === 'gatherings'
     ? filteredGatherings
-        .map((g) => {
-          const fit = getGatheringFitReasons(g);
-          if (weatherIndoorBias && isIndoorCategory(g.interest_tag)) {
-            fit.score += WEATHER_BONUS;
-            fit.reasons = [...fit.reasons, 'Good for the weather'];
-          } else if (weatherOutdoorBias && isOutdoorCategory(g.interest_tag)) {
-            fit.score += WEATHER_BONUS;
-            fit.reasons = [...fit.reasons, 'Great weather for it'];
-          }
-          return { ...g, fit };
-        })
+        .map(scoreGathering)
         .filter((g) => g.fit.score >= STANDARD_SCORE)
         .sort((a, b) => b.fit.score - a.fit.score)
         .slice(0, NOTABLE_DISPLAY_CAP)
     : [];
   const notableGatheringIds = new Set(notableGatherings.map((g) => g.id));
+
+  // P1 UX critique reply item 14: "Where do I want to go / what do I want
+  // to do / when do I want to do it?" -- three real, always-visible
+  // time-scoped sections (never a toggle whose effect is invisible until
+  // you look at the list beneath it) replace the old single quick-date-
+  // chip-driven flat list, for the default "All" landing view only. Each
+  // uses the exact same real date-bucket logic
+  // (utils/gatheringDateFilter.js's matchesDateFilter) the dedicated
+  // Gatherings screen's own "When" filter already uses -- not a second,
+  // independently-invented definition of "today"/"this weekend."
+  // Deliberately NOT filtered by STANDARD_SCORE the way notableGatherings
+  // is: being genuinely happening now/today/this weekend is itself the
+  // section's own real qualifying criterion, not a bonus signal to filter
+  // further on top of -- fit.score here only decides sort order and
+  // hero/standard tile tier, never inclusion. Each tier excludes whatever
+  // a more-urgent tier already displayed, so a gathering never appears
+  // twice (same "don't repeat what a more prominent section already
+  // showed" principle dedupedGatherings below already established for
+  // notable-vs-flat).
+  const happeningNowGatherings = isAll && !isSearching
+    ? filteredGatherings
+        .filter((g) => matchesDateFilter(g.scheduled_at, 'now'))
+        .map(scoreGathering)
+        .sort((a, b) => b.fit.score - a.fit.score)
+        .slice(0, HAPPENING_NOW_CAP)
+    : [];
+  const happeningNowIds = new Set(happeningNowGatherings.map((g) => g.id));
+
+  const todayQualifying = isAll && !isSearching
+    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'today') && !happeningNowIds.has(g.id))
+    : [];
+  const todayGatherings = todayQualifying
+    .map(scoreGathering)
+    .sort((a, b) => b.fit.score - a.fit.score)
+    .slice(0, TIME_SECTION_CAP);
+  const todayHasMore = todayQualifying.length > TIME_SECTION_CAP;
+  const todayIds = new Set(todayGatherings.map((g) => g.id));
+
+  const weekendQualifying = isAll && !isSearching
+    ? filteredGatherings.filter((g) => matchesDateFilter(g.scheduled_at, 'weekend') && !happeningNowIds.has(g.id) && !todayIds.has(g.id))
+    : [];
+  const weekendGatherings = weekendQualifying
+    .map(scoreGathering)
+    .sort((a, b) => b.fit.score - a.fit.score)
+    .slice(0, TIME_SECTION_CAP);
+  const weekendHasMore = weekendQualifying.length > TIME_SECTION_CAP;
 
   // Phase 8 section F -- the expanded context's own real content, filtered
   // out of what this screen already fetched. No new gatherings/offers query
@@ -609,23 +670,34 @@ export default function DiscoverHubScreen({ navigation }) {
   // real and already applied -- the label names the constraint that's
   // genuinely in force rather than claiming one that isn't.
   const contextGatherings = expandedContext
-    ? gatherings.filter((g) => g.interest_tag === expandedContext.interestTag
-        && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket)
+    ? gatherings.filter((g) => (expandedContext.categoryTags
+        ? expandedContext.categoryTags.includes(g.interest_tag)
+        : g.interest_tag === expandedContext.interestTag && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket))
     : [];
   const contextGatheringIds = new Set(contextGatherings.map((g) => g.id));
   // Same interest, genuinely different time. Shown as its own clearly
   // labelled group rather than silently folded into the exact-context list
   // above -- a "Tonight" context must never quietly list next Saturday
-  // under the same heading.
-  const contextOtherTimeGatherings = expandedContext
+  // under the same heading. Category mode has no time constraint to begin
+  // with (contextGatherings above already includes every time), so this
+  // is always empty there -- not a second, redundant listing of the exact
+  // same rows.
+  const contextOtherTimeGatherings = expandedContext && !expandedContext.categoryTags
     ? gatherings.filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
     : [];
   // target_interest_tag is the offer row's own real targeting field (the
   // same one the Perks section above already reads) -- not a keyword guess
   // against the offer's title.
   const contextOffers = expandedContext
-    ? offers.filter((o) => o.target_interest_tag === expandedContext.interestTag)
+    ? offers.filter((o) => (expandedContext.categoryTags
+        ? expandedContext.categoryTags.includes(o.target_interest_tag)
+        : o.target_interest_tag === expandedContext.interestTag))
     : [];
+  // The one real topic label this context is about, regardless of which
+  // mode opened it -- every empty-state string and the Places search
+  // keyword below read this instead of assuming expandedContext.interestTag
+  // exists.
+  const contextTopicLabel = expandedContext?.categoryLabel ?? expandedContext?.interestTag ?? '';
   // A stable dep for the connections effect below -- contextGatherings is
   // rebuilt every render, so its identity can't be a dependency.
   const contextGatheringKey = contextGatherings.map((g) => g.id).join(',');
@@ -643,7 +715,7 @@ export default function DiscoverHubScreen({ navigation }) {
     if (!expandedContext || !userLocation) return;
     const thisRequestId = ++contextPlacesRequestId.current;
     setLoadingContextPlaces(true);
-    searchNearbyPlaces(userLocation.latitude, userLocation.longitude, null, expandedContext.interestTag)
+    searchNearbyPlaces(userLocation.latitude, userLocation.longitude, null, contextTopicLabel)
       .then((results) => {
         if (thisRequestId === contextPlacesRequestId.current) setContextPlaces(results);
       })
@@ -701,11 +773,16 @@ export default function DiscoverHubScreen({ navigation }) {
   }, [expandedContext, contextGatheringKey, myUserId]);
 
   const showGatherings = typeFilter === 'all' || typeFilter === 'gatherings';
+  // P1 UX critique reply item 14: the old flat "Gatherings" preview
+  // section (below) is now redundant with the new Happening Now/Today/
+  // This Weekend hierarchy for the default "All" browse case -- it stays
+  // exactly as before for the dedicated Gatherings tab, and for search
+  // results (which the new hierarchy deliberately doesn't cover either).
+  const showFlatGatheringsSection = showGatherings && !(isAll && !isSearching);
   const showCommunities = typeFilter === 'all' || typeFilter === 'communities';
   const showPlaces = typeFilter === 'all' || typeFilter === 'places';
   const showPerks = typeFilter === 'all' || typeFilter === 'perks';
   const showViewToggle = typeFilter === 'all' || typeFilter === 'gatherings' || typeFilter === 'perks';
-  const isAll = typeFilter === 'all';
 
   // Whatever already surfaced above doesn't repeat in the plain catch-all
   // list right below it. A no-op when `notableGatherings` is empty
@@ -844,7 +921,9 @@ export default function DiscoverHubScreen({ navigation }) {
   }
 
   const contextLabel = expandedContext
-    ? [expandedContext.interestTag, titleCaseBadge(expandedContext.timeBucket), 'Nearby'].filter(Boolean).join(' · ')
+    ? (expandedContext.categoryTags
+        ? [expandedContext.categoryIcon, expandedContext.categoryLabel, 'Nearby'].filter(Boolean).join(' ')
+        : [expandedContext.interestTag, titleCaseBadge(expandedContext.timeBucket), 'Nearby'].filter(Boolean).join(' · '))
     : null;
 
   // The one real "why this place, right now" line, shared verbatim by the
@@ -908,6 +987,172 @@ export default function DiscoverHubScreen({ navigation }) {
           <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
         ) : (
           <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
+        )}
+      </TouchableOpacity>
+    );
+  }
+
+  // P1 UX critique reply item 14: extracted verbatim from the old inline
+  // notableGatherings.map() render callback so the exact same hero/standard
+  // tile treatment (Phase 8, CLAUDE.md, Discover visual hierarchy) is
+  // shared by the dedicated Gatherings tab's notableGatherings AND the new
+  // Today/This Weekend sections below, instead of three copies of this
+  // block drifting apart.
+  function renderGatheringTile(g) {
+    const action = gatheringActionInfo(g);
+    const reasonLine = primaryReasonLine(g);
+    const timeLine = gatheringTimeLine(g.scheduled_at);
+
+    if (g.fit.score >= HERO_SCORE) {
+      const categoryStyle = categoryStyleFor(g.interest_tag);
+      return (
+        <TouchableOpacity
+          key={g.id}
+          style={styles.heroCard}
+          /* Phase 8 section F -- the card body no longer navigates:
+             tapping it expands this screen around the gathering's own
+             context. The CTA below is its own nested touchable and
+             still navigates, because joining is a real task change. */
+          onPress={() => openContextFor(g)}
+          activeOpacity={0.9}
+          accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
+          accessibilityRole="button"
+        >
+          {coverPhotoUrls[g.id] ? (
+            <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.heroImage} />
+          ) : curatedCoverPhotoFor(g.interest_tag) ? (
+            // Real curated category photo (same map/precedent as
+            // GatheringDetailScreen's own cover-photo fallback) --
+            // a host's own uploaded photo always wins when one
+            // exists, this is the next-best real picture, not a
+            // fabricated one.
+            <Image source={{ uri: curatedCoverPhotoFor(g.interest_tag) }} style={styles.heroImage} accessibilityLabel={`${g.interest_tag} cover photo`} />
+          ) : (
+            // Real, disclosed fallback: this app's own existing
+            // categoryStyleFor() color/icon (never a fabricated
+            // stock photo) filling the full card instead of sitting
+            // inside a 32px glyph -- only reached for the handful of
+            // categories with no sourced curated photo.
+            <LinearGradient
+              colors={[lightenHex(categoryStyle.color, 0.28), categoryStyle.color]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroImage}
+            >
+              <Text style={styles.heroWatermarkIcon}>{categoryStyle.icon}</Text>
+            </LinearGradient>
+          )}
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']}
+            style={styles.heroScrim}
+            pointerEvents="none"
+          />
+          <Text style={styles.heroEyebrow}>{heroEyebrow(g)}</Text>
+          <View style={styles.heroBody}>
+            <View style={{ flex: 1, marginRight: spacing.sm }}>
+              <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
+              <Text style={styles.heroMeta} numberOfLines={1}>
+                {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+              </Text>
+            </View>
+            {action.kind === 'cta' ? (
+              <TouchableOpacity
+                style={styles.heroCta}
+                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                accessibilityLabel={`${action.label}: ${g.title}`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.heroCtaText}>{action.label}</Text>
+              </TouchableOpacity>
+            ) : (
+              /* An already-RSVP'd state ("Going"/"Waitlisted") is a
+                 badge, not a button -- deliberately not touchable,
+                 per CLAUDE.md's "informational must not visually
+                 impersonate a button" rule. */
+              <View style={styles.heroStatePill}>
+                <Text style={styles.heroStatePillText}>{action.label}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        key={g.id}
+        style={styles.card}
+        onPress={() => openContextFor(g)}
+        activeOpacity={0.85}
+        accessibilityLabel={`${g.title}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
+        accessibilityRole="button"
+      >
+        {coverPhotoUrls[g.id] ? (
+          <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
+        ) : (
+          renderCardIcon(categoryStyleFor(g.interest_tag).icon, g.interest_tag)
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>{g.title}</Text>
+          {(reasonLine || timeLine || g.distanceLabel) && (
+            <Text style={styles.cardSubtitle} numberOfLines={1}>
+              {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+            </Text>
+          )}
+          {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+            <Text
+              style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
+              numberOfLines={1}
+            >
+              {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+            </Text>
+          )}
+        </View>
+        {action.kind === 'cta' ? (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+            accessibilityLabel={`${action.label}: ${g.title}`}
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
+        )}
+      </TouchableOpacity>
+    );
+  }
+
+  // P1 UX critique reply item 14: a compact horizontal "Happening Now"
+  // tile -- deliberately smaller/plainer than renderGatheringTile's own
+  // hero/standard tiers (the critique's own mock calls this "a small
+  // horizontal set," not a peer of Today/This Weekend's fuller cards).
+  // Still taps into the same real expand-in-place context as every other
+  // gathering tile on this screen.
+  function renderHappeningNowTile(g) {
+    const timeLine = gatheringTimeLine(g.scheduled_at);
+    return (
+      <TouchableOpacity
+        key={g.id}
+        style={styles.nowCard}
+        onPress={() => openContextFor(g)}
+        activeOpacity={0.85}
+        accessibilityLabel={`${g.title}, ${[timeLine, g.distanceLabel].filter(Boolean).join(', ')}. Shows more like this.`}
+        accessibilityRole="button"
+      >
+        {coverPhotoUrls[g.id] ? (
+          <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.nowCardImage} />
+        ) : (
+          <View style={[styles.nowCardImage, styles.nowCardIconWrap, { backgroundColor: `${categoryStyleFor(g.interest_tag).color}20` }]}>
+            <Text style={styles.cardIcon}>{categoryStyleFor(g.interest_tag).icon}</Text>
+          </View>
+        )}
+        <Text style={styles.nowCardTitle} numberOfLines={1}>{g.title}</Text>
+        {(timeLine || g.distanceLabel) && (
+          <Text style={styles.nowCardSubtitle} numberOfLines={1}>
+            {[timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
+          </Text>
         )}
       </TouchableOpacity>
     );
@@ -1115,7 +1360,7 @@ export default function DiscoverHubScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.sectionHeader}>Gatherings</Text>
           {contextGatherings.length === 0 ? (
-            <Text style={styles.emptyText}>No {expandedContext.interestTag.toLowerCase()} gatherings at this time nearby.</Text>
+            <Text style={styles.emptyText}>No {contextTopicLabel.toLowerCase()} gatherings at this time nearby.</Text>
           ) : (
             contextGatherings.map(renderContextGatheringRow)
           )}
@@ -1134,7 +1379,7 @@ export default function DiscoverHubScreen({ navigation }) {
           ) : loadingContextPlaces ? (
             <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
           ) : contextPlaces.length === 0 ? (
-            <Text style={styles.emptyText}>No {expandedContext.interestTag.toLowerCase()} places found nearby.</Text>
+            <Text style={styles.emptyText}>No {contextTopicLabel.toLowerCase()} places found nearby.</Text>
           ) : (
             contextPlaces.slice(0, PREVIEW_COUNT).map((p) => (
               <PlaceCard
@@ -1152,7 +1397,7 @@ export default function DiscoverHubScreen({ navigation }) {
 
           <Text style={styles.sectionHeader}>Perks</Text>
           {contextOffers.length === 0 ? (
-            <Text style={styles.emptyText}>No {expandedContext.interestTag.toLowerCase()} perks nearby right now.</Text>
+            <Text style={styles.emptyText}>No {contextTopicLabel.toLowerCase()} perks nearby right now.</Text>
           ) : (
             contextOffers.map((o) => {
               const isRedeemed = redeemedOfferIds.has(o.id);
@@ -1226,32 +1471,6 @@ export default function DiscoverHubScreen({ navigation }) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {isAll && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
-              {QUICK_DATE_FILTERS.map((f) => {
-                const active = quickDateFilter === f.key;
-                return (
-                  <TouchableOpacity
-                    key={f.key}
-                    style={[styles.quickTimeCard, active && styles.quickTimeCardActive]}
-                    // Tapping the already-active chip clears it, mirroring
-                    // Friend Discovery's own distance-filter toggle
-                    // behavior -- a real "off" state, not just re-selecting
-                    // the same filter.
-                    onPress={() => setQuickDateFilter(active ? 'anytime' : f.key)}
-                    activeOpacity={0.85}
-                    accessibilityLabel={f.label}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Text style={styles.quickTimeCardIcon}>{f.icon}</Text>
-                    <Text style={[styles.quickTimeCardText, active && styles.quickTimeCardTextActive]}>{f.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-
           {weatherBanner && (
             <View style={styles.weatherBanner}>
               <Text style={styles.weatherBannerText}>{weatherBanner}</Text>
@@ -1286,161 +1505,102 @@ export default function DiscoverHubScreen({ navigation }) {
             <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
           )}
 
+          {/* P1 UX critique reply item 14 ("Things To Do needs a UX pass",
+              CLAUDE.md): the default All landing view's real hierarchy --
+              "Where do I want to go / what do I want to do / when do I
+              want to do it?" answered by four always-visible, consistently
+              positioned sections, instead of one quick-date-chip toggle
+              silently reshaping a single flat "Recommended For You" list
+              beneath it. Each of the three time sections is real
+              (utils/gatheringDateFilter.js's matchesDateFilter, the exact
+              logic the dedicated Gatherings screen's own "When" filter
+              uses) and hides itself when genuinely empty, same as every
+              other section on this screen -- no fabricated placeholder. */}
+          {happeningNowGatherings.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>⚡ Happening Now</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
+                {happeningNowGatherings.map(renderHappeningNowTile)}
+              </ScrollView>
+            </>
+          )}
+
+          {todayGatherings.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>🌅 Today</Text>
+              {todayGatherings.map(renderGatheringTile)}
+              {todayHasMore && (
+                <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel="See all happening today" accessibilityRole="button">
+                  <Text style={styles.seeAll}>See all happening today →</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+
+          {weekendGatherings.length > 0 && (
+            <>
+              <Text style={styles.sectionHeader}>🌴 This Weekend</Text>
+              {weekendGatherings.map(renderGatheringTile)}
+              {weekendHasMore && (
+                <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'weekend' })} accessibilityLabel="See all this weekend" accessibilityRole="button">
+                  <Text style={styles.seeAll}>See all this weekend →</Text>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+
+          {/* Categories answers "what," not "when" -- a real browse
+              entry point over this codebase's own single canonical 19-
+              group taxonomy (constants/gatheringCategories.js), the same
+              one gatherings/communities/business categorization already
+              share, not a second invented list. Tapping a group reuses
+              the exact same expand-in-place mechanism (Phase 8 section F)
+              a notable gathering tile already opens, just scoped to the
+              whole group's tags instead of one gathering's own tag. */}
+          {isAll && !isSearching && (
+            <>
+              <Text style={styles.sectionHeader}>Categories</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
+                {CATEGORY_GROUPS.map((group) => (
+                  <TouchableOpacity
+                    key={group.key}
+                    style={styles.categoryChip}
+                    onPress={() => openCategoryContext(group)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={group.label}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.categoryChipIcon}>{group.icon}</Text>
+                    <Text style={styles.categoryChipText}>{group.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
+
+          {/* The dedicated Gatherings tab's own real scored/tiered list
+              (unaffected by the P1 item 14 redesign above, which only
+              replaces the default "All" landing view). */}
           {notableGatherings.length > 0 && (
             <Text style={styles.sectionHeader}>Recommended For You</Text>
           )}
+          {notableGatherings.map(renderGatheringTile)}
 
-          {/* Phase 8 (CLAUDE.md, Discover visual hierarchy) -- each
-              notableGatherings item picks its own tile tier from its own
-              real score (HERO_SCORE), instead of a fixed "first 2 are
-              hero" rule -- a day with four genuinely high-scoring
-              gatherings shows four hero cards; a quiet day shows none. */}
-          {notableGatherings.map((g) => {
-            const action = gatheringActionInfo(g);
-            const reasonLine = primaryReasonLine(g);
-            const timeLine = gatheringTimeLine(g.scheduled_at);
-
-            if (g.fit.score >= HERO_SCORE) {
-              const categoryStyle = categoryStyleFor(g.interest_tag);
-              return (
-                <TouchableOpacity
-                  key={g.id}
-                  style={styles.heroCard}
-                  /* Phase 8 section F -- the card body no longer navigates:
-                     tapping it expands this screen around the gathering's own
-                     context. The CTA below is its own nested touchable and
-                     still navigates, because joining is a real task change. */
-                  onPress={() => openContextFor(g)}
-                  activeOpacity={0.9}
-                  accessibilityLabel={`${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
-                  accessibilityRole="button"
-                >
-                  {coverPhotoUrls[g.id] ? (
-                    <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.heroImage} />
-                  ) : curatedCoverPhotoFor(g.interest_tag) ? (
-                    // Real curated category photo (same map/precedent as
-                    // GatheringDetailScreen's own cover-photo fallback) --
-                    // a host's own uploaded photo always wins when one
-                    // exists, this is the next-best real picture, not a
-                    // fabricated one.
-                    <Image source={{ uri: curatedCoverPhotoFor(g.interest_tag) }} style={styles.heroImage} accessibilityLabel={`${g.interest_tag} cover photo`} />
-                  ) : (
-                    // Real, disclosed fallback: this app's own existing
-                    // categoryStyleFor() color/icon (never a fabricated
-                    // stock photo) filling the full card instead of sitting
-                    // inside a 32px glyph -- only reached for the handful of
-                    // categories with no sourced curated photo.
-                    <LinearGradient
-                      colors={[lightenHex(categoryStyle.color, 0.28), categoryStyle.color]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.heroImage}
-                    >
-                      <Text style={styles.heroWatermarkIcon}>{categoryStyle.icon}</Text>
-                    </LinearGradient>
-                  )}
-                  <LinearGradient
-                    colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)']}
-                    style={styles.heroScrim}
-                    pointerEvents="none"
-                  />
-                  <Text style={styles.heroEyebrow}>{heroEyebrow(g)}</Text>
-                  <View style={styles.heroBody}>
-                    <View style={{ flex: 1, marginRight: spacing.sm }}>
-                      <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
-                      <Text style={styles.heroMeta} numberOfLines={1}>
-                        {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
-                      </Text>
-                    </View>
-                    {action.kind === 'cta' ? (
-                      <TouchableOpacity
-                        style={styles.heroCta}
-                        onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                        accessibilityLabel={`${action.label}: ${g.title}`}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.heroCtaText}>{action.label}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      /* An already-RSVP'd state ("Going"/"Waitlisted") is a
-                         badge, not a button -- deliberately not touchable,
-                         per CLAUDE.md's "informational must not visually
-                         impersonate a button" rule. */
-                      <View style={styles.heroStatePill}>
-                        <Text style={styles.heroStatePillText}>{action.label}</Text>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            }
-
-            return (
-              <TouchableOpacity
-                key={g.id}
-                style={styles.card}
-                onPress={() => openContextFor(g)}
-                activeOpacity={0.85}
-                accessibilityLabel={`${g.title}${reasonLine ? `, ${reasonLine}` : ''}. Shows more like this.`}
-                accessibilityRole="button"
-              >
-                {coverPhotoUrls[g.id] ? (
-                  <Image source={{ uri: coverPhotoUrls[g.id] }} style={styles.cardImage} />
-                ) : (
-                  renderCardIcon(categoryStyleFor(g.interest_tag).icon, g.interest_tag)
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardTitle}>{g.title}</Text>
-                  {(reasonLine || timeLine || g.distanceLabel) && (
-                    <Text style={styles.cardSubtitle} numberOfLines={1}>
-                      {[reasonLine, timeLine, g.distanceLabel].filter(Boolean).join(' · ')}
-                    </Text>
-                  )}
-                  {/* P1 remediation (CLAUDE.md, Aug 28 Full Coherence
-                      Audit, "Discover needs to stop throwing away
-                      information it already has"): price/party/
-                      fullness are already fetched on every gathering
-                      row, just never rendered here before. */}
-                  {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
-                    <Text
-                      style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
-                      numberOfLines={1}
-                    >
-                      {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
-                    </Text>
-                  )}
-                </View>
-                {action.kind === 'cta' ? (
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
-                    accessibilityLabel={`${action.label}: ${g.title}`}
-                    accessibilityRole="button"
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-
-          {showGatherings && isSearching && loadingSearch && (
+          {showFlatGatheringsSection && isSearching && loadingSearch && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
               <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
             </>
           )}
 
-          {showGatherings && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
+          {showFlatGatheringsSection && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
               <Text style={styles.emptyText}>No gatherings match "{searchQuery.trim()}".</Text>
             </>
           )}
 
-          {showGatherings && !(isSearching && loadingSearch) && gatheringsToShow.length > 0 && (
+          {showFlatGatheringsSection && !(isSearching && loadingSearch) && gatheringsToShow.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
               {gatheringsToShow.map((g) => (
@@ -1778,14 +1938,26 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
   },
   viewToggleIcon: { fontSize: 15 },
-  quickTimeCard: {
-    alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.border, paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+  // P1 UX critique reply item 14 -- the compact horizontal "Happening Now"
+  // tile (renderHappeningNowTile), deliberately smaller/plainer than the
+  // full hero/standard cards Today/This Weekend use.
+  nowCard: {
+    width: 128, backgroundColor: colors.surface, borderRadius: radius.lg,
+    borderWidth: 1, borderColor: colors.border, padding: spacing.sm,
   },
-  quickTimeCardActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
-  quickTimeCardIcon: { fontSize: 22, marginBottom: 4 },
-  quickTimeCardText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
-  quickTimeCardTextActive: { color: colors.primary },
+  nowCardImage: { width: '100%', height: 64, borderRadius: radius.md, marginBottom: spacing.xs },
+  nowCardIconWrap: { alignItems: 'center', justifyContent: 'center' },
+  nowCardTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
+  nowCardSubtitle: { color: colors.textTertiary, fontSize: 11, marginTop: 2 },
+  // The new Categories browse row -- plain chips (no active/selected
+  // state, since tapping navigates into an expanded context rather than
+  // toggling a filter that stays on this same row).
+  categoryChip: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, gap: 6,
+  },
+  categoryChipIcon: { fontSize: 14 },
+  categoryChipText: { color: colors.textPrimary, fontWeight: '700', fontSize: 12 },
   weatherBanner: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.md,
