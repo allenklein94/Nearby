@@ -41,53 +41,42 @@ grow past a few hundred lines without doing this split again.
 ## Active / unfinished work
 
 **Thursday plan items 32 & 33 (standardize relationship states; standardize action-verb
-semantics) — IN PROGRESS, picked up mid-audit, restart-safe checkpoint (2026-09-11).** Two global
-audits requested directly by the user, each ending in a concrete matrix + prioritized fix list,
-not just a vibe check:
+semantics) — fully DONE (2026-09-11).** Two global audits requested directly by the user, each
+run as a background research fork (to survey the whole codebase without blowing up context),
+each ending in concrete fixes, not just a report:
 
-- **Item 32** — "A person can be Stranger / Request Sent / Request Received / Friend / Match /
-  Following / Blocked / etc. Those states need to render consistently everywhere." Wants a real
-  relationship-state matrix and a global audit of every surface that shows or acts on a person's
-  relationship to the viewer, checking the same real state always renders the same way (their
-  worry: someone shows as "Friend" on one screen and an actionable "Add Friend" button on
-  another, because two screens consult different logic).
-- **Item 33** — "If coral means primary action, make it mean that everywhere." Wants every button
-  verb (Plan/Join/Create/Message/Save/Discover/etc.) to mean one consistent thing across the app,
-  and no two screens giving the same underlying engine/flow two different names (their example:
-  one screen says "Do Something" while another, wired to the same flow, says "Plan").
+- **Item 32** (relationship states) — audit found 2 real bugs + 1 structural risk, all fixed:
+  `block_and_unmatch()` never deleted the `friendships` row on block, so a blocked former friend
+  stayed listed as a Friend on `FriendsScreen`/`ProfileScreen` while `ViewProfileScreen` correctly
+  blanked their profile (exactly the "contradicting states across screens" failure described) —
+  fixed in `20261006_block_clears_friendship.sql`, verified live via a rolled-back dry run before
+  applying for real; `getCommunityMembers()` didn't filter blocked users, unlike every sibling
+  roster function — fixed with the same blocked-both-directions pattern `getFellowAttendees()`
+  already used; no canonical relationship-status function existed anywhere — extracted
+  `getRelationshipStatus(otherUserId)` into `src/services/friends.js` and refactored
+  `ViewProfileScreen.js` (the only real consumer) to use it instead of 3 separate inline queries.
+  Candidate pools (dating swipe, friend swipe) were both already correctly excluding blocked/
+  already-connected people — no bug there. Full matrix + audit methodology:
+  `PRODUCT_AUDIT/RELATIONSHIP_STATE_MATRIX_2026-09-11.md`.
+- **Item 33** (action-verb semantics) — audit found 5 real label/destination mismatches, all
+  fixed: `GatheringDetailScreen.js`/`CommunityDetailScreen.js`'s shared business-help chooser
+  labeled both its options "Ask..." despite routing to two deliberately different flows (reworded
+  the `RequestBusinessPartner` one to "Request a specific business"); `MatchesScreen.js` used
+  "Plan" for two different destinations (direct-to-DateProposal vs. the 12-option "Do Something
+  Together" menu) — the menu branch relabeled to "Do Something"; `GatheringsScreen.js`'s "I'm
+  Interested" button (and its `GatheringIntentModal` call) used a generic label while
+  `GatheringDetailScreen.js`'s identical action already used the real three-way "Join Gathering"/
+  "Request to Join"/"Join Waitlist" label for the same `gathering_interest` insert — applied the
+  same computation; two smaller outliers ("Start a Community from This Gathering" →  "Create a
+  Community...", "Start a Gathering" → "Host a Gathering") renamed to match their own screens'
+  canonical titles used everywhere else. Save/Discover/Message/Ask-vs-Request-at-every-other-entry-
+  point verb families were all already consistent — no changes needed there.
 
-**What's been done so far (direct code reading, not delegated):** confirmed `ViewProfileScreen.js`
-(lines ~174-217) is the ONLY place in the codebase that queries `friendships`/`matches` directly
-to derive a relationship state for a specific other person — no other screen or component does
-`from('friendships')`/`from('matches')` lookups, and `src/services/friends.js` exports
-`getMutualFriends`/`getSuggestedFriends`/`sendFriendRequest`/`respondToFriendRequest`/
-`getMyFriends`/`getPendingFriendRequests`/`filterToMyFriends`/`getUpcomingConnectedBirthdays` but
-**no canonical `getRelationshipStatus(otherUserId)` function** — meaning today there's no *literal*
-duplication bug (nothing else re-derives the state and gets it wrong), but also no shared source
-of truth for the next screen that needs it, which is exactly the failure mode item 32 is trying to
-prevent going forward. This still needs verifying against swipe-candidate pools (does
-`DiscoveryScreen`/`FriendDiscoveryScreen`'s candidate RPC actually exclude already-friends/already-
-matched/blocked people, or could a stale/wrong state be swipeable?) and against every other
-screen/component that shows relationship-adjacent UI — not yet done.
-
-**Two research forks were launched in the background** (session id `session_016XMxbCDfQjVzP1w4chN4LN`)
-to do the actual wide-surface survey without blowing up context — one auditing relationship-state
-rendering across every screen (candidate pools, `MatchesScreen`/`FriendsScreen` staleness, blocked-
-user exclusion, business "follow" semantics), one auditing action-verb usage across every coral CTA
-(Plan/Do Something variants, Join/RSVP/Attend, Create/Start/Host, Message, Save, Discover/Explore,
-Ask/Request). **Neither fork had reported back yet at the time this checkpoint was written.**
-Background forks do not survive a codespace restart — if you're reading this after a restart, the
-forks are gone and their in-progress work is lost; re-launch both audits fresh (the prompts used
-are reconstructable from this section's own description above, or just re-derive the two research
-plans from the user's original item 32/33 asks, quoted at the top of this note) rather than assume
-partial results exist anywhere. Once both audits return, the actual plan is: (1) build a real
-canonical `getRelationshipStatus()`-style service function if the audit confirms it's worth
-extracting (only if a second real consumer need is found — don't extract a "utility" nobody but
-`ViewProfileScreen` would call), (2) fix whatever CONCRETE inconsistencies the audits found
-(file:line specific, not speculative), (3) do the same for action-verb labels — rename to the
-converged canonical verb only where the underlying destination/engine is genuinely the same across
-the differently-labeled entry points (never merge two labels that turn out to route to genuinely
-different flows). Nothing has been fixed yet; this whole item is still open.
+Both audits' full findings (including what was checked and found already-consistent, not just
+what got fixed) are in the fork reports; the fix commits' own messages carry the same detail. Full
+Jest suite 280/280 passing throughout; every touched file transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note).
 
 **Thursday plan items 30 & 31 (Home/Discover/Create clarity; Profile is about ME) — audited,
 mostly already-DONE, one real concrete gap closed (2026-09-11).** Both items turned out to be
