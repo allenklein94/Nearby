@@ -40,6 +40,63 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Thursday plan" (external UX critique items 18-24, "one connected system" objective) — fully
+DONE (2026-09-11).** User's overarching ask: Nearby should feel like one connected system
+(Discover → find people → decide to do it → create a plan → connect a business/place → go do
+it), not a collection of separate screens. Two research forks audited the actual current state
+against all 7 items before any code changed — most of it was already built from prior sessions;
+only real, concrete gaps got code changes:
+- **#18** (unified Discover hierarchy: What are you looking for? → Things to Do | People → sub-
+  tabs, filters as content not navigation) — **already fully built**, no code needed.
+  `DiscoverHubScreen.js`'s `mode`/`peopleSubMode` are in-screen state, not routes; Things-To-Do's
+  category drill-down is the Phase 8 "expand in place" mechanism, also not navigation.
+  `StoriesRow.js` confirmed gone (per the 2026-09-10 Discover UX cleanup).
+- **#19** (filters should sit as a layer over results, never a navigation destination) — mostly
+  already true (`FiltersModal` was already a real in-place modal). One real gap: the deeper
+  `QuickFilterCustomize` screen it links to was a full stack push. Fixed:
+  `presentation: 'modal'` in `RootNavigator.js`.
+- **#20** (Create as Discover's inverse, same taxonomy powering both) — mostly already true
+  (`CreateHubScreen.js` already mirrors Discover's own framing and sources `CREATE_HUB_OPTIONS`/
+  `SUB_OPTIONS` from the same `INTEREST_OPTIONS` taxonomy). One real gap: no path to
+  `AskBusinessScreen` (the "post a request, any business can respond" flow, distinct from the
+  Phase 7 "Request a Business Partner" affiliate flow deliberately removed from this screen
+  earlier) — it was only ever reachable *from* an existing gathering/community/match/Home-ask
+  context. Added a "With businesses" row, navigated with no params (a genuinely blank ask).
+- **#21** ("Plan" should exist everywhere it logically can) — mostly already true
+  (`ViewProfileScreen`/`GatheringDetailScreen`/`BusinessProfileScreen` all already have a real
+  Plan-type CTA reusing the same planning engine, `dateProposals.js`). One real gap:
+  `MatchCelebrationModal` (shown right after a new match) offered only Message/dismiss. Added a
+  "Plan Together" button routing to the same Together-menu destination the match row's own
+  "🤝 Plan" button already uses.
+- **#22** (business as the natural endpoint of Person + Intent → Activity → Place, not a separate
+  ad section) — **already satisfied** by prior work: the intent resolver's `business_availability`
+  results, Experience Bundles, and `DateProposalScreen`'s "Find something nearby" search (item 4)
+  already implement exactly this flow; Discover's own Perks section is woven into the same
+  unified results list, not a separate sponsored unit. No code change needed.
+- **#23** (every recommendation should explain WHY) — real, confirmed gap on two of four
+  surfaces. Gatherings and Friends discovery already had real reason text (`getGatheringFitReasons`,
+  `FriendDiscoverySwipeCards`'s `sharedBits`). Fixed: `SwipeableDiscoveryCards.js` (dating swipe
+  deck, plain Browse mode) now shows the same tappable compatibility "Why?" badge + shared-
+  interests line the list view (`DiscoveryScreen.js`) already had, reusing the same already-
+  computed `item.compatibilityScore`/`item.sharedInterests` fields. `business_availability`
+  intent results (and the Experience Bundles/components that reuse the same candidate objects)
+  had zero why-reasoning at all — new `getBusinessAvailabilityReasons()`
+  (`intentResolverScoring.js`) mirrors each existing scoring bonus's own exact condition
+  (category/subcategory/secondary-category, distance, cuisine, attribute, party-type, occasion)
+  and surfaces real text for whichever ones actually fired, appended to the existing title/price
+  subtitle. New Jest coverage.
+- **#24** (social proof honesty — never display a count not calculated from verified underlying
+  relationships) — the specific bug the user remembered ("said 3 when there was only 1") was
+  **already fixed** in a prior session: `homeDashboard.js`'s `friendsActivity` dedupes by
+  `host_id` before capping at 3, with an explicit code comment naming this exact failure mode. No
+  other fabricated/stale social-proof count found in the surfaces checked (not exhaustive —
+  community screens, `FriendsScreen`/`MatchesScreen` copy, and all push-notification bodies
+  weren't individually re-checked this session).
+
+Full suite 258/258 passing throughout; every touched file transform-checked clean under
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note). Commits: `1cad107d` (19/21/23-dating), `3678bfb3` (23-business), `2ccd3e39` (20).
+
 **"This matches you" recommendation push notifications, external UX critique item 17 — fully
 DONE (2026-09-11).** Real push notifications for gatherings/communities and business postings
 that genuinely match a user's own declared interests, with real controls (on/off, frequency,
