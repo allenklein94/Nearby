@@ -950,25 +950,38 @@ export default function GatheringsScreen({ navigation, route }) {
               <Text style={styles.forYouHint}>{weatherBanner}</Text>
             ) : null
           }
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🎉</Text>
-              <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
-              {!forYouActive && (isSearchingGatherings ? searchQuery.trim() : interestFilter) && (
-                <TouchableOpacity
-                  style={styles.emptyStateCreateButton}
-                  onPress={() => navigation.navigate('CreateGathering', {
-                    quickStartCategory: interestFilter || undefined,
-                    quickStartTitle: isSearchingGatherings ? searchQuery.trim() : undefined,
-                  })}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Start a ${isSearchingGatherings ? searchQuery.trim() : interestFilter} gathering`}
-                >
-                  <Text style={styles.emptyStateCreateButtonText}>+ Start a {isSearchingGatherings ? searchQuery.trim() : interestFilter} Gathering</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          }
+          ListEmptyComponent={(() => {
+            // Thursday plan item 25: this button used to be gated on
+            // (isSearchingGatherings ? searchQuery.trim() : interestFilter)
+            // being truthy -- so the true first-visit empty state (no
+            // search, no filter) fell through to t('gatherings.emptyNearby'),
+            // whose own copy promises "Be the first to host something!"
+            // with no button anywhere to actually do that. Now renders
+            // whenever the empty state isn't the personalized "For You"
+            // case (where "check back later" is the honest framing, not
+            // "go create one"), with a real category/title prefill only
+            // when one genuinely exists.
+            const label = isSearchingGatherings ? searchQuery.trim() : (interestFilter || '');
+            return (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyEmoji}>🎉</Text>
+                <Text style={styles.emptyText}>{isSearchingGatherings ? `No gatherings match "${searchQuery.trim()}".` : (forYouActive ? "Nothing matching your history right now — check back later." : ((interestFilter || dateFilter !== 'anytime') ? 'No gatherings match these filters right now.' : t('gatherings.emptyNearby')))}</Text>
+                {!forYouActive && (
+                  <TouchableOpacity
+                    style={styles.emptyStateCreateButton}
+                    onPress={() => navigation.navigate('CreateGathering', {
+                      quickStartCategory: interestFilter || undefined,
+                      quickStartTitle: isSearchingGatherings ? searchQuery.trim() : undefined,
+                    })}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Start a${label ? ` ${label}` : ''} gathering`}
+                  >
+                    <Text style={styles.emptyStateCreateButtonText}>+ Start a{label ? ` ${label}` : ''} Gathering</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })()}
           renderItem={({ item, index }) => {
             const categoryStyle = categoryStyleFor(item.interest_tag);
             return (
@@ -1137,6 +1150,9 @@ export default function GatheringsScreen({ navigation, route }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>✅</Text>
               <Text style={styles.emptyText}>{t('gatherings.emptyAttending')}</Text>
+              <TouchableOpacity onPress={() => setTab('nearby')} accessibilityLabel="Browse nearby gatherings" accessibilityRole="button" style={styles.emptyStateCreateButton}>
+                <Text style={styles.emptyStateCreateButtonText}>Browse Nearby Gatherings</Text>
+              </TouchableOpacity>
             </View>
           }
           renderItem={({ item: row }) => {
@@ -1303,6 +1319,14 @@ export default function GatheringsScreen({ navigation, route }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>{t('gatherings.emptyHosting')}</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('CreateGathering')}
+                accessibilityLabel="Host a gathering"
+                accessibilityRole="button"
+                style={styles.emptyStateCreateButton}
+              >
+                <Text style={styles.emptyStateCreateButtonText}>+ Host a Gathering</Text>
+              </TouchableOpacity>
             </View>
           }
           renderItem={({ item: row }) => {

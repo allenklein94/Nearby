@@ -137,6 +137,14 @@ export default function CommunitiesScreen({ navigation }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🏘️</Text>
               <Text style={styles.emptyText}>No public communities to discover right now — start your own!</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('CreateCommunity')}
+                accessibilityLabel="Create a community"
+                accessibilityRole="button"
+                style={{ marginTop: spacing.md }}
+              >
+                <Text style={styles.emptyActionText}>+ Create a Community →</Text>
+              </TouchableOpacity>
             </View>
           )
         }
@@ -199,4 +207,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', paddingHorizontal: spacing.xl },
+  emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700' },
 });

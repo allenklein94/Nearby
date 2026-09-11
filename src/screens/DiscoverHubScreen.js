@@ -306,6 +306,22 @@ export default function DiscoverHubScreen({ navigation }) {
     setContextConnectionPhotos({});
   }
 
+  // Thursday plan item 25 ("empty states should become invitations"):
+  // "Enable location" used to be plain text with nothing to tap --
+  // loadCore() above only ever checked the existing permission
+  // (getForegroundPermissionsAsync), never prompted for it, so a user who'd
+  // said no once had no path back in from here. A real prompt, using the
+  // same expo-location already imported for that check.
+  async function enableLocation() {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null);
+      if (position) {
+        setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      }
+    }
+  }
+
   // Android hardware back clears the expanded context instead of leaving
   // the whole Discover tab -- without this, "back" from an expanded view
   // would feel like it skipped a level, since going in never pushed one.
@@ -1360,7 +1376,19 @@ export default function DiscoverHubScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.sectionHeader}>Gatherings</Text>
           {contextGatherings.length === 0 ? (
-            <Text style={styles.emptyText}>No {contextTopicLabel.toLowerCase()} gatherings at this time nearby.</Text>
+            <>
+              <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} gatherings at this time nearby.</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('CreateGathering', {
+                  quickStartTitle: contextTopicLabel,
+                  quickStartCategory: expandedContext.interestTag ?? expandedContext.categoryTags?.[0] ?? null,
+                })}
+                accessibilityLabel={`Create a ${contextTopicLabel} gathering`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.emptyActionText}>+ Create a {contextTopicLabel} Gathering →</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             contextGatherings.map(renderContextGatheringRow)
           )}
@@ -1375,11 +1403,21 @@ export default function DiscoverHubScreen({ navigation }) {
 
           <Text style={styles.sectionHeader}>Places</Text>
           {!userLocation ? (
-            <Text style={styles.emptyText}>Enable location to see places nearby.</Text>
+            <>
+              <Text style={styles.emptyTextTight}>Enable location to see places nearby.</Text>
+              <TouchableOpacity onPress={enableLocation} accessibilityLabel="Enable location" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Enable Location →</Text>
+              </TouchableOpacity>
+            </>
           ) : loadingContextPlaces ? (
             <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
           ) : contextPlaces.length === 0 ? (
-            <Text style={styles.emptyText}>No {contextTopicLabel.toLowerCase()} places found nearby.</Text>
+            <>
+              <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} places found nearby.</Text>
+              <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>← Browse Other Categories</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             contextPlaces.slice(0, PREVIEW_COUNT).map((p) => (
               <PlaceCard
@@ -1397,7 +1435,12 @@ export default function DiscoverHubScreen({ navigation }) {
 
           <Text style={styles.sectionHeader}>Perks</Text>
           {contextOffers.length === 0 ? (
-            <Text style={styles.emptyText}>No {contextTopicLabel.toLowerCase()} perks nearby right now.</Text>
+            <>
+              <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} perks nearby right now.</Text>
+              <TouchableOpacity onPress={closeContext} accessibilityLabel="Browse other categories" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>← Browse Other Categories</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             contextOffers.map((o) => {
               const isRedeemed = redeemedOfferIds.has(o.id);
@@ -1596,7 +1639,10 @@ export default function DiscoverHubScreen({ navigation }) {
           {showFlatGatheringsSection && isSearching && !loadingSearch && gatheringsToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
-              <Text style={styles.emptyText}>No gatherings match "{searchQuery.trim()}".</Text>
+              <Text style={styles.emptyTextTight}>No gatherings match "{searchQuery.trim()}".</Text>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Clear Search →</Text>
+              </TouchableOpacity>
             </>
           )}
 
@@ -1650,7 +1696,10 @@ export default function DiscoverHubScreen({ navigation }) {
           {showCommunities && isSearching && !loadingSearch && communitiesToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Communities</Text>
-              <Text style={styles.emptyText}>No communities match "{searchQuery.trim()}".</Text>
+              <Text style={styles.emptyTextTight}>No communities match "{searchQuery.trim()}".</Text>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Clear Search →</Text>
+              </TouchableOpacity>
             </>
           )}
 
@@ -1686,11 +1735,27 @@ export default function DiscoverHubScreen({ navigation }) {
             <>
               <Text style={styles.sectionHeader}>Places</Text>
               {!userLocation ? (
-                <Text style={styles.emptyText}>Enable location to discover places nearby.</Text>
+                <>
+                  <Text style={styles.emptyTextTight}>Enable location to discover places nearby.</Text>
+                  <TouchableOpacity onPress={enableLocation} accessibilityLabel="Enable location" accessibilityRole="button">
+                    <Text style={styles.emptyActionText}>Enable Location →</Text>
+                  </TouchableOpacity>
+                </>
               ) : loadingPlaces ? (
                 <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
               ) : placesToShow.length === 0 ? (
-                <Text style={styles.emptyText}>Nothing found nearby{typeFilter === 'places' ? ' in this category' : ''}.</Text>
+                <>
+                  <Text style={styles.emptyTextTight}>Nothing found nearby{typeFilter === 'places' ? ' in this category' : ''}.</Text>
+                  {isSearching ? (
+                    <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+                      <Text style={styles.emptyActionText}>Clear Search →</Text>
+                    </TouchableOpacity>
+                  ) : typeFilter === 'places' ? (
+                    <TouchableOpacity onPress={() => setTypeFilter('all')} accessibilityLabel="Browse everything" accessibilityRole="button">
+                      <Text style={styles.emptyActionText}>← Browse Everything</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </>
               ) : (
                 placesToShow.map((p) => (
                   <PlaceCard
@@ -1723,7 +1788,10 @@ export default function DiscoverHubScreen({ navigation }) {
           {showPerks && isSearching && !loadingSearch && offersToShow.length === 0 && (
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
-              <Text style={styles.emptyText}>No perks match "{searchQuery.trim()}".</Text>
+              <Text style={styles.emptyTextTight}>No perks match "{searchQuery.trim()}".</Text>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
+                <Text style={styles.emptyActionText}>Clear Search →</Text>
+              </TouchableOpacity>
             </>
           )}
 
@@ -2055,6 +2123,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
   seeAll: { color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: spacing.lg },
   emptyText: { color: colors.textTertiary, marginBottom: spacing.lg },
+  emptyTextTight: { color: colors.textTertiary, marginBottom: spacing.xs },
+  emptyActionText: { color: colors.primary, fontWeight: '700', marginBottom: spacing.lg },
   storyRing: { alignItems: 'center', width: 64 },
   storyAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#e1306c', marginBottom: 4, backgroundColor: colors.surfaceElevated },
   storyAvatarPlaceholder: {},
