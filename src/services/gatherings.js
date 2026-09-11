@@ -267,20 +267,33 @@ export async function searchGatherings(queryText, tier = 'wide') {
     .neq('host_id', userId)
     .gt('scheduled_at', new Date().toISOString());
 
-  // Two separate ILIKE queries merged client-side, rather than one .or(...)
-  // string built from user input — PostgREST's .or() filter syntax gives
-  // comma/parenthesis special meaning, and building that string out of raw
-  // search text is an unnecessary parsing/injection surface to introduce
-  // for what a plain .ilike() call already does safely per-column.
-  const [titleRes, descriptionRes] = await Promise.all([
+  // Three separate ILIKE queries merged client-side, rather than one
+  // .or(...) string built from user input — PostgREST's .or() filter
+  // syntax gives comma/parenthesis special meaning, and building that
+  // string out of raw search text is an unnecessary parsing/injection
+  // surface to introduce for what a plain .ilike() call already does
+  // safely per-column.
+  //
+  // Taxonomy audit reply (CLAUDE.md, "Categories are actually a major
+  // strategic issue," P1 item 15): this search used to only ever match
+  // title/description, completely blind to interest_tag -- a gathering
+  // tagged 'Yoga' titled "Morning Stretch Session" was invisible to
+  // someone searching "yoga." Adding a third ILIKE query on interest_tag
+  // itself (same real single-canonical-taxonomy field every other engine
+  // already reads, gatheringCategories.js's own CATEGORY_GROUPS) closes
+  // that gap with no new matching logic to maintain -- a real tag value
+  // is itself a real, searchable English phrase.
+  const [titleRes, descriptionRes, tagRes] = await Promise.all([
     baseQuery().ilike('title', `%${escaped}%`),
     baseQuery().ilike('description', `%${escaped}%`),
+    baseQuery().ilike('interest_tag', `%${escaped}%`),
   ]);
   if (titleRes.error) console.error('searchGatherings title error', titleRes.error);
   if (descriptionRes.error) console.error('searchGatherings description error', descriptionRes.error);
+  if (tagRes.error) console.error('searchGatherings interest_tag error', tagRes.error);
 
   const byId = new Map();
-  for (const row of [...(titleRes.data ?? []), ...(descriptionRes.data ?? [])]) byId.set(row.id, row);
+  for (const row of [...(titleRes.data ?? []), ...(descriptionRes.data ?? []), ...(tagRes.data ?? [])]) byId.set(row.id, row);
 
   const filtered = applyGatheringVisibilityFilters([...byId.values()], context);
   return enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, context.myInterests, tier);

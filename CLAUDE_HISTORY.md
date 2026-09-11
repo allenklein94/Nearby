@@ -1,4 +1,52 @@
-## Sep 11 2026 — Crossed Paths sighting push notification — FULLY BUILT, VERIFIED
+## Sep 11 2026 — Taxonomy-aware search: closed the search/interest_tag gap — FULLY BUILT, VERIFIED
+
+A session was conducting a fresh taxonomy audit in-conversation (its own numbered findings list —
+referenced in this fix's own code comments as "CLAUDE.md, 'Categories are actually a major
+strategic issue,' P1 item 15" — was never itself written to any file before a codespace restart
+cut the session off partway through committing this one item's fix). That list itself is not
+recoverable; what survives is this one concrete finding and its fix, resumed and finished this
+session by reading the uncommitted working tree left behind rather than re-deriving anything.
+
+**The gap**: every other real signal path in this codebase (gatherings, communities, business
+profiles, the intent resolver, matching, personalization, recommendations) was already verified to
+share the one canonical taxonomy (`CATEGORY_GROUPS`, `src/constants/gatheringCategories.js`) — but
+search never referenced it at all. `searchGatherings()`/`searchPublicCommunities()`
+(`src/services/gatherings.js`, `src/services/communities.js`) only ever ILIKE'd title/description
+(name/description for communities), completely blind to `interest_tag`. A gathering tagged `Yoga`
+but titled "Morning Stretch Session" was invisible to someone searching "yoga." The one other
+search path in the app, `search_offer_ids()` (a server-side SECURITY DEFINER RPC used by
+`src/services/brandOffers.js`'s `searchOffers()`), had the identical gap against
+`target_interest_tag`.
+
+**The fix**: both client-side search functions gained a third ILIKE query (on `interest_tag`),
+merged client-side into the existing by-id dedup map alongside the pre-existing title/description
+and name/description queries — same "two/three separate ILIKE queries merged client-side rather
+than one `.or(...)` built from raw user input" precedent each function's own header comment already
+documented (PostgREST's `.or()` filter syntax gives comma/parenthesis special meaning; building
+that string out of raw search text is an unnecessary parsing surface `.ilike()` per-column already
+avoids). `search_offer_ids()` got a `CREATE OR REPLACE` adding one `or o.target_interest_tag ilike
+'%' || query_text || '%'` clause — same signature, not a new overload, so this repo's own
+post-migration overload check doesn't apply (the argument list is genuinely unchanged, only the
+body).
+
+**Indexing**: new migration `20261003_taxonomy_aware_search.sql` adds trigram GIN indexes —
+`gatherings_interest_tag_trgm_idx`, `communities_interest_tag_trgm_idx`,
+`brand_offers_target_interest_tag_trgm_idx` — same real, already-disclosed precedent this repo
+established for this exact search shape (`20260809_indexed_text_search.sql`, trigram GIN indexes on
+gatherings.title/description and communities.name/description): a plain btree index can't serve
+`ILIKE '%term%'` (not a prefix match), and this repo's current production row counts are still
+small enough that the planner will correctly prefer a seq scan today regardless — same caveat that
+earlier migration's own header already disclosed — but the index needs to exist now so the query
+is genuinely indexed once the table grows.
+
+**Verified live** (resumed post-restart, re-confirmed rather than trusted): the migration had
+already been applied to production before the restart cut the session off. Confirmed by reading
+back the real deployed state directly via the Management API — `pg_get_functiondef` on
+`search_offer_ids` shows the `target_interest_tag` clause live in the deployed function body; all
+three trigram indexes exist (`pg_indexes` query); `pg_trgm` extension is enabled. Full Jest suite
+252/252 passing (no test coverage exists for these two client search functions or the RPC directly
+— none existed before this change either — verification here is the live-DB read-back above, plus
+the unchanged-signature/dedup-shape parity with each function's own pre-existing merge logic).
 
 Resumed a session that had paused at ~99% usage on 2026-09-10 with a dispatched research fork
 that never returned. Rather than trust the paused session's own untested assumptions, every one

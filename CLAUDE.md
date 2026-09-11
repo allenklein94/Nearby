@@ -40,6 +40,16 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Taxonomy-aware search — fully DONE (2026-09-11).** Closed a real gap: `searchGatherings()`/
+`searchPublicCommunities()`/`search_offer_ids()` used to only match title/description (name/
+description for communities), completely blind to `interest_tag`/`target_interest_tag` — a
+gathering tagged `Yoga` titled "Morning Stretch Session" was invisible to a search for "yoga."
+All three now also ILIKE the tag column, merged client-side same as the existing columns. New
+trigram GIN indexes (`20261003_taxonomy_aware_search.sql`) on all three tag columns, same
+precedent as `20260809_indexed_text_search.sql`. Verified live: function body, all 3 indexes, and
+`pg_trgm` extension all confirmed present in production via the Management API. Full Jest suite
+252/252 passing. Full detail: `CLAUDE_HISTORY.md`, search "Taxonomy-aware search."
+
 **"Things To Do needs a UX pass" — external UX critique item 14 — fully DONE (2026-09-11).**
 `DiscoverHubScreen.js`'s default "All" Things-to-Do landing view (the one item 14 was about) no
 longer shows a single quick-date-chip toggle silently reshaping one flat "Recommended For You"

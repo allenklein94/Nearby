@@ -131,15 +131,20 @@ export async function searchPublicCommunities(queryText) {
     .select(PUBLIC_COMMUNITY_SELECT)
     .eq('is_public', true);
 
-  const [nameRes, descriptionRes] = await Promise.all([
+  // Taxonomy audit reply (CLAUDE.md, "Categories are actually a major
+  // strategic issue," P1 item 15): same real gap and same fix as
+  // searchGatherings() -- this used to be blind to interest_tag entirely.
+  const [nameRes, descriptionRes, tagRes] = await Promise.all([
     baseQuery().ilike('name', `%${escaped}%`),
     baseQuery().ilike('description', `%${escaped}%`),
+    baseQuery().ilike('interest_tag', `%${escaped}%`),
   ]);
   if (nameRes.error) console.error('searchPublicCommunities name error', nameRes.error);
   if (descriptionRes.error) console.error('searchPublicCommunities description error', descriptionRes.error);
+  if (tagRes.error) console.error('searchPublicCommunities interest_tag error', tagRes.error);
 
   const byId = new Map();
-  for (const row of [...(nameRes.data ?? []), ...(descriptionRes.data ?? [])]) byId.set(row.id, row);
+  for (const row of [...(nameRes.data ?? []), ...(descriptionRes.data ?? []), ...(tagRes.data ?? [])]) byId.set(row.id, row);
   return [...byId.values()];
 }
 
