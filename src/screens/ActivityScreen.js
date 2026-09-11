@@ -568,6 +568,16 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
               <Text style={styles.emptyText}>
                 Nothing new yet — notices, crossed paths, and other activity will show up here.
               </Text>
+              {/* Thursday plan item 25: a real next action instead of a
+                  dead end while waiting for something to show up here. */}
+              <View style={styles.emptyActionsRow}>
+                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('FriendDiscovery')} accessibilityLabel="Discover people" accessibilityRole="button">
+                  <Text style={styles.emptyActionText}>Discover People →</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
           renderItem={({ item }) => {
@@ -707,6 +717,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl, width: '100%', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center', lineHeight: 20 },
+  emptyActionsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
+  emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   // Phase 8 section H (Activity): was a bordered/shadowed radius.lg box per
   // row -- read as a stack of separate cards. Flattened to a plain timeline
   // row (bottom divider only, no fill/border/shadow) per the locked H plan
