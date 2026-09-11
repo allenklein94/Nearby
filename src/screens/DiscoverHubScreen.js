@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSignedStoryUrl, getPublicStoriesGrouped, getGatheringStoriesGrouped, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
+import { getSignedStoryUrl, getGatheringStoriesGrouped, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
@@ -28,7 +28,6 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import { gatheringTimeBadge, gatheringTimeLine } from '../utils/gatheringTimeLabel';
 import { matchesDateFilter } from '../utils/gatheringDateFilter';
 import { lightenHex } from '../utils/colorUtils';
-import StoryViewerModal from '../components/StoryViewerModal';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
 import TabHeaderActions from '../components/TabHeaderActions';
@@ -254,7 +253,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
     AsyncStorage.setItem(LAST_PEOPLE_SUBMODE_KEY, key).catch(() => {});
   }
 
-  const [publicStories, setPublicStories] = useState([]);
   const [gatheringStories, setGatheringStories] = useState([]);
   // Real business-authored moments (CLAUDE.md items 11/13) -- the honest,
   // buildable version of "going live to promote a business": a real
@@ -266,14 +264,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // now"), so they read as one section, not two.
   const [businessMoments, setBusinessMoments] = useState([]);
   const [gatheringStoryViewer, setGatheringStoryViewer] = useState(null);
-  const [storyPhotoUrls, setStoryPhotoUrls] = useState({});
-  const [viewerTarget, setViewerTarget] = useState(null);
   // Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): the People tab's
   // Stories row is gone (its signal now lives on each candidate's own
   // avatar in DiscoveryScreen/SwipeableDiscoveryCards/
   // FriendDiscoverySwipeCards) -- this is its replacement "post a story"
   // entry point, moved to a small header icon per the user's own explicit
   // pick ("very small... don't make it another prominent card or CTA").
+  // Item 42 (CLAUDE.md, 2026-09-11): the parallel "Public Stories Near
+  // You" row that used to live here in Things-To-Do is gone too, for the
+  // same reason -- a story is a signal on a person, not its own separate
+  // list. Public-story posters who are also real Dating/Friends candidates
+  // still surface via that same avatar-ring mechanism; this screen no
+  // longer has its own second Stories surface.
   const [postingStory, setPostingStory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -436,7 +438,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   useFocusEffect(
     useCallback(() => {
-      loadPublicStories();
       loadGatheringStories();
       loadBusinessMoments();
       loadCore();
@@ -560,22 +561,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return () => clearTimeout(timer);
   }, [searchQuery, userLocation]);
 
-  async function loadPublicStories() {
-    try {
-      const grouped = await getPublicStoriesGrouped();
-      setPublicStories(grouped);
-      const urlEntries = await Promise.all(
-        grouped.map(async (g) => {
-          if (!g.photoUrl) return [g.userId, null];
-          const url = await getSignedPhotoUrl(g.photoUrl);
-          return [g.userId, url];
-        })
-      );
-      setStoryPhotoUrls(Object.fromEntries(urlEntries));
-    } catch (e) {
-      console.error('loadPublicStories failed', e);
-    }
-  }
   async function loadGatheringStories() {
     try {
       const grouped = await getGatheringStoriesGrouped();
@@ -1679,30 +1664,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </View>
           )}
 
-          {isAll && publicStories.length > 0 && (
-            <>
-              <Text style={styles.sectionHeader}>Public Stories Near You</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
-                {publicStories.map((group) => (
-                  <TouchableOpacity
-                    key={group.userId}
-                    style={styles.storyRing}
-                    onPress={() => setViewerTarget(group)}
-                    accessibilityLabel={`${group.displayName}'s public story`}
-                    accessibilityRole="button"
-                  >
-                    {storyPhotoUrls[group.userId] ? (
-                      <Image source={{ uri: storyPhotoUrls[group.userId] }} style={styles.storyAvatar} />
-                    ) : (
-                      <View style={[styles.storyAvatar, styles.storyAvatarPlaceholder]} />
-                    )}
-                    <Text style={styles.storyName} numberOfLines={1}>{group.displayName}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </>
-          )}
-
           {loadingCore && (
             <View style={{ marginVertical: spacing.lg }}>
               <ActivityIndicator color={colors.primary} />
@@ -2134,14 +2095,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
         </ScrollView>
       )}
 
-      <StoryViewerModal
-        visible={!!viewerTarget}
-        group={viewerTarget}
-        onClose={() => {
-          setViewerTarget(null);
-          loadPublicStories();
-        }}
-      />
       <Modal visible={!!gatheringStoryViewer} animationType="slide" onRequestClose={() => setGatheringStoryViewer(null)}>
         <SafeAreaView style={styles.container}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', margin: spacing.lg }}>
@@ -2394,8 +2347,4 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   intentSearchResultSubtitle: { ...typography.caption, color: colors.textTertiary },
   intentSearchResultChevron: { color: colors.textTertiary, fontSize: 18 },
   emptyActionText: { color: colors.primary, fontWeight: '700', marginBottom: spacing.lg },
-  storyRing: { alignItems: 'center', width: 64 },
-  storyAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#e1306c', marginBottom: 4, backgroundColor: colors.surfaceElevated },
-  storyAvatarPlaceholder: {},
-  storyName: { color: colors.textSecondary, fontSize: 11, textAlign: 'center' },
 });

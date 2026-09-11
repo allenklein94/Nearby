@@ -40,6 +40,35 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 42 ("Stories should reinforce People, not compete with it") — fully DONE (2026-09-11).**
+Direct user principle: a story is a signal on a person, not its own separate discovery
+hierarchy — "Allen 🔴 / Sarah 🔴 / Mike," never a "Stories" row sitting above a "People" row.
+Item 8 (2026-09-10) already built this correctly for the People tab itself (Dating/Friends
+swipe decks: the avatar carries the ring, tap the ring for the story, tap the card for the
+profile — no separate Stories row there). This session found and closed the one remaining
+violation: Discover's Things-To-Do "All" view still had its own separate "Public Stories Near
+You" horizontal strip (`DiscoverHubScreen.js`) — a second Stories hierarchy, unattached to any
+person list, browsing public-story posters generally (not just Dating/Friends candidates).
+Per direct user pick (via `AskUserQuestion`): removed the strip entirely rather than relocating
+that people-pool into the People tab (which the user explicitly rejected — folding it in would
+just recreate the same "competing feeds" problem one level down, "People" becoming a collection
+of different people-feeds). Public-story posters who are also real Dating/Friends candidates
+still surface via the existing avatar-ring mechanism there; standalone public-story browsing via
+the map (`getPublicStoriesOnMap`) is untouched — a genuinely different, non-hierarchy-competing
+surface (a map, not a list). Removed alongside the JSX: the section's own state
+(`publicStories`, `storyPhotoUrls`, `viewerTarget`), its loader (`loadPublicStories`), its
+`StoryViewerModal` usage/import in this file (the component itself stays — still used by
+`DiscoveryScreen.js`/`GatheringsScreen.js`/`FriendDiscoveryScreen.js`), its now-unused styles
+(`storyRing`/`storyAvatar`/`storyAvatarPlaceholder`/`storyName`), and the now-fully-dead
+`getPublicStoriesGrouped()` query function in `src/services/stories.js` (confirmed zero other
+callers anywhere in `src/` before deleting). User's own broader framing, worth carrying forward
+as a lens for future work: "don't create a separate surface for something that can be a signal
+on an existing object" (story → ring on person; friendship → relationship state on person;
+interest → attribute on person/activity; business availability → signal on business). Full Jest
+suite 280/280 passing; both touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note).
+
 **Item 41 ("make 'People' about people, not dating") — audited, one real concrete gap closed
 (2026-09-11).** User's ask: keep "People" as the parent label over Dating|Friends (explicitly likes
 this architecture because it leaves room for more social-relationship types later without
