@@ -1,3 +1,155 @@
+## Sep 11 2026 — "This matches you" recommendation push notifications — FULLY BUILT, VERIFIED
+
+External UX critique item 17, direct user request ("Yes — absolutely. But this needs to be done
+carefully"). The ask: real push notifications for gatherings/events/business postings that
+genuinely match a user's interests ("This matches you," not "here's another random event"), plus
+real controls so it doesn't become notification fatigue: on/off, frequency, categories, distance,
+time preferences.
+
+**Research before building anything.** Two placeholder toggles already existed for exactly this:
+`notify_things_to_do` and `notify_nearby_opportunities` (`profiles`, added
+`20260913_v5_notification_taxonomy.sql`) — that migration's own header comment explicitly called
+them "honest placeholders — no consumer-facing push exists for either yet," matching
+`notify_businesses_offers`'s own earlier precedent of adding a column ahead of its UI. Real,
+reusable signal dimensions with no invention needed: `profiles.interests text[]` (interest),
+gathering `interest_tag`/`scheduled_at` and business_availability `category`/`starts_at` (time),
+the existing `LOCAL_TIER_MAX_MILES`(1)/`WIDE_TIER_MAX_MILES`(15) distance tiers in `gatherings.js`
+(distance).
+
+**The real blocker found**: no persisted per-user location existed anywhere a background DB
+trigger could check distance against — precise location is only ever passed live from an open
+app. `sightings.approx_area` looked close but only exists *pairwise*, written when two users are
+simultaneously reporting presence for Crossed Paths, never as a general "my last location" field.
+Surfaced this to the user directly rather than guessing, since starting to persist any new
+per-user location field is a real privacy-shape decision, not an implementation detail.
+
+**Scoped via `AskUserQuestion`, 3 questions, all answered directly:**
+1. *Location source* — reuse the existing presence pipeline's coarse location (extend it to also
+   persist a "last known area") vs. live-location-only (foreground-only feature). User picked
+   reuse, with 4 explicit guardrails: coarse only (no new precision), timestamped, a real
+   freshness window (≤24h), never exposed to any client including the owning user's own — and a
+   soft preference for a dedicated table over adding the field to `profiles` "if easy," but not
+   at the cost of a big refactor.
+2. *Cadence* — real-time-capped vs. daily digest. User picked real-time-capped explicitly:
+   "immediate notifications are much more valuable... A daily digest would undermine that
+   immediacy," but insisted on a real per-day cap, deduplication, and freshness — a frequency
+   *setting* the user actually controls (Off / A few per day / More often / As they happen).
+3. *Time control* — Anytime/Evenings & Weekends vs. custom quiet hours. User picked the simple
+   2-option version explicitly, reusing existing date-bucket logic, declining to build a
+   quiet-hours picker "yet."
+
+**A real finding during that same research pass eliminated the location-persistence work
+entirely**: `presence_reports` (`user_id` primary key, `area`, `reported_at`) already existed,
+upserted by the `report-presence` Edge Function on every background presence report (the exact
+same pipeline Crossed Paths already uses) — confirmed by pulling the function's real deployed
+source via the Management API's function-body endpoint (an ESZIP bundle; `strings` on it surfaces
+the embedded plaintext Deno source directly). It already satisfied every one of the user's own
+four guardrails without any new code: same coarse rounded lat/lng already sent for Crossed Paths;
+already timestamped; RLS enabled with zero policies (confirmed live via `pg_policies` — nothing,
+including the owning user's own client, can read it); and a stricter-than-requested freshness
+concept was already half-built (`purge_expired_sightings()`, in the baseline migration, already
+deletes `presence_reports` rows older than 1 hour) — though a real check (`select * from
+cron.job`, live) showed that function is on no cron schedule at all and never actually runs, so
+this work's own triggers enforce the freshness bound directly themselves
+(`reported_at > now() - interval '1 hour'`) rather than depending on that dormant job. Net result:
+no new table, no Edge Function change, no new permission prompt, and the user's preferred
+"dedicated table, not `profiles`" shape came for free since it was already a separate table.
+
+**What shipped** (`20261004_recommended_for_you_push.sql`):
+- 8 new `profiles` columns: `notify_things_to_do_frequency`/`_categories`/`_max_distance_miles`/
+  `_time_pref`, and the same 4 for `notify_nearby_opportunities`. `categories`: null = every one
+  of the user's own declared interests qualifies (no narrowing) — same "null means unrestricted"
+  shape already used elsewhere in this schema (`brand_partners.categories`). `max_distance_miles`:
+  null = any distance; the two real non-null options reuse `gatherings.js`'s own existing
+  `LOCAL_TIER_MAX_MILES`/`WIDE_TIER_MAX_MILES` values rather than inventing a new distance concept
+  or a slider. `frequency`: `few_per_day`/`more_often`/`as_they_happen`, mapped to hard caps of
+  3/8/20 pushes per day inside the trigger (even `as_they_happen` gets a hard safety ceiling, per
+  the user's own explicit "a hard daily cap" requirement — never literally unlimited).
+- `recommendation_push_log` (new table, shared by both categories via a `source_type` column) —
+  one row per push actually sent, read back by the triggers to enforce the per-day cap in the
+  recipient's own timezone (same "today in user's own tz" convention this schema already uses
+  elsewhere, e.g. `ai_uses_today`). RLS enabled, zero policies — internal only, same shape as
+  `presence_reports`. A GIN index was added on `profiles.interests` (rewriting the match check as
+  `@>` instead of `x = any(...)` so it can actually use one) — same "index ahead of need, even
+  though today's row counts are small enough the planner will pick a seq scan regardless" precedent
+  this repo already established in `20261003_taxonomy_aware_search.sql`.
+- `notify_matching_things_to_do()`, an `AFTER INSERT` trigger on `gatherings`. Fires once per
+  newly created gathering (insert-only, so an edit never re-fires it — same dedup-for-free shape
+  as `20261002_crossed_paths_sighting_notification.sql`). Only ever considers
+  `visibility = 'everyone'` — a friends/invite-only/community-scoped gathering is not general
+  discoverable supply, so pushing it to an arbitrary interest-matched stranger would violate this
+  app's own no-stranger-discovery hard privacy rule; that rule is about *who* a real thing is
+  surfaced to, not whether the thing itself is real, and "everyone" visibility is the
+  already-established real boundary for that. For each candidate: real interest overlap, real
+  haversine distance against the presence table (both the row's own real coordinates and the
+  candidate's own real last-known area), a real evening/weekend check against the gathering's own
+  `scheduled_at` converted to the candidate's own `profiles.timezone`, the frequency cap, then a
+  push whose copy is built entirely from real fields (title, interest_tag, and a `when` phrase
+  computed from the real `scheduled_at` — "tonight"/"today"/"tomorrow"/"this weekend"/a weekday
+  name — never a fabricated urgency claim).
+- `notify_matching_business_availability()`, the same shape on `business_availability` INSERT.
+  Matches against the posting's own real `category` AND the business's own standing
+  `subcategory`/`categories` (`brand_partners`) — the same layered category+subcategory+
+  secondary-category match already established for ranking in
+  `intentResolverScoring.js`'s `subcategoryBonus()`/`secondaryCategoryBonus()`, just re-expressed
+  in SQL since a background trigger can't call client JS. Distance respects both the business's
+  own stated broadcast radius (`business_availability.radius_miles`) and the candidate's own
+  distance preference, whichever is smaller — both real, pre-existing constraints, not a new one.
+  Excludes the posting's own business-owner profile (`profiles.managed_partner_id`) from ever
+  being pushed about its own posting.
+- A genuine taxonomy-granularity trap caught during live verification, not shipped: an early test
+  insert used `brand_partners.category = 'Coffee'`, which failed its own CHECK constraint —
+  `brand_partners.category` is the *19-major-group* key (`food_drink`, etc.), a different,
+  coarser vocabulary than `brand_partners.subcategory`/`.categories` and
+  `business_availability.category` (all ~75-tag *leaf* level, the same vocabulary
+  `profiles.interests` uses). The trigger itself was already correct (it never reads
+  `brand_partners.category` for matching at all, only `subcategory`/`categories`) — only the test
+  fixture was wrong, and fixing it live during verification is exactly the kind of thing this
+  discipline is for.
+
+**Verified live, twice.** First: a single comprehensive disposable rolled-back transaction against
+production (the whole migration + 9 synthetic profiles/a synthetic business/two gatherings/one
+business posting, all under fixed literal UUIDs so assertions could run as plain `raise exception`
+checks inside one `do $$ ... $$` block) covering all 8 real cases in one pass — genuine match
+fires; wrong-interest, too-far (50mi against a 15mi preference), stale-presence (2hr old report),
+and private-visibility candidates are all correctly suppressed; the frequency cap holds a user at
+exactly 3 for `few_per_day` even after a 4th qualifying event; a business's own linked
+owner-profile is never pushed about its own posting — then rolled back, so nothing touched
+production. Only after that passed cleanly (empty response, no exception) was the migration
+applied for real. Second: re-confirmed live afterward via the Management API — both triggers
+present (`pg_trigger`), all 8 new `profiles` columns present with correct defaults,
+`recommendation_push_log` exists and is empty (as expected — no real gathering/posting has been
+created since).
+
+**Client**: `RecommendationPreferencesScreen.js` (new, mode-driven — `things_to_do` |
+`nearby_opportunities` — mirroring `QuickFilterCustomizeScreen.js`'s own precedent so two near-
+identical screens weren't built) reached via a new "⚙️ Frequency, categories, distance & time"
+link that appears under each of the two existing Settings toggle rows only while that toggle is
+on. Categories deliberately shows only the user's own already-declared `profiles.interests` as
+togglable chips, not the full ~75-tag catalog — a push can only ever fire for something the
+trigger already requires to be a genuine interest of theirs, so offering the full catalog would
+let someone "select" a category that could never actually produce a push, a control that looks
+real but isn't. `notifications.js` routes `recommended_gathering` into the same real
+`GatheringDetail` destination every other gathering-shaped push already uses;
+`recommended_business_availability` lands on the Discover tab (no per-posting consumer detail
+screen exists anywhere in this app yet, so this is an honest "browse," not a fabricated deep-link
+to a screen action that doesn't exist — same shape this file's own `group_intent_signal` case
+already uses for a similar gap).
+
+**Deliberately NOT built in this pass, disclosed rather than silently skipped**: the "3 people
+nearby are planning X" social-proof copy variant from the user's own illustrative example. A
+brand-new gathering has zero attendees at the exact moment this migration's own `AFTER INSERT`
+trigger fires, so that variant needs its own separate trigger on `gathering_interest` INSERT
+checking a real attendee-count threshold crossed — mirroring `notify_group_intent_threshold()`'s
+own existing threshold-crossing shape (business_requests, `20260815_group_intent_and_demand_
+notifications.sql`) — a real, distinct fast-follow, not something this migration's own trigger
+shape can produce.
+
+Full Jest suite 252/252 passing; a direct `@babel/core` + `babel-preset-expo` transform check
+passed clean on all four touched/new client files (`RecommendationPreferencesScreen.js`,
+`SettingsScreen.js`, `RootNavigator.js`, `notifications.js`). Not exercised in a running app (no
+simulator/device tooling this session, standing note).
+
 ## Sep 11 2026 — Taxonomy-aware search: closed the search/interest_tag gap — FULLY BUILT, VERIFIED
 
 A session was conducting a fresh taxonomy audit in-conversation (its own numbered findings list —

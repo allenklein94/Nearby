@@ -99,6 +99,7 @@ import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScr
 import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
 import QuickFilterCustomizeScreen from '../screens/QuickFilterCustomizeScreen';
+import RecommendationPreferencesScreen from '../screens/RecommendationPreferencesScreen';
 import MusicModeScreen from '../screens/MusicModeScreen';
 
 const Stack = createNativeStackNavigator();
@@ -492,6 +493,7 @@ export default function RootNavigator() {
               })}
             />
             <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? 'Customize Friends Filters' : 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            <Stack.Screen name="RecommendationPreferences" component={RecommendationPreferencesScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'nearby_opportunities' ? 'Nearby Opportunities' : 'Things To Do', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: 'Edit Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />

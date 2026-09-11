@@ -584,6 +584,16 @@ export default function SettingsScreen({ navigation, route }) {
               accessibilityLabel="Notify me about nearby things to do"
             />
           </View>
+          {notifyThingsToDo && (
+            <TouchableOpacity
+              style={styles.customizeLink}
+              onPress={() => navigation.navigate('RecommendationPreferences', { mode: 'things_to_do' })}
+              accessibilityLabel="Customize Things To Do notifications"
+              accessibilityRole="button"
+            >
+              <Text style={styles.customizeLinkText}>⚙️ Frequency, categories, distance & time</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>🤝 Friends</Text>
@@ -624,6 +634,16 @@ export default function SettingsScreen({ navigation, route }) {
               accessibilityLabel="Notify me about nearby opportunities"
             />
           </View>
+          {notifyNearbyOpportunities && (
+            <TouchableOpacity
+              style={styles.customizeLink}
+              onPress={() => navigation.navigate('RecommendationPreferences', { mode: 'nearby_opportunities' })}
+              accessibilityLabel="Customize Nearby Opportunities notifications"
+              accessibilityRole="button"
+            >
+              <Text style={styles.customizeLinkText}>⚙️ Frequency, categories, distance & time</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <Text style={styles.settingLabel}>👋 Crossed Paths</Text>
@@ -963,6 +983,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm },
   settingLabel: { ...typography.bodyBold, color: colors.textPrimary, fontSize: 15 },
+  customizeLink: { paddingBottom: spacing.sm },
+  customizeLinkText: { ...typography.caption, color: colors.primary, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.border },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.sm, padding: spacing.md, fontSize: 15 },

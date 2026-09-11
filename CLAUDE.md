@@ -40,6 +40,48 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"This matches you" recommendation push notifications, external UX critique item 17 — fully
+DONE (2026-09-11).** Real push notifications for gatherings/communities and business postings
+that genuinely match a user's own declared interests, with real controls (on/off, frequency,
+categories, distance, time preferences) — not the two dangling "honest placeholder" toggles
+(`notify_things_to_do`/`notify_nearby_opportunities`, added 2026-09-13 with zero real trigger)
+they were before. Scoped down to 3 concrete architecture decisions via `AskUserQuestion` before
+building (all confirmed by direct user answer): (1) reuse the existing background-presence
+pipeline's coarse last-known location rather than add any new location capability — and a real
+finding *during* that research made this free: `presence_reports` (user_id pk, area, reported_at,
+upserted by `report-presence`) already existed as exactly that table, RLS-enabled with zero
+policies (confirmed live), so no new table/Edge Function/permission was needed at all; (2)
+real-time pushes, capped per day, not a daily digest; (3) a simple Anytime/Evenings & Weekends
+time control, not a custom quiet-hours picker. Shipped: `20261004_recommended_for_you_push.sql`
+— 8 new profile preference columns (frequency/categories/max-distance/time-pref × 2 categories),
+a new `recommendation_push_log` table (frequency-cap tracking, RLS enabled/zero policies,
+internal only), and two real `AFTER INSERT` triggers (`notify_matching_things_to_do()` on
+`gatherings`, `notify_matching_business_availability()` on `business_availability`) matching on
+real interest overlap (`profiles.interests`), real distance (haversine against the presence
+table, respecting both the user's own preference and — for business postings — the posting's own
+stated `radius_miles`), and real time-of-day/day-of-week checks against the row's own
+`scheduled_at`/`starts_at`. Only ever considers `visibility = 'everyone'` gatherings (a
+friends/invite-only/community-scoped gathering is not general discoverable supply — pushing it to
+an arbitrary interest-matched stranger would violate this app's own no-stranger-discovery rule).
+Verified live via a comprehensive disposable rolled-back transaction against production covering
+all 8 real cases (genuine match fires; wrong interest/too far/stale presence/private-visibility
+all correctly suppressed; the frequency cap holds a user at exactly 3 for `few_per_day`; a
+business's own linked profile is never pushed about its own posting) before applying for real —
+confirmed live afterward (triggers, all 8 new columns, `recommendation_push_log` all present).
+Client: `RecommendationPreferencesScreen.js` (new, mode-driven, mirrors
+`QuickFilterCustomizeScreen.js`'s own precedent) reached via a new "⚙️ Frequency, categories,
+distance & time" link under each of the two existing Settings toggles; `notifications.js` routes
+both new push types (`recommended_gathering` → `GatheringDetail`; `recommended_business_availability`
+→ the Discover tab, since no per-posting consumer detail screen exists yet). Deliberately NOT
+built, disclosed rather than silently skipped: the "3 people nearby are planning X" social-proof
+copy variant from the user's own example — a brand-new gathering has zero attendees at the moment
+its own INSERT trigger fires, so that needs its own separate trigger on `gathering_interest`
+INSERT checking a real attendee-count threshold crossed (mirroring the existing
+`notify_group_intent_threshold()` shape) — a real, distinct fast-follow. Full Jest suite 252/252
+passing; a direct `@babel/core` + `babel-preset-expo` transform check passed clean on all four
+touched/new client files. Not exercised in a running app (no simulator/device tooling this
+session, standing note).
+
 **"Build Something Bigger" section, external UX critique item 16 — fully DONE (2026-09-11).**
 `CreateHubScreen.js`'s "Want to build something bigger?" section used to promise more than its
 one real button ("Create a Community") delivered. Per direct user pick (via `AskUserQuestion`,

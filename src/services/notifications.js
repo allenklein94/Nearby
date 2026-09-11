@@ -127,11 +127,23 @@ export function routeNotificationTap(data) {
     case 'gathering_waitlisted':
     case 'gathering_updated':
     case 'recurring_gathering':
+    // "This matches you" recommendation push (20261004_recommended_for_you_push.sql,
+    // notify_matching_things_to_do()) -- same real destination as any other
+    // gathering-shaped push, since it's a genuine gathering row.
+    case 'recommended_gathering':
       if (data.gathering_id) {
         navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id });
       } else {
         navigationRef.navigate('Gatherings');
       }
+      break;
+    // Same recommendation push, business-availability-sourced
+    // (notify_matching_business_availability()). There is no dedicated
+    // per-posting consumer detail screen in this app yet -- lands on the
+    // Things-To-Do hub to browse, same honest "no exact deep-link" shape
+    // this file already uses for group_intent_signal below.
+    case 'recommended_business_availability':
+      navigationRef.navigate('MainTabs', { screen: 'Discover' });
       break;
     case 'gathering_cancelled':
       // Deliberately no gathering_id in this payload — the row is already
