@@ -40,6 +40,24 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 43 ("consider eliminating unnecessary section headers") — fully DONE (2026-09-11).**
+Direct continuation of the "Things To Do feels busy" observation: a title on its own line,
+content, then a separate "See all in X →" link on its own line below the content adds a full
+extra row of visual weight per section, repeated across a whole screen it reads as a dashboard.
+Fixed the concrete instance across Discover's Things-To-Do view (item 14's Today/This Weekend
+sections, plus the Gatherings/Communities/Places/Perks browse-all sections) by merging each
+section's title and its own "See all" onto one row (`sectionHeaderRow`/`sectionHeaderRowLabel`/
+`seeAllInline`, new shared styles in `DiscoverHubScreen.js`) — "🌅 Today &nbsp; See all →" /
+[content] / "🌴 This Weekend &nbsp; See all →" / [content], matching the user's own mock exactly.
+Shortened each link's visible text to the generic "See all →" (the section's own header already
+names what it's a see-all *of*; kept the more specific string in each `accessibilityLabel` for
+screen readers). Sections with no "See all" at all (Happening Now, Categories, Recommended For
+You, Happening Nearby) were already single-line headers with no description/button underneath —
+untouched, already the lean shape the mock asks for. Removed the now-fully-dead `seeAll` style
+(every call site converted). Full Jest suite 280/280 passing; `DiscoverHubScreen.js` transform-
+checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no
+simulator/device tooling this session, standing note).
+
 **Item 42 ("Stories should reinforce People, not compete with it") — fully DONE (2026-09-11).**
 Direct user principle: a story is a signal on a person, not its own separate discovery
 hierarchy — "Allen 🔴 / Sarah 🔴 / Mike," never a "Stories" row sitting above a "People" row.

@@ -1693,25 +1693,29 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {todayGatherings.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>🌅 Today</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>🌅 Today</Text>
+                {todayHasMore && (
+                  <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel="See all happening today" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               {todayGatherings.map(renderGatheringTile)}
-              {todayHasMore && (
-                <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'today' })} accessibilityLabel="See all happening today" accessibilityRole="button">
-                  <Text style={styles.seeAll}>See all happening today →</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
           {weekendGatherings.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>🌴 This Weekend</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>🌴 This Weekend</Text>
+                {weekendHasMore && (
+                  <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'weekend' })} accessibilityLabel="See all this weekend" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               {weekendGatherings.map(renderGatheringTile)}
-              {weekendHasMore && (
-                <TouchableOpacity onPress={() => navigation.navigate('Gatherings', { initialDateFilter: 'weekend' })} accessibilityLabel="See all this weekend" accessibilityRole="button">
-                  <Text style={styles.seeAll}>See all this weekend →</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
@@ -1828,7 +1832,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {showFlatGatheringsSection && !(isSearching && loadingSearch) && gatheringsToShow.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Gatherings</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>Gatherings</Text>
+                {isAll && (
+                  <TouchableOpacity onPress={() => navigation.navigate('Gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               {gatheringsToShow.map((g) => (
                 <TouchableOpacity
                   key={g.id}
@@ -1858,11 +1869,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
               ))}
-              {isAll && (
-                <TouchableOpacity onPress={() => navigation.navigate('Gatherings')} accessibilityLabel="See all gatherings" accessibilityRole="button">
-                  <Text style={styles.seeAll}>See all in Gatherings →</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
@@ -1886,7 +1892,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {showCommunities && !(isSearching && loadingSearch) && communitiesToShow.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Communities</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>Communities</Text>
+                {isAll && (
+                  <TouchableOpacity onPress={() => navigation.navigate('Communities')} accessibilityLabel="See all communities" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               {communitiesToShow.map((c) => (
                 <TouchableOpacity
                   key={c.id}
@@ -1904,17 +1917,19 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   <Text style={styles.cardChevron}>›</Text>
                 </TouchableOpacity>
               ))}
-              {isAll && (
-                <TouchableOpacity onPress={() => navigation.navigate('Communities')} accessibilityLabel="See all communities" accessibilityRole="button">
-                  <Text style={styles.seeAll}>See all in Communities →</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
           {showPlaces && (
             <>
-              <Text style={styles.sectionHeader}>Places</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>Places</Text>
+                {isAll && places.length > 0 && (
+                  <TouchableOpacity onPress={() => navigation.navigate('Places')} accessibilityLabel="See all places" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               {!userLocation ? (
                 <>
                   <Text style={styles.emptyTextTight}>Enable location to discover places nearby.</Text>
@@ -1976,11 +1991,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   />
                 ))
               )}
-              {isAll && places.length > 0 && (
-                <TouchableOpacity onPress={() => navigation.navigate('Places')} accessibilityLabel="See all places" accessibilityRole="button">
-                  <Text style={styles.seeAll}>See all in Places →</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
@@ -2004,7 +2014,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
           {showPerks && !(isSearching && loadingSearch) && offersToShow.length > 0 && (
             <>
-              <Text style={styles.sectionHeader}>Perks</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionHeaderRowLabel}>Perks</Text>
+                {isAll && (
+                  <TouchableOpacity onPress={() => navigation.navigate('BrandOffers')} accessibilityLabel="See all perks" accessibilityRole="button">
+                    <Text style={styles.seeAllInline}>See all →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               {offersToShow.map((o) => {
                 const isRedeemed = redeemedOfferIds.has(o.id);
                 return (
@@ -2030,11 +2047,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   />
                 );
               })}
-              {isAll && (
-                <TouchableOpacity onPress={() => navigation.navigate('BrandOffers')} accessibilityLabel="See all perks" accessibilityRole="button">
-                  <Text style={styles.seeAll}>See all in Perks →</Text>
-                </TouchableOpacity>
-              )}
             </>
           )}
 
@@ -2317,13 +2329,19 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   connectionAvatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.md },
   connectionAvatarPlaceholder: { backgroundColor: colors.surfaceElevated },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
+  // Item 43 (CLAUDE.md, "Things To Do feels busy"): a title + its own
+  // "See all" both live on one row instead of title-content-See-all
+  // stacking as three separate lines -- one row of visual weight per
+  // section instead of two.
+  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.sm },
+  sectionHeaderRowLabel: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5 },
   // Same "one cluster header, several lighter sub-labels underneath"
   // recipe HomeScreen.js's own "✨ Because You Like…" cluster already
   // established -- reused verbatim (Aug 30 2026 second UX critique fix)
   // so Recommended/Trending read as one grouped signal, not two
   // competing top-level sections.
   subLabel: { color: colors.textSecondary, fontSize: 13, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.xs },
-  seeAll: { color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: spacing.lg },
+  seeAllInline: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   emptyText: { color: colors.textTertiary, marginBottom: spacing.lg },
   emptyTextTight: { color: colors.textTertiary, marginBottom: spacing.xs },
   loadingCaption: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },
