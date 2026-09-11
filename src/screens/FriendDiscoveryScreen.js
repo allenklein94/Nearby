@@ -304,6 +304,9 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
         <Header />
         <View style={styles.centered}>
           <ActivityIndicator color={colors.primary} />
+          <Text style={styles.loadingCaption}>
+            {discoveryMode === 'crossedPaths' ? 'Finding people you’ve crossed paths with…' : 'Finding people who match…'}
+          </Text>
         </View>
       </Container>
     );
@@ -559,6 +562,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingCaption: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
   // Same values as DiscoveryScreen.js's own header/headerRow/headerTitle/
   // headerSubtitle -- reused verbatim, not approximated, so the two
   // screens' chrome is genuinely identical, not just similar.

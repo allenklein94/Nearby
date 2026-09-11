@@ -936,7 +936,10 @@ export default function GatheringsScreen({ navigation, route }) {
           />
         </View>
       ) : tab === 'nearby' && isSearchingGatherings && loadingGatheringSearch ? (
-        <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
+        <View style={{ marginVertical: spacing.lg }}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.emptyText}>Searching gatherings…</Text>
+        </View>
       ) : tab === 'nearby' && (
         <FlatList
           data={filteredNearby}

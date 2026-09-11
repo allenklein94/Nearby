@@ -567,7 +567,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <View>
                 <Text style={styles.subLabel}>Popular Nearby</Text>
                 {loadingPlaces ? (
-                  <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.sm }} />
+                  <View style={{ marginTop: spacing.sm }}>
+                    <ActivityIndicator color={colors.primary} />
+                    <Text style={styles.helperText}>Finding places nearby…</Text>
+                  </View>
                 ) : (popularPlaces ?? []).length === 0 ? (
                   <Text style={styles.helperText}>No nearby places found — try "Near Me" instead, or drop a pin below.</Text>
                 ) : (

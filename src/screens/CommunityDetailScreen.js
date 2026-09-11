@@ -340,6 +340,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xxl }} />
+        <Text style={{ ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>Loading community…</Text>
       </SafeAreaView>
     );
   }

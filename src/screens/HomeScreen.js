@@ -1345,9 +1345,17 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           )}
 
+          {intentThinking && (
+            <View style={styles.intentResults}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.intentLoadingText}>Finding things nearby…</Text>
+            </View>
+          )}
+
           {surpriseLoading && (
             <View style={styles.intentResults}>
               <ActivityIndicator color={colors.primary} />
+              <Text style={styles.intentLoadingText}>Building your options…</Text>
             </View>
           )}
 
@@ -2419,6 +2427,7 @@ const getStyles = (colors) => StyleSheet.create({
   intentButtonDisabled: { opacity: 0.5 },
   intentButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   intentResults: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border },
+  intentLoadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
   intentUnclearNote: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm, lineHeight: 18 },
   intentResultsHeading: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.sm },
   intentGroupLabel: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginBottom: 4 },

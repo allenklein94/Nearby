@@ -431,6 +431,10 @@ export default function DateProposalScreen({ navigation, route }) {
                     )}
                   </TouchableOpacity>
 
+                  {searchingNearby && (
+                    <Text style={styles.nearbyEmptyText}>Finding availability…</Text>
+                  )}
+
                   {nearbyResults && nearbyResults.length === 0 && (
                     <Text style={styles.nearbyEmptyText}>
                       No real nearby options right now — you can still send a text invite below.

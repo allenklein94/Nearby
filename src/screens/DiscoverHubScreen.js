@@ -1410,7 +1410,10 @@ export default function DiscoverHubScreen({ navigation }) {
               </TouchableOpacity>
             </>
           ) : loadingContextPlaces ? (
-            <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+            <View style={{ marginVertical: spacing.md }}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.loadingCaption}>Finding places nearby…</Text>
+            </View>
           ) : contextPlaces.length === 0 ? (
             <>
               <Text style={styles.emptyTextTight}>No {contextTopicLabel.toLowerCase()} places found nearby.</Text>
@@ -1545,7 +1548,10 @@ export default function DiscoverHubScreen({ navigation }) {
           )}
 
           {loadingCore && (
-            <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
+            <View style={{ marginVertical: spacing.lg }}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.loadingCaption}>Finding things nearby…</Text>
+            </View>
           )}
 
           {/* P1 UX critique reply item 14 ("Things To Do needs a UX pass",
@@ -1633,6 +1639,7 @@ export default function DiscoverHubScreen({ navigation }) {
             <>
               <Text style={styles.sectionHeader}>Gatherings</Text>
               <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+              <Text style={styles.loadingCaption}>Searching gatherings…</Text>
             </>
           )}
 
@@ -1690,6 +1697,7 @@ export default function DiscoverHubScreen({ navigation }) {
             <>
               <Text style={styles.sectionHeader}>Communities</Text>
               <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+              <Text style={styles.loadingCaption}>Searching communities…</Text>
             </>
           )}
 
@@ -1742,7 +1750,10 @@ export default function DiscoverHubScreen({ navigation }) {
                   </TouchableOpacity>
                 </>
               ) : loadingPlaces ? (
-                <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+                <View style={{ marginVertical: spacing.md }}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={styles.loadingCaption}>Finding places nearby…</Text>
+                </View>
               ) : placesToShow.length === 0 ? (
                 <>
                   <Text style={styles.emptyTextTight}>Nothing found nearby{typeFilter === 'places' ? ' in this category' : ''}.</Text>
@@ -1804,6 +1815,7 @@ export default function DiscoverHubScreen({ navigation }) {
             <>
               <Text style={styles.sectionHeader}>Perks</Text>
               <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.md }} />
+              <Text style={styles.loadingCaption}>Searching perks…</Text>
             </>
           )}
 
@@ -2146,6 +2158,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   seeAll: { color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: spacing.lg },
   emptyText: { color: colors.textTertiary, marginBottom: spacing.lg },
   emptyTextTight: { color: colors.textTertiary, marginBottom: spacing.xs },
+  loadingCaption: { ...typography.caption, color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xs },
   emptyActionText: { color: colors.primary, fontWeight: '700', marginBottom: spacing.lg },
   storyRing: { alignItems: 'center', width: 64 },
   storyAvatar: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: '#e1306c', marginBottom: 4, backgroundColor: colors.surfaceElevated },

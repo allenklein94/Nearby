@@ -107,7 +107,10 @@ export default function PlacesScreen({ navigation }) {
       />
 
       {loading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.xl }} />
+        <View style={{ marginTop: spacing.xl }}>
+          <ActivityIndicator color={colors.primary} />
+          <Text style={styles.emptyText}>Finding places nearby…</Text>
+        </View>
       ) : locationDenied ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📍</Text>

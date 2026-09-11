@@ -228,6 +228,7 @@ export default function CreateHubScreen({ navigation }) {
                   {thinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.assistantButtonText}>→</Text>}
                 </TouchableOpacity>
               </View>
+              {thinking && <Text style={styles.somethingElseSubtext}>Building your options…</Text>}
             </View>
           ) : (
             <>
