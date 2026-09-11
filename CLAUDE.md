@@ -40,6 +40,47 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Thursday plan items 30 & 31 (Home/Discover/Create clarity; Profile is about ME) — audited,
+mostly already-DONE, one real concrete gap closed (2026-09-11).** Both items turned out to be
+close restatements of architecture already built and iterated on across many prior sessions —
+verified by reading the actual current code, not assumed from memory.
+
+**Item 30** (Home = "what do you want to do", Discover = "here's what's available", Create =
+"here's how you make something happen"): already true in both navigation and content. Only 4 tabs
+exist (`RootNavigator.js`: Home/Discover/Create/Activity), and each screen's own literal framing
+text already independently arrived at almost the user's exact wording — Home's ask box literally
+says "What do you want to do?" (Phase 1a of the Intent Layer plan); Discover's subtitle reads
+"What's happening nearby"/"Who's around you" per mode; Create's reads "What do you want to
+create?". Home's own sections (Quick Picks, Nearby Right Now, Happening Near You, Because You
+Like…) are all small, personalized/algorithmic picks, never an exhaustive raw browse — that stays
+Discover's job, a real, checked distinction. The one place Discover links to Create
+(`DiscoverHubScreen.js`'s "+ Create a {topic} Gathering →" inside an empty Gatherings section) is
+the correct escape-hatch relationship the user's own model implies (Discover shows what's real;
+when nothing's real, it hands off to Create rather than fabricating content), not a boundary
+violation. No code changes made — nothing to fix.
+
+**Item 31** (Profile about ME: identity → what can I do with them; own Profile emphasizes
+identity/interests/plans/communities/activity, Settings separate): `ViewProfileScreen.js` already
+matches the "who are they, then what can I do" shape closely — photos/name lead, then real
+primary actions (Message only when a real `matches` row exists; Plan Something only once friends
+are `accepted`; Friends ✓ / Request Sent / Add Friend / Accept-Decline reflecting real
+`friendships` state), with Report/Block tucked into a header "⋯" menu rather than competing for
+attention, and no discovery-surface bleed (no "people like this" feed at the bottom). The one real
+state overlap (Add Friend button shown alongside Message, for a dating match who isn't yet a
+formal friend) is two independently true facts, not a bug — confirmed via the code's own
+`on_friendship_accepted_create_match` note that friend-acceptance always creates a real match too,
+so pure "connected but not `matches`-linked" friends can't actually happen. Own `ProfileScreen.js`
+already led with a real identity snapshot (Aug 23 2026 IA pass) and already had Plans → Connections
+(Communities/Friends) → Story (Timeline/Memory Vault/Activity/Occasions) sections in almost the
+user's own order, with Settings reached only via a separate gear icon. The one real, concrete gap:
+**interests had no read-only summary near the top** the way Plans/Connections already did — only
+the toggleable chooser far down inside "Edit Your Profile." Added a "My Interests" read-only
+section right after the identity snapshot (before "Your Plans"), reusing the exact chip treatment
+`ViewProfileScreen.js` already uses to show a *real other person's* interests — the editable
+chooser is untouched, still the actual editing tool. Full Jest suite 280/280 passing;
+`ProfileScreen.js` transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+in a running app (no simulator/device tooling this session, standing note).
+
 **Thursday plan item 29 (notification categories — "an intelligent layer, not a firehose") —
 fully DONE (2026-09-11).** Picked up after a codespace restart mid-build — an untracked
 `.wip_notification_categories/` scratch directory (originals + partially-fixed copies of every
