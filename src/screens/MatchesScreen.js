@@ -247,6 +247,19 @@ export default function MatchesScreen({ navigation }) {
     }
   }
 
+  // "Thursday plan" item 21 ("Plan should exist everywhere it logically
+  // can"): the match row already has its own "🤝 Plan" entry point straight
+  // into the Together menu (line ~404 above) -- this is the same
+  // destination, just reachable from the celebration moment itself instead
+  // of requiring the user to first dismiss it and find the row again.
+  function handlePlanTogether() {
+    const match = celebrationMatch;
+    setCelebrationMatch(null);
+    if (match) {
+      navigation.navigate('Chat', { matchId: match.id, openTogetherMenu: true });
+    }
+  }
+
   function showCompatibilityReport(match) {
     const other = otherPersonFor(match);
     const report = generateCompatibilityReport(myProfile, other);
@@ -442,6 +455,7 @@ export default function MatchesScreen({ navigation }) {
         wasWave={celebrationWasWave}
         isFirstMatch={celebrationIsFirst}
         onSendMessage={handleSendMessage}
+        onPlanTogether={handlePlanTogether}
         onDismiss={() => setCelebrationMatch(null)}
       />
 

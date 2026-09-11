@@ -23,7 +23,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // per-candidate reason (shared gathering attendance when it exists,
 // proximity sighting otherwise) -- never both, never a guess.
 export default function SwipeableDiscoveryCards({
-  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths',
+  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths', onShowCompatibility,
 }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
@@ -166,9 +166,20 @@ export default function SwipeableDiscoveryCards({
             <Text style={styles.name}>{item.profiles?.display_name}</Text>
             {item.profiles?.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
             {item.compatibilityScore !== null && (
-              <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}>
-                <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>{item.compatibilityScore}%</Text>
-              </View>
+              onShowCompatibility ? (
+                <TouchableOpacity
+                  style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}
+                  onPress={() => onShowCompatibility(item)}
+                  accessibilityLabel={`${item.compatibilityScore} percent compatible, view details`}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>{item.compatibilityScore}% · Why?</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatibilityScore) }]}>
+                  <Text style={[styles.compatText, { color: compatibilityColor(item.compatibilityScore) }]}>{item.compatibilityScore}%</Text>
+                </View>
+              )
             )}
           </View>
           <Text style={styles.proximityText}>
@@ -179,6 +190,12 @@ export default function SwipeableDiscoveryCards({
                 : `📍 Within about 35 feet${crossedPathsTime ? ` · ${crossedPathsTime}` : ''}`}
           </Text>
           <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
+          {item.sharedInterests?.length > 0 && (
+            <Text style={styles.sharedText}>
+              ✨ {t('discovery.youBothLike')} {item.sharedInterests.slice(0, 3).join(', ')}
+              {item.sharedInterests.length > 3 ? ` +${item.sharedInterests.length - 3} ${t('discovery.moreCount')}` : ''}
+            </Text>
+          )}
         </TouchableOpacity>
       </Animated.View>
 
@@ -255,6 +272,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   compatText: { fontSize: 11, fontWeight: '700' },
   proximityText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.sm },
   bio: { ...typography.body, color: colors.textSecondary },
+  sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   buttonRow: {
     position: 'absolute', bottom: spacing.xl, flexDirection: 'row', gap: spacing.lg, alignItems: 'center',
   },

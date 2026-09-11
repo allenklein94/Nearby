@@ -567,6 +567,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             compatibilityColor={compatibilityColor}
             onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
             discoveryMode={discoveryMode}
+            onShowCompatibility={showCompatibilityReport}
           />
         )
       ) : (

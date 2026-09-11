@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch, onSendMessage, onDismiss }) {
+export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoUrl, theirName, gatheringTitle, wasWave, isFirstMatch, onSendMessage, onPlanTogether, onDismiss }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
@@ -57,6 +57,11 @@ export default function MatchCelebrationModal({ visible, myPhotoUrl, theirPhotoU
           <TouchableOpacity style={styles.messageButton} onPress={onSendMessage} activeOpacity={0.85}>
             <Text style={styles.messageButtonText}>Send a Message</Text>
           </TouchableOpacity>
+          {onPlanTogether && (
+            <TouchableOpacity style={styles.planButton} onPress={onPlanTogether} activeOpacity={0.85}>
+              <Text style={styles.planButtonText}>🤝 Plan Together</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={onDismiss} style={{ marginTop: spacing.md }}>
             <Text style={styles.dismissText}>Keep Browsing</Text>
           </TouchableOpacity>
@@ -86,5 +91,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     paddingHorizontal: spacing.xl, paddingVertical: spacing.md, ...shadow.button,
   },
   messageButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  planButton: {
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.6)', borderRadius: radius.full,
+    paddingHorizontal: spacing.xl, paddingVertical: spacing.md, marginTop: spacing.sm,
+  },
+  planButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   dismissText: { color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600' },
 });

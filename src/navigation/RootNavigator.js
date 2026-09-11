@@ -491,7 +491,14 @@ export default function RootNavigator() {
                 headerShadowVisible: false,
               })}
             />
-            <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? 'Customize Friends Filters' : 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
+            {/* Thursday plan item 19 ("filters should behave like controls
+                sitting on top of results, not destinations"): presentation:
+                'modal' makes this slide up as a layer over Discover/People
+                rather than push as a new stack destination -- same screen,
+                same content, no rewrite, just corrects the one concrete gap
+                the audit found (FiltersModal itself was already a real
+                in-place modal; only this deeper "Customize" screen wasn't). */}
+            <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? 'Customize Friends Filters' : 'Customize Quick Filters', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' })} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: 'Create Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: 'Edit Community', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
