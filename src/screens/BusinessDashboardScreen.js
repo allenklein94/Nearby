@@ -2586,7 +2586,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
             {section === 'gatherings' && (
               gatherings.length === 0 ? (
-                <Text style={styles.emptyText}>No gatherings hosted yet — create one from the Create tab and it'll show up here.</Text>
+                <View style={{ alignItems: 'center' }}>
+                  {/* Thursday plan item 25: the original copy claimed
+                      "create one from the Create tab and it'll show up
+                      here" -- but this section is scoped to
+                      gatherings.hosting_partner_id = this business
+                      (getMyBusinessGatherings()), and no create flow
+                      anywhere in this codebase ever sets that column
+                      (confirmed by search -- CreateGatheringScreen.js has
+                      no such param). That claim was already false before
+                      this change. Rather than wire a fabricated-looking
+                      button that wouldn't actually make a gathering appear
+                      here, this softens the copy to not promise that, and
+                      still gives a real action to a real destination.
+                      Wiring an actual business-hosted-gathering create
+                      path is a separate, bigger feature, not an empty-
+                      state copy fix -- flagged, not silently built. */}
+                  <Text style={styles.emptyText}>No gatherings hosted yet.</Text>
+                  <TouchableOpacity
+                    style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
+                    onPress={() => navigation.navigate('CreateGathering')}
+                    accessibilityLabel="Host a gathering"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.smallActionButtonText}>+ Host a Gathering</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 gatherings.map((g) => {
                   const breakdown = gatheringBreakdowns[g.id];
@@ -2676,7 +2701,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 )}
 
                 {communities.length === 0 ? (
-                  <Text style={styles.emptyText}>No communities yet — create one from the Create tab and it'll show up here.</Text>
+                  <View style={{ alignItems: 'center' }}>
+                    {/* Thursday plan item 25: same finding as the
+                        gatherings empty state above -- this section is
+                        scoped to communities.hosting_partner_id = this
+                        business, and no create flow (CreateCommunityScreen.js
+                        included) ever sets that column, so "it'll show up
+                        here" was already an unfulfillable promise. Softened
+                        copy, real action to a real destination. */}
+                    <Text style={styles.emptyText}>No communities yet.</Text>
+                    <TouchableOpacity
+                      style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm }]}
+                      onPress={() => navigation.navigate('CreateCommunity')}
+                      accessibilityLabel="Create a community"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.smallActionButtonText}>+ Create a Community</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   communities.map((c) => (
                     <TouchableOpacity
