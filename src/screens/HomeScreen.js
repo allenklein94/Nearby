@@ -7,6 +7,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { resolveIntent, resolveCommunityIntent } from '../services/intentResolver';
+import { runSurpriseMe, pickNextFromPool, findConnectedPerson, suggestionCandidateKeys, moodToParams } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
@@ -22,6 +23,7 @@ import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants
 import { supabase } from '../services/supabase';
 import * as Location from 'expo-location';
 import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
+import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
@@ -199,6 +201,17 @@ export default function HomeScreen({ navigation }) {
   const [intentResults, setIntentResults] = useState(null);
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
   const [intentPlaceholder, setIntentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
+  // "Surprise Me" (critique item 28) -- entirely separate state from the
+  // typed-ask intentResults above (no classifyResult/typedText exists for
+  // a quick-picker-only ask). `pool`/`connectedPeople` are the real,
+  // already-fetched candidates a Shuffle Again re-rolls from -- never
+  // refetched unless the pool is genuinely exhausted (see
+  // handleSurpriseShuffle below). `shown` is every candidate key already
+  // displayed this session, so a shuffle never repeats the same one back
+  // to back.
+  const [surpriseSheetVisible, setSurpriseSheetVisible] = useState(false);
+  const [surpriseLoading, setSurpriseLoading] = useState(false);
+  const [surprise, setSurprise] = useState(null);
   const [outcomePrompt, setOutcomePrompt] = useState(null);
   const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
   // Nearby 2.0 vision, partial build (see CLAUDE.md's "Nearby 2.0 Vision"
@@ -702,6 +715,7 @@ export default function HomeScreen({ navigation }) {
     setIntentThinking(true);
     setIntentResults(null);
     setIntentEmptyFallback(null);
+    setSurprise(null);
     try {
       const result = await classifyCreateRequest(typedText);
       if (result.intent === 'business_partner') {
@@ -914,6 +928,110 @@ export default function HomeScreen({ navigation }) {
     setIntentResults(null);
     setIntentEmptyFallback(null);
     setIntentText('');
+  }
+
+  // "Surprise Me" (critique item 28) -- runs entirely off the locked-spec
+  // quick-picker (When/Mood), never free text. Dismisses any in-progress
+  // typed-ask results first so the two result blocks never show at once.
+  async function handleSurpriseSubmit({ when, mood }) {
+    setIntentResults(null);
+    setIntentEmptyFallback(null);
+    setSurprise(null);
+    setSurpriseLoading(true);
+    try {
+      const { suggestion, pool, connectedPeople, connectedPerson } = await runSurpriseMe({ when, mood });
+      if (!suggestion) {
+        setSurprise({ when, mood, suggestion: null, pool, connectedPeople, connectedPerson: null, shown: new Set() });
+        return;
+      }
+      setSurprise({
+        when,
+        mood,
+        suggestion,
+        pool,
+        connectedPeople,
+        connectedPerson,
+        shown: new Set(suggestionCandidateKeys(suggestion)),
+      });
+    } catch (e) {
+      console.error('runSurpriseMe failed', e);
+      setSurprise({ when, mood, suggestion: null, pool: [], connectedPeople: [], connectedPerson: null, shown: new Set() });
+    } finally {
+      setSurpriseLoading(false);
+    }
+  }
+
+  // Re-rolls within the pool already fetched for this Surprise Me tap --
+  // only re-fetches (a fresh runSurpriseMe call, same when/mood) when that
+  // real pool is genuinely exhausted, per the locked spec. Never fabricates
+  // an alternative.
+  async function handleSurpriseShuffle() {
+    if (!surprise) return;
+    const next = pickNextFromPool(surprise.pool, surprise.shown);
+    if (next) {
+      const connectedPerson = findConnectedPerson(next, surprise.connectedPeople);
+      setSurprise((prev) => ({
+        ...prev,
+        suggestion: next,
+        connectedPerson,
+        shown: new Set([...prev.shown, ...suggestionCandidateKeys(next)]),
+      }));
+      return;
+    }
+    setSurpriseLoading(true);
+    try {
+      const { suggestion, pool, connectedPeople, connectedPerson } = await runSurpriseMe({ when: surprise.when, mood: surprise.mood });
+      setSurprise({
+        when: surprise.when,
+        mood: surprise.mood,
+        suggestion,
+        pool,
+        connectedPeople,
+        connectedPerson: suggestion ? connectedPerson : null,
+        shown: suggestion ? new Set(suggestionCandidateKeys(suggestion)) : new Set(),
+      });
+    } catch (e) {
+      console.error('runSurpriseMe re-fetch failed', e);
+    } finally {
+      setSurpriseLoading(false);
+    }
+  }
+
+  function handleSurpriseDismiss() {
+    setSurprise(null);
+  }
+
+  // Mirrors handleIntentResultTap's own navigation branches, restricted to
+  // the types Surprise Me can ever suggest (SURPRISE_ELIGIBLE_TYPES in
+  // surpriseMeLogic.js) -- no classifyResult/typedText exists here since
+  // this never went through a typed ask, so prefillText is honestly left
+  // blank rather than inventing what the user "asked for."
+  function handleSurpriseResultTap(item) {
+    setSurprise(null);
+    if (item.type === 'gathering') {
+      navigation.navigate('GatheringDetail', { gatheringId: item.id });
+    } else if (item.type === 'perk') {
+      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+      navigation.navigate('BrandOffers', { highlightOfferId: item.id });
+    } else if (item.type === 'community') {
+      navigation.navigate('CommunityDetail', { communityId: item.id });
+    } else if (item.type === 'business_availability') {
+      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+      navigation.navigate('AskBusiness', {
+        prefillText: '',
+        prefillCategory: item.category ?? null,
+        prefillDateWindow: surprise?.when ?? null,
+        prefillOccasion: surprise?.mood ? moodToParams(surprise.mood).occasion : null,
+        matchedAvailability: item.matchedAvailability ?? null,
+      });
+    } else if (item.type === 'business_policy_match') {
+      if (item.partnerId) logBusinessProfileView(item.partnerId, 'intent_match');
+      navigation.navigate('AskBusiness', {
+        prefillText: '',
+        prefillCategory: item.category ?? null,
+        prefillDateWindow: surprise?.when ?? null,
+      });
+    }
   }
 
   async function handleOutcomeAnswer(outcome) {
@@ -1210,6 +1328,136 @@ export default function HomeScreen({ navigation }) {
               {intentThinking ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.intentButtonText}>Find it</Text>}
             </TouchableOpacity>
           </View>
+
+          {/* "Surprise Me" (critique item 28) -- a small, visually
+              secondary action beside the ask box, never a filled button
+              competing with "Find it" above. Text-link-weight, same
+              treatment intentResultsCreateNew already uses for a real
+              coral-colored but visually secondary action on this screen. */}
+          {!intentResults && !intentEmptyFallback && !surprise && !surpriseLoading && (
+            <TouchableOpacity
+              style={styles.surpriseMeLink}
+              onPress={() => setSurpriseSheetVisible(true)}
+              accessibilityLabel="Surprise Me"
+              accessibilityRole="button"
+            >
+              <Text style={styles.surpriseMeLinkText}>✨ Surprise Me</Text>
+            </TouchableOpacity>
+          )}
+
+          {surpriseLoading && (
+            <View style={styles.intentResults}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          )}
+
+          {surprise && !surpriseLoading && (
+            <View style={styles.intentResults}>
+              {!surprise.suggestion ? (
+                <>
+                  <Text style={styles.intentResultsHeading}>Nothing real to suggest right now</Text>
+                  <TouchableOpacity onPress={handleSurpriseDismiss}>
+                    <Text style={styles.intentResultsDismiss}>Try something else</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {surprise.suggestion.kind === 'experience' ? (
+                    <View style={{ marginBottom: spacing.sm }}>
+                      <Text style={styles.intentResultsHeading}>{surprise.suggestion.experience.title}</Text>
+                      {(surprise.suggestion.experience.bundles ?? []).map((bundle) => (
+                        <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
+                          <Text style={styles.intentGroupLabel}>
+                            ✨ One place has it all: {bundle.componentLabels.join(' + ')}
+                          </Text>
+                          <TouchableOpacity style={styles.intentResultRow} onPress={() => handleSurpriseResultTap(bundle)}>
+                            <Ionicons name={INTENT_RESULT_ICONS[bundle.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
+                            <View style={styles.intentResultTextCol}>
+                              <Text style={styles.intentResultTitle} numberOfLines={1}>{bundle.title}</Text>
+                              {bundle.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{bundle.subtitle}</Text> : null}
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {surprise.suggestion.experience.components.map((component) => (
+                        <View key={component.key} style={{ marginBottom: spacing.sm }}>
+                          <Text style={styles.intentGroupLabel}>{component.label}</Text>
+                          {component.items.map((item) => (
+                            <TouchableOpacity key={`${item.type}-${item.id}`} style={styles.intentResultRow} onPress={() => handleSurpriseResultTap(item)}>
+                              <Ionicons name={INTENT_RESULT_ICONS[item.type] ?? 'sparkles-outline'} size={18} color={colors.primary} style={styles.intentResultIcon} />
+                              <View style={styles.intentResultTextCol}>
+                                <Text style={styles.intentResultTitle} numberOfLines={1}>{item.title}</Text>
+                                {item.subtitle ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{item.subtitle}</Text> : null}
+                              </View>
+                              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.surpriseCard}>
+                      <View style={styles.intentResultRow}>
+                        <Ionicons
+                          name={INTENT_RESULT_ICONS[surprise.suggestion.candidate.type] ?? 'sparkles-outline'}
+                          size={20}
+                          color={colors.primary}
+                          style={styles.intentResultIcon}
+                        />
+                        <View style={styles.intentResultTextCol}>
+                          <Text style={styles.intentResultTitle}>{surprise.suggestion.candidate.title}</Text>
+                          {surprise.suggestion.candidate.subtitle ? (
+                            <Text style={styles.intentResultSubtitle}>{surprise.suggestion.candidate.subtitle}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                      {/* People/privacy hard rule (locked spec item 2): only
+                          ever a real connected friend/match with a genuine,
+                          verifiable interest overlap -- never a stranger,
+                          never forced. */}
+                      {surprise.connectedPerson && (
+                        <Text style={styles.surpriseConnectedText}>
+                          You could go with {surprise.connectedPerson.name} 👋
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                  <View style={styles.surpriseActionsRow}>
+                    {surprise.suggestion.kind === 'candidate' && (
+                      <TouchableOpacity
+                        style={styles.surpriseViewButton}
+                        onPress={() => handleSurpriseResultTap(surprise.suggestion.candidate)}
+                        accessibilityLabel={
+                          surprise.suggestion.candidate.type === 'business_availability'
+                          || surprise.suggestion.candidate.type === 'business_policy_match'
+                            ? 'Plan This' : 'View'
+                        }
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.surpriseViewButtonText}>
+                          {surprise.suggestion.candidate.type === 'business_availability'
+                            || surprise.suggestion.candidate.type === 'business_policy_match'
+                            ? 'Plan This' : 'View'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={styles.surpriseShuffleButton}
+                      onPress={handleSurpriseShuffle}
+                      accessibilityLabel="Shuffle Again"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.surpriseShuffleButtonText}>🔀 Shuffle Again</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity onPress={handleSurpriseDismiss}>
+                    <Text style={styles.intentResultsDismiss}>Try something else</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
 
           {intentResults && (
             <View style={styles.intentResults}>
@@ -2118,6 +2366,14 @@ export default function HomeScreen({ navigation }) {
         onSave={saveQuickPicks}
         onResetToAuto={resetQuickPicksToAuto}
       />
+      <SurpriseMeSheet
+        visible={surpriseSheetVisible}
+        onClose={() => setSurpriseSheetVisible(false)}
+        onSubmit={(picks) => {
+          setSurpriseSheetVisible(false);
+          handleSurpriseSubmit(picks);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -2176,6 +2432,28 @@ const getStyles = (colors) => StyleSheet.create({
   friendRequestActionTextPrimary: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   intentResultsCreateNew: { color: colors.primary, fontWeight: '600', fontSize: 14, marginTop: spacing.sm },
   intentResultsDismiss: { color: colors.textTertiary, fontSize: 13, marginTop: spacing.sm },
+  // "Surprise Me" (critique item 28) -- a text-link-weight entry point
+  // (no fill, no border) so it never competes visually with the coral
+  // "Find it" button right above it; the same "secondary but still
+  // coral-colored text" treatment intentResultsCreateNew already uses.
+  surpriseMeLink: { alignSelf: 'flex-start', marginTop: spacing.sm },
+  surpriseMeLinkText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  surpriseCard: { marginBottom: spacing.sm },
+  surpriseConnectedText: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs, marginLeft: spacing.xl },
+  surpriseActionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs, marginBottom: spacing.sm },
+  surpriseViewButton: {
+    flex: 1, backgroundColor: colors.primary, borderRadius: radius.full,
+    paddingVertical: spacing.sm, alignItems: 'center', justifyContent: 'center',
+  },
+  surpriseViewButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  // Secondary/outlined per the locked spec ("Shuffle Again should be
+  // secondary/outlined") -- never coral, coral is reserved for this
+  // card's own primary View/Plan This action beside it.
+  surpriseShuffleButton: {
+    flex: 1, backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
+    paddingVertical: spacing.sm, alignItems: 'center', justifyContent: 'center',
+  },
+  surpriseShuffleButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
   askBusinessButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
