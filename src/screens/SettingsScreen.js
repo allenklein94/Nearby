@@ -82,6 +82,7 @@ export default function SettingsScreen({ navigation, route }) {
   const [notifyDating, setNotifyDating] = useState(true);
   const [notifyPlans, setNotifyPlans] = useState(true);
   const [notifyNearbyOpportunities, setNotifyNearbyOpportunities] = useState(true);
+  const [notifyCrossedPaths, setNotifyCrossedPaths] = useState(true);
   const [osNotifPermission, setOsNotifPermission] = useState('granted');
 
   const [changingPhone, setChangingPhone] = useState(false);
@@ -142,6 +143,7 @@ export default function SettingsScreen({ navigation, route }) {
       setNotifyDating(data.notify_dating ?? true);
       setNotifyPlans(data.notify_plans ?? true);
       setNotifyNearbyOpportunities(data.notify_nearby_opportunities ?? true);
+      setNotifyCrossedPaths(data.notify_crossed_paths ?? true);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
@@ -620,6 +622,16 @@ export default function SettingsScreen({ navigation, route }) {
               onValueChange={(v) => toggleNotifPref('notify_nearby_opportunities', v, setNotifyNearbyOpportunities)}
               trackColor={{ true: colors.primary, false: colors.border }}
               accessibilityLabel="Notify me about nearby opportunities"
+            />
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>👋 Crossed Paths</Text>
+            <Switch
+              value={notifyCrossedPaths}
+              onValueChange={(v) => toggleNotifPref('notify_crossed_paths', v, setNotifyCrossedPaths)}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel="Notify me when I cross paths with someone nearby"
             />
           </View>
           <View style={styles.divider} />

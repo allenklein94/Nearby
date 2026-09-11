@@ -244,23 +244,23 @@ Experiences (`business_experiences` — a different, older, single-category show
 wired into the intent resolver at all) gaining its own bundle concept — out of scope, not implied
 by this change.
 
-**BACKLOG (not started): Crossed Paths sighting push notification.** Item 12 of the same Sep 6
-2026 external UX critique asked for copy like "we'll let you know when you cross paths with
-someone" — but as of 2026-09-06 no push notification is ever sent for a crossed-paths sighting.
-`report-presence` (the Edge Function both foreground `reportPresence()` and the background
-location task call — `src/services/proximity.js`) silently upserts a row into `sightings` and
-stops there; nothing calls `send-push` or writes a row a client would surface as a notification.
-The copy was fixed to stop promising this (see item below) — the actual capability is still
-missing. **Per direct user decision (2026-09-06): do not bolt a push call directly onto
-`report-presence`'s sighting-insert path** — build it as a real notification event layer instead
-(`sighting created → notification event → preference/quiet-hours check → push → deep link to that
-sighting`), the same shape this app will eventually want for gathering activity, match activity,
-business offers, reservation updates, and friend activity — not a one-off trigger wired straight
-into the sightings table. Scope for whoever picks this up: respect notification
-preferences/quiet-hours (check what's already enforced for other push types in
-`services/notifications.js` first — reuse that, don't build a second preference check), dedupe
-so a lingering sighting doesn't re-notify repeatedly, deep-link to the actual sighting, and test
-foreground/background/terminated delivery. Not urgent, but real — flag rather than silently drop.
+**Crossed Paths sighting push notification — fully DONE (2026-09-11).** Item 12 of the Sep 6 2026
+external UX critique's last open piece: a genuine sighting now sends a real push to both people in
+the pair (each gated on their own new `notify_crossed_paths` preference, default on), deep-linking
+to the other person's profile. Shipped as `notify_sighting_crossed_paths()`, a plain `AFTER INSERT`
+trigger on `sightings` (`20261002_crossed_paths_sighting_notification.sql`) — the same direct-
+table-trigger shape every sibling `notify_*` push in this codebase already uses (there is no
+`notification_events` intermediate table anywhere in this schema, confirmed live). Dedup comes free
+from `sightings`' own real shape (`UNIQUE(user_a, user_b)` + `report-presence`'s upsert never
+touching `first_seen_at` on conflict, confirmed by reading the real deployed Edge Function body) —
+a repeated sighting between the same pair is always an `UPDATE`, which an insert-only trigger never
+fires on, so no extra dedup column was needed. Verified live via a disposable rolled-back
+transaction (genuine push logged once, correctly gated per-recipient, then a re-upsert of the same
+pair produced no second push). Client: `notifications.js` routes the new `crossed_paths_sighting`
+type to `ViewProfile`; `SettingsScreen.js` has a new "👋 Crossed Paths" toggle. Full Jest suite
+252/252 passing; real device push delivery not exercised (no simulator/device tooling available in
+this project, standing note). Full research trail and design reasoning: `CLAUDE_HISTORY.md`,
+search "Crossed Paths sighting push notification."
 
 **Quick Filters customization copy — Crossed Paths "keep the app open" wording fixed, DONE
 (2026-09-06), external UX critique item 12.** Real background location detection already exists

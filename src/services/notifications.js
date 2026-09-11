@@ -149,6 +149,15 @@ export function routeNotificationTap(data) {
         navigationRef.navigate('ViewProfile', { userId: data.birthday_user_id });
       }
       break;
+    case 'crossed_paths_sighting':
+      // Same real destination the existing Crossed Paths Discover surfaces
+      // already open on a tap (see CLAUDE.md, "Unified Crossed Paths across
+      // Dating and Friends") -- there's no dedicated sighting-detail screen,
+      // the person's own profile is the real place this is actionable from.
+      if (data.other_user_id) {
+        navigationRef.navigate('ViewProfile', { userId: data.other_user_id });
+      }
+      break;
     case 'new_story':
       // No dedicated story-viewer route exists anywhere in this app —
       // stories render inline in feeds/carousels, not as their own

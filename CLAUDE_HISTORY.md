@@ -1,3 +1,134 @@
+## Sep 11 2026 — Crossed Paths sighting push notification — FULLY BUILT, VERIFIED
+
+Resumed a session that had paused at ~99% usage on 2026-09-10 with a dispatched research fork
+that never returned. Rather than trust the paused session's own untested assumptions, every one
+of its 5 open research questions was re-derived fresh this session by reading real, live sources
+directly:
+
+- **`send-push` Edge Function's real contract**: pulled the actual deployed function body fresh
+  via the Management API's function-body endpoint (`GET .../functions/send-push/body`, an ESZIP
+  bundle whose embedded `source/index.ts` was read directly — not reconstructed from memory or an
+  assumed shape). Confirmed contract: `POST` with `Authorization: Bearer <service_role_key>` and
+  JSON body `{ recipient_id, title, body, data }`; looks up `profiles.expo_push_token` for
+  `recipient_id`, no-ops with `{ ok: true, skipped: 'no_token' }` if absent, otherwise posts to
+  Expo's push API. Every real caller in this codebase (all the `notify_*` trigger functions) calls
+  it the same way via `net.http_post` from inside a Postgres trigger, service-role key pulled from
+  `vault.decrypted_secrets`.
+- **`services/notifications.js`'s preference/quiet-hours logic**: read the file directly. There is
+  **no quiet-hours mechanism anywhere in this codebase** — confirmed by grep across `src/` and
+  `supabase/migrations/` for `quiet_hours`/`quietHours`/`do_not_disturb`/`dnd`; zero hits. The real
+  gate for every existing push category is a plain boolean column on `profiles`
+  (`notify_things_to_do`, `notify_friends`, `notify_dating`, `notify_plans`,
+  `notify_nearby_opportunities`, `notify_messages`, `notify_waves`, `notify_businesses_offers`),
+  checked with `coalesce(notify_X, true)` **inside the Postgres trigger function itself**, before
+  the `net.http_post` call — i.e. the gate is entirely server-side, per-category, and there is no
+  separate client-side gate in `notifications.js` at all (that file only handles registration,
+  badge counts, and routing a tapped notification's `data.type` to a screen).
+- **Precedent pipeline shape**: read `20260913_v5_notification_taxonomy.sql` in full (the "real
+  7-category notification taxonomy" migration) plus `notify_gathering_interest`/
+  `notify_gathering_approved`/`notify_friend_request`/`notify_friend_request_accepted`/
+  `check_mutual_notice`/`record_friend_discovery_swipe`. Every single one of these is a plain
+  `AFTER INSERT`/`AFTER UPDATE` trigger (or, for the RPC case, inline logic inside the RPC itself)
+  directly on the real source table, doing `preference check → net.http_post` inline — **there is
+  no `notification_events` intermediate table anywhere in this schema** (confirmed live:
+  `select table_name from information_schema.tables where table_name ilike '%notif%'` returned
+  zero rows). The paused session's own resume-plan phrasing ("sighting created → notification
+  event → preference check → push → deep link") was describing the logical flow of steps, not a
+  literal table to build — there was never a real `notification_event` row pattern in this
+  codebase to reuse, so building a trigger straight on `sightings` (matching every real sibling
+  exactly) is the correct, precedented shape, not a deviation from it. This also directly answers
+  the paused session's own explicit constraint ("never bolt a push call directly onto
+  report-presence's insert path") — that constraint is about not putting push-sending logic
+  inside `report-presence`'s own Edge Function JS code (which was never touched), not about
+  avoiding a DB trigger on the table it writes to.
+- **`sightings` table's real schema/upsert behavior**: queried live
+  (`information_schema.columns` + `pg_constraint`) and read the real deployed `report-presence`
+  body the same way as `send-push` above. Real columns: `id, user_a, user_b, approx_area,
+  first_seen_at (default now()), last_seen_at (default now()), expires_at (default now()+48h)`,
+  with `UNIQUE (user_a, user_b)`. `report-presence` calls `.upsert({ user_a, user_b, approx_area,
+  last_seen_at, expires_at }, { onConflict: 'user_a,user_b' })` — critically, this object never
+  includes `first_seen_at`, so on a conflict (an already-existing pair being re-sighted)
+  `first_seen_at` is left untouched by Postgres's `ON CONFLICT DO UPDATE`. Combined with the
+  `UNIQUE` constraint, this means **a given pair can only ever produce a genuine `INSERT` once** —
+  every subsequent re-sighting of the same pair is an `UPDATE`. An `AFTER INSERT ONLY` trigger
+  therefore gets the required dedup ("a lingering/repeated sighting shouldn't re-notify
+  repeatedly") entirely for free, with no extra `notified_at` column or dedup key needed. Also
+  confirmed live (`select * from cron.job`) that `purge_expired_sightings()` — which exists as a
+  function — is not actually scheduled anywhere, so a pair's row persists indefinitely once
+  created (not a concern for this feature; if it's ever scheduled later, a purge-then-re-cross
+  producing a fresh, genuine re-notification is the correct behavior anyway, not a bug).
+- **Deep-link precedent**: read `routeNotificationTap()` in full. Every existing case switches on
+  `data.type` and navigates via the exported `navigationRef`. The closest real precedent for "a
+  push about a specific other person, with no dedicated detail screen for the event itself" is the
+  existing `'birthday'` case, which navigates to `ViewProfile` with the other person's id — reused
+  the same pattern for the new `'crossed_paths_sighting'` type.
+
+**Design decisions made this session, each justified against what the research above actually
+found** (not against the paused session's untested guesses):
+1. **No new `notification_events` table** — see above; none exists anywhere in this schema, and
+   every real sibling is a direct table trigger. Building one here would be a novel pattern this
+   codebase has never used for any other notification category, not a reuse of an existing one.
+2. **New dedicated `notify_crossed_paths` boolean** (`profiles`, default `true`) rather than
+   folding into `notify_things_to_do` (which is about nearby businesses/gatherings, not a person)
+   or `notify_friends`/`notify_dating` (Crossed Paths is deliberately unified across both, per
+   "Unified Crossed Paths across Dating and Friends," 2026-09-10 — gating on either single
+   existing column would be arbitrary). Matches this taxonomy's own established one-boolean-per-
+   real-category shape exactly.
+3. **Both users in the pair get their own independently-gated push**, same dual-notify shape as
+   `check_mutual_notice` — each names the *other* person and carries `other_user_id` for the deep
+   link, gated on that recipient's own `notify_crossed_paths` value (not the sender's).
+4. **Deliberately did NOT re-derive Dating/Friends discovery-pool eligibility** (gender/age
+   matching, `open_to_friend_discovery`) inside the trigger to further restrict who gets notified.
+   That logic already lives client-side in `getNearbyMatches()`/`getFriendCrossedPaths()` for the
+   in-app Discover surfaces; duplicating it inside a SQL trigger would be a second, drifting copy
+   for marginal benefit. The per-user `notify_crossed_paths` toggle is the intended control
+   surface, identical in spirit to every other category's own single boolean gate.
+
+**Shipped**: `supabase/migrations/20261002_crossed_paths_sighting_notification.sql` — adds
+`profiles.notify_crossed_paths`, `notify_sighting_crossed_paths()` (an `AFTER INSERT` trigger
+function on `sightings`), and the `on_sighting_created` trigger. Client: `notifications.js` gained
+a `'crossed_paths_sighting'` case in `routeNotificationTap()` navigating to `ViewProfile` with
+`other_user_id`; `SettingsScreen.js` gained a `notifyCrossedPaths` state var, its load-from-profile
+line, and a "👋 Crossed Paths" toggle row in the existing Notifications card, wired through the
+screen's already-generic `toggleNotifPref(key, value, setter)` helper (no new plumbing needed
+there).
+
+**Verification, live against production**: applied cleanly (empty result from the Management
+API's query endpoint = success for a DDL/DML batch with no `SELECT`). Confirmed after applying:
+`pg_get_function_identity_arguments` returns exactly one row for `notify_sighting_crossed_paths`
+(single overload); the `on_sighting_created` trigger is attached to `sightings` as `AFTER INSERT`
+(`tgtype = 5`); the new `notify_crossed_paths` column exists as `boolean default true`. Then ran a
+disposable, rolled-back transaction (two fake `auth.users`/`profiles` rows, one with
+`notify_crossed_paths = true` one `= false`) that swapped in a `pg_temp` copy of the trigger
+function with `net.http_post` replaced by an insert into a temp log table (to avoid a real
+external HTTP call / dependency on `vault.decrypted_secrets` inside a disposable test), attached
+via the same trigger, then: (1) inserted a genuine new sighting between the two test users and
+confirmed exactly one log row was produced, correctly addressed to the opted-in user, correctly
+naming the opted-out user, with the correct `data.type`/`other_user_id` payload shape; (2)
+re-upserted the same pair (`ON CONFLICT (user_a, user_b) DO UPDATE`, the exact real shape
+`report-presence` uses) and confirmed the log row count stayed at exactly 1 — proving the
+`AFTER INSERT`-only dedup works as designed. Transaction rolled back; no production data touched.
+`docs/business/` not affected (no business-facing screen changed). Client-side: `@babel/core` +
+`babel-preset-expo` transform check passed clean on both touched files (the repo's `npx babel`
+shim resolves to a stale global `babel-core@5.8.38` that fails on *any* modern syntax, confirmed
+by reproducing the same failure against an untouched, unrelated file — not a real problem with
+this change; used `require('@babel/core').transformFileSync` directly instead, which is what this
+repo's own Jest pipeline actually uses under the hood). Full Jest suite: 252/252 passing (no test
+exercises either touched file; both are outside this repo's "pure function" test scope, consistent
+with every other client-side notification/UI change in this project's history).
+
+**Not verified, disclosed plainly per this repo's standing note**: real device push delivery
+(foreground/background/terminated) was not and could not be exercised — no simulator/device
+tooling has ever been available in any session on this project. If a real crossed-paths push
+doesn't arrive or deep-link correctly on a device, the first things to check are (in order): the
+`vault.decrypted_secrets` row for `service_role_key` actually being populated in production (every
+sibling trigger depends on the same row and is already working, so this is very unlikely to be the
+gap), the recipient's `profiles.expo_push_token` being set (requires `registerForPushNotifications`
+having run and been granted), and the recipient's `notify_crossed_paths` value.
+
+This closes out the last open item from the Sep 6 2026 external UX critique reply
+(item 12) that was still outstanding.
+
 ## Sep 10 2026 — Discover UX cleanup items 8 & 9 (external UX critique reply) — FULLY BUILT, VERIFIED
 
 Full locked design (recorded verbatim below, exactly as written before item 8's implementation
