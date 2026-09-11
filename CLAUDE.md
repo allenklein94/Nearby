@@ -40,6 +40,51 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Thursday plan item 29 (notification categories — "an intelligent layer, not a firehose") —
+fully DONE (2026-09-11).** Picked up after a codespace restart mid-build — an untracked
+`.wip_notification_categories/` scratch directory (originals + partially-fixed copies of every
+push-sending DB function, 45 of 59 already converted) was found, checked against the user's own
+locked spec, and completed rather than restarted: the remaining 14 files were fixed following the
+exact same mapping pattern the prior partial pass had already established. Per the user's own
+spec, replaced the growing, ungoverned pile of individual per-feature `notify_*` booleans
+(friends/dating/messages/waves/plans/things_to_do/nearby_opportunities/crossed_paths/
+businesses_offers — several generations of one-off additions, see item 17's own history) with 6
+named categories a user controls independently: Social, Discovery, Proximity, Planning, Business,
+Community. Every one of the 59 functions in the schema that sends a push was individually
+re-gated onto the 6 new columns — verified live afterward with a query for any function still
+calling `send-push` without referencing one of the 6 (zero found). This full audit surfaced a
+real, previously-undocumented gap: 12 business-side functions (`_accept_business_offer_internal`,
+`_business_request_fanout`, `_match_request_to_availability`, `_match_request_to_policy`,
+`_ai_auto_respond_to_business_requests`, `accept_business_offer`,
+`admin_review_business_content_screening`'s offer-response branch,
+`approve_business_partner_request`, `deny_business_partner_request`,
+`notify_aggregated_demand_threshold`, `post_business_availability`,
+`request_more_business_partner_info`, `respond_to_business_partnership_request`) fired pushes with
+**no preference check of any kind** before this change — all now gate on `notify_business`.
+`notify_community_area_demand_threshold` gates on `notify_community`; `cancel_community` gains its
+first-ever gate, also `notify_community`. Mapping for the rest: notify_friends/dating/messages/
+waves → notify_social; notify_things_to_do/nearby_opportunities → notify_discovery (their own
+separate frequency/distance/time-pref/categories sub-preferences from item 17 are unchanged —
+only the plain on/off master switch collapsed); notify_crossed_paths → notify_proximity;
+notify_plans → notify_planning; notify_businesses_offers → notify_business. Migration
+(`20261005_notification_categories.sql`) backfills existing users' 6 new columns honestly from
+whatever they'd already set on the old ones (OR'd across every folded-in constituent, so a user
+who'd opted out of everything in a now-shared category stays opted out), then drops the 9
+fully-superseded old columns. Verified live: rolled-back dry-run transaction first (confirmed
+clean apply + the specific gate/backfill assertions), then applied for real and re-confirmed
+against production directly (6 new columns present, 0 old columns remaining, 0 ungated
+`send-push` callers anywhere in the schema). `SettingsScreen.js` collapsed from 9 toggles to 6,
+each with real descriptive subtext; Discovery keeps both existing "Things To Do"/"Nearby
+Opportunities" customize sub-panels (now nested under its own toggle rather than each having its
+own separate master switch). Full Jest suite 280/280 passing; `SettingsScreen.js` transform-
+checked clean via `@babel/core` + `babel-preset-expo` (this repo's own `npx babel` resolves to a
+stale global shim that fails on any modern syntax — use `require('@babel/core').transformFileSync`
+directly, per this repo's own established precedent). Not exercised in a running app (no
+simulator/device tooling this session, standing note). One unrelated pre-existing dead column
+found during this audit, deliberately not touched (out of the scope actually asked for):
+`profiles.notify_matches`, superseded by the Sep 13 2026 "Phase E" 7-category taxonomy per that
+change's own code comment, but never dropped — no live function references it.
+
 **Thursday plan item 28 ("Surprise Me") — fully DONE (2026-09-11).** Picked up mid-stream after a
 usage-limit restart (the prior session's untracked `surpriseMe.js`/`surpriseMe.test.js` were
 read in full and checked against the locked spec — both were correct and complete, no rewrite
