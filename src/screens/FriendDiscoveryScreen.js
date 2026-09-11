@@ -505,6 +505,22 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           <Text style={styles.explainerBody}>
             No one nearby matches these filters right now — try widening them.
           </Text>
+          {/* Thursday plan item 25: a real action, not just the word
+              "widening" with nothing to tap -- resets the same four filter
+              states the chips above already control. */}
+          <TouchableOpacity
+            onPress={() => {
+              setInterestFilters([]);
+              setDistanceFilter(null);
+              setVerifiedOnlyFilter(false);
+              setOnlineOnlyFilter(false);
+            }}
+            accessibilityLabel="Clear filters"
+            accessibilityRole="button"
+            style={{ marginTop: spacing.md }}
+          >
+            <Text style={styles.customizeLink}>Clear Filters →</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FriendDiscoverySwipeCards
@@ -515,6 +531,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false }) 
           onViewStory={setViewingStoryGroup}
           compatibilityColor={compatibilityColor}
           onSwipe={handleSwipe}
+          navigation={navigation}
         />
       )}
 

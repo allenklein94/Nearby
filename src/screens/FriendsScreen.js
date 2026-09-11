@@ -384,6 +384,20 @@ export default function FriendsScreen({ navigation }) {
               <Text style={styles.emptyText}>
                 Add friends from anyone's profile, or find friends from your contacts above, to see who's interested in the same gatherings as you.
               </Text>
+              {/* Thursday plan item 25: the header's "Find Friends From
+                  Contacts" button already covers one real path, but a
+                  direct action attached to the empty state itself
+                  shouldn't depend on the user noticing a button "above" --
+                  Meet New People is a real, distinct destination that
+                  button doesn't cover. */}
+              <TouchableOpacity
+                onPress={() => navigation.navigate('FriendDiscovery')}
+                accessibilityLabel="Meet new people nearby"
+                accessibilityRole="button"
+                style={{ marginTop: spacing.md }}
+              >
+                <Text style={styles.emptyActionText}>Meet New People →</Text>
+              </TouchableOpacity>
             </View>
           )
         }
@@ -445,7 +459,25 @@ export default function FriendsScreen({ navigation }) {
               <TouchableWithoutFeedback>
                 <View style={styles.modalSheet}>
                   <Text style={styles.modalTitle}>Circles for {manageCirclesFor?.display_name}</Text>
-                  {circles.length === 0 && <Text style={styles.emptyText}>No circles yet — create one from the Friends screen first.</Text>}
+                  {circles.length === 0 && (
+                    <View>
+                      <Text style={styles.emptyText}>No circles yet.</Text>
+                      {/* Thursday plan item 25: this modal used to point
+                          the user back at "the Friends screen" they're
+                          already on -- a self-referential dead end. Opens
+                          the exact same New Circle modal the main screen's
+                          own "+ Organize into Circles" link opens, right
+                          from here. */}
+                      <TouchableOpacity
+                        onPress={() => { setManageCirclesFor(null); setNewCircleModalVisible(true); }}
+                        accessibilityLabel="Create a circle"
+                        accessibilityRole="button"
+                        style={{ marginTop: spacing.sm }}
+                      >
+                        <Text style={styles.emptyActionText}>+ Create a Circle →</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                   {circles.map((circle) => {
                     const isMember = manageCirclesFor && circle.memberIds.includes(manageCirclesFor.id);
                     return (
@@ -539,4 +571,5 @@ const getStyles = (colors) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center', lineHeight: 20, paddingHorizontal: spacing.lg },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 14 },
 });

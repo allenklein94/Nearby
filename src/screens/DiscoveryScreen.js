@@ -271,6 +271,59 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
     setFiltersModalVisible(true);
   }
 
+  // Thursday plan item 25 ("empty states should become invitations"): this
+  // rendered twice before (card view + list view ListEmptyComponent),
+  // both plain dead-end text with no real action -- extracted into one
+  // shared renderer so the fix, and any future one, only needs to happen
+  // once. Every branch below gets a real, already-working destination:
+  // the filtered cases reopen the same FiltersModal the "Filters" button
+  // above already does (never a fabricated "clear filters" control this
+  // screen doesn't have); the true first-visit empty (no filter active,
+  // genuinely nobody nearby yet) offers Invite Friends (grows the real
+  // supply) and Adjust Preferences (the real discovery-radius/Looking For
+  // section already on Settings), not a vague suggestion with nothing to
+  // tap.
+  function renderPeopleEmptyState() {
+    const filtered = discoveryMode === 'browse' || anyFilterActive;
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
+        <Text style={styles.emptyTitle}>
+          {discoveryMode === 'browse'
+            ? 'No one matches your filters in this area yet'
+            : (anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle'))}
+        </Text>
+        <Text style={styles.emptyText}>
+          {discoveryMode === 'browse'
+            ? 'Try adjusting your filters, or check back as more people join.'
+            : (anyFilterActive ? 'Try adjusting or clearing your filters below.' : t('discovery.emptyText'))}
+        </Text>
+        {filtered ? (
+          <TouchableOpacity onPress={openFilters} accessibilityLabel="Adjust filters" accessibilityRole="button">
+            <Text style={styles.emptyActionText}>Adjust Filters →</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.emptyActionsRow}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('InviteFriends')}
+              accessibilityLabel="Invite friends"
+              accessibilityRole="button"
+            >
+              <Text style={styles.emptyActionText}>Invite Friends →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Settings', { scrollToPreferences: true })}
+              accessibilityLabel="Adjust preferences"
+              accessibilityRole="button"
+            >
+              <Text style={styles.emptyActionText}>Adjust Preferences →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }
+
   async function toggleViewStyle() {
     const newStyle = viewStyle === 'cards' ? 'list' : 'cards';
     setViewStyle(newStyle);
@@ -540,19 +593,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
         </View>
       ) : viewStyle === 'cards' ? (
         filteredNearby.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
-            <Text style={styles.emptyTitle}>
-              {discoveryMode === 'browse'
-                ? 'No one matches your filters in this area yet'
-                : (anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle'))}
-            </Text>
-            <Text style={styles.emptyText}>
-              {discoveryMode === 'browse'
-                ? 'Try adjusting your filters, or check back as more people join.'
-                : (anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText'))}
-            </Text>
-          </View>
+          renderPeopleEmptyState()
         ) : (
           <SwipeableDiscoveryCards
             data={filteredNearby}
@@ -585,21 +626,7 @@ export default function DiscoveryScreen({ navigation, embedded = false }) {
             </View>
           ) : null
         }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>{discoveryMode === 'browse' ? '🔎' : '📍'}</Text>
-            <Text style={styles.emptyTitle}>
-              {discoveryMode === 'browse'
-                ? 'No one matches your filters in this area yet'
-                : (anyFilterActive ? 'No one matches these filters right now' : t('discovery.emptyTitle'))}
-            </Text>
-            <Text style={styles.emptyText}>
-              {discoveryMode === 'browse'
-                ? 'Try adjusting your filters, or check back as more people join.'
-                : (anyFilterActive ? 'Try adjusting or clearing your filters above.' : t('discovery.emptyText'))}
-            </Text>
-          </View>
-        }
+        ListEmptyComponent={renderPeopleEmptyState()}
         renderItem={({ item, index }) => {
           const crossedPathsTime = discoveryMode === 'browse' ? null : formatCrossedPathsTime(item.last_seen_at);
           const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason, formatCrossedPathsTime);
@@ -886,6 +913,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  emptyActionsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
+  emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700', marginTop: spacing.md },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

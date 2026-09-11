@@ -23,7 +23,7 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // mutual-friends/bio, never a dating-oriented proximity/compatibility
 // readout. Distance is a coarse bucket from the RPC (never exact miles),
 // matching the locked "no location-discovery tool" decision.
-export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe }) {
+export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -65,6 +65,18 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
       <View style={styles.emptyState}>
         <Text style={styles.emptyEmoji}>🤝</Text>
         <Text style={styles.emptyText}>No one nearby has friend discovery on right now — check back later.</Text>
+        {/* Thursday plan item 25: a real next action, not a dead end --
+            the same InviteFriends destination every other empty state in
+            this pass routes to. */}
+        {navigation && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('InviteFriends')}
+            accessibilityLabel="Invite friends"
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyActionText}>Invite Friends →</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -268,4 +280,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700', marginTop: spacing.md },
 });

@@ -311,6 +311,26 @@ export default function MatchesScreen({ navigation }) {
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>✨</Text>
             <Text style={styles.emptyText}>{t('matches.emptyText')}</Text>
+            {/* Thursday plan item 25: a real next action instead of a dead
+                end -- matches this screen's own suggested "Explore Things
+                To Do" / "Invite Friends" pair for a dating-adjacent empty
+                state (the item's own worked example). */}
+            <View style={styles.emptyActionsRow}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Discover')}
+                accessibilityLabel="Explore things to do"
+                accessibilityRole="button"
+              >
+                <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('InviteFriends')}
+                accessibilityLabel="Invite friends"
+                accessibilityRole="button"
+              >
+                <Text style={styles.emptyActionText}>Invite Friends →</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         }
         renderItem={({ item }) => {
@@ -483,6 +503,8 @@ const getStyles = (colors) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
+  emptyActionsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
+  emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   cardWrap: { marginBottom: spacing.sm },
   card: {
     flexDirection: 'row',
