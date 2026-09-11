@@ -34,6 +34,7 @@ import {
   occasionBonus,
   subcategoryBonus,
   secondaryCategoryBonus,
+  getBusinessAvailabilityReasons,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -322,12 +323,18 @@ async function resolveBusinessAvailability(category, location, attributes, cuisi
     // specified hierarchy (primary category > subcategory > secondary
     // category ≈ semantic tag/occasion).
     score += secondaryCategoryBonus(row, category);
+    // Thursday plan item 23: real "why" text for the same bonuses just
+    // scored above, never a second computation -- appended to the
+    // existing title/price subtitle rather than replacing it, so no
+    // information already shown here is lost.
+    const bonusReasons = getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion });
+    const baseSubtitle = row.price != null ? `${row.title} · $${row.price}` : row.title;
     return {
       type: 'business_availability',
       id: row.id,
       partnerId: row.partner_id,
       title: `${row.partner_name} has availability`,
-      subtitle: row.price != null ? `${row.title} · $${row.price}` : row.title,
+      subtitle: bonusReasons[0] ? `${baseSubtitle} · ${bonusReasons[0]}` : baseSubtitle,
       // Intent engine vision -- Experiences assembly, first increment
       // (2026-09-10): the row's own real category/subcategory/categories,
       // carried onto the candidate itself (not just used internally for

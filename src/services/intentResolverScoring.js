@@ -13,6 +13,7 @@
 // intentResolver.js imports every export here instead of defining its own
 // copies -- same values, same logic, just factored out.
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
+import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS } from '../constants/businessAttributes';
 
 // Shared relevance weights, kept on the same scale
 // getGatheringFitReasons() already established (interest match = 5, close
@@ -223,6 +224,51 @@ export function secondaryCategoryBonus(row, category) {
   if (!category) return 0;
   const secondaryCategories = Array.isArray(row.categories) ? row.categories : [];
   return secondaryCategories.includes(category) ? SCORE_HAPPENING_NOW : 0;
+}
+
+// Thursday plan item 23 ("every recommendation should explain WHY"):
+// gatherings have always had getGatheringFitReasons() (services/
+// gatherings.js) feeding a real reason into resolveIntent()'s subtitle;
+// business_availability results never had an equivalent -- resolveIntent()
+// computed a real, multi-factor score for every bonus below but discarded
+// the reasoning once reduced to a number, leaving every posting's subtitle
+// as just its own title/price with zero explanation of why it was surfaced
+// or ranked where it was. This mirrors each bonus function above's own
+// exact condition (never a new signal, never a fabricated one) and returns
+// human-readable text for whichever ones actually fired, in the same
+// priority order resolveBusinessAvailability() already scores them in.
+export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion } = {}) {
+  const reasons = [];
+  const matchesCategory = !!(category && (
+    (row.category && row.category === category)
+    || (row.subcategory && row.subcategory === category)
+    || (Array.isArray(row.categories) && row.categories.includes(category))
+  ));
+  if (matchesCategory) reasons.push("Matches what you're looking for");
+  if (row.distance_miles != null && row.distance_miles < 2) {
+    reasons.push(row.distance_miles < 0.3 ? 'Very close' : `${row.distance_miles.toFixed(1)} mi away`);
+  }
+  if (cuisine && row.cuisine && row.cuisine === cuisine) {
+    const label = CUISINE_OPTIONS.find((c) => c.key === cuisine)?.label ?? cuisine;
+    reasons.push(`${label} cuisine, as you asked`);
+  }
+  const rowAttributes = Array.isArray(row.attributes) ? row.attributes : [];
+  if (Array.isArray(attributes) && attributes.length > 0) {
+    const matchedKey = rowAttributes.find((a) => attributes.includes(a));
+    if (matchedKey) {
+      const label = BUSINESS_ATTRIBUTE_OPTIONS.find((o) => o.key === matchedKey)?.label ?? matchedKey;
+      reasons.push(label);
+    }
+  }
+  if (partyType) {
+    const accommodates = Array.isArray(row.accommodates_party_types) ? row.accommodates_party_types : [];
+    if (accommodates.includes(partyType)) reasons.push('Accommodates your group');
+  }
+  if (occasion) {
+    const priorityOccasions = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
+    if (priorityOccasions.includes(occasion)) reasons.push('Great fit for the occasion');
+  }
+  return reasons;
 }
 
 export function startOfDay(d) {

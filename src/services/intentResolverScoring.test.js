@@ -13,6 +13,7 @@ const {
   occasionBonus,
   subcategoryBonus,
   secondaryCategoryBonus,
+  getBusinessAvailabilityReasons,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
   SCORE_INTEREST_MATCH,
@@ -194,6 +195,46 @@ describe('secondaryCategoryBonus', () => {
 
   it('awards only one flat bonus regardless of how many entries match, never per-tag', () => {
     expect(secondaryCategoryBonus({ categories: ['Music', 'Coffee', 'Wine'] }, 'Coffee')).toBe(SCORE_HAPPENING_NOW);
+  });
+});
+
+describe('getBusinessAvailabilityReasons', () => {
+  it('returns no reasons when nothing was asked and nothing matches', () => {
+    expect(getBusinessAvailabilityReasons({}, {})).toEqual([]);
+  });
+
+  it('reports a category match from row.category, row.subcategory, or row.categories, each honestly', () => {
+    expect(getBusinessAvailabilityReasons({ category: 'Coffee' }, { category: 'Coffee' })).toEqual(["Matches what you're looking for"]);
+    expect(getBusinessAvailabilityReasons({ subcategory: 'Coffee' }, { category: 'Coffee' })).toEqual(["Matches what you're looking for"]);
+    expect(getBusinessAvailabilityReasons({ categories: ['Coffee'] }, { category: 'Coffee' })).toEqual(["Matches what you're looking for"]);
+    expect(getBusinessAvailabilityReasons({ category: 'Wine' }, { category: 'Coffee' })).toEqual([]);
+  });
+
+  it('formats a real distance_miles into a reason, never inventing one when absent or far', () => {
+    expect(getBusinessAvailabilityReasons({ distance_miles: 0.2 })).toEqual(['Very close']);
+    expect(getBusinessAvailabilityReasons({ distance_miles: 1.4 })).toEqual(['1.4 mi away']);
+    expect(getBusinessAvailabilityReasons({ distance_miles: 5 })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({})).toEqual([]);
+  });
+
+  it('names the real matching cuisine, attribute, party-type, and occasion signals', () => {
+    expect(getBusinessAvailabilityReasons({ cuisine: 'italian' }, { cuisine: 'italian' })).toEqual(['Italian cuisine, as you asked']);
+    expect(getBusinessAvailabilityReasons({ attributes: ['dog_friendly'] }, { attributes: ['dog_friendly'] })).toEqual(['Dog-Friendly']);
+    expect(getBusinessAvailabilityReasons({ accommodates_party_types: ['date'] }, { partyType: 'date' })).toEqual(['Accommodates your group']);
+    expect(getBusinessAvailabilityReasons({ priority_occasions: ['anniversary'] }, { occasion: 'anniversary' })).toEqual(['Great fit for the occasion']);
+  });
+
+  it('never fabricates a reason for a real mismatch', () => {
+    expect(getBusinessAvailabilityReasons({ cuisine: 'mexican' }, { cuisine: 'italian' })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({ attributes: ['quiet'] }, { attributes: ['dog_friendly'] })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({ accommodates_party_types: ['solo'] }, { partyType: 'date' })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({ priority_occasions: ['birthday'] }, { occasion: 'anniversary' })).toEqual([]);
+  });
+
+  it('returns multiple real reasons together, in the same priority order resolveBusinessAvailability scores them', () => {
+    const row = { category: 'Coffee', distance_miles: 0.5, cuisine: 'italian', attributes: ['dog_friendly'] };
+    const reasons = getBusinessAvailabilityReasons(row, { category: 'Coffee', cuisine: 'italian', attributes: ['dog_friendly'] });
+    expect(reasons).toEqual(["Matches what you're looking for", '0.5 mi away', 'Italian cuisine, as you asked', 'Dog-Friendly']);
   });
 });
 
