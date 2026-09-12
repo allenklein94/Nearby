@@ -8,7 +8,7 @@ import { addOccasion, linkOccasionToPlan } from '../services/occasions';
 import { resolveIntent } from '../services/intentResolver';
 import { submitBusinessRequest } from '../services/businessFulfillment';
 import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
-import { celebrateOccasionOptions } from '../constants/businessAttributes';
+import { occasionGroupOptions } from '../constants/businessAttributes';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import {
   composeCelebrationTitle,
@@ -705,24 +705,36 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {stepKey === 'occasion' && (
               <>
                 <Text style={styles.label}>What are you celebrating?</Text>
-                <View style={styles.chipRow}>
-                  {celebrateOccasionOptions().map((o) => {
-                    const selected = occasion === o.key;
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => { Haptics.selectionAsync(); setOccasion(o.key); }}
-                        activeOpacity={0.8}
-                        accessibilityLabel={o.label}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                {/* Item 73 (CLAUDE.md): "have the category architecture
+                    flexible enough for ... don't hard-code the product
+                    around birthdays" -- real grouped sections
+                    (Celebrations/Milestones/Social Moments/Custom)
+                    instead of one long flat chip row, so the vocabulary
+                    can keep growing without reading as "birthday, plus an
+                    ever-longer afterthought list." */}
+                {occasionGroupOptions().map((group) => (
+                  <View key={group.key} style={{ marginBottom: spacing.md }}>
+                    <Text style={styles.sublabel}>{group.label}</Text>
+                    <View style={styles.chipRow}>
+                      {group.options.map((o) => {
+                        const selected = occasion === o.key;
+                        return (
+                          <TouchableOpacity
+                            key={o.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => { Haptics.selectionAsync(); setOccasion(o.key); }}
+                            activeOpacity={0.8}
+                            accessibilityLabel={o.label}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
               </>
             )}
 

@@ -43,7 +43,7 @@ describe('composeCelebrationAskText', () => {
 
   it('falls back to a generic who-for phrase with no name picked', () => {
     expect(composeCelebrationAskText({ occasion: 'graduation', whoFor: 'friend', activityType: 'night_out' })).toBe('A graduation night out for a friend');
-    expect(composeCelebrationAskText({ occasion: 'promotion', whoFor: 'family', activityType: 'activity' })).toBe('A promotion / new job activity for a family member');
+    expect(composeCelebrationAskText({ occasion: 'promotion', whoFor: 'family', activityType: 'activity' })).toBe('A promotion activity for a family member');
   });
 
   it('drops "other" from the subject rather than naming it literally', () => {

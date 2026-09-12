@@ -36,6 +36,7 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 import { gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
+import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 
 const PERIOD_DATE_FILTER = { morning: 'today', afternoon: 'today', evening: 'today', weekend: 'weekend' };
 
@@ -137,9 +138,18 @@ const PERIOD_SUBTITLES = {
 // render at once (line ~1726) -- they're never about the same real person
 // unless the caller deliberately double-entered one, which the Occasions
 // screen's own subtitle now warns against.
-const OCCASION_TYPE_ICONS = {
-  anniversary: '💑', graduation: '🎓', milestone: '🏆', life_event: '🌟', other: '📅', birthday: '🎂',
-};
+// Item 73 (CLAUDE.md): this used to be its own small hardcoded map --
+// exactly the "hard-coded around birthdays" pattern the item warns
+// against, since every occasion type added since (graduation/milestone/
+// etc., then wedding/retirement/new_job/... in this same item) had to be
+// separately remembered here too, and several already weren't (this
+// screen's own nudge card silently fell back to a generic 📅 for most of
+// them until now). Derives from OCCASION_OPTIONS -- the one real source
+// of truth for every occasion's icon -- so a future occasion added there
+// is automatically covered here too, no second list to keep in sync.
+function occasionTypeIcon(occasionType) {
+  return OCCASION_OPTIONS.find((o) => o.key === occasionType)?.icon ?? '📅';
+}
 
 // "Coffee" / "Coffee & Outdoors" / "Coffee, Outdoors & Music" — the real
 // top categories this section is drawn from, not just the first result.
@@ -1782,7 +1792,7 @@ export default function HomeScreen({ navigation }) {
               <View style={styles.outcomePromptCard}>
                 <View style={styles.outcomePromptHeaderRow}>
                   <Text style={styles.outcomePromptText} numberOfLines={2}>
-                    {OCCASION_TYPE_ICONS[occasionNudge.occasion_type] ?? '📅'} {occasionNudge.title} is{' '}
+                    {occasionTypeIcon(occasionNudge.occasion_type)} {occasionNudge.title} is{' '}
                     {occasionNudge.days_until === 0 ? 'today' : occasionNudge.days_until === 1 ? 'tomorrow' : `in ${occasionNudge.days_until} days`}
                     {' '}— want to plan something?
                   </Text>

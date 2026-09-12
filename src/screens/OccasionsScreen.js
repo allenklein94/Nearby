@@ -6,7 +6,7 @@ import { getMyOccasions, addOccasion, deleteOccasion, setOccasionReminderEnabled
 import { getMyOccasionGroupPlans } from '../services/occasionGroupPlans';
 import { getMyFriends } from '../services/friends';
 import { composeCelebrationTitle } from '../services/celebrateSomething';
-import { OCCASION_OPTIONS, personalOccasionTypeOptions } from '../constants/businessAttributes';
+import { OCCASION_OPTIONS, personalOccasionTypeOptions, personalOccasionTypeGroupOptions } from '../constants/businessAttributes';
 import { groupOccasionsByPerson } from '../utils/occasionGrouping';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -342,19 +342,29 @@ export default function OccasionsScreen({ navigation }) {
 
           <Text style={styles.sectionLabel} accessibilityRole="header">Add an occasion</Text>
           <View style={styles.form}>
-            <View style={styles.chipRow}>
-              {OCCASION_TYPES.map((t) => (
-                <TouchableOpacity
-                  key={t.key}
-                  style={[styles.chip, occasionType === t.key && styles.chipSelected]}
-                  onPress={() => handleOccasionTypeChange(t.key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={t.label}
-                >
-                  <Text style={[styles.chipText, occasionType === t.key && styles.chipTextSelected]}>{t.icon} {t.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Item 73 (CLAUDE.md): real grouped sections instead of one
+                long flat chip row -- same architecture the Occasion
+                wizard's own occasion step uses, so this screen (built for
+                "anyone, including someone not on Nearby") never falls
+                behind as the vocabulary grows. */}
+            {personalOccasionTypeGroupOptions().map((group) => (
+              <View key={group.key} style={{ marginBottom: spacing.sm }}>
+                <Text style={styles.fieldLabel}>{group.label}</Text>
+                <View style={styles.chipRow}>
+                  {group.options.map((t) => (
+                    <TouchableOpacity
+                      key={t.key}
+                      style={[styles.chip, occasionType === t.key && styles.chipSelected]}
+                      onPress={() => handleOccasionTypeChange(t.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t.label}
+                    >
+                      <Text style={[styles.chipText, occasionType === t.key && styles.chipTextSelected]}>{t.icon} {t.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ))}
 
             <Text style={styles.fieldLabel}>Who is this for?</Text>
             <View style={styles.chipRow}>

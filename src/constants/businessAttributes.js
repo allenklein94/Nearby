@@ -160,6 +160,14 @@ export function priorityTimeWindowLabel(key) {
 // not as a second parallel vocabulary, per this repo's "one ontology"
 // convention. Mirrors 20261016_celebrate_occasion_vocabulary_expansion.sql
 // exactly -- keep in sync if either ever changes.
+//
+// Item 73 (CLAUDE.md): "This can work for non-social life events too ...
+// don't hard-code the product around birthdays." Widened with 8 more real
+// life-event values (wedding through holiday_gathering below) -- mirrors
+// 20261031_occasion_vocabulary_life_events_expansion.sql exactly. 'promotion'
+// relabeled from "Promotion / New Job" to plain "Promotion" now that
+// 'new_job' exists as its own real value -- a label-only change, the
+// underlying key/data is untouched.
 export const OCCASION_OPTIONS = [
   { key: 'birthday', label: 'Birthday', icon: '🎂' },
   { key: 'anniversary', label: 'Anniversary', icon: '💍' },
@@ -171,21 +179,71 @@ export const OCCASION_OPTIONS = [
   { key: 'graduation', label: 'Graduation', icon: '🎓' },
   { key: 'baby_shower', label: 'Baby Shower', icon: '🍼' },
   { key: 'engagement', label: 'Engagement', icon: '💒' },
+  { key: 'wedding', label: 'Wedding', icon: '💐' },
   { key: 'housewarming', label: 'Housewarming', icon: '🏠' },
-  { key: 'promotion', label: 'Promotion / New Job', icon: '📈' },
+  { key: 'new_job', label: 'New Job', icon: '🚀' },
+  { key: 'promotion', label: 'Promotion', icon: '📈' },
+  { key: 'retirement', label: 'Retirement', icon: '🌅' },
+  { key: 'achievement', label: 'Achievement', icon: '🏆' },
+  { key: 'moving', label: 'Moving', icon: '📦' },
   { key: 'farewell', label: 'Farewell', icon: '👋' },
+  { key: 'reunion', label: 'Reunion', icon: '🤗' },
+  { key: 'welcome', label: 'Welcome', icon: '🙌' },
+  { key: 'holiday_gathering', label: 'Holiday Gathering', icon: '🎇' },
   { key: 'milestone', label: 'Milestone', icon: '🥂' },
   // occasions.occasion_type's own personal-record-only catch-all (real
   // since 20260914_occasions.sql) -- was missing from this list entirely
   // (occasionLabel() fell back to the raw 'life_event' string) until
   // "Make Occasions proactive" (CLAUDE.md) started sending real pushes
-  // about it. Deliberately still NOT in CELEBRATE_OCCASION_KEYS below --
+  // about it. Deliberately still NOT in CELEBRATE_OCCASION_GROUPS below --
   // stays a personal-record/manual-entry-only type, never wizard-picked
   // from scratch (20261023_life_event_occasion_downstream_fix.sql's own
   // header comment has the full reasoning).
   { key: 'life_event', label: 'Life Event', icon: '🌟' },
   { key: 'other', label: 'Other Occasion', icon: '✨' },
 ];
+
+// Item 73's own real "category architecture flexible enough for..." ask --
+// a genuine grouped structure, not just a longer flat chip row, so the
+// vocabulary can keep growing without the product reading as "birthdays,
+// plus an ever-longer afterthought list." Every key here must also exist
+// in OCCASION_OPTIONS above (occasionGroupOptions() filters out anything
+// that doesn't, so a typo here fails soft, never crashes). date_night/
+// casual_hangout/business_meal/family_gathering are deliberately excluded
+// from every group -- real occasions elsewhere (AskBusinessScreen's own
+// broader flat picker), but not "life event celebrations" in the sense
+// this grouping is about, same boundary CELEBRATE_OCCASION_KEYS already
+// drew before this item.
+export const OCCASION_GROUPS = [
+  {
+    key: 'celebrations',
+    label: 'Celebrations',
+    keys: ['birthday', 'anniversary', 'graduation', 'engagement', 'wedding', 'baby_shower', 'housewarming'],
+  },
+  {
+    key: 'milestones',
+    label: 'Milestones',
+    keys: ['new_job', 'promotion', 'retirement', 'achievement', 'moving', 'milestone'],
+  },
+  {
+    key: 'social_moments',
+    label: 'Social Moments',
+    keys: ['reunion', 'farewell', 'welcome', 'holiday_gathering'],
+  },
+  {
+    key: 'custom',
+    label: 'Custom',
+    keys: ['other'],
+  },
+];
+
+export function occasionGroupOptions() {
+  return OCCASION_GROUPS.map((g) => ({
+    key: g.key,
+    label: g.label,
+    options: g.keys.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean),
+  }));
+}
 
 export function occasionLabel(key) {
   return OCCASION_OPTIONS.find((o) => o.key === key)?.label ?? key;
@@ -196,11 +254,11 @@ export function occasionLabel(key) {
 // business_meal/family_gathering (real occasions elsewhere, but not
 // "life event celebrations" in the sense this wizard is about) while
 // keeping OCCASION_OPTIONS itself as the single source of truth for every
-// key's label/icon.
-export const CELEBRATE_OCCASION_KEYS = [
-  'birthday', 'anniversary', 'graduation', 'baby_shower', 'engagement',
-  'housewarming', 'promotion', 'farewell', 'milestone', 'other',
-];
+// key's label/icon. Item 73: now derived directly from OCCASION_GROUPS
+// (flattened in group order) instead of its own hand-maintained flat
+// list, so the wizard's occasion picker can never silently drift from the
+// grouped architecture it's meant to reflect.
+export const CELEBRATE_OCCASION_KEYS = OCCASION_GROUPS.flatMap((g) => g.keys);
 
 export function celebrateOccasionOptions() {
   return CELEBRATE_OCCASION_KEYS.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean);
@@ -217,23 +275,32 @@ export function celebrateOccasionOptions() {
 // CLAUDE.md) has no profiles.birthdate for Nearby to ever read, so their
 // birthday needs this same generic path everyone else here already gets.
 // 'other' is excluded outright -- too generic a calendar entry to be useful.
-export const CALENDAR_SAVEABLE_OCCASION_KEYS = [
-  'anniversary', 'graduation', 'baby_shower', 'engagement', 'housewarming', 'promotion', 'farewell', 'milestone',
-];
+export const CALENDAR_SAVEABLE_OCCASION_KEYS = CELEBRATE_OCCASION_KEYS.filter((k) => k !== 'birthday' && k !== 'other');
 
 // The occasions table's own occasion_type CHECK (20260914_occasions.sql +
 // 20261016_celebrate_occasion_vocabulary_expansion.sql +
-// 20261023_life_event_occasion_downstream_fix.sql) -- every value a
+// 20261023_life_event_occasion_downstream_fix.sql +
+// 20261031_occasion_vocabulary_life_events_expansion.sql) -- every value a
 // personal Occasion record can actually be saved as, whether via the
 // wizard's own "save to calendar" step or OccasionsScreen's standalone
-// manual form. Derived from OCCASION_OPTIONS, same "one ontology"
-// discipline as CELEBRATE_OCCASION_KEYS above -- keep in sync with the
-// table's own CHECK if either ever changes.
-export const PERSONAL_OCCASION_TYPE_KEYS = [
-  'birthday', 'anniversary', 'graduation', 'baby_shower', 'engagement',
-  'housewarming', 'promotion', 'farewell', 'milestone', 'life_event', 'other',
-];
+// manual form. Item 73: derived from the same OCCASION_GROUPS as
+// CELEBRATE_OCCASION_KEYS, plus 'life_event' -- the one value that's
+// personal-record-only and deliberately outside every group (see
+// OCCASION_OPTIONS' own comment above).
+export const PERSONAL_OCCASION_TYPE_KEYS = [...CELEBRATE_OCCASION_KEYS, 'life_event'];
 
 export function personalOccasionTypeOptions() {
   return PERSONAL_OCCASION_TYPE_KEYS.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean);
+}
+
+// Item 73: the same grouped shape occasionGroupOptions() gives the
+// Celebrate wizard, but for OccasionsScreen's broader "save an occasion
+// for anyone" form -- appends 'life_event' onto the Custom group (next to
+// 'other') rather than introducing a 5th group for a single personal-
+// record-only catch-all value.
+export function personalOccasionTypeGroupOptions() {
+  const lifeEvent = OCCASION_OPTIONS.find((o) => o.key === 'life_event');
+  return occasionGroupOptions().map((g) => (
+    g.key === 'custom' && lifeEvent ? { ...g, options: [...g.options, lifeEvent] } : g
+  ));
 }
