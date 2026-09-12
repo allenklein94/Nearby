@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing, typography } from '../theme';
+import { NearbyMark } from './brand';
 
 // Shared "couldn't load, try again" state for screens whose initial data
 // fetch has no error handling at all — previously a thrown error (e.g. no
@@ -10,11 +11,20 @@ import { radius, spacing, typography } from '../theme';
 // the load-side counterpart to useChatComposer's send-side recovery: same
 // idea (don't fail silently, let the user retry), different half of the
 // request lifecycle.
+//
+// Item 57 ("the N mark should become part of the product language, but
+// don't overdo it"): this is the one shared component every "couldn't load"
+// moment across the whole app already funnels through, so a single small,
+// muted mark here reaches broad, consistent brand identity with exactly
+// one change — not a per-screen retrofit. Muted (low opacity), not the
+// full-vividness gradient BrandedLoader/Login/Onboarding use, since this is
+// a quiet, secondary moment, not a hero one.
 export default function LoadErrorState({ message, onRetry }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
   return (
     <View style={styles.container}>
+      <NearbyMark size={28} style={styles.mark} />
       <Text style={styles.title}>Couldn't load this</Text>
       <Text style={styles.message}>{message ?? 'Check your connection and try again.'}</Text>
       <TouchableOpacity
@@ -32,6 +42,7 @@ export default function LoadErrorState({ message, onRetry }) {
 const getStyles = (colors) =>
   StyleSheet.create({
     container: { padding: spacing.xl, alignItems: 'center' },
+    mark: { opacity: 0.35, marginBottom: spacing.sm },
     title: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.xs },
     message: { color: colors.textSecondary, fontSize: 13, textAlign: 'center', marginBottom: spacing.md },
     button: {

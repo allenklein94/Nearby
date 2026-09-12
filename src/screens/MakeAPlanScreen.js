@@ -9,6 +9,7 @@ import { sendInvite } from '../services/invites';
 import { getSignedPhotoUrl } from '../services/photos';
 import { checkTextModeration } from '../services/textModeration';
 import LoadErrorState from '../components/LoadErrorState';
+import { NearbyMark } from '../components/brand';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -279,6 +280,10 @@ export default function MakeAPlanScreen({ route, navigation }) {
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
         ) : friends.length === 0 ? (
           <View>
+            {/* Item 57 ("N mark as product language, but don't overdo it"):
+                a small muted mark on this one real, self-contained empty-
+                state block. */}
+            <NearbyMark size={24} style={{ opacity: 0.3, alignSelf: 'center' }} />
             <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
             {/* Item 56 ("no dead ends"): a real way to actually go add
                 friends, not just copy telling the user what to do. */}

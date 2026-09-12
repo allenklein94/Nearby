@@ -365,12 +365,39 @@ export default function RootNavigator() {
     return () => subscription.remove();
   }, [session, profileComplete]);
 
+  // Item 57 ("the N mark as product language ... subtle brand transitions"):
+  // the Stack.Navigator below swaps its entire set of screens (a different
+  // ternary branch) on two real app-level state flips -- signing out
+  // (session -> null) and finishing onboarding (profileComplete -> true) --
+  // and until now that was an instant, un-transitioned cut with zero brand
+  // touch on either edge. This doesn't change the real navigation logic at
+  // all; it only inserts one brief BrandedLoader beat (the same component
+  // the boot gate below already uses) between the two real states, on
+  // exactly those two flips -- never on first mount (both refs start
+  // already equal to the initial values, so there's nothing to detect yet).
+  const prevSessionRef = useRef(session);
+  const prevProfileCompleteRef = useRef(profileComplete);
+  const [brandTransitioning, setBrandTransitioning] = useState(false);
+  useEffect(() => {
+    const wasSignedIn = !!prevSessionRef.current;
+    const isSignedIn = !!session;
+    const justSignedOut = wasSignedIn && !isSignedIn;
+    const justFinishedOnboarding = isSignedIn && !prevProfileCompleteRef.current && profileComplete;
+    prevSessionRef.current = session;
+    prevProfileCompleteRef.current = profileComplete;
+    if (justSignedOut || justFinishedOnboarding) {
+      setBrandTransitioning(true);
+      const timer = setTimeout(() => setBrandTransitioning(false), 450);
+      return () => clearTimeout(timer);
+    }
+  }, [session, profileComplete]);
+
   // Sep 6 2026 (CLAUDE.md, external UX critique item 13): this used to be
   // a bare blank screen while the session/profile check resolves -- the
   // one moment every single app open passes through, and the most natural
   // place for the new branded loading treatment (BrandedLoader.js) rather
   // than a generic spinner.
-  if (loading || (session && profileLoading)) return <BrandedLoader />;
+  if (loading || (session && profileLoading) || brandTransitioning) return <BrandedLoader />;
 
   return (
     <NavigationContainer ref={navigationRef} linking={linking}>

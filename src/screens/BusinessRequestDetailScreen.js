@@ -9,6 +9,7 @@ import { recordIntentSelection } from '../services/intentOutcomes';
 import { createBusinessPaymentIntent, isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from '../services/stripeConnect';
 import { openUberToDestination } from '../utils/uberDeepLink';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
+import { NearbyMark } from '../components/brand';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import OfferOutcomeModal from '../components/OfferOutcomeModal';
@@ -600,6 +601,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
         {offers.length === 0 ? (
           <View>
+            {/* Item 57 ("N mark as product language, but don't overdo it"):
+                a small muted mark on this one real, self-contained empty-
+                state block -- not the many inline single-line empty texts
+                elsewhere in this app that don't read as their own moment. */}
+            <NearbyMark size={24} style={{ opacity: 0.3, marginBottom: spacing.xs }} />
             <Text style={styles.emptyText}>No businesses have responded yet.</Text>
             {/* Item 56 ("no dead ends"): the original justSubmitted banner
                 only ever offered this retry once, right after submitting,

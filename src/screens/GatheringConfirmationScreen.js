@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
 import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
 import { getMyCircles } from '../services/friendCircles';
 import LoadErrorState from '../components/LoadErrorState';
+import { NearbyMark } from '../components/brand';
 import * as Haptics from 'expo-haptics';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -34,6 +35,14 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   const [invitingId, setInvitingId] = useState(null);
   const [circles, setCircles] = useState([]);
   const [invitingCircleId, setInvitingCircleId] = useState(null);
+  // Item 57 ("N mark as product language ... success confirmation"): this
+  // is the app's one real, already-existing celebration screen (the 🎉
+  // emoji + haptic below), and the single flagship spot for the brand mark
+  // to make a "confirmed by Nearby" moment — not a replacement for the
+  // celebratory emoji, a small addition above it. Same spring-in shape
+  // MatchCelebrationModal.js already established for a celebration entrance.
+  const markScale = useRef(new Animated.Value(0.7)).current;
+  const markOpacity = useRef(new Animated.Value(0)).current;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,6 +59,10 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
 
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Animated.parallel([
+      Animated.spring(markScale, { toValue: 1, friction: 6, useNativeDriver: true }),
+      Animated.timing(markOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
     load();
     isFirstGatheringHosted().then(setIsFirstHosted);
   }, [gatheringId, load]);
@@ -181,6 +194,9 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xxl, alignItems: 'center' }}>
+        <Animated.View style={{ opacity: markOpacity, transform: [{ scale: markScale }], marginBottom: spacing.xs }}>
+          <NearbyMark size={40} />
+        </Animated.View>
         <Text style={styles.celebrateIcon}>{isFirstHosted ? '🎉🌟' : '🎉'}</Text>
         <Text style={styles.title}>{isFirstHosted ? 'Your First Gathering Is Live!' : 'Your gathering is live!'}</Text>
         <Text style={styles.subtitle}>

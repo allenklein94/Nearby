@@ -7,6 +7,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
+import { NearbyMark } from '../components/brand';
 
 // Convergence pass P2 (CLAUDE.md, "Insights vs. Momentum -- one user-facing
 // 'how am I doing?' concept"): this screen used to be Momentum-only (the
@@ -148,6 +149,10 @@ export default function MomentumScreen({ navigation }) {
               </View>
             ) : (
               <View style={styles.chartCard}>
+                {/* Item 57 ("N mark as product language, but don't overdo
+                    it"): a small muted mark on this one real, self-
+                    contained empty-state card. */}
+                <NearbyMark size={24} style={{ opacity: 0.3, alignSelf: 'center', marginBottom: spacing.xs }} />
                 <Text style={styles.emptyText}>Nothing in the last {momentum.weeks.length} weeks yet — join or host a gathering to see it here.</Text>
                 {/* Item 56 ("no dead ends"): a real next action, same
                     destination ActivityScreen's own empty state already uses. */}
