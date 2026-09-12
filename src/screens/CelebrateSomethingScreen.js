@@ -84,16 +84,33 @@ const WHO_INVOLVED_OPTIONS = [
   { key: 'invite_specific', label: 'Invite Specific People', icon: '✋' },
 ];
 
-export default function CelebrateSomethingScreen({ navigation }) {
+// "Birthday reminders as a recurring retention mechanism" (CLAUDE.md): a
+// real reason to open the app should land somewhere useful, not back at
+// step 1 to re-answer questions the push already answered. `initialOccasion`/
+// `initialWhoFor`/`initialWhoForName`/`initialWhoForFriendId` (all optional)
+// pre-seed the wizard's own state and skip straight past whichever leading
+// steps are already known -- never further than the "What would you like
+// to do?" step, since that answer is never knowable in advance. Generic by
+// design, not birthday-specific -- any future deep link into this wizard
+// can use the same convention.
+function initialStepFor(route) {
+  const hasOccasion = !!route.params?.initialOccasion;
+  const hasWhoFor = !!route.params?.initialWhoFor;
+  if (hasOccasion && hasWhoFor) return 2; // 'activity'
+  if (hasOccasion) return 1; // 'who_for'
+  return 0;
+}
+
+export default function CelebrateSomethingScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => initialStepFor(route));
 
-  const [occasion, setOccasion] = useState(null);
+  const [occasion, setOccasion] = useState(route.params?.initialOccasion ?? null);
 
-  const [whoFor, setWhoFor] = useState(null);
-  const [whoForName, setWhoForName] = useState('');
-  const [whoForFriendId, setWhoForFriendId] = useState(null);
+  const [whoFor, setWhoFor] = useState(route.params?.initialWhoFor ?? null);
+  const [whoForName, setWhoForName] = useState(route.params?.initialWhoForName ?? '');
+  const [whoForFriendId, setWhoForFriendId] = useState(route.params?.initialWhoForFriendId ?? null);
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
@@ -147,6 +164,15 @@ export default function CelebrateSomethingScreen({ navigation }) {
     setWhoFor(key);
     if (key !== 'me') ensureFriendsLoaded();
   }
+
+  // A push-deep-link entry (initialWhoFor pre-seeded) skips straight past
+  // the "who's for" step's own onPress, which is normally what triggers
+  // this -- pre-load anyway so a real Back-to-review still shows the real
+  // friend chip list instead of an empty one.
+  useEffect(() => {
+    if (whoFor && whoFor !== 'me') ensureFriendsLoaded();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function pickWhoInvolved(key) {
     Haptics.selectionAsync();

@@ -135,3 +135,20 @@ const WHEN_PRESET_TO_DATE_WINDOW = { now: 'tonight', tonight: 'tonight', tomorro
 export function dateWindowForWhenPreset(whenPreset) {
   return WHEN_PRESET_TO_DATE_WINDOW[whenPreset] ?? null;
 }
+
+// "Birthday reminders as a recurring retention mechanism" (CLAUDE.md):
+// deep-linking an upcoming-birthday push straight into this wizard, for a
+// real, self-logged Occasions row (a non-Nearby-user person, e.g. "Mom"),
+// needs a real name to pre-fill -- but that table only stores a single
+// free-text title ("Mom's Birthday"), no separate name field. Best-effort,
+// honestly labeled extraction: only returns a name when the title
+// genuinely matches the "X's Birthday" shape every wizard-composed title
+// of this kind already has (composeCelebrationTitle's own output);
+// anything else (a title typed some other way) returns null rather than
+// guessing wrong -- the caller should fall back to letting the person
+// re-type it, never silently mislabel an unrelated string as a name.
+export function extractNameFromBirthdayTitle(title) {
+  if (!title) return null;
+  const match = title.match(/^(.+?)['’]s\s+birthday$/i);
+  return match ? match[1].trim() : null;
+}

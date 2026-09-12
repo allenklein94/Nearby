@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import { navigationRef } from '../navigation/RootNavigator';
 import { getBusinessAvailabilityById } from './businessFulfillment';
+import { extractNameFromBirthdayTitle } from './celebrateSomething';
 
 // A push tap can arrive (via getLastNotificationResponseAsync, below) before
 // the authenticated stack is mounted — e.g. the app was fully closed and the
@@ -218,6 +219,37 @@ export async function routeNotificationTap(data) {
     case 'birthday':
       if (data.birthday_user_id) {
         navigationRef.navigate('ViewProfile', { userId: data.birthday_user_id });
+      }
+      break;
+    // "Birthday reminders as a recurring retention mechanism" (CLAUDE.md):
+    // a real, planning-oriented reason to open the app, distinct from
+    // 'birthday' above (a same-day "wish them happy birthday" touchpoint,
+    // unchanged) -- this fires days ahead, while there's still real time
+    // to plan something, and lands directly on the "What would you like to
+    // do?" step of the Celebrate Something wizard rather than a bare
+    // profile. Two real sources: a connected Nearby friend/match's own
+    // profiles.birthdate (birthday_user_id + a real display_name, both
+    // server-sent), or a self-logged Occasions row for someone who isn't a
+    // Nearby user at all (occasion_title only -- Item 61 follow-up,
+    // CLAUDE.md's "don't require a Nearby account"). The occasions path
+    // best-effort extracts a name from the row's own title; when that
+    // doesn't cleanly parse, land one step earlier (still occasion-
+    // prefilled) rather than guess a name wrong.
+    case 'birthday_upcoming':
+      if (data.birthday_user_id) {
+        navigationRef.navigate('CelebrateSomething', {
+          initialOccasion: 'birthday',
+          initialWhoFor: 'friend',
+          initialWhoForName: data.display_name ?? null,
+          initialWhoForFriendId: data.birthday_user_id,
+        });
+      } else if (data.occasion_title) {
+        const extractedName = extractNameFromBirthdayTitle(data.occasion_title);
+        navigationRef.navigate('CelebrateSomething', extractedName
+          ? { initialOccasion: 'birthday', initialWhoFor: 'family', initialWhoForName: extractedName }
+          : { initialOccasion: 'birthday' });
+      } else {
+        navigationRef.navigate('Occasions');
       }
       break;
     case 'crossed_paths_sighting':

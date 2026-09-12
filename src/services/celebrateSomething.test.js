@@ -7,6 +7,7 @@ import {
   shouldOfferCalendarSave,
   buildOccasionSaveParams,
   dateWindowForWhenPreset,
+  extractNameFromBirthdayTitle,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -147,5 +148,24 @@ describe('dateWindowForWhenPreset', () => {
   it('honestly returns null for a custom picked date rather than guessing a bucket', () => {
     expect(dateWindowForWhenPreset('custom')).toBeNull();
     expect(dateWindowForWhenPreset(null)).toBeNull();
+  });
+});
+
+describe('extractNameFromBirthdayTitle', () => {
+  it('extracts the real name from a wizard-composed "X\'s Birthday" title', () => {
+    expect(extractNameFromBirthdayTitle("Mom's Birthday")).toBe('Mom');
+    expect(extractNameFromBirthdayTitle('Sarah’s Birthday')).toBe('Sarah');
+    expect(extractNameFromBirthdayTitle("My Best Friend's Birthday")).toBe('My Best Friend');
+  });
+
+  it('is case-insensitive on the trailing "birthday" word', () => {
+    expect(extractNameFromBirthdayTitle("Mom's birthday")).toBe('Mom');
+  });
+
+  it('honestly returns null for a title that does not match the expected shape, rather than guessing wrong', () => {
+    expect(extractNameFromBirthdayTitle('My Birthday')).toBeNull();
+    expect(extractNameFromBirthdayTitle('Family Reunion')).toBeNull();
+    expect(extractNameFromBirthdayTitle(null)).toBeNull();
+    expect(extractNameFromBirthdayTitle('')).toBeNull();
   });
 });
