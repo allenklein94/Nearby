@@ -40,6 +40,48 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 74 ("'Custom Occasion' is important... keeps the system open-ended") — fully DONE
+(2026-09-12), same-day direct follow-up to Item 73.** User's own example: "My dad is visiting
+from out of town" isn't a standard life event -- picking "Custom Occasion" should ask "What are
+you planning?", the user types "Dad's visiting — want to take him somewhere special," and Nearby
+understands the intent and starts building options directly, rather than forcing the usual
+who/what/when interrogation.
+
+Relabeled the occasion wizard's existing 'other' key from "Other Occasion" to "Custom Occasion"
+(same key/data everywhere else it's used -- AskBusinessScreen, BusinessDashboardScreen's priority-
+occasion picker, OccasionsScreen -- only the display label changed) and gave it a genuinely
+different, much shorter path in `CelebrateSomethingScreen.js`: `buildStepDefs()` now branches on
+`occasion === 'other'` to a 2-step flow (Occasion → Describe) instead of the usual 5, skipping
+who_for/activity/when/who_involved entirely. The new 'custom_describe' step is one free-text box
+("What are you planning?"), submitted through `runIntentSearch()` -- the exact same classify
+(`create-assistant`) + resolve (`resolveIntent`/`resolveCommunityIntent`) pipeline Home's ask box
+and Discover's search (Item 39) already use, not a new or weaker one. Real matching results
+(gatherings/business availability/communities/perks) render inline as plain tap-through rows
+(`navigateToIntentResultItem`); a `business_partner`-classified description routes straight to
+`RequestBusinessPartner`; when nothing already exists, the same "🏪 Ask Nearby Businesses" /
+"None of these? Create it yourself →" escape hatches every other empty/unclear intent result in
+this app already offers apply here too (`goAskBusinessFromCustom`/`proceedToCustomCreation`,
+mirroring HomeScreen's own `goAskBusiness`/`proceedToCreation` exactly) -- no dead ends, no
+fabricated structure forced onto an open-ended ask.
+
+Extracted `INTENT_SEARCH_TYPE_EMOJI`/`intentSearchDateLabel`/`intentSearchFallbackTitle` out of
+`DiscoverHubScreen.js` (which had them as its own private helpers for rendering its "understood
+as" search panel) into the dependency-free `intentResolverScoring.js` -- both screens now share
+one result-rendering vocabulary instead of two copies that could drift (this repo's own
+already-established Items 27/39 discipline), and the three functions are finally unit-tested
+(`intentResolverScoring.test.js`, 5 new tests) since `intentResolver.js` itself transitively
+imports supabase/expo-location and can't be imported in a plain Jest/Node test at all (confirmed
+live: importing it throws trying to strip types out of an `expo-modules-core` file under
+`node_modules`).
+
+No DB migration -- pure client-side reuse of already-existing, already-tested infrastructure. Full
+Jest suite 402/402 passing; all seven touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real account that picking "Custom Occasion"
+correctly shows the 2-step Describe flow, that a description like the dad-visiting example
+produces sensible real results (or the correct escape hatches when it doesn't), and that "Try a
+different description" correctly lets the user redo the search without losing their typed text.
+
 **Item 73 ("This can work for non-social life events too ... don't hard-code the product around
 birthdays") — fully DONE (2026-09-12), resumed after a codespace restart mid-build.** Found at
 session start: a complete, uncommitted migration
