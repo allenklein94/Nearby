@@ -19,9 +19,16 @@ import { spacing, radius, typography } from '../theme';
 // decision #3 — never nearby strangers, even ones the recommendation
 // engine would score as a good match).
 export default function GatheringConfirmationScreen({ route, navigation }) {
-  const { gatheringId, placeName, businessesAsked, preInviteResult } = route.params;
+  const { gatheringId, placeName, businessesAsked, preInviteResult, suggestedInviteeIds, suggestedInviteeLabel } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  // Item 71 (CLAUDE.md): "Occasions can automatically suggest people" --
+  // real, organizer-picked suggestions from CelebrateSomethingScreen's own
+  // who_involved step (mutual friends of whoever the occasion is for),
+  // never auto-invited -- just sorted to the top of this screen's own
+  // real invite panel with a "suggested" badge, still requiring the
+  // organizer's own explicit per-friend "Invite" tap below.
+  const suggestedIdSet = useState(() => new Set(suggestedInviteeIds ?? []))[0];
 
   const [gathering, setGathering] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +72,8 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
     ]).start();
     load();
     isFirstGatheringHosted().then(setIsFirstHosted);
+    if (suggestedIdSet.size > 0) handleOpenInvite();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gatheringId, load]);
 
   async function handleShare() {
@@ -270,37 +279,47 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
                 })}
               </View>
             )}
+            {suggestedIdSet.size > 0 && (
+              <Text style={styles.suggestedHeader}>
+                ✨ People you may want to invite{suggestedInviteeLabel ? ` — ${suggestedInviteeLabel}` : ''}
+              </Text>
+            )}
             {loadingFriends ? (
               <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
             ) : friends.length === 0 ? (
               <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
             ) : (
-              friends.map((f) => (
-                <View key={f.id} style={styles.friendRow}>
-                  {photoUrls[f.id] ? (
-                    <Image source={{ uri: photoUrls[f.id] }} style={styles.avatar} />
-                  ) : (
-                    <View style={[styles.avatar, styles.avatarPlaceholder]} />
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.friendName}>{f.display_name}</Text>
-                    {f.sharedContext && <Text style={styles.friendContext}>{f.sharedContext}</Text>}
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent]}
-                    onPress={() => handleInvite(f.id)}
-                    disabled={invitingId === f.id || invitedIds[f.id]}
-                    accessibilityLabel={invitedIds[f.id] ? 'Invite sent' : `Invite ${f.display_name}`}
-                    accessibilityRole="button"
-                  >
-                    {invitingId === f.id ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={styles.inviteButtonText}>{invitedIds[f.id] ? '✓ Sent' : 'Invite'}</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              ))
+              [...friends]
+                .sort((a, b) => (suggestedIdSet.has(b.id) ? 1 : 0) - (suggestedIdSet.has(a.id) ? 1 : 0))
+                .map((f) => {
+                  const isSuggested = suggestedIdSet.has(f.id);
+                  return (
+                    <View key={f.id} style={styles.friendRow}>
+                      {photoUrls[f.id] ? (
+                        <Image source={{ uri: photoUrls[f.id] }} style={styles.avatar} />
+                      ) : (
+                        <View style={[styles.avatar, styles.avatarPlaceholder]} />
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.friendName}>{isSuggested ? '🤝 ' : ''}{f.display_name}</Text>
+                        {f.sharedContext && <Text style={styles.friendContext}>{f.sharedContext}</Text>}
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent]}
+                        onPress={() => handleInvite(f.id)}
+                        disabled={invitingId === f.id || invitedIds[f.id]}
+                        accessibilityLabel={invitedIds[f.id] ? 'Invite sent' : `Invite ${f.display_name}`}
+                        accessibilityRole="button"
+                      >
+                        {invitingId === f.id ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.inviteButtonText}>{invitedIds[f.id] ? '✓ Sent' : 'Invite'}</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })
             )}
             <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel="Done" accessibilityRole="button">
               <Text style={styles.doneLink}>Done</Text>
@@ -335,6 +354,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   doneLink: { color: colors.textTertiary, textAlign: 'center', fontSize: 14 },
   inviteHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   inviteSubtext: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
+  suggestedHeader: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: spacing.xs },
   circleRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.md, gap: spacing.sm },
   circleChip: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.full,

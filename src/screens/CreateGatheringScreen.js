@@ -370,7 +370,19 @@ export default function CreateGatheringScreen({ navigation, route }) {
         linkOccasionToPlan({ occasionId: route.params.linkOccasionId, resultingGatheringId: created.id }).catch(() => {});
       }
 
-      navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName, businessesAsked: askLocalBusinesses });
+      navigation.replace('GatheringConfirmation', {
+        gatheringId: created.id,
+        placeName,
+        businessesAsked: askLocalBusinesses,
+        // Item 71 (CLAUDE.md): "Occasions can automatically suggest
+        // people" -- carries CelebrateSomethingScreen's own real,
+        // organizer-picked invite suggestions through to the confirmation
+        // screen's real invite panel. Still just a suggestion there too --
+        // nothing is sent until the organizer taps that screen's own
+        // per-friend "Invite" button.
+        suggestedInviteeIds: route.params?.suggestedInviteeIds ?? null,
+        suggestedInviteeLabel: route.params?.suggestedInviteeLabel ?? null,
+      });
     } catch (e) {
       Alert.alert('Error', e.message);
     }

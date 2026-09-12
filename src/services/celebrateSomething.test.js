@@ -13,6 +13,7 @@ import {
   dedupeBusinessCandidates,
   extractBusinessCandidateIds,
   formatBusinessOptionDetail,
+  possessiveFriendsLabel,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -362,5 +363,25 @@ describe('formatBusinessOptionDetail', () => {
 
   it('honestly returns null when neither field is real, never a fabricated placeholder', () => {
     expect(formatBusinessOptionDetail({ price: null, startsAt: null })).toBeNull();
+  });
+});
+
+describe('possessiveFriendsLabel', () => {
+  it('adds a plain possessive for a name not ending in s', () => {
+    expect(possessiveFriendsLabel('Sarah')).toBe('Sarah’s friends');
+  });
+
+  it('adds only an apostrophe for a name ending in s', () => {
+    expect(possessiveFriendsLabel('Chris')).toBe('Chris’ friends');
+  });
+
+  it('trims whitespace before formatting', () => {
+    expect(possessiveFriendsLabel('  Mike  ')).toBe('Mike’s friends');
+  });
+
+  it('returns null for an empty or missing name, never a fabricated label', () => {
+    expect(possessiveFriendsLabel('')).toBeNull();
+    expect(possessiveFriendsLabel(null)).toBeNull();
+    expect(possessiveFriendsLabel(undefined)).toBeNull();
   });
 });

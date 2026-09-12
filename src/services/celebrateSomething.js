@@ -342,3 +342,14 @@ export function resolveDecidedGroupPlanParams(decided, groupPlanId = null) {
     initialBudgetMax: decided.budgetMax ?? null,
   };
 }
+
+// Item 71 (CLAUDE.md): "Occasions can automatically suggest people" -- a
+// real, honest possessive label ("Sarah's friends", "Chris' friends") for
+// the who_involved step's suggestion panel and the confirmation screen it
+// carries through to. Pure and dependency-free, same split as every other
+// small formatter in this file.
+export function possessiveFriendsLabel(name) {
+  const trimmed = (name ?? '').trim();
+  if (!trimmed) return null;
+  return `${trimmed}${trimmed.endsWith('s') ? '’' : '’s'} friends`;
+}

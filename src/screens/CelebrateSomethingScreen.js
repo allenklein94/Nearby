@@ -21,6 +21,7 @@ import {
   buildOccasionSaveParams,
   dateWindowForWhenPreset,
   dedupeBusinessCandidates,
+  possessiveFriendsLabel,
   ACTIVITY_OPTIONS,
   BUDGET_RANGE_OPTIONS,
   formatBudgetRange,
@@ -242,15 +243,34 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   async function ensureFriendsLoaded() {
     if (friendsLoaded || loadingFriends) return;
     setLoadingFriends(true);
-    const [data, mutuals] = await Promise.all([
-      getMyFriends(),
-      whoForFriendId ? getMutualFriends(whoForFriendId) : Promise.resolve([]),
-    ]);
+    const data = await getMyFriends();
     setFriends(data);
-    setMutualFriendIds(new Set(mutuals.map((m) => m.id)));
     setLoadingFriends(false);
     setFriendsLoaded(true);
   }
+
+  // Items 63/71 (CLAUDE.md) fix: mutual friends must be re-fetched whenever
+  // whoForFriendId itself changes, not folded into ensureFriendsLoaded()'s
+  // one-shot fetch above. Real bug found while building Item 71: the "who
+  // is this for" step's onPress calls ensureFriendsLoaded() the instant the
+  // "A Friend" chip is tapped -- BEFORE the user has picked which specific
+  // friend, so whoForFriendId is still null at that moment. Baking the
+  // mutual-friends fetch into that one-shot call meant it was permanently
+  // stuck at an empty set for the rest of the wizard session (friendsLoaded
+  // guards against ever calling it again), silently breaking Item 63's own
+  // "🤝 marks a friend you both know" badge on the group-vote invite step
+  // ever since it shipped -- fails quiet, not a crash, so nothing caught it.
+  useEffect(() => {
+    let cancelled = false;
+    if (!whoForFriendId) {
+      setMutualFriendIds(new Set());
+      return undefined;
+    }
+    getMutualFriends(whoForFriendId).then((mutuals) => {
+      if (!cancelled) setMutualFriendIds(new Set(mutuals.map((m) => m.id)));
+    });
+    return () => { cancelled = true; };
+  }, [whoForFriendId]);
 
   async function ensureCommunitiesLoaded() {
     if (communitiesLoaded || loadingCommunities) return;
@@ -566,6 +586,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       // whichever Occasion/group plan sent it here.
       if (groupPlanId) params.linkOccasionGroupPlanId = groupPlanId;
       if (savedOccasionId) params.linkOccasionId = savedOccasionId;
+      // Item 71 (CLAUDE.md): carries the who_involved step's own
+      // suggested-invitee selections through so GatheringConfirmationScreen
+      // can surface them as a real, pre-highlighted (never auto-sent)
+      // suggestion once the gathering exists -- the organizer still taps
+      // "Invite" per person there, same as any other invite.
+      if (selectedInviteeIds.size > 0) {
+        params.suggestedInviteeIds = Array.from(selectedInviteeIds);
+        params.suggestedInviteeLabel = possessiveFriendsLabel(whoForName);
+      }
       navigation.navigate('CreateGathering', params);
       return;
     }
@@ -1052,9 +1081,54 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 )}
 
                 {(whoInvolved === 'friends' || whoInvolved === 'family' || whoInvolved === 'invite_specific') && (
-                  <Text style={styles.helperText}>
-                    We'll take you to your new plan — from there, "Invite Friends" lets you pick exactly who should know.
-                  </Text>
+                  <>
+                    {/* Item 71 (CLAUDE.md): "Occasions can automatically
+                        suggest people" -- real, existing mutual friends
+                        between the organizer and whoForFriendId (already
+                        loaded via ensureFriendsLoaded/get_mutual_friends,
+                        the same infrastructure Item 63 built for the
+                        group-vote invite step), surfaced here as an
+                        explicit suggestion. A tap only ever adds a friend
+                        to selectedInviteeIds -- nothing is invited yet;
+                        the actual send still requires the organizer's own
+                        explicit tap on GatheringConfirmationScreen's real
+                        per-friend "Invite" button once the gathering
+                        exists. Never shown for a stranger the organizer
+                        isn't already connected to (no whoForFriendId, or
+                        zero real mutual friends) -- this repo's own
+                        no-stranger-discovery rule. */}
+                    {whoForFriendId && mutualFriendIds.size > 0 && (
+                      <>
+                        <Text style={[styles.label, { marginTop: spacing.lg }]}>People you may want to invite</Text>
+                        <Text style={styles.helperText}>
+                          {possessiveFriendsLabel(whoForName) ?? 'Friends you both know'} — just suggestions, you decide who to invite.
+                        </Text>
+                        <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                          {friends.filter((f) => mutualFriendIds.has(f.id)).map((f) => {
+                            const selected = selectedInviteeIds.has(f.id);
+                            return (
+                              <TouchableOpacity
+                                key={f.id}
+                                style={[styles.chip, selected && styles.chipSelected]}
+                                onPress={() => toggleInvitee(f.id)}
+                                activeOpacity={0.8}
+                                accessibilityLabel={f.display_name}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: selected }}
+                              >
+                                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                                  {selected ? '✓ ' : ''}🤝 {f.display_name}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </>
+                    )}
+                    <Text style={[styles.helperText, { marginTop: spacing.md }]}>
+                      We'll take you to your new plan — from there, "Invite Friends" lets you pick exactly who should know.
+                    </Text>
+                  </>
                 )}
               </>
             )}
