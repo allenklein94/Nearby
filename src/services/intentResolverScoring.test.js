@@ -13,6 +13,8 @@ const {
   occasionBonus,
   subcategoryBonus,
   secondaryCategoryBonus,
+  favoriteBusinessBonus,
+  pastPlanBonus,
   getBusinessAvailabilityReasons,
   detectFriendDiscoveryIntent,
   SCORE_HAPPENING_NOW,
@@ -198,6 +200,39 @@ describe('secondaryCategoryBonus', () => {
   });
 });
 
+// "Anniversaries could work the same way" follow-up (CLAUDE.md).
+describe('favoriteBusinessBonus', () => {
+  it('awards a bonus when the caller follows this exact business', () => {
+    expect(favoriteBusinessBonus({ partner_id: 'p1' }, new Set(['p1', 'p2']))).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when the caller follows other businesses but not this one', () => {
+    expect(favoriteBusinessBonus({ partner_id: 'p1' }, new Set(['p2', 'p3']))).toBe(0);
+  });
+
+  it('awards nothing when the caller follows no businesses, or the row has no partner_id', () => {
+    expect(favoriteBusinessBonus({ partner_id: 'p1' }, new Set())).toBe(0);
+    expect(favoriteBusinessBonus({ partner_id: 'p1' }, null)).toBe(0);
+    expect(favoriteBusinessBonus({}, new Set(['p1']))).toBe(0);
+  });
+});
+
+describe('pastPlanBonus', () => {
+  it('awards a bonus when the caller has a real past accepted/completed plan with this exact business', () => {
+    expect(pastPlanBonus({ partner_id: 'p1' }, new Set(['p1', 'p2']))).toBe(SCORE_HAPPENING_NOW);
+  });
+
+  it('awards nothing when the caller has past plans with other businesses but not this one', () => {
+    expect(pastPlanBonus({ partner_id: 'p1' }, new Set(['p2', 'p3']))).toBe(0);
+  });
+
+  it('awards nothing when the caller has no past plans, or the row has no partner_id', () => {
+    expect(pastPlanBonus({ partner_id: 'p1' }, new Set())).toBe(0);
+    expect(pastPlanBonus({ partner_id: 'p1' }, null)).toBe(0);
+    expect(pastPlanBonus({}, new Set(['p1']))).toBe(0);
+  });
+});
+
 describe('getBusinessAvailabilityReasons', () => {
   it('returns no reasons when nothing was asked and nothing matches', () => {
     expect(getBusinessAvailabilityReasons({}, {})).toEqual([]);
@@ -224,11 +259,21 @@ describe('getBusinessAvailabilityReasons', () => {
     expect(getBusinessAvailabilityReasons({ priority_occasions: ['anniversary'] }, { occasion: 'anniversary' })).toEqual(['Great fit for the occasion']);
   });
 
+  it('names a real favorite-business / past-plan match, in past-plan-before-favorite priority order', () => {
+    expect(getBusinessAvailabilityReasons({ partner_id: 'p1' }, { pastPartnerIds: new Set(['p1']) })).toEqual(["You've been here before"]);
+    expect(getBusinessAvailabilityReasons({ partner_id: 'p1' }, { followedPartnerIds: new Set(['p1']) })).toEqual(['A business you follow']);
+    expect(getBusinessAvailabilityReasons({ partner_id: 'p1' }, {
+      pastPartnerIds: new Set(['p1']), followedPartnerIds: new Set(['p1']),
+    })).toEqual(["You've been here before", 'A business you follow']);
+  });
+
   it('never fabricates a reason for a real mismatch', () => {
     expect(getBusinessAvailabilityReasons({ cuisine: 'mexican' }, { cuisine: 'italian' })).toEqual([]);
     expect(getBusinessAvailabilityReasons({ attributes: ['quiet'] }, { attributes: ['dog_friendly'] })).toEqual([]);
     expect(getBusinessAvailabilityReasons({ accommodates_party_types: ['solo'] }, { partyType: 'date' })).toEqual([]);
     expect(getBusinessAvailabilityReasons({ priority_occasions: ['birthday'] }, { occasion: 'anniversary' })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({ partner_id: 'p1' }, { pastPartnerIds: new Set(['p2']) })).toEqual([]);
+    expect(getBusinessAvailabilityReasons({ partner_id: 'p1' }, { followedPartnerIds: new Set(['p2']) })).toEqual([]);
   });
 
   it('returns multiple real reasons together, in the same priority order resolveBusinessAvailability scores them', () => {

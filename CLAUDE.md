@@ -40,6 +40,43 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Anniversaries could work the same way" — fully DONE (2026-09-12), same-day direct follow-up to
+the birthday planning nudge below.** Two parts, both shipped: (1) a new push,
+`send_anniversary_planning_nudges()` (`20261019_anniversary_planning_nudge.sql`), mirrors the
+birthday nudge's mechanism but at a 14-day lead (per the user's own example) and from a single
+real source — a self-logged `occasions` row of type 'anniversary' (no structural
+`profiles.anniversary_date`-style column exists for this occasion type, unlike birthday). When
+the occasion's own `connected_user_id` is set (only ever true when the Celebrate Something
+wizard's "save to calendar" step originally attached a real, explicitly-picked connected friend/
+match), the push carries that id + the partner's real `display_name`, letting the client deep-link
+straight past the wizard's "who's this for" step the rich way, exactly like birthday's connected-
+friend case; otherwise it falls back to occasion-only prefill. (2) The user's own broader ask —
+"Nearby could use preferences, previous activities, favorite businesses, location, availability,
+budget, past plans to suggest options" — audited against what `resolveIntent()` (the same
+resolver the wizard's own "Options" step already calls, Item 61 fast-follow) already used:
+location/availability/preferences were already real scored signals; "previous activities"/"past
+plans" and "favorite businesses" were not. Closed both as two new real, non-fabricated scoring
+bonuses in `intentResolverScoring.js` — `favoriteBusinessBonus()` (a business the caller has
+explicitly followed, `business_followers`) and `pastPlanBonus()` (a business the caller has a
+real past accepted/completed `business_request_offers` row with — genuine repeat-visit affinity,
+never a browse/view) — fetched once per `resolveIntent()` call via new
+`getMyBusinessAffinitySignals()` (`businessFulfillment.js`, best-effort, fails open to empty sets,
+same non-blocking-parallel shape as the existing weather fetch) and wired into
+`resolveBusinessAvailability()`'s scoring + `getBusinessAvailabilityReasons()`'s "why" text ("You've
+been here before" / "A business you follow"). This benefits every `resolveIntent()` caller (Home's
+ask box, Discover search, the wizard), not just anniversary. **Budget deliberately NOT built as a
+third bonus** — no real, non-fabricated per-user budget signal exists to derive one from yet
+(disclosed gap, not silently skipped). Verified live against production via disposable rolled-back
+transactions (a connected-partner anniversary and a solo one both fire exactly once at the 14-day
+mark with correct payloads; a wrong-lead-time occasion correctly doesn't fire) before applying the
+migration for real; function + cron job (`send-anniversary-planning-nudges`, daily 9am) confirmed
+live afterward. New Jest coverage for both scoring functions; full suite 330/330 passing; all five
+touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a
+running app or against a real authenticated session (no simulator/device tooling this session,
+standing note) — the new `business_followers`/`business_request_offers` client queries reuse an
+already-established `!inner()` join pattern from `homeDashboard.js` but weren't run against a real
+signed-in user this session.
+
 **"Birthday reminders as a recurring retention mechanism" — fully DONE (2026-09-12).** Direct
 user follow-up, resumed after a codespace restart mid-build (uncommitted work found at session
 start: a new migration file plus edits to `CelebrateSomethingScreen.js`/`celebrateSomething.js`/

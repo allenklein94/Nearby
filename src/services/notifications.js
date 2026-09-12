@@ -252,6 +252,29 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('Occasions');
       }
       break;
+    // "Anniversaries could work the same way" (CLAUDE.md, direct follow-up):
+    // same real mechanism as birthday_upcoming above, but anniversary has
+    // no structural "connected user's own profile field" source at all
+    // (send_anniversary_planning_nudges() reads only a self-logged
+    // occasions row) -- connected_user_id/connected_display_name are only
+    // ever present when the wizard's own "save to calendar" step originally
+    // attached a real, explicitly-picked connected friend/match to this
+    // occasion (celebrateSomething.js's shouldOfferCalendarSave()), never
+    // inferred from the free-text title.
+    case 'anniversary_upcoming':
+      if (data.connected_user_id) {
+        navigationRef.navigate('CelebrateSomething', {
+          initialOccasion: 'anniversary',
+          initialWhoFor: 'friend',
+          initialWhoForName: data.connected_display_name ?? null,
+          initialWhoForFriendId: data.connected_user_id,
+        });
+      } else if (data.occasion_title) {
+        navigationRef.navigate('CelebrateSomething', { initialOccasion: 'anniversary' });
+      } else {
+        navigationRef.navigate('Occasions');
+      }
+      break;
     case 'crossed_paths_sighting':
       // Same real destination the existing Crossed Paths Discover surfaces
       // already open on a tap (see CLAUDE.md, "Unified Crossed Paths across

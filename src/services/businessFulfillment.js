@@ -849,6 +849,42 @@ export async function getBusinessAvailabilityById(availabilityId) {
   return data?.[0] ?? null;
 }
 
+// "Anniversaries could work the same way" follow-up (CLAUDE.md, direct user
+// request): two real, already-captured personalization signals for
+// resolveBusinessAvailability() (intentResolver.js) to score against --
+// which businesses the caller has explicitly followed (business_followers,
+// the same real relationship the "+Follow" button on BusinessProfileScreen
+// already writes) and which businesses the caller has actually transacted
+// with before (a real past business_request_offers row of theirs at status
+// accepted/completed -- genuine repeat-visit affinity, not a browse/view).
+// Both queries are scoped to the caller's own rows by RLS (business_followers'
+// own user_id policy; business_request_offers' "Requesters can view offers
+// on their own requests" policy via the business_requests join). Best-effort:
+// an unauthenticated caller or either query failing returns empty sets
+// rather than throwing -- this personalizes ranking, it never gates it.
+export async function getMyBusinessAffinitySignals() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return { followedPartnerIds: new Set(), pastPartnerIds: new Set() };
+
+  const [followedResult, pastResult] = await Promise.allSettled([
+    supabase.from('business_followers').select('brand_partner_id').eq('user_id', myId),
+    supabase
+      .from('business_request_offers')
+      .select('partner_id, status, business_requests!inner(requester_id)')
+      .eq('business_requests.requester_id', myId)
+      .in('status', ['accepted', 'completed']),
+  ]);
+
+  const followedPartnerIds = new Set(
+    followedResult.status === 'fulfilled' ? (followedResult.value.data ?? []).map((r) => r.brand_partner_id) : []
+  );
+  const pastPartnerIds = new Set(
+    pastResult.status === 'fulfilled' ? (pastResult.value.data ?? []).map((r) => r.partner_id) : []
+  );
+  return { followedPartnerIds, pastPartnerIds };
+}
+
 export async function searchPolicyOnlyBusinesses({ latitude = null, longitude = null, radiusMiles = 15, partySize = null } = {}) {
   const { data, error } = await supabase.rpc('search_policy_only_businesses', {
     latitude_param: latitude,

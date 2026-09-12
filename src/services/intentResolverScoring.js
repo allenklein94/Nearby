@@ -226,6 +226,38 @@ export function secondaryCategoryBonus(row, category) {
   return secondaryCategories.includes(category) ? SCORE_HAPPENING_NOW : 0;
 }
 
+// "Anniversaries could work the same way ... Nearby could use preferences,
+// previous activities, favorite businesses, location, availability, budget,
+// past plans to suggest options" (CLAUDE.md, direct follow-up to the
+// birthday planning nudge). Location/availability/budget/preferences were
+// already real resolver inputs (row.distance_miles, search only ever
+// returns currently-live postings, attributeAndCuisineBonus/
+// accommodatesPartyTypeBonus/occasionBonus above) -- these two close the
+// two genuinely missing real signals: a business the caller has explicitly
+// followed (business_followers, the same real relationship the "+Follow"
+// button on BusinessProfileScreen writes), and a business the caller has
+// actually transacted with before (a real past business_request_offers row
+// of theirs at status accepted/completed -- genuine repeat-visit affinity,
+// not a browse/view). Both flat SCORE_HAPPENING_NOW bonuses, same "real
+// signal, never a filter" shape as every bonus above -- a business the
+// caller has no history with is never excluded, just not boosted.
+// Deliberately two separate bonuses, not one combined "affinity" bonus:
+// following a business and having actually paid/reserved there are two
+// independently meaningful real signals, same reasoning
+// attributeAndCuisineBonus()'s own header comment gives for scoring cuisine
+// and attributes separately. Budget is deliberately NOT built as a third
+// bonus here -- there is no real, non-fabricated per-user budget signal to
+// derive one from yet (see CLAUDE.md's own note on this).
+export function favoriteBusinessBonus(row, followedPartnerIds) {
+  if (!row.partner_id || !followedPartnerIds || followedPartnerIds.size === 0) return 0;
+  return followedPartnerIds.has(row.partner_id) ? SCORE_HAPPENING_NOW : 0;
+}
+
+export function pastPlanBonus(row, pastPartnerIds) {
+  if (!row.partner_id || !pastPartnerIds || pastPartnerIds.size === 0) return 0;
+  return pastPartnerIds.has(row.partner_id) ? SCORE_HAPPENING_NOW : 0;
+}
+
 // Thursday plan item 23 ("every recommendation should explain WHY"):
 // gatherings have always had getGatheringFitReasons() (services/
 // gatherings.js) feeding a real reason into resolveIntent()'s subtitle;
@@ -237,7 +269,7 @@ export function secondaryCategoryBonus(row, category) {
 // exact condition (never a new signal, never a fabricated one) and returns
 // human-readable text for whichever ones actually fired, in the same
 // priority order resolveBusinessAvailability() already scores them in.
-export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion } = {}) {
+export function getBusinessAvailabilityReasons(row, { category, attributes, cuisine, partyType, occasion, followedPartnerIds, pastPartnerIds } = {}) {
   const reasons = [];
   const matchesCategory = !!(category && (
     (row.category && row.category === category)
@@ -268,6 +300,8 @@ export function getBusinessAvailabilityReasons(row, { category, attributes, cuis
     const priorityOccasions = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
     if (priorityOccasions.includes(occasion)) reasons.push('Great fit for the occasion');
   }
+  if (row.partner_id && pastPartnerIds && pastPartnerIds.has(row.partner_id)) reasons.push("You've been here before");
+  if (row.partner_id && followedPartnerIds && followedPartnerIds.has(row.partner_id)) reasons.push('A business you follow');
   return reasons;
 }
 
