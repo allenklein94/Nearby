@@ -40,6 +40,48 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 64 ("'For Someone Else' is a huge distinction") — fully DONE (2026-09-12), same-day direct
+user follow-up to Items 62 & 63 below.** User's own framing: the Create flow should explicitly
+ask "Who is this for? Me / A friend / Family / Someone else" — not a cosmetic addition, but a
+real expansion of what Nearby is for: not only a tool for the user's own activities, but a tool
+for organizing experiences for the people they care about.
+
+Shipped on `CreateHubScreen.js` itself — the one place every create path already funnels through
+(Item 61's "I wouldn't clutter Create with 10 separate buttons" redesign) — as an always-visible
+selector at the very top, above the 3 primary cards, using the exact same whoFor vocabulary
+(`me`/`friend`/`family`/`someone_else`) `CelebrateSomethingScreen`'s own who_for step already
+established, so the two questions never drift and Occasion can consume the answer directly.
+Defaults to "Me," so a user who never touches it sees zero behavior change. Picking anything else
+reveals the same real-friend-chip-plus-free-text-name combo the wizard already uses (lazy-loaded
+via `getMyFriends()`).
+
+The answer threads through as a real, always-editable prefill — never auto-submitted, per this
+repo's own "AI suggests, never silently commits" discipline even though this isn't AI-driven:
+**Occasion** gets full structural support for free (it already has `who_for_name`/
+`who_for_friend_id` real columns from "Occasion architecture should not be a silo") — the card
+tap now passes `initialWhoFor`/`initialWhoForName`/`initialWhoForFriendId` straight into the
+already-existing route params `CelebrateSomethingScreen` reads, landing on its own who_for step
+pre-filled rather than blank. **Gathering** and the "Ask Nearby Businesses"/"Start a Weekly
+Meetup" quick actions (both of which also land on `CreateGathering`) get a real, editable title/
+text prefill (`"{Name}'s Gathering"` / `"Something for {Name}"`, new pure `buildGatheringQuickStart
+Title()`/`buildAskBusinessPrefillText()` in `src/utils/createHubWhoFor.js`, 12 new Jest tests) —
+no new schema, since neither gatherings nor business_requests has (or needs) a structural "who
+for" column for this. **Community was deliberately left out** — it's a shared, ongoing entity by
+its own nature ("Build something ongoing"), not something "for" one person, and forcing a signal
+onto it would fabricate context that doesn't fit; disclosed in the code rather than silently
+applied. "Invite Friends"/"Plan a Date"/"Meet New People" quick actions are already inherently
+about a specific person and were left untouched. The "Something Else" free-text AI box was also
+left untouched — it can already express "for my mom" in natural language, and force-injecting the
+selector's text into that field would fight with what the user is actively typing.
+
+Full Jest suite 352/352 passing (12 new); all three touched/new files (`CreateHubScreen.js`,
+`createHubWhoFor.js`, `createHubWhoFor.test.js`) transform-checked clean via `@babel/core` +
+`babel-preset-expo`. No DB migration — pure client-side wiring over already-existing route params
+and columns. Not exercised in a running app (no simulator/device tooling this session, standing
+note) — next session should confirm the selector renders correctly above the 3 primary cards and
+that tapping Occasion after picking a friend actually lands on a pre-filled (not blank) who_for
+step.
+
 **Items 62 & 63 ("Let users save important dates for people" / "make the reminder useful
 immediately") — fully DONE (2026-09-12), same-day direct user follow-up to "Make Occasions
 proactive" below.** User's own mock for item 62: an "Occasions & Reminders" section grouped per

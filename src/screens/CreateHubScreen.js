@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Acti
 import { Ionicons } from '@expo/vector-icons';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { classifyCreateRequest } from '../services/createAssistant';
+import { getMyFriends } from '../services/friends';
+import { buildGatheringQuickStartTitle, buildAskBusinessPrefillText, buildOccasionWhoForParams } from '../utils/createHubWhoFor';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -41,6 +43,21 @@ const PRIMARY_CREATE_OPTIONS = [
 // / the old "bigger" section) into one flat secondary list -- see the
 // header comment above for why. Each of these already routed somewhere
 // real before this change; only their visual weight changed.
+// Item 64 (CLAUDE.md, direct user request): "'For Someone Else' is a huge
+// distinction... Nearby isn't only a social app for my own activities.
+// It's a tool for organizing experiences for the people I care about."
+// Same vocabulary CelebrateSomethingScreen's own who_for step already
+// uses -- 'me'/'friend'/'family'/'someone_else' -- so the two never drift
+// and the Occasion card can hand this straight through as a real prefill
+// (initialWhoFor/initialWhoForName/initialWhoForFriendId, already-live
+// route params that screen supports).
+const WHO_FOR_OPTIONS = [
+  { key: 'me', label: 'Me', icon: '🙋' },
+  { key: 'friend', label: 'A Friend', icon: '🤝' },
+  { key: 'family', label: 'Family', icon: '👨‍👩‍👧' },
+  { key: 'someone_else', label: 'Someone Else', icon: '✨' },
+];
+
 const QUICK_ACTIONS = [
   { icon: 'person-add-outline', label: 'Invite Friends', route: 'InviteFriends' },
   { icon: 'heart-outline', label: 'Plan a Date', route: 'Messages' },
@@ -55,6 +72,36 @@ export default function CreateHubScreen({ navigation, route }) {
   const [showSomethingElse, setShowSomethingElse] = useState(false);
   const [assistantText, setAssistantText] = useState('');
   const [thinking, setThinking] = useState(false);
+
+  // Item 64: "Who is this for?" -- defaults to 'me' so a user who never
+  // touches this behaves exactly as before. Real connected friends are
+  // lazy-loaded the first time a non-'me' option is picked, same pattern
+  // CelebrateSomethingScreen's own who_for step already uses.
+  const [whoFor, setWhoFor] = useState('me');
+  const [whoForName, setWhoForName] = useState('');
+  const [whoForFriendId, setWhoForFriendId] = useState(null);
+  const [friends, setFriends] = useState([]);
+  const [friendsLoaded, setFriendsLoaded] = useState(false);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+
+  async function ensureFriendsLoaded() {
+    if (friendsLoaded || loadingFriends) return;
+    setLoadingFriends(true);
+    const data = await getMyFriends();
+    setFriends(data);
+    setLoadingFriends(false);
+    setFriendsLoaded(true);
+  }
+
+  function pickWhoFor(key) {
+    setWhoFor(key);
+    if (key === 'me') {
+      setWhoForName('');
+      setWhoForFriendId(null);
+    } else {
+      ensureFriendsLoaded();
+    }
+  }
 
   // Item 61 ("Celebrate Something", CLAUDE.md): the wizard's own "Custom"
   // activity type has no structured destination to route to -- it hands
@@ -75,7 +122,30 @@ export default function CreateHubScreen({ navigation, route }) {
   }
 
   function handleQuickAction(action) {
-    navigation.navigate(action.route, action.params);
+    const trimmedName = whoForName.trim() || null;
+    let extraParams = null;
+    if (action.route === 'AskBusiness') {
+      const prefillText = buildAskBusinessPrefillText(whoFor, trimmedName);
+      if (prefillText) extraParams = { prefillText };
+    } else if (action.route === 'CreateGathering') {
+      const quickStartTitle = buildGatheringQuickStartTitle(whoFor, trimmedName);
+      if (quickStartTitle) extraParams = { quickStartTitle };
+    }
+    navigation.navigate(action.route, extraParams ? { ...action.params, ...extraParams } : action.params);
+  }
+
+  function handlePrimaryCardPress(opt) {
+    if (opt.key === 'occasion') {
+      navigation.navigate(opt.route, buildOccasionWhoForParams({ whoFor, whoForName: whoForName.trim() || null, whoForFriendId }));
+    } else if (opt.key === 'gathering') {
+      const quickStartTitle = buildGatheringQuickStartTitle(whoFor, whoForName.trim() || null);
+      navigation.navigate(opt.route, quickStartTitle ? { quickStartTitle } : undefined);
+    } else {
+      // Community is a shared, ongoing entity, not something "for" one
+      // person -- deliberately not threaded through (this file's own
+      // createHubWhoFor.js header comment has the full reasoning).
+      navigation.navigate(opt.route);
+    }
   }
 
   async function handleAskAssistant() {
@@ -191,6 +261,69 @@ export default function CreateHubScreen({ navigation, route }) {
             </View>
           ) : (
             <>
+              {/* Item 64 (CLAUDE.md, direct user request): "The Create flow
+                  should explicitly ask: Who is this for?" -- always
+                  visible, defaults to Me so a user who ignores it sees no
+                  change at all. Threaded into Occasion as real structured
+                  context (initialWhoFor/initialWhoForName/
+                  initialWhoForFriendId) and into Gathering/Ask Nearby
+                  Businesses as an editable prefill -- see
+                  createHubWhoFor.js for why Community isn't included. */}
+              <Text style={styles.fieldLabel}>Who is this for?</Text>
+              <View style={styles.chipRow}>
+                {WHO_FOR_OPTIONS.map((o) => (
+                  <TouchableOpacity
+                    key={o.key}
+                    style={[styles.chip, whoFor === o.key && styles.chipSelected]}
+                    onPress={() => pickWhoFor(o.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={o.label}
+                    accessibilityState={{ selected: whoFor === o.key }}
+                  >
+                    <Text style={[styles.chipText, whoFor === o.key && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {whoFor !== 'me' && (
+                <View style={styles.whoForDetailBox}>
+                  {loadingFriends && <ActivityIndicator color={colors.primary} />}
+                  {!loadingFriends && friends.length > 0 && (
+                    <>
+                      <Text style={styles.sublabel}>Pick a real friend (optional)</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, marginBottom: spacing.sm }}>
+                        {friends.map((f) => {
+                          const selected = whoForFriendId === f.id;
+                          return (
+                            <TouchableOpacity
+                              key={f.id}
+                              style={[styles.chip, selected && styles.chipSelected]}
+                              onPress={() => {
+                                setWhoForName(selected ? '' : f.display_name);
+                                setWhoForFriendId(selected ? null : f.id);
+                              }}
+                              accessibilityRole="button"
+                              accessibilityLabel={f.display_name}
+                              accessibilityState={{ selected }}
+                            >
+                              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{f.display_name}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </>
+                  )}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Or type a name (optional)"
+                    placeholderTextColor={colors.textTertiary}
+                    value={whoForName}
+                    onChangeText={(t) => { setWhoForName(t); setWhoForFriendId(null); }}
+                    accessibilityLabel="Name (optional)"
+                  />
+                </View>
+              )}
+
               {/* "I'd call the whole feature 'Occasion' ... I wouldn't
                   clutter Create with 10 separate buttons" (CLAUDE.md,
                   direct user request) -- the one visual hierarchy this
@@ -200,7 +333,7 @@ export default function CreateHubScreen({ navigation, route }) {
                   <TouchableOpacity
                     key={opt.key}
                     style={styles.primaryCard}
-                    onPress={() => navigation.navigate(opt.route)}
+                    onPress={() => handlePrimaryCardPress(opt)}
                     activeOpacity={0.85}
                     accessibilityLabel={opt.label}
                     accessibilityRole="button"
@@ -302,4 +435,22 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   assistantButtonText: { color: '#fff', fontSize: 20, fontWeight: '700' },
   secondaryRowHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
+  // Item 64's "Who is this for?" selector -- same chip treatment
+  // CelebrateSomethingScreen's own who_for step already established, so
+  // the two feel like the same question asked in two places.
+  fieldLabel: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.xs, fontWeight: '700' },
+  sublabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.md },
+  chip: {
+    paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceElevated,
+  },
+  chipSelected: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  chipText: { color: colors.textSecondary, fontSize: 13 },
+  chipTextSelected: { color: colors.primary, fontWeight: '700' },
+  whoForDetailBox: { marginBottom: spacing.md },
+  input: {
+    backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.md,
+    padding: spacing.sm, borderWidth: 1, borderColor: colors.border, minHeight: 44, justifyContent: 'center',
+  },
 });
