@@ -40,6 +40,55 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 57 ("the N mark should become part of the product language") — fully DONE (2026-09-12).**
+User's own framing: use the redesigned N mark consistently beyond the app icon (loading, empty
+states, "perhaps" success confirmation, subtle brand transitions, notification identity) but
+"don't overdo it — the goal is for the N to become recognizable, not become decoration
+everywhere." A research fork first confirmed real infrastructure already existed: a real,
+approved SVG brand component (`src/components/brand/NearbyMark.js`, variants gradient/white/
+black, "works on any background per the approved brand sheet" per its own header comment) already
+used on Login/Onboarding/BusinessWeb, plus `BrandedLoader.js` already using the same mark (as a
+raster PNG) at `RootNavigator.js`'s boot gate. **Loading and notification identity were both
+already fully shipped** before this item — `BrandedLoader`'s gate (`loading ||
+(session && profileLoading)`) already catches the sign-in transition too since `profileLoading`
+flips true immediately on a fresh sign-in, and `app.json`'s `notification-icon.png` +
+`color: '#FF5A5F'` (Android status-bar icon, confirmed still current) already gives every push its
+own brand identity — no code needed for either. The three real remaining bullets were each
+deliberately scoped to a small, concrete set of genuine moments rather than a blanket retrofit:
+- **Empty states**: `NearbyMark` (small, muted/low-opacity) added to `LoadErrorState.js` — the
+  one shared "couldn't load" component reused broadly across the app, so this single change
+  reaches every screen that already uses it, rather than a per-screen retrofit. Also added to the
+  3 real self-contained empty-state *blocks* (not the many inline single-line empty texts buried
+  inside dense multi-section screens like `CommunityDetailScreen`/`GroupPlanScreen` — deliberately
+  skipped those, since adding an icon to inline text mid-scroll would tip toward clutter, not
+  identity): `BusinessRequestDetailScreen.js` ("no businesses responded yet"),
+  `MomentumScreen.js` (empty weekly chart), `MakeAPlanScreen.js` ("no friends yet") — all three
+  already gained real next-action CTAs in Item 56, which is what makes them genuine, deliberate
+  empty-state moments rather than throwaway text.
+- **Success confirmation** (the user's own softest ask — "perhaps"): `GatheringConfirmationScreen.js`,
+  the app's one real, already-existing celebration screen, gained a small spring-in `NearbyMark`
+  above its existing 🎉 emoji (same `Animated.spring`/`timing` entrance shape
+  `MatchCelebrationModal.js` already established for a celebration moment) — an addition, not a
+  replacement for the emoji's own fun/expressive energy. Deliberately did NOT build new success UI
+  for community creation, business-offer-accept, or group-plan-confirm — all four currently have
+  *no* dedicated success UI at all (confirmed by the research fork: community creation is a bare
+  `Alert.alert`, the other two are silent state re-renders) — building 4 new celebration surfaces
+  from scratch is a bigger scope decision than "extend an existing mark," and risks exactly the
+  "decoration everywhere" the request warned against. Flagged as a real, disclosed, not-built
+  opportunity rather than assumed out of scope.
+- **Subtle brand transitions**: `RootNavigator.js`'s sign-out and onboarding-complete flips (both
+  instant `Stack.Navigator` children swaps with zero transition before this — confirmed by the
+  research fork, not assumed) now show one brief (450ms) `BrandedLoader` beat — reusing the
+  existing component, not a new one — triggered by real state-change detection
+  (`prevSessionRef`/`prevProfileCompleteRef` comparing against the previous render, never firing
+  on initial mount).
+
+Full Jest suite 295/295 passing; all six touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm the 450ms transition beat feels right in practice
+(picked as a reasonable estimate, not measured against a real device) and that the empty-state
+mark's muted opacity reads as "quiet identity" rather than "washed-out icon" on a real screen.
+
 **Item 56 ("no dead ends") — fully DONE (2026-09-12).** Direct product requirement, locked as a
 standing convention (see below): no major surface should end with unactionable "nothing here"
 copy — always a concrete, tappable next step (Demand → supply → activity → engagement, in the
