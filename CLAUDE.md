@@ -40,6 +40,42 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"I'd call the whole feature 'Occasions' ... I wouldn't clutter Create with 10 separate
+buttons" — fully DONE (2026-09-12), same-day direct follow-up to the anniversary nudge below.**
+Two real changes, both per the user's own mock verbatim: (1) renamed the "Celebrate Something"
+wizard to "Occasion" everywhere user-visible — `RootNavigator.js`'s nav title is now "Create an
+Occasion" (was "Celebrate Something"), the wizard's own in-body header now reads "🎉 Create an
+Occasion". Internal identifiers (the `CelebrateSomethingScreen.js` file, the `'CelebrateSomething'`
+route key, the `celebrateSomething.js` service) were deliberately left unrenamed — not user-
+visible, and renaming them would risk exactly the collision this rename has to avoid: this app
+already has a real, different, pre-existing `OccasionsScreen.js`/`'Occasions'` route (a personal
+reminder log, Phase H, Sep 14 2026). Resolved the same way this app already distinguishes
+Gathering/Gatherings and Community/Communities — singular "Occasion" = create this one (the
+wizard), plural "Occasions" = browse/manage what you've already logged (the pre-existing,
+untouched screen). (2) Restructured `CreateHubScreen.js`'s entire top-level layout, which had
+grown to a big activity-category icon grid plus 3 more grouped rows (With people/With businesses/
+For an occasion) plus a second "bigger" secondary row — into exactly 3 large primary cards
+(Gathering "Bring people together." / Community "Build something ongoing." / Occasion "Plan a
+birthday, anniversary, milestone or celebration.", taglines copied verbatim from the user's mock),
+the screen's one clear visual hierarchy. Every other real action the screen used to offer (Invite
+Friends/Plan a Date/Meet New People/Ask Nearby Businesses/Start a Weekly Meetup/Something Else)
+was kept, not deleted — the user asked for the primary view to stop looking cluttered, not for any
+of that real, working functionality to disappear — demoted into one small flat "Quick Actions"
+list below the 3 cards, the same demotion precedent this screen's own former "Want to build
+something bigger?" row had already established. The old activity-category quick-pick grid
+(Coffee/Dinner/Hiking/etc.) is the one thing not preserved on this screen specifically — verified
+first that `CreateGatheringScreen`'s own "What" step already has a complete category picker, so
+the grid was always just a skip-a-step shortcut, and the identical category set is also still
+reachable from Home's own Quick Picks row (a separate, unmodified consumer of the same
+`CREATE_HUB_OPTIONS`/`SUB_OPTIONS` constants this screen used to import its own copy of that grid
+from). "Create a Community" (the old secondary row's own link) was removed as now-redundant with
+the new Community primary card; "Start a Weekly Meetup" was kept (a real, distinct sub-flow of
+Gathering, not redundant with anything). Full Jest suite 330/330 passing; all three touched files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
+(no simulator/device tooling this session, standing note) — next session should confirm the 3-card
+layout and the "Something Else" AI box (now reached via the Quick Actions list instead of a grid
+tile) both render and behave correctly on a real screen.
+
 **"Anniversaries could work the same way" — fully DONE (2026-09-12), same-day direct follow-up to
 the birthday planning nudge below.** Two parts, both shipped: (1) a new push,
 `send_anniversary_planning_nudges()` (`20261019_anniversary_planning_nudge.sql`), mirrors the

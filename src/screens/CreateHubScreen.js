@@ -1,68 +1,57 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, ImageBackground } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { CREATE_HUB_OPTIONS, SUB_OPTIONS } from '../components/StartSomethingModal';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { classifyCreateRequest } from '../services/createAssistant';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { iconNameForOption } from '../constants/quickPickIcons';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 
-const SOMETHING_ELSE_LABEL = 'Something Else';
-
-// The real primary Create surface ("Create 2.0") — a big-button icon
-// grid inline on the screen, not behind a modal tap. StartSomethingModal's
-// CREATE_HUB_OPTIONS/SUB_OPTIONS constants stay the single source of
-// truth for the option list (also still used, unmodified, by
-// StartSomethingModal itself for HomeScreen's time-adaptive quick
-// actions) but are rendered here with this screen's own JSX. Free text
-// now lives specifically behind "Something Else" — no more redundant
-// always-visible NL box alongside the grid. Community creation moves to
-// a small, de-emphasized secondary row below — still a real feature,
-// just not what this screen is about anymore. Business consolidation
-// (Phase 7, CLAUDE.md) removed this screen's own business entry point —
-// "Request a Business Partner" is reachable from a specific gathering/
-// community's own detail screen instead, and "become a business owner"
-// lives solely on Profile now. See CLAUDE.md's "Create 2.0" and Phase 7
-// sections for the full design discussion.
-//
-// "With People" quick-action row, added per the Aug 23 2026 IA pass
-// (CLAUDE.md): a real, deliberate reason this screen's own grid now
-// leads with three action verbs (Invite Friends / Plan a Date / Meet
-// New People) before the activity-category grid — the grid alone read
-// as a near-duplicate of Home's own time-of-day Quick Picks chip row
-// (same category set, Coffee/Dinner/Walk/etc.), so tapping into Create
-// felt like Home opened again in another place. These three rows are
-// deliberately not shaped like that: none of them create a gathering
-// directly, each routes to a real, already-working destination
-// (InviteFriends/Messages.../FriendDiscovery) — Create's own job stays
-// "turn an idea into an action," distinct from Home's "here's what's
-// nearby right now."
-const WITH_PEOPLE_ACTIONS = [
-  { icon: 'person-add-outline', label: 'Invite Friends', subtitle: 'Bring someone new to Nearby', route: 'InviteFriends' },
-  { icon: 'heart-outline', label: 'Plan a Date', subtitle: 'Turn a match into a real plan', route: 'Messages' },
-  { icon: 'people-outline', label: 'Meet New People', subtitle: 'Make new friends nearby', route: 'FriendDiscovery' },
+// "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
+// with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
+// replaced the old "big-button icon grid + With people/With businesses/
+// For an occasion grouped rows + a second 'bigger' section below" layout
+// (which had grown to 3+3+1+1 buttons plus a ~13-tile category grid, all
+// competing for the same visual weight) with exactly three primary
+// entities you can create in this app -- Gathering, Community, Occasion
+// -- as the screen's one clear visual hierarchy, matching the user's own
+// mock verbatim (label + one-line tagline each). Every other real action
+// this screen used to offer (Invite Friends/Plan a Date/Meet New People/
+// Ask Nearby Businesses/Start a Weekly Meetup/Something Else) is kept,
+// not deleted -- nothing here was built without a reason, and this user
+// didn't ask for any of it to go away, only for the primary view to stop
+// looking like 10 buttons -- just demoted into one small "Quick Actions"
+// secondary section below the 3 cards, the same demotion precedent this
+// screen's own former "Want to build something bigger?" row already
+// established. The old activity-category quick-pick grid (Coffee/Dinner/
+// Hiking/etc., "fromQuickPick") is the one thing NOT preserved on this
+// screen -- CreateGatheringScreen's own "What" step already has a full,
+// complete category picker (t('gatherings.categoryLabel')), so that grid
+// was always just a shortcut to skip a step that still works fine without
+// it; the identical category set is also still available from Home's own
+// Quick Picks row (StartSomethingModal.js, a separate, unmodified
+// consumer of the same CREATE_HUB_OPTIONS/SUB_OPTIONS constants this
+// screen used to import for its own copy of that same grid).
+const PRIMARY_CREATE_OPTIONS = [
+  { key: 'gathering', icon: 'people-outline', label: 'Gathering', subtitle: 'Bring people together.', route: 'CreateGathering' },
+  { key: 'community', icon: 'globe-outline', label: 'Community', subtitle: 'Build something ongoing.', route: 'CreateCommunity' },
+  { key: 'occasion', icon: 'sparkles-outline', label: 'Occasion', subtitle: 'Plan a birthday, anniversary, milestone or celebration.', route: 'CelebrateSomething' },
 ];
 
-// Thursday plan item 20 ("Create should be the inverse of Discover"): the
-// user's own named list of Create actions included "Ask Businesses"
-// alongside Create a Gathering/Build a Community -- and this screen really
-// had no path to it. AskBusinessScreen (the real "post a request, any
-// business can respond" flow -- distinct from the Phase 7 "Request a
-// Business Partner" affiliate flow that was deliberately removed from
-// here) was only ever reachable *from* an existing gathering/community/
-// match/Home-ask context, never as its own top-level "make something
-// happen" action the way Create a Gathering already is. Navigated with no
-// params -- a genuinely blank ask, same as every route.params?. fallback
-// AskBusinessScreen.js already has; there's no prior typed-ask context to
-// prefill from here the way HomeScreen's own entry points have.
+// Demoted from three separate grouped rows (With people / With businesses
+// / the old "bigger" section) into one flat secondary list -- see the
+// header comment above for why. Each of these already routed somewhere
+// real before this change; only their visual weight changed.
+const QUICK_ACTIONS = [
+  { icon: 'person-add-outline', label: 'Invite Friends', route: 'InviteFriends' },
+  { icon: 'heart-outline', label: 'Plan a Date', route: 'Messages' },
+  { icon: 'people-outline', label: 'Meet New People', route: 'FriendDiscovery' },
+  { icon: 'storefront-outline', label: 'Ask Nearby Businesses', route: 'AskBusiness' },
+  { icon: 'repeat-outline', label: 'Start a Weekly Meetup', route: 'CreateGathering', params: { quickStartRecurring: true } },
+];
 
 export default function CreateHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [activeSubCategory, setActiveSubCategory] = useState(null);
   const [showSomethingElse, setShowSomethingElse] = useState(false);
   const [assistantText, setAssistantText] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -80,38 +69,13 @@ export default function CreateHubScreen({ navigation, route }) {
     }
   }, [route.params?.prefillSomethingElseText]);
 
-  function resetGrid() {
-    setActiveSubCategory(null);
+  function closeSomethingElse() {
     setShowSomethingElse(false);
     setAssistantText('');
   }
 
-  function handlePick(item) {
-    if (item.label === SOMETHING_ELSE_LABEL) {
-      setShowSomethingElse(true);
-      return;
-    }
-    if (SUB_OPTIONS[item.label]) {
-      setActiveSubCategory(item);
-      return;
-    }
-    // A literal icon-grid tap — title/category already known, so the
-    // gathering wizard's "What" step is skipped entirely and opens
-    // straight to "Who should discover this?".
-    navigation.navigate('CreateGathering', {
-      quickStartTitle: item.label,
-      quickStartCategory: item.category,
-      fromQuickPick: true,
-    });
-  }
-
-  function handlePickSub(subLabel) {
-    const title = subLabel === "Doesn't matter" || subLabel === 'Other' ? activeSubCategory.label : subLabel;
-    navigation.navigate('CreateGathering', {
-      quickStartTitle: title,
-      quickStartCategory: activeSubCategory.category,
-      fromQuickPick: true,
-    });
+  function handleQuickAction(action) {
+    navigation.navigate(action.route, action.params);
   }
 
   async function handleAskAssistant() {
@@ -142,7 +106,7 @@ export default function CreateHubScreen({ navigation, route }) {
         // occasion regardless of intent specifically so this branch can
         // route to the real matching product object instead: Ask Nearby
         // Businesses (AskBusinessScreen), the same "post what you need,
-        // businesses respond" flow this screen's own "With businesses" row
+        // businesses respond" flow this screen's own Quick Actions row
         // already offers -- prefilled exactly the same way HomeScreen's own
         // goAskBusiness()/business_availability branches already prefill it
         // from an identical classifyResult shape. Still just a prefill: the
@@ -156,14 +120,12 @@ export default function CreateHubScreen({ navigation, route }) {
           prefillOccasion: result.occasion ?? null,
         });
       }
-      resetGrid();
+      closeSomethingElse();
     } catch (e) {
       Alert.alert('Something went wrong', e.message);
     }
     setThinking(false);
   }
-
-  const options = activeSubCategory ? SUB_OPTIONS[activeSubCategory.label] : CREATE_HUB_OPTIONS;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -172,7 +134,7 @@ export default function CreateHubScreen({ navigation, route }) {
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>Create</Text>
-              <Text style={styles.subtitle}>What do you want to create?</Text>
+              <Text style={styles.subtitle}>Make Something Happen</Text>
             </View>
             <TabHeaderActions navigation={navigation} />
           </View>
@@ -181,7 +143,7 @@ export default function CreateHubScreen({ navigation, route }) {
               CLAUDE.md) -- this stays as a real, harmless secondary
               shortcut straight into its Things-to-Do mode, not the only
               way to reach it anymore. */}
-          {!activeSubCategory && !showSomethingElse && (
+          {!showSomethingElse && (
             <TouchableOpacity
               style={styles.browseLink}
               onPress={() => navigation.navigate('Discover')}
@@ -193,67 +155,10 @@ export default function CreateHubScreen({ navigation, route }) {
             </TouchableOpacity>
           )}
 
-          {(activeSubCategory || showSomethingElse) && (
-            <TouchableOpacity onPress={resetGrid} accessibilityLabel="Back" accessibilityRole="button">
+          {showSomethingElse && (
+            <TouchableOpacity onPress={closeSomethingElse} accessibilityLabel="Back" accessibilityRole="button">
               <Text style={styles.backLink}>← Back</Text>
             </TouchableOpacity>
-          )}
-
-          {!activeSubCategory && !showSomethingElse && (
-            <>
-              <Text style={styles.groupHeader}>With people</Text>
-              <View style={styles.peopleActionsRow}>
-                {WITH_PEOPLE_ACTIONS.map((action) => (
-                  <TouchableOpacity
-                    key={action.label}
-                    style={styles.peopleAction}
-                    onPress={() => navigation.navigate(action.route)}
-                    activeOpacity={0.85}
-                    accessibilityLabel={action.label}
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name={action.icon} size={22} color={colors.primary} />
-                    <Text style={styles.peopleActionLabel}>{action.label}</Text>
-                    <Text style={styles.peopleActionSubtitle}>{action.subtitle}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.groupHeader}>With businesses</Text>
-              <TouchableOpacity
-                style={styles.peopleAction}
-                onPress={() => navigation.navigate('AskBusiness')}
-                activeOpacity={0.85}
-                accessibilityLabel="Ask Nearby Businesses"
-                accessibilityRole="button"
-              >
-                <Ionicons name="storefront-outline" size={22} color={colors.primary} />
-                <Text style={styles.peopleActionLabel}>Ask Nearby Businesses</Text>
-                <Text style={styles.peopleActionSubtitle}>Post what you need, businesses respond</Text>
-              </TouchableOpacity>
-
-              {/* Item 61 ("Celebrate Something", CLAUDE.md): a real,
-                  first-class entry point (not a rename of an existing
-                  action) -- cuts across "with people"/"with businesses"
-                  since the wizard itself decides which one a given
-                  celebration actually needs. Its own group header, own
-                  row, deliberately placed before the plain activity grid
-                  since a life event is a more specific, richer ask than
-                  a bare category tap. */}
-              <Text style={styles.groupHeader}>For an occasion</Text>
-              <TouchableOpacity
-                style={styles.peopleAction}
-                onPress={() => navigation.navigate('CelebrateSomething')}
-                activeOpacity={0.85}
-                accessibilityLabel="Celebrate Something"
-                accessibilityRole="button"
-              >
-                <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
-                <Text style={styles.peopleActionLabel}>🎉 Celebrate Something</Text>
-                <Text style={styles.peopleActionSubtitle}>Birthdays, anniversaries, and other life moments</Text>
-              </TouchableOpacity>
-
-              <Text style={styles.groupHeader}>Something to do</Text>
-            </>
           )}
 
           {showSomethingElse ? (
@@ -286,78 +191,57 @@ export default function CreateHubScreen({ navigation, route }) {
             </View>
           ) : (
             <>
-              {activeSubCategory && <Text style={styles.gridHeader}>What kind of {activeSubCategory.label.toLowerCase()}?</Text>}
-              <View style={styles.grid}>
-                {options.map((item) => {
-                  // Real curated category photo (same map GatheringDetailScreen/
-                  // GatheringsScreen already use as their cover-photo fallback)
-                  // wins whenever one exists -- a "Coffee" tile shows real
-                  // coffee, not just a tinted swatch. categoryStyleFor()'s
-                  // color still backs the tint fallback for categories with
-                  // no sourced photo (never a fabricated color). Items with
-                  // no real category (Something Else, and the Dinner
-                  // sub-grid's cuisine leaves) fall back to the neutral
-                  // surfaceElevated token instead of reusing an unrelated
-                  // category's color/photo.
-                  const categoryColor = item.category ? categoryStyleFor(item.category).color : null;
-                  const photoUrl = item.category ? curatedCoverPhotoFor(item.category) : null;
-                  return (
-                    <TouchableOpacity
-                      key={item.label}
-                      style={[
-                        styles.gridItem,
-                        !photoUrl && (categoryColor ? { backgroundColor: `${categoryColor}20` } : { backgroundColor: colors.surfaceElevated }),
-                      ]}
-                      onPress={() => (activeSubCategory ? handlePickSub(item.label) : handlePick(item))}
-                      activeOpacity={0.85}
-                      accessibilityLabel={item.label}
-                      accessibilityRole="button"
-                    >
-                      {photoUrl ? (
-                        <ImageBackground source={{ uri: photoUrl }} style={styles.gridItemPhoto}>
-                          <View style={styles.gridItemPhotoScrim}>
-                            <Ionicons name={iconNameForOption(item)} size={28} color="#fff" style={styles.gridItemIcon} />
-                            <Text style={[styles.gridItemLabel, styles.gridItemLabelOnPhoto]}>{item.label}</Text>
-                          </View>
-                        </ImageBackground>
-                      ) : (
-                        <>
-                          <Ionicons name={iconNameForOption(item)} size={30} color={categoryColor ?? colors.textSecondary} style={styles.gridItemIcon} />
-                          <Text style={styles.gridItemLabel}>{item.label}</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+              {/* "I'd call the whole feature 'Occasion' ... I wouldn't
+                  clutter Create with 10 separate buttons" (CLAUDE.md,
+                  direct user request) -- the one visual hierarchy this
+                  screen now has: the three real things you can create. */}
+              <View style={styles.primaryCards}>
+                {PRIMARY_CREATE_OPTIONS.map((opt) => (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={styles.primaryCard}
+                    onPress={() => navigation.navigate(opt.route)}
+                    activeOpacity={0.85}
+                    accessibilityLabel={opt.label}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.primaryCardIconWrap}>
+                      <Ionicons name={opt.icon} size={24} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.primaryCardLabel}>{opt.label}</Text>
+                      <Text style={styles.primaryCardSubtitle}>{opt.subtitle}</Text>
+                    </View>
+                    <Text style={styles.primaryCardChevron}>›</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.secondaryRowHeader}>Quick Actions</Text>
+              <View style={styles.quickActionsList}>
+                {QUICK_ACTIONS.map((action) => (
+                  <TouchableOpacity
+                    key={action.label}
+                    style={styles.quickActionRow}
+                    onPress={() => handleQuickAction(action)}
+                    accessibilityLabel={action.label}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name={action.icon} size={18} color={colors.textSecondary} />
+                    <Text style={styles.quickActionLabel}>{action.label}</Text>
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.quickActionRow}
+                  onPress={() => setShowSomethingElse(true)}
+                  accessibilityLabel="Something Else"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="bulb-outline" size={18} color={colors.textSecondary} />
+                  <Text style={styles.quickActionLabel}>Something Else</Text>
+                </TouchableOpacity>
               </View>
             </>
-          )}
-
-          {!activeSubCategory && !showSomethingElse && (
-            <View style={styles.secondaryRow}>
-              <Text style={styles.secondaryRowHeader}>Want to build something bigger?</Text>
-              <TouchableOpacity
-                style={styles.secondaryLink}
-                onPress={() => navigation.navigate('CreateCommunity')}
-                accessibilityLabel="Create a community"
-                accessibilityRole="button"
-              >
-                <Text style={styles.secondaryLinkText}>👥 Create a Community</Text>
-              </TouchableOpacity>
-              {/* A real, distinct entry point (not a rename of the one above):
-                  this creates a recurring gathering (gatherings.recurring_series_id),
-                  never a communities row -- deliberately not labeled "Start a
-                  Community" so it can't be mistaken for the button right above
-                  it, which creates a genuinely different entity. */}
-              <TouchableOpacity
-                style={styles.secondaryLink}
-                onPress={() => navigation.navigate('CreateGathering', { quickStartRecurring: true })}
-                accessibilityLabel="Start a weekly meetup"
-                accessibilityRole="button"
-              >
-                <Text style={styles.secondaryLinkText}>🔁 Start a Weekly Meetup</Text>
-              </TouchableOpacity>
-            </View>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -378,27 +262,29 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   browseLinkText: { ...typography.body, color: colors.textPrimary, fontWeight: '600', flex: 1 },
   browseLinkChevron: { color: colors.textTertiary, fontSize: 22 },
-  groupHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.sm },
-  peopleActionsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
-  peopleAction: {
-    flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, gap: 2,
+  // The one visual hierarchy this screen now has -- three roomy, co-equal
+  // primary cards (Gathering/Community/Occasion), each with its own icon,
+  // label, and one-line tagline, per the user's own mock verbatim. Same
+  // bordered-surface + shadow.card treatment this file's old peopleAction
+  // cards used, just bigger and full-width since there are only three.
+  primaryCards: { gap: spacing.sm, marginBottom: spacing.xl },
+  primaryCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, padding: spacing.lg, ...shadow.card,
   },
-  peopleActionLabel: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginTop: spacing.xs },
-  peopleActionSubtitle: { ...typography.caption, color: colors.textTertiary, fontSize: 11 },
-  gridHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  gridItem: {
-    width: '31%', aspectRatio: 1, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...shadow.card,
+  primaryCardIconWrap: {
+    width: 44, height: 44, borderRadius: radius.md, backgroundColor: `${colors.primary}1a`,
+    alignItems: 'center', justifyContent: 'center',
   },
-  gridItemPhoto: { width: '100%', height: '100%' },
-  gridItemPhotoScrim: {
-    flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.38)',
-  },
-  gridItemIcon: { marginBottom: spacing.xs },
-  gridItemLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  gridItemLabelOnPhoto: { color: '#fff' },
+  primaryCardLabel: { ...typography.headline, color: colors.textPrimary },
+  primaryCardSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  primaryCardChevron: { color: colors.textTertiary, fontSize: 22 },
+  // Every other real action this screen offers, demoted to one small flat
+  // list below the 3 primary cards -- see this file's own header comment
+  // for why these were kept rather than deleted.
+  quickActionsList: { gap: 2 },
+  quickActionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  quickActionLabel: { ...typography.body, color: colors.textSecondary, fontWeight: '600', fontSize: 14 },
   somethingElseBox: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg,
@@ -415,8 +301,5 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   assistantButtonText: { color: '#fff', fontSize: 20, fontWeight: '700' },
-  secondaryRow: { marginTop: spacing.xl, gap: spacing.sm },
-  secondaryRowHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '600', marginBottom: 2 },
-  secondaryLink: { paddingVertical: spacing.sm },
-  secondaryLinkText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  secondaryRowHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
 });

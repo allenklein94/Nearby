@@ -443,7 +443,13 @@ export default function RootNavigator() {
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Legal" component={LegalScreen} options={{ headerShown: true, title: 'Legal', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, title: 'Host a Gathering', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="CelebrateSomething" component={CelebrateSomethingScreen} options={{ headerShown: true, title: 'Celebrate Something', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
+            {/* User-facing name is "Occasion" (direct user request, CLAUDE.md) --
+                internal route key/component/file stay CelebrateSomething*
+                (Item 61's original name, and no genuine collision risk since
+                internal identifiers aren't user-visible), matching this
+                repo's own precedent of not renaming plumbing purely for a
+                copy change. See CelebrateSomethingScreen.js's own header. */}
+            <Stack.Screen name="CelebrateSomething" component={CelebrateSomethingScreen} options={{ headerShown: true, title: 'Create an Occasion', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="MakeAPlan" component={MakeAPlanScreen} options={{ headerShown: true, title: 'Make a Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GatheringConfirmation" component={GatheringConfirmationScreen} options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
             <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: 'Shared Playlist', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

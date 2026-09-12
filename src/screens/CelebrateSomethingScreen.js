@@ -31,6 +31,19 @@ import { typography, spacing, radius } from '../theme';
 // SurpriseMeSheet.js. Full architecture rationale:
 // PRODUCT_AUDIT/CELEBRATE_SOMETHING_2026-09-12.md.
 //
+// Renamed to "Occasion" in every user-facing surface (direct user request,
+// CLAUDE.md, 2026-09-12) -- Create's own primary "Occasion" card, this
+// screen's nav title ("Create an Occasion") and in-body header both say
+// Occasion now, matching the app's existing Gathering/Gatherings and
+// Community/Communities create-vs-browse naming pattern (singular =
+// create this one; plural, OccasionsScreen.js, = browse/manage the ones
+// you've already logged -- a genuinely different, pre-existing screen,
+// not this one). Internal identifiers (this file's own name, the
+// 'CelebrateSomething' route key, celebrateSomething.js) deliberately
+// were NOT renamed -- they're not user-visible, and renaming them risks
+// exactly the file-name collision this comment is disambiguating
+// (OccasionScreen.js vs OccasionsScreen.js) for no real benefit.
+//
 // "Connect it to businesses" follow-up (direct user request): for a
 // business-destined activity type (dinner/night_out/activity), the final
 // step becomes a real live-options step ("options") instead of the
@@ -455,7 +468,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
-            <Text style={styles.header} accessibilityRole="header">🎉 Celebrate Something</Text>
+            <Text style={styles.header} accessibilityRole="header">🎉 Create an Occasion</Text>
             <Text style={styles.subheader}>Let's turn this into a real plan.</Text>
 
             <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${stepDefs.length}: ${stepDefs[step].label}`}>
