@@ -1,4 +1,4 @@
-const { PLAN_STATUS, resolveGatheringPlanStatus, resolveGroupPlanStatus } = require('./planStatus');
+const { PLAN_STATUS, resolveGatheringPlanStatus, resolveGroupPlanStatus, resolvePlanTableStatus } = require('./planStatus');
 
 describe('resolveGatheringPlanStatus', () => {
   it('a past gathering is always Completed, regardless of role', () => {
@@ -34,5 +34,20 @@ describe('resolveGroupPlanStatus', () => {
   it('maps everything else (e.g. open) to Pending', () => {
     expect(resolveGroupPlanStatus('open')).toBe(PLAN_STATUS.PENDING);
     expect(resolveGroupPlanStatus('merged')).toBe(PLAN_STATUS.PENDING);
+  });
+});
+
+describe('resolvePlanTableStatus', () => {
+  it('maps confirmed to Confirmed', () => {
+    expect(resolvePlanTableStatus('confirmed')).toBe(PLAN_STATUS.CONFIRMED);
+  });
+
+  it('maps cancelled to Cancelled', () => {
+    expect(resolvePlanTableStatus('cancelled')).toBe(PLAN_STATUS.CANCELLED);
+  });
+
+  it('maps draft (and anything else) to Pending', () => {
+    expect(resolvePlanTableStatus('draft')).toBe(PLAN_STATUS.PENDING);
+    expect(resolvePlanTableStatus(undefined)).toBe(PLAN_STATUS.PENDING);
   });
 });

@@ -3,11 +3,12 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Refre
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyAttendingGatherings, getMyGatherings } from '../services/gatherings';
 import { getMyGroupPlans } from '../services/groupPlans';
+import { getMyStandaloneBusinessRequestPlans, getMyDateProposalPlans } from '../services/plans';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { formatHeroDateTime } from '../utils/timeContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
 import PlanCard from '../components/PlanCard';
-import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
+import { resolveGatheringPlanStatus, resolveGroupPlanStatus, resolvePlanTableStatus } from '../constants/planStatus';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -45,16 +46,31 @@ export default function PlansScreen({ navigation, route }) {
   // commitment calendar" — the only prior way to discover one was a push
   // notification tap.
   const [groupPlans, setGroupPlans] = useState([]);
+  // Item 52 ("Build a universal Plan object", CLAUDE.md) -- the two
+  // plan_types the `plans` table already models but this screen never
+  // showed at all: a solo business request (not yet merged into a Group
+  // Plan) and a dating date proposal. See services/plans.js's own header
+  // comment for the full scope decision.
+  const [businessRequestPlans, setBusinessRequestPlans] = useState([]);
+  const [datePlans, setDatePlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [attendingData, hostingData, groupPlanData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings(), getMyGroupPlans()]);
+      const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData] = await Promise.all([
+        getMyAttendingGatherings(),
+        getMyGatherings(),
+        getMyGroupPlans(),
+        getMyStandaloneBusinessRequestPlans(),
+        getMyDateProposalPlans(),
+      ]);
       setAttending(attendingData);
       setHosting(hostingData);
       setGroupPlans(groupPlanData);
+      setBusinessRequestPlans(businessRequestPlanData);
+      setDatePlans(datePlanData);
       setLoadError(false);
     } catch (e) {
       setLoadError(true);
@@ -68,11 +84,19 @@ export default function PlansScreen({ navigation, route }) {
       let cancelled = false;
       (async () => {
         try {
-          const [attendingData, hostingData, groupPlanData] = await Promise.all([getMyAttendingGatherings(), getMyGatherings(), getMyGroupPlans()]);
+          const [attendingData, hostingData, groupPlanData, businessRequestPlanData, datePlanData] = await Promise.all([
+            getMyAttendingGatherings(),
+            getMyGatherings(),
+            getMyGroupPlans(),
+            getMyStandaloneBusinessRequestPlans(),
+            getMyDateProposalPlans(),
+          ]);
           if (cancelled) return;
           setAttending(attendingData);
           setHosting(hostingData);
           setGroupPlans(groupPlanData);
+          setBusinessRequestPlans(businessRequestPlanData);
+          setDatePlans(datePlanData);
           setLoadError(false);
         } catch (e) {
           if (!cancelled) setLoadError(true);
@@ -88,6 +112,8 @@ export default function PlansScreen({ navigation, route }) {
 
   const openGathering = (gatheringId) => navigation.navigate('GatheringDetail', { gatheringId });
   const openGroupPlan = (proposalId) => navigation.navigate('GroupPlan', { proposalId });
+  const openBusinessRequest = (requestId) => navigation.navigate('BusinessRequestDetail', { requestId });
+  const openDatePlan = (matchId) => navigation.navigate('DateProposal', { matchId });
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -179,6 +205,16 @@ export default function PlansScreen({ navigation, route }) {
     for (const plan of groupPlans) {
       listData.push({ type: 'groupPlanRow', key: `group-plan-${plan.id}`, plan });
     }
+    // Real `plans`-table rows (Item 52) -- same "its own unsorted block on
+    // Upcoming only, regardless of real status" treatment group plans
+    // already got above (getMyGroupPlans() itself only ever returns
+    // open/fulfilled, never split into a Past tab) -- not a new pattern.
+    for (const plan of businessRequestPlans) {
+      listData.push({ type: 'businessRequestPlanRow', key: `biz-request-plan-${plan.id}`, plan });
+    }
+    for (const plan of datePlans) {
+      listData.push({ type: 'datePlanRow', key: `date-plan-${plan.id}`, plan });
+    }
   }
 
   return (
@@ -251,6 +287,37 @@ export default function PlansScreen({ navigation, route }) {
                   peopleCount={plan.party_size}
                   status={resolveGroupPlanStatus(plan.status)}
                   onPress={() => openGroupPlan(plan.group_plan_id)}
+                  style={styles.planCardSpacing}
+                />
+              );
+            }
+            if (item.type === 'businessRequestPlanRow') {
+              const plan = item.plan;
+              const category = plan.business_requests?.category ?? null;
+              return (
+                <PlanCard
+                  icon={categoryStyleFor(category).icon}
+                  iconColor={categoryStyleFor(category).color}
+                  title={plan.title || 'A business request'}
+                  roleLabel="Business request"
+                  dateTimeText={plan.scheduled_at ? formatHeroDateTime(plan.scheduled_at) : null}
+                  peopleCount={plan.party_size}
+                  status={resolvePlanTableStatus(plan.status)}
+                  onPress={() => openBusinessRequest(plan.resulting_business_request_id)}
+                  style={styles.planCardSpacing}
+                />
+              );
+            }
+            if (item.type === 'datePlanRow') {
+              const plan = item.plan;
+              const matchId = plan.date_proposals?.match_id;
+              return (
+                <PlanCard
+                  icon="💗"
+                  title={plan.title || 'A date'}
+                  roleLabel="Date"
+                  status={resolvePlanTableStatus(plan.status)}
+                  onPress={() => matchId && openDatePlan(matchId)}
                   style={styles.planCardSpacing}
                 />
               );

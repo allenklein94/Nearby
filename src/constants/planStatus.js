@@ -62,3 +62,18 @@ export function resolveGroupPlanStatus(rawStatus) {
   if (rawStatus === 'cancelled' || rawStatus === 'expired') return PLAN_STATUS.CANCELLED;
   return PLAN_STATUS.PENDING;
 }
+
+// Item 52 ("Build a universal Plan object", CLAUDE.md): a row read
+// straight from the `plans` table (services/plans.js) already carries its
+// own already-collapsed status -- 'draft'/'confirmed'/'cancelled', synced
+// by the DB triggers in 20260914_plans_unified_object.sql from whichever
+// real source row (business_requests/date_proposals) produced it. Distinct
+// from resolveGroupPlanStatus above, which reads business_requests' own
+// richer raw status directly -- this only ever sees the table's already-
+// narrowed vocabulary, so the mapping is a direct rename, not a
+// re-derivation.
+export function resolvePlanTableStatus(rawStatus) {
+  if (rawStatus === 'confirmed') return PLAN_STATUS.CONFIRMED;
+  if (rawStatus === 'cancelled') return PLAN_STATUS.CANCELLED;
+  return PLAN_STATUS.PENDING; // 'draft'
+}

@@ -40,6 +40,63 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 52 ("Build a universal Plan object") — first real increment shipped (2026-09-12).**
+The `plans` table (Phase G, `20260914_plans_unified_object.sql`) has existed since Sep 14 2026,
+populated additively by triggers on gatherings/business_requests/date_proposals, but had zero
+client readers until now (re-confirmed by Item 51's own migration comment the same day: "no
+`.from('plans')` call exists anywhere in src/"). Given a locked scope decision via a direct user
+message relaying their own advisor's reasoning — **"wire the client first" (Option 1)**: prove
+the existing `plans` object can drive real UI before investing in completing its data model
+(participants, business/place association, more trigger sources) or building a dedicated new
+Plans screen. Explicit caveats given alongside: don't leave underlying Plan states inconsistent
+(the existing lifecycle rules still apply), and don't add speculative schema complexity in this
+pass.
+
+Shipped: `src/services/plans.js` (`getMyStandaloneBusinessRequestPlans()`,
+`getMyDateProposalPlans()`), both first real reads of the `plans` table — reused the existing
+`PlansScreen.js` ("Your Plans," already the app's "complete commitment calendar" surface) rather
+than a new navigation destination, per the caveat. Scoped to exactly the two `plan_type`s that
+screen had **zero visibility into before this** — a solo business request (asked but never
+merged into a Group Plan) and a dating date proposal — both now render as real `PlanCard` rows on
+the Upcoming tab, same treatment Group Plans already got (no scheduled-slot sort, own unsorted
+block, never split into Past — matching `getMyGroupPlans()`'s own existing precedent). New
+`resolvePlanTableStatus()` (`constants/planStatus.js`, 3 new Jest tests) maps the table's own
+already-collapsed `draft`/`confirmed`/`cancelled` status onto the existing six-word `PLAN_STATUS`
+vocabulary used everywhere else on this screen.
+
+Deliberately did NOT touch gathering-sourced plans (still read via the existing
+`getMyAttendingGatherings()`/`getMyGatherings()` queries) — a gathering someone else hosts has no
+`plans` row at all (RLS is `created_by`-only, no participant concept on this table yet), and
+building one now would be exactly the speculative schema complexity the locked decision said to
+defer. Also did not touch the already-shipped Group Plans list; standalone business-request plans
+are explicitly de-duplicated against it client-side (excluded whenever the underlying
+`business_requests.group_plan_id` is set — a real, disclosed gap in the original Phase G
+migration is that this isn't synced onto `plans.status`, so it has to be checked directly).
+
+Verified live against production (`enmosvippabmuqslzrox`) via two disposable rolled-back
+transactions (real FK constraint names for `resulting_business_request_id`/
+`resulting_date_proposal_id` confirmed first via `pg_constraint`; a solo open request, a
+group-plan-merged request, and a cancelled request inserted, and the filtering logic — the
+merged one is present at the SQL level but excluded by the client-side filter, the cancelled one
+is excluded already by `status <> 'cancelled'`, the solo one is present — was confirmed correct
+in both directions; a real date-proposal row correctly produced a `dating_date` plan row with the
+right `match_id` for navigation), plus a live, unauthenticated REST call against the actual
+PostgREST endpoint with the exact embed-join query strings the client uses, confirming they parse
+correctly (rejected on `anon`'s missing table grant — the expected/correct outcome — never on a
+malformed embed). Both disposable transactions rolled back and re-confirmed zero leaked rows.
+Full Jest suite 295/295 passing; all four touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that a genuine solo
+business request and a genuine date proposal each render correctly as a Plans-tab row and that
+tapping each lands on the right existing screen.
+
+Real next increments, not started, no code exists for them yet (flagged, not assumed): the
+gathering-attendee/participant gap named above; folding `plans` into other existing ad-hoc
+surfaces (e.g. `getMyBusinessEcosystemActivity()` on ActivityScreen still queries
+`business_requests` directly rather than `plans`); a `birthday`/`anniversary`-sourced plan row
+(no trigger populates these plan_types yet, a real disclosed gap from the original Phase G
+migration, unrelated to this pass).
+
 **Item 51 ("cancellation needs to propagate everywhere") — fully DONE (2026-09-12).** Cancelling a
 Gathering or Community used to be a partial state change: an already-ACCEPTED business offer
 (a confirmed reservation, possibly a captured payment) tied to it survived untouched. Fixed by
