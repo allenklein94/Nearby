@@ -177,6 +177,25 @@ export default function CreateGatheringScreen({ navigation, route }) {
     }
   }, [route.params?.quickStartTitle, route.params?.quickStartCategory]);
 
+  // Item 61 ("Celebrate Something", CLAUDE.md): the first caller of
+  // quickStartTitle that also already knows a real When answer (the
+  // wizard's own deterministic WHEN_PRESETS step) -- mirrors
+  // quickStartTitle's own prefill-then-fully-editable pattern exactly,
+  // never auto-submits. 'custom' carries a real picked ISO date/time
+  // (quickStartWhenISO); every other preset is recomputed via
+  // dateForPreset() same as a normal in-screen tap would.
+  useEffect(() => {
+    if (route.params?.quickStartWhenPreset) {
+      const preset = route.params.quickStartWhenPreset;
+      setWhenPreset(preset);
+      if (preset === 'custom' && route.params?.quickStartWhenISO) {
+        setScheduledAt(new Date(route.params.quickStartWhenISO));
+      } else {
+        setScheduledAt(dateForPreset(preset));
+      }
+    }
+  }, [route.params?.quickStartWhenPreset, route.params?.quickStartWhenISO]);
+
   // Reached from a specific CommunityDetailScreen's "Host a Gathering" entry
   // point — carries that community's context into the same one Create flow
   // instead of making the user re-pick it on the Who step.

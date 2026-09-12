@@ -40,30 +40,46 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Item 61 ("Celebrate Something" life-events planning layer) — IN PROGRESS, resume here.**
-Working doc: `PRODUCT_AUDIT/CELEBRATE_SOMETHING_2026-09-12.md` — read that first, it has the full
-architecture rationale and what's already reused vs. genuinely new. User's ask: a new Create-tab
-entry point walking through occasion → who's it for → what to do → when → who's involved, then
-turning that into a real plan.
+**Item 61 ("Celebrate Something" life-events planning layer) — fully DONE (2026-09-12).** Full
+architecture rationale: `PRODUCT_AUDIT/CELEBRATE_SOMETHING_2026-09-12.md`. User's ask: a new
+Create-tab entry point walking through occasion → who's it for → what to do → when → who's
+involved, then turning that into a real plan. Picked up after a codespace restart mid-build — the
+DB layer, the wizard screen, the Create-tab entry point, `CreateGatheringScreen`'s
+`quickStartWhenPreset`/`quickStartWhenISO` prefill, and both edge functions' widened
+`VALID_OCCASIONS` prompts were all already written locally but neither deployed nor committed;
+this session verified each piece, closed one real remaining gap, and shipped.
 
-**Status**: DB layer DONE and verified live (`20261016_celebrate_occasion_vocabulary_expansion.sql`
-— widened `business_requests.occasion`/`brand_partners.priority_occasions`/
-`occasions.occasion_type` CHECK constraints with 7 new life-event values). This is a pure
-client-side orchestrating wizard (no new entity) that routes into existing screens
-(`AskBusinessScreen` for Dinner/Night out/Activity, `CreateGathering` for Party/Surprise/Weekend
-trip, `CreateHubScreen`'s "Something Else" AI box for Custom) with full prefill — architecture
-locked, not to be re-litigated.
+Shipped as a pure client-side orchestrating wizard (no new entity) — `CelebrateSomethingScreen.js`
+collects occasion/who-for/activity/when/who-involved via `src/services/celebrateSomething.js`'s
+pure routing functions, then hands off to an existing real screen with full prefill:
+`AskBusinessScreen` for Dinner/Night out/Activity, `CreateGathering` for Party/Surprise/Weekend
+trip, `CreateHubScreen`'s "Something Else" AI box for Custom. DB layer
+(`20261016_celebrate_occasion_vocabulary_expansion.sql`, widening `business_requests.occasion`/
+`brand_partners.priority_occasions`/`occasions.occasion_type` with 7 new life-event values) was
+already live from the prior session. Both edge functions' updated `VALID_OCCASIONS` lists/prompt
+examples were found NOT yet live (confirmed by pulling the deployed function bodies via the
+Management API and grepping for the new keys — the deployed prompt still collapsed "promotion"/
+"graduation" into generic "celebration") — redeployed
+(`npx supabase functions deploy <name> --project-ref enmosvippabmuqslzrox`) and reconfirmed live
+via the same body-pull-and-grep method.
 
-**Not yet built**: the new `CelebrateSomethingScreen.js` wizard itself; the new Create-tab entry
-point in `CreateHubScreen.js`; `CreateGatheringScreen.js`'s small `quickStartWhenPreset`/
-`quickStartWhenISO` param addition (mirrors its existing `quickStartTitle` pattern); the
-`create-assistant`/`business-onboarding-assistant` edge function `VALID_OCCASIONS` list + prompt
-example widening (needed so free-text AI extraction elsewhere in the app can also produce the 7
-new values, and so create-assistant's prompt maps "promotion"/"graduation" phrases to their own
-specific new keys instead of collapsing into generic "celebration"); Jest coverage for any new
-pure functions (title composition, routing decision); full-suite + transform-check verification;
-committing. If picking this up after a restart, the DB migration is already live — don't re-apply
-it, just continue the client build. ("the CEO test," first-time-user obviousness) — fully DONE (2026-09-12).** All 5
+One real gap closed this session, not present in the pre-restart build: the working doc's own
+locked design named an optional "save to my calendar" step (the reason `occasions.occasion_type`
+was widened at all), but the wizard as found had no such step — `CALENDAR_SAVEABLE_OCCASION_KEYS`
+(`businessAttributes.js`) existed but was unused anywhere. Added a checkbox on the final step,
+shown only for genuinely calendar-worthy occasions (excludes birthday — already has its own
+dedicated signal — and other — too generic), that calls the existing `addOccasion()` RPC wrapper
+non-blocking (an optional side effect never gates the real navigation). New
+`shouldOfferCalendarSave()`/`buildOccasionSaveParams()` pure functions in `celebrateSomething.js`
+(6 new Jest tests) — `recursAnnually` defaults true only for `anniversary`, every other
+calendar-saveable occasion is a real one-time date. A friend picked from the wizard's own chip
+list (not a free-typed name) now carries its real `connectedUserId` through to the saved
+occasion, cleared whenever the name is hand-edited so a stale id can never attach to the wrong
+person. Full Jest suite 316/316 passing; all seven touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note).
+
+**Item 60 ("the CEO test," first-time-user obviousness) — fully DONE (2026-09-12).** All 5
 questions (What is Nearby? / What can I do here? / How do I find something? / How do I meet/
 connect with someone? / How do I actually make something happen?) PASS — each answer is obvious
 from real on-screen copy/navigation with no chained explanation needed, per a full code trace of

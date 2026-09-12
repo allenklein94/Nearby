@@ -1,0 +1,127 @@
+import {
+  composeCelebrationTitle,
+  composeCelebrationAskText,
+  resolveCelebrationDestination,
+  resolveCelebrationVisibility,
+  celebrationCategoryHint,
+  shouldOfferCalendarSave,
+  buildOccasionSaveParams,
+} from './celebrateSomething';
+
+describe('composeCelebrationTitle', () => {
+  it('uses "My {Occasion}" for whoFor=me', () => {
+    expect(composeCelebrationTitle({ occasion: 'birthday', whoFor: 'me' })).toBe('My Birthday');
+  });
+
+  it('uses the real chosen name when present, regardless of whoFor', () => {
+    expect(composeCelebrationTitle({ occasion: 'graduation', whoFor: 'friend', whoForName: 'Sarah' })).toBe("Sarah's Graduation");
+  });
+
+  it('falls back to a generic phrase per whoFor when no name is picked', () => {
+    expect(composeCelebrationTitle({ occasion: 'anniversary', whoFor: 'friend' })).toBe('Anniversary Celebration');
+  });
+
+  it('collapses "other" to a plain "Celebration" noun instead of "Other Occasion"', () => {
+    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'me' })).toBe('My Celebration');
+    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'friend' })).toBe('A Celebration');
+    expect(composeCelebrationTitle({ occasion: 'other', whoFor: 'friend', whoForName: 'Sarah' })).toBe("Sarah's Celebration");
+  });
+});
+
+describe('composeCelebrationAskText', () => {
+  it('combines occasion + activity + a real name', () => {
+    expect(composeCelebrationAskText({ occasion: 'birthday', whoFor: 'friend', whoForName: 'Sarah', activityType: 'dinner' })).toBe('A birthday dinner for Sarah');
+  });
+
+  it('falls back to a generic who-for phrase with no name picked', () => {
+    expect(composeCelebrationAskText({ occasion: 'graduation', whoFor: 'friend', activityType: 'night_out' })).toBe('A graduation night out for a friend');
+    expect(composeCelebrationAskText({ occasion: 'promotion', whoFor: 'family', activityType: 'activity' })).toBe('A promotion / new job activity for a family member');
+  });
+
+  it('drops "other" from the subject rather than naming it literally', () => {
+    expect(composeCelebrationAskText({ occasion: 'other', whoFor: 'me', activityType: 'activity' })).toBe('A activity for me');
+  });
+
+  it('honestly falls back to "Something" with no occasion or activity phrase', () => {
+    expect(composeCelebrationAskText({ occasion: 'other', whoFor: 'someone_else', activityType: 'custom' })).toBe('Something for someone special');
+  });
+});
+
+describe('resolveCelebrationDestination', () => {
+  it('routes host-it-yourself activity types to gathering', () => {
+    expect(resolveCelebrationDestination('party')).toBe('gathering');
+    expect(resolveCelebrationDestination('surprise')).toBe('gathering');
+    expect(resolveCelebrationDestination('weekend_trip')).toBe('gathering');
+  });
+
+  it('routes find-a-business activity types to business', () => {
+    expect(resolveCelebrationDestination('dinner')).toBe('business');
+    expect(resolveCelebrationDestination('night_out')).toBe('business');
+    expect(resolveCelebrationDestination('activity')).toBe('business');
+  });
+
+  it('routes custom to the AI-assisted custom path', () => {
+    expect(resolveCelebrationDestination('custom')).toBe('custom');
+  });
+});
+
+describe('resolveCelebrationVisibility', () => {
+  it('forces invite_only for a surprise regardless of who is involved', () => {
+    expect(resolveCelebrationVisibility({ activityType: 'surprise', whoInvolved: 'existing_group' })).toBe('invite_only');
+  });
+
+  it('maps existing_group to community for a non-surprise activity', () => {
+    expect(resolveCelebrationVisibility({ activityType: 'party', whoInvolved: 'existing_group' })).toBe('community');
+  });
+
+  it('defaults every other who-involved answer to invite_only, never public', () => {
+    expect(resolveCelebrationVisibility({ activityType: 'party', whoInvolved: 'friends' })).toBe('invite_only');
+    expect(resolveCelebrationVisibility({ activityType: 'party', whoInvolved: 'family' })).toBe('invite_only');
+    expect(resolveCelebrationVisibility({ activityType: 'party', whoInvolved: 'invite_specific' })).toBe('invite_only');
+  });
+});
+
+describe('celebrationCategoryHint', () => {
+  it('hints Foodie only for dinner', () => {
+    expect(celebrationCategoryHint('dinner')).toBe('Foodie');
+  });
+
+  it('leaves every other activity type uncategorized rather than guessing', () => {
+    expect(celebrationCategoryHint('night_out')).toBeNull();
+    expect(celebrationCategoryHint('activity')).toBeNull();
+    expect(celebrationCategoryHint('party')).toBeNull();
+  });
+});
+
+describe('shouldOfferCalendarSave', () => {
+  it('offers the calendar step for genuinely calendar-worthy occasions', () => {
+    expect(shouldOfferCalendarSave('anniversary')).toBe(true);
+    expect(shouldOfferCalendarSave('graduation')).toBe(true);
+    expect(shouldOfferCalendarSave('milestone')).toBe(true);
+  });
+
+  it('excludes birthday (already has its own dedicated signal) and other (too generic)', () => {
+    expect(shouldOfferCalendarSave('birthday')).toBe(false);
+    expect(shouldOfferCalendarSave('other')).toBe(false);
+  });
+});
+
+describe('buildOccasionSaveParams', () => {
+  it('defaults recursAnnually to true only for anniversary', () => {
+    const scheduledAt = new Date('2026-10-05T18:00:00.000Z');
+    expect(buildOccasionSaveParams({ occasion: 'anniversary', title: "Sarah's Anniversary", scheduledAt }).recursAnnually).toBe(true);
+    expect(buildOccasionSaveParams({ occasion: 'graduation', title: "Sarah's Graduation", scheduledAt }).recursAnnually).toBe(false);
+  });
+
+  it('carries the real chosen date and connectedUserId through, honestly null when absent', () => {
+    const scheduledAt = new Date('2026-10-05T18:00:00.000Z');
+    expect(buildOccasionSaveParams({ occasion: 'milestone', title: 'A Milestone Celebration', scheduledAt })).toEqual({
+      occasionType: 'milestone',
+      title: 'A Milestone Celebration',
+      occasionDate: '2026-10-05',
+      recursAnnually: false,
+      connectedUserId: null,
+    });
+    expect(buildOccasionSaveParams({ occasion: 'milestone', title: 'x', scheduledAt, connectedUserId: 'user-1' }).connectedUserId).toBe('user-1');
+  });
+});

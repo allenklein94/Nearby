@@ -154,6 +154,12 @@ export function priorityTimeWindowLabel(key) {
 // business's "what would you like more customers for" occasion-appetite
 // picker (Phase 2) -- same real taxonomy on both sides, not two vocabs
 // that happen to look similar.
+//
+// Item 61 ("Celebrate Something", CLAUDE.md) added the 7 life-event keys
+// below the original 8 (graduation through milestone) -- widened here,
+// not as a second parallel vocabulary, per this repo's "one ontology"
+// convention. Mirrors 20261016_celebrate_occasion_vocabulary_expansion.sql
+// exactly -- keep in sync if either ever changes.
 export const OCCASION_OPTIONS = [
   { key: 'birthday', label: 'Birthday', icon: '🎂' },
   { key: 'anniversary', label: 'Anniversary', icon: '💍' },
@@ -162,9 +168,41 @@ export const OCCASION_OPTIONS = [
   { key: 'casual_hangout', label: 'Casual Hangout', icon: '☕' },
   { key: 'business_meal', label: 'Business Meal', icon: '💼' },
   { key: 'family_gathering', label: 'Family Gathering', icon: '👨‍👩‍👧‍👦' },
+  { key: 'graduation', label: 'Graduation', icon: '🎓' },
+  { key: 'baby_shower', label: 'Baby Shower', icon: '🍼' },
+  { key: 'engagement', label: 'Engagement', icon: '💒' },
+  { key: 'housewarming', label: 'Housewarming', icon: '🏠' },
+  { key: 'promotion', label: 'Promotion / New Job', icon: '📈' },
+  { key: 'farewell', label: 'Farewell', icon: '👋' },
+  { key: 'milestone', label: 'Milestone', icon: '🥂' },
   { key: 'other', label: 'Other Occasion', icon: '✨' },
 ];
 
 export function occasionLabel(key) {
   return OCCASION_OPTIONS.find((o) => o.key === key)?.label ?? key;
 }
+
+// Item 61: the curated subset + literal order the "Celebrate Something"
+// wizard shows -- deliberately excludes date_night/casual_hangout/
+// business_meal/family_gathering (real occasions elsewhere, but not
+// "life event celebrations" in the sense this wizard is about) while
+// keeping OCCASION_OPTIONS itself as the single source of truth for every
+// key's label/icon.
+export const CELEBRATE_OCCASION_KEYS = [
+  'birthday', 'anniversary', 'graduation', 'baby_shower', 'engagement',
+  'housewarming', 'promotion', 'farewell', 'milestone', 'other',
+];
+
+export function celebrateOccasionOptions() {
+  return CELEBRATE_OCCASION_KEYS.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean);
+}
+
+// Item 61: which of the curated Celebrate occasions are also genuinely
+// calendar-worthy (occasions.occasion_type's own CHECK, Phase H) -- used
+// to gate the wizard's optional "save to my calendar" step. 'birthday' is
+// deliberately excluded -- profiles.birthdate + the existing Home nudge
+// already own that signal (OccasionsScreen.js's own header comment).
+// 'other' is excluded too -- too generic a calendar entry to be useful.
+export const CALENDAR_SAVEABLE_OCCASION_KEYS = [
+  'anniversary', 'graduation', 'baby_shower', 'engagement', 'housewarming', 'promotion', 'farewell', 'milestone',
+];

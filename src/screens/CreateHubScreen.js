@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CREATE_HUB_OPTIONS, SUB_OPTIONS } from '../components/StartSomethingModal';
@@ -59,13 +59,26 @@ const WITH_PEOPLE_ACTIONS = [
 // AskBusinessScreen.js already has; there's no prior typed-ask context to
 // prefill from here the way HomeScreen's own entry points have.
 
-export default function CreateHubScreen({ navigation }) {
+export default function CreateHubScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   const [activeSubCategory, setActiveSubCategory] = useState(null);
   const [showSomethingElse, setShowSomethingElse] = useState(false);
   const [assistantText, setAssistantText] = useState('');
   const [thinking, setThinking] = useState(false);
+
+  // Item 61 ("Celebrate Something", CLAUDE.md): the wizard's own "Custom"
+  // activity type has no structured destination to route to -- it hands
+  // off to this screen's existing AI-classification box instead of
+  // building a second one, same "AI suggests, never silently commits"
+  // pattern every other prefill here follows (the text is only ever
+  // pre-typed, never auto-submitted).
+  useEffect(() => {
+    if (route.params?.prefillSomethingElseText) {
+      setShowSomethingElse(true);
+      setAssistantText(route.params.prefillSomethingElseText);
+    }
+  }, [route.params?.prefillSomethingElseText]);
 
   function resetGrid() {
     setActiveSubCategory(null);
@@ -216,6 +229,27 @@ export default function CreateHubScreen({ navigation }) {
                 <Ionicons name="storefront-outline" size={22} color={colors.primary} />
                 <Text style={styles.peopleActionLabel}>Ask Nearby Businesses</Text>
                 <Text style={styles.peopleActionSubtitle}>Post what you need, businesses respond</Text>
+              </TouchableOpacity>
+
+              {/* Item 61 ("Celebrate Something", CLAUDE.md): a real,
+                  first-class entry point (not a rename of an existing
+                  action) -- cuts across "with people"/"with businesses"
+                  since the wizard itself decides which one a given
+                  celebration actually needs. Its own group header, own
+                  row, deliberately placed before the plain activity grid
+                  since a life event is a more specific, richer ask than
+                  a bare category tap. */}
+              <Text style={styles.groupHeader}>For an occasion</Text>
+              <TouchableOpacity
+                style={styles.peopleAction}
+                onPress={() => navigation.navigate('CelebrateSomething')}
+                activeOpacity={0.85}
+                accessibilityLabel="Celebrate Something"
+                accessibilityRole="button"
+              >
+                <Ionicons name="sparkles-outline" size={22} color={colors.primary} />
+                <Text style={styles.peopleActionLabel}>🎉 Celebrate Something</Text>
+                <Text style={styles.peopleActionSubtitle}>Birthdays, anniversaries, and other life moments</Text>
               </TouchableOpacity>
 
               <Text style={styles.groupHeader}>Something to do</Text>
