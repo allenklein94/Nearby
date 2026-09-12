@@ -324,11 +324,19 @@ export default function PlansScreen({ navigation, route }) {
             if (item.type === 'datePlanRow') {
               const plan = item.plan;
               const matchId = plan.date_proposals?.match_id;
+              // Item 59 fix (Thursday acceptance test, Journey B): a
+              // proposal-sourced plan isn't always romantic -- a "Plan
+              // Something Together" made from a Friends-tab connection is
+              // plan_type 'friend_hangout', not 'dating_date'
+              // (20261015_friend_sourced_plan_type_fix.sql). Rendering it
+              // with a heart icon and "Date" label was the actual
+              // "no dating language in Friends" bug the journey trace found.
+              const isFriendHangout = plan.plan_type === 'friend_hangout';
               return (
                 <PlanCard
-                  icon="💗"
-                  title={plan.title || 'A date'}
-                  roleLabel="Date"
+                  icon={isFriendHangout ? '🤝' : '💗'}
+                  title={plan.title || (isFriendHangout ? 'A hangout' : 'A date')}
+                  roleLabel={isFriendHangout ? 'Hangout' : 'Date'}
                   status={resolvePlanTableStatus(plan.status)}
                   onPress={() => matchId && openDatePlan(matchId)}
                   style={styles.planCardSpacing}

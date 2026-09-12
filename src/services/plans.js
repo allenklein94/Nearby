@@ -51,14 +51,25 @@ export async function getMyStandaloneBusinessRequestPlans() {
 // date_proposal() never sets one), so there's no "upcoming vs past" split
 // to make here the same way gathering rows get one; every non-cancelled
 // row is just "still a live plan."
+//
+// Item 59 fix ("Thursday acceptance test", Journey B): a date-proposal
+// row can be plan_type 'friend_hangout' now, not just 'dating_date'
+// (20261015_friend_sourced_plan_type_fix.sql -- a "Plan Something
+// Together" made from a Friends-tab connection is not a romantic date).
+// Both are fetched here since resulting_date_proposal_id already scopes
+// this query to proposal-sourced rows only (a gathering-sourced
+// friend_hangout plan has resulting_gathering_id set instead, never this
+// column) -- plan_type is also selected so the caller can render the
+// right icon/label instead of assuming "date proposal" always means
+// romantic.
 export async function getMyDateProposalPlans() {
   const { data, error } = await supabase
     .from('plans')
     .select(
-      'id, title, status, resulting_date_proposal_id, ' +
+      'id, title, plan_type, status, resulting_date_proposal_id, ' +
         'date_proposals!plans_resulting_date_proposal_id_fkey(match_id)'
     )
-    .eq('plan_type', 'dating_date')
+    .in('plan_type', ['dating_date', 'friend_hangout'])
     .not('resulting_date_proposal_id', 'is', null)
     .neq('status', 'cancelled')
     .order('created_at', { ascending: false });
