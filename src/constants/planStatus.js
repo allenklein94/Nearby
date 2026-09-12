@@ -75,5 +75,11 @@ export function resolveGroupPlanStatus(rawStatus) {
 export function resolvePlanTableStatus(rawStatus) {
   if (rawStatus === 'confirmed') return PLAN_STATUS.CONFIRMED;
   if (rawStatus === 'cancelled') return PLAN_STATUS.CANCELLED;
+  // Item 59 fix (Thursday acceptance test, Journey E): the `plans` table's
+  // own CHECK constraint allows 'completed' (20260914_plans_unified_object.sql)
+  // even though no trigger currently writes it -- mapped explicitly so a
+  // future trigger that does start setting it doesn't silently fall through
+  // to "Pending" the way it would have with a bare default.
+  if (rawStatus === 'completed') return PLAN_STATUS.COMPLETED;
   return PLAN_STATUS.PENDING; // 'draft'
 }

@@ -50,4 +50,8 @@ describe('resolvePlanTableStatus', () => {
     expect(resolvePlanTableStatus('draft')).toBe(PLAN_STATUS.PENDING);
     expect(resolvePlanTableStatus(undefined)).toBe(PLAN_STATUS.PENDING);
   });
+
+  it('maps completed to Completed', () => {
+    expect(resolvePlanTableStatus('completed')).toBe(PLAN_STATUS.COMPLETED);
+  });
 });

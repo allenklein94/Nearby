@@ -11,7 +11,7 @@ Progress tracker (updated as each journey fork reports back):
 - [x] Journey B — Friends: People → Friends → friend → message → Plan → activity/business → plan
 - [x] Journey C — Discover: Discover → Things To Do → Today → category → activity → Plan
 - [x] Journey D — Create: Discover → can't find it → Create → Gathering/Community → publish
-- [ ] Journey E — Business: Intent → options → business → offer/availability → reservation/plan
+- [x] Journey E — Business: Intent → options → business → offer/availability → reservation/plan
 
 Findings and fixes land below each journey's checkbox as it completes.
 
@@ -174,3 +174,69 @@ Invite/Done actions, plus its own error-fallback escape hatch) and `CommunityDet
 No unregistered route, no param-name mismatch, no unwired submit button found anywhere in the
 chain. Not exercised in a running app (no simulator/device tooling this session, standing note) —
 this is a full code trace.
+
+## Journey E — Business
+
+Traced both directions: (1) an ask-box intent resolving to a specific real `business_availability`
+posting, picked directly; (2) a general fan-out where a business responds on its own. **Verdict:
+fully connected — every hop threads a real ID or status transition into the next, no broken
+link.**
+
+Direction 1: `intentResolver.js`'s `resolveBusinessAvailability()` queries real live postings via
+`search_active_business_availability()`, carrying the real `availabilityId` onto each candidate.
+Tapping one navigates to `AskBusiness` with `matchedAvailability`; submitting threads
+`preferredAvailabilityId` through `submitBusinessRequest()` → `create_business_request()` →
+`_match_request_to_availability()`, which inserts a `business_request_offers` row already at
+`status='offered'` (confirmed against the live migration body) — `BusinessRequestDetailScreen.js`
+correctly renders this as "Made you an offer" with a real Accept button, not stuck on the parent
+request's own "waiting" copy. Direction 2: `_business_request_fanout()` inserts one `pending` offer
+per eligible business; a business's own dashboard flips it via `submit_business_offer` to
+`offered` — rendered identically to direction 1 on the same detail screen. Accepting either calls
+`accept_business_offer()`, which genuinely writes a `business_reservations` row (`status='confirmed'`)
+and a `business_payments` row, and sets `business_requests.status='fulfilled'`. A DB trigger
+(`sync_plan_status_from_business_request()`) then promotes the matching `plans` row to
+`status='confirmed'`, which `getMyStandaloneBusinessRequestPlans()`/`PlansScreen.js` already
+surface as a real, tappable Plan (Item 52) — closing the loop back to a Plans-tab row. Both
+`STATUS_COPY` (5 request statuses) and `OFFER_STATUS_COPY` (8 offer statuses) were checked against
+their DB CHECK constraints — full coverage, no unhandled value falling through to nothing. No
+unwired accept/decline/cancel action found.
+
+**One real, small, currently-dormant gap found and fixed**: `plans.status`'s own CHECK constraint
+(`20260914_plans_unified_object.sql`) allows `'completed'`, but `resolvePlanTableStatus()`
+(`src/constants/planStatus.js`) only explicitly mapped `confirmed`/`cancelled`, defaulting
+everything else — including a hypothetical `completed` row — to `PENDING`. Verified live against
+production that no trigger anywhere in the schema currently writes `'completed'` to this column
+(grepped every `update ... plans set status`), so this has never mismapped a real row — but it
+would have silently mislabeled a completed business-request plan as "Pending" the moment any
+future trigger starts setting it. Fixed with one explicit `if (rawStatus === 'completed') return
+PLAN_STATUS.COMPLETED;` branch + a new Jest test. Full suite 296/296 passing; both touched files
+(`planStatus.js`, `planStatus.test.js`) transform-checked clean. Not exercised in a running app (no
+simulator/device tooling this session, standing note) — this is a full code trace plus one
+pure-function fix, no live DB write was needed since nothing currently produces the value being
+fixed for.
+
+## Item 59 — overall verdict, all 5 journeys
+
+All five journeys were traced end-to-end against the real current code (not re-trusted from
+memory) and, with the fixes made across this multi-session effort, all five now hold up against
+their own acceptance criterion:
+
+- **A (Dating)** — clean, one disclosed-not-fixed friction point (Plan Together buried at #12/12
+  in a generic menu instead of a direct hop to DateProposalScreen — a design call, not a bug).
+- **B (Friends)** — clean after fixing 4 real bugs this session (friend-plan mislabeling on Plans
+  tab; 3 leaked dating/relationship-tool exposures in Chat's Together menu and safety check-in).
+- **C (Discover)** — clean on the literal "no unnecessary intermediate screen" criterion (2 real
+  pushes, 2 in-place expansions); one disclosed-not-fixed reachability gap (the gathering Plan CTA
+  is host-only, so a non-host discovering someone else's gathering can't reach it from that screen).
+- **D (Create)** — clean, no changes needed; full re-verification of items 26/37's prior escape-
+  hatch work held up exactly as documented.
+- **E (Business)** — clean/fully connected; one small dormant status-mapping gap found and fixed.
+
+Net this session: **6 real bugs found and fixed** (friend-plan mislabeling + DB trigger; 3 dating-
+language leaks in Chat; 1 dormant plan-status gap — plus PlansScreen's client render), all verified
+(Jest + babel transform, live disposable DB checks where a migration was involved) and committed.
+**2 real gaps disclosed but deliberately not built** (Plan Together's menu placement; the host-only
+gathering Plan CTA) — both are product-scope decisions under the feature-freeze convention, not
+mechanical fixes, flagged here for explicit direction rather than assumed. Nothing exercised in a
+running app this session (no simulator/device tooling available, standing note across this whole
+project) — every finding above is a full code trace, not an on-device observation.
