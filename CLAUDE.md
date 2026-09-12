@@ -40,6 +40,47 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 53 ("The business relationship should attach to the Plan") — fully DONE (2026-09-12).**
+Direct continuation of Item 52: "Allen + Claude + Dinner + Friday 7PM" should become a Plan, and
+Nearby should then find real restaurant options for it — not force the user to wait on an
+asynchronous "ask and hope a business responds" cycle before seeing anything real. Given a
+direct user pick (via `AskUserQuestion`, among "build the plan-first flow now" / "hold, the data
+model already satisfies it" / "small enrichment only"): **build the plan-first flow.**
+
+Real finding before writing any code: the entire backend chain the user described — Plan →
+location → business → availability → offer → reservation — **already existed end to end**,
+verified live: `plans.resulting_business_request_id` → `business_request_offers` →
+`business_reservations`, plus `submitBusinessRequest()`'s existing `preferredAvailabilityId` param
+(Intent Layer UX walkthrough finding 5) already binds a request directly to one specific,
+already-live `business_availability` posting — confirmed by reading `_match_request_to_availability()`
+live: passing a preferred posting immediately inserts a real `business_request_offers` row at
+`status = 'offered'`, no waiting on the business at all. The only genuinely missing piece was a
+**client-side "search live options first" step for the general (non-match) ask** — that pattern
+already existed for the dating-specific case (`DateProposalScreen`'s `handleFindNearby`/
+`handleChooseNearby`, external UX critique reply item 4) but had never been generalized to the
+plain solo "ask a business" flow.
+
+Shipped by enhancing `AskBusinessScreen.js` (solo mode only — a gathering/community already
+sources location server-side, and a match's own pre-accept search already lives on
+`DateProposalScreen`) rather than building a duplicate new screen: a new "🔎 Find options nearby"
+step, placed right after party size/budget so a real `partySize` is available to filter capacity,
+calls the existing `searchActiveBusinessAvailability()` with real device location; picking a
+result sets `pickedAvailability` and is threaded into the existing `preferredAvailabilityId` param
+on submit (composes the "what do you want?" text field from the real chosen business, but only
+when the caller hadn't already typed their own text). No new DB migration, RPC, or schema — every
+moving part reused verbatim. The "who" half of the example ("+ Claude") also needed no new code:
+`BusinessRequestDetailScreen.js` already has a real "👤 Invite Someone" panel (Item 36 chain 1)
+that appears the moment the resulting request lands, open and not yet part of a group plan —
+exactly where the plan-first flow's own submit navigates to.
+
+Full Jest suite 295/295 passing (no test files needed changes — no new pure functions introduced,
+only UI wiring over already-tested services); `AskBusinessScreen.js` transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that "Find options
+nearby" returns real results, that picking one correctly shows as an already-"offered" business on
+`BusinessRequestDetail` immediately after submit, and that "Invite Someone" still works right
+after a plan-first submission.
+
 **Item 52 ("Build a universal Plan object") — first real increment shipped (2026-09-12).**
 The `plans` table (Phase G, `20260914_plans_unified_object.sql`) has existed since Sep 14 2026,
 populated additively by triggers on gatherings/business_requests/date_proposals, but had zero

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity } from '../services/businessFulfillment';
+import * as Location from 'expo-location';
+import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { BUSINESS_ATTRIBUTE_OPTIONS, CUISINE_OPTIONS, OCCASION_OPTIONS, businessAttributeLabel, cuisineLabel, occasionLabel } from '../constants/businessAttributes';
@@ -202,6 +203,24 @@ export default function AskBusinessScreen({ navigation, route }) {
   const [occasionInput, setOccasionInput] = useState(route.params?.prefillOccasion ?? null);
   const isSoloMode = !gatheringId && !matchId && !communityId;
 
+  // Item 53 ("The business relationship should attach to the Plan",
+  // CLAUDE.md): "Allen + Claude + Dinner + Friday 7PM" should let Nearby
+  // find real restaurant options right away, not only after a business
+  // notices the ask and responds on its own time. Reuses the exact
+  // mechanism already proven for the dating-plan case (DateProposalScreen's
+  // handleFindNearby/handleChooseNearby, external UX critique reply item 4)
+  // and the exact preferredAvailabilityId binding submitBusinessRequest()
+  // already supports (Intent Layer UX walkthrough finding 5) -- no new RPC,
+  // no new schema. Solo mode only: a gathering/community already sources
+  // location server-side (no device location to search from here), and a
+  // match's own pre-accept search already lives on DateProposalScreen
+  // itself. Suppressed once matchedAvailability is already set -- that's
+  // already a specific bound posting from somewhere else, so a second,
+  // competing search step here would be redundant.
+  const [searchingNearby, setSearchingNearby] = useState(false);
+  const [nearbyResults, setNearbyResults] = useState(null);
+  const [pickedAvailability, setPickedAvailability] = useState(null);
+
   // Per the locked design (CLAUDE.md, Aug 24 2026): every field genuinely
   // rendered as an editable input in this mode is required -- fields
   // already server-sourced per mode (gathering's party size/date, match's
@@ -219,6 +238,48 @@ export default function AskBusinessScreen({ navigation, route }) {
     if (!gatheringId && !matchId && !partySize.trim()) return { title: 'How many people?', body: 'A real party size helps a business quote the right offer.' };
     if (!budgetMax.trim()) return { title: 'What’s your budget?', body: 'A rough ceiling is enough -- it just helps businesses respond with something realistic.' };
     return null;
+  }
+
+  // Read-only, contacts no business -- same "browsing is free, asking is
+  // the real action" precedent DateProposalScreen's own handleFindNearby
+  // already established. category may genuinely be null (a plain "show me
+  // what's around" browse); partySize is passed through so capacity is
+  // honestly filtered, matching how submit itself uses it.
+  async function handleFindNearby() {
+    setSearchingNearby(true);
+    setNearbyResults(null);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location access is needed to find nearby options.');
+      }
+      const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const partySizeNum = partySize.trim() ? parseInt(partySize.trim(), 10) : null;
+      const results = await searchActiveBusinessAvailability({
+        category,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        radiusMiles,
+        partySize: Number.isInteger(partySizeNum) && partySizeNum > 0 ? partySizeNum : null,
+      });
+      setNearbyResults(results);
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setSearchingNearby(false);
+  }
+
+  // Composes a real description from the chosen posting the same way
+  // DateProposalScreen's handleChooseNearby does -- but only when the
+  // caller hasn't already typed their own "what do you want?" text, so a
+  // browse-then-pick never silently clobbers something the user wrote
+  // first.
+  function handleChooseNearby(result) {
+    setPickedAvailability(result);
+    if (!text.trim()) {
+      setText(`${category ?? 'Something'} at ${result.partner_name}${result.title ? ` — ${result.title}` : ''}`);
+    }
+    setNearbyResults(null);
   }
 
   async function handleSubmit() {
@@ -286,7 +347,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           date: resolvedDate,
           radiusMiles,
           submissionId,
-          preferredAvailabilityId: matchedAvailability?.availabilityId ?? null,
+          preferredAvailabilityId: matchedAvailability?.availabilityId ?? pickedAvailability?.id ?? null,
           attributes: attributesInput.length > 0 ? attributesInput : null,
           cuisine: category === 'Foodie' ? cuisineInput : null,
           occasion: occasionInput,
@@ -346,6 +407,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     if (occasionInput) recapParts.push(occasionLabel(occasionInput));
     if (isSoloMode && category === 'Foodie' && cuisineInput) recapParts.push(cuisineLabel(cuisineInput));
     if (isSoloMode && attributesInput.length > 0) recapParts.push(attributesInput.map(businessAttributeLabel).join(', '));
+    if (isSoloMode && pickedAvailability) recapParts.push(`at ${pickedAvailability.partner_name}`);
     recapParts.push(`within ${radiusMiles} mi`);
   }
 
@@ -371,7 +433,7 @@ export default function AskBusinessScreen({ navigation, route }) {
                   ? `Describe what you need — every eligible business near your community's Area can respond with a real, custom offer.`
                   : matchedAvailability
                     ? `${matchedAvailability.partnerName} already has this available — review below and send your ask.`
-                    : "We couldn't find anything already happening for this — real nearby businesses can respond with a real offer."}
+                    : 'Tell us what you want, then see real nearby availability right away — or just ask, and businesses can respond with a real offer.'}
           </Text>
 
           {matchedAvailability && (
@@ -412,7 +474,11 @@ export default function AskBusinessScreen({ navigation, route }) {
               <TouchableOpacity
                 key={c}
                 style={[styles.chip, category === c && styles.chipSelected]}
-                onPress={() => setCategory(category === c ? null : c)}
+                onPress={() => {
+                  setCategory(category === c ? null : c);
+                  setNearbyResults(null);
+                  setPickedAvailability(null);
+                }}
                 accessibilityLabel={c}
                 accessibilityRole="button"
               >
@@ -502,6 +568,70 @@ export default function AskBusinessScreen({ navigation, route }) {
               />
             </View>
           </View>
+
+          {isSoloMode && !matchedAvailability && (
+            <View style={{ marginTop: spacing.md }}>
+              <Text style={styles.label}>See what's actually available first?</Text>
+              <TouchableOpacity
+                style={styles.findNearbyButton}
+                onPress={handleFindNearby}
+                disabled={searchingNearby}
+                accessibilityLabel="Find options nearby"
+                accessibilityRole="button"
+              >
+                {searchingNearby ? (
+                  <ActivityIndicator color={colors.primary} />
+                ) : (
+                  <Text style={styles.findNearbyButtonText}>🔎 Find options nearby</Text>
+                )}
+              </TouchableOpacity>
+
+              {searchingNearby && <Text style={styles.nearbyEmptyText}>Finding availability…</Text>}
+
+              {nearbyResults && nearbyResults.length === 0 && (
+                <Text style={styles.nearbyEmptyText}>
+                  Nothing real available right now — you can still send your ask below and hear back from a business directly.
+                </Text>
+              )}
+
+              {nearbyResults && nearbyResults.length > 0 && (
+                <View style={styles.nearbyResultsList}>
+                  {nearbyResults.map((result) => (
+                    <TouchableOpacity
+                      key={result.id}
+                      style={[styles.nearbyResultCard, pickedAvailability?.id === result.id && styles.nearbyResultCardSelected]}
+                      onPress={() => handleChooseNearby(result)}
+                      accessibilityLabel={`Choose ${result.partner_name}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.nearbyResultTitle}>{result.partner_name}</Text>
+                      {!!result.title && <Text style={styles.nearbyResultSubtitle}>{result.title}</Text>}
+                      <Text style={styles.nearbyResultMeta}>
+                        {[
+                          result.offer_type,
+                          result.price != null ? `$${result.price}` : null,
+                          result.distance_miles != null ? `${result.distance_miles.toFixed(1)} mi` : null,
+                          result.remaining_capacity != null ? `${result.remaining_capacity} spots left` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {pickedAvailability && (
+                <View style={styles.matchedAvailabilityBanner}>
+                  <Text style={styles.matchedAvailabilityTitle}>✓ {pickedAvailability.partner_name}</Text>
+                  <Text style={styles.matchedAvailabilityText}>
+                    {pickedAvailability.title}
+                    {pickedAvailability.price != null ? ` · $${pickedAvailability.price}` : ''}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
 
           <Text style={styles.label}>What's this for? (optional)</Text>
           <View style={styles.chipRow}>
@@ -644,6 +774,22 @@ const getStyles = (colors) => StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
+  findNearbyButton: {
+    borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary,
+    paddingVertical: spacing.sm, alignItems: 'center', backgroundColor: colors.primaryMuted,
+    marginBottom: spacing.sm,
+  },
+  findNearbyButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
+  nearbyEmptyText: { ...typography.caption, color: colors.textTertiary, fontStyle: 'italic' },
+  nearbyResultsList: { gap: spacing.xs },
+  nearbyResultCard: {
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.sm,
+  },
+  nearbyResultCardSelected: { borderColor: colors.primary, borderWidth: 1.5, backgroundColor: colors.primaryMuted },
+  nearbyResultTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  nearbyResultSubtitle: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  nearbyResultMeta: { ...typography.small, color: colors.textTertiary, marginTop: 2 },
   submitButton: {
     backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.md,
     alignItems: 'center', marginTop: spacing.xl,
