@@ -122,18 +122,38 @@ export async function routeNotificationTap(data) {
     case 'wave':
       navigationRef.navigate('Notices');
       break;
+    // Item 55 ("deep links should preserve context, too" -- CLAUDE.md):
+    // don't just dump the tap onto a bare GatheringDetail as if the user
+    // browsed there organically -- carry the real reason (the push's own
+    // already-computed body text, the exact sentence the user just read in
+    // their notification center, never a re-derived or fabricated one)
+    // through so the destination screen can explain itself. Only
+    // gathering_interest (a host learns someone's interested) and
+    // recommended_gathering (a stranger learns real nearby interest matches
+    // their own tastes) also suggest the one obviously-relevant next
+    // action, "Invite Friends" -- capitalizing on real momentum. The other
+    // types here (an update, a reminder, a waitlist change) have a real
+    // reason worth showing but no single obviously-correct next action to
+    // force, so they get the reason banner without ever the invite CTA.
     case 'gathering_interest':
+    case 'recommended_gathering':
+      if (data.gathering_id) {
+        navigationRef.navigate('GatheringDetail', {
+          gatheringId: data.gathering_id,
+          notificationReason: data.body ?? null,
+          notificationSuggestsInvite: true,
+        });
+      } else {
+        navigationRef.navigate('Gatherings');
+      }
+      break;
     case 'gathering_invite':
     case 'gathering_reminder':
     case 'gathering_waitlisted':
     case 'gathering_updated':
     case 'recurring_gathering':
-    // "This matches you" recommendation push (20261004_recommended_for_you_push.sql,
-    // notify_matching_things_to_do()) -- same real destination as any other
-    // gathering-shaped push, since it's a genuine gathering row.
-    case 'recommended_gathering':
       if (data.gathering_id) {
-        navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id });
+        navigationRef.navigate('GatheringDetail', { gatheringId: data.gathering_id, notificationReason: data.body ?? null });
       } else {
         navigationRef.navigate('Gatherings');
       }
@@ -354,9 +374,17 @@ export async function consumePendingNotificationTap() {
 
 // Call once, high in the component tree (App.js), to start listening
 // for notification taps for the lifetime of the app.
+// Item 55: the push's own real body text (the exact reason a user just
+// read) lives on the notification's top-level `content`, separate from its
+// custom `data` payload -- merged here, once, so every routeNotificationTap
+// case can read data.body without each one reaching into `response` itself.
+function contentWithBody(content) {
+  return { ...content.data, body: content.body ?? null };
+}
+
 export function setupNotificationTapHandling() {
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    routeNotificationTap(response.notification.request.content.data);
+    routeNotificationTap(contentWithBody(response.notification.request.content));
   });
 
   // Also handle the case where the app was fully closed and the user
@@ -365,7 +393,7 @@ export function setupNotificationTapHandling() {
   // listener even gets attached.
   Notifications.getLastNotificationResponseAsync().then((response) => {
     if (response) {
-      routeNotificationTap(response.notification.request.content.data);
+      routeNotificationTap(contentWithBody(response.notification.request.content));
     }
   });
 

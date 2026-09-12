@@ -40,6 +40,45 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 55 ("deep links should preserve context too") — fully DONE (2026-09-12).** A notification
+tap used to dump the user onto a bare `GatheringDetail` with zero explanation of why they were
+there — e.g. `notify_gathering_interest()` (a host learns someone's interested in their own
+gathering) and `notify_gathering_interest_threshold()` (a stranger learns real nearby interest
+matches their own tastes, `recommended_gathering`) both already compute a real, specific reason
+sentence for the push body, but `routeNotificationTap()` only ever forwarded `gathering_id` —
+the reason itself was read once, then thrown away.
+
+Fixed by carrying the push's own real body text through as a route param, rather than inventing
+new copy: `notifications.js`'s two `Notifications.*` listener call sites now merge the
+notification's top-level `body` onto its `data` payload (`contentWithBody()`) before routing, and
+the `gathering_interest`/`recommended_gathering` cases pass `notificationReason` (the literal real
+sentence the user already read) through to `GatheringDetail` — plus `notificationSuggestsInvite:
+true`, since those two are the only gathering-notification types where "Invite Friends" is
+genuinely the one obviously-correct next step (capitalizing on real momentum). Every other
+gathering-shaped push type (invite/reminder/waitlisted/updated/recurring) now also carries
+`notificationReason` for its own real reason banner, but deliberately without the invite CTA —
+there's no single obviously-correct action to force for those, and forcing one anyway would
+violate the same "don't notify about things you can't act on" discipline Items 48/49 already
+established for the push itself. `GatheringDetailScreen.js` renders a dismissible banner at the
+very top of its content (before the title) showing that real reason text, with an inline "🤝
+Invite Friends" button (reusing the exact same `InviteFriendsModal`/`setInviteModalVisible` every
+other Invite link on this screen already uses — confirmed generic over host/attendee/not-yet-
+joined callers alike, so it's safe for the `recommended_gathering` case where the recipient hasn't
+joined yet) when `notificationSuggestsInvite` is set. Not built as a new "Plan" step beyond
+View→Invite: for a gathering specifically, the gathering itself already *is* the plan — there's no
+honest third stage to add without fabricating one.
+
+Scoped to gathering-shaped notifications only, matching the user's own example exactly — the same
+"real reason + obvious action" banner mechanism is a real fast-follow candidate for other detail
+screens reached by notification (`BusinessRequestDetail`, `CommunityDetail`, etc.) but wasn't
+built for those now; flagged here rather than assumed. Full Jest suite 295/295 passing (no new
+pure functions to test — pure UI/routing wiring over already-computed, already-live push text);
+both touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+in a running app or against a real push notification (no simulator/device tooling this session,
+standing note) — next session should confirm on a real device that a tapped `gathering_interest`/
+`recommended_gathering` push shows the correct real reason text and that "Invite Friends" opens
+the existing modal correctly from that banner.
+
 **Item 54 ("the app should remember context on back navigation") — audited, already TRUE by
 construction, no code change needed (2026-09-12).** Both named examples ("Things To Do → Today →
 Fitness → open an event → back" and "People → Friends → filters → open a profile → back") traced

@@ -91,6 +91,15 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // the same as null -- try again), or a real 'pending'/'approved' row.
   const [myPartnershipRequest, setMyPartnershipRequest] = useState(null);
   const [businessHelpChooserOpen, setBusinessHelpChooserOpen] = useState(false);
+  // Item 55 ("deep links should preserve context, too" -- CLAUDE.md): a
+  // notification tap can carry the real reason the user landed here (the
+  // exact push body text, see notifications.js's routeNotificationTap) and,
+  // for the two types where it's genuinely the one obviously-correct next
+  // step, a flag to surface "Invite Friends" right alongside it -- never
+  // forced for every notification type, only the ones where it's real.
+  const notificationReason = route.params?.notificationReason ?? null;
+  const notificationSuggestsInvite = route.params?.notificationSuggestsInvite ?? false;
+  const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
 
   const load = useCallback(async () => {
     let g;
@@ -483,6 +492,31 @@ export default function GatheringDetailScreen({ route, navigation }) {
         )}
 
         <View style={styles.content}>
+          {showReasonBanner && notificationReason && (
+            <View style={styles.notificationReasonBanner}>
+              <Text style={styles.notificationReasonText}>{notificationReason}</Text>
+              <View style={styles.notificationReasonActions}>
+                {notificationSuggestsInvite && (
+                  <TouchableOpacity
+                    onPress={() => setInviteModalVisible(true)}
+                    style={styles.notificationReasonInviteButton}
+                    accessibilityLabel="Invite friends to this gathering"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.notificationReasonInviteButtonText}>🤝 Invite Friends</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => setShowReasonBanner(false)}
+                  accessibilityLabel="Dismiss"
+                  accessibilityRole="button"
+                  style={styles.notificationReasonDismiss}
+                >
+                  <Text style={styles.notificationReasonDismissText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           <View style={styles.titleRow}>
             <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
               <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
@@ -1111,6 +1145,18 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   heroFallback: { alignItems: 'center', justifyContent: 'center' },
   heroFallbackIcon: { fontSize: 72 },
   content: { padding: spacing.lg },
+  notificationReasonBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.md, marginBottom: spacing.lg,
+  },
+  notificationReasonText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  notificationReasonActions: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm },
+  notificationReasonInviteButton: {
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
+  },
+  notificationReasonInviteButtonText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  notificationReasonDismiss: { marginLeft: 'auto', padding: spacing.xs },
+  notificationReasonDismissText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   categoryBadge: { width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   categoryBadgeIcon: { fontSize: 16 },
