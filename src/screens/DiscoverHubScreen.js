@@ -21,7 +21,10 @@ import { recordIntentSelection, getMyTopSearchedCategory } from '../services/int
 import { recordPeopleSubModeUse, getMyPeopleSubModeUsage } from '../services/peopleSubModeUsage';
 import { resolveDefaultPeopleSubMode } from '../utils/peopleSubModePreference';
 import { isIndoorCategory, isOutdoorCategory } from '../constants/gatheringIndoorOutdoor';
-import { SCORE_HAPPENING_NOW as WEATHER_BONUS } from '../services/intentResolverScoring';
+import {
+  SCORE_HAPPENING_NOW as WEATHER_BONUS,
+  INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle,
+} from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
@@ -92,42 +95,12 @@ const TYPE_FILTERS = [
 
 const PREVIEW_COUNT = 3;
 
-// Item 39 (CLAUDE.md): Discover-local emoji equivalents of HomeScreen's own
-// INTENT_RESULT_ICONS (Ionicons names) -- this screen's whole visual
-// language is already emoji-based (🔍, ✕, etc.), never Ionicons, so this
-// mirrors that instead of introducing a new icon system just for this
-// block. Same real 🟢/🟡 confirmed-vs-standing-willingness hierarchy as
-// Home's own labels, not a different signal.
-const INTENT_SEARCH_TYPE_EMOJI = {
-  gathering: '🎉',
-  community: '🏘️',
-  friend_request: '👥',
-  perk: '🎁',
-  business_availability: '🟢',
-  business_policy_match: '🟡',
-  friend_discovery: '💗',
-};
-
-// Honest labels for the real dateWindow bucket create-assistant returns --
-// never a specific date invented from it (a "weekend" bucket genuinely
-// means "Saturday or Sunday," so it renders as "This weekend," not a
-// fabricated single day). No entry for 'flexible' -- that's the "no real
-// timing signal" case, so no tag renders for it at all.
-const INTENT_SEARCH_DATE_LABELS = {
-  now: 'Right now',
-  today: 'Today',
-  tonight: 'Tonight',
-  tomorrow: 'Tomorrow',
-  weekend: 'This weekend',
-};
-
-function intentSearchDateLabel(dateWindow) {
-  return INTENT_SEARCH_DATE_LABELS[dateWindow] ?? null;
-}
-
-function intentSearchFallbackTitle(classifyResult) {
-  return classifyResult?.category ? `${classifyResult.category} Ideas` : 'Ideas For You';
-}
+// Item 74 (CLAUDE.md): INTENT_SEARCH_TYPE_EMOJI/intentSearchDateLabel/
+// intentSearchFallbackTitle (Discover-local emoji equivalents of
+// HomeScreen's own Ionicons-based result vocabulary, Item 39) moved to
+// intentResolverScoring.js -- CelebrateSomethingScreen's own "Custom
+// Occasion" step needed the identical shape, imported above instead of
+// duplicated here.
 
 // Aug 24 2026 (CLAUDE.md): Discover is now the real 🔎 bottom tab (it
 // used to be a pushed screen reachable only via a single buried

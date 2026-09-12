@@ -200,7 +200,14 @@ export const OCCASION_OPTIONS = [
   // from scratch (20261023_life_event_occasion_downstream_fix.sql's own
   // header comment has the full reasoning).
   { key: 'life_event', label: 'Life Event', icon: '🌟' },
-  { key: 'other', label: 'Other Occasion', icon: '✨' },
+  // Item 74 (CLAUDE.md): "'Custom Occasion' is important... that keeps the
+  // system open-ended." Relabeled from "Other Occasion" to the user's own
+  // wording -- the key/data is untouched, only the display label changes,
+  // but this is also now a real, distinct entry point: picking it in the
+  // Occasion wizard skips the usual who/what/when interrogation entirely
+  // in favor of one open-ended free-text description Nearby classifies
+  // directly (CelebrateSomethingScreen.js's own 'custom_describe' step).
+  { key: 'other', label: 'Custom Occasion', icon: '✨' },
 ];
 
 // Item 73's own real "category architecture flexible enough for..." ask --

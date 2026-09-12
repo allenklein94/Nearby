@@ -21,6 +21,9 @@ const {
   SCORE_INTEREST_MATCH,
   SCORE_CLOSE_DISTANCE,
   SCORE_CONFIRMED_AVAILABILITY_FLOOR,
+  INTENT_SEARCH_TYPE_EMOJI,
+  intentSearchDateLabel,
+  intentSearchFallbackTitle,
 } = require('./intentResolverScoring');
 const { RIGHT_NOW_WINDOW_PAST_MS, RIGHT_NOW_WINDOW_FUTURE_MS } = require('../utils/rightNowWindow');
 
@@ -421,5 +424,41 @@ describe('detectFriendDiscoveryIntent', () => {
     expect(detectFriendDiscoveryIntent('start a running club')).toBe(false);
     expect(detectFriendDiscoveryIntent('')).toBe(false);
     expect(detectFriendDiscoveryIntent(null)).toBe(false);
+  });
+});
+
+// Item 74 (CLAUDE.md): extracted from DiscoverHubScreen.js so
+// CelebrateSomethingScreen's "Custom Occasion" step can share the exact
+// same result-rendering vocabulary instead of a second copy.
+describe('INTENT_SEARCH_TYPE_EMOJI', () => {
+  it('has a real emoji for every runIntentSearch() result type', () => {
+    ['gathering', 'community', 'friend_request', 'perk', 'business_availability', 'business_policy_match', 'friend_discovery'].forEach((type) => {
+      expect(typeof INTENT_SEARCH_TYPE_EMOJI[type]).toBe('string');
+      expect(INTENT_SEARCH_TYPE_EMOJI[type].length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('intentSearchDateLabel', () => {
+  it('gives an honest label for each real dateWindow bucket', () => {
+    expect(intentSearchDateLabel('today')).toBe('Today');
+    expect(intentSearchDateLabel('weekend')).toBe('This weekend');
+  });
+
+  it('renders no tag at all for "flexible" or an unknown bucket -- never a fabricated one', () => {
+    expect(intentSearchDateLabel('flexible')).toBeNull();
+    expect(intentSearchDateLabel(null)).toBeNull();
+    expect(intentSearchDateLabel(undefined)).toBeNull();
+  });
+});
+
+describe('intentSearchFallbackTitle', () => {
+  it('uses the classified category when one exists', () => {
+    expect(intentSearchFallbackTitle({ category: 'Coffee' })).toBe('Coffee Ideas');
+  });
+
+  it('falls back to a generic honest title with no real category', () => {
+    expect(intentSearchFallbackTitle({ category: null })).toBe('Ideas For You');
+    expect(intentSearchFallbackTitle(null)).toBe('Ideas For You');
   });
 });

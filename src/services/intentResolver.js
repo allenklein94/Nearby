@@ -697,6 +697,18 @@ export async function runIntentSearch(typedText) {
   };
 }
 
+// Item 74 (CLAUDE.md): INTENT_SEARCH_TYPE_EMOJI/intentSearchDateLabel/
+// intentSearchFallbackTitle (extracted from DiscoverHubScreen.js, which
+// used to define these as its own private helpers) now live in
+// intentResolverScoring.js, not here -- this file transitively imports
+// supabase/expo-location and can't be imported in a plain Jest/Node test
+// at all (confirmed: importing it throws trying to strip types out of an
+// expo-modules-core file under node_modules), so a pure helper that
+// deserves its own test has to live in that dependency-free sibling module
+// instead, same reasoning its own header comment already gives for every
+// other export in it. Both DiscoverHubScreen.js and
+// CelebrateSomethingScreen.js import them from there directly.
+
 // Pure routing: given a resolveIntent()/runIntentSearch() result item,
 // navigates to its real matching destination. Extracted (Item 39,
 // CLAUDE.md) from HomeScreen.js's own handleIntentResultTap, which had

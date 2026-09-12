@@ -54,9 +54,13 @@ const ACTIVITY_ASK_PHRASE = {
   weekend_trip: 'weekend trip',
 };
 
-// 'other' has no real label worth repeating twice ("Other Occasion
+// 'other' has no real label worth repeating twice ("Custom Occasion
 // Celebration" reads badly) -- collapses to the generic "Celebration" noun
-// everywhere in this module instead.
+// everywhere in this module instead. Moot in practice since Item 74
+// (CLAUDE.md): picking 'other' in the wizard now branches to its own
+// 'custom_describe' step, which never calls composeCelebrationTitle at
+// all -- kept correct anyway in case a future caller still reaches here
+// with occasion === 'other' some other way.
 function celebrationNoun(occasion) {
   return occasion === 'other' ? 'Celebration' : occasionLabel(occasion);
 }

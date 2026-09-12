@@ -5,7 +5,10 @@ import * as Haptics from 'expo-haptics';
 import { getMyFriends, getMutualFriends } from '../services/friends';
 import { getMyCommunities } from '../services/communities';
 import { addOccasion, linkOccasionToPlan } from '../services/occasions';
-import { resolveIntent } from '../services/intentResolver';
+import { resolveIntent, runIntentSearch, navigateToIntentResultItem } from '../services/intentResolver';
+import { intentSearchFallbackTitle, INTENT_SEARCH_TYPE_EMOJI } from '../services/intentResolverScoring';
+import { routeClassifiedIntentToCreation } from '../services/createAssistant';
+import { recordIntentSelection } from '../services/intentOutcomes';
 import { submitBusinessRequest } from '../services/businessFulfillment';
 import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { occasionGroupOptions } from '../constants/businessAttributes';
@@ -68,7 +71,24 @@ import { typography, spacing, radius } from '../theme';
 // decides, CelebrateSomethingScreen is re-entered from
 // GroupOccasionPlanScreen with the real decided activityType already set,
 // so this branch is never hit twice for the same plan.
-function buildStepDefs(activityType) {
+//
+// Item 74 (CLAUDE.md, "'Custom Occasion' is important"): a real life event
+// like "my dad is visiting from out of town" doesn't fit who/what/when
+// structured questions the way a birthday or dinner does -- forcing the
+// same 4 more questions on it would fight the whole point of having an
+// open-ended catch-all. occasion === 'other' ("Custom Occasion") is a
+// wholly different, much shorter path: describe it in one free-text
+// sentence, and Nearby classifies + resolves that directly (the same
+// classify+resolve pipeline Home's ask box and Discover's search already
+// use, runIntentSearch()) instead of asking who it's for, what to do, and
+// when one question at a time.
+function buildStepDefs(occasion, activityType) {
+  if (occasion === 'other') {
+    return [
+      { key: 'occasion', label: 'Occasion' },
+      { key: 'custom_describe', label: 'Describe' },
+    ];
+  }
   const base = [
     { key: 'occasion', label: 'Occasion' },
     { key: 'who_for', label: 'Who' },
@@ -136,7 +156,7 @@ function initialStepFor(route) {
   const hasActivity = !!route.params?.initialActivityType;
   const hasWhen = !!route.params?.initialWhenPreset;
   if (hasOccasion && hasWhoFor && hasActivity && hasWhen) {
-    return buildStepDefs(route.params.initialActivityType).length - 1;
+    return buildStepDefs(route.params.initialOccasion, route.params.initialActivityType).length - 1;
   }
   if (hasOccasion && hasWhoFor) return 2; // 'activity'
   if (hasOccasion) return 1; // 'who_for'
@@ -239,6 +259,16 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [optionsResult, setOptionsResult] = useState(null);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [submittingOptions, setSubmittingOptions] = useState(false);
+
+  // Item 74: "Custom Occasion" ('other') -- one open-ended free-text
+  // description instead of who/what/when, resolved via the same
+  // classify+resolve pipeline Home's ask box and Discover's search already
+  // use (runIntentSearch()). customSearchResult holds the full
+  // {outcome, items, experience, classifyResult, typedText, submissionId}
+  // shape runIntentSearch() returns -- null until a search has actually run.
+  const [customDescription, setCustomDescription] = useState('');
+  const [customSearching, setCustomSearching] = useState(false);
+  const [customSearchResult, setCustomSearchResult] = useState(null);
 
   async function ensureFriendsLoaded() {
     if (friendsLoaded || loadingFriends) return;
@@ -368,7 +398,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     }
   }
 
-  const stepDefs = buildStepDefs(activityType);
+  const stepDefs = buildStepDefs(occasion, activityType);
   const stepKey = stepDefs[step].key;
 
   useEffect(() => {
@@ -409,6 +439,86 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     }
     setOptionsFetched(true);
     setOptionsLoading(false);
+  }
+
+  // Item 74: submits the free-text "What are you planning?" description
+  // through the exact same classify+resolve pipeline Home's ask box and
+  // Discover's search already use -- "Nearby then understands the intent
+  // and starts building options," per the user's own framing. A
+  // 'business_partner' classification ("propose this specific business as
+  // a sponsor") has no results concept, same as every other caller of this
+  // pipeline -- routes straight to creation instead of ever rendering a
+  // results block.
+  async function submitCustomDescription() {
+    const typedText = customDescription.trim();
+    if (!typedText) {
+      return Alert.alert('Tell us more', "What are you planning? A sentence or two is enough.");
+    }
+    Haptics.selectionAsync();
+    Keyboard.dismiss();
+    setCustomSearching(true);
+    setCustomSearchResult(null);
+    try {
+      const result = await runIntentSearch(typedText);
+      if (result.outcome === 'business_partner') {
+        routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
+        return;
+      }
+      setCustomSearchResult(result);
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setCustomSearching(false);
+  }
+
+  // Tapping a real result leaves the wizard entirely -- same as every other
+  // caller of navigateToIntentResultItem (Home's ask box, Discover's
+  // search), a gathering/business/perk/community result is a real existing
+  // thing to go look at or request, not another wizard step.
+  function handleCustomResultTap(item) {
+    const { classifyResult, typedText, submissionId } = customSearchResult ?? {};
+    recordIntentSelection({
+      rawText: typedText, category: classifyResult?.category ?? null, dateWindow: classifyResult?.dateWindow ?? null,
+      resultType: item.type, resultId: item.id ?? null, resultTitle: item.title, submissionId,
+    });
+    navigateToIntentResultItem(navigation, item, { typedText, classifyResult });
+  }
+
+  // The real escape hatch when nothing already exists that fits -- same
+  // "post what you need, businesses respond" flow (AskBusinessScreen) every
+  // other unclear/empty intent result in this app already offers, prefilled
+  // exactly the same way HomeScreen's own goAskBusiness() prefills it.
+  function goAskBusinessFromCustom() {
+    const { classifyResult, typedText, submissionId } = customSearchResult ?? {};
+    recordIntentSelection({
+      rawText: typedText, category: classifyResult?.category ?? null, dateWindow: classifyResult?.dateWindow ?? null,
+      resultType: 'created_new', resultId: null, resultTitle: typedText, submissionId,
+    });
+    navigation.navigate('AskBusiness', {
+      prefillText: typedText,
+      prefillCategory: classifyResult?.category ?? null,
+      prefillPartySize: classifyResult?.partySize ?? null,
+      prefillBudgetMax: classifyResult?.budgetMax ?? null,
+      prefillDateWindow: classifyResult?.dateWindow ?? null,
+      prefillOccasion: classifyResult?.occasion ?? null,
+      prefillSubmissionId: submissionId ?? null,
+    });
+  }
+
+  // "None of these? Create it yourself" -- the same real fallback Home's
+  // own ask box offers once resolveIntent() has genuinely found nothing
+  // (routeClassifiedIntentToCreation, createAssistant.js): a gathering/
+  // community/business_partner intent routes to its own real creation
+  // screen, prefilled but never auto-submitted.
+  function proceedToCustomCreation() {
+    const { classifyResult, typedText, submissionId } = customSearchResult ?? {};
+    routeClassifiedIntentToCreation(navigation, classifyResult, typedText);
+    if (classifyResult?.intent !== 'business_partner') {
+      recordIntentSelection({
+        rawText: typedText, category: classifyResult?.category ?? null, dateWindow: classifyResult?.dateWindow ?? null,
+        resultType: 'created_new', resultId: null, resultTitle: classifyResult?.title ?? typedText, submissionId,
+      });
+    }
   }
 
   // Every real, selectable business_availability candidate resolveIntent()
@@ -685,6 +795,34 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     );
   }
 
+  // Item 74: a plain tap-to-view/tap-to-request row for a real
+  // runIntentSearch() result -- unlike renderOptionCard's multi-select
+  // checkboxes (built for the structured business-destined activity path's
+  // own "Ask These Businesses" batch submit), a Custom Occasion result can
+  // be any real type (gathering/business_availability/perk/community/
+  // friend_discovery), so tapping always just navigates there directly via
+  // navigateToIntentResultItem -- the same one-tap-and-you're-there
+  // behavior Home's ask box and Discover's search already give the exact
+  // same result shapes.
+  function renderCustomResultRow(item) {
+    return (
+      <TouchableOpacity
+        key={`${item.type}-${item.id}`}
+        style={styles.optionCard}
+        onPress={() => handleCustomResultTap(item)}
+        activeOpacity={0.8}
+        accessibilityLabel={item.title}
+        accessibilityRole="button"
+      >
+        <Text style={{ fontSize: 18 }}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.optionTitle}>{item.title}</Text>
+          {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -735,6 +873,100 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     </View>
                   </View>
                 ))}
+              </>
+            )}
+
+            {/* Item 74 (CLAUDE.md): "Custom Occasion" is important -- "my
+                dad is visiting from out of town" isn't a standard life
+                event, so instead of forcing who/what/when questions on it,
+                one open-ended description is classified + resolved
+                directly (runIntentSearch(), the same pipeline Home's ask
+                box and Discover's search already use). "Nearby then
+                understands the intent and starts building options" per the
+                user's own framing -- this renders real matching results
+                inline, the same "no dead ends" escape hatches (Ask Nearby
+                Businesses / Create it yourself) every other empty/unclear
+                intent result in this app already offers. */}
+            {stepKey === 'custom_describe' && (
+              <>
+                <Text style={styles.label}>What are you planning?</Text>
+                <Text style={styles.helperText}>
+                  Describe it in your own words — Nearby will figure out how to help.
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="e.g. Dad's visiting — want to take him somewhere special."
+                  placeholderTextColor={colors.textTertiary}
+                  value={customDescription}
+                  onChangeText={(t) => {
+                    setCustomDescription(t);
+                    if (customSearchResult) setCustomSearchResult(null);
+                  }}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  accessibilityLabel="What are you planning?"
+                />
+
+                {customSearching && (
+                  <View style={styles.customSearchLoadingRow}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <Text style={styles.helperText}>Understanding what you're planning…</Text>
+                  </View>
+                )}
+
+                {customSearchResult && !customSearching && (
+                  <View style={styles.customResultsBlock}>
+                    {customSearchResult.items.length > 0 ? (
+                      <>
+                        <Text style={styles.sublabel}>
+                          {customSearchResult.experience?.title ?? intentSearchFallbackTitle(customSearchResult.classifyResult)}
+                        </Text>
+                        {(customSearchResult.experience?.bundles ?? []).map((bundle) => (
+                          <View key={bundle.id} style={{ marginBottom: spacing.sm }}>
+                            <Text style={styles.optionHint}>✨ One place has it all: {bundle.componentLabels.join(' + ')}</Text>
+                            {renderCustomResultRow(bundle)}
+                          </View>
+                        ))}
+                        {customSearchResult.experience
+                          ? customSearchResult.experience.components.map((component) => (
+                              <View key={component.key} style={{ marginBottom: spacing.sm }}>
+                                <Text style={styles.optionHint}>{component.label}</Text>
+                                {component.items.map(renderCustomResultRow)}
+                              </View>
+                            ))
+                          : customSearchResult.items.map(renderCustomResultRow)}
+                      </>
+                    ) : (
+                      <Text style={styles.helperText}>Nothing already out there matches yet — but Nearby can still help.</Text>
+                    )}
+                    <TouchableOpacity
+                      style={[styles.askBusinessButton, { marginTop: spacing.md }]}
+                      onPress={goAskBusinessFromCustom}
+                      activeOpacity={0.85}
+                      accessibilityLabel="Ask Nearby Businesses"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.askBusinessButtonText}>🏪 Ask Nearby Businesses</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={proceedToCustomCreation}
+                      style={{ marginTop: spacing.sm }}
+                      accessibilityLabel="None of these? Create it yourself"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.createOwnLinkText}>None of these? Create it yourself →</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setCustomSearchResult(null)}
+                      style={{ marginTop: spacing.xs }}
+                      accessibilityLabel="Try a different description"
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.skipRowText}>← Try a different description</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </>
             )}
 
@@ -1250,6 +1482,22 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     {creatingGroupPlan ? 'Creating…' : `Create Group Vote (${selectedInviteeIds.size}) →`}
                   </Text>
                 </TouchableOpacity>
+              ) : stepKey === 'custom_describe' ? (
+                // Item 74: once real results (or an honest empty state) are
+                // showing, the actions are the inline rows/buttons above --
+                // a generic "Next" here would have nowhere real to go.
+                customSearchResult ? null : (
+                  <TouchableOpacity
+                    style={[styles.nextButton, (!customDescription.trim() || customSearching) && styles.nextButtonDisabled]}
+                    onPress={submitCustomDescription}
+                    activeOpacity={0.85}
+                    disabled={!customDescription.trim() || customSearching}
+                    accessibilityLabel="Find Options"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.nextButtonText}>{customSearching ? 'Finding…' : 'Find Options →'}</Text>
+                  </TouchableOpacity>
+                )
               ) : (
                 <TouchableOpacity
                   style={styles.nextButton}
@@ -1305,6 +1553,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   chipTextSelected: { color: '#fff' },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, marginTop: spacing.xs },
+  // Item 74: the "Custom Occasion" free-text description box.
+  textArea: { minHeight: 84, paddingTop: spacing.md },
+  customSearchLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
+  customResultsBlock: { marginTop: spacing.lg },
+  askBusinessButton: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm,
+  },
+  askBusinessButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  createOwnLinkText: { color: colors.primary, fontWeight: '600', fontSize: 14, textAlign: 'center' },
   dateDisplay: {
     marginTop: spacing.md, backgroundColor: colors.surfaceElevated, borderRadius: radius.md,
     padding: spacing.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center',

@@ -442,3 +442,45 @@ export function scoreGatheringForResolver(gathering) {
   if (isToday) score += SCORE_HAPPENING_NOW;
   return score;
 }
+
+// Item 74 (CLAUDE.md): extracted from DiscoverHubScreen.js, which had these
+// three as its own private helpers for rendering a runIntentSearch()
+// result -- CelebrateSomethingScreen's new "Custom Occasion" free-text step
+// (Item 74) needed the identical emoji-per-type/date-label/fallback-title
+// shape, and hand-rolling a second copy is exactly the kind of drift this
+// repo has already been bitten by more than once (Items 27/39).
+// DiscoverHubScreen.js now imports these instead of defining its own.
+//
+// Emoji-based, not Ionicons -- matches DiscoverHubScreen's own whole visual
+// language (🔍, ✕, etc.). Same real 🟢/🟡 confirmed-vs-standing-willingness
+// hierarchy as Home's own labels, not a different signal.
+export const INTENT_SEARCH_TYPE_EMOJI = {
+  gathering: '🎉',
+  community: '🏘️',
+  friend_request: '👥',
+  perk: '🎁',
+  business_availability: '🟢',
+  business_policy_match: '🟡',
+  friend_discovery: '💗',
+};
+
+// Honest labels for the real dateWindow bucket create-assistant returns --
+// never a specific date invented from it (a "weekend" bucket genuinely
+// means "Saturday or Sunday," so it renders as "This weekend," not a
+// fabricated single day). No entry for 'flexible' -- that's the "no real
+// timing signal" case, so no tag renders for it at all.
+const INTENT_SEARCH_DATE_LABELS = {
+  now: 'Right now',
+  today: 'Today',
+  tonight: 'Tonight',
+  tomorrow: 'Tomorrow',
+  weekend: 'This weekend',
+};
+
+export function intentSearchDateLabel(dateWindow) {
+  return INTENT_SEARCH_DATE_LABELS[dateWindow] ?? null;
+}
+
+export function intentSearchFallbackTitle(classifyResult) {
+  return classifyResult?.category ? `${classifyResult.category} Ideas` : 'Ideas For You';
+}
