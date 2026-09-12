@@ -49,6 +49,7 @@ const GROUP_PLAN_STATUS_COPY = {
   voting: 'Voting open',
   decided: 'Decided',
   cancelled: 'Cancelled',
+  fulfilled: '✅ Turned into a plan',
 };
 
 export default function OccasionsScreen({ navigation }) {
@@ -195,6 +196,7 @@ export default function OccasionsScreen({ navigation }) {
                   <Text style={styles.detail}>
                     {formatDate(new Date(occasion.occasion_date + 'T00:00:00'))}
                     {occasion.recurs_annually ? ' · Repeats every year' : ' · One time'}
+                    {occasion.resulting_plan_id ? ' · ✅ Planned' : ''}
                   </Text>
                 </View>
                 <TouchableOpacity

@@ -131,8 +131,17 @@ describe('buildOccasionSaveParams', () => {
       occasionDate: '2026-10-05',
       recursAnnually: false,
       connectedUserId: null,
+      whoForName: null,
+      whoForFriendId: null,
     });
     expect(buildOccasionSaveParams({ occasion: 'milestone', title: 'x', scheduledAt, connectedUserId: 'user-1' }).connectedUserId).toBe('user-1');
+  });
+
+  it('carries the real structured who-for fields through, honestly null when absent (CLAUDE.md, "Occasion architecture should not be a silo")', () => {
+    const scheduledAt = new Date('2026-10-05T18:00:00.000Z');
+    expect(buildOccasionSaveParams({
+      occasion: 'anniversary', title: "Sarah's Anniversary", scheduledAt, whoForName: 'Sarah', whoForFriendId: 'friend-1',
+    })).toMatchObject({ whoForName: 'Sarah', whoForFriendId: 'friend-1' });
   });
 });
 
@@ -192,7 +201,22 @@ describe('resolveDecidedGroupPlanParams', () => {
       initialWhenPreset: 'tonight',
       initialScheduledAtISO: '2026-10-05T12:00:00',
       initialPartySize: 8,
+      initialGroupPlanId: null,
     });
+  });
+
+  it('carries the real occasion_group_plans id through when passed, for linking back once fulfilled (CLAUDE.md, "Occasion architecture should not be a silo")', () => {
+    const params = resolveDecidedGroupPlanParams({
+      occasionType: 'birthday',
+      whoForName: 'Sarah',
+      whoForFriendId: 'friend-1',
+      whenPreset: 'tonight',
+      scheduledDate: '2026-10-05',
+      activityType: 'dinner',
+      label: null,
+      partySize: 8,
+    }, 'plan-123');
+    expect(params.initialGroupPlanId).toBe('plan-123');
   });
 
   it('infers whoFor=someone_else for a real typed name with no connected id', () => {

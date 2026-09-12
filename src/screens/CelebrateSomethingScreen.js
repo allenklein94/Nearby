@@ -4,10 +4,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { getMyFriends } from '../services/friends';
 import { getMyCommunities } from '../services/communities';
-import { addOccasion } from '../services/occasions';
+import { addOccasion, linkOccasionToPlan } from '../services/occasions';
 import { resolveIntent } from '../services/intentResolver';
 import { submitBusinessRequest } from '../services/businessFulfillment';
-import { createOccasionGroupPlan } from '../services/occasionGroupPlans';
+import { createOccasionGroupPlan, linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { celebrateOccasionOptions } from '../constants/businessAttributes';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import {
@@ -144,6 +144,14 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [step, setStep] = useState(() => initialStepFor(route));
 
   const [occasion, setOccasion] = useState(route.params?.initialOccasion ?? null);
+
+  // "Occasion architecture should not be a silo" (CLAUDE.md): present only
+  // on a decided-group-vote re-entry (resolveDecidedGroupPlanParams) --
+  // lets the eventual real business_request/gathering this wizard hands
+  // off to link back to the occasion_group_plans row that decided it, so
+  // that row learns it was actually fulfilled instead of staying 'decided'
+  // forever with no trace of what happened next.
+  const [groupPlanId] = useState(route.params?.initialGroupPlanId ?? null);
 
   const [whoFor, setWhoFor] = useState(route.params?.initialWhoFor ?? null);
   const [whoForName, setWhoForName] = useState(route.params?.initialWhoForName ?? '');
@@ -366,8 +374,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     const trimmedName = whoForName.trim() || null;
     const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
     const askText = composeCelebrationAskText({ occasion, whoFor, whoForName: trimmedName, activityType });
+    let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
-      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: whoForFriendId })).catch(() => {});
+      const saveResult = await addOccasion(buildOccasionSaveParams({
+        occasion, title, scheduledAt, connectedUserId: whoForFriendId, whoForName: trimmedName, whoForFriendId,
+      })).catch(() => null);
+      savedOccasionId = saveResult?.data?.id ?? null;
     }
     const dateParam = scheduledAt.toISOString().slice(0, 10);
     const results = await Promise.allSettled(
@@ -385,6 +397,18 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     if (succeeded.length === 0) {
       Alert.alert('Something went wrong', "We couldn't send those requests. Please try again.");
       return;
+    }
+    // Best-effort link-back to whichever real Occasion produced this --
+    // the first succeeded request stands in for "the plan" when several
+    // were submitted at once (this repo's own "no invented signals" rule
+    // means we link to a real created plan, never guess which one is
+    // primary beyond just picking the first real success).
+    const primaryRequestId = succeeded[0].requestId;
+    if (groupPlanId) {
+      linkOccasionGroupPlanToPlan({ groupPlanId, resultingBusinessRequestId: primaryRequestId }).catch(() => {});
+    }
+    if (savedOccasionId) {
+      linkOccasionToPlan({ occasionId: savedOccasionId, resultingBusinessRequestId: primaryRequestId }).catch(() => {});
     }
     if (succeeded.length === 1) {
       navigation.replace('BusinessRequestDetail', {
@@ -442,18 +466,24 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     setStep((s) => Math.max(s - 1, 0));
   }
 
-  function proceedToDestination() {
+  async function proceedToDestination() {
     const trimmedName = whoForName.trim() || null;
     const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
     const askText = composeCelebrationAskText({ occasion, whoFor, whoForName: trimmedName, activityType });
     const visibility = resolveCelebrationVisibility({ activityType, whoInvolved });
     const destination = resolveCelebrationDestination(activityType);
 
+    // Awaited (not fire-and-forget) only so the real created occasion's id
+    // is available to link once CreateGathering's own creation succeeds --
+    // still never blocks or fails the real navigation below on its own
+    // failure (this repo's own "no dead ends" spirit run in reverse: an
+    // optional extra never becomes a required gate either).
+    let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
-      // Optional, additive side effect -- never blocks or fails the real
-      // navigation below (this repo's own "no dead ends" spirit run in
-      // reverse: an optional extra never becomes a required gate either).
-      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: whoForFriendId })).catch(() => {});
+      const saveResult = await addOccasion(buildOccasionSaveParams({
+        occasion, title, scheduledAt, connectedUserId: whoForFriendId, whoForName: trimmedName, whoForFriendId,
+      })).catch(() => null);
+      savedOccasionId = saveResult?.data?.id ?? null;
     }
 
     if (destination === 'gathering') {
@@ -463,6 +493,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         params.quickStartWhenPreset = whenPreset;
         if (whenPreset === 'custom') params.quickStartWhenISO = scheduledAt.toISOString();
       }
+      // "Occasion architecture should not be a silo": lets
+      // CreateGatheringScreen link the real gathering it creates back to
+      // whichever Occasion/group plan sent it here.
+      if (groupPlanId) params.linkOccasionGroupPlanId = groupPlanId;
+      if (savedOccasionId) params.linkOccasionId = savedOccasionId;
       navigation.navigate('CreateGathering', params);
       return;
     }

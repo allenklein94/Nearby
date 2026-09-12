@@ -40,6 +40,74 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Occasion architecture should not be a silo" — fully DONE (2026-09-12), same-day direct user
+follow-up to "Group planning for an Occasion" below.** User's own list: an Occasion should carry
+occasion type / person being celebrated / date / participants / preferences / plan / location /
+business / status / notifications, reusing the existing categories/people/gathering/intent/
+business/notification systems rather than building a parallel stack — "Nearby remembers the
+moments worth doing something about, and helps you make them happen" as the stated bigger vision.
+
+Audited the real current model (`occasions` + `occasion_group_plans`, both already built in prior
+sessions) against that list field-by-field before writing anything. Verdict: the model already
+satisfies almost all of it by genuine reuse, not duplication — occasion type/date/participants/
+business/notifications all already flow through the real shared systems (friendships/matches for
+participants+eligibility, resolveIntent()/business_requests for business, the existing
+notify_planning category for pushes). "Preferences" deliberately gets no new stored field — it's
+already served by the shared intent-resolver scoring system (favoriteBusinessBonus/pastPlanBonus/
+attributeAndCuisineBonus/occasionBonus in `intentResolverScoring.js`); duplicating it onto the
+occasion would be exactly the second copy this request warned against. "Location"/"business"
+likewise stay unstored directly on the occasion — they already live on whichever real gathering/
+business_request the occasion's plan link (below) points to.
+
+One real, concrete gap found: once a celebration was actually acted on (a real gathering or
+business_request created downstream via CelebrateSomethingScreen's existing hand-off), neither
+`occasions` nor `occasion_group_plans` ever learned that happened — the already-existing unified
+`plans` object (Phase G, `20260914_plans_unified_object.sql`) sat right there as the intended
+cross-system pointer for exactly this, populated by triggers on gatherings/business_requests, but
+nothing had ever linked an Occasion to it. Closed via `20261021_occasion_plan_linkage.sql`: (1)
+`occasions` gains `who_for_name`/`who_for_friend_id` — the same structured "person being
+celebrated" shape `occasion_group_plans` already had (title previously conflated person+occasion
+as free text with no queryable field behind it); (2) both tables gain `resulting_plan_id` (a real
+FK into `plans`), `occasions` also gains `last_planned_at` — an honest, derived-from-a-real-link
+"was this acted on" signal rather than a fabricated status enum with its own separate lifecycle to
+keep in sync; `occasion_group_plans.status` gains a real 4th value, `'fulfilled'`, set the moment a
+resulting plan is linked (safe for this table specifically since, unlike the recurring `occasions`
+table, a group plan is a genuinely one-time object); (3) two new SECURITY DEFINER RPCs
+(`link_occasion_to_plan`/`link_occasion_group_plan_to_plan`) do the actual linking — each looks up
+the real `plans` row the existing triggers already created for whichever resulting gathering/
+business_request id the client passes, and is a safe no-op (never an error) if that row isn't
+found yet, since both are always called best-effort/non-blocking right after the real creation
+call already succeeded. `get_upcoming_occasions()` was widened to return the new columns (explicit
+`drop function` first, per this repo's own RETURNS TABLE column-list gotcha).
+
+Client wiring: `CelebrateSomethingScreen.js` now awaits its own optional "save to calendar" insert
+(previously fire-and-forget) so it has the real created occasion id to link, tracks a new
+`groupPlanId` state (threaded from a decided group-vote re-entry via
+`resolveDecidedGroupPlanParams(decided, groupPlanId)`'s new second argument), and calls the
+appropriate link function right after a real business_request or gathering is actually created —
+covering both structured destinations (`submitSelectedBusinessRequests` for the business path,
+`CreateGatheringScreen.js` for the gathering path, given a new `linkOccasionId`/
+`linkOccasionGroupPlanId` route param pair). The 'custom' destination (hands off to
+CreateHubScreen's free-text AI box) is deliberately NOT linked — genuinely open-ended, no
+structured resulting object to link to, disclosed rather than silently skipped.
+`GroupOccasionPlanScreen.js` now renders a distinct "✅ Turned into a real plan!" state once
+fulfilled (still lets any other participant keep finding their own options, matching this object's
+existing multi-actor shape); `OccasionsScreen.js` shows a real "✅ Planned" badge sourced from
+`resulting_plan_id`.
+
+Verified live against production via a comprehensive disposable rolled-back transaction (real
+occasion linked to a real plan row; a non-owner correctly rejected; a decided group plan linked by
+a non-host participant transitions to `fulfilled` and points at *that participant's own* created
+plan, never another's; a non-participant correctly rejected; linking a still-voting plan is a safe
+no-op; `get_upcoming_occasions()` round-trips the new columns) before applying for real; re-
+confirmed live afterward (columns, widened status CHECK, both new functions, and zero `anon`
+grant leak all present). Full Jest suite 335/335 passing (5 new/updated tests); all eight touched
+files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running
+app (no simulator/device tooling this session, standing note) — next session should confirm on a
+real account that a decided group plan's "Find Options Nearby" submission actually flips
+`GroupOccasionPlanScreen` to the fulfilled state and that OccasionsScreen shows the "✅ Planned"
+badge after a solo (non-group) occasion's calendar-saved wizard flow completes.
+
 **"Group planning for an Occasion" (Sarah's 30th Birthday example) — fully DONE (2026-09-12),
 direct user follow-up to the Occasion rename/simplify pass below, picked up after a codespace
 restart mid-build.** Found at session start: `supabase/migrations/20261020_occasion_group_plans.sql`

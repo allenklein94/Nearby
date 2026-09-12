@@ -125,13 +125,19 @@ export function shouldOfferCalendarSave(occasion, hasConnectedNearbyUser = false
 // real one-time date, so recursAnnually defaults per-occasion instead of
 // asking a 6th question the wizard's own locked question list doesn't
 // have room for.
-export function buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId }) {
+// whoForName/whoForFriendId (added for "Occasion architecture should not be
+// a silo," CLAUDE.md) are the same structured "person being celebrated"
+// fields occasion_group_plans already had -- title alone used to conflate
+// person+occasion as free text with no queryable field behind it.
+export function buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId, whoForName = null, whoForFriendId = null }) {
   return {
     occasionType: occasion,
     title,
     occasionDate: scheduledAt.toISOString().slice(0, 10),
     recursAnnually: occasion === 'anniversary' || occasion === 'birthday',
     connectedUserId: connectedUserId ?? null,
+    whoForName: whoForName ?? null,
+    whoForFriendId: whoForFriendId ?? null,
   };
 }
 
@@ -186,7 +192,12 @@ export function extractNameFromBirthdayTitle(title) {
 // only ever used downstream for its date portion (submitBusinessRequest's
 // `date` field, the optional calendar save), never displayed as a real
 // scheduled time.
-export function resolveDecidedGroupPlanParams(decided) {
+// groupPlanId (added for "Occasion architecture should not be a silo,"
+// CLAUDE.md) threads the real occasion_group_plans.id through so that once
+// the wizard actually creates a real gathering/business_request from this
+// decided plan, it can link back (linkOccasionGroupPlanToPlan) -- without
+// this, the group plan itself never learns it was fulfilled.
+export function resolveDecidedGroupPlanParams(decided, groupPlanId = null) {
   const whoFor = decided.whoForFriendId ? 'friend' : decided.whoForName ? 'someone_else' : 'me';
   return {
     initialOccasion: decided.occasionType,
@@ -197,5 +208,6 @@ export function resolveDecidedGroupPlanParams(decided) {
     initialWhenPreset: decided.whenPreset,
     initialScheduledAtISO: decided.scheduledDate ? `${decided.scheduledDate}T12:00:00` : null,
     initialPartySize: decided.partySize ?? null,
+    initialGroupPlanId: groupPlanId,
   };
 }

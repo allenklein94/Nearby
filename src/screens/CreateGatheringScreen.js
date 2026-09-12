@@ -4,6 +4,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { createGathering } from '../services/gatherings';
+import { linkOccasionToPlan } from '../services/occasions';
+import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
 import { getMyCommunities } from '../services/communities';
 import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
 import { checkTextModeration } from '../services/textModeration';
@@ -357,6 +359,17 @@ export default function CreateGatheringScreen({ navigation, route }) {
       // later, once real gathering state exists, from
       // GatheringDetailScreen's own "Ready to see what's available?"
       // banner. See createGathering()'s own comment in gatherings.js.
+
+      // "Occasion architecture should not be a silo" (CLAUDE.md): only
+      // present when CelebrateSomethingScreen sent us here -- best-effort,
+      // never blocks the real navigation below on failure.
+      if (route.params?.linkOccasionGroupPlanId) {
+        linkOccasionGroupPlanToPlan({ groupPlanId: route.params.linkOccasionGroupPlanId, resultingGatheringId: created.id }).catch(() => {});
+      }
+      if (route.params?.linkOccasionId) {
+        linkOccasionToPlan({ occasionId: route.params.linkOccasionId, resultingGatheringId: created.id }).catch(() => {});
+      }
+
       navigation.replace('GatheringConfirmation', { gatheringId: created.id, placeName, businessesAsked: askLocalBusinesses });
     } catch (e) {
       Alert.alert('Error', e.message);

@@ -18,7 +18,7 @@ export async function getMyOccasions() {
   return data ?? [];
 }
 
-export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null }) {
+export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
   const { data, error } = await supabase
@@ -30,6 +30,8 @@ export async function addOccasion({ occasionType, title, occasionDate, recursAnn
       occasion_date: occasionDate,
       recurs_annually: recursAnnually,
       connected_user_id: connectedUserId,
+      who_for_name: whoForName,
+      who_for_friend_id: whoForFriendId,
     })
     .select()
     .single();
@@ -38,6 +40,23 @@ export async function addOccasion({ occasionType, title, occasionDate, recursAnn
     return { error: error.message };
   }
   return { data };
+}
+
+// "Occasion architecture should not be a silo" (CLAUDE.md, direct user
+// request): once the wizard's own downstream hand-off actually creates a
+// real gathering/business_request, this links the occasion to the real
+// `plans` row that object's own existing trigger already created --
+// closing the loop so "Nearby remembers... and helps you make it happen"
+// is a real, queryable fact, not just a one-way fire-and-forget. Best-
+// effort by design (see link_occasion_to_plan's own SQL comment) -- always
+// called after the real creation already succeeded, never blocking it.
+export async function linkOccasionToPlan({ occasionId, resultingGatheringId = null, resultingBusinessRequestId = null }) {
+  const { error } = await supabase.rpc('link_occasion_to_plan', {
+    occasion_id_param: occasionId,
+    resulting_gathering_id_param: resultingGatheringId,
+    resulting_business_request_id_param: resultingBusinessRequestId,
+  });
+  if (error) console.error('linkOccasionToPlan error', error);
 }
 
 export async function deleteOccasion(occasionId) {

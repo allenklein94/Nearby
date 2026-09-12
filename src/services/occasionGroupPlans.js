@@ -86,6 +86,20 @@ export async function cancelOccasionGroupPlan(planId) {
   if (error) throw new Error(error.message);
 }
 
+// "Occasion architecture should not be a silo" (CLAUDE.md, direct user
+// request): links a decided group plan to the real `plans` row that its
+// downstream gathering/business_request creation already produced --
+// transitions the plan's own status to 'fulfilled' once linked. Best-
+// effort by design; see link_occasion_group_plan_to_plan's own SQL comment.
+export async function linkOccasionGroupPlanToPlan({ groupPlanId, resultingGatheringId = null, resultingBusinessRequestId = null }) {
+  const { error } = await supabase.rpc('link_occasion_group_plan_to_plan', {
+    group_plan_id_param: groupPlanId,
+    resulting_gathering_id_param: resultingGatheringId,
+    resulting_business_request_id_param: resultingBusinessRequestId,
+  });
+  if (error) console.error('linkOccasionGroupPlanToPlan error', error);
+}
+
 export async function getMyOccasionGroupPlans() {
   const { data, error } = await supabase.rpc('get_my_occasion_group_plans');
   if (error) {

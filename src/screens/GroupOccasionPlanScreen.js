@@ -146,7 +146,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           onPress: async () => {
             const decided = await runAction(() => decideOccasionGroupPlan(planId, option.id));
             if (decided) {
-              navigation.replace('CelebrateSomething', resolveDecidedGroupPlanParams(decided));
+              navigation.replace('CelebrateSomething', resolveDecidedGroupPlanParams(decided, planId));
             }
           },
         },
@@ -173,7 +173,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       activityType: winningOption?.activityType,
       label: winningOption?.label,
       partySize: Math.max(joinedCount, 1),
-    }));
+    }, planId));
   }
 
   if (loading && !detail) {
@@ -196,7 +196,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
   const occasionMeta = OCCASION_OPTIONS.find((o) => o.key === detail.occasionType);
   const canVote = detail.myStatus === 'joined' && detail.status === 'voting';
-  const winningOption = detail.status === 'decided'
+  const winningOption = (detail.status === 'decided' || detail.status === 'fulfilled')
     ? detail.options.find((o) => o.id === detail.winningOptionId)
     : null;
 
@@ -226,14 +226,18 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           </View>
         )}
 
-        {detail.status === 'decided' && winningOption && (
+        {(detail.status === 'decided' || detail.status === 'fulfilled') && winningOption && (
           <View style={styles.decidedCard}>
-            <Text style={styles.decidedLabel}>🎉 It's decided!</Text>
+            <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? '✅ Turned into a real plan!' : "🎉 It's decided!"}</Text>
             <Text style={styles.decidedChoice}>
               {activityMeta(winningOption.activityType).icon} {winningOption.label || activityMeta(winningOption.activityType).label}
             </Text>
+            {/* "fulfilled" means someone already turned this into a real gathering/business
+                request (linkOccasionGroupPlanToPlan) -- the button stays available so anyone
+                else who still wants their own separate options can keep going, per this
+                object's own multi-actor shape (any joined participant can submit their own). */}
             <TouchableOpacity style={styles.decideButton} onPress={goFindBusinesses} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Find businesses for this">
-              <Text style={styles.decideButtonText}>Find Options Nearby →</Text>
+              <Text style={styles.decideButtonText}>{detail.status === 'fulfilled' ? 'Find More Options →' : 'Find Options Nearby →'}</Text>
             </TouchableOpacity>
           </View>
         )}
