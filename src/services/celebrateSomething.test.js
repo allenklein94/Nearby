@@ -101,16 +101,23 @@ describe('shouldOfferCalendarSave', () => {
     expect(shouldOfferCalendarSave('milestone')).toBe(true);
   });
 
-  it('excludes birthday (already has its own dedicated signal) and other (too generic)', () => {
-    expect(shouldOfferCalendarSave('birthday')).toBe(false);
+  it('excludes other (too generic) regardless of connection', () => {
     expect(shouldOfferCalendarSave('other')).toBe(false);
+    expect(shouldOfferCalendarSave('other', true)).toBe(false);
+  });
+
+  it('offers birthday only when there is no real connected Nearby user attached -- the "don\'t require an account" case', () => {
+    expect(shouldOfferCalendarSave('birthday')).toBe(true);
+    expect(shouldOfferCalendarSave('birthday', false)).toBe(true);
+    expect(shouldOfferCalendarSave('birthday', true)).toBe(false);
   });
 });
 
 describe('buildOccasionSaveParams', () => {
-  it('defaults recursAnnually to true only for anniversary', () => {
+  it('defaults recursAnnually to true for anniversary and birthday, false for one-time occasions', () => {
     const scheduledAt = new Date('2026-10-05T18:00:00.000Z');
     expect(buildOccasionSaveParams({ occasion: 'anniversary', title: "Sarah's Anniversary", scheduledAt }).recursAnnually).toBe(true);
+    expect(buildOccasionSaveParams({ occasion: 'birthday', title: "Mom's Birthday", scheduledAt }).recursAnnually).toBe(true);
     expect(buildOccasionSaveParams({ occasion: 'graduation', title: "Sarah's Graduation", scheduledAt }).recursAnnually).toBe(false);
   });
 

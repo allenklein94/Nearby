@@ -86,24 +86,35 @@ export function celebrationCategoryHint(activityType) {
 
 // Item 61's own design doc locked an optional "save to my calendar" step
 // (occasions.occasion_type was widened specifically to support it) --
-// only genuinely calendar-worthy occasions qualify (CALENDAR_SAVEABLE_
-// OCCASION_KEYS's own header comment explains why 'birthday'/'other' are
-// excluded).
-export function shouldOfferCalendarSave(occasion) {
+// genuinely calendar-worthy occasions qualify (CALENDAR_SAVEABLE_
+// OCCASION_KEYS's own header comment explains why 'other' is excluded
+// outright). 'birthday' is a special case, not in that flat list: it
+// already has its own dedicated, better-integrated reminder
+// (profiles.birthdate + the existing Home nudge) -- but ONLY for a real
+// connected Nearby user. "Don't require the celebrated person to be a
+// Nearby user" (CLAUDE.md) means a birthday for someone who isn't one --
+// a mother, say -- has no profiles.birthdate for that nudge to ever read,
+// so it needs this same generic path everyone else already gets.
+// `hasConnectedNearbyUser` should be true only when a real, picked
+// connected friend/match is actually attached (never inferred from a
+// hand-typed name, which could just as easily be a stranger to Nearby).
+export function shouldOfferCalendarSave(occasion, hasConnectedNearbyUser = false) {
+  if (occasion === 'birthday') return !hasConnectedNearbyUser;
   return CALENDAR_SAVEABLE_OCCASION_KEYS.includes(occasion);
 }
 
-// 'anniversary' is the one calendar-saveable occasion that's genuinely
-// annual by nature -- every other one (graduation/baby_shower/engagement/
-// housewarming/promotion/farewell/milestone) is a real one-time date, so
-// recursAnnually defaults per-occasion instead of asking a 6th question
-// the wizard's own locked question list doesn't have room for.
+// 'anniversary' and 'birthday' are the two calendar-saveable occasions
+// that are genuinely annual by nature -- every other one (graduation/
+// baby_shower/engagement/housewarming/promotion/farewell/milestone) is a
+// real one-time date, so recursAnnually defaults per-occasion instead of
+// asking a 6th question the wizard's own locked question list doesn't
+// have room for.
 export function buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId }) {
   return {
     occasionType: occasion,
     title,
     occasionDate: scheduledAt.toISOString().slice(0, 10),
-    recursAnnually: occasion === 'anniversary',
+    recursAnnually: occasion === 'anniversary' || occasion === 'birthday',
     connectedUserId: connectedUserId ?? null,
   };
 }

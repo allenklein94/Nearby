@@ -249,7 +249,7 @@ export default function CelebrateSomethingScreen({ navigation }) {
     const trimmedName = whoForName.trim() || null;
     const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
     const askText = composeCelebrationAskText({ occasion, whoFor, whoForName: trimmedName, activityType });
-    if (saveToCalendar && shouldOfferCalendarSave(occasion)) {
+    if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: whoForFriendId })).catch(() => {});
     }
     const dateParam = scheduledAt.toISOString().slice(0, 10);
@@ -332,7 +332,7 @@ export default function CelebrateSomethingScreen({ navigation }) {
     const visibility = resolveCelebrationVisibility({ activityType, whoInvolved });
     const destination = resolveCelebrationDestination(activityType);
 
-    if (saveToCalendar && shouldOfferCalendarSave(occasion)) {
+    if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       // Optional, additive side effect -- never blocks or fails the real
       // navigation below (this repo's own "no dead ends" spirit run in
       // reverse: an optional extra never becomes a required gate either).
@@ -620,7 +620,7 @@ export default function CelebrateSomethingScreen({ navigation }) {
                   />
                 )}
 
-                {shouldOfferCalendarSave(occasion) && (
+                {shouldOfferCalendarSave(occasion, !!whoForFriendId) && (
                   <TouchableOpacity
                     style={styles.calendarToggleRow}
                     onPress={() => { Haptics.selectionAsync(); setSaveToCalendar((v) => !v); }}

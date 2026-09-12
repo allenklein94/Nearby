@@ -127,10 +127,16 @@ const PERIOD_SUBTITLES = {
 };
 
 // Same icon set OccasionsScreen.js's OCCASION_TYPES already uses -- kept
-// in sync manually since neither file imports the other. 'birthday' has
-// no real path into this table (birthdays live in profiles.birthdate,
-// surfaced by the separate birthdayNudge above), so this is a defensive
-// fallback, not a real case.
+// in sync manually since neither file imports the other. 'birthday' was
+// originally a defensive-only fallback here (birthdays lived only in
+// profiles.birthdate, surfaced by the separate birthdayNudge above) --
+// it's now a real, reachable case too: OccasionsScreen.js added 'birthday'
+// as a selectable type (Item 61 follow-up, CLAUDE.md) for celebrating
+// someone who isn't a Nearby user at all, so has no profiles.birthdate for
+// birthdayNudge to ever find. The two nudges are independent and can both
+// render at once (line ~1726) -- they're never about the same real person
+// unless the caller deliberately double-entered one, which the Occasions
+// screen's own subtitle now warns against.
 const OCCASION_TYPE_ICONS = {
   anniversary: '💑', graduation: '🎓', milestone: '🏆', life_event: '🌟', other: '📅', birthday: '🎂',
 };

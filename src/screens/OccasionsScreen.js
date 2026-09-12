@@ -10,11 +10,24 @@ import { typography, spacing, radius } from '../theme';
 // Sep 14 2026 (CLAUDE.md, "global onboarding -> product wiring" master
 // plan, Phase H) -- a real Occasions CRUD screen, same shape/scope as
 // EmergencyContactsScreen.js (a personal-record table, plain owner-scoped
-// RLS, no RPC needed for create/delete). Birthdays stay owned by the
-// already-real, already-live profiles.birthdate + Home nudge -- not one
-// of the 6 chip options here, since there's nothing new to record for a
-// signal this app already has.
+// RLS, no RPC needed for create/delete).
+//
+// 'birthday' was originally left off this list -- the reasoning at the
+// time was that profiles.birthdate + the existing Home nudge
+// (get_upcoming_connected_birthdays) already own that signal. That's only
+// true for a real connected Nearby user, though, and this screen's own
+// title/date fields never required one in the first place (connectedUserId
+// stays honestly null for everything created here -- there's no "attach a
+// real person" picker on this screen at all). "Don't require the
+// celebrated person to be a Nearby user" (CLAUDE.md, Item 61 follow-up)
+// means someone real but not on the app -- a mother, say -- has no
+// profiles.birthdate for that nudge to ever read, so their birthday needs
+// this same generic path everyone else here already gets. Re-added as a
+// 6th chip; 'birthday' has always been a legal occasion_type value in the
+// schema (20260914_occasions.sql) -- this was purely a UI gap, no
+// migration needed.
 const OCCASION_TYPES = [
+  { key: 'birthday', label: 'Birthday', icon: '🎂' },
   { key: 'anniversary', label: 'Anniversary', icon: '💑' },
   { key: 'graduation', label: 'Graduation', icon: '🎓' },
   { key: 'milestone', label: 'Milestone', icon: '🏆' },
@@ -120,8 +133,9 @@ export default function OccasionsScreen() {
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">Occasions</Text>
           <Text style={styles.headerSubtitle}>
-            Anniversaries, graduations, and other real dates worth planning around. Birthdays are
-            already handled automatically on Home — this is for everything else.
+            Birthdays, anniversaries, graduations, and other real dates worth planning around —
+            for anyone, even someone who isn't on Nearby. A connected Nearby friend's birthday is
+            already handled automatically on Home, so you don't need to add it again here.
           </Text>
 
           {occasions.length === 0 && (

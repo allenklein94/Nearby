@@ -40,6 +40,37 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 61 fast-follow ("don't require the celebrated person to be a Nearby user") — fully DONE
+(2026-09-12), same day, direct user follow-up.** User's own example: planning a mother's birthday
+should work by just typing "Mom" and her birthday — she should never need a Nearby account.
+The wizard's "who is this for" step already satisfied this (free text, never gated on picking a
+real friend) — but a real, pre-existing bug undermined it specifically for birthdays: both the
+wizard's "save to calendar" step (this session's own earlier work) and the standalone
+`OccasionsScreen.js` (Phase H, Sep 14 2026, predates this session) excluded 'birthday' entirely,
+reasoning "`profiles.birthdate` + the existing Home nudge already own that signal" — true only for
+a real connected Nearby user, never for someone who isn't one at all, which is exactly the case
+this request is about. Confirmed live in the schema before changing anything: 'birthday' has
+always been a legal `occasion_type` value (`20260914_occasions.sql`'s own original CHECK) — this
+was purely a UI gap in both places, no migration needed.
+
+Fixed both: `shouldOfferCalendarSave()` (`celebrateSomething.js`) now takes a second
+`hasConnectedNearbyUser` argument and only excludes 'birthday' when a real, explicitly-picked
+connected friend/match is attached (never inferred from a hand-typed name) — `recursAnnually`
+also now defaults true for birthday, not just anniversary. `CelebrateSomethingScreen.js`'s three
+call sites pass `!!whoForFriendId`. `OccasionsScreen.js` — the general, standalone "add an
+occasion for anyone" surface, not just the wizard — gained 'birthday' as a 6th selectable chip
+(its header comment's original reasoning corrected) and an updated subtitle clarifying this is for
+anyone, including someone not on Nearby, with a note not to double-enter a connected friend's
+birthday since that's already automatic. `HomeScreen.js`'s existing `OCCASION_TYPE_ICONS` already
+had a defensive `birthday: '🎂'` entry for a case its own comment said "couldn't happen" — it can
+now genuinely happen, comment corrected; the existing birthday-nudge and occasion-nudge cards are
+already fully independent (can both render at once, confirmed by reading the render condition),
+so no collision risk between a connected friend's automatic nudge and a manually-added one for a
+different (non-Nearby) person. New Jest coverage for the new `shouldOfferCalendarSave` signature.
+Full suite 320/320 passing; all five touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note).
+
 **Item 61 ("Celebrate Something" life-events planning layer) — fully DONE (2026-09-12).** Full
 architecture rationale: `PRODUCT_AUDIT/CELEBRATE_SOMETHING_2026-09-12.md`. User's ask: a new
 Create-tab entry point walking through occasion → who's it for → what to do → when → who's

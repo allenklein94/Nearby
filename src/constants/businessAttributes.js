@@ -200,9 +200,14 @@ export function celebrateOccasionOptions() {
 // Item 61: which of the curated Celebrate occasions are also genuinely
 // calendar-worthy (occasions.occasion_type's own CHECK, Phase H) -- used
 // to gate the wizard's optional "save to my calendar" step. 'birthday' is
-// deliberately excluded -- profiles.birthdate + the existing Home nudge
-// already own that signal (OccasionsScreen.js's own header comment).
-// 'other' is excluded too -- too generic a calendar entry to be useful.
+// deliberately NOT in this flat list -- it needs its own conditional rule
+// (see shouldOfferCalendarSave in celebrateSomething.js), since whether
+// profiles.birthdate + the existing Home nudge already cover it depends on
+// whether the person being celebrated is a real connected Nearby user at
+// all -- someone who isn't (the "don't require a Nearby account" case,
+// CLAUDE.md) has no profiles.birthdate for Nearby to ever read, so their
+// birthday needs this same generic path everyone else here already gets.
+// 'other' is excluded outright -- too generic a calendar entry to be useful.
 export const CALENDAR_SAVEABLE_OCCASION_KEYS = [
   'anniversary', 'graduation', 'baby_shower', 'engagement', 'housewarming', 'promotion', 'farewell', 'milestone',
 ];
