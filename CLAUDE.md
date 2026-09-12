@@ -40,6 +40,52 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 73 ("This can work for non-social life events too ... don't hard-code the product around
+birthdays") — fully DONE (2026-09-12), resumed after a codespace restart mid-build.** Found at
+session start: a complete, uncommitted migration
+(`20261031_occasion_vocabulary_life_events_expansion.sql`) and matching edits to
+`businessAttributes.js`/`CelebrateSomethingScreen.js`/`HomeScreen.js`/`OccasionsScreen.js` (plus a
+new `businessAttributes.test.js`) — all read in full, checked against the user's own list, and
+found correct and complete. Widens the occasion vocabulary with 8 real values from that list not
+previously covered (wedding/retirement/new_job/achievement/moving/reunion/welcome/
+holiday_gathering) across every table CHECK constraint and function-level inline copy in the
+schema, and — the real architectural ask — replaces the wizard's and `OccasionsScreen`'s single
+ever-longer flat chip row with a genuine grouped structure (`OCCASION_GROUPS`: Celebrations/
+Milestones/Social Moments/Custom in `businessAttributes.js`), with `CELEBRATE_OCCASION_KEYS`/
+`PERSONAL_OCCASION_TYPE_KEYS` now derived from it instead of their own hand-maintained flat lists,
+so the vocabulary can keep growing without silently drifting between the two. `HomeScreen.js`'s
+occasion-nudge icon lookup was also generalized from a small hardcoded map to a lookup against
+`OCCASION_OPTIONS` itself — the same "second copy drifts" bug pattern this migration's own
+functions were being fixed for.
+
+**Two real, additional, pre-existing gaps found live (via disposable rolled-back transactions)
+after the rest of the migration was confirmed already applied, not present in the pre-restart
+build** — both are DB constraints this migration's own stated goal ("widen every occasion
+vocabulary gate together") should have caught but missed: (1)
+`business_occasion_packages_occasion_type_check` (Item 68's Occasion Packages table) was still
+stuck at the original 16-value list even though `create_occasion_package`'s own inline check was
+already correctly widened to 24 in the found migration — creating a package for `retirement` (or
+several already-existing values) hit a hard 23514 at the INSERT itself; (2)
+`business_partner_requests_priority_occasions_check` (the pending-application table, distinct
+from `brand_partners`' own copy) had never been widened even by the original Sep 16 2026 8→16
+expansion, despite `BusinessPartnerApplyScreen.js`'s chip picker already rendering the full,
+current `OCCASION_OPTIONS` list with no RPC layer in front of the insert — any applicant picking
+`graduation`/`wedding`/etc. as a priority occasion has always hit an unexplained submission
+failure. Both fixed and applied live to the same 24-value list as every other gate; the migration
+file was updated to match so a from-scratch replay lands in the same state.
+
+Verified live against production (`enmosvippabmuqslzrox`): every widened constraint and function
+body confirmed present and matching the migration file exactly; `set_business_priority_occasions`
+confirmed to have no duplicate overload; a disposable rolled-back transaction confirmed
+`create_business_request(occasion:'wedding')`, `create_occasion_package(occasion_type:'retirement')`,
+and a `business_partner_requests` insert with `priority_occasions: ['graduation','wedding',
+'achievement']` all now succeed where at least the latter two previously failed — zero leaked rows
+afterward. Full Jest suite 397/397 passing; all five touched/new client files transform-checked
+clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device
+tooling this session, standing note) — next session should confirm on a real account that the
+Occasion wizard's occasion step renders the 4 grouped sections correctly and that a business can
+successfully create an Occasion Package for one of the 8 new occasion types.
+
 **Item 72 ("Make invitations frictionless") — fully DONE (2026-09-12).** User's own framing: a
 plan invite shouldn't require the recipient to already have Nearby — "View Plan" and a lightweight
 web experience should work for anyone, with "Open Nearby" as the upgrade path, creating a natural
