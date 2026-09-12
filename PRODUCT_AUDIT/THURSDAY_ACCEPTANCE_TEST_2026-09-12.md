@@ -10,7 +10,7 @@ Progress tracker (updated as each journey fork reports back):
 - [x] Journey A — Dating: People → Dating → person → match → message → Plan → business/place → plan
 - [x] Journey B — Friends: People → Friends → friend → message → Plan → activity/business → plan
 - [x] Journey C — Discover: Discover → Things To Do → Today → category → activity → Plan
-- [ ] Journey D — Create: Discover → can't find it → Create → Gathering/Community → publish
+- [x] Journey D — Create: Discover → can't find it → Create → Gathering/Community → publish
 - [ ] Journey E — Business: Intent → options → business → offer/availability → reservation/plan
 
 Findings and fixes land below each journey's checkbox as it completes.
@@ -148,3 +148,29 @@ this session: building an attendee-facing personal "plan something around this" 
 the host's group-level one is a real, disclosed feature decision (whether/how to scope it, whether
 it should even exist alongside "Invite Friends"), not a mechanical bugfix, and the standing
 feature-freeze convention says not to start it without explicit direction.
+
+## Journey D — Create
+
+Traced `DiscoverHubScreen.js`'s search-empty-state escape hatch → `createAssistant.js`'s
+classification/routing → `CreateGatheringScreen.js`/`CreateCommunityScreen.js` submit handlers →
+post-publish screens. **Verdict: clean, no dead end** — full chain re-verified against the real
+code (not just re-trusted from the CLAUDE.md history summary of items 26/37).
+
+Key confirmations: the "Create What You're Looking For →" CTA is gated on the same live
+`filteredGatherings`/`filteredCommunities`/`filteredOffers` state the visible empty-state text
+itself uses (`DiscoverHubScreen.js:941-942`), so it can never show alongside real results and never
+goes stale. `handleCreateItFromSearch()` (`:1008-1019`) reads the same `searchQuery` state, calls
+`classifyCreateRequest()`, and surfaces any error via `Alert.alert` rather than swallowing it.
+`routeClassifiedIntentToCreation()` (`createAssistant.js:64-74`) routes gathering/community/
+business-partner intents to their real screens with matching param names on both ends
+(`quickStartTitle`/`quickStartCategory` written and read identically); critically, an `unclear`
+classification still lands on `CreateGathering` with the user's own raw typed text as the title —
+the fallback-of-a-fallback that guarantees the search term is never dropped even when the AI can't
+classify it at all. Both `CreateGatheringScreen.js` and `CreateCommunityScreen.js` submit handlers
+validate visibly (`Alert.alert` on rejection/moderation/blank-required-field), call a real Supabase
+insert, catch and surface errors (never swallowed), and on success `navigation.replace()` into a
+real next screen with correctly-matching param names — `GatheringConfirmationScreen` (real Share/
+Invite/Done actions, plus its own error-fallback escape hatch) and `CommunityDetail` respectively.
+No unregistered route, no param-name mismatch, no unwired submit button found anywhere in the
+chain. Not exercised in a running app (no simulator/device tooling this session, standing note) —
+this is a full code trace.
