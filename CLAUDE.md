@@ -40,43 +40,12 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Item 59 ("the Thursday acceptance test," 5 end-to-end journeys) — IN PROGRESS, resume here.**
-Full working doc: `PRODUCT_AUDIT/THURSDAY_ACCEPTANCE_TEST_2026-09-12.md` — read that file first,
-it has the real per-journey detail; this is just the pointer + exact next step.
-
-Status: **Journeys A, B, C, D are done** (traced + any real bugs found already fixed, verified,
-and committed — nothing left uncommitted from those). **Journey E (Business: Intent → options →
-business → offer/availability → reservation/plan) is NOT started** — a background research fork
-for it was launched in the session that got interrupted, but background fork state does not
-survive a codespace restart, so if you're reading this after a restart, that fork is gone and
-Journey E needs to be launched fresh, not resumed.
-
-**Exact next step**: launch a research fork (or trace directly) for Journey E, same shape as the
-other four — read real code, don't assume from the CLAUDE.md history summary below. Trace one path
-from an intent (e.g. Home's ask box or `AskBusinessScreen.js` directly) through `intentResolver.js`
-→ real `business_availability` options → picking one → `preferredAvailabilityId` threading through
-`submitBusinessRequest()`/`_match_request_to_availability()` → `BusinessRequestDetailScreen.js`
-showing it as already-offered. Also trace the other direction: a fanned-out request a business
-responds to, the consumer's Accept action, and whether that produces a real `business_reservations`
-row / shows up as a real Plan (Item 52's `getMyStandaloneBusinessRequestPlans()`). Look for any
-broken link: unhandled status value, missing param, dead accept/decline button. Fix what's found,
-verify (Jest + babel transform + live disposable DB check if a migration's involved), commit, then
-fold the finding into the audit doc, mark Journey E's checkbox done, and write the overall Item 59
-"all 5 journeys" summary/verdict at the top of that file (not yet written — the per-journey
-sections exist but nothing ties them together yet). Only then update this CLAUDE.md section down
-to a short "fully DONE" status line per the standing convention below.
-
-**What's already been found and fixed this session** (all committed, don't redo): (1) friend-
-sourced date-proposal plans were mislabeled with a heart/"Date" on the Plans tab instead of
-`friend_hangout` — DB trigger + `plans.js` + `PlansScreen.js` fixed, verified live. (2)
-`ChatScreen.js`'s "Do Something Together" menu leaked 7 explicitly romantic-relationship tools
-(Relationship Constitution, Chemistry Diary, Memory Vault, etc.) into friend/gathering-sourced
-chats with zero gating, plus the safety check-in modal was entirely dating-framed regardless of
-match type — both fixed with `isRomanticMatch` gating/copy-swapping. (3) Journey C found one real,
-disclosed-not-fixed gap (the gathering "Plan"/business CTA is host-only, so a non-host discovering
-someone else's gathering never sees it) — a real feature-scope question, not a bug, left for
-explicit direction per the feature-freeze convention. (4) Journey D re-verified clean, no changes
-needed.
+**Item 59 ("the Thursday acceptance test," 5 end-to-end journeys) — fully DONE (2026-09-12).** All
+5 journeys traced and verified against real current code; 6 real bugs found and fixed (friend-plan
+mislabeling, 3 dating-language leaks in Chat, 1 dormant `plans.status` mapping gap), 2 real
+scope-decision gaps disclosed but not built (Plan Together's menu placement; the host-only
+gathering Plan CTA). Full detail: `CLAUDE_HISTORY.md`, search "Item 59"; per-journey trace detail:
+`PRODUCT_AUDIT/THURSDAY_ACCEPTANCE_TEST_2026-09-12.md`.
 
 **Item 57 ("the N mark should become part of the product language") — fully DONE (2026-09-12).**
 User's own framing: use the redesigned N mark consistently beyond the app icon (loading, empty

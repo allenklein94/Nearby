@@ -1,3 +1,77 @@
+## Sep 12 2026 — Item 59 ("the Thursday acceptance test," 5 end-to-end journeys) — FULLY DONE
+
+Full working doc: `PRODUCT_AUDIT/THURSDAY_ACCEPTANCE_TEST_2026-09-12.md` (has the complete
+per-journey trace detail; this is the session-log account of how it was built, across a restart).
+
+This was a multi-session effort, interrupted once by a codespace restart mid-way (background
+research forks do not survive a restart, so Journey E had to be launched fresh rather than
+resumed when picked back up). Five acceptance journeys, each traced against the real current code
+(never re-trusted from a prior summary):
+
+- **A (Dating)**: clean. One disclosed-not-fixed friction point — "Plan Together" sits buried at
+  slot #12/12 in a generic "Do Something Together" menu instead of a direct hop to
+  `DateProposalScreen` — a design call, not a bug, left for explicit direction.
+- **B (Friends)**: People → Friends → friend → message → Plan → activity/business → plan. Found
+  and fixed 4 real bugs: (1) friend-sourced date-proposal plans were mislabeled with a heart/"Date"
+  on the Plans tab instead of `friend_hangout` (DB trigger + `plans.js` + `PlansScreen.js` fixed,
+  verified live); (2) `ChatScreen.js`'s "Do Something Together" menu leaked 7 explicitly
+  romantic-relationship tools (Relationship Constitution, Chemistry Diary, Memory Vault, etc.) into
+  friend/gathering-sourced chats with zero gating; (3) the safety check-in modal was entirely
+  dating-framed regardless of match type — both (2) and (3) fixed with `isRomanticMatch`
+  gating/copy-swapping.
+- **C (Discover)**: Discover → Things To Do → Today → category → activity → Plan. Clean on the
+  literal "no unnecessary intermediate screen" criterion (2 real pushes, 2 in-place expansions).
+  One disclosed-not-fixed reachability gap: the gathering "Plan"/business CTA is host-only, so a
+  non-host discovering someone else's gathering never sees it from that screen — a real
+  feature-scope question, not a bug, left for explicit direction per the feature-freeze
+  convention.
+- **D (Create)**: Discover → can't find it → Create → Gathering/Community → publish. Re-verified
+  clean, no changes needed — full re-check of items 26/37's prior escape-hatch work held up
+  exactly as documented; no unregistered route, no param-name mismatch, no unwired submit button
+  found anywhere in the chain.
+- **E (Business)**: Intent → options → business → offer/availability → reservation/plan. Traced
+  both directions: (1) an ask-box intent resolving to a specific real `business_availability`
+  posting, picked directly — `intentResolver.js`'s `resolveBusinessAvailability()` carries the real
+  `availabilityId` onto each candidate; tapping one navigates to `AskBusiness` with
+  `matchedAvailability`; submitting threads `preferredAvailabilityId` through
+  `submitBusinessRequest()` → `create_business_request()` → `_match_request_to_availability()`,
+  which inserts a `business_request_offers` row already at `status='offered'` (confirmed against
+  the live migration body) — `BusinessRequestDetailScreen.js` correctly renders this as "Made you
+  an offer" with a real Accept button. (2) A general fan-out where a business responds on its own:
+  `_business_request_fanout()` inserts one `pending` offer per eligible business; a business's own
+  dashboard flips it via `submit_business_offer` to `offered` — rendered identically to direction 1
+  on the same detail screen. Accepting either calls `accept_business_offer()`, which genuinely
+  writes a `business_reservations` row (`status='confirmed'`) and a `business_payments` row, and
+  sets `business_requests.status='fulfilled'`. A DB trigger
+  (`sync_plan_status_from_business_request()`) then promotes the matching `plans` row to
+  `status='confirmed'`, which `getMyStandaloneBusinessRequestPlans()`/`PlansScreen.js` already
+  surface as a real, tappable Plan (Item 52) — closing the loop back to a Plans-tab row. Both
+  `STATUS_COPY` (5 request statuses) and `OFFER_STATUS_COPY` (8 offer statuses) were checked
+  against their DB CHECK constraints — full coverage, no unhandled value falling through to
+  nothing. No unwired accept/decline/cancel action found anywhere in the chain.
+
+  **One real, small, currently-dormant gap found and fixed**: `plans.status`'s own CHECK
+  constraint (`20260914_plans_unified_object.sql`) allows `'completed'`, but
+  `resolvePlanTableStatus()` (`src/constants/planStatus.js`) only explicitly mapped
+  `confirmed`/`cancelled`, defaulting everything else — including a hypothetical `completed` row —
+  to `PENDING`. Verified live against production that no trigger anywhere in the schema currently
+  writes `'completed'` to this column (grepped every `update ... plans set status`), so this has
+  never mismapped a real row — but it would have silently mislabeled a completed business-request
+  plan as "Pending" the moment any future trigger starts setting it. Fixed with one explicit
+  `if (rawStatus === 'completed') return PLAN_STATUS.COMPLETED;` branch + a new Jest test.
+
+**Net across the whole item**: 6 real bugs found and fixed (friend-plan mislabeling + DB trigger; 3
+dating-language leaks in Chat; 1 dormant plan-status gap — plus PlansScreen's client render), all
+verified (Jest + babel transform, live disposable DB checks where a migration was involved) and
+committed. 2 real gaps disclosed but deliberately not built (Plan Together's menu placement; the
+host-only gathering Plan CTA) — both are product-scope decisions under the feature-freeze
+convention, not mechanical fixes, flagged for explicit direction rather than assumed. Full Jest
+suite 296/296 passing throughout; every touched file transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Nothing exercised in a running app this session (no simulator/device tooling
+available, standing note across this whole project) — every finding above is a full code trace,
+not an on-device observation. Commits across the effort: `8c682e20`, `962d073b`, `3b2ae05a`,
+`df1fab49`.
+
 ## Sep 12 2026 — Item 51 ("cancellation needs to propagate everywhere") — FULLY BUILT, VERIFIED
 
 Direct user critique, framed explicitly as a lifecycle-architecture issue rather than a single
