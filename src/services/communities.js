@@ -104,6 +104,14 @@ export async function getPublicCommunities() {
     .from('communities')
     .select(PUBLIC_COMMUNITY_SELECT)
     .eq('is_public', true)
+    // Item 50 (state consistency audit, Finding 3): a paused/cancelled
+    // community used to stay fully browsable here despite being un-joinable
+    // in intent -- and, until this same pass's RLS fix, actually joinable
+    // too. Matches the direct user decision: active = discoverable, paused/
+    // cancelled = not, for anyone who isn't already a member (getMyCommunities
+    // is untouched -- existing members keep seeing their own communities
+    // regardless of status).
+    .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(200);
 
@@ -126,10 +134,13 @@ export async function searchPublicCommunities(queryText) {
   if (!term) return [];
   const escaped = term.replace(/[%_]/g, '\\$&');
 
+  // Item 50: same status gate as getPublicCommunities() above -- search
+  // must never surface a community browse itself wouldn't.
   const baseQuery = () => supabase
     .from('communities')
     .select(PUBLIC_COMMUNITY_SELECT)
-    .eq('is_public', true);
+    .eq('is_public', true)
+    .eq('status', 'active');
 
   // Taxonomy audit reply (CLAUDE.md, "Categories are actually a major
   // strategic issue," P1 item 15): same real gap and same fix as
@@ -182,6 +193,13 @@ export async function joinCommunity(communityId) {
 
   if (error) {
     if (error.code === '23505') return; // already a member, fine
+    // Item 50: the RLS with_check now also requires status = 'active'
+    // (20261012_state_consistency_audit_fixes.sql) -- a stale deep link or
+    // a race against the creator pausing/cancelling can still reach this
+    // insert. Postgres' own RLS-violation message ("new row violates row-
+    // level security policy...") isn't something to show a user; give the
+    // one honest, specific reason instead.
+    if (error.code === '42501') throw new Error("This community isn't accepting new members right now.");
     throw error;
   }
 }

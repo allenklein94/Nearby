@@ -38,6 +38,11 @@ const OFFER_STATUS_COPY = {
   // promise more than the data actually does.
   accepted: 'Accepted — your reservation',
   declined: "Can't help with this one",
+  // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
+  // is a real, live transition this map was missing -- fell through to the
+  // raw literal "withdrawn" instead of styled copy. Matches
+  // SOCIAL_OFFER_STATUS_COPY's own existing entry above, verbatim.
+  withdrawn: 'Withdrawn',
   expired: 'No longer available',
   cancelled: 'Cancelled',
   completed: 'Completed',

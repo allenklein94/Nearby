@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
@@ -27,6 +27,11 @@ const OFFER_STATUS_COPY = {
   offered: 'Made you an offer',
   accepted: 'Accepted — your reservation',
   declined: "Can't help with this one",
+  // Item 50 (state consistency audit, Finding 4): withdraw_business_offer()
+  // is a real, live transition this map was missing -- fell through to the
+  // raw literal "withdrawn" instead of styled copy. Matches
+  // GroupPlanScreen's identical business-offer copy map, kept in sync.
+  withdrawn: 'Withdrawn',
   expired: 'No longer available',
   cancelled: 'Cancelled',
   completed: 'Completed',
@@ -425,6 +430,27 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setActingOfferId(null);
   }
 
+  // Item 50 (CLAUDE.md) fix 5: "this fell through" -- either party may
+  // cancel a confirmed reservation. The RPC's own "already paid, contact
+  // the business" rejection surfaces here unchanged.
+  function handleCancelReservation(offerId) {
+    Alert.alert('Cancel this reservation?', "The business will be notified and any held spot will be released.", [
+      { text: 'Never mind', style: 'cancel' },
+      {
+        text: 'Cancel Reservation', style: 'destructive', onPress: async () => {
+          setActingOfferId(offerId);
+          try {
+            await cancelBusinessReservation(offerId);
+            await load();
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+          setActingOfferId(null);
+        },
+      },
+    ]);
+  }
+
   async function handleCancel() {
     Alert.alert('Cancel this request?', 'Businesses will no longer be able to respond.', [
       { text: 'Never mind', style: 'cancel' },
@@ -673,6 +699,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   >
                     {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>Mark as Completed</Text>}
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cancelReservationButton}
+                    onPress={() => handleCancelReservation(o.id)}
+                    disabled={actingOfferId === o.id}
+                    accessibilityLabel="Cancel this reservation"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.cancelReservationButtonText}>Cancel Reservation</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -796,6 +831,8 @@ const getStyles = (colors) => StyleSheet.create({
   acceptButtonText: { color: '#fff', fontWeight: '700' },
   completeButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   completeButtonText: { color: colors.primary, fontWeight: '700' },
+  cancelReservationButton: { borderWidth: 1, borderColor: colors.danger, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
+  cancelReservationButtonText: { color: colors.danger, fontWeight: '700' },
   cancelLink: { color: colors.textTertiary, fontSize: 14, textAlign: 'center', marginTop: spacing.lg },
   groupPlanBanner: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,

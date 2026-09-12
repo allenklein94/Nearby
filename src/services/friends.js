@@ -119,11 +119,19 @@ export async function sendFriendRequest(otherUserId) {
   }
 }
 
+// Item 50 (CLAUDE.md, "state consistency audit"): this used to be a raw
+// .update() with no "already resolved" transition guard anywhere -- a
+// re-decline after accept left a stale live match/chat, a re-accept after
+// decline showed "✓ Friends" with no match to message through (see
+// PRODUCT_AUDIT/STATE_CONSISTENCY_AUDIT_2026-09-11.md, Finding 1). Now a
+// SECURITY DEFINER RPC that locks the row, checks it's still 'pending', and
+// re-validates blocks at response time -- same pattern
+// approve_gathering_interest() already established.
 export async function respondToFriendRequest(friendshipId, accept) {
-  const { error } = await supabase
-    .from('friendships')
-    .update({ status: accept ? 'accepted' : 'declined' })
-    .eq('id', friendshipId);
+  const { error } = await supabase.rpc('respond_to_friend_request', {
+    friendship_id_param: friendshipId,
+    accept_param: accept,
+  });
   if (error) throw error;
 }
 

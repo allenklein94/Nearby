@@ -280,6 +280,18 @@ export async function routeNotificationTap(data) {
     case 'business_offer_accepted':
       navigationRef.navigate('BusinessDashboard');
       break;
+    // Item 50 (state consistency audit, fix 5): cancel_business_reservation()
+    // notifies whichever side didn't initiate the cancellation -- two
+    // distinct type strings since each role needs a different destination
+    // for the same underlying event (see that RPC's own comment).
+    case 'business_reservation_cancelled':
+      if (data.request_id) {
+        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id });
+      }
+      break;
+    case 'reservation_cancelled_by_customer':
+      navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
+      break;
     // Nearby 2.0 vision layer 3 (see CLAUDE.md's "Nearby 2.0 Vision" doc):
     // a real "N people you know are looking for X" signal just crossed
     // its own real 2+ threshold -- lands on Home, where the dismissible

@@ -1,3 +1,74 @@
+## Sep 12 2026 — Item 50 ("state consistency audit"), fix 5 — "cancel a confirmed reservation" — FULLY BUILT, VERIFIED
+
+Resumed after a codespace restart mid-block. Full audit report: `PRODUCT_AUDIT/
+STATE_CONSISTENCY_AUDIT_2026-09-11.md`. Fixes 1/2/3/4/6 (client + a separate migration) had
+already shipped in the prior session and are unaffected by any of this. Fix 5 was the one open
+item: once an offer moves to `accepted`/`confirmed`, nothing could move it any further except
+`complete_business_reservation()` — no way to represent "this fell through." Designed
+`cancel_business_reservation(offer_id_param)` (dual-auth: requester or the business's own
+`managed_partner_id`, mirroring `complete_business_reservation()`'s shape; refuses once
+`business_payments.status` is `captured`/`authorized` per the standing "real money needs the user
+present" rule).
+
+**The prior session's blocker and its real cause.** The prior session spent its remaining budget
+convinced it had found a reproducible PL/pgSQL engine anomaly: a conditional `UPDATE` on
+`business_payments` inside this function silently no-opped (row stayed at its old status, no
+error) across many variants — record-field `IN(...)`, `= OR =` chains, and finally a pure
+SQL-side `UPDATE ... WHERE` with no PL/pgSQL record comparison at all. It stopped there,
+correctly declining to ship an unverified payment-state transition, and left this file with an
+explicit instruction: on resume, first re-run that last SQL-side variant as a genuinely fresh,
+first-thing-in-session query, before assuming a real database bug.
+
+Doing exactly that immediately surfaced the real cause, on the very first query of this session:
+the live `business_payments_status_check` CHECK constraint did not yet allow the value
+`'cancelled'` at all — the `ALTER TABLE ... ADD CONSTRAINT` that adds it lives in this exact same
+draft migration file, which had never actually been applied. Every one of the prior session's
+disposable rolled-back test transactions was therefore trying to `UPDATE ... SET status =
+'cancelled'` against a constraint that had never been widened *in that same transaction*, so the
+write predictably failed a constraint check — not a PL/pgSQL anomaly, not an engine quirk, just an
+ordinary missing-migration bug. (Re-running the identical test with the constraint-widening ALTER
+TABLE included in the same transaction confirmed this directly: the update then succeeded
+cleanly, first try, no special-casing needed.) The "inconsistent" results the prior session saw
+across variants are consistent with this: whichever ad-hoc test happened to include the schema
+change in its own transaction that time would have looked like it worked; the ones that didn't
+would look like a silent no-op.
+
+**Resolution.** Rewrote the function to use the cleaner SQL-side form (a `SELECT EXISTS(...) INTO
+v_payment_blocked` guard, then a plain `UPDATE ... WHERE status IN (...)`) rather than the
+record-field comparison the draft file had settled on defensively — no comparison-shape issue
+ever existed, so there's no reason to prefer the more awkward form. Applied the migration for real
+(constraint widened to add `'cancelled'`, `business_request_offers.cancelled_at` column added,
+function created). Verified live via `pg_get_function_identity_arguments` (single overload),
+`pg_get_constraintdef` (constraint has the new value), `information_schema.columns` (new column
+present), and `information_schema.role_routine_grants` (`authenticated` only, no `anon`/`public`).
+Then ran one comprehensive disposable rolled-back transaction against the real deployed function
+(not just the isolated payment-update logic), simulating `auth.uid()` via `SET LOCAL
+request.jwt.claim.sub`, covering: consumer-initiated cancel (offer/reservation/payment status all
+correctly flip to `cancelled`), business-side (`managed_partner_id`) cancel, a `captured`-payment
+reservation correctly rejected with no state change, and a stranger (neither party) correctly
+rejected. All four passed clean on the first run.
+
+**Client wiring shipped**: `cancelBusinessReservation(offerId)` in `businessFulfillment.js`
+(same one-line RPC-wrapper shape as its siblings); `getBusinessOpportunities()`'s select extended
+with `business_reservations(status, business_payments(status))` so the business dashboard can
+read payment state; a "Cancel Reservation" action (danger-styled, mirroring this repo's
+outlined-destructive-action convention) added to `BusinessRequestDetailScreen.js`'s existing
+`o.status === 'accepted'` block, right after "Mark as Completed"; the same action added to
+`BusinessDashboardScreen.js`'s "📅 Upcoming Nearby Visits" list, previously a passive read-only
+display. `GroupPlanScreen.js` needed no changes — an accepted group-plan offer already renders
+through `BusinessRequestDetailScreen.js`'s shared `accepted` block (not gated on
+`isGroupPlanRequest`), so the consumer-side button already covers that case too. Push-tap routing
+for the two new notification types (`business_reservation_cancelled` →
+`BusinessRequestDetail`; `reservation_cancelled_by_customer` → `BusinessDashboard`, requests
+section) had already been added to `notifications.js` in the prior session and needed no change.
+
+Full Jest suite 292/292 passing; all three touched files (`businessFulfillment.js`,
+`BusinessRequestDetailScreen.js`, `BusinessDashboardScreen.js`) transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — push delivery specifically can't be end-to-end verified without a
+real device token, though the DB-side notification-row/payload logic was verified live same as
+the rest of the function.
+
 ## Sep 11 2026 — "This matches you" recommendation push notifications — FULLY BUILT, VERIFIED
 
 External UX critique item 17, direct user request ("Yes — absolutely. But this needs to be done

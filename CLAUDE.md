@@ -75,14 +75,13 @@ suite 292/292 passing throughout; all touched files transform-checked clean via 
 standing note) — push notifications specifically can't be end-to-end verified without a real
 device token. Commits: `760c0fef`, `d72a189c`.
 
-**Item 50 ("state consistency audit") — in progress, launched 2026-09-11.** Direct user ask: enumerate every entity's real state machine (Friendship, Gathering,
-Community, Business request/offer, Match, and any other genuine status column found) and verify
-DB CHECK constraints → backend RPC transitions → client rendering all agree, the same shape as
-item 32's already-shipped Friendship/Match/block audit
-(`PRODUCT_AUDIT/RELATIONSHIP_STATE_MATRIX_2026-09-11.md`) but extended to the rest of the schema.
-A background audit fork is running against live production schema; report will land at
-`PRODUCT_AUDIT/STATE_CONSISTENCY_AUDIT_2026-09-11.md`. Update this entry once that lands and any
-concrete fixes are made.
+**Item 50 ("state consistency audit") — fully DONE (2026-09-12).** All 6 findings shipped: fixes
+1/2/3/4/6 (2026-09-11) plus fix 5, "cancel a confirmed reservation"
+(`cancel_business_reservation()` RPC + client wiring in `BusinessRequestDetailScreen.js`/
+`BusinessDashboardScreen.js`), resolved after a resumed session traced the prior "reproducible
+PL/pgSQL anomaly" to a mundane cause — a CHECK constraint that hadn't been widened yet in the
+same still-unapplied migration, not an engine bug. Full detail: `CLAUDE_HISTORY.md`, search
+"Item 50 ... fix 5".
 
 **Items 46 & 47 ("personalization should determine what appears first" / "don't
 over-personalize too early") — first real increment shipped (2026-09-11).** Paired ask: Discover

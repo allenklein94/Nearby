@@ -376,7 +376,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
         )}
         {community.description ? <Text style={styles.description}>{community.description}</Text> : null}
 
-        {!isCreator && community.status !== 'cancelled' && (
+        {/* Item 50 (state consistency audit, Finding 3): a paused/cancelled
+            community is no longer joinable server-side (RLS now requires
+            status='active') -- the Join button must not offer an action
+            that would just fail. An existing member still needs Leave
+            available regardless of status, since "existing members keep
+            their own access" is the whole point of the distinction. */}
+        {!isCreator && (isMember || community.status === 'active') && (
           <TouchableOpacity
             style={[styles.joinButton, isMember && styles.leaveButton]}
             onPress={handleJoinLeave}

@@ -13,7 +13,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -399,6 +399,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const offerTypeAcceptance = useMemo(() => computeOfferTypeAcceptanceRates(opportunities), [opportunities]);
   const suggestedOfferType = useMemo(() => bestAcceptedOfferType(offerTypeAcceptance), [offerTypeAcceptance]);
   const [respondingOpportunityId, setRespondingOpportunityId] = useState(null);
+  const [cancellingReservationOfferId, setCancellingReservationOfferId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   // Phase 3 -- which real Signature Experience (if any) the currently-open
   // offer was built from, so it's actually recorded on submit and can feed
@@ -1538,6 +1539,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setRespondingOpportunityId(null);
+  }
+
+  // Item 50 (CLAUDE.md) fix 5: the business's own side of "this fell
+  // through" -- mirrors BusinessRequestDetailScreen's consumer-side action
+  // over the same RPC. The RPC's own "already paid" rejection surfaces
+  // here unchanged.
+  function handleCancelReservation(offerId) {
+    Alert.alert('Cancel this reservation?', 'The customer will be notified and any held spot will be released.', [
+      { text: 'Never mind', style: 'cancel' },
+      {
+        text: 'Cancel Reservation', style: 'destructive', onPress: async () => {
+          setCancellingReservationOfferId(offerId);
+          try {
+            await cancelBusinessReservation(offerId);
+            await loadOpportunities(selectedPartner.id);
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+          setCancellingReservationOfferId(null);
+        },
+      },
+    ]);
   }
 
   async function loadMyAvailability(partnerId) {
@@ -2836,6 +2859,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             ].filter(Boolean).join(' · ')}
                           </Text>
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                            onPress={() => handleCancelReservation(o.id)}
+                            disabled={cancellingReservationOfferId === o.id}
+                            accessibilityLabel="Cancel this reservation"
+                            accessibilityRole="button"
+                          >
+                            {cancellingReservationOfferId === o.id ? (
+                              <ActivityIndicator color={colors.danger} size="small" />
+                            ) : (
+                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>Cancel Reservation</Text>
+                            )}
+                          </TouchableOpacity>
                         </View>
                       );
                     })}
