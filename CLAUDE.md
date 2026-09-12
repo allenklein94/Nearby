@@ -40,6 +40,40 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 71 ("Occasions can automatically suggest people") — fully DONE (2026-09-12).** User's
+own example: creating "Sarah's birthday" should surface "Who should be included? People you may
+want to invite — Sarah's friends: John, Emily, Mike," but only as a suggestion, never an automatic
+invitation. Item 63 (2026-09-12) had already built exactly this mechanism for the group-vote
+invite step (real mutual friends between organizer and the celebrated person, `get_mutual_friends`,
+marked 🤝, never auto-selected) — this extends the same mechanism to the plain (non-group-vote)
+`who_involved` step, which previously offered zero suggestions at all: picking Friends/Family/
+Invite Specific just said "we'll take you to your new plan, invite from there." Now, when a real
+connected friend/family member is who_for, that step shows a real "People you may want to invite —
+{Name}'s friends" panel with tappable mutual-friend chips; nothing is invited from the wizard
+itself — the selection carries through `CreateGathering` → `GatheringConfirmationScreen` as a
+sorted-to-top, 🤝-badged suggestion on that screen's own real invite panel, where sending still
+requires the organizer's own explicit per-friend "Invite" tap (same screen, same mechanism every
+other invite already uses — no new send path). New pure `possessiveFriendsLabel()`
+(`celebrateSomething.js`, 4 new tests).
+
+**Real, previously-unnoticed bug found and fixed while building this**: Item 63's own mutual-
+friends fetch (`ensureFriendsLoaded()`) was keyed off `whoForFriendId` but ran the instant the "A
+Friend" chip is tapped — *before* the user picks which specific friend — so `whoForFriendId` was
+still null at fetch time and `mutualFriendIds` was permanently stuck at an empty set for the rest
+of the wizard session (the `friendsLoaded` guard prevents it from ever re-running). Fixed by
+splitting mutual-friend fetching into its own `useEffect` keyed on the real `whoForFriendId` value,
+so it actually refetches once a specific person is picked — this also retroactively fixes Item 63's
+own "🤝 marks a friend you both know" badge on the group-vote invite step, which had never actually
+lit up in practice since it shipped (a silent failure, not a crash, so nothing caught it before
+now).
+
+Full Jest suite 386/386 passing; all five touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — next session should confirm on a real account that the suggestion panel renders
+with real mutual friends, that tapped selections correctly appear sorted-to-top and 🤝-badged on
+`GatheringConfirmationScreen`, and that nothing is ever actually invited without an explicit tap
+there.
+
 **Item 70 ("Add 'What are you celebrating?' to business requests") — audited, fully DONE
 (2026-09-12).** Audited first rather than assumed: `business_requests` already collects
 occasion/party_size/budget_min/budget_max/date/time_window/attributes/cuisine (built across
