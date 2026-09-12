@@ -40,7 +40,30 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Item 60 ("the CEO test," first-time-user obviousness) — fully DONE (2026-09-12).** All 5
+**Item 61 ("Celebrate Something" life-events planning layer) — IN PROGRESS, resume here.**
+Working doc: `PRODUCT_AUDIT/CELEBRATE_SOMETHING_2026-09-12.md` — read that first, it has the full
+architecture rationale and what's already reused vs. genuinely new. User's ask: a new Create-tab
+entry point walking through occasion → who's it for → what to do → when → who's involved, then
+turning that into a real plan.
+
+**Status**: DB layer DONE and verified live (`20261016_celebrate_occasion_vocabulary_expansion.sql`
+— widened `business_requests.occasion`/`brand_partners.priority_occasions`/
+`occasions.occasion_type` CHECK constraints with 7 new life-event values). This is a pure
+client-side orchestrating wizard (no new entity) that routes into existing screens
+(`AskBusinessScreen` for Dinner/Night out/Activity, `CreateGathering` for Party/Surprise/Weekend
+trip, `CreateHubScreen`'s "Something Else" AI box for Custom) with full prefill — architecture
+locked, not to be re-litigated.
+
+**Not yet built**: the new `CelebrateSomethingScreen.js` wizard itself; the new Create-tab entry
+point in `CreateHubScreen.js`; `CreateGatheringScreen.js`'s small `quickStartWhenPreset`/
+`quickStartWhenISO` param addition (mirrors its existing `quickStartTitle` pattern); the
+`create-assistant`/`business-onboarding-assistant` edge function `VALID_OCCASIONS` list + prompt
+example widening (needed so free-text AI extraction elsewhere in the app can also produce the 7
+new values, and so create-assistant's prompt maps "promotion"/"graduation" phrases to their own
+specific new keys instead of collapsing into generic "celebration"); Jest coverage for any new
+pure functions (title composition, routing decision); full-suite + transform-check verification;
+committing. If picking this up after a restart, the DB migration is already live — don't re-apply
+it, just continue the client build. ("the CEO test," first-time-user obviousness) — fully DONE (2026-09-12).** All 5
 questions (What is Nearby? / What can I do here? / How do I find something? / How do I meet/
 connect with someone? / How do I actually make something happen?) PASS — each answer is obvious
 from real on-screen copy/navigation with no chained explanation needed, per a full code trace of
