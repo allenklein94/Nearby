@@ -40,6 +40,20 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 70 ("Add 'What are you celebrating?' to business requests") — audited, fully DONE
+(2026-09-12).** Audited first rather than assumed: `business_requests` already collects
+occasion/party_size/budget_min/budget_max/date/time_window/attributes/cuisine (built across
+Items 61/25-Aug semantic-tags work), `AskBusinessScreen.js` already asks for all of them, and
+`get_business_opportunities()` (Item 69) already returns every one of those fields to the
+business. The one real, concrete gap: the business's own pending-opportunity "What they're
+looking for" tag row (`BusinessDashboardScreen.js`) never showed the requested DATE, even though
+it's collected and already used for scoring — a business deciding whether to respond needs to see
+"Sat, Sep 19" alongside occasion/party size/budget. Closed with a new pure
+`formatRequestWhen()` (`src/utils/businessRequestWhen.js`, 7 Jest tests) wired into the tag row as
+a new "📅 ..." chip. Full Jest suite 382/382 passing; `BusinessDashboardScreen.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
+(no simulator/device tooling this session, standing note).
+
 **Item 69 ("Businesses shouldn't need to know the person's identity") — fully DONE (2026-09-12),
 direct follow-up to Item 68.** User's own locked answer (via `AskUserQuestion`): a strict
 two-stage boundary. Pre-acceptance, a business sees only what it needs to decide whether to make
