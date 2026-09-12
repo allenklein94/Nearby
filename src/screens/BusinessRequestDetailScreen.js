@@ -112,6 +112,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const justSubmitted = route.params?.justSubmitted ?? false;
   const notifiedCount = route.params?.notifiedCount ?? 0;
   const isDuplicate = route.params?.duplicate ?? false;
+  // Item 55 fast-follow ("deep links should preserve context too" --
+  // CLAUDE.md): a business_offer_received/business_offer_withdrawn/
+  // business_reservation_cancelled notification tap already carries the
+  // real reason (the push's own body text) -- see notifications.js. No
+  // forced action here (unlike GatheringDetail's Invite Friends case): the
+  // offer list right below is already the obvious next thing to look at,
+  // so a second competing CTA would just be noise.
+  const notificationReason = route.params?.notificationReason ?? null;
+  const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
   // Finding 4: the original ask's own fields, carried forward so "Try a
   // Wider Radius" can push a fresh, pre-filled AskBusiness instead of
   // sending the user back to a blank form.
@@ -503,6 +512,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {showReasonBanner && notificationReason && (
+          <View style={styles.notificationReasonBanner}>
+            <Text style={styles.notificationReasonText}>{notificationReason}</Text>
+            <TouchableOpacity
+              onPress={() => setShowReasonBanner(false)}
+              accessibilityLabel="Dismiss"
+              accessibilityRole="button"
+              style={styles.notificationReasonDismiss}
+            >
+              <Text style={styles.notificationReasonDismissText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {justSubmitted && (
           <View style={styles.banner}>
             <Text style={styles.bannerText}>
@@ -807,6 +829,13 @@ const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   banner: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
   bannerText: { ...typography.body, color: colors.textSecondary },
+  notificationReasonBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.primaryMuted,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.lg,
+  },
+  notificationReasonText: { flex: 1, color: colors.textPrimary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  notificationReasonDismiss: { paddingLeft: spacing.sm },
+  notificationReasonDismissText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   widerRadiusButton: { marginTop: spacing.sm, alignSelf: 'flex-start' },
   widerRadiusButtonText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   rawText: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },

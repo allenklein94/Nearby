@@ -275,7 +275,7 @@ export async function routeNotificationTap(data) {
     case 'business_offer_withdrawn':
     case 'business_offer_received':
       if (data.request_id) {
-        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id });
+        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }
       break;
     case 'business_opportunity_received':
@@ -306,7 +306,7 @@ export async function routeNotificationTap(data) {
     // for the same underlying event (see that RPC's own comment).
     case 'business_reservation_cancelled':
       if (data.request_id) {
-        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id });
+        navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }
       break;
     case 'reservation_cancelled_by_customer':
