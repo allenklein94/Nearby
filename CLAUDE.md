@@ -53,9 +53,19 @@ submitting with `notifiedCount === 0` — now renders whenever the request is st
 offers, and its prefill fields fall back to the real fetched request row's own columns when
 route.params carry none, e.g. a revisit via push tap), `MakeAPlanScreen.js` ("no friends yet" had
 no way to actually go add one — now links to `FriendDiscovery`). One low-priority candidate
-(`RecommendationCustomizePanel.js`'s "add interests" copy) deliberately left unfixed — no real
-existing route anchors directly to the interest editor (an inline `ProfileScreen` section, not
-its own screen); flagged rather than fabricating a destination. Full audit also confirmed a long
+(`RecommendationCustomizePanel.js`'s "add interests" copy) was initially left unfixed — no real
+existing route anchored directly to the interest editor (an inline `ProfileScreen` section, not
+its own screen) — **closed same day, per direct user request ("do the one low priority case"):**
+rather than guess a destination, built a real scroll-anchor the same way this app already solves
+"land on the right part of an existing screen" elsewhere (`scrollToGenderSection`/
+`scrollToPreferences`) — a new `scrollToInterestsSection` route param on `ProfileScreen.js`
+(`interestsSectionYRef` + `onLayout` + a route-param `useEffect`, identical shape to those two
+precedents) scrolls straight to the real interest picker; `RecommendationCustomizePanel.js` gained
+an `onPressAddInterests` prop, wired from both `SettingsScreen.js` call sites to
+`navigation.navigate('Profile', { scrollToInterestsSection: true })`. Full Jest suite 295/295
+passing; all three touched files transform-checked clean. Not exercised in a running app (no
+simulator/device tooling this session, standing note) — next session should confirm the scroll
+lands on the interests section specifically. Commit: `d7998ce0`. Full audit also confirmed a long
 list of surfaces already correct from the Items 25/26 baseline (`DiscoveryScreen`/
 `FriendDiscoveryScreen`/`MatchesScreen`/`FriendsScreen`/`CommunitiesScreen`/`GatheringsScreen`/
 `DiscoverHubScreen`/`PlacesScreen`/`BusinessDashboardScreen`/`ChatScreen`/`RewardsScreen`/
