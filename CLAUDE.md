@@ -40,6 +40,63 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 65 ("Let the organizer keep the occasion private" / Surprise mode 🔒) — fully DONE
+(2026-09-12), resumed after a codespace restart mid-build.** User's own spec: a "Surprise mode"
+toggle so the person being celebrated never learns "Allen is planning your birthday," while
+invited organizers can still collaborate freely. Found at session start: a complete, uncommitted
+migration (`20261025_occasion_surprise_mode.sql`) and matching edits to
+`CelebrateSomethingScreen.js`/`OccasionsScreen.js`/`celebrateSomething.js`/`occasionGroupPlans.js`/
+`occasions.js` — all read in full and checked against the user's own spec, found correct and
+complete. The migration's own header comment shows a real leak audit was already done covering all
+3 paths that could tell the celebrated person something is being planned: (1)
+`occasions.connected_user_id` (Item 62's "share this too" checkbox) — now structurally impossible
+to combine with `surprise_mode` via a CHECK constraint, not just client-side hiding; (2)
+`occasion_group_plans`' own invitee list — the organizer could accidentally select the celebrated
+person as one of the "friends to invite to vote," now skipped both by an early-skip in
+`create_occasion_group_plan` and, as a structural backstop, a BEFORE INSERT trigger on
+`occasion_group_plan_participants` that covers any future insert path into that table, not just
+this one RPC; (3) the resulting Gathering's own visibility — audited and found already safe
+(`resolveCelebrationVisibility()` already forces `invite_only` for every group-planning-reachable
+path, so the interest-matched discovery pushes that only ever fire for `visibility = 'everyone'`
+can never reach the celebrated person this way) — no change needed there.
+
+Two real gaps closed this session, not present in the pre-restart build: (1)
+`GroupOccasionPlanScreen.js` — the one collaborator-facing surface the migration's own comment
+named ("so the client can show a real 🔒 Surprise Mode indicator") — had received no client code
+at all; added a 🔒 prefix on the header title (matching `OccasionsScreen.js`'s own existing
+convention) and a dismissible-style banner ("🔒 Surprise mode — {name} isn't part of this plan and
+won't be notified. Keep it quiet!") for invited collaborators. (2) `decide_occasion_group_plan`
+didn't return `surpriseMode` in its result, so `resolveDecidedGroupPlanParams()` had no way to
+carry surprise context forward into the wizard's post-decide "find options nearby" step — a host
+deciding a surprise plan would land back in `CelebrateSomethingScreen` with local `surpriseMode`
+state reset to its `false` default, silently re-showing the "share with friend" checkbox as if
+nothing had ever been hidden (still opt-in/default-off, so never a hard leak, but a real loss of
+continuity). Fixed by adding a `surpriseMode` field to `decide_occasion_group_plan`'s returned
+jsonb (plain `CREATE OR REPLACE`, unchanged 2-arg signature, no overload risk), a new
+`initialSurpriseMode` field on `resolveDecidedGroupPlanParams()` (4 new/updated Jest tests), a
+`route.params?.initialSurpriseMode` seed on `CelebrateSomethingScreen`'s `surpriseMode` state, and
+`detail.surpriseMode` threaded through `GroupOccasionPlanScreen.js`'s own `goFindBusinesses()` call
+site (the other of the two real callers of `resolveDecidedGroupPlanParams`).
+
+Verified live against production (`enmosvippabmuqslzrox`) via a comprehensive set of disposable
+rolled-back transactions (real `auth.users`/`profiles`/`friendships` rows, real
+`SET ROLE authenticated` + `request.jwt.claims` GUC impersonation, not just the Management API's
+own table-owner bypass): `create_occasion_group_plan` correctly skips the celebrated person from
+the invite list even when explicitly included (invitedCount reflects only the other real invitee;
+participant rows confirm the celebrated person is genuinely absent); the
+`occasion_group_plan_participants` BEFORE INSERT trigger independently blocks a direct insert of
+the celebrated person with the exact expected error message; the `occasions` CHECK constraint
+blocks `surprise_mode` + `connected_user_id` together; `get_occasion_group_plan_detail` and
+`decide_occasion_group_plan` both correctly return `surpriseMode: true`. All rolled back and
+re-confirmed afterward with zero leaked rows (`auth.users`/`occasion_group_plans`/`occasions`
+counts all zero). Full Jest suite 354/354 passing (4 new/updated tests); all seven touched/new
+files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running
+app (no simulator/device tooling this session, standing note) — next session should confirm on a
+real account that the 🔒 checkbox renders correctly in both `OccasionsScreen` and
+`CelebrateSomethingScreen`, that an invited collaborator sees the new surprise banner on
+`GroupOccasionPlanScreen`, and that the celebrated person genuinely never sees the occasion
+anywhere in their own app.
+
 **Item 64 ("'For Someone Else' is a huge distinction") — fully DONE (2026-09-12), same-day direct
 user follow-up to Items 62 & 63 below.** User's own framing: the Create flow should explicitly
 ask "Who is this for? Me / A friend / Family / Someone else" — not a cosmetic addition, but a

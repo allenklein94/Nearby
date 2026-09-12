@@ -129,15 +129,20 @@ export function shouldOfferCalendarSave(occasion, hasConnectedNearbyUser = false
 // a silo," CLAUDE.md) are the same structured "person being celebrated"
 // fields occasion_group_plans already had -- title alone used to conflate
 // person+occasion as free text with no queryable field behind it.
-export function buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId, whoForName = null, whoForFriendId = null }) {
+// Item 65 (CLAUDE.md): surpriseMode always wins over connectedUserId --
+// a surprise occasion can never be shared with the person it's for,
+// enforced again at the DB layer (occasions_surprise_no_share_check) so
+// this can't silently drift if some other caller ever forgets the rule.
+export function buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId, whoForName = null, whoForFriendId = null, surpriseMode = false }) {
   return {
     occasionType: occasion,
     title,
     occasionDate: scheduledAt.toISOString().slice(0, 10),
     recursAnnually: occasion === 'anniversary' || occasion === 'birthday',
-    connectedUserId: connectedUserId ?? null,
+    connectedUserId: surpriseMode ? null : (connectedUserId ?? null),
     whoForName: whoForName ?? null,
     whoForFriendId: whoForFriendId ?? null,
+    surpriseMode,
   };
 }
 
@@ -209,5 +214,10 @@ export function resolveDecidedGroupPlanParams(decided, groupPlanId = null) {
     initialScheduledAtISO: decided.scheduledDate ? `${decided.scheduledDate}T12:00:00` : null,
     initialPartySize: decided.partySize ?? null,
     initialGroupPlanId: groupPlanId,
+    // Item 65 (CLAUDE.md): carries a surprise plan's own flag forward so
+    // the wizard's post-decide "find options nearby" step doesn't lose
+    // surprise context and re-show a "share with friend" checkbox as if
+    // nothing was ever hidden.
+    initialSurpriseMode: decided.surpriseMode ?? false,
   };
 }

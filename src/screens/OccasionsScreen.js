@@ -90,6 +90,13 @@ export default function OccasionsScreen({ navigation }) {
   // checked. Defaults OFF, same posture as CelebrateSomethingScreen's own
   // matching "share this too" checkbox.
   const [shareWithFriend, setShareWithFriend] = useState(false);
+  // Item 65 (CLAUDE.md, direct user request): "Let the organizer keep the
+  // occasion private... The birthday person should not automatically see:
+  // Allen is planning your birthday." Only meaningful once a real
+  // connected friend is picked -- there's nothing on Nearby to hide from
+  // someone with no account. Forces shareWithFriend off (also a hard DB
+  // constraint, occasions_surprise_no_share_check).
+  const [surpriseMode, setSurpriseMode] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -121,9 +128,11 @@ export default function OccasionsScreen({ navigation }) {
       setWhoForName('');
       setWhoForFriendId(null);
       setShareWithFriend(false);
+      setSurpriseMode(false);
     } else if (key === 'someone_else') {
       setWhoForFriendId(null);
       setShareWithFriend(false);
+      setSurpriseMode(false);
     }
     if (!titleTouched) {
       setTitle(key === 'me' ? composeCelebrationTitle({ occasion: occasionType, whoFor: 'me', whoForName: null }) : '');
@@ -134,7 +143,17 @@ export default function OccasionsScreen({ navigation }) {
     setWhoFor('friend');
     setWhoForFriendId(friend.id);
     setWhoForName(friend.display_name);
+    setShareWithFriend(false);
+    setSurpriseMode(false);
     if (!titleTouched) setTitle(composeCelebrationTitle({ occasion: occasionType, whoFor: 'friend', whoForName: friend.display_name }));
+  }
+
+  function toggleSurpriseMode() {
+    setSurpriseMode((v) => {
+      const next = !v;
+      if (next) setShareWithFriend(false);
+      return next;
+    });
   }
 
   function handleWhoForNameChange(text) {
@@ -165,6 +184,7 @@ export default function OccasionsScreen({ navigation }) {
       whoForName: trimmedWhoForName,
       whoForFriendId: whoFor === 'friend' ? whoForFriendId : null,
       connectedUserId: whoFor === 'friend' && shareWithFriend ? whoForFriendId : null,
+      surpriseMode: whoFor === 'friend' && surpriseMode,
     });
     setSubmitting(false);
     if (result.error) {
@@ -178,6 +198,7 @@ export default function OccasionsScreen({ navigation }) {
     setWhoForName('');
     setWhoForFriendId(null);
     setShareWithFriend(false);
+    setSurpriseMode(false);
     load();
   }
 
@@ -259,7 +280,7 @@ export default function OccasionsScreen({ navigation }) {
                   >
                     <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '🗳️'}</Text>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.name}>{plan.title}</Text>
+                      <Text style={styles.name}>{plan.surpriseMode ? '🔒 ' : ''}{plan.title}</Text>
                       <Text style={styles.detail}>
                         {GROUP_PLAN_STATUS_COPY[plan.status] ?? plan.status}{plan.isHost ? ' · Hosting' : ''}
                       </Text>
@@ -370,18 +391,37 @@ export default function OccasionsScreen({ navigation }) {
                   </View>
                 )}
                 {whoForFriendId && (
-                  <TouchableOpacity
-                    style={styles.recurRow}
-                    onPress={() => setShareWithFriend((v) => !v)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: shareWithFriend }}
-                    accessibilityLabel={`Also share this with ${whoForName}`}
-                  >
-                    <View style={[styles.checkbox, shareWithFriend && styles.checkboxChecked]}>
-                      {shareWithFriend && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
-                    </View>
-                    <Text style={{ color: colors.textPrimary, flex: 1 }}>👀 Also share this with {whoForName} — they'll see it on their own Occasions page too</Text>
-                  </TouchableOpacity>
+                  <>
+                    <TouchableOpacity
+                      style={styles.recurRow}
+                      onPress={toggleSurpriseMode}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: surpriseMode }}
+                      accessibilityLabel={`Surprise mode — keep this hidden from ${whoForName}`}
+                    >
+                      <View style={[styles.checkbox, surpriseMode && styles.checkboxChecked]}>
+                        {surpriseMode && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                      </View>
+                      <Text style={{ color: colors.textPrimary, flex: 1 }}>🔒 Surprise mode — keep this hidden from {whoForName}</Text>
+                    </TouchableOpacity>
+
+                    {surpriseMode ? (
+                      <Text style={styles.helperText}>This won't be shared with {whoForName} or shown to them anywhere in Nearby.</Text>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.recurRow}
+                        onPress={() => setShareWithFriend((v) => !v)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: shareWithFriend }}
+                        accessibilityLabel={`Also share this with ${whoForName}`}
+                      >
+                        <View style={[styles.checkbox, shareWithFriend && styles.checkboxChecked]}>
+                          {shareWithFriend && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>✓</Text>}
+                        </View>
+                        <Text style={{ color: colors.textPrimary, flex: 1 }}>👀 Also share this with {whoForName} — they'll see it on their own Occasions page too</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </>
             )}

@@ -18,7 +18,7 @@ export async function getMyOccasions() {
   return data ?? [];
 }
 
-export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null }) {
+export async function addOccasion({ occasionType, title, occasionDate, recursAnnually = true, connectedUserId = null, whoForName = null, whoForFriendId = null, surpriseMode = false }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
   const { data, error } = await supabase
@@ -29,9 +29,13 @@ export async function addOccasion({ occasionType, title, occasionDate, recursAnn
       title,
       occasion_date: occasionDate,
       recurs_annually: recursAnnually,
-      connected_user_id: connectedUserId,
+      // Item 65: structurally impossible to share a surprise occasion with
+      // the person it's for -- also enforced by a DB CHECK constraint, but
+      // pre-empted here so a caller never even hits that error.
+      connected_user_id: surpriseMode ? null : connectedUserId,
       who_for_name: whoForName,
       who_for_friend_id: whoForFriendId,
+      surprise_mode: surpriseMode,
     })
     .select()
     .single();

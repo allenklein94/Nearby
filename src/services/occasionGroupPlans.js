@@ -18,6 +18,7 @@ export async function createOccasionGroupPlan({
   whenPreset = null,
   scheduledDate = null,
   inviteeIds = [],
+  surpriseMode = false,
 }) {
   const { data, error } = await supabase.rpc('create_occasion_group_plan', {
     occasion_type_param: occasionType,
@@ -27,6 +28,7 @@ export async function createOccasionGroupPlan({
     when_preset_param: whenPreset,
     scheduled_date_param: scheduledDate,
     invitee_ids_param: inviteeIds,
+    surprise_mode_param: surpriseMode,
   });
   if (error) throw new Error(error.message);
   return data;

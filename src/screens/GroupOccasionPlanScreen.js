@@ -173,6 +173,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       activityType: winningOption?.activityType,
       label: winningOption?.label,
       partySize: Math.max(joinedCount, 1),
+      surpriseMode: detail.surpriseMode,
     }, planId));
   }
 
@@ -203,11 +204,24 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.header} accessibilityRole="header">{occasionMeta?.icon ?? '🎉'} {detail.title}</Text>
+        <Text style={styles.header} accessibilityRole="header">{occasionMeta?.icon ?? '🎉'} {detail.surpriseMode ? '🔒 ' : ''}{detail.title}</Text>
         <Text style={styles.subheader}>
           {occasionLabel(detail.occasionType)} · {formatWhen(detail.whenPreset, detail.scheduledDate)}
           {detail.isHost ? ' · You\'re hosting' : ''}
         </Text>
+
+        {/* Item 65 (CLAUDE.md): the one collaborator-facing surface this
+            change added a real indicator to -- surpriseMode is already
+            enforced server-side (the person it's for can never actually be
+            a participant here), this is just making that fact visible so
+            invited friends know to keep it quiet. */}
+        {detail.surpriseMode && (
+          <View style={styles.surpriseBanner}>
+            <Text style={styles.surpriseBannerText}>
+              🔒 Surprise mode — {detail.whoForName || 'the person this is for'} isn't part of this plan and won't be notified. Keep it quiet!
+            </Text>
+          </View>
+        )}
 
         {detail.status === 'cancelled' && (
           <View style={styles.emptyState}>
@@ -347,6 +361,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   subheader: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg },
   emptyState: { alignItems: 'center', paddingVertical: spacing.xl },
   emptyText: { color: colors.textTertiary },
+  surpriseBanner: {
+    backgroundColor: colors.primaryMuted, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary,
+    padding: spacing.sm, marginBottom: spacing.lg,
+  },
+  surpriseBannerText: { color: colors.textPrimary, fontSize: 13, fontWeight: '600' },
   inviteRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   declineButton: { flex: 1, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingVertical: 14, alignItems: 'center' },
   declineButtonText: { color: colors.textSecondary, fontWeight: '700' },

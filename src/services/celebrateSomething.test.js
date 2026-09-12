@@ -133,6 +133,7 @@ describe('buildOccasionSaveParams', () => {
       connectedUserId: null,
       whoForName: null,
       whoForFriendId: null,
+      surpriseMode: false,
     });
     expect(buildOccasionSaveParams({ occasion: 'milestone', title: 'x', scheduledAt, connectedUserId: 'user-1' }).connectedUserId).toBe('user-1');
   });
@@ -142,6 +143,15 @@ describe('buildOccasionSaveParams', () => {
     expect(buildOccasionSaveParams({
       occasion: 'anniversary', title: "Sarah's Anniversary", scheduledAt, whoForName: 'Sarah', whoForFriendId: 'friend-1',
     })).toMatchObject({ whoForName: 'Sarah', whoForFriendId: 'friend-1' });
+  });
+
+  it('surpriseMode always wins over connectedUserId -- a surprise occasion can never be shared with the person it is for (CLAUDE.md, Item 65)', () => {
+    const scheduledAt = new Date('2026-10-05T18:00:00.000Z');
+    const params = buildOccasionSaveParams({
+      occasion: 'birthday', title: "Sarah's Birthday", scheduledAt, connectedUserId: 'friend-1', whoForFriendId: 'friend-1', surpriseMode: true,
+    });
+    expect(params.connectedUserId).toBeNull();
+    expect(params.surpriseMode).toBe(true);
   });
 });
 
@@ -202,7 +212,17 @@ describe('resolveDecidedGroupPlanParams', () => {
       initialScheduledAtISO: '2026-10-05T12:00:00',
       initialPartySize: 8,
       initialGroupPlanId: null,
+      initialSurpriseMode: false,
     });
+  });
+
+  it('carries surpriseMode through as initialSurpriseMode, honestly false when absent (CLAUDE.md, Item 65)', () => {
+    const base = {
+      occasionType: 'birthday', whoForName: 'Sarah', whoForFriendId: 'friend-1',
+      whenPreset: 'tonight', scheduledDate: '2026-10-05', activityType: 'dinner', label: null, partySize: 8,
+    };
+    expect(resolveDecidedGroupPlanParams(base).initialSurpriseMode).toBe(false);
+    expect(resolveDecidedGroupPlanParams({ ...base, surpriseMode: true }).initialSurpriseMode).toBe(true);
   });
 
   it('carries the real occasion_group_plans id through when passed, for linking back once fulfilled (CLAUDE.md, "Occasion architecture should not be a silo")', () => {

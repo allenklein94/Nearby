@@ -196,6 +196,20 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // ever set when this is explicitly checked. Defaults OFF -- "the user
   // chooses what Nearby is allowed to remember," never an implicit share.
   const [shareOccasionWithFriend, setShareOccasionWithFriend] = useState(false);
+  // Item 65 (CLAUDE.md, direct user request): "Maybe I'm planning a
+  // surprise birthday. The birthday person should not automatically see:
+  // Allen is planning your birthday." Only meaningful once a real
+  // connected friend is picked as who_for -- there's nothing on Nearby to
+  // hide from someone with no account. Turning this on forces
+  // shareOccasionWithFriend off (a surprise occasion can never also be
+  // shared with the person it's for -- also a hard DB constraint) and
+  // excludes whoForFriendId from the group-vote invite list.
+  // Seeded from a decided group plan (resolveDecidedGroupPlanParams) so a
+  // host who decided a surprise plan doesn't lose that context navigating
+  // back into this same wizard for the "find options nearby" step -- the
+  // underlying group_plan row already has surprise_mode set regardless of
+  // this local state, this just keeps the UI honest about it.
+  const [surpriseMode, setSurpriseMode] = useState(route.params?.initialSurpriseMode ?? false);
 
   // "Connect it to businesses": resolveIntent()'s own real, already-scored
   // candidate pool (business_availability + gathering), fetched using the
@@ -233,7 +247,18 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   function pickWhoFor(key) {
     Haptics.selectionAsync();
     setWhoFor(key);
-    if (key !== 'me') ensureFriendsLoaded();
+    if (key !== 'me') {
+      ensureFriendsLoaded();
+    } else {
+      setSurpriseMode(false);
+      setShareOccasionWithFriend(false);
+    }
+  }
+
+  function setSurpriseModeOn(next) {
+    Haptics.selectionAsync();
+    setSurpriseMode(next);
+    if (next) setShareOccasionWithFriend(false);
   }
 
   // A push-deep-link entry (initialWhoFor pre-seeded) skips straight past
@@ -273,7 +298,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     const trimmedName = whoForName.trim() || null;
     const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
-      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null })).catch(() => {});
+      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForFriendId, surpriseMode })).catch(() => {});
     }
     try {
       const result = await createOccasionGroupPlan({
@@ -284,6 +309,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         whenPreset,
         scheduledDate: scheduledAt.toISOString().slice(0, 10),
         inviteeIds: Array.from(selectedInviteeIds),
+        surpriseMode,
       });
       navigation.replace('GroupOccasionPlan', { planId: result.planId });
     } catch (e) {
@@ -394,7 +420,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       const saveResult = await addOccasion(buildOccasionSaveParams({
-        occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForName: trimmedName, whoForFriendId,
+        occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForName: trimmedName, whoForFriendId, surpriseMode,
       })).catch(() => null);
       savedOccasionId = saveResult?.data?.id ?? null;
     }
@@ -498,7 +524,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       const saveResult = await addOccasion(buildOccasionSaveParams({
-        occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForName: trimmedName, whoForFriendId,
+        occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForName: trimmedName, whoForFriendId, surpriseMode,
       })).catch(() => null);
       savedOccasionId = saveResult?.data?.id ?? null;
     }
@@ -673,6 +699,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                                   Haptics.selectionAsync();
                                   setWhoForName(selected ? '' : f.display_name);
                                   setWhoForFriendId(selected ? null : f.id);
+                                  setSurpriseMode(false);
+                                  setShareOccasionWithFriend(false);
                                 }}
                                 activeOpacity={0.8}
                                 accessibilityLabel={f.display_name}
@@ -692,9 +720,32 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                       placeholder="e.g. Sarah"
                       placeholderTextColor={colors.textTertiary}
                       value={whoForName}
-                      onChangeText={(t) => { setWhoForName(t); setWhoForFriendId(null); }}
+                      onChangeText={(t) => {
+                        setWhoForName(t);
+                        setWhoForFriendId(null);
+                        setSurpriseMode(false);
+                        setShareOccasionWithFriend(false);
+                      }}
                       accessibilityLabel="Name (optional)"
                     />
+
+                    {whoForFriendId && (
+                      <TouchableOpacity
+                        style={styles.calendarToggleRow}
+                        onPress={() => setSurpriseModeOn(!surpriseMode)}
+                        activeOpacity={0.8}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: surpriseMode }}
+                        accessibilityLabel={`Surprise mode — keep this hidden from ${whoForName}`}
+                      >
+                        <View style={[styles.checkbox, surpriseMode && styles.checkboxChecked]}>
+                          {surpriseMode && <Text style={styles.checkboxMark}>✓</Text>}
+                        </View>
+                        <Text style={styles.calendarToggleText}>
+                          🔒 Surprise mode — keep this hidden from {whoForName}. Invited friends can still help plan; {whoForName} won't be invited or notified.
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </>
                 )}
               </>
@@ -829,21 +880,25 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 )}
 
                 {saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId) && whoForFriendId && (
-                  <TouchableOpacity
-                    style={styles.calendarToggleRow}
-                    onPress={() => { Haptics.selectionAsync(); setShareOccasionWithFriend((v) => !v); }}
-                    activeOpacity={0.8}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: shareOccasionWithFriend }}
-                    accessibilityLabel={`Also share this with ${whoForName || 'them'}`}
-                  >
-                    <View style={[styles.checkbox, shareOccasionWithFriend && styles.checkboxChecked]}>
-                      {shareOccasionWithFriend && <Text style={styles.checkboxMark}>✓</Text>}
-                    </View>
-                    <Text style={styles.calendarToggleText}>
-                      👀 Also share this with {whoForName || 'them'} — they'll see it on their own Occasions page too
-                    </Text>
-                  </TouchableOpacity>
+                  surpriseMode ? (
+                    <Text style={styles.helperText}>🔒 Surprise mode is on — this won't be shared with {whoForName}.</Text>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.calendarToggleRow}
+                      onPress={() => { Haptics.selectionAsync(); setShareOccasionWithFriend((v) => !v); }}
+                      activeOpacity={0.8}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: shareOccasionWithFriend }}
+                      accessibilityLabel={`Also share this with ${whoForName || 'them'}`}
+                    >
+                      <View style={[styles.checkbox, shareOccasionWithFriend && styles.checkboxChecked]}>
+                        {shareOccasionWithFriend && <Text style={styles.checkboxMark}>✓</Text>}
+                      </View>
+                      <Text style={styles.calendarToggleText}>
+                        👀 Also share this with {whoForName || 'them'} — they'll see it on their own Occasions page too
+                      </Text>
+                    </TouchableOpacity>
+                  )
                 )}
               </>
             )}
@@ -952,17 +1007,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   Invite real friends to propose ideas and vote — once you pick the winner, Nearby turns it into a real plan.
                 </Text>
+                {surpriseMode && (
+                  <Text style={styles.helperText}>🔒 Surprise mode is on — {whoForName} won't appear in this list or be notified.</Text>
+                )}
                 {loadingFriends && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />}
-                {!loadingFriends && friendsLoaded && friends.length === 0 && (
+                {!loadingFriends && friendsLoaded && friends.filter((f) => !(surpriseMode && f.id === whoForFriendId)).length === 0 && (
                   <Text style={styles.helperText}>You don't have any friends connected yet to invite.</Text>
                 )}
-                {!loadingFriends && friends.length > 0 && (
+                {!loadingFriends && friends.filter((f) => !(surpriseMode && f.id === whoForFriendId)).length > 0 && (
                   <>
                     {mutualFriendIds.size > 0 && whoForName && (
                       <Text style={styles.helperText}>🤝 marks a friend you both know — a good place to start.</Text>
                     )}
                     <View style={[styles.chipRow, { marginTop: spacing.md }]}>
-                      {[...friends]
+                      {friends
+                        .filter((f) => !(surpriseMode && f.id === whoForFriendId))
                         .sort((a, b) => (mutualFriendIds.has(b.id) ? 1 : 0) - (mutualFriendIds.has(a.id) ? 1 : 0))
                         .map((f) => {
                           const selected = selectedInviteeIds.has(f.id);
