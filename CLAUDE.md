@@ -40,6 +40,19 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 51 ("cancellation needs to propagate everywhere") — fully DONE (2026-09-12).** Cancelling a
+Gathering or Community used to be a partial state change: an already-ACCEPTED business offer
+(a confirmed reservation, possibly a captured payment) tied to it survived untouched. Fixed by
+extracting Item 50 fix 5's cancellation logic into a shared `_cancel_reservation_by_offer()`
+helper that `cancel_gathering()`/`cancel_community()` now also call for any accepted offer,
+preserving the same real-money-safety rule (captured/authorized payments block auto-cancellation,
+both sides notified to coordinate directly). Every other concern the user listed (attendee
+notification, dead deep links, recommendation surfaces, stale promotion) was checked live and
+found already correct — no fix needed. One client gap closed: `CommunityDetailScreen.js` no
+longer offers "Invite Friends"/"Host a Gathering" on a cancelled community. Verified live via 4
+disposable rolled-back scenarios against the real deployed functions. Full detail:
+`CLAUDE_HISTORY.md`, search "Item 51".
+
 **Items 48 & 49 ("notifications need a reason + action" / "don't notify about things you can't
 act on") — fully DONE (2026-09-11).** Picked up in-flight, uncommitted work from an interrupted
 prior session: `get_business_availability_by_id()` (`supabase/migrations/

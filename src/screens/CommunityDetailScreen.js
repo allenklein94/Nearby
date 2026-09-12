@@ -313,7 +313,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   function confirmCancelCommunity() {
     Alert.alert(
       `Cancel "${community.name}"?`,
-      `This notifies all ${memberCount} member${memberCount === 1 ? '' : 's'} that the community is cancelled. Membership and message history are kept, and any open business requests tied to this community are cancelled too. This can't be undone (though you can still delete it permanently afterward).`,
+      `This notifies all ${memberCount} member${memberCount === 1 ? '' : 's'} that the community is cancelled. Membership and message history are kept, and any business requests or confirmed reservations tied to this community are cancelled too (unless a payment's already gone through — that side will be told to sort it out directly with the business). This can't be undone (though you can still delete it permanently afterward).`,
       [
         { text: 'Keep It', style: 'cancel' },
         {
@@ -562,7 +562,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
-        {(isMember || isCreator) && (
+        {/* Item 51 (CLAUDE.md, "cancellation needs to propagate
+            everywhere"): a cancelled community is a dead end, not
+            somewhere to keep growing -- don't offer to bring in new
+            people or spin up new activity under it. Membership/chat
+            history stays visible either way. */}
+        {(isMember || isCreator) && community.status !== 'cancelled' && (
           <TouchableOpacity
             style={styles.chatButton}
             onPress={() => setInviteModalVisible(true)}
@@ -574,7 +579,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         )}
 
-        {(isMember || isCreator) && (
+        {(isMember || isCreator) && community.status !== 'cancelled' && (
           <TouchableOpacity
             style={styles.chatButton}
             onPress={() => navigation.navigate('CreateGathering', {

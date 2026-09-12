@@ -1,3 +1,125 @@
+## Sep 12 2026 — Item 51 ("cancellation needs to propagate everywhere") — FULLY BUILT, VERIFIED
+
+Direct user critique, framed explicitly as a lifecycle-architecture issue rather than a single
+bug: "If a host cancels a gathering: Gathering disappears/changes state, but also: attendees get
+notified, calendars/plans update, business connection is handled, reservation gets handled if
+applicable, recommendation surfaces remove it, notifications don't continue promoting it, deep
+links don't lead to an invalid state. Same for Communities."
+
+**Method**: pulled every relevant live function definition (`cancel_gathering`,
+`cancel_community`, both `notify_*` triggers on the `gatherings` table, `accept_business_offer`)
+and every real FK relationship pointing at `gatherings.id`/`communities.id` (via
+`pg_constraint`/`confdeltype`) directly from production before assuming anything about current
+behavior, then checked each of the user's 7 bullets against that evidence one at a time.
+
+**Real gap found (the significant one)**: `cancel_gathering()`/`cancel_community()` only ever
+cancelled `business_requests` still `status = 'open'` and `business_request_offers` still
+`pending`/`offered`. But `accept_business_offer()` flips `business_requests.status` to
+`'fulfilled'` the moment an offer is accepted — so an accepted offer (a real, confirmed
+`business_reservations` row, possibly with a captured Stripe `business_payments` row) was
+*invisible* to both cancellation filters and survived completely untouched. Concretely: a host
+cancels a gathering they'd already gotten a confirmed restaurant reservation for; the business
+still expects a party that's no longer coming; the requester (who might not even be the host, if
+an attendee submitted the request) still sees a "confirmed" reservation for an event that no
+longer exists. Exactly the "business connection is handled" / "reservation gets handled if
+applicable" gap the user named.
+
+**Fix**: extracted the actual state-transition logic out of `cancel_business_reservation()`
+(Item 50 fix 5, shipped one migration earlier this same session) into a new internal
+`_cancel_reservation_by_offer(offer_id_param)` — `security definer`, revoked from
+`public`/`anon`/`authenticated` (only callable from another already-privileged `security definer`
+function, never directly by a client) — returning a status jsonb (`cancelled: true`, or `false`
+with a `reason` of `not_accepted`/`not_confirmed`/`payment_captured`) instead of raising, so one
+payment-blocked reservation inside a batch can never abort the whole gathering/community
+cancellation. `cancel_business_reservation()` itself was re-created calling this helper (identical
+external behavior — same auth checks, same rejection messages, same notifications — verified by
+diff, not just intent). `cancel_gathering()` and `cancel_community()` each gained a loop over every
+`business_request_offers` row in `accepted` status whose `business_requests.gathering_id`/
+`community_id` matches, calling the shared helper per offer:
+- On success, both sides are notified via the *same* two notification `type` strings
+  `cancel_business_reservation()` already uses (`business_reservation_cancelled` →
+  `BusinessRequestDetail`; `reservation_cancelled_by_customer` → `BusinessDashboard`), just with
+  copy naming the gathering/community as the actual cause — reuses existing, already-tested tap
+  routing with zero new client work. The requester is skipped when they *are* the person doing the
+  cancelling (`auth.uid()` — the common case where the host asked for the place themselves), since
+  they don't need to be told about an action they just took; the business side is always notified
+  regardless, since it's a genuinely different party either way.
+- On `payment_captured` (real money already moved — the standing "real money needs the user
+  present" rule), the reservation is deliberately left untouched, and both sides instead get an
+  honest "the gathering/community was cancelled, but you already paid — contact the business
+  directly" notification rather than either a silent no-op or a false claim of cancellation.
+  Critically, this must never block the gathering/community's own cancellation from completing —
+  verified this explicitly (Scenario 2 below): the gathering still gets deleted even when one of
+  its linked reservations couldn't be auto-cancelled.
+
+**Second, smaller, currently-invisible fix**: `plans.resulting_gathering_id` had
+`ON DELETE CASCADE` — a cancelled gathering's own `create_plan_from_gathering()`-authored `plans`
+row (which already has a `'cancelled'` value in its own status CHECK constraint, doing nothing
+with it) was being silently, permanently destroyed rather than marked cancelled. Checked whether
+this has any live user-facing symptom first: grepped all of `src/` for `.from('plans')` and found
+zero call sites — `PlansScreen.js` reads from `gatherings`/`group_plans` directly, never the
+`plans` table, so this table currently has no reader at all. Fixed anyway as pure data-integrity
+hardening (changed the FK to `ON DELETE SET NULL`, added an explicit
+`UPDATE plans SET status = 'cancelled' WHERE resulting_gathering_id = ...` in `cancel_gathering()`
+before the delete) since it's the one table that literally models "calendars/plans update," and
+there's no reason a future consumer of this table should inherit a silent-destruction bug — but
+explicitly did NOT build any new UI surface to read it, since that's out of scope for this item
+and no one asked for one.
+
+**Everything else on the user's list, checked directly against live code and found already
+correct — no changes made**:
+- *Attendees get notified*: `notify_gathering_cancelled()` (a `BEFORE DELETE` trigger on
+  `gatherings`) and `cancel_community()`'s own member-loop both already push every approved
+  attendee/member.
+- *Recommendation surfaces remove it*: gatherings are hard-deleted (the pre-existing "delete-based
+  mechanism," see this file's own Sep 6 2026 entry), so nothing can query a row that no longer
+  exists. Communities already gate every browse/search query on `status = 'active'` (Item 50,
+  Finding 3, `getPublicCommunities`/`searchPublicCommunities`).
+- *Notifications don't continue promoting it*: `notify_matching_things_to_do()` only ever fires
+  once, on `gatherings` `INSERT` — there's no recurring/scheduled re-promotion mechanism to worry
+  about. Communities have no equivalent recommendation-push trigger at all.
+- *Deep links don't lead to an invalid state*: `GatheringDetailScreen.js`'s own `load()` already
+  distinguishes "genuine fetch error" (`loadError` → `LoadErrorState` + Retry) from "row doesn't
+  exist" (`gathering === null` with `loadError === false` → "This gathering isn't available
+  anymore.") — confirmed by reading the actual branch, not assumed. `notify_gathering_cancelled()`
+  correctly sends no `gathering_id` in its push payload at all (per Items 48/49's own "community_
+  cancelled matches its gathering_cancelled sibling" note), so a cancellation push itself can never
+  deep-link into a dead gathering — it routes to a generic browse.
+
+**One real client gap found and fixed** while checking `CommunityDetailScreen.js`'s handling of
+`status === 'cancelled'` (Item 50 had already added the status banner and Join-button gating):
+"🤝 Invite Friends" and "🎉 Host a Gathering for This Community" were still shown to members/the
+creator on an already-cancelled community — inviting new people into, or spinning up new activity
+under, something that's already been declared dead. Both gated on `community.status !==
+'cancelled'`. Deliberately left "💬 Community Chat" visible regardless of status — a cancelled
+community's chat history/closure conversation is legitimate to keep open, unlike growing it
+further. Also updated both cancellation confirmation dialogs (`GatheringDetailScreen.js`,
+`CommunityDetailScreen.js`) to accurately describe the new scope ("business requests or confirmed
+reservations," not just "open business requests," plus a note that an already-paid reservation
+needs direct business coordination) — the old copy became inaccurate once the fix shipped.
+
+**Live verification**: one comprehensive disposable rolled-back transaction against the real
+deployed functions (not a hand-simulated isolated check), covering 4 scenarios: (1) a gathering
+with an accepted-offer-plus-pending-payment reservation — cascaded correctly (offer/reservation/
+payment all → `cancelled`, capacity restored), and its auto-created `plans` row survived with
+`status = 'cancelled'` rather than being deleted; (2) a gathering with an accepted-offer-plus-
+captured-payment reservation — correctly left untouched (offer stays `accepted`, payment stays
+`captured`) while the gathering cancellation itself still completed (row actually deleted,
+confirming the payment-blocked case never aborts the outer cancellation); (3) the pre-existing
+still-open-request/still-pending-offer path — confirmed unchanged, a straight regression check;
+(4) a community with the same accepted-offer-plus-payment shape — cascaded identically, community
+`status` correctly ends at `cancelled`. All four passed on the first clean run. Verified function
+overloads (`pg_get_function_identity_arguments`), the new internal helper's grants
+(`information_schema.role_routine_grants` — `service_role`/`postgres` only, no
+`authenticated`/`anon`), and the `plans` FK's new `ON DELETE SET NULL` behavior
+(`pg_get_constraintdef`) directly against production after applying.
+
+Full Jest suite 292/292 passing; both touched client files (`CommunityDetailScreen.js`,
+`GatheringDetailScreen.js`) transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised in a running app (no simulator/device tooling this session, standing note) — push
+delivery specifically can't be end-to-end verified without a real device token, though the DB-side
+notification-row/payload logic was verified live same as the rest of the function.
+
 ## Sep 12 2026 — Item 50 ("state consistency audit"), fix 5 — "cancel a confirmed reservation" — FULLY BUILT, VERIFIED
 
 Resumed after a codespace restart mid-block. Full audit report: `PRODUCT_AUDIT/

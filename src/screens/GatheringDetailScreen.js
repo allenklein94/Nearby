@@ -379,7 +379,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
     Alert.alert(
       `Cancel "${gathering.title}"?`,
-      "This cancels the gathering and notifies everyone who's approved to attend. Any open business requests tied to it are cancelled too. This can't be undone.",
+      "This cancels the gathering and notifies everyone who's approved to attend. Any business requests or confirmed reservations tied to it are cancelled too (unless a payment's already gone through — that side will be told to sort it out directly with the business). This can't be undone.",
       [
         { text: 'Keep It', style: 'cancel' },
         {
