@@ -152,6 +152,7 @@ export default function ProfileScreen({ navigation, route }) {
   const recordingIntroTimerRef = useRef(null);
   const scrollRef = useRef(null);
   const editSectionYRef = useRef(0);
+  const interestsSectionYRef = useRef(0);
 
   useEffect(() => {
     load();
@@ -174,6 +175,20 @@ export default function ProfileScreen({ navigation, route }) {
       return () => clearTimeout(timer);
     }
   }, [route?.params?.scrollToGenderSection]);
+
+  // Item 56 fast-follow ("no dead ends" -- CLAUDE.md): Settings' own
+  // RecommendationCustomizePanel "Add Interests" link lands here, scrolled
+  // straight to the interest picker itself rather than just the top of
+  // "Edit Your Profile" -- same wait-a-beat-then-scroll pattern
+  // scrollToGenderSection already established just above.
+  useEffect(() => {
+    if (route?.params?.scrollToInterestsSection) {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: interestsSectionYRef.current, animated: true });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.scrollToInterestsSection]);
 
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -1250,7 +1265,9 @@ export default function ProfileScreen({ navigation, route }) {
           ))}
         </View>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
+        <View onLayout={(e) => { interestsSectionYRef.current = e.nativeEvent.layout.y; }}>
+          <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
+        </View>
         <View style={styles.chipsWrap}>
           {INTEREST_OPTIONS.map((interest) => {
             const selected = interests.includes(interest);

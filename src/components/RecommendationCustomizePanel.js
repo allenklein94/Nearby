@@ -48,6 +48,7 @@ export default function RecommendationCustomizePanel({
   onChangeDistance,
   onChangeTimePref,
   onToggleCategory,
+  onPressAddInterests,
 }) {
   const styles = getStyles(colors);
   const effectiveSelectedCategories = selectedCategories ?? myInterests;
@@ -104,7 +105,26 @@ export default function RecommendationCustomizePanel({
 
       <Text style={styles.sectionHeader}>Categories</Text>
       {myInterests.length === 0 ? (
-        <Text style={styles.emptyText}>Add interests to your profile to fine-tune which categories notify you.</Text>
+        <View>
+          <Text style={styles.emptyText}>Add interests to your profile to fine-tune which categories notify you.</Text>
+          {/* Item 56 fast-follow ("no dead ends" -- CLAUDE.md): a real way
+              to actually go add interests, not just copy naming the fix.
+              Lands on Profile's own interest picker (an inline section, not
+              its own screen), scrolled straight to it -- same
+              scrollToGenderSection/scrollToPreferences pattern this app
+              already established for exactly this "land on the right part
+              of an existing screen" need. */}
+          {onPressAddInterests && (
+            <TouchableOpacity
+              onPress={onPressAddInterests}
+              accessibilityLabel="Add interests to your profile"
+              accessibilityRole="button"
+              style={{ marginTop: spacing.sm }}
+            >
+              <Text style={styles.emptyActionText}>Add Interests →</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       ) : (
         <View style={styles.chipsWrap}>
           {myInterests.map((tag) => {
@@ -132,6 +152,7 @@ const getStyles = (colors) => StyleSheet.create({
   panel: { paddingTop: spacing.sm, paddingBottom: spacing.md },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm, marginTop: spacing.md },
   emptyText: { ...typography.body, color: colors.textTertiary, fontStyle: 'italic' },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full,
