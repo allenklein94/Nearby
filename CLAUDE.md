@@ -79,6 +79,61 @@ person. Full Jest suite 316/316 passing; all seven touched/new files transform-c
 `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
 this session, standing note).
 
+**Item 61 fast-follow ("connect it to businesses") — fully DONE (2026-09-12), same day, direct
+user follow-up.** User's own example: "It's my friend's 30th birthday, plan something for 10
+people" should assemble a real multi-part plan (Dinner + Something Fun) with real live business
+options, not just a single prefilled ask. Real finding before writing code: the exact machinery
+this needed already existed from the 2026-09-10 "Experiences assembly" work —
+`experienceTemplates.js` already has a real birthday/anniversary template (Dinner + Something
+Fun + Sweet Treat), and `resolveIntent()`/`assembleExperience()` already assemble real, already-
+scored `business_availability`/`gathering` candidates into those components — just never wired
+into anything the wizard could reach, since `resolveIntent()` was only ever driven by free-text
+AI classification (create-assistant) before this.
+
+Shipped: for a business-destined activity type (dinner/night_out/activity), the wizard's final
+step is now a real live-options step ("Nearby found these options") that calls `resolveIntent()`
+directly with the wizard's own already-collected structured answers (occasion/when/party size) —
+no free text, no AI classification needed, since these are ground truth, more precise than
+anything AI would re-extract from typed prose. This step *replaces* the "who's involved" question
+for this destination rather than adding a 6th step — that question was already vestigial for a
+business ask (its answer, `whoInvolved`, was collected but never actually used in the business
+branch of `proceedToDestination()`, confirmed by reading the code, not assumed). Every other
+destination (gathering/custom) keeps "who's involved" exactly as shipped. Added a new, optional
+"How many people?" chip row (2/4/6/8/10+) to the "What" step — feeds `resolveIntent()`'s own real
+hard capacity filter and the submitted request's `party_size` column; left unset is honest and
+common, never defaulted.
+
+Real options render as: a business's own self-declared multi-component "Experience Bundle" first
+(when one exists), then each template component (e.g. 🍽️ Dinner, 🎉 Something Fun) with its own
+real top-3 candidates as checkboxes; a `gathering`-type candidate (a real thing already happening
+that fills a component) renders as a plain tap-to-view row instead, since a business_request can't
+be sent against a gathering. "Ask These Businesses (N) →" submits one real `submitBusinessRequest`
+per selected candidate in parallel, each bound via `preferredAvailabilityId` (same "skip straight
+to offered" mechanism Item 53's own single-pick "Find options nearby" already uses on
+AskBusinessScreen, extended here to several at once) — a single success lands on that request's
+own real `BusinessRequestDetail` exactly like a normal solo ask; several land on the `Plans` tab,
+where each is already independently visible (Item 52). "Skip — I'll post a general request
+myself →" always stays available, reusing the exact original prefill-into-AskBusinessScreen path
+unchanged (never a forced choice). The optional save-to-calendar checkbox (this session's earlier
+fix) moved from the now-replaced "who's involved" step to the "When" step so it still applies
+regardless of destination — fires from both the skip path and the new submit path. A real
+staleness guard resets the fetched options whenever the user goes back and changes occasion/
+activity/when/party size, so a stale result never silently survives an edited answer.
+
+Deliberately did NOT extend `experienceTemplates.js` with new templates for the 7 new life-event
+occasions (graduation/baby_shower/engagement/housewarming/promotion/farewell/milestone) — same
+disclosed, intentional scope boundary the original Item 61 DB migration already drew for business-
+side bundles; those occasions still get a real flat (non-templated) options list via
+`resolveIntent()`'s own `items`, just no multi-component assembly. New `dateWindowForWhenPreset()`
+pure function (`celebrateSomething.js`, 3 new Jest tests) maps the wizard's own deterministic
+WHEN_PRESETS key onto `resolveIntent()`'s real dateWindow vocabulary. Full Jest suite 319/319
+passing; all three touched/new files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app or against real business_availability data
+(no simulator/device tooling this session, standing note) — next session should confirm on a real
+account that the assembled birthday/anniversary experience renders correctly, that a multi-select
+submission creates the right number of distinct `business_requests` rows each bound to its own
+picked posting, and that the Plans-tab landing after a multi-submit shows all of them.
+
 **Item 60 ("the CEO test," first-time-user obviousness) — fully DONE (2026-09-12).** All 5
 questions (What is Nearby? / What can I do here? / How do I find something? / How do I meet/
 connect with someone? / How do I actually make something happen?) PASS — each answer is obvious

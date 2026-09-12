@@ -6,6 +6,7 @@ import {
   celebrationCategoryHint,
   shouldOfferCalendarSave,
   buildOccasionSaveParams,
+  dateWindowForWhenPreset,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -123,5 +124,21 @@ describe('buildOccasionSaveParams', () => {
       connectedUserId: null,
     });
     expect(buildOccasionSaveParams({ occasion: 'milestone', title: 'x', scheduledAt, connectedUserId: 'user-1' }).connectedUserId).toBe('user-1');
+  });
+});
+
+describe('dateWindowForWhenPreset', () => {
+  it('maps now and tonight to the same "later today" bucket', () => {
+    expect(dateWindowForWhenPreset('now')).toBe('tonight');
+    expect(dateWindowForWhenPreset('tonight')).toBe('tonight');
+  });
+
+  it('maps tomorrow through unchanged', () => {
+    expect(dateWindowForWhenPreset('tomorrow')).toBe('tomorrow');
+  });
+
+  it('honestly returns null for a custom picked date rather than guessing a bucket', () => {
+    expect(dateWindowForWhenPreset('custom')).toBeNull();
+    expect(dateWindowForWhenPreset(null)).toBeNull();
   });
 });

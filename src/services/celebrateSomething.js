@@ -107,3 +107,20 @@ export function buildOccasionSaveParams({ occasion, title, scheduledAt, connecte
     connectedUserId: connectedUserId ?? null,
   };
 }
+
+// "Connect it to businesses" (CLAUDE.md, direct follow-up to Item 61): for
+// a business-destined activity type (dinner/night_out/activity), the
+// wizard's own already-collected structured answers (occasion/when/party
+// size) are ground truth -- richer and more precise than free text a user
+// would otherwise have to retype into AskBusinessScreen's own "Find
+// options nearby" search (Item 53). This maps the wizard's own deterministic
+// WHEN_PRESETS key onto resolveIntent()'s real dateWindow vocabulary
+// (matchesDateWindow in intentResolverScoring.js) -- 'now'/'tonight' both
+// collapse to the same "later today" window that vocabulary already uses
+// for both; a real picked custom date has no matching bucket, so it maps to
+// null (matchesDateWindow's own "no date filter" value) rather than
+// guessing a wrong one -- an honest breadth tradeoff, not a fabricated match.
+const WHEN_PRESET_TO_DATE_WINDOW = { now: 'tonight', tonight: 'tonight', tomorrow: 'tomorrow', custom: null };
+export function dateWindowForWhenPreset(whenPreset) {
+  return WHEN_PRESET_TO_DATE_WINDOW[whenPreset] ?? null;
+}

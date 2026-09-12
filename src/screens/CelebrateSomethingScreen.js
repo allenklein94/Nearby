@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { getMyFriends } from '../services/friends';
 import { getMyCommunities } from '../services/communities';
 import { addOccasion } from '../services/occasions';
+import { resolveIntent } from '../services/intentResolver';
+import { submitBusinessRequest } from '../services/businessFulfillment';
 import { celebrateOccasionOptions } from '../constants/businessAttributes';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import {
@@ -15,6 +17,7 @@ import {
   celebrationCategoryHint,
   shouldOfferCalendarSave,
   buildOccasionSaveParams,
+  dateWindowForWhenPreset,
 } from '../services/celebrateSomething';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
@@ -27,13 +30,35 @@ import { typography, spacing, radius } from '../theme';
 // nothing itself -- it's pure orchestration, same posture as
 // SurpriseMeSheet.js. Full architecture rationale:
 // PRODUCT_AUDIT/CELEBRATE_SOMETHING_2026-09-12.md.
-const STEP_DEFS = [
-  { key: 'occasion', label: 'Occasion' },
-  { key: 'who_for', label: 'Who' },
-  { key: 'activity', label: 'What' },
-  { key: 'when', label: 'When' },
-  { key: 'who_involved', label: 'Involve' },
-];
+//
+// "Connect it to businesses" follow-up (direct user request): for a
+// business-destined activity type (dinner/night_out/activity), the final
+// step becomes a real live-options step ("options") instead of the
+// otherwise-vestigial "who's involved" question -- that question never
+// actually fed anything for a business ask (visibility only matters for
+// the gathering destination), so this replaces it rather than bolting on
+// a 6th step. Every other destination keeps "who's involved" unchanged.
+function buildStepDefs(activityType) {
+  const base = [
+    { key: 'occasion', label: 'Occasion' },
+    { key: 'who_for', label: 'Who' },
+    { key: 'activity', label: 'What' },
+    { key: 'when', label: 'When' },
+  ];
+  base.push(
+    resolveCelebrationDestination(activityType) === 'business'
+      ? { key: 'options', label: 'Options' }
+      : { key: 'who_involved', label: 'Involve' }
+  );
+  return base;
+}
+
+// A real, optional guest count -- feeds resolveIntent()'s own real hard
+// feasibility filter (a posting whose capacity can't fit this many people
+// is excluded server-side, not just ranked lower) and the submitted
+// business_request's own party_size column. Left unset (null) is honest
+// and common -- never defaulted to a guessed number.
+const PARTY_SIZE_OPTIONS = [2, 4, 6, 8, 10];
 
 const WHO_FOR_OPTIONS = [
   { key: 'me', label: 'Me', icon: '🙋' },
@@ -74,6 +99,7 @@ export default function CelebrateSomethingScreen({ navigation }) {
   const [friendsLoaded, setFriendsLoaded] = useState(false);
 
   const [activityType, setActivityType] = useState(null);
+  const [partySize, setPartySize] = useState(null);
 
   const [whenPreset, setWhenPreset] = useState(null);
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 60 * 60 * 1000));
@@ -86,6 +112,17 @@ export default function CelebrateSomethingScreen({ navigation }) {
   const [communityId, setCommunityId] = useState(null);
 
   const [saveToCalendar, setSaveToCalendar] = useState(false);
+
+  // "Connect it to businesses": resolveIntent()'s own real, already-scored
+  // candidate pool (business_availability + gathering), fetched using the
+  // wizard's own structured answers -- no free text, no AI classification
+  // needed, since every field it needs is already real ground truth by the
+  // time the user reaches this step.
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [optionsFetched, setOptionsFetched] = useState(false);
+  const [optionsResult, setOptionsResult] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [submittingOptions, setSubmittingOptions] = useState(false);
 
   async function ensureFriendsLoaded() {
     if (friendsLoaded || loadingFriends) return;
@@ -127,7 +164,128 @@ export default function CelebrateSomethingScreen({ navigation }) {
     }
   }
 
-  const stepKey = STEP_DEFS[step].key;
+  const stepDefs = buildStepDefs(activityType);
+  const stepKey = stepDefs[step].key;
+
+  useEffect(() => {
+    if (stepKey === 'options' && !optionsFetched && !optionsLoading) {
+      fetchOptions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepKey]);
+
+  // A real staleness guard: going Back from 'options' to change occasion/
+  // when/party size (all real inputs to the query above) must force a
+  // fresh fetch next time 'options' is reached, not silently keep serving
+  // results computed from the answers the user just changed.
+  useEffect(() => {
+    setOptionsFetched(false);
+    setOptionsResult(null);
+    setSelectedIds(new Set());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [occasion, activityType, whenPreset, scheduledAt, partySize]);
+
+  async function fetchOptions() {
+    setOptionsLoading(true);
+    try {
+      const result = await resolveIntent({
+        category: null,
+        dateWindow: dateWindowForWhenPreset(whenPreset),
+        rawText: '',
+        partySize,
+        occasion,
+      });
+      setOptionsResult(result);
+    } catch (e) {
+      console.error('CelebrateSomething fetchOptions error', e);
+      setOptionsResult({ items: [], experience: null });
+    }
+    setOptionsFetched(true);
+    setOptionsLoading(false);
+  }
+
+  // Every real, selectable business_availability candidate resolveIntent()
+  // found -- bundles, per-component items, and (when no experience
+  // assembled) the flat list, deduped by id since the same posting could
+  // otherwise appear in more than one of those buckets.
+  const allCandidates = useMemo(() => {
+    if (!optionsResult) return [];
+    const byId = new Map();
+    (optionsResult.experience?.bundles ?? []).forEach((c) => byId.set(c.id, c));
+    (optionsResult.experience?.components ?? []).forEach((comp) => {
+      comp.items.forEach((c) => { if (c.type === 'business_availability') byId.set(c.id, c); });
+    });
+    if (!optionsResult.experience) {
+      optionsResult.items
+        .filter((c) => c.type === 'business_availability')
+        .forEach((c) => byId.set(c.id, c));
+    }
+    return Array.from(byId.values());
+  }, [optionsResult]);
+
+  function toggleSelected(candidate) {
+    if (candidate.type !== 'business_availability') return;
+    Haptics.selectionAsync();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(candidate.id)) next.delete(candidate.id); else next.add(candidate.id);
+      return next;
+    });
+  }
+
+  // Submits one real business_request per selected candidate, each bound
+  // via preferredAvailabilityId -- same "skip straight to offered" RPC
+  // path AskBusinessScreen's own "Find options nearby" step (Item 53)
+  // already uses for a single pick, extended here to several at once
+  // since a birthday plan can genuinely need dinner AND something fun.
+  // Never a blind bulk-submit with no visible outcome: a single success
+  // lands on that request's own real detail screen exactly like a normal
+  // solo ask would; several successes land on Plans, where every one of
+  // them is independently already visible (Item 52).
+  async function submitSelectedBusinessRequests() {
+    const selected = allCandidates.filter((c) => selectedIds.has(c.id));
+    if (selected.length === 0) return;
+    setSubmittingOptions(true);
+    const trimmedName = whoForName.trim() || null;
+    const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
+    const askText = composeCelebrationAskText({ occasion, whoFor, whoForName: trimmedName, activityType });
+    if (saveToCalendar && shouldOfferCalendarSave(occasion)) {
+      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: whoForFriendId })).catch(() => {});
+    }
+    const dateParam = scheduledAt.toISOString().slice(0, 10);
+    const results = await Promise.allSettled(
+      selected.map((c) => submitBusinessRequest({
+        text: askText,
+        category: c.category ?? null,
+        partySize,
+        date: dateParam,
+        occasion,
+        preferredAvailabilityId: c.id,
+      }))
+    );
+    setSubmittingOptions(false);
+    const succeeded = results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    if (succeeded.length === 0) {
+      Alert.alert('Something went wrong', "We couldn't send those requests. Please try again.");
+      return;
+    }
+    if (succeeded.length === 1) {
+      navigation.replace('BusinessRequestDetail', {
+        requestId: succeeded[0].requestId,
+        justSubmitted: true,
+        notifiedCount: succeeded[0].notifiedCount,
+        duplicate: succeeded[0].duplicate,
+        prefillText: askText,
+        prefillOccasion: occasion,
+        prefillPartySize: partySize,
+        prefillDateWindow: whenPreset === 'custom' ? PICK_DATE_KEY : whenPreset,
+        prefillPickedDateISO: whenPreset === 'custom' ? scheduledAt.toISOString() : null,
+      });
+      return;
+    }
+    Alert.alert('Requests sent', `🎉 Sent ${succeeded.length} requests — track them all from your Plans tab.`);
+    navigation.navigate('Plans');
+  }
 
   function goNext() {
     if (stepKey === 'occasion' && !occasion) {
@@ -155,7 +313,7 @@ export default function CelebrateSomethingScreen({ navigation }) {
       return proceedToDestination();
     }
     Haptics.selectionAsync();
-    setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
+    setStep((s) => Math.min(s + 1, stepDefs.length - 1));
   }
 
   function goBack() {
@@ -196,6 +354,7 @@ export default function CelebrateSomethingScreen({ navigation }) {
       const params = { prefillText: askText, prefillOccasion: occasion };
       const categoryHint = celebrationCategoryHint(activityType);
       if (categoryHint) params.prefillCategory = categoryHint;
+      if (partySize) params.prefillPartySize = partySize;
       if (whenPreset === 'now' || whenPreset === 'tonight') {
         params.prefillDateWindow = 'today';
       } else if (whenPreset === 'tomorrow') {
@@ -215,7 +374,55 @@ export default function CelebrateSomethingScreen({ navigation }) {
     navigation.navigate('Create', { prefillSomethingElseText: askText });
   }
 
-  const finalStep = stepKey === 'who_involved';
+  const finalStep = step === stepDefs.length - 1;
+
+  // A real gathering candidate (assembleExperience() can bucket one into a
+  // component alongside business_availability, e.g. a live-music gathering
+  // filling "Something Fun") can't be requested from a business -- it's
+  // already a real, already-happening thing, so it renders as a plain
+  // tap-to-view row instead of a selectable checkbox.
+  function renderOptionCard(item) {
+    if (item.type === 'gathering') {
+      return (
+        <TouchableOpacity
+          key={`gathering-${item.id}`}
+          style={styles.optionCard}
+          onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
+          activeOpacity={0.8}
+          accessibilityLabel={item.title}
+          accessibilityRole="button"
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.optionTitle}>🎊 {item.title}</Text>
+            {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
+            <Text style={styles.optionHint}>Already happening — tap to view</Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+    const selected = selectedIds.has(item.id);
+    const isBundle = Array.isArray(item.componentLabels);
+    return (
+      <TouchableOpacity
+        key={`business-${item.id}`}
+        style={[styles.optionCard, selected && styles.optionCardSelected]}
+        onPress={() => toggleSelected(item)}
+        activeOpacity={0.8}
+        accessibilityLabel={item.title}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: selected }}
+      >
+        <View style={[styles.checkbox, selected && styles.checkboxChecked]}>
+          {selected && <Text style={styles.checkboxMark}>✓</Text>}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.optionTitle}>{item.title}</Text>
+          {item.subtitle ? <Text style={styles.optionSubtitle}>{item.subtitle}</Text> : null}
+          {isBundle && <Text style={styles.optionHint}>Covers: {item.componentLabels.join(', ')}</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -225,8 +432,8 @@ export default function CelebrateSomethingScreen({ navigation }) {
             <Text style={styles.header} accessibilityRole="header">🎉 Celebrate Something</Text>
             <Text style={styles.subheader}>Let's turn this into a real plan.</Text>
 
-            <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${STEP_DEFS.length}: ${STEP_DEFS[step].label}`}>
-              {STEP_DEFS.map((s, i) => (
+            <View style={styles.progressRow} accessibilityLabel={`Step ${step + 1} of ${stepDefs.length}: ${stepDefs[step].label}`}>
+              {stepDefs.map((s, i) => (
                 <View key={s.key} style={styles.progressStep}>
                   <View style={[styles.progressDot, i <= step && styles.progressDotActive]} />
                   <Text style={[styles.progressLabel, i === step && styles.progressLabelActive]}>{s.label}</Text>
@@ -345,6 +552,27 @@ export default function CelebrateSomethingScreen({ navigation }) {
                     );
                   })}
                 </View>
+
+                <Text style={styles.sublabel}>How many people? (optional)</Text>
+                <View style={styles.chipRow}>
+                  {PARTY_SIZE_OPTIONS.map((n, i) => {
+                    const selected = partySize === n;
+                    const label = i === PARTY_SIZE_OPTIONS.length - 1 ? `${n}+` : String(n);
+                    return (
+                      <TouchableOpacity
+                        key={n}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setPartySize(selected ? null : n); }}
+                        activeOpacity={0.8}
+                        accessibilityLabel={`${label} people`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </>
             )}
 
@@ -390,6 +618,61 @@ export default function CelebrateSomethingScreen({ navigation }) {
                       }
                     }}
                   />
+                )}
+
+                {shouldOfferCalendarSave(occasion) && (
+                  <TouchableOpacity
+                    style={styles.calendarToggleRow}
+                    onPress={() => { Haptics.selectionAsync(); setSaveToCalendar((v) => !v); }}
+                    activeOpacity={0.8}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: saveToCalendar }}
+                    accessibilityLabel="Also save to your Occasions calendar"
+                  >
+                    <View style={[styles.checkbox, saveToCalendar && styles.checkboxChecked]}>
+                      {saveToCalendar && <Text style={styles.checkboxMark}>✓</Text>}
+                    </View>
+                    <Text style={styles.calendarToggleText}>🗓️ Also save this to your Occasions calendar</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+            {stepKey === 'options' && (
+              <>
+                <Text style={styles.label}>Nearby found these options</Text>
+                {optionsLoading && <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />}
+                {!optionsLoading && optionsResult && (
+                  <>
+                    {optionsResult.experience ? (
+                      <>
+                        {optionsResult.experience.bundles.length > 0 && (
+                          <View style={{ marginBottom: spacing.md }}>
+                            <Text style={styles.sublabel}>✨ One place has it all</Text>
+                            {optionsResult.experience.bundles.map((item) => renderOptionCard(item))}
+                          </View>
+                        )}
+                        {optionsResult.experience.components.map((comp) => (
+                          <View key={comp.key} style={{ marginBottom: spacing.md }}>
+                            <Text style={styles.sublabel}>{comp.label}</Text>
+                            {comp.items.map((item) => renderOptionCard(item))}
+                          </View>
+                        ))}
+                      </>
+                    ) : optionsResult.items.some((i) => i.type === 'business_availability') ? (
+                      <View style={{ marginBottom: spacing.md }}>
+                        <Text style={styles.sublabel}>🍽️ Nearby options</Text>
+                        {optionsResult.items
+                          .filter((i) => i.type === 'business_availability')
+                          .slice(0, 5)
+                          .map((item) => renderOptionCard(item))}
+                      </View>
+                    ) : (
+                      <Text style={styles.helperText}>
+                        Nothing live nearby right now — no worries, you can still post a request and businesses will respond.
+                      </Text>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -450,22 +733,6 @@ export default function CelebrateSomethingScreen({ navigation }) {
                     We'll take you to your new plan — from there, "Invite Friends" lets you pick exactly who should know.
                   </Text>
                 )}
-
-                {shouldOfferCalendarSave(occasion) && (
-                  <TouchableOpacity
-                    style={styles.calendarToggleRow}
-                    onPress={() => { Haptics.selectionAsync(); setSaveToCalendar((v) => !v); }}
-                    activeOpacity={0.8}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: saveToCalendar }}
-                    accessibilityLabel="Also save to your Occasions calendar"
-                  >
-                    <View style={[styles.checkbox, saveToCalendar && styles.checkboxChecked]}>
-                      {saveToCalendar && <Text style={styles.checkboxMark}>✓</Text>}
-                    </View>
-                    <Text style={styles.calendarToggleText}>🗓️ Also save this to your Occasions calendar</Text>
-                  </TouchableOpacity>
-                )}
               </>
             )}
 
@@ -476,19 +743,47 @@ export default function CelebrateSomethingScreen({ navigation }) {
                 activeOpacity={0.85}
                 accessibilityLabel={step === 0 ? 'Cancel' : 'Back'}
                 accessibilityRole="button"
+                disabled={submittingOptions}
               >
                 <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
               </TouchableOpacity>
+              {stepKey === 'options' ? (
+                <TouchableOpacity
+                  style={[styles.nextButton, (selectedIds.size === 0 || submittingOptions) && styles.nextButtonDisabled]}
+                  onPress={submitSelectedBusinessRequests}
+                  activeOpacity={0.85}
+                  disabled={selectedIds.size === 0 || submittingOptions}
+                  accessibilityLabel={`Ask These Businesses (${selectedIds.size})`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.nextButtonText}>
+                    {submittingOptions ? 'Sending…' : `Ask These Businesses (${selectedIds.size}) →`}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.nextButton}
+                  onPress={goNext}
+                  activeOpacity={0.85}
+                  accessibilityLabel={finalStep ? "Let's Plan It" : 'Next'}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.nextButtonText}>{finalStep ? "Let's Plan It →" : 'Next'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {stepKey === 'options' && !optionsLoading && (
               <TouchableOpacity
-                style={styles.nextButton}
-                onPress={goNext}
-                activeOpacity={0.85}
-                accessibilityLabel={finalStep ? "Let's Plan It" : 'Next'}
+                style={styles.skipRow}
+                onPress={proceedToDestination}
+                activeOpacity={0.7}
+                disabled={submittingOptions}
+                accessibilityLabel="Skip, I'll ask myself"
                 accessibilityRole="button"
               >
-                <Text style={styles.nextButtonText}>{finalStep ? "Let's Plan It →" : 'Next'}</Text>
+                <Text style={styles.skipRowText}>Skip — I'll post a general request myself →</Text>
               </TouchableOpacity>
-            </View>
+            )}
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -533,6 +828,15 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkboxMark: { color: '#fff', fontSize: 12, fontWeight: '700' },
   calendarToggleText: { color: colors.textPrimary, fontSize: 14, flex: 1 },
+  optionCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm,
+    backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginBottom: spacing.xs,
+  },
+  optionCardSelected: { borderColor: colors.primary, backgroundColor: colors.primaryMuted },
+  optionTitle: { color: colors.textPrimary, fontWeight: '700', fontSize: 14 },
+  optionSubtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  optionHint: { color: colors.textTertiary, fontSize: 12, marginTop: 2 },
   navRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
   backButton: {
     paddingVertical: 16, paddingHorizontal: spacing.lg, borderRadius: radius.full,
@@ -540,5 +844,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   backButtonText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
   nextButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 16, alignItems: 'center', ...shadow.button },
+  nextButtonDisabled: { opacity: 0.5 },
   nextButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  skipRow: { alignItems: 'center', paddingVertical: spacing.md },
+  skipRowText: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
 });
