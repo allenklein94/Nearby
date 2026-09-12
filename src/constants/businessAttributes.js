@@ -175,6 +175,15 @@ export const OCCASION_OPTIONS = [
   { key: 'promotion', label: 'Promotion / New Job', icon: '📈' },
   { key: 'farewell', label: 'Farewell', icon: '👋' },
   { key: 'milestone', label: 'Milestone', icon: '🥂' },
+  // occasions.occasion_type's own personal-record-only catch-all (real
+  // since 20260914_occasions.sql) -- was missing from this list entirely
+  // (occasionLabel() fell back to the raw 'life_event' string) until
+  // "Make Occasions proactive" (CLAUDE.md) started sending real pushes
+  // about it. Deliberately still NOT in CELEBRATE_OCCASION_KEYS below --
+  // stays a personal-record/manual-entry-only type, never wizard-picked
+  // from scratch (20261023_life_event_occasion_downstream_fix.sql's own
+  // header comment has the full reasoning).
+  { key: 'life_event', label: 'Life Event', icon: '🌟' },
   { key: 'other', label: 'Other Occasion', icon: '✨' },
 ];
 
@@ -211,3 +220,20 @@ export function celebrateOccasionOptions() {
 export const CALENDAR_SAVEABLE_OCCASION_KEYS = [
   'anniversary', 'graduation', 'baby_shower', 'engagement', 'housewarming', 'promotion', 'farewell', 'milestone',
 ];
+
+// The occasions table's own occasion_type CHECK (20260914_occasions.sql +
+// 20261016_celebrate_occasion_vocabulary_expansion.sql +
+// 20261023_life_event_occasion_downstream_fix.sql) -- every value a
+// personal Occasion record can actually be saved as, whether via the
+// wizard's own "save to calendar" step or OccasionsScreen's standalone
+// manual form. Derived from OCCASION_OPTIONS, same "one ontology"
+// discipline as CELEBRATE_OCCASION_KEYS above -- keep in sync with the
+// table's own CHECK if either ever changes.
+export const PERSONAL_OCCASION_TYPE_KEYS = [
+  'birthday', 'anniversary', 'graduation', 'baby_shower', 'engagement',
+  'housewarming', 'promotion', 'farewell', 'milestone', 'life_event', 'other',
+];
+
+export function personalOccasionTypeOptions() {
+  return PERSONAL_OCCASION_TYPE_KEYS.map((key) => OCCASION_OPTIONS.find((o) => o.key === key)).filter(Boolean);
+}

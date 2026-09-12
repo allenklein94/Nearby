@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getMyOccasions, addOccasion, deleteOccasion } from '../services/occasions';
 import { getMyOccasionGroupPlans } from '../services/occasionGroupPlans';
-import { OCCASION_OPTIONS } from '../constants/businessAttributes';
+import { OCCASION_OPTIONS, personalOccasionTypeOptions } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -14,28 +14,16 @@ import { typography, spacing, radius } from '../theme';
 // EmergencyContactsScreen.js (a personal-record table, plain owner-scoped
 // RLS, no RPC needed for create/delete).
 //
-// 'birthday' was originally left off this list -- the reasoning at the
-// time was that profiles.birthdate + the existing Home nudge
-// (get_upcoming_connected_birthdays) already own that signal. That's only
-// true for a real connected Nearby user, though, and this screen's own
-// title/date fields never required one in the first place (connectedUserId
-// stays honestly null for everything created here -- there's no "attach a
-// real person" picker on this screen at all). "Don't require the
-// celebrated person to be a Nearby user" (CLAUDE.md, Item 61 follow-up)
-// means someone real but not on the app -- a mother, say -- has no
-// profiles.birthdate for that nudge to ever read, so their birthday needs
-// this same generic path everyone else here already gets. Re-added as a
-// 6th chip; 'birthday' has always been a legal occasion_type value in the
-// schema (20260914_occasions.sql) -- this was purely a UI gap, no
-// migration needed.
-const OCCASION_TYPES = [
-  { key: 'birthday', label: 'Birthday', icon: '🎂' },
-  { key: 'anniversary', label: 'Anniversary', icon: '💑' },
-  { key: 'graduation', label: 'Graduation', icon: '🎓' },
-  { key: 'milestone', label: 'Milestone', icon: '🏆' },
-  { key: 'life_event', label: 'Life Event', icon: '🌟' },
-  { key: 'other', label: 'Other', icon: '📅' },
-];
+// "Make Occasions proactive, not just user-created" (CLAUDE.md): this used
+// to be its own hardcoded 6-value list, missing 5 real values the schema
+// has allowed since 20261016_celebrate_occasion_vocabulary_expansion.sql
+// (baby_shower/engagement/housewarming/promotion/farewell) -- a real UI
+// completeness gap now that every one of them gets its own proactive
+// nudge (send_occasion_planning_nudges()). Sourced from the shared
+// PERSONAL_OCCASION_TYPE_KEYS list (businessAttributes.js) instead of its
+// own copy, so this screen can never drift from what the table actually
+// allows again.
+const OCCASION_TYPES = personalOccasionTypeOptions();
 
 function formatDate(d) {
   if (!d) return '';

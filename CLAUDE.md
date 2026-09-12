@@ -40,6 +40,77 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Make Occasions proactive, not just user-created" — fully DONE (2026-09-12), same-day direct
+user follow-up to "Occasion architecture should not be a silo" below, resumed after a codespace
+restart mid-commit.** User's own framing, generalized past birthday/anniversary: "Nearby already
+knows you have an upcoming occasion because you chose to save it... 🎂 Sarah's birthday is
+September 18. Want to plan something?" — extend the existing birthday/anniversary planning-nudge
+mechanism (below) to all 11 real `occasions.occasion_type` values, not just those two.
+
+`send_birthday_planning_nudges()` and `send_anniversary_planning_nudges()` (20261017/20261019)
+already built exactly this shape, but as two separate, occasion-type-specific functions, and only
+for 2 of the 11 values the column has allowed since `20261016_celebrate_occasion_vocabulary_
+expansion.sql` widened it (graduation/milestone/life_event/baby_shower/engagement/housewarming/
+promotion/farewell/other were never nudged about at all). Shipped via
+`20261022_occasion_planning_nudges_generalized.sql`: (1) a new `send_occasion_planning_nudges()`
+consolidates every self-logged `occasions` row (any of the 11 types) into one generic function —
+a future occasion type added to the CHECK constraint now gets a real proactive nudge
+automatically, no new migration needed; lead time is 14 days for occasions that typically need
+more logistics (anniversary/graduation/baby_shower/engagement/housewarming, same reasoning the
+original anniversary migration gave) and 7 days for the rest — a disclosed judgment call, not a
+measured fact; (2) `send_birthday_planning_nudges()` is trimmed to only its structural Source 1 (a
+connected Nearby friend/match's real `profiles.birthdate` — the one source the generic function
+can't reach, since it has no `occasions` row behind it); (3) `send_anniversary_planning_nudges()`
+is fully retired (unscheduled + dropped) — it was 100% self-logged-occasion-based, now entirely
+covered by the generic function; (4) a recurring occasion already turned into a real plan for its
+current upcoming date (`occasions.resulting_plan_id`/`last_planned_at`, from "Occasion
+architecture should not be a silo" below) is skipped — don't nag about something already planned;
+the ~350-day window is a disclosed approximation, since this table has no per-year-instance
+concept to check exactly. The new push type, `occasion_upcoming`, carries the structured
+`who_for_name`/`who_for_friend_id` fields (one consistent payload shape for every occasion type,
+replacing each old type's own narrower field names) — `notifications.js` routes it generically
+into `CelebrateSomethingScreen`'s existing `initialOccasion`/`initialWhoFor`/`initialWhoForName`/
+`initialWhoForFriendId` route params (all pre-existing infrastructure from the birthday/
+anniversary nudges, confirmed still correctly consumed) rather than each type inventing its own
+routing case.
+
+Client completeness fix bundled in: `OccasionsScreen.js`'s own manual-entry chip list was a
+hardcoded 6-value list missing 5 real values the schema has allowed since the Sep 16 vocabulary
+expansion (baby_shower/engagement/housewarming/promotion/farewell) — a real gap now that every
+one of them gets its own proactive nudge. Fixed by sourcing it from a new shared
+`PERSONAL_OCCASION_TYPE_KEYS`/`personalOccasionTypeOptions()` (`businessAttributes.js`, derived
+from `OCCASION_OPTIONS`, same "one ontology" discipline as `CELEBRATE_OCCASION_KEYS`) instead of
+its own copy, so this screen can never drift from what the table actually allows again. This
+surfaced `life_event` needing to be added to `OCCASION_OPTIONS` itself (it existed in the DB CHECK
+since the original `20260914_occasions.sql` but had no display label anywhere) — added, but
+deliberately kept out of `CELEBRATE_OCCASION_KEYS`/`CALENDAR_SAVEABLE_OCCASION_KEYS` (the wizard's
+own occasion picker): it stays a personal-record/manual-entry-only catch-all, never something
+picked from scratch mid-wizard.
+
+That exposed one real downstream bug, fixed via `20261023_life_event_occasion_downstream_fix.sql`:
+`life_event` was never added to `business_requests.occasion`'s or `occasion_group_plans
+.occasion_type`'s own CHECK constraints when the Sep 16/20 migrations widened everything else —
+harmless while nothing could ever nudge about a life_event occasion, but now that
+`send_occasion_planning_nudges()` proactively nudges about every type, a real recipient tapping a
+life_event push and picking a business-destined activity or "Let the Group Vote" would hit a real
+INSERT failure. Fixed by widening both CHECK constraints to accept `life_event`, nothing broader —
+still not added to the wizard's own selectable chip list, per the reasoning above.
+
+Verified live against production (`enmosvippabmuqslzrox`): both migrations were already applied
+before the restart that interrupted this session — confirmed via direct queries showing
+`send_occasion_planning_nudges()`/`send_birthday_planning_nudges()` present and
+`send_anniversary_planning_nudges()` gone, the `send-occasion-planning-nudges` cron job scheduled
+(daily 9am) and `send-anniversary-planning-nudges` removed, and all 3 widened CHECK constraints
+(`business_requests_occasion_check`/`brand_partners_priority_occasions_check`/
+`occasion_group_plans_occasion_type_check`) live with `life_event` present. The three client files
+left uncommitted by the same restart (`businessAttributes.js`, `OccasionsScreen.js`,
+`notifications.js`) were re-read in full this session, checked against the migrations and against
+`CelebrateSomethingScreen.js`'s real existing route-param handling, and found correct and
+complete — nothing needed to be redone. Full Jest suite 335/335 passing; all three touched files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app or
+against a real device (no simulator/device tooling this session, standing note) — push
+notifications specifically can't be end-to-end verified without a real device token.
+
 **"Occasion architecture should not be a silo" — fully DONE (2026-09-12), same-day direct user
 follow-up to "Group planning for an Occasion" below.** User's own list: an Occasion should carry
 occasion type / person being celebrated / date / participants / preferences / plan / location /

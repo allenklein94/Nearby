@@ -275,6 +275,39 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('Occasions');
       }
       break;
+    // "Make Occasions proactive, not just user-created" (CLAUDE.md, direct
+    // follow-up): the generalized replacement for birthday_upcoming's/
+    // anniversary_upcoming's own self-logged-occasion branches above --
+    // send_occasion_planning_nudges() now covers all 11 real occasion_type
+    // values, not just those two, under one consistent payload shape
+    // (who_for_name/who_for_friend_id, the structured fields "Occasion
+    // architecture should not be a silo" added) rather than each type
+    // inventing its own field names. birthday_upcoming/anniversary_upcoming
+    // themselves are untouched above -- birthday_upcoming's own
+    // birthday_user_id branch is still real and still fires (a connected
+    // Nearby friend's own profiles.birthdate, which has no occasions row to
+    // ever route through here); a self-logged occasion of any type,
+    // including birthday/anniversary, now arrives as this type instead.
+    case 'occasion_upcoming':
+      if (data.who_for_friend_id) {
+        navigationRef.navigate('CelebrateSomething', {
+          initialOccasion: data.occasion_type,
+          initialWhoFor: 'friend',
+          initialWhoForName: data.who_for_name ?? null,
+          initialWhoForFriendId: data.who_for_friend_id,
+        });
+      } else if (data.who_for_name) {
+        navigationRef.navigate('CelebrateSomething', {
+          initialOccasion: data.occasion_type,
+          initialWhoFor: data.occasion_type === 'birthday' ? 'family' : 'someone_else',
+          initialWhoForName: data.who_for_name,
+        });
+      } else if (data.occasion_type) {
+        navigationRef.navigate('CelebrateSomething', { initialOccasion: data.occasion_type });
+      } else {
+        navigationRef.navigate('Occasions');
+      }
+      break;
     case 'crossed_paths_sighting':
       // Same real destination the existing Crossed Paths Discover surfaces
       // already open on a tap (see CLAUDE.md, "Unified Crossed Paths across
