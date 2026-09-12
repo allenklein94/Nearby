@@ -79,6 +79,25 @@ standing note) — next session should confirm on a real device that a tapped `g
 `recommended_gathering` push shows the correct real reason text and that "Invite Friends" opens
 the existing modal correctly from that banner.
 
+**Item 55 fast-follow #1 (`BusinessRequestDetail`) — fully DONE, same day (2026-09-12).** Picked
+up in-flight, uncommitted work interrupted by a codespace restart mid-session, then finished and
+committed (`155ef16d`). Closes the first of the two concrete candidates the paragraph above
+flagged as not-yet-built: a `business_offer_received`/`business_offer_withdrawn`/
+`business_reservation_cancelled` notification tap now carries the push's own real body text
+through as `notificationReason` (`notifications.js`, same `data.body ?? null` shape the gathering
+cases already use), rendered by `BusinessRequestDetailScreen.js` as the same dismissible banner
+at the very top of its content, styled identically to `GatheringDetailScreen`'s own version
+(`colors.primaryMuted` fill, `colors.primary` border). Deliberately no forced CTA in this banner
+(unlike the gathering `notificationSuggestsInvite` case) — the offer list rendered right below is
+already the obviously-correct next thing to look at, so a second competing button would just be
+noise; documented inline in the screen's own comment at the fix site. `CommunityDetail` (the
+paragraph's other named candidate — `business_partnership_response`/`community_area_demand_growing`
+taps, both of which currently navigate there with no reason at all) remains a real, un-started
+fast-follow, not assumed done by this change. Full Jest suite 295/295 passing (no new pure
+functions — same UI/routing-wiring shape as the original Item 55); both touched files transform-
+checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app or against a
+real push notification (no simulator/device tooling this session, standing note).
+
 **Item 54 ("the app should remember context on back navigation") — audited, already TRUE by
 construction, no code change needed (2026-09-12).** Both named examples ("Things To Do → Today →
 Fitness → open an event → back" and "People → Friends → filters → open a profile → back") traced
