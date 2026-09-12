@@ -40,18 +40,17 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
-**Item 60 ("the CEO test," first-time-user obviousness) — IN PROGRESS, resume here.** Working
-doc: `PRODUCT_AUDIT/CEO_TEST_2026-09-12.md`. User's ask: open the app as someone who's never seen
-it, and check whether 5 questions in order (What is Nearby? / What can I do here? / How do I find
-something? / How do I meet/connect with someone? / How do I actually make something happen?) are
-each answerable from what's on screen with no chained "click here, then this opens, then there's
-a link" explanation. A research fork was launched to trace this against real screen copy/
-navigation (Login/Onboarding for Q1, tab bar + Home for Q2, Discover for Q3, People/Matches for
-Q4, Create for Q5) — if reading this after a restart and no fork result has landed, treat it as
-gone (background fork state doesn't survive a restart, same caveat as Item 59's Journey E) and
-relaunch fresh rather than wait. Once findings land: fix concrete, small copy/CTA-obviousness gaps
-directly; for anything that implies a bigger navigation/architecture change, disclose and ask
-before building (feature-freeze convention) rather than assume scope.
+**Item 60 ("the CEO test," first-time-user obviousness) — fully DONE (2026-09-12).** All 5
+questions (What is Nearby? / What can I do here? / How do I find something? / How do I meet/
+connect with someone? / How do I actually make something happen?) PASS — each answer is obvious
+from real on-screen copy/navigation with no chained explanation needed, per a full code trace of
+the signed-out onboarding flow, Home, Discover's mode toggles, and the primary CTAs on Gathering/
+Profile/Business detail screens. Two small, real first-impression soft spots found and fixed (both
+copy-only, no navigation change): Home's rotating ask-box placeholders were 100% activity-shaped
+with no hint that meeting people is also part of the app (added "Meet new people…," a real,
+already-supported intent phrase); the Quick Stats "N people nearby" row read as a passive stat
+rather than an action (reworded to "N people nearby to meet"). Full detail:
+`PRODUCT_AUDIT/CEO_TEST_2026-09-12.md`.
 
 **Item 59 ("the Thursday acceptance test," 5 end-to-end journeys) — fully DONE (2026-09-12).** All
 5 journeys traced and verified against real current code; 6 real bugs found and fixed (friend-plan

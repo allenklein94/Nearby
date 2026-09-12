@@ -44,7 +44,12 @@ const PERIOD_SECTION_LABELS = { morning: 'Good Morning', afternoon: 'This Aftern
 // Phase 1a of the Intent Layer plan (CLAUDE.md) -- rotating placeholder
 // examples for the new "What do you want to do?" box. Picked once per
 // mount, not re-randomized on every keystroke.
-const INTENT_PLACEHOLDER_EXAMPLES = ['Dinner tonight…', 'Something fun Saturday…', 'Find a pickleball game…'];
+// Item 60 (CEO test, CLAUDE.md): every prior example here was activity-shaped,
+// so a first-time user skimming Home never saw a hint that meeting people is
+// also part of the app -- "Meet new people…" is a real, already-supported
+// intent phrase (detectFriendDiscoveryIntent in intentResolverScoring.js), not
+// a placeholder that would resolve to nothing if actually typed.
+const INTENT_PLACEHOLDER_EXAMPLES = ['Dinner tonight…', 'Something fun Saturday…', 'Find a pickleball game…', 'Meet new people…'];
 
 // One icon per real resolver candidate type (intentResolver.js) -- kept as
 // a lookup rather than a ternary chain now that there are 4 real types,
@@ -2059,15 +2064,20 @@ export default function HomeScreen({ navigation }) {
               general. Now lands on Discover's own real People > Dating|
               Friends toggle instead (same Dating content pre-selected, so
               this is the same real destination as before), with Friends
-              one tap away rather than absent. */}
+              one tap away rather than absent.
+              Item 60 (CEO test): reworded "N people nearby" -> "N people
+              nearby to meet" so this row itself signals the meet/connect
+              action instead of reading as a passive stat -- a text-only
+              change, keeps the same single-line row style as every other
+              Quick Stats row (no new caption line). */}
           <TouchableOpacity
             style={styles.cardRow}
             onPress={() => navigation.navigate('Discover', { initialMode: 'people', initialPeopleSubMode: 'dating' })}
-            accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby, tap to view`}
+            accessibilityLabel={`${dashboard?.nearbyPeopleCount ?? 0} people nearby to meet, tap to view`}
             accessibilityRole="button"
           >
             <Ionicons name="people-outline" size={20} color={colors.textPrimary} style={styles.cardIcon} />
-            <Text style={styles.cardText}>{dashboard?.nearbyPeopleCount ?? 0} people nearby</Text>
+            <Text style={styles.cardText}>{dashboard?.nearbyPeopleCount ?? 0} people nearby to meet</Text>
             <Text style={styles.cardChevron}>›</Text>
           </TouchableOpacity>
 
