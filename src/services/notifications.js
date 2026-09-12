@@ -256,11 +256,16 @@ export async function routeNotificationTap(data) {
     case 'business_partner_needs_info':
       navigationRef.navigate('MyBusinessApplication');
       break;
+    // Item 55 fast-follow #2 (CLAUDE.md): CommunityDetail, the other
+    // candidate the original Item 55 paragraph flagged and BusinessRequest
+    // Detail's own fast-follow already left open — same real-reason banner,
+    // no forced CTA (the community's own content right below is already the
+    // obvious next thing to look at, same reasoning as BusinessRequestDetail).
     case 'business_partnership_response':
       if (data.target_type === 'gathering' && data.target_id) {
-        navigationRef.navigate('GatheringDetail', { gatheringId: data.target_id });
+        navigationRef.navigate('GatheringDetail', { gatheringId: data.target_id, notificationReason: data.body ?? null });
       } else if (data.target_type === 'community' && data.target_id) {
-        navigationRef.navigate('CommunityDetail', { communityId: data.target_id });
+        navigationRef.navigate('CommunityDetail', { communityId: data.target_id, notificationReason: data.body ?? null });
       }
       break;
     case 'business_update':
@@ -294,7 +299,7 @@ export async function routeNotificationTap(data) {
     // detail screen, the one real place this signal is actionable from.
     case 'community_area_demand_growing':
       if (data.community_id) {
-        navigationRef.navigate('CommunityDetail', { communityId: data.community_id });
+        navigationRef.navigate('CommunityDetail', { communityId: data.community_id, notificationReason: data.body ?? null });
       }
       break;
     case 'business_offer_accepted':

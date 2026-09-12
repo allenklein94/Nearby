@@ -23,6 +23,14 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const { communityId, communityName } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  // Item 55 fast-follow #2 (CLAUDE.md, "deep links should preserve context
+  // too"): a business_partnership_response/community_area_demand_growing
+  // notification tap already carries the push's own real reason text --
+  // see notifications.js. No forced CTA here (same reasoning as its
+  // BusinessRequestDetail sibling fast-follow): whatever this community's
+  // own content already shows below is the obvious next thing to look at.
+  const notificationReason = route.params?.notificationReason ?? null;
+  const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
   const [community, setCommunity] = useState(null);
   const [isMember, setIsMember] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
@@ -358,6 +366,19 @@ export default function CommunityDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        {showReasonBanner && notificationReason && (
+          <View style={styles.notificationReasonBanner}>
+            <Text style={styles.notificationReasonText}>{notificationReason}</Text>
+            <TouchableOpacity
+              onPress={() => setShowReasonBanner(false)}
+              accessibilityLabel="Dismiss"
+              accessibilityRole="button"
+              style={styles.notificationReasonDismiss}
+            >
+              <Text style={styles.notificationReasonDismissText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={[styles.iconBadge, { backgroundColor: categoryStyle.color + '30' }]}>
           <Text style={styles.iconText}>{categoryStyle.icon}</Text>
         </View>
@@ -838,6 +859,13 @@ export default function CommunityDetailScreen({ route, navigation }) {
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  notificationReasonBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.primaryMuted,
+    borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, padding: spacing.md, marginBottom: spacing.lg,
+  },
+  notificationReasonText: { flex: 1, color: colors.textPrimary, fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  notificationReasonDismiss: { paddingLeft: spacing.sm },
+  notificationReasonDismissText: { color: colors.textTertiary, fontSize: 15, fontWeight: '600' },
   iconBadge: { width: 56, height: 56, borderRadius: radius.lg, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.md },
   iconText: { fontSize: 28 },
   title: { ...typography.title, color: colors.textPrimary },
