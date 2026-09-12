@@ -13,6 +13,7 @@ import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import {
   composeCelebrationTitle,
   composeCelebrationAskText,
+  composeCelebrationAskTextForBusiness,
   resolveCelebrationDestination,
   resolveCelebrationVisibility,
   celebrationCategoryHint,
@@ -427,7 +428,13 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     setSubmittingOptions(true);
     const trimmedName = whoForName.trim() || null;
     const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
-    const askText = composeCelebrationAskText({ occasion, whoFor, whoForName: trimmedName, activityType });
+    // Item 69 (CLAUDE.md): this submits straight to real businesses with
+    // no user-review step in between -- the business-safe variant never
+    // splices whoForName in ("A birthday dinner", never "A birthday
+    // dinner for Sarah"). `title` above (which does carry the name) stays
+    // scoped to the private calendar-save/occasion-link below, never sent
+    // to a business.
+    const askText = composeCelebrationAskTextForBusiness({ occasion, activityType });
     let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       const saveResult = await addOccasion(buildOccasionSaveParams({
@@ -564,7 +571,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     }
 
     if (destination === 'business') {
-      const params = { prefillText: askText, prefillOccasion: occasion };
+      // Item 69 (CLAUDE.md): default the business-facing prefill to the
+      // name-free variant -- still a fully editable field on
+      // AskBusinessScreen, but the safe default should never require the
+      // user to notice and manually strip a name before it reaches a
+      // business. `askText` (with the name) stays reserved for the
+      // 'custom' destination below, which hands off to a free-text box
+      // with no fixed destination yet, not a business directly.
+      const businessSafeAskText = composeCelebrationAskTextForBusiness({ occasion, activityType });
+      const params = { prefillText: businessSafeAskText, prefillOccasion: occasion };
       const categoryHint = celebrationCategoryHint(activityType);
       if (categoryHint) params.prefillCategory = categoryHint;
       if (partySize) params.prefillPartySize = partySize;

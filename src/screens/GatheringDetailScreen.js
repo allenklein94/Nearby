@@ -303,9 +303,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
   async function handleAskBusinessesNow() {
     setFiringBusinessRequest(true);
     try {
+      // Item 69 (CLAUDE.md): "Businesses shouldn't need to know the
+      // person's identity." gathering.title is the host's own freely-
+      // chosen text -- it could just as easily be "Sarah's Birthday" as
+      // "Yoga in the Park," and this fires with no user-review step in
+      // between. category (the gathering's real interest_tag, already
+      // sent separately below) already tells the business what kind of
+      // gathering this is; a generic phrase covers the rest without ever
+      // risking a real name.
       await submitBusinessRequestForGathering({
         gatheringId,
-        text: gathering.title,
+        text: gathering.interest_tag ? `A ${gathering.interest_tag} gathering looking for a place to go` : 'A gathering looking for a place to go',
         category: gathering.interest_tag ?? null,
       });
       posthog.capture('gathering_business_help_fired', { gatheringId });

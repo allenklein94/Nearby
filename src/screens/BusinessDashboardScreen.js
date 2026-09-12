@@ -2219,7 +2219,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       ? new Date(`${br.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
       : null;
     if (br?.gathering_id && br?.gatherings) {
-      return { kicker: '🎉 A Gathering', title: br.gatherings.title, when: br.gatherings.scheduled_at ? formatDate(br.gatherings.scheduled_at) : soloWhen };
+      // Item 69 (CLAUDE.md): a gathering's own host-chosen title could
+      // just as easily carry a real name as any occasion-composed one --
+      // get_business_opportunities() no longer returns it at all, only
+      // the gathering's real (non-identity) interest_tag.
+      const tagLabel = br.gatherings.interest_tag ? `${br.gatherings.interest_tag} Gathering` : 'A Gathering';
+      return { kicker: '🎉 A Gathering', title: tagLabel, when: br.gatherings.scheduled_at ? formatDate(br.gatherings.scheduled_at) : soloWhen };
     }
     if (br?.match_id) {
       return { kicker: '❤️ A Date', title: 'Two people planning to visit', when: soloWhen };
@@ -2991,6 +2996,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                               formatOfferSummary(o),
                             ].filter(Boolean).join(' · ')}
                           </Text>
+                          {/* Item 69 (CLAUDE.md): the ONE place a real name
+                              ever reaches a business -- once this is a
+                              genuine confirmed reservation, get_business_
+                              opportunities() reveals the primary
+                              requester's real display name (never for a
+                              dating-sourced request, which stays "Two
+                              people planning to visit" above). */}
+                          {o.business_requests?.requester_display_name && (
+                            <Text style={[styles.breakdownText, { fontWeight: '600' }]}>
+                              👤 {o.business_requests.requester_display_name}
+                            </Text>
+                          )}
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                           <TouchableOpacity
                             style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}

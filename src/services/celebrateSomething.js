@@ -81,7 +81,10 @@ const WHO_FOR_ASK_PHRASE = {
 // Free-text framing used to prefill AskBusinessScreen's own text field and
 // the "Custom" destination's assistant box -- a real, human-readable
 // sentence built entirely from the wizard's own already-collected answers,
-// never AI-generated at this step.
+// never AI-generated at this step. Both of those destinations show the
+// text back to the user for review/edit before anything is ever sent
+// anywhere, so a real picked name is fine here -- this is the user's own
+// editable draft, not yet business-visible.
 export function composeCelebrationAskText({ occasion, whoFor, whoForName, activityType }) {
   const parts = [];
   if (occasion && occasion !== 'other') parts.push(occasionLabel(occasion).toLowerCase());
@@ -90,6 +93,26 @@ export function composeCelebrationAskText({ occasion, whoFor, whoForName, activi
   const subject = parts.length > 0 ? `A ${parts.join(' ')}` : 'Something';
   const forClause = whoForName ? `for ${whoForName}` : WHO_FOR_ASK_PHRASE[whoFor] ?? 'for a friend';
   return `${subject} ${forClause}`;
+}
+
+// Item 69 (CLAUDE.md): "Businesses shouldn't need to know the person's
+// identity." A business should see "A birthday dinner for 8" -- never
+// "for Sarah." This is the ONLY ask-text builder used for the wizard's
+// direct-to-business paths (submitSelectedBusinessRequests' silent
+// multi-submit, which has no user-review step at all before the text
+// reaches a business) -- composeCelebrationAskText() above stays exactly
+// as-is for the two destinations where the text is shown back to the user
+// for their own editing first (AskBusinessScreen's prefill, the "Custom"
+// assistant box). party size/occasion/budget already reach the business
+// as their own real structured fields (submitBusinessRequest's own
+// partySize/occasion/budgetMin/budgetMax params) -- this text only needs
+// to name the occasion + activity, never who it's for.
+export function composeCelebrationAskTextForBusiness({ occasion, activityType }) {
+  const parts = [];
+  if (occasion && occasion !== 'other') parts.push(occasionLabel(occasion).toLowerCase());
+  const activityPhrase = ACTIVITY_ASK_PHRASE[activityType];
+  if (activityPhrase) parts.push(activityPhrase);
+  return parts.length > 0 ? `A ${parts.join(' ')}` : 'A celebration';
 }
 
 // Which real existing screen this activity type routes to. 'gathering' and

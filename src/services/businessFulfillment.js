@@ -521,12 +521,23 @@ export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRep
 // CLAUDE.md's own plan) -- a real, gathering-sourced signal for the
 // deterministic offer-recommendation ranking, only ever present for a
 // gathering-sourced request.
+// Item 69 (CLAUDE.md): "Businesses shouldn't need to know the person's
+// identity." Routed through a SECURITY DEFINER RPC (get_business_
+// opportunities, 20261029_business_request_privacy_boundary.sql) instead
+// of a direct embedded table read -- its column list is fixed in the
+// function body, so requester_id can never leave it no matter what a
+// client asks for, and a linked gathering's real title never comes back
+// at all (only its non-identity interest_tag) -- a real DB-authorization
+// guarantee, not a client-side choice not to request those fields. The
+// RPC's own jsonb shape mirrors the old embedded-select shape exactly (a
+// flat offer row plus nested business_requests/business_reservations
+// objects), so every existing renderer/scorer in BusinessDashboardScreen.js
+// needed no changes beyond reading the new, honestly-scoped
+// business_requests.requester_display_name field (null pre-acceptance,
+// and for any dating-sourced request; the primary requester's real name
+// once this specific offer is a genuine accepted/completed reservation).
 export async function getBusinessOpportunities(partnerId) {
-  const { data, error } = await supabase
-    .from('business_request_offers')
-    .select('*, business_requests(raw_text, category, party_size, budget_min, budget_max, date, time_window_start, time_window_end, status, expires_at, gathering_id, match_id, attributes, cuisine, occasion, gatherings(title, scheduled_at, price_level, party_type)), business_reservations(status, business_payments(status))')
-    .eq('partner_id', partnerId)
-    .order('created_at', { ascending: false });
+  const { data, error } = await supabase.rpc('get_business_opportunities', { partner_id_param: partnerId });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
