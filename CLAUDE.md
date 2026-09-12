@@ -40,6 +40,59 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Group planning for an Occasion" (Sarah's 30th Birthday example) — fully DONE (2026-09-12),
+direct user follow-up to the Occasion rename/simplify pass below, picked up after a codespace
+restart mid-build.** Found at session start: `supabase/migrations/20261020_occasion_group_plans.sql`
+already written, uncommitted, and already applied live in production (confirmed via the
+Management API) from the interrupted prior session — 4 new tables
+(`occasion_group_plans`/`_participants`/`_options`/`_votes`, all RLS-enabled with zero client
+policies, every access through a SECURITY DEFINER RPC, same posture as
+`recommendation_push_log`) plus 7 RPCs (create/respond/propose/vote/decide/cancel/list). No
+client code existed yet for it. User's own example: create the occasion, invite 8 friends,
+everyone proposes/votes on what to do (Italian dinner/Bowling/Concert), Nearby turns the winner
+into a real plan via the existing business pipeline — occasion → people → group decision →
+activity → business → reservation. User's own explicit guardrail, honored throughout: no complex
+RSVP systems, no elaborate invitations, no gift registries, no seating charts, no massive event
+pages, no complicated calendars — just Remember → Plan → Invite → Find something → Connect
+business → Do it.
+
+Shipped: `CelebrateSomethingScreen.js`'s 'activity' step gained a real, distinct "🗳️ Let the Group
+Vote" choice (not an 8th equivalent activity type — rendered separately below the main row) that
+branches the wizard to a new 'group_invite' step (pick real connected friends, same friends-list
+mechanism the 'who_for' step already used) instead of 'options'/'who_involved'. Choosing it calls
+the already-live `create_occasion_group_plan` RPC and hands off to a new
+`GroupOccasionPlanScreen.js` — invitees accept/decline, propose ideas (reusing the wizard's own 7
+`ACTIVITY_OPTIONS`, now exported from `celebrateSomething.js` as a single source of truth instead
+of a second copy), and vote, all live via a Postgres realtime channel subscription (same
+whole-screen-refetch-on-any-event shape `GroupPlanScreen.js` already established). The host
+picking a winner (`decide_occasion_group_plan`) hands straight back into
+`CelebrateSomethingScreen` already past occasion/who-for/activity/when
+(`resolveDecidedGroupPlanParams()`, new pure function, 3 new Jest tests) — the wizard's own
+`initialStepFor()` now recognizes a fully-decided entry and skips straight to that activity type's
+real last step (business 'options' pipeline, or gathering/custom 'who_involved'), so nothing the
+group already answered gets re-asked. `notifications.js` routes both new push types
+(`occasion_group_plan_invite`/`occasion_group_plan_decided`) to the new screen.
+`OccasionsScreen.js` gained a "Group Plans" section (via `getMyOccasionGroupPlans()`) as a real,
+durable, non-push entry point back into an open or decided plan — per this repo's own "no dead
+ends" convention.
+
+Verified live against production via disposable rolled-back transactions covering every RPC and
+every authorization boundary before treating the DB layer as done: invite eligibility (a real
+connected friend gets invited, an unconnected stranger is silently skipped), accept/join,
+propose + vote (vote count correct), a non-participant blocked from both voting and reading plan
+detail, a non-host blocked from deciding, the decide payload's exact shape (occasionType/title/
+whoForName/whoForFriendId/whenPreset/scheduledDate/activityType/label/partySize — matches
+`resolveDecidedGroupPlanParams()`'s own expected input field-for-field), proposing blocked once
+decided, the plan correctly listed for its host via `get_my_occasion_group_plans`, cancel +
+double-cancel correctly blocked, and a zero-invitee creation (`array[]::uuid[]`) not crashing —
+all rolled back afterward with zero rows left in any of the 4 tables (confirmed via a live count
+query). Full Jest suite 333/333 passing; all touched/new files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that the "Let the
+Group Vote" chip, the invite/propose/vote realtime flow, and the hand-back into
+CelebrateSomethingScreen's business-options step all render and behave correctly on a real
+screen, and that both new push types deep-link correctly from a real device.
+
 **"I'd call the whole feature 'Occasions' ... I wouldn't clutter Create with 10 separate
 buttons" — fully DONE (2026-09-12), same-day direct follow-up to the anniversary nudge below.**
 Two real changes, both per the user's own mock verbatim: (1) renamed the "Celebrate Something"
