@@ -9,6 +9,7 @@ import {
   dateWindowForWhenPreset,
   extractNameFromBirthdayTitle,
   resolveDecidedGroupPlanParams,
+  formatBudgetRange,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -213,7 +214,21 @@ describe('resolveDecidedGroupPlanParams', () => {
       initialPartySize: 8,
       initialGroupPlanId: null,
       initialSurpriseMode: false,
+      initialBudgetMin: null,
+      initialBudgetMax: null,
     });
+  });
+
+  it('carries budgetMin/budgetMax through as initialBudgetMin/initialBudgetMax, honestly null when absent (CLAUDE.md, Item 66)', () => {
+    const base = {
+      occasionType: 'birthday', whoForName: 'Sarah', whoForFriendId: 'friend-1',
+      whenPreset: 'tonight', scheduledDate: '2026-10-05', activityType: 'dinner', label: null, partySize: 8,
+    };
+    expect(resolveDecidedGroupPlanParams(base).initialBudgetMin).toBeNull();
+    expect(resolveDecidedGroupPlanParams(base).initialBudgetMax).toBeNull();
+    const withBudget = resolveDecidedGroupPlanParams({ ...base, budgetMin: 50, budgetMax: 100 });
+    expect(withBudget.initialBudgetMin).toBe(50);
+    expect(withBudget.initialBudgetMax).toBe(100);
   });
 
   it('carries surpriseMode through as initialSurpriseMode, honestly false when absent (CLAUDE.md, Item 65)', () => {
@@ -267,5 +282,23 @@ describe('resolveDecidedGroupPlanParams', () => {
     });
     expect(params.initialWhoFor).toBe('me');
     expect(params.initialScheduledAtISO).toBeNull();
+  });
+});
+
+describe('formatBudgetRange', () => {
+  it('honestly returns null when neither bound is set, rather than showing a fabricated "Any"', () => {
+    expect(formatBudgetRange(null, null)).toBeNull();
+  });
+
+  it('formats both bounds together', () => {
+    expect(formatBudgetRange(50, 100)).toBe('$50–100/person');
+  });
+
+  it('formats a floor-only budget honestly, never guessing a ceiling', () => {
+    expect(formatBudgetRange(100, null)).toBe('$100+/person');
+  });
+
+  it('formats a ceiling-only budget honestly, never guessing a floor', () => {
+    expect(formatBudgetRange(null, 25)).toBe('Up to $25/person');
   });
 });

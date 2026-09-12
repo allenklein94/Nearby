@@ -40,6 +40,62 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 66 ("Add collaborative planning") — fully DONE (2026-09-12), same-day direct user
+follow-up to Item 65.** User's own mock for "Sarah's 30th Birthday": Organizers (Allen, John,
+Emily) shown distinctly from Guests (8 invited), Ideas with vote counts (already shipped by the
+original occasion_group_plans work), a Budget ($50-$100/person), and "Nearby is finding
+options...". Closed the two real, concrete gaps that work didn't cover -- co-organizers and a real
+budget range -- via `20261026_occasion_group_plan_collaborative.sql`.
+
+**Co-organizers**: a new `occasion_group_plan_participants.is_organizer` flag (default false). The
+host can promote any *joined* participant to organizer (`set_occasion_group_plan_organizer`,
+host-only; a merely-invited person can't be promoted, enforced server-side) and demote back to a
+plain guest. An organizer gains exactly one real new power -- inviting more real friends/matches
+mid-voting (`invite_more_to_occasion_group_plan`) -- deliberately NOT decide/cancel authority,
+keeping a single final decider and avoiding the "complex RSVP / giant event-management platform"
+the backlog's own guardrail warns against. `invite_more_to_occasion_group_plan` checks eligibility
+against the *inviter's own* friend/match network (not the host's) -- each organizer can only
+surface their own real connections, never borrow the host's, per this repo's own "no stranger
+discovery" rule; verified live that an organizer's own friend, a stranger to the host, gets
+invited correctly.
+
+**Budget**: `occasion_group_plans.budget_min`/`budget_max` (nullable integers, USD/person) -- a
+real, explicit, chip-picked organizer input at plan-creation time (`BUDGET_RANGE_OPTIONS` in
+`celebrateSomething.js`: Any/$0-25/$25-50/$50-100/$100+), never AI-inferred. A CHECK constraint
+plus a function-level guard both reject min > max. Threaded all the way through: `decide_
+occasion_group_plan` now returns it, `resolveDecidedGroupPlanParams()` carries it forward as
+`initialBudgetMin`/`initialBudgetMax`, and the wizard's post-decide business-request submission
+(`submitSelectedBusinessRequests`) and the "skip -- post manually" path (`AskBusinessScreen`'s own
+single `budgetMax` ceiling field) both pass it through to `create_business_request`'s already-
+existing `budget_min_param`/`budget_max_param` -- no DB change needed there, pure client wiring.
+Also added a small, honest "✨ Nearby is finding options…" line next to the wizard's existing
+options-step spinner, matching the mock's own framing -- deliberately NOT built as a live
+per-idea preview during voting, since no single activity type is actually known until the group
+decides (that's literally what the vote determines); doing so live would mean fabricating a
+"searching" state with nothing real to search for yet.
+
+`GroupOccasionPlanScreen.js` now shows a real "Organizers" section (host + promoted participants,
+named, 👑/🎗️ marked) separate from a "Guests" section (a real, honest status-count summary --
+"N invited · N joined · N can't make it" -- plus the existing per-person chip list), a budget line
+under the header (`formatBudgetRange()`, honestly omitted when unset), host-only tap-to-promote/
+demote on guest/organizer chips (with a confirm `Alert`, never silent), and an organizer/host-only
+"+ Invite More Guests" expand-in-place panel (no new navigation, per this app's own Progressive
+Depth doctrine) reusing `getMyFriends()` and filtering out anyone already in the plan and (when
+`surpriseMode` is on) the celebrated person.
+
+Verified live against production (`enmosvippabmuqslzrox`) via disposable rolled-back transactions
+with real `SET ROLE authenticated` + `request.jwt.claims` impersonation: promoting a not-yet-
+joined participant correctly rejected; a plain guest (never organizer) correctly blocked from
+inviting more people; an organizer successfully invites their own real friend (a stranger to the
+host); both the function-level and table-level budget-order guards correctly reject min > max;
+`decide_occasion_group_plan` correctly returns the real budget. All rolled back with zero leaked
+rows afterward. Full Jest suite 359/359 passing (5 new tests: `formatBudgetRange`, budget/
+organizer fields on `resolveDecidedGroupPlanParams`); all six touched/new files transform-checked
+clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device
+tooling this session, standing note) — next session should confirm on a real account that the
+Organizers/Guests split, the promote/demote confirm flow, the Invite More panel, and the budget
+chip picker all render and behave correctly on a real screen.
+
 **Item 65 ("Let the organizer keep the occasion private" / Surprise mode 🔒) — fully DONE
 (2026-09-12), resumed after a codespace restart mid-build.** User's own spec: a "Surprise mode"
 toggle so the person being celebrated never learns "Allen is planning your birthday," while

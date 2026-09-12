@@ -10,8 +10,11 @@ import {
   castOccasionVote,
   decideOccasionGroupPlan,
   cancelOccasionGroupPlan,
+  setOccasionGroupPlanOrganizer,
+  inviteMoreToOccasionGroupPlan,
 } from '../services/occasionGroupPlans';
-import { ACTIVITY_OPTIONS, resolveDecidedGroupPlanParams } from '../services/celebrateSomething';
+import { getMyFriends } from '../services/friends';
+import { ACTIVITY_OPTIONS, resolveDecidedGroupPlanParams, formatBudgetRange } from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
 import LoadErrorState from '../components/LoadErrorState';
@@ -64,6 +67,17 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [acting, setActing] = useState(false);
   const [proposeType, setProposeType] = useState(null);
   const [proposeLabel, setProposeLabel] = useState('');
+
+  // Item 66 (CLAUDE.md, "Add collaborative planning"): host/organizer-only
+  // "invite more guests" expand-in-place, same "no navigation, contextual
+  // disclosure" doctrine this app already applies everywhere (Progressive
+  // Depth). Friends are only fetched once this section is actually opened.
+  const [inviteMoreOpen, setInviteMoreOpen] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [friendsLoaded, setFriendsLoaded] = useState(false);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+  const [selectedNewInviteeIds, setSelectedNewInviteeIds] = useState(() => new Set());
+  const [invitingMore, setInvitingMore] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -174,7 +188,56 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
       label: winningOption?.label,
       partySize: Math.max(joinedCount, 1),
       surpriseMode: detail.surpriseMode,
+      budgetMin: detail.budgetMin,
+      budgetMax: detail.budgetMax,
     }, planId));
+  }
+
+  // Item 66 (CLAUDE.md, "Add collaborative planning"): host-only. Promoting
+  // requires the target to have actually joined -- enforced server-side --
+  // since a co-organizer role only makes sense for someone who's genuinely
+  // in the plan, not someone who merely got invited.
+  function handleToggleOrganizer(participant) {
+    Haptics.selectionAsync();
+    runAction(() => setOccasionGroupPlanOrganizer(planId, participant.userId, !participant.isOrganizer));
+  }
+
+  async function openInviteMore() {
+    setInviteMoreOpen((v) => !v);
+    if (!friendsLoaded && !loadingFriends) {
+      setLoadingFriends(true);
+      try {
+        const result = await getMyFriends();
+        setFriends(result);
+      } catch (e) {
+        setFriends([]);
+      }
+      setFriendsLoaded(true);
+      setLoadingFriends(false);
+    }
+  }
+
+  function toggleNewInvitee(friendId) {
+    Haptics.selectionAsync();
+    setSelectedNewInviteeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(friendId)) next.delete(friendId); else next.add(friendId);
+      return next;
+    });
+  }
+
+  async function handleInviteMore() {
+    if (selectedNewInviteeIds.size === 0) return;
+    setInvitingMore(true);
+    try {
+      await inviteMoreToOccasionGroupPlan(planId, Array.from(selectedNewInviteeIds));
+      setSelectedNewInviteeIds(new Set());
+      setInviteMoreOpen(false);
+      await load();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setInvitingMore(false);
   }
 
   if (loading && !detail) {
@@ -200,15 +263,32 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const winningOption = (detail.status === 'decided' || detail.status === 'fulfilled')
     ? detail.options.find((o) => o.id === detail.winningOptionId)
     : null;
+  const budgetLabel = formatBudgetRange(detail.budgetMin, detail.budgetMax);
+
+  // Item 66: Organizers (host + anyone the host has promoted) get their own
+  // named section, matching the user's own mock -- everyone else is just
+  // "Guests," a real honest count broken down by status.
+  const organizers = detail.participants.filter((p) => p.isOrganizer);
+  const guests = detail.participants.filter((p) => !p.isOrganizer);
+  const guestCounts = guests.reduce((acc, p) => {
+    acc[p.status] = (acc[p.status] ?? 0) + 1;
+    return acc;
+  }, {});
+  const canInviteMore = detail.myIsOrganizer && detail.status === 'voting';
+  const alreadyInPlanIds = new Set(detail.participants.map((p) => p.userId));
+  const inviteMoreCandidates = friends.filter((f) => (
+    !alreadyInPlanIds.has(f.id) && !(detail.surpriseMode && f.id === detail.whoForFriendId)
+  ));
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
         <Text style={styles.header} accessibilityRole="header">{occasionMeta?.icon ?? '🎉'} {detail.surpriseMode ? '🔒 ' : ''}{detail.title}</Text>
-        <Text style={styles.subheader}>
+        <Text style={[styles.subheader, budgetLabel && { marginBottom: 0 }]}>
           {occasionLabel(detail.occasionType)} · {formatWhen(detail.whenPreset, detail.scheduledDate)}
           {detail.isHost ? ' · You\'re hosting' : ''}
         </Text>
+        {budgetLabel && <Text style={[styles.subheader, { marginTop: 2 }]}>💰 {budgetLabel}</Text>}
 
         {/* Item 65 (CLAUDE.md): the one collaborator-facing surface this
             change added a real indicator to -- surpriseMode is already
@@ -258,16 +338,121 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
         {detail.status === 'voting' && (
           <>
-            <Text style={styles.sectionLabel}>Who's In</Text>
+            {/* Item 66 (CLAUDE.md, "Add collaborative planning"): Organizers
+                (host + anyone promoted) get a named section of their own,
+                matching the user's own mock -- everyone else is a Guest,
+                a real honest count broken down by status rather than a
+                second wall of names. */}
+            <Text style={styles.sectionLabel}>Organizers</Text>
             <View style={styles.participantsWrap}>
-              {detail.participants.map((p) => (
-                <View key={p.userId} style={styles.participantChip}>
-                  <Text style={styles.participantText}>
-                    {p.displayName}{p.userId === myId ? ' (You)' : ''} · {PARTICIPANT_STATUS_COPY[p.status] ?? p.status}
-                  </Text>
-                </View>
-              ))}
+              {organizers.map((p) => {
+                const isSelf = p.userId === myId;
+                const canDemote = detail.isHost && !isSelf;
+                return (
+                  <TouchableOpacity
+                    key={p.userId}
+                    style={styles.participantChip}
+                    disabled={!canDemote}
+                    activeOpacity={canDemote ? 0.7 : 1}
+                    onPress={() => canDemote && Alert.alert(
+                      `Remove ${p.displayName} as organizer?`,
+                      "They'll stay a regular guest -- still able to propose and vote.",
+                      [{ text: 'Never mind', style: 'cancel' }, { text: 'Remove', style: 'destructive', onPress: () => handleToggleOrganizer(p) }]
+                    )}
+                    accessibilityRole={canDemote ? 'button' : undefined}
+                    accessibilityLabel={canDemote ? `Remove ${p.displayName} as organizer` : undefined}
+                  >
+                    <Text style={styles.participantText}>
+                      {p.userId === detail.hostId ? '👑 ' : '🎗️ '}{p.displayName}{isSelf ? ' (You)' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+
+            <Text style={styles.sectionLabel}>
+              Guests · {[
+                guestCounts.invited ? `${guestCounts.invited} invited` : null,
+                guestCounts.joined ? `${guestCounts.joined} joined` : null,
+                guestCounts.declined ? `${guestCounts.declined} can't make it` : null,
+              ].filter(Boolean).join(' · ') || 'none yet'}
+            </Text>
+            <View style={styles.participantsWrap}>
+              {guests.map((p) => {
+                const isSelf = p.userId === myId;
+                const canPromote = detail.isHost && !isSelf && p.status === 'joined';
+                return (
+                  <TouchableOpacity
+                    key={p.userId}
+                    style={styles.participantChip}
+                    disabled={!canPromote}
+                    activeOpacity={canPromote ? 0.7 : 1}
+                    onPress={() => canPromote && Alert.alert(
+                      `Make ${p.displayName} an organizer?`,
+                      'They\'ll be able to invite more guests to help plan.',
+                      [{ text: 'Never mind', style: 'cancel' }, { text: 'Make Organizer', onPress: () => handleToggleOrganizer(p) }]
+                    )}
+                    accessibilityRole={canPromote ? 'button' : undefined}
+                    accessibilityLabel={canPromote ? `Make ${p.displayName} an organizer` : undefined}
+                  >
+                    <Text style={styles.participantText}>
+                      {p.displayName}{isSelf ? ' (You)' : ''} · {PARTICIPANT_STATUS_COPY[p.status] ?? p.status}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {guests.length === 0 && <Text style={styles.helperText}>No other guests yet.</Text>}
+            </View>
+
+            {canInviteMore && (
+              <View style={{ marginBottom: spacing.md }}>
+                <TouchableOpacity onPress={openInviteMore} accessibilityRole="button" accessibilityLabel="Invite more guests">
+                  <Text style={styles.inviteMoreLink}>{inviteMoreOpen ? '− Invite More Guests' : '+ Invite More Guests'}</Text>
+                </TouchableOpacity>
+                {inviteMoreOpen && (
+                  <View style={styles.inviteMorePanel}>
+                    {loadingFriends && <ActivityIndicator color={colors.primary} />}
+                    {!loadingFriends && friendsLoaded && inviteMoreCandidates.length === 0 && (
+                      <Text style={styles.helperText}>Everyone you're connected with is already part of this plan.</Text>
+                    )}
+                    {!loadingFriends && inviteMoreCandidates.length > 0 && (
+                      <>
+                        <View style={styles.chipRow}>
+                          {inviteMoreCandidates.map((f) => {
+                            const selected = selectedNewInviteeIds.has(f.id);
+                            return (
+                              <TouchableOpacity
+                                key={f.id}
+                                style={[styles.chip, selected && styles.chipSelected]}
+                                onPress={() => toggleNewInvitee(f.id)}
+                                activeOpacity={0.8}
+                                accessibilityRole="checkbox"
+                                accessibilityState={{ checked: selected }}
+                                accessibilityLabel={f.display_name}
+                              >
+                                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                                  {selected ? '✓ ' : ''}{f.display_name}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.addOptionButton, selectedNewInviteeIds.size === 0 && { opacity: 0.5 }]}
+                          onPress={handleInviteMore}
+                          disabled={selectedNewInviteeIds.size === 0 || invitingMore}
+                          activeOpacity={0.85}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Invite ${selectedNewInviteeIds.size} more`}
+                        >
+                          <Text style={styles.addOptionButtonText}>{invitingMore ? 'Inviting…' : `Invite (${selectedNewInviteeIds.size})`}</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
 
             <Text style={styles.sectionLabel}>What Should We Do?</Text>
             {detail.options.length === 0 && (
@@ -383,6 +568,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   participantsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginBottom: spacing.sm },
   participantChip: { backgroundColor: colors.surface, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.sm, paddingVertical: 6 },
   participantText: { color: colors.textSecondary, fontSize: 12 },
+  inviteMoreLink: { color: colors.primary, fontWeight: '700', fontSize: 13, marginBottom: spacing.xs },
+  inviteMorePanel: {
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
+    padding: spacing.md, marginTop: spacing.xs,
+  },
   helperText: { color: colors.textTertiary, fontSize: 13, marginBottom: spacing.md },
   optionCard: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,

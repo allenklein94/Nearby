@@ -19,6 +19,11 @@ export async function createOccasionGroupPlan({
   scheduledDate = null,
   inviteeIds = [],
   surpriseMode = false,
+  // Item 66 (CLAUDE.md, "Add collaborative planning"): a real, explicit,
+  // per-person budget range -- never AI-inferred, honestly null when the
+  // organizer leaves it unset.
+  budgetMin = null,
+  budgetMax = null,
 }) {
   const { data, error } = await supabase.rpc('create_occasion_group_plan', {
     occasion_type_param: occasionType,
@@ -29,6 +34,33 @@ export async function createOccasionGroupPlan({
     scheduled_date_param: scheduledDate,
     invitee_ids_param: inviteeIds,
     surprise_mode_param: surpriseMode,
+    budget_min_param: budgetMin,
+    budget_max_param: budgetMax,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Item 66: the host can promote any joined participant to co-organizer --
+// gains exactly one real new power (inviteMoreToOccasionGroupPlan below),
+// never decide/cancel authority. Passing false demotes back to a plain
+// guest.
+export async function setOccasionGroupPlanOrganizer(planId, userId, isOrganizer) {
+  const { error } = await supabase.rpc('set_occasion_group_plan_organizer', {
+    plan_id_param: planId,
+    user_id_param: userId,
+    is_organizer_param: isOrganizer,
+  });
+  if (error) throw new Error(error.message);
+}
+
+// Item 66: host or a joined organizer can invite more real friends/matches
+// to vote, mid-voting -- same eligibility/surprise-mode-skip rules
+// createOccasionGroupPlan's own initial invite already applies.
+export async function inviteMoreToOccasionGroupPlan(planId, inviteeIds) {
+  const { data, error } = await supabase.rpc('invite_more_to_occasion_group_plan', {
+    plan_id_param: planId,
+    invitee_ids_param: inviteeIds,
   });
   if (error) throw new Error(error.message);
   return data;

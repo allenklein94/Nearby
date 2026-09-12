@@ -21,6 +21,30 @@ export const ACTIVITY_OPTIONS = [
   { key: 'custom', label: 'Something Custom', icon: '💡' },
 ];
 
+// Item 66 (CLAUDE.md, "Add collaborative planning"): a real, explicit,
+// chip-picked per-person budget range for a group plan -- never AI-
+// inferred. `min`/`max` are the real values sent to createOccasionGroupPlan
+// and, once decided, to create_business_request's own budget_min_param/
+// budget_max_param -- 'any' maps to null/null, an honestly-unset budget.
+export const BUDGET_RANGE_OPTIONS = [
+  { key: 'any', label: 'Any budget', min: null, max: null },
+  { key: '0-25', label: '$0–25', min: 0, max: 25 },
+  { key: '25-50', label: '$25–50', min: 25, max: 50 },
+  { key: '50-100', label: '$50–100', min: 50, max: 100 },
+  { key: '100+', label: '$100+', min: 100, max: null },
+];
+
+// A real, honest display string for whatever min/max combination actually
+// got saved -- never fabricates the other half when only one bound is set
+// (e.g. a plan whose budget predates this feature, or a caller who only
+// ever passes one bound directly rather than through the chip list above).
+export function formatBudgetRange(min, max) {
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `$${min}–${max}/person`;
+  if (min != null) return `$${min}+/person`;
+  return `Up to $${max}/person`;
+}
+
 const ACTIVITY_ASK_PHRASE = {
   dinner: 'dinner',
   night_out: 'night out',
@@ -219,5 +243,10 @@ export function resolveDecidedGroupPlanParams(decided, groupPlanId = null) {
     // surprise context and re-show a "share with friend" checkbox as if
     // nothing was ever hidden.
     initialSurpriseMode: decided.surpriseMode ?? false,
+    // Item 66 (CLAUDE.md): carries the group's own real budget forward into
+    // the wizard's post-decide "find options nearby" step and, from there,
+    // into whichever business request the group actually submits.
+    initialBudgetMin: decided.budgetMin ?? null,
+    initialBudgetMax: decided.budgetMax ?? null,
   };
 }

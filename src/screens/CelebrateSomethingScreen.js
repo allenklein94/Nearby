@@ -20,6 +20,8 @@ import {
   buildOccasionSaveParams,
   dateWindowForWhenPreset,
   ACTIVITY_OPTIONS,
+  BUDGET_RANGE_OPTIONS,
+  formatBudgetRange,
 } from '../services/celebrateSomething';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
@@ -211,6 +213,19 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // this local state, this just keeps the UI honest about it.
   const [surpriseMode, setSurpriseMode] = useState(route.params?.initialSurpriseMode ?? false);
 
+  // Item 66 (CLAUDE.md, "Add collaborative planning"): a real, explicit
+  // per-person budget range for the group vote -- 'any' (the default)
+  // means honestly unset, never a fabricated guess. Seeded from a decided
+  // group plan the same way surpriseMode is above, so the budget the group
+  // already agreed on carries into the resulting business request.
+  const [budgetRangeKey, setBudgetRangeKey] = useState(() => {
+    const min = route.params?.initialBudgetMin ?? null;
+    const max = route.params?.initialBudgetMax ?? null;
+    const match = BUDGET_RANGE_OPTIONS.find((o) => o.min === min && o.max === max);
+    return match?.key ?? 'any';
+  });
+  const budgetRange = BUDGET_RANGE_OPTIONS.find((o) => o.key === budgetRangeKey) ?? BUDGET_RANGE_OPTIONS[0];
+
   // "Connect it to businesses": resolveIntent()'s own real, already-scored
   // candidate pool (business_availability + gathering), fetched using the
   // wizard's own structured answers -- no free text, no AI classification
@@ -310,6 +325,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         scheduledDate: scheduledAt.toISOString().slice(0, 10),
         inviteeIds: Array.from(selectedInviteeIds),
         surpriseMode,
+        budgetMin: budgetRange.min,
+        budgetMax: budgetRange.max,
       });
       navigation.replace('GroupOccasionPlan', { planId: result.planId });
     } catch (e) {
@@ -430,6 +447,8 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         text: askText,
         category: c.category ?? null,
         partySize,
+        budgetMin: budgetRange.min,
+        budgetMax: budgetRange.max,
         date: dateParam,
         occasion,
         preferredAvailabilityId: c.id,
@@ -550,6 +569,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       const categoryHint = celebrationCategoryHint(activityType);
       if (categoryHint) params.prefillCategory = categoryHint;
       if (partySize) params.prefillPartySize = partySize;
+      // Item 66: AskBusinessScreen only ever has a single ceiling field --
+      // budgetRange.max is the honest value for it; budgetRange.min (a
+      // real floor when the group set one) has no field to land in there.
+      if (budgetRange.max) params.prefillBudgetMax = budgetRange.max;
       if (whenPreset === 'now' || whenPreset === 'tonight') {
         params.prefillDateWindow = 'today';
       } else if (whenPreset === 'tomorrow') {
@@ -906,7 +929,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {stepKey === 'options' && (
               <>
                 <Text style={styles.label}>Nearby found these options</Text>
-                {optionsLoading && <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />}
+                {optionsLoading && (
+                  <>
+                    <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.lg }} />
+                    <Text style={[styles.helperText, { textAlign: 'center', marginTop: spacing.sm }]}>✨ Nearby is finding options…</Text>
+                  </>
+                )}
                 {!optionsLoading && optionsResult && (
                   <>
                     {optionsResult.experience ? (
@@ -1045,6 +1073,27 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     </View>
                   </>
                 )}
+
+                <Text style={[styles.label, { marginTop: spacing.lg }]}>Budget (optional)</Text>
+                <Text style={styles.helperText}>A rough per-person range helps Nearby find realistic options once the group decides.</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                  {BUDGET_RANGE_OPTIONS.map((o) => {
+                    const selected = budgetRangeKey === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => { Haptics.selectionAsync(); setBudgetRangeKey(o.key); }}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel={o.label}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </>
             )}
 
