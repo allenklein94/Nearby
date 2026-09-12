@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Modal, Alert, ActivityIndicator, Share } from 'react-native';
 import { getMyFriends } from '../services/friends';
+import { gatheringInviteShareUrl } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import { sendInvite } from '../services/invites';
@@ -77,9 +78,17 @@ export default function InviteFriendsModal({
 
   async function handleShareWithNonUser() {
     try {
+      // Item 72 (CLAUDE.md): "Make invitations frictionless -- don't
+      // require everyone to download Nearby just to participate." This
+      // function is literally named for exactly that case, but used to
+      // share a bare nearby:// deep link -- useless for anyone without
+      // the app already installed. Now shares a plain https link that
+      // works for anyone: view the plan with zero install, then "Open in
+      // Nearby" or "Get Nearby" for the full experience.
+      const shareUrl = gatheringInviteShareUrl(resolvedTargetId);
       await Share.share({
-        message: `Join me: ${resolvedTargetTitle ?? 'my gathering'} — nearby://gathering/${resolvedTargetId}`,
-        url: `nearby://gathering/${resolvedTargetId}`,
+        message: `Join me: ${resolvedTargetTitle ?? 'my gathering'} — ${shareUrl}`,
+        url: shareUrl,
       });
     } catch (e) {
       // Share sheet dismissal/cancel throws on some platforms -- not a real error.

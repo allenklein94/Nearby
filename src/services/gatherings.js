@@ -19,6 +19,24 @@ function wideArea(latitude, longitude) {
   return `${bucketLat},${bucketLng}`;
 }
 
+// Item 72 (CLAUDE.md): "Make invitations frictionless -- don't require
+// everyone to download Nearby just to participate." Every existing share
+// call site (GatheringConfirmationScreen, GatheringHubScreen,
+// InviteFriendsModal's own handleShareWithNonUser) used to share a bare
+// `nearby://gathering/:id` deep link -- a custom URL scheme with no web
+// fallback, so it silently does nothing for anyone without the app
+// already installed. This is the one real URL all of them should share
+// instead: a plain https link (docs/invite.html, backed by the public
+// get_public_gathering_invite_preview RPC) that works for literally
+// anyone -- view the plan with zero install, then "Open in Nearby" (if
+// already installed) or "Get Nearby" for the full experience. Mirrors
+// liveTracking.js's own identical `${GITHUB_PAGES_BASE}/track.html?...`
+// pattern for the same reason ("the viewing link works for anyone").
+const GITHUB_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+export function gatheringInviteShareUrl(gatheringId) {
+  return `${GITHUB_PAGES_BASE}/invite.html?g=${gatheringId}`;
+}
+
 const WIDE_TIER_MAX_MILES = 15;
 
 // price_level/party_type: two real, optional, host-declared fields backing

@@ -12,6 +12,7 @@ import {
   hasSubmittedFeedback,
   getHostStats,
   isFirstGatheringJoin,
+  gatheringInviteShareUrl,
 } from '../services/gatherings';
 import { getSocialForecast } from '../services/homeDashboard';
 import { getSignedPhotoUrl } from '../services/photos';
@@ -142,9 +143,12 @@ export default function GatheringHubScreen({ route, navigation }) {
 
   async function handleGrowthShareLink() {
     try {
+      // Item 72 (CLAUDE.md): a plain https link, not a bare nearby://
+      // deep link -- this one works for anyone, app installed or not.
+      const shareUrl = gatheringInviteShareUrl(gatheringId);
       await Share.share({
-        message: `Join me: ${gathering?.title ?? 'this gathering'} — nearby://gathering/${gatheringId}`,
-        url: `nearby://gathering/${gatheringId}`,
+        message: `Join me: ${gathering?.title ?? 'this gathering'} — ${shareUrl}`,
+        url: shareUrl,
       });
     } catch (e) {
       // Share sheet cancellation isn't an error worth surfacing.

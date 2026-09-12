@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
-import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted } from '../services/gatherings';
+import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted, gatheringInviteShareUrl } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
 import { getMyCircles } from '../services/friendCircles';
@@ -78,9 +78,12 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
 
   async function handleShare() {
     try {
+      // Item 72 (CLAUDE.md): a plain https link, not a bare nearby://
+      // deep link -- this one works for anyone, app installed or not.
+      const shareUrl = gatheringInviteShareUrl(gatheringId);
       await Share.share({
-        message: `Join me: ${gathering?.title ?? 'my gathering'}${placeName ? ` at ${placeName}` : ''} — nearby://gathering/${gatheringId}`,
-        url: `nearby://gathering/${gatheringId}`,
+        message: `Join me: ${gathering?.title ?? 'my gathering'}${placeName ? ` at ${placeName}` : ''} — ${shareUrl}`,
+        url: shareUrl,
       });
     } catch (e) {
       // Share sheet cancellation isn't an error worth surfacing.
