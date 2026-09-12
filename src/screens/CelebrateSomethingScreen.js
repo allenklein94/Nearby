@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { getMyFriends } from '../services/friends';
+import { getMyFriends, getMutualFriends } from '../services/friends';
 import { getMyCommunities } from '../services/communities';
 import { addOccasion, linkOccasionToPlan } from '../services/occasions';
 import { resolveIntent } from '../services/intentResolver';
@@ -159,6 +159,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [friends, setFriends] = useState([]);
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
+  // Item 63 (CLAUDE.md): "the app already knows... relevant friends" for
+  // the group-vote invite step -- real mutual friends between the caller
+  // and whoForFriendId (get_mutual_friends, already live infrastructure),
+  // surfaced first/marked in the chip list below as a suggestion, never
+  // auto-selected -- the user still makes the actual invite decision.
+  const [mutualFriendIds, setMutualFriendIds] = useState(() => new Set());
 
   const [activityType, setActivityType] = useState(route.params?.initialActivityType ?? null);
   const [partySize, setPartySize] = useState(route.params?.initialPartySize ?? null);
@@ -183,6 +189,13 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [communityId, setCommunityId] = useState(null);
 
   const [saveToCalendar, setSaveToCalendar] = useState(false);
+  // Item 62 (CLAUDE.md): naming a real connected friend as who this is for
+  // is an organizational/grouping choice, not automatically a consent to
+  // share the record with them -- occasions.connected_user_id (which
+  // actually grants them read access via get_upcoming_occasions) is only
+  // ever set when this is explicitly checked. Defaults OFF -- "the user
+  // chooses what Nearby is allowed to remember," never an implicit share.
+  const [shareOccasionWithFriend, setShareOccasionWithFriend] = useState(false);
 
   // "Connect it to businesses": resolveIntent()'s own real, already-scored
   // candidate pool (business_availability + gathering), fetched using the
@@ -198,8 +211,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   async function ensureFriendsLoaded() {
     if (friendsLoaded || loadingFriends) return;
     setLoadingFriends(true);
-    const data = await getMyFriends();
+    const [data, mutuals] = await Promise.all([
+      getMyFriends(),
+      whoForFriendId ? getMutualFriends(whoForFriendId) : Promise.resolve([]),
+    ]);
     setFriends(data);
+    setMutualFriendIds(new Set(mutuals.map((m) => m.id)));
     setLoadingFriends(false);
     setFriendsLoaded(true);
   }
@@ -256,7 +273,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     const trimmedName = whoForName.trim() || null;
     const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
-      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: whoForFriendId })).catch(() => {});
+      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null })).catch(() => {});
     }
     try {
       const result = await createOccasionGroupPlan({
@@ -377,7 +394,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       const saveResult = await addOccasion(buildOccasionSaveParams({
-        occasion, title, scheduledAt, connectedUserId: whoForFriendId, whoForName: trimmedName, whoForFriendId,
+        occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForName: trimmedName, whoForFriendId,
       })).catch(() => null);
       savedOccasionId = saveResult?.data?.id ?? null;
     }
@@ -481,7 +498,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     let savedOccasionId = null;
     if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
       const saveResult = await addOccasion(buildOccasionSaveParams({
-        occasion, title, scheduledAt, connectedUserId: whoForFriendId, whoForName: trimmedName, whoForFriendId,
+        occasion, title, scheduledAt, connectedUserId: shareOccasionWithFriend ? whoForFriendId : null, whoForName: trimmedName, whoForFriendId,
       })).catch(() => null);
       savedOccasionId = saveResult?.data?.id ?? null;
     }
@@ -810,6 +827,24 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                     <Text style={styles.calendarToggleText}>🗓️ Also save this to your Occasions calendar</Text>
                   </TouchableOpacity>
                 )}
+
+                {saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId) && whoForFriendId && (
+                  <TouchableOpacity
+                    style={styles.calendarToggleRow}
+                    onPress={() => { Haptics.selectionAsync(); setShareOccasionWithFriend((v) => !v); }}
+                    activeOpacity={0.8}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: shareOccasionWithFriend }}
+                    accessibilityLabel={`Also share this with ${whoForName || 'them'}`}
+                  >
+                    <View style={[styles.checkbox, shareOccasionWithFriend && styles.checkboxChecked]}>
+                      {shareOccasionWithFriend && <Text style={styles.checkboxMark}>✓</Text>}
+                    </View>
+                    <Text style={styles.calendarToggleText}>
+                      👀 Also share this with {whoForName || 'them'} — they'll see it on their own Occasions page too
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </>
             )}
 
@@ -922,24 +957,34 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   <Text style={styles.helperText}>You don't have any friends connected yet to invite.</Text>
                 )}
                 {!loadingFriends && friends.length > 0 && (
-                  <View style={[styles.chipRow, { marginTop: spacing.md }]}>
-                    {friends.map((f) => {
-                      const selected = selectedInviteeIds.has(f.id);
-                      return (
-                        <TouchableOpacity
-                          key={f.id}
-                          style={[styles.chip, selected && styles.chipSelected]}
-                          onPress={() => toggleInvitee(f.id)}
-                          activeOpacity={0.8}
-                          accessibilityLabel={f.display_name}
-                          accessibilityRole="checkbox"
-                          accessibilityState={{ checked: selected }}
-                        >
-                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{selected ? '✓ ' : ''}{f.display_name}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                  <>
+                    {mutualFriendIds.size > 0 && whoForName && (
+                      <Text style={styles.helperText}>🤝 marks a friend you both know — a good place to start.</Text>
+                    )}
+                    <View style={[styles.chipRow, { marginTop: spacing.md }]}>
+                      {[...friends]
+                        .sort((a, b) => (mutualFriendIds.has(b.id) ? 1 : 0) - (mutualFriendIds.has(a.id) ? 1 : 0))
+                        .map((f) => {
+                          const selected = selectedInviteeIds.has(f.id);
+                          const isMutual = mutualFriendIds.has(f.id);
+                          return (
+                            <TouchableOpacity
+                              key={f.id}
+                              style={[styles.chip, selected && styles.chipSelected]}
+                              onPress={() => toggleInvitee(f.id)}
+                              activeOpacity={0.8}
+                              accessibilityLabel={isMutual ? `${f.display_name}, mutual friend` : f.display_name}
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: selected }}
+                            >
+                              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                                {selected ? '✓ ' : ''}{isMutual ? '🤝 ' : ''}{f.display_name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                    </View>
+                  </>
                 )}
               </>
             )}

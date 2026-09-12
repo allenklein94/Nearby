@@ -59,6 +59,20 @@ export async function linkOccasionToPlan({ occasionId, resultingGatheringId = nu
   if (error) console.error('linkOccasionToPlan error', error);
 }
 
+// Item 62 (CLAUDE.md): "whether reminders are enabled" is a real per-
+// occasion control, not just the blanket notify_social category toggle --
+// a plain owner-scoped update (the table's own RLS policy already covers
+// UPDATE via "for all"), same posture as delete/add above. Never touches
+// any other occasion or preference.
+export async function setOccasionReminderEnabled(occasionId, enabled) {
+  const { error } = await supabase.from('occasions').update({ reminder_enabled: enabled }).eq('id', occasionId);
+  if (error) {
+    console.error('setOccasionReminderEnabled error', error);
+    return false;
+  }
+  return true;
+}
+
 export async function deleteOccasion(occasionId) {
   const { error } = await supabase.from('occasions').delete().eq('id', occasionId);
   if (error) {

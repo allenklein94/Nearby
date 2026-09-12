@@ -40,6 +40,103 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Items 62 & 63 ("Let users save important dates for people" / "make the reminder useful
+immediately") — fully DONE (2026-09-12), same-day direct user follow-up to "Make Occasions
+proactive" below.** User's own mock for item 62: an "Occasions & Reminders" section grouped per
+person (Sarah / 🎂 Birthday — Sept 18 / 💍 Anniversary — June 12 / 🎓 Graduation — May 24), with
+"strong privacy controls" — the user chooses what Nearby is allowed to remember and whether
+reminders are enabled, and this shouldn't imply Nearby automatically knows sensitive information
+about people's lives. Item 63: a reminder should land with useful context already populated
+(who, relationship, relevant friends, location, interests, past plans) rather than dumping the
+user at a blank "figure it out yourself" screen.
+
+Audited the real gap before writing anything: `occasions.who_for_name`/`who_for_friend_id`
+(added by "Occasion architecture should not be a silo") were only ever populated by
+`CelebrateSomethingScreen`'s own wizard save-to-calendar step — `OccasionsScreen.js`'s manual
+"Add an occasion" form had no way to name a person at all, so grouping by person was structurally
+impossible for anything added there. Also found: every real write path
+(`celebrateSomething.js`'s 3 call sites) set `occasions.connected_user_id` — which actually
+grants that named friend real read access to the record via `get_upcoming_occasions()` —
+unconditionally to whichever friend was picked as "who this is for." Naming someone for your own
+organizational purposes was silently also sharing the record with them; there was no separate
+"whether reminders are enabled" control at all beyond the blanket `notify_social` category
+toggle.
+
+Shipped via `20261024_occasion_reminders_and_sharing_controls.sql`: (1) a new
+`occasions.reminder_enabled` column (default true), checked by `send_occasion_planning_nudges()`
+alongside the existing `notify_social` gate — a real per-occasion mute, independent of the
+category toggle and every other occasion; (2) while verifying this live, found and fixed a real,
+pre-existing gap in the prior migration — both `send_occasion_planning_nudges()` and
+`send_birthday_planning_nudges()` had been revoked from `public`/`anon` but not `authenticated`,
+meaning any signed-in user could call either cron-only function directly and trigger a mass push
+run on demand (this repo's own standing "a new function defaults to PUBLIC execute" convention
+exists for exactly this). Fixed both; a broader audit of the other ~57 push-sending functions for
+the same gap was NOT done — disclosed as a real, separate, larger task, not silently skipped.
+
+Client: `OccasionsScreen.js`'s add form gained a real "Who is this for?" picker (Me / a real
+connected friend, fetched via `getMyFriends()` / Someone Else with a free-text name field, same
+vocabulary `CelebrateSomethingScreen` already uses) and, only when a real friend is picked, an
+explicit "👀 Also share this with {name} too" checkbox — **defaulting OFF** — before
+`connected_user_id` is ever set; picking a friend just for grouping no longer silently shares
+anything. The title field auto-fills from occasion+person (reusing `composeCelebrationTitle()`,
+the same pure function the wizard already uses) but stays fully editable and is never
+force-overwritten once the user types their own. The list itself now groups by person via a new
+pure `groupOccasionsByPerson()` (`src/utils/occasionGrouping.js`, 5 new Jest tests) — a real
+connected friend id and a hand-typed name are matched case/whitespace-insensitively but never
+conflated with each other (a friend-linked "Sarah" and a free-typed "Sarah" are two different
+people until the user actually connects them); occasions with no linked person (personal
+milestones, or anything saved before this feature existed) land in a trailing "Other" bucket
+rather than being hidden or guessed into a wrong group. Each occasion row gained a 🔔/🔕 reminder
+toggle (`setOccasionReminderEnabled()`, a plain owner-scoped update — no RPC needed, same posture
+as the existing add/delete). Screen renamed "Occasions & Reminders" everywhere user-visible (nav
+title + in-body header), matching the user's own naming.
+
+`CelebrateSomethingScreen.js` got the matching "share this too" checkbox (same default-OFF
+behavior) right below its own existing "save to calendar" checkbox, wired into all 3 real
+`buildOccasionSaveParams()` call sites — `connectedUserId` is now `shareOccasionWithFriend ?
+whoForFriendId : null` instead of always `whoForFriendId`. This is a real, disclosed behavior
+change from before this item: an anniversary named via a real connected partner used to always be
+auto-shared with them; it now requires the same explicit opt-in, per the item's own "the user
+chooses" framing.
+
+Item 63's own concrete gap, closed: the group-vote invite step (`stepKey === 'group_invite'`) now
+surfaces real mutual friends of the celebrated person first in the friend-picker chip list,
+marked with a 🤝, using the already-live `get_mutual_friends()` RPC (no new backend needed) — a
+real "relevant friends" signal, never auto-selected (the user still makes the actual invite
+decision, consistent with "AI suggests, never silently commits" run in a non-AI, deterministic
+context). Every other piece of item 63's own example was found already real and already shipped
+by prior work, verified by reading the actual code rather than assumed: the push already lands
+with occasion+person prefilled via `initialOccasion`/`initialWhoFor`/`initialWhoForName`/
+`initialWhoForFriendId`; location/interests/past-plans/favorite-business context is already live
+in `resolveIntent()`'s scoring (`favoriteBusinessBonus`/`pastPlanBonus`/`occasionBonus`, from the
+anniversary-nudge fast-follow). Deliberately NOT built: a true OS-level actionable "Plan
+Something" button embedded in the push notification itself (vs. the current "tap opens the app
+directly into the prefilled step") — this repo has no existing `categoryIdentifier`/notification-
+action infrastructure at all, and "no simulator/device tooling has ever been available in any
+session" means shipping untested native notification-action code carries real, unverifiable risk;
+disclosed as a deliberate scope boundary, not silently skipped. Also not built: a signal for
+"previous plans with this specific person" (vs. the caller's own general business affinity,
+already covered) — no schema currently tracks "attended with whom" in a form scoring could use;
+flagged as a real, distinct, unstarted gap.
+
+Verified live against production (`enmosvippabmuqslzrox`): the `occasions` table had zero live
+rows, so the column add and function replace carried no migration risk; the `reminder_enabled`
+filtering logic was verified via a disposable rolled-back transaction (two test rows, one per
+flag value, confirmed the WHERE-clause split before rollback, zero rows left afterward) rather
+than invoking the full push-sending function (which would have fired a real `net.http_post` even
+inside a rolled-back transaction — fire-and-forget by design, so the SQL-level check was the safe
+verification here); the `authenticated`-grant fix was confirmed live before and after
+(`information_schema.role_routine_grants` showed the leak, then showed it gone on both
+functions); `link_occasion_to_plan`/`link_occasion_group_plan_to_plan`/`get_upcoming_occasions`/
+`get_mutual_friends` were all spot-checked and confirmed correctly scoped to `authenticated` only
+(no `anon`/`PUBLIC` leak) as a sanity check alongside the fix. Full Jest suite 340/340 passing
+(5 new); all six touched/new files transform-checked clean via `@babel/core` + `babel-preset-
+expo`. Not exercised in a running app (no simulator/device tooling this session, standing note)
+— next session should confirm on a real account that the person-grouped list renders correctly,
+that the share checkbox actually gates a connected friend's own visibility into the record
+(`get_upcoming_occasions()` from their side), and that the mutual-friends badge appears correctly
+in the group-vote invite step.
+
 **"Make Occasions proactive, not just user-created" — fully DONE (2026-09-12), same-day direct
 user follow-up to "Occasion architecture should not be a silo" below, resumed after a codespace
 restart mid-commit.** User's own framing, generalized past birthday/anniversary: "Nearby already
