@@ -40,6 +40,32 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 54 ("the app should remember context on back navigation") — audited, already TRUE by
+construction, no code change needed (2026-09-12).** Both named examples ("Things To Do → Today →
+Fitness → open an event → back" and "People → Friends → filters → open a profile → back") traced
+through the real navigation tree rather than assumed: `RootNavigator.js` registers `MainTabs` (the
+`Tab.Navigator` holding Home/Discover/Create/Activity as plain `Tab.Screen`s, no nested per-tab
+stacks, no `unmountOnBlur` anywhere) as one `Stack.Screen` sibling alongside `GatheringDetail`/
+`ViewProfile`/every other detail screen in the single outer `Stack.Navigator`. Navigating to a
+detail screen pushes it on top of that outer stack — `MainTabs`, and everything inside it, stays
+mounted underneath (React Navigation's own default); popping back returns to the exact same
+mounted instance with all local `useState` intact, no extra plumbing required.
+
+Verified this actually holds for both examples by reading the real state, not just the general
+mechanism: `DiscoverHubScreen.js`'s `mode`/`peopleSubMode`/`expandedContext` are all plain
+`useState`, and the one `useEffect` that seeds `mode`/`peopleSubMode` from `AsyncStorage` runs only
+on initial mount (`[]` deps) — it does not re-run on refocus, so it can't stomp on a value the
+user already changed. The screen's own `useFocusEffect` only re-fetches gatherings/communities/
+offers/businesses on refocus; it never touches `expandedContext`. People/Friends mode renders
+`FriendDiscoveryScreen` as a directly-embedded child component (not a separate navigated screen,
+per the Aug 24 2026 "embedded" pattern) — its own filter state (`interestFilters`/`distanceFilter`/
+`verifiedOnlyFilter`/`onlineOnlyFilter`/quick-filter order) is likewise plain `useState`, and its
+own `useFocusEffect` only reloads candidates, never resets a filter.
+
+Not exercised in a running app (no simulator/device tooling this session, standing note) — next
+session should still confirm this visually once tooling is available, since this conclusion is
+from a full code trace, not an on-device observation.
+
 **Item 53 ("The business relationship should attach to the Plan") — fully DONE (2026-09-12).**
 Direct continuation of Item 52: "Allen + Claude + Dinner + Friday 7PM" should become a Plan, and
 Nearby should then find real restaurant options for it — not force the user to wait on an
