@@ -98,6 +98,24 @@ functions — same UI/routing-wiring shape as the original Item 55); both touche
 checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app or against a
 real push notification (no simulator/device tooling this session, standing note).
 
+**Item 55 fast-follow #2 (`CommunityDetail`) — fully DONE, same day (2026-09-12).** Closes the
+last remaining candidate the original Item 55 paragraph named, per direct user request ("do
+community detail too"). `business_partnership_response` (community-target branch) and
+`community_area_demand_growing` notification taps now carry `notificationReason` through to
+`CommunityDetailScreen.js`, which renders the exact same dismissible banner
+`BusinessRequestDetailScreen` already has (same styles, no forced CTA — the community's own
+content below is already the obvious next thing to look at). Bundled in the same change:
+`business_partnership_response`'s gathering-target branch also now passes `notificationReason` —
+`GatheringDetailScreen` already fully supports the param generically (no CTA renders, since
+`notificationSuggestsInvite` isn't set for this type), so this closed the same real gap for that
+branch with no new code needed there. With this, every notification type this app sends that
+routes to `GatheringDetail`, `BusinessRequestDetail`, or `CommunityDetail` now carries its real
+reason text — the fast-follow list from the original Item 55 paragraph is fully closed out; no
+further named candidates remain. Full Jest suite 295/295 passing; both touched files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app or
+against a real push notification (no simulator/device tooling this session, standing note).
+Commit: `8c37cc6e`.
+
 **Item 54 ("the app should remember context on back navigation") — audited, already TRUE by
 construction, no code change needed (2026-09-12).** Both named examples ("Things To Do → Today →
 Fitness → open an event → back" and "People → Friends → filters → open a profile → back") traced
