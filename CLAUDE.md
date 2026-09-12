@@ -40,6 +40,69 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 69 ("Businesses shouldn't need to know the person's identity") — fully DONE (2026-09-12),
+direct follow-up to Item 68.** User's own locked answer (via `AskUserQuestion`): a strict
+two-stage boundary. Pre-acceptance, a business sees only what it needs to decide whether to make
+an offer ("Birthday celebration · 8 people · Saturday evening · $75/person") — never a name.
+Post-acceptance (a genuine confirmed reservation), the business gets the primary requester's real
+name only — never phone/photo/other profile fields, never for a dating-sourced request (which
+already has its own separate, deliberate "Two people planning to visit" anonymization predating
+this item), and this must hold at the DB/RPC layer, not just by a client choosing not to render a
+field.
+
+Audited the real current model first (background research fork): `business_requests` has no
+`title`/`who_for_name` column at all — the leak was entirely that the Occasion wizard's
+auto-composed free text ("Sarah's Birthday") got stored verbatim as `raw_text`, plus a linked
+gathering's real title got exposed a second, independent way via `getBusinessOpportunities()`'s
+own `gatherings(title,...)` embed. Separately, `requester_id` (a real profile FK) was technically
+over-exposable via the "Businesses can view requests they've received an opportunity for" RLS
+policy (full-row SELECT the instant an opportunity exists) even though no shipped query currently
+requested it — latent, not previously exploited, but real. And the opposite gap: nothing at all
+revealed identity at confirmed-reservation time, not even the minimally-necessary name.
+
+Two write-side fixes close the concrete leaks at the source: a new `composeCelebrationAskTextForBusiness()`
+(`celebrateSomething.js`, no `whoFor`/`whoForName` ever) replaces `composeCelebrationAskText()` for
+both of the wizard's direct-to-business paths — `submitSelectedBusinessRequests()`'s silent
+multi-submit (no user-review step before the text reaches a business) and `AskBusinessScreen`'s
+default prefill (still user-editable, but the safe default no longer requires the user to notice
+and strip a name themselves). `composeCelebrationAskText()` itself is untouched and still used for
+the gathering-title/calendar-save/"Custom" AI-box paths, which are either private or shown back to
+the user for their own edit first. `GatheringDetailScreen.js`'s "Ask Local Businesses Now" (a
+single tap, no review screen at all) stopped sending the host's own freely-chosen `gathering.title`
+verbatim — same risk for any gathering, not just an occasion-sourced one — now sends a generic,
+category-derived description instead.
+
+Two read-side structural fixes close what a text fix alone can't, per the user's own explicit
+"across RPCs and database authorization, not just by hiding fields in the client" instruction:
+`getBusinessOpportunities()` (`businessFulfillment.js`) is now routed through a new
+`get_business_opportunities(partner_id_param)` SECURITY DEFINER RPC
+(`20261029_business_request_privacy_boundary.sql`) whose returned column list is fixed in the
+function body — `requester_id` can never leave it no matter what a client asks for — and which
+returns a linked gathering's non-identity `interest_tag` instead of its real `title`
+(`BusinessDashboardScreen.js`'s `describeVisit()` updated to match). The RLS policy the old direct
+embed relied on is dropped outright (confirmed via `pg_policies` that only the unrelated
+consumer-side policies remain); the RPC does its own `managed_partner_id` ownership check. The
+same RPC adds the post-acceptance reveal: a `requester_display_name` field, null unless this
+specific offer's `status` is `accepted`/`completed` AND the request has no `match_id` (preserving
+the existing dating anonymization) — surfaced as a new "👤 {name}" line on the dashboard's
+"Upcoming Nearby Visits" card. `profiles` has only a single `display_name` column (no first/last
+split, no phone anywhere on the table) — revealed as-is, nothing fabricated or split.
+
+Verified live against production (`enmosvippabmuqslzrox`) via two disposable rolled-back
+transactions before applying the migration for real: a pending offer and a match-sourced accepted
+offer both correctly withhold `requester_display_name` (null); a genuine non-match accepted offer
+correctly reveals it ("Sarah Smith"); the full jsonb payload never contains a `requester_id`
+field in any of the three cases; an unauthorized caller (wrong `partner_id`) is correctly rejected
+with the exact expected error; a direct table `SELECT` against `business_requests` by the
+business owner (bypassing the RPC entirely) returns zero rows once the old policy is dropped. Both
+transactions rolled back and re-confirmed afterward with zero leaked rows
+(`auth.users`/`brand_partners`/`business_requests` counts all zero for the test ids). Function and
+dropped policy both re-confirmed live after the real apply. Full Jest suite 375/375 passing; all
+five touched files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised
+in a running app (no simulator/device tooling this session, standing note) — next session should
+confirm on a real account that a business dashboard's pending-opportunity card never shows a name,
+and that the "👤 {name}" line correctly appears only after a real accepted (non-dating) offer.
+
 **Item 68 ("Businesses could create occasion-specific offers") — first real increment shipped
 (2026-09-12), direct follow-up to Items 61-67's Occasion work.** User's own framing: a restaurant
 should be able to configure a real "Birthday Package" (dessert + a group table, minimum 6 guests,
