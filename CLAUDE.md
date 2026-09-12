@@ -40,6 +40,32 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 56 ("no dead ends") — fully DONE (2026-09-12).** Direct product requirement, locked as a
+standing convention (see below): no major surface should end with unactionable "nothing here"
+copy — always a concrete, tappable next step (Demand → supply → activity → engagement, in the
+user's own words). Items 25/26 (2026-09-11) already did a big pass on this exact problem; this
+item re-audited the whole app (background fork) against that baseline, specifically to catch
+surfaces built or changed in the items since (27-55). Found and fixed 4 real remaining gaps:
+`PlansScreen.js` (all 3 tabs had a text-only empty state — now "+ Host a Gathering"/"Explore
+Things To Do"), `MomentumScreen.js` (weekly chart empty state, now "Explore Things To Do"),
+`BusinessRequestDetailScreen.js` ("Try a Wider Radius" only ever rendered once, right after
+submitting with `notifiedCount === 0` — now renders whenever the request is still open with zero
+offers, and its prefill fields fall back to the real fetched request row's own columns when
+route.params carry none, e.g. a revisit via push tap), `MakeAPlanScreen.js` ("no friends yet" had
+no way to actually go add one — now links to `FriendDiscovery`). One low-priority candidate
+(`RecommendationCustomizePanel.js`'s "add interests" copy) deliberately left unfixed — no real
+existing route anchors directly to the interest editor (an inline `ProfileScreen` section, not
+its own screen); flagged rather than fabricating a destination. Full audit also confirmed a long
+list of surfaces already correct from the Items 25/26 baseline (`DiscoveryScreen`/
+`FriendDiscoveryScreen`/`MatchesScreen`/`FriendsScreen`/`CommunitiesScreen`/`GatheringsScreen`/
+`DiscoverHubScreen`/`PlacesScreen`/`BusinessDashboardScreen`/`ChatScreen`/`RewardsScreen`/
+`OccasionsScreen`/`CommunityDetailScreen`/`AskBusinessScreen`/`SurpriseMeSheet`/`ProfileScreen`),
+plus 2 genuinely passive/analytics states in `GroupPlanScreen.js` correctly left honest (no
+obvious retry destination exists for those, same precedent Item 25 batch 4 already set for
+BusinessDashboard's own passive states). Full Jest suite 295/295 passing; all five touched files
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not exercised in a running app
+(no simulator/device tooling this session, standing note).
+
 **Item 55 ("deep links should preserve context too") — fully DONE (2026-09-12).** A notification
 tap used to dump the user onto a bare `GatheringDetail` with zero explanation of why they were
 there — e.g. `notify_gathering_interest()` (a host learns someone's interested in their own
@@ -1348,6 +1374,11 @@ original reasoning/citations for any of these: `CLAUDE_HISTORY.md`.
 - **No invented numbers, no fabricated signals, ever.** Every metric/count/reason shown anywhere
   in the app must trace to a real query result. An absent signal renders as an honest empty
   state, never a guessed placeholder.
+- **No dead ends (Item 56, locked 2026-09-12).** No major surface's empty state may be
+  unactionable "nothing here" copy alone — it must offer a concrete, tappable next step to a real
+  existing destination (create/adjust-filters/invite/explore-elsewhere, whichever genuinely fits),
+  never a fabricated one. Applies to any new empty state a future change introduces, not just the
+  surfaces already audited under Items 25/26/56.
 - **Coral (`colors.primary`) = action, not decoration.** Tappable-and-advances-the-user → coral.
   Informational → must not visually impersonate a button. Destructive → `colors.danger`, never
   coral. Progress/data-visualization (a fill bar, an achievement indicator) → coral is fine when
