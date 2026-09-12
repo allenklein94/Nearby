@@ -29,6 +29,9 @@ import { scoreBusinessOpportunity } from '../services/businessOpportunityScoring
 // second wording of the identical real signal.
 import { REASON_TEXT } from '../constants/recommendationReasonVocabulary';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherBias';
+// Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
+// own date/time window, shown on the business's opportunity card.
+import { formatRequestWhen } from '../utils/businessRequestWhen';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
@@ -3152,10 +3155,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // line + a second, separate cuisine/attribute-only chip
                     // row with one consolidated, scannable tag summary.
                     const reqOccasion = OCCASION_OPTIONS.find((opt) => opt.key === o.business_requests?.occasion);
+                    // Item 70 (CLAUDE.md): "Add 'What are you celebrating?'
+                    // to business requests" -- occasion/party size/budget/
+                    // cuisine/attributes were already shown here; date was
+                    // already collected (business_requests.date/
+                    // time_window_start) and already used for scoring, but
+                    // never actually shown to the business deciding
+                    // whether to respond. Real gap, now closed.
+                    const requestWhen = formatRequestWhen(
+                      o.business_requests?.date,
+                      o.business_requests?.time_window_start,
+                      o.business_requests?.time_window_end
+                    );
                     const lookingForTags = [
                       o.business_requests?.category,
                       reqOccasion ? `${reqOccasion.icon} ${reqOccasion.label}` : null,
                       o.business_requests?.party_size ? `${o.business_requests.party_size} people` : null,
+                      requestWhen ? `📅 ${requestWhen}` : null,
                       o.business_requests?.budget_max ? `up to $${o.business_requests.budget_max}` : null,
                       o.business_requests?.cuisine ? cuisineLabel(o.business_requests.cuisine) : null,
                       ...reqAttrs.map((key) => businessAttributeLabel(key)),
