@@ -8,7 +8,7 @@ import { getMyEmergencyContacts } from '../services/emergencyContacts';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation }) {
+export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation, isRomanticMatch = true }) {
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 2 * 60 * 60 * 1000));
@@ -76,14 +76,16 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
   async function handleCreate() {
     setSubmitting(true);
     try {
-      await createCheckIn({ matchId, matchName, scheduledAt: scheduledAt.toISOString() });
+      await createCheckIn({ matchId, matchName, scheduledAt: scheduledAt.toISOString(), isRomanticMatch });
 
       const message = buildShareMessage(matchName, scheduledAt.toISOString());
       await shareWithContact(message);
 
       Alert.alert(
         "You're all set",
-        "We'll check in with you after your date, and you've had a chance to share your plans with someone you trust."
+        isRomanticMatch
+          ? "We'll check in with you after your date, and you've had a chance to share your plans with someone you trust."
+          : "We'll check in with you afterward, and you've had a chance to share your plans with someone you trust."
       );
       onClose();
     } catch (e) {
@@ -122,9 +124,11 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>🛡️ Date Safety Check-In</Text>
+          <Text style={styles.title}>{isRomanticMatch ? '🛡️ Date Safety Check-In' : '🛡️ Safety Check-In'}</Text>
           <Text style={styles.description}>
-            Set a time for your date. We'll check in with you afterward, and you can share your plans with a trusted contact.
+            {isRomanticMatch
+              ? "Set a time for your date. We'll check in with you afterward, and you can share your plans with a trusted contact."
+              : "Set a time for when you're meeting up. We'll check in with you afterward, and you can share your plans with a trusted contact."}
           </Text>
           {emergencyContact ? (
             <Text style={styles.contactHint}>Sharing will text {emergencyContact.name}.</Text>

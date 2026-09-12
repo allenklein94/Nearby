@@ -323,7 +323,7 @@ export default function ChatScreen({ route, navigation }) {
           <TouchableOpacity
             onPress={() => setCheckInModalVisible(true)}
             style={{ paddingHorizontal: spacing.sm }}
-            accessibilityLabel="Set up a date safety check-in"
+            accessibilityLabel={isRomanticMatch ? 'Set up a date safety check-in' : 'Set up a safety check-in'}
             accessibilityRole="button"
           >
             <Text style={{ fontSize: 18 }}>🛡️</Text>
@@ -419,7 +419,7 @@ export default function ChatScreen({ route, navigation }) {
             <TouchableOpacity
               onPress={() => setCheckInModalVisible(true)}
               style={{ paddingHorizontal: spacing.sm }}
-              accessibilityLabel="Set up a date safety check-in"
+              accessibilityLabel={isRomanticMatch ? 'Set up a date safety check-in' : 'Set up a safety check-in'}
               accessibilityRole="button"
             >
               <Text style={{ fontSize: 18 }}>🛡️</Text>
@@ -519,19 +519,36 @@ export default function ChatScreen({ route, navigation }) {
   // Real menu options, not an Alert.alert button list — RN's Alert is
   // documented as unreliable beyond ~3 buttons on Android, and this menu
   // has 12 real destinations, so it renders via ActionSheetModal instead.
+  //
+  // Item 59 fix ("Thursday acceptance test", Journey B): this same modal
+  // opens for friend- and gathering-sourced matches too (MatchesScreen's
+  // "🤝 Do Something" row), but most of these destinations are genuinely
+  // romantic-relationship tools by construction, not just by label --
+  // RelationshipConstitution's categories are "How We Handle Conflict"/
+  // "How We Make Big Decisions"; TimelinePlanner's are month1/month6/
+  // year1/year3 relationship milestones; MemoryVault's own placeholder
+  // text is "our first conversation, first date"; ChemistryDiaryEntry is
+  // a romantic-feelings log; StressTest's scenarios assume a long-term
+  // partner; SharedDecisions ("Big Picture Chat") covers cohabitation/
+  // shared-finances decisions. None of that translates to a friendship,
+  // so `romanticOnly` hides them there (same precedent `courageMenuOptions`
+  // below already set for "Ask them out" etc.) rather than trying to
+  // reword content that doesn't actually apply. Shared Playlist/Plan a
+  // Trip/Suggest an Activity/Help Me Say It (self-filtering)/Plan
+  // Something Together are all genuinely neutral and stay for everyone.
   const togetherMenuOptions = [
     { key: 'playlist', text: '🎵 Shared Playlist', onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
     { key: 'trip', text: '🧳 Plan a Trip', onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'bigpicture', text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'bigpicture', romanticOnly: true, text: '🧭 Big Picture Chat', onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
     { key: 'experiment', text: '💡 Suggest an Activity', onPress: showRandomExperiment },
-    { key: 'legacy', text: '💌 Leave Relationship Wisdom', onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'timeline', text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'memoryvault', text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'chemistry', text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
-    { key: 'stresstest', text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'constitution', text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'legacy', romanticOnly: true, text: '💌 Leave Relationship Wisdom', onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'timeline', romanticOnly: true, text: '🗓️ Timeline Thoughts', onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'memoryvault', romanticOnly: true, text: '💫 Memory Vault', onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'chemistry', romanticOnly: true, text: '📔 Log a Chemistry Check-In', onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
+    { key: 'stresstest', romanticOnly: true, text: '🧪 What If... Scenarios', onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'constitution', romanticOnly: true, text: '📜 Our Constitution', onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
     { key: 'courage', text: '🦁 Help Me Say It', onPress: showCourageMenu },
-    { key: 'datenight', text: '🌆 Suggest a Date Night', onPress: suggestDateNight },
+    { key: 'datenight', text: isRomanticMatch ? '🌆 Suggest a Date Night' : '🌆 Suggest Something To Do', onPress: suggestDateNight },
     // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4):
     // the real Match -> Proposal -> Dating/Friend Experience -> Business
     // Request bridge. Discover/People-Friends parity plan, item 4: this
@@ -541,7 +558,7 @@ export default function ChatScreen({ route, navigation }) {
     // offered here regardless, with the label swapping to match context
     // the same way "Ask them out" etc. stay romantic-only just above.
     { key: 'plantogether', text: isRomanticMatch ? '💌 Plan Something Together' : '🎯 Plan Something Together', onPress: () => navigation.navigate('DateProposal', { matchId, matchName: otherUser?.display_name }) },
-  ];
+  ].filter((opt) => !opt.romanticOnly || isRomanticMatch);
 
   async function suggestDateNight() {
     try {
@@ -579,7 +596,8 @@ export default function ChatScreen({ route, navigation }) {
         return;
       }
 
-      const suggestionText = `💡 Date night ideas, since you both like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
+      const suggestionKicker = isRomanticMatch ? 'Date night ideas' : 'Ideas nearby';
+      const suggestionText = `💡 ${suggestionKicker}, since you both like ${sharedInterests.slice(0, 3).join(', ')}:\n${offersData.map((o) => `• ${o.title} at ${o.brand_partners?.name ?? 'a local spot'}`).join('\n')}`;
       const { data, error } = await supabase
         .from('messages')
         .insert({ match_id: matchId, sender_id: userId, body: suggestionText })
@@ -1471,6 +1489,7 @@ export default function ChatScreen({ route, navigation }) {
         matchId={matchId}
         matchName={otherUser?.display_name || 'this person'}
         navigation={navigation}
+        isRomanticMatch={isRomanticMatch}
       />
 
       <ReportBlockModal

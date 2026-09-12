@@ -1,7 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import { supabase } from './supabase';
 
-export async function createCheckIn({ matchId, matchName, scheduledAt }) {
+// Item 59 fix ("Thursday acceptance test", Journey B): this check-in is a
+// universal in-person-meetup safety feature (matchId is any match --
+// dating, friend, or gathering-sourced), so its own notification copy
+// must not assume "date" -- isRomanticMatch controls wording only, never
+// the underlying mechanism.
+export async function createCheckIn({ matchId, matchName, scheduledAt, isRomanticMatch = true }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
 
@@ -15,7 +20,7 @@ export async function createCheckIn({ matchId, matchName, scheduledAt }) {
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'How did your date go?',
+      title: isRomanticMatch ? 'How did your date go?' : 'How did it go?',
       body: `Checking in on your plans with ${matchName}. Let us know you're safe.`,
       data: { type: 'date_checkin', checkinId: data.id },
     },

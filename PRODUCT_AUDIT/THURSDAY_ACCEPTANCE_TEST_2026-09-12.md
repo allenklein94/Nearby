@@ -8,8 +8,8 @@ substituted for the real thing.
 Progress tracker (updated as each journey fork reports back):
 
 - [x] Journey A — Dating: People → Dating → person → match → message → Plan → business/place → plan
-- [ ] Journey B — Friends: People → Friends → friend → message → Plan → activity/business → plan
-- [ ] Journey C — Discover: Discover → Things To Do → Today → category → activity → Plan
+- [x] Journey B — Friends: People → Friends → friend → message → Plan → activity/business → plan
+- [x] Journey C — Discover: Discover → Things To Do → Today → category → activity → Plan
 - [ ] Journey D — Create: Discover → can't find it → Create → Gathering/Community → publish
 - [ ] Journey E — Business: Intent → options → business → offer/availability → reservation/plan
 
@@ -68,5 +68,83 @@ passed. Migration was already applied live to production before the restart (con
 header comment had promised ("fixed in the same client change") but that hadn't actually landed
 yet.
 
-Remainder of Journey B (Together-menu copy, DateProposalScreen copy, post-accept business search
-framing) — trace in progress via background research fork, not yet reported.
+**Second round of bugs found (background research fork) and fixed**: `DateProposalScreen.js`,
+`MatchesScreen.js`, `ViewProfileScreen.js`, `AskBusinessScreen.js`, `BusinessRequestDetailScreen.js`,
+`FriendsScreen.js` were all confirmed already clean (correctly `isRomanticMatch`-gated or entirely
+neutral). Three real leaks found in `ChatScreen.js`'s "Do Something Together" menu
+(`togetherMenuOptions`) and its sibling safety-check-in feature, both reachable from a
+friend/gathering-sourced chat with zero gating:
+
+1. **The Together menu showed 7 explicitly romantic-relationship tools to friends** — "Leave
+   Relationship Wisdom," "Log a Chemistry Check-In," "Our Constitution," "Timeline Thoughts,"
+   "Memory Vault," "What If... Scenarios," "Big Picture Chat." These aren't just mislabeled —
+   their actual content is romantic-relationship-specific by construction (checked each
+   destination screen's own categories/placeholders: `RelationshipConstitution`'s categories are
+   "How We Handle Conflict"/"How We Make Big Decisions"; `TimelinePlanner`'s are month1/month6/
+   year1/year3 relationship milestones; `MemoryVault`'s own placeholder text is "our first
+   conversation, first date"; `SharedDecisions` ("Big Picture Chat") covers "Where to Live"/
+   "Finances" cohabitation decisions). Fixed by adding a `romanticOnly` flag to each and filtering
+   the array on `isRomanticMatch`, the same precedent `courageMenuOptions` already established for
+   "Ask them out"/"Say I'm interested." "Suggest a Date Night" was adapted rather than hidden
+   (relabeled "Suggest Something To Do" + its inserted chat message reworded from "Date night
+   ideas" to "Ideas nearby" for non-romantic matches) since its actual mechanic — matching shared
+   interests to nearby business offers — is genuinely valid for friends too, unlike the 7 hidden
+   ones. Shared Playlist/Plan a Trip/Suggest an Activity were already neutral, confirmed by reading
+   their own category lists, and stay visible for everyone.
+2. **The header shield icon ("🛡️") opening `DateCheckInModal` was completely ungated**, with
+   `accessibilityLabel="Set up a date safety check-in"` and the modal itself unconditionally
+   titled "🛡️ Date Safety Check-In," describing "your date" throughout, plus a scheduled push
+   notification titled "How did your date go?" (`dateSafety.js`'s `createCheckIn`). This is a
+   genuine universal in-person-meetup safety feature, not a dating-only one, so the fix adapts
+   copy rather than removing it for friends (removing a safety feature nobody asked to remove
+   would be a worse outcome than the copy bug itself): `DateCheckInModal` now takes an
+   `isRomanticMatch` prop (passed from `ChatScreen.js`'s own existing state) and swaps
+   title/description/post-submit-alert/notification-title to neutral "Safety Check-In"/"meeting
+   up"/"How did it go?" wording when false. `buildShareMessage()`'s outbound SMS text was already
+   neutral ("I'm meeting someone named X") — confirmed correct, not touched.
+
+All three fixes verified via full Jest suite (295/295 passing) + a direct `@babel/core` +
+`babel-preset-expo` transform check on all three touched files (`ChatScreen.js`,
+`DateCheckInModal.js`, `dateSafety.js`) — no live DB involved, pure client copy/gating logic. Not
+exercised in a running app (no simulator/device tooling this session, standing note).
+
+**Journey B verdict**: with these fixes, clean — friend hangout flow (message → Do Something →
+Plan Something Together → find a business) carries no dating language anywhere in the traced path.
+
+## Journey C — Discover
+
+Traced `DiscoverHubScreen.js` (Today section) → `GatheringDetailScreen.js` → business-connection
+screens. One correction to the journey's own literal wording: there's no category *chip* inside
+Today specifically — Today renders real activity tiles directly (`todayGatherings.map(renderGatheringTile)`,
+`DiscoverHubScreen.js:1779-1791`); the standalone chip-based Categories row is its own separate
+section below This Weekend. The real Today interaction is "tap an activity tile," which invokes
+the same expand-in-place mechanism (`openContextFor`, `:370-388`) scoped to that tile's own
+category — functionally equivalent to what the journey describes.
+
+**Hop count: clean, 2 real screen pushes, no gratuitous intermediate.**
+1. Today tile tap → expand in place (`openContextFor`, `DiscoverHubScreen.js:1219`/`:1288`) — no
+   navigation.
+2. Expanded-context row tap → `GatheringDetail` (real push #1) —
+   `renderContextGatheringRow`, `DiscoverHubScreen.js:1163`.
+3. `GatheringDetailScreen`'s "🏪 Find a Business for This Plan" (`:956`) expands a two-option
+   chooser in place (no navigation) — the Item 33-audited merged front door.
+4. Chooser option tap → `RequestBusinessPartner` or `AskBusiness` (real push #2) — `:964`/`:976-982`.
+
+**Real gap found, disclosed rather than silently fixed**: the entire "Find a Business for This
+Plan" CTA block is gated on `gathering.isHost` (`GatheringDetailScreen.js:782`) — intentional,
+matches this app's existing model that a *group-level* business partnership decision for a
+gathering is the host's own call to make (the "each actor only ever reports its own side's state"
+convention, applied at the gathering-owner level). But it means a user who discovers someone
+*else's* public gathering via Today/Categories — the overwhelmingly common case for this journey,
+since most gatherings on Discover aren't the browsing user's own — never sees a "Plan" CTA on that
+screen at all once joined; only "Invite Friends" (`:506`, notification-reason banner only, not
+always present). This isn't a broken hop or a fabricated screen, so it doesn't fail the "no
+gratuitous intermediate screen" criterion literally — but the *journey itself* (discover an
+activity → plan) is only fully walkable when the discovered activity happens to be one's own
+hosted gathering. A genuinely non-host attendee can still separately reach `AskBusinessScreen`
+on their own (Item 53's plan-first flow, or Home/Discover's own general ask entry points) — just
+not from this specific gathering screen with the gathering's own context pre-filled. Not fixed
+this session: building an attendee-facing personal "plan something around this" CTA distinct from
+the host's group-level one is a real, disclosed feature decision (whether/how to scope it, whether
+it should even exist alongside "Invite Friends"), not a mechanical bugfix, and the standing
+feature-freeze convention says not to start it without explicit direction.
