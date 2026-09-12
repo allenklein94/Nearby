@@ -269,6 +269,19 @@ export default function PlansScreen({ navigation, route }) {
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>📅</Text>
               <Text style={styles.emptyText}>{emptyCopy}</Text>
+              {/* Item 56 ("no dead ends"): a real next action per tab
+                  instead of leaving the user with nothing to do. */}
+              <View style={styles.emptyActionsRow}>
+                {tab === 'hosting' ? (
+                  <TouchableOpacity onPress={() => navigation.navigate('CreateGathering')} accessibilityLabel="Host a gathering" accessibilityRole="button">
+                    <Text style={styles.emptyActionText}>+ Host a Gathering →</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button">
+                    <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           }
           renderItem={({ item }) => {
@@ -370,4 +383,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingTop: spacing.xxl ?? 48 },
   emptyEmoji: { fontSize: 32, marginBottom: spacing.sm },
   emptyText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.lg },
+  emptyActionsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13 },
 });

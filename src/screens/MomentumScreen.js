@@ -149,6 +149,11 @@ export default function MomentumScreen({ navigation }) {
             ) : (
               <View style={styles.chartCard}>
                 <Text style={styles.emptyText}>Nothing in the last {momentum.weeks.length} weeks yet — join or host a gathering to see it here.</Text>
+                {/* Item 56 ("no dead ends"): a real next action, same
+                    destination ActivityScreen's own empty state already uses. */}
+                <TouchableOpacity onPress={() => navigation.navigate('Discover')} accessibilityLabel="Explore things to do" accessibilityRole="button" style={{ marginTop: spacing.md }}>
+                  <Text style={styles.emptyActionText}>Explore Things To Do →</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -280,6 +285,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   subtitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
   emptyText: { color: colors.textTertiary, fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13, textAlign: 'center' },
   streakCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center', marginBottom: spacing.lg,

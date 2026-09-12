@@ -8,6 +8,7 @@ import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
 import { createBusinessPaymentIntent, isStripeConfigured, STRIPE_PUBLISHABLE_KEY } from '../services/stripeConnect';
 import { openUberToDestination } from '../utils/uberDeepLink';
+import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import OfferOutcomeModal from '../components/OfferOutcomeModal';
@@ -121,21 +122,27 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // so a second competing CTA would just be noise.
   const notificationReason = route.params?.notificationReason ?? null;
   const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
+  const [request, setRequest] = useState(null);
   // Finding 4: the original ask's own fields, carried forward so "Try a
   // Wider Radius" can push a fresh, pre-filled AskBusiness instead of
-  // sending the user back to a blank form.
+  // sending the user back to a blank form. Item 56 ("no dead ends"): a
+  // revisit that never carried these route.params at all (e.g. a push tap,
+  // which only ever carries requestId + notificationReason) used to fall
+  // through to a blank AskBusiness -- now falls back to the real fetched
+  // request row's own fields (loaded below), so "Try a Wider Radius" is
+  // never a dead retry.
   const prefillFields = {
-    prefillText: route.params?.prefillText ?? null,
-    prefillCategory: route.params?.prefillCategory ?? null,
-    prefillPartySize: route.params?.prefillPartySize ?? null,
-    prefillBudgetMax: route.params?.prefillBudgetMax ?? null,
-    prefillDateWindow: route.params?.prefillDateWindow ?? null,
+    prefillText: route.params?.prefillText ?? request?.raw_text ?? null,
+    prefillCategory: route.params?.prefillCategory ?? request?.category ?? null,
+    prefillPartySize: route.params?.prefillPartySize ?? request?.party_size ?? null,
+    prefillBudgetMax: route.params?.prefillBudgetMax ?? request?.budget_max ?? null,
+    prefillDateWindow: route.params?.prefillDateWindow ?? (request?.date ? PICK_DATE_KEY : null),
     // P0 #2 fix (CLAUDE.md, Aug 29 2026): carry a real picked date forward
     // too, not just its dateWindow key -- without this, a retry after
     // picking a specific date would silently lose it and fall back to
     // "flexible" (PICK_DATE_KEY alone means nothing without the ISO
     // string next to it).
-    prefillPickedDateISO: route.params?.prefillPickedDateISO ?? null,
+    prefillPickedDateISO: route.params?.prefillPickedDateISO ?? (request?.date ? new Date(request.date).toISOString() : null),
     prefillOccasion: route.params?.prefillOccasion ?? null,
     prefillSubmissionId: route.params?.prefillSubmissionId ?? null,
     gatheringId: route.params?.gatheringId ?? null,
@@ -146,7 +153,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     communityId: route.params?.communityId ?? null,
     communityName: route.params?.communityName ?? null,
   };
-  const priorRadiusMiles = route.params?.prefillRadiusMiles ?? 15;
+  const priorRadiusMiles = route.params?.prefillRadiusMiles ?? request?.radius_miles ?? 15;
   const widerRadiusMiles = priorRadiusMiles < 30 ? 30 : 50;
 
   function handleTryWiderRadius() {
@@ -162,7 +169,6 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [collectingPayment, setCollectingPayment] = useState(false);
 
-  const [request, setRequest] = useState(null);
   const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -593,7 +599,27 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         )}
 
         {offers.length === 0 ? (
-          <Text style={styles.emptyText}>No businesses have responded yet.</Text>
+          <View>
+            <Text style={styles.emptyText}>No businesses have responded yet.</Text>
+            {/* Item 56 ("no dead ends"): the original justSubmitted banner
+                only ever offered this retry once, right after submitting,
+                and only when notifiedCount was already 0 -- a request that
+                genuinely never got any takers (or a revisit via push tap,
+                which carries none of the original route.params) had no way
+                back to a retry at all. request.status === 'open' matches
+                this screen's own existing "still actionable" gate used
+                everywhere else on this file. */}
+            {!justSubmitted && request.status === 'open' && (
+              <TouchableOpacity
+                style={styles.widerRadiusButton}
+                onPress={handleTryWiderRadius}
+                accessibilityLabel={`Try a wider radius, ${widerRadiusMiles} miles`}
+                accessibilityRole="button"
+              >
+                <Text style={styles.widerRadiusButtonText}>Try a Wider Radius →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         ) : (
           <>
           {showComparison && (

@@ -278,7 +278,19 @@ export default function MakeAPlanScreen({ route, navigation }) {
         {loadingFriends ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />
         ) : friends.length === 0 ? (
-          <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+          <View>
+            <Text style={styles.emptyText}>Add some friends first to be able to invite them here.</Text>
+            {/* Item 56 ("no dead ends"): a real way to actually go add
+                friends, not just copy telling the user what to do. */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('FriendDiscovery')}
+              accessibilityLabel="Discover people to add as friends"
+              accessibilityRole="button"
+              style={{ alignItems: 'center' }}
+            >
+              <Text style={styles.emptyActionText}>Discover People →</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           friends.map((f) => {
             const selected = !!selectedFriendIds[f.id];
@@ -351,6 +363,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   chipTextSelected: { color: '#fff' },
   whenSummary: { ...typography.small, color: colors.textSecondary, marginTop: spacing.sm },
   emptyText: { color: colors.textTertiary, textAlign: 'center', paddingVertical: spacing.lg, lineHeight: 20 },
+  emptyActionText: { color: colors.primary, fontWeight: '700', fontSize: 13, marginTop: -spacing.sm },
   friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: spacing.sm, backgroundColor: colors.surfaceElevated },
   avatarPlaceholder: {},

@@ -37,7 +37,7 @@ const DATE_OPTIONS = [
 // already uses elsewhere in this codebase -- mode="date" only, since
 // business_requests.date is a plain calendar date with no time-of-day
 // component (see toDateParam()'s own comment).
-const PICK_DATE_KEY = 'pick_date';
+export const PICK_DATE_KEY = 'pick_date';
 
 // PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md finding 4 -- the
 // empty-fallback's own "try widening what you're looking for" copy
