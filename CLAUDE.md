@@ -40,6 +40,54 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 72 ("Make invitations frictionless") — fully DONE (2026-09-12).** User's own framing: a
+plan invite shouldn't require the recipient to already have Nearby — "View Plan" and a lightweight
+web experience should work for anyone, with "Open Nearby" as the upgrade path, creating a natural
+acquisition loop. Audited every real share-a-plan call site first: `GatheringConfirmationScreen`'s
+"Share Gathering," `GatheringHubScreen`'s growth-loop share prompt, and `InviteFriendsModal`'s own
+`handleShareWithNonUser` (a function literally named for this exact case) all shared a bare
+`nearby://gathering/:id` deep link — confirmed via `app.json` (only `"scheme": "nearby"`, no
+`associatedDomains`/`intentFilters` anywhere) that this does nothing at all for anyone without the
+app already installed. The opposite of frictionless.
+
+Fixed by mirroring this repo's own existing Live Tracking precedent exactly
+(`get_live_tracking_session` + `docs/track.html`, already shipped, already anon-callable): a new
+`get_public_gathering_invite_preview(uuid)` RPC (`20261030_public_gathering_invite_preview.sql`,
+SECURITY DEFINER, granted to `anon` — a deliberate, disclosed exception to the usual "revoke from
+anon" convention) returns only minimal, non-sensitive fields (title, category, host display name,
+time, attendee count) for anyone holding the link — no exact coordinates, no free-text description,
+no participant list. A real correction made before this ever shipped: the migration's first draft
+also returned `gatherings.area`, assumed to be a neighborhood name — reading `gatherings.js`'s own
+`localArea()` showed it's actually a real lat/lng pair rounded to ~1km, i.e. genuine coordinate
+data, which is exactly the kind of pre-acceptance overexposure Item 69 already drew a hard line
+against; removed before it ever reached anon. A new static page, `docs/invite.html` (same GitHub
+Pages hosting as the business web dashboard, same "plain HTML + direct REST call with the public
+anon key" shape `track.html` already established), renders the preview with zero install — "Open
+in Nearby" attempts the native deep link and falls back to the App/Play Store after a beat only if
+the tab never backgrounds (a `document.hidden` check, not a raw timer race); "Get Nearby" goes
+straight to the store. All three real share call sites now share this `https://` URL instead of the
+dead-end `nearby://` link, via a new shared `gatheringInviteShareUrl()` (`gatherings.js`).
+
+Deliberately scoped to gatherings only — the one concrete, already-externally-shareable "plan"
+object across every existing share call site. Group-vote plans (`occasion_group_plans`) and
+business-request plans are NOT covered: both structurally only ever invite the organizer's own
+already-connected Nearby friends today (no existing "share with someone who might not be a Nearby
+user" path to fix), and building genuine anonymous-guest voting is a materially bigger, separate
+feature (guest identity, spam/abuse risk) than this item asks for — disclosed, not silently
+skipped.
+
+Verified live against production (`enmosvippabmuqslzrox`) via disposable rolled-back transactions:
+a real gathering's preview returns correctly as `anon` (title/category/host name/time/attendee
+count, and confirmed the payload never contains `requester_id`/exact coordinates/description); a
+nonexistent id correctly returns `null`; zero leaked rows afterward. Full Jest suite 386/386
+passing; all four touched JS files transform-checked clean via `@babel/core` + `babel-preset-
+expo`; the page's inline script syntax-checked clean via `node --check`. Not exercised in a running
+app or a real browser (no simulator/device/browser tooling this session, standing note) — next
+session should confirm on a real device that tapping a shared invite link opens `docs/invite.html`
+correctly, that "Open in Nearby" correctly hands off when the app is installed, and that "Get
+Nearby" lands on the real App Store listing (the Play Store URL is constructed from the known
+Android package id in `app.json` but has not been confirmed to resolve to a live listing).
+
 **Item 71 ("Occasions can automatically suggest people") — fully DONE (2026-09-12).** User's
 own example: creating "Sarah's birthday" should surface "Who should be included? People you may
 want to invite — Sarah's friends: John, Emily, Mike," but only as a suggestion, never an automatic
