@@ -40,6 +40,31 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"Birthday reminders as a recurring retention mechanism" — fully DONE (2026-09-12).** Direct
+user follow-up, resumed after a codespace restart mid-build (uncommitted work found at session
+start: a new migration file plus edits to `CelebrateSomethingScreen.js`/`celebrateSomething.js`/
+`notifications.js` — all read in full, checked against the request, and found correct and
+complete; nothing needed to be redone, only verified and shipped). A new push,
+`send_birthday_planning_nudges()` (`20261017_birthday_planning_nudge.sql`), fires exactly 7 days
+before a real birthday — once per person per year — from two real sources: a connected friend/
+match's own `profiles.birthdate`, or a self-logged `occasions` row of type 'birthday' (covers a
+non-Nearby-user person, e.g. "Mom" — same case Item 61's own same-day fast-follow addressed).
+Distinct from the existing `send_birthday_reminders()` (fires same-day, "happy birthday" framing,
+lands on a bare profile — left completely untouched). This one's push ("Sarah's birthday is in 7
+days. Plan something?") deep-links straight into the Celebrate Something wizard, pre-seeded with
+the real occasion + who-for so the user lands directly on "What would you like to do?" (Dinner |
+Party | Activity | Surprise — the wizard's existing `ACTIVITY_OPTIONS` already matched the user's
+own example verbatim, no new options needed) rather than re-answering what the push already knew.
+Gated on the recipient's own `notify_social` preference (Item 29's category taxonomy). Verified
+live against production via disposable rolled-back transactions — both positive cases (friend-
+birthdate source and self-logged-occasion source each fire exactly once at the 7-day mark, with
+the correct recipient/body) and negative cases (wrong day, `notify_social = false`) confirmed
+before applying for real; confirmed live afterward (function + cron job both present). Full Jest
+suite 323/323 passing; all four touched files transform-checked clean via `@babel/core` +
+`babel-preset-expo`. Not exercised in a running app (no simulator/device tooling this session,
+standing note) — push notifications specifically can't be end-to-end verified without a real
+device token. Commit: `724b66d7`.
+
 **Item 61 fast-follow ("don't require the celebrated person to be a Nearby user") — fully DONE
 (2026-09-12), same day, direct user follow-up.** User's own example: planning a mother's birthday
 should work by just typing "Mom" and her birthday — she should never need a Nearby account.
