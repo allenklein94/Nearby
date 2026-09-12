@@ -14,6 +14,8 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
 import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+// Item 68 (CLAUDE.md): a business's own durable, named occasion package.
+import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { getMyStripeConnectStatus, startStripeOnboarding, isStripeConfigured } from '../services/stripeConnect';
 import { getMyReservationProviderStatus, updateReservationProvider } from '../services/reservationProvider';
@@ -414,6 +416,20 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // a real card that stays visible until the owner dismisses it.
   const [lastPostedAvailability, setLastPostedAvailability] = useState(null);
   const [postAvailabilityModalVisible, setPostAvailabilityModalVisible] = useState(false);
+  // Item 68 (CLAUDE.md): a business's own durable, named occasion packages
+  // -- distinct from myAvailability (one-time posted slots) above.
+  const [myOccasionPackages, setMyOccasionPackages] = useState([]);
+  const [packageModalVisible, setPackageModalVisible] = useState(false);
+  const [editingPackageId, setEditingPackageId] = useState(null);
+  const [packageOccasionInput, setPackageOccasionInput] = useState(null);
+  const [packageNameInput, setPackageNameInput] = useState('');
+  const [packageDescriptionInput, setPackageDescriptionInput] = useState('');
+  const [packageIncludedItemsInput, setPackageIncludedItemsInput] = useState([]);
+  const [packageIncludedItemDraft, setPackageIncludedItemDraft] = useState('');
+  const [packageMinGuestsInput, setPackageMinGuestsInput] = useState('');
+  const [packagePriceInput, setPackagePriceInput] = useState('');
+  const [packageAvailableDaysInput, setPackageAvailableDaysInput] = useState([]);
+  const [savingPackage, setSavingPackage] = useState(false);
   const [availabilityTitleInput, setAvailabilityTitleInput] = useState('');
   const [availabilityDescriptionInput, setAvailabilityDescriptionInput] = useState('');
   const [availabilityCategoryInput, setAvailabilityCategoryInput] = useState(null);
@@ -1311,6 +1327,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadAggregatedDemand(selectedPartner.id);
         loadMyAvailability(selectedPartner.id);
         loadFulfillmentPolicy(selectedPartner.id);
+        loadMyOccasionPackages();
         loadExperiences(selectedPartner.id);
         loadEntitlements(selectedPartner.id);
       }
@@ -1579,6 +1596,122 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
     }
+  }
+
+  // Item 68 (CLAUDE.md): loads every one of the caller's own packages,
+  // active or paused -- get_my_occasion_packages() is already scoped to
+  // the caller's own managed_partner_id, no partnerId param needed.
+  async function loadMyOccasionPackages() {
+    try {
+      const results = await getMyOccasionPackages();
+      setMyOccasionPackages(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  function openPackageModal(pkg) {
+    setEditingPackageId(pkg?.id ?? null);
+    setPackageOccasionInput(pkg?.occasion_type ?? null);
+    setPackageNameInput(pkg?.name ?? '');
+    setPackageDescriptionInput(pkg?.description ?? '');
+    setPackageIncludedItemsInput(Array.isArray(pkg?.included_items) ? pkg.included_items : []);
+    setPackageIncludedItemDraft('');
+    setPackageMinGuestsInput(pkg?.min_guests != null ? String(pkg.min_guests) : '');
+    setPackagePriceInput(pkg?.price_per_person != null ? String(pkg.price_per_person) : '');
+    setPackageAvailableDaysInput(Array.isArray(pkg?.available_days) ? pkg.available_days : []);
+    setPackageModalVisible(true);
+  }
+
+  function togglePackageAvailableDay(dayKey) {
+    setPackageAvailableDaysInput((prev) =>
+      prev.includes(dayKey) ? prev.filter((d) => d !== dayKey) : [...prev, dayKey].sort((a, b) => a - b)
+    );
+  }
+
+  function addPackageIncludedItem() {
+    const trimmed = packageIncludedItemDraft.trim();
+    if (!trimmed) return;
+    setPackageIncludedItemsInput((prev) => [...prev, trimmed]);
+    setPackageIncludedItemDraft('');
+  }
+
+  function removePackageIncludedItem(index) {
+    setPackageIncludedItemsInput((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSavePackage() {
+    if (!packageOccasionInput) {
+      Alert.alert('Pick an occasion', 'Say which occasion this package is for.');
+      return;
+    }
+    if (!packageNameInput.trim()) {
+      Alert.alert('Add a name', 'Give this package a real name, e.g. "Birthday Package".');
+      return;
+    }
+    setSavingPackage(true);
+    try {
+      const minGuestsNum = packageMinGuestsInput.trim() ? parseInt(packageMinGuestsInput.trim(), 10) : null;
+      const priceNum = packagePriceInput.trim() ? parseFloat(packagePriceInput.trim()) : null;
+      const params = {
+        occasionType: packageOccasionInput,
+        name: packageNameInput.trim(),
+        description: packageDescriptionInput.trim() || null,
+        includedItems: packageIncludedItemsInput,
+        minGuests: Number.isFinite(minGuestsNum) && minGuestsNum > 0 ? minGuestsNum : null,
+        pricePerPerson: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
+        availableDays: packageAvailableDaysInput.length > 0 ? packageAvailableDaysInput : null,
+      };
+      if (editingPackageId) {
+        await updateOccasionPackage(editingPackageId, params);
+      } else {
+        await createOccasionPackage(params);
+      }
+      setPackageModalVisible(false);
+      await loadMyOccasionPackages();
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setSavingPackage(false);
+  }
+
+  function handleTogglePackageActive(pkg) {
+    Alert.alert(
+      pkg.active ? 'Pause this package?' : 'Resume this package?',
+      pkg.active
+        ? 'It will stop showing up as a match until you resume it.'
+        : 'It will start showing up as a match again.',
+      [
+        { text: 'Never mind', style: 'cancel' },
+        {
+          text: pkg.active ? 'Pause' : 'Resume',
+          onPress: async () => {
+            try {
+              await setOccasionPackageActive(pkg.id, !pkg.active);
+              await loadMyOccasionPackages();
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  function handleDeletePackage(pkg) {
+    Alert.alert('Delete this package?', `"${pkg.name}" will be permanently removed.`, [
+      { text: 'Never mind', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await deleteOccasionPackage(pkg.id);
+            await loadMyOccasionPackages();
+          } catch (e) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
   }
 
   function openPolicyModal() {
@@ -3133,6 +3266,66 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         </TouchableOpacity>
                       )}
                     </View>
+                  ))
+                )}
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
+                  <Text style={styles.sectionHeader}>Occasion Packages</Text>
+                  <TouchableOpacity
+                    style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                    onPress={() => openPackageModal()}
+                    accessibilityLabel="Add an occasion package"
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.smallActionButtonText}>+ Add Package</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.helperText}>
+                  A standing offer for a specific occasion -- e.g. a "Birthday Package" with real
+                  inclusions, a minimum group size, and a per-person price. Nearby matches these
+                  directly against real requests for that occasion, no waiting on you.
+                </Text>
+                {myOccasionPackages.length === 0 ? (
+                  <Text style={styles.emptyText}>No packages yet.</Text>
+                ) : (
+                  myOccasionPackages.map((pkg) => (
+                    <TouchableOpacity
+                      key={pkg.id}
+                      style={styles.gatheringRow}
+                      onPress={() => openPackageModal(pkg)}
+                      accessibilityLabel={`Edit ${pkg.name}`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.offerTitle}>
+                        {pkg.active ? '' : '⚪️ '}{occasionLabel(pkg.occasion_type)}: {pkg.name}
+                      </Text>
+                      <Text style={styles.breakdownText}>
+                        {formatOccasionPackageDetail({
+                          pricePerPerson: pkg.price_per_person, minGuests: pkg.min_guests, availableDays: pkg.available_days,
+                        }) || 'No further details given'}
+                      </Text>
+                      {formatIncludedItemsLabel(pkg.included_items) && (
+                        <Text style={styles.breakdownText}>Includes: {formatIncludedItemsLabel(pkg.included_items)}</Text>
+                      )}
+                      <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated, marginRight: spacing.sm }]}
+                          onPress={() => handleTogglePackageActive(pkg)}
+                          accessibilityLabel={pkg.active ? 'Pause this package' : 'Resume this package'}
+                          accessibilityRole="button"
+                        >
+                          <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{pkg.active ? 'Pause' : 'Resume'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                          onPress={() => handleDeletePackage(pkg)}
+                          accessibilityLabel="Delete this package"
+                          accessibilityRole="button"
+                        >
+                          <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
                   ))
                 )}
 
@@ -5182,6 +5375,148 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.modalCloseText}>Cancel</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Item 68 (CLAUDE.md): create/edit a durable, named occasion
+          package -- e.g. "Birthday Package": dessert + a group table,
+          minimum 6 guests, available Fri/Sat, $X/person. */}
+      <Modal visible={packageModalVisible} animationType="slide" transparent onRequestClose={() => setPackageModalVisible(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={styles.overlay}>
+            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
+              <Text style={styles.sheetTitle}>{editingPackageId ? 'Edit Package' : 'Add an Occasion Package'}</Text>
+              <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
+                A standing offer for one specific occasion -- Nearby matches it directly against
+                real requests for that occasion, no waiting on you to respond.
+              </Text>
+              <Text style={styles.sectionHeader}>Which occasion?</Text>
+              <View style={styles.chipRow}>
+                {OCCASION_OPTIONS.map((o) => {
+                  const selected = packageOccasionInput === o.key;
+                  return (
+                    <TouchableOpacity
+                      key={o.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setPackageOccasionInput(o.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={o.label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Package name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Birthday Package"
+                placeholderTextColor={colors.textTertiary}
+                value={packageNameInput}
+                onChangeText={setPackageNameInput}
+                accessibilityLabel="Package name"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Description (optional)</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 60 }]}
+                placeholder="What makes this package special?"
+                placeholderTextColor={colors.textTertiary}
+                value={packageDescriptionInput}
+                onChangeText={setPackageDescriptionInput}
+                multiline
+                accessibilityLabel="Package description, optional"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>What's included?</Text>
+              <View style={{ flexDirection: 'row' }}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="e.g. Birthday dessert"
+                  placeholderTextColor={colors.textTertiary}
+                  value={packageIncludedItemDraft}
+                  onChangeText={setPackageIncludedItemDraft}
+                  onSubmitEditing={addPackageIncludedItem}
+                  accessibilityLabel="Add an included item"
+                />
+                <TouchableOpacity
+                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  onPress={addPackageIncludedItem}
+                  accessibilityLabel="Add item"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.smallActionButtonText}>Add</Text>
+                </TouchableOpacity>
+              </View>
+              {packageIncludedItemsInput.length > 0 && (
+                <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
+                  {packageIncludedItemsInput.map((item, index) => (
+                    <TouchableOpacity
+                      key={`${item}-${index}`}
+                      style={[styles.chip, styles.chipSelected]}
+                      onPress={() => removePackageIncludedItem(index)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${item}`}
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{item} ×</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Minimum guests (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 6"
+                placeholderTextColor={colors.textTertiary}
+                value={packageMinGuestsInput}
+                onChangeText={(t) => setPackageMinGuestsInput(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                accessibilityLabel="Minimum guests"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Price per person (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. 45"
+                placeholderTextColor={colors.textTertiary}
+                value={packagePriceInput}
+                onChangeText={(t) => setPackagePriceInput(t.replace(/[^0-9.]/g, ''))}
+                keyboardType="decimal-pad"
+                accessibilityLabel="Price per person"
+              />
+              <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>Available days (optional)</Text>
+              <Text style={styles.helperText}>Leave every day unselected to offer it every day of the week.</Text>
+              <View style={styles.chipRow}>
+                {DAY_OF_WEEK_OPTIONS.map((day) => {
+                  const selected = packageAvailableDaysInput.includes(day.key);
+                  return (
+                    <TouchableOpacity
+                      key={day.key}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => togglePackageAvailableDay(day.key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={day.label}
+                      accessibilityState={{ selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{day.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <TouchableOpacity
+                style={[styles.submitButton, { marginTop: spacing.md }]}
+                onPress={handleSavePackage}
+                disabled={savingPackage || !packageNameInput.trim() || !packageOccasionInput}
+                accessibilityLabel={savingPackage ? 'Saving' : 'Save package'}
+                accessibilityRole="button"
+              >
+                {savingPackage ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{editingPackageId ? 'Save Changes' : 'Add Package'}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPackageModalVisible(false)} style={{ marginTop: spacing.md, marginBottom: spacing.lg }} accessibilityLabel="Cancel" accessibilityRole="button">
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

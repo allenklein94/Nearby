@@ -224,6 +224,16 @@ export function dedupeBusinessCandidates(optionsResult) {
       .filter((c) => c.type === 'business_availability')
       .forEach((c) => byId.set(c.id, c));
   }
+  // Item 68 (CLAUDE.md): a business_occasion_package is a standing product,
+  // never fed into assembleExperience()'s own bundle/component grouping
+  // (that's keyed to dinner/dessert/etc-shaped categories, not "the whole
+  // night handled by one business's package") -- always included from the
+  // flat list directly, regardless of whether an Experience also assembled,
+  // so a real published package is never hidden behind bundle/component
+  // logic that was never built to recognize it.
+  (optionsResult.items ?? [])
+    .filter((c) => c.type === 'business_occasion_package')
+    .forEach((c) => byId.set(c.id, c));
   return Array.from(byId.values());
 }
 
@@ -232,8 +242,15 @@ export function dedupeBusinessCandidates(optionsResult) {
 // proposal free-for-all. `limit` mirrors propose_occasion_business_options'
 // own 5-option cap server-side (a lower client-side value is fine; a higher
 // one just gets partially accepted, never an error).
+// Deliberately filtered to business_availability only, even though
+// dedupeBusinessCandidates() also now returns business_occasion_package
+// candidates (Item 68, CLAUDE.md): occasion_group_plan_options' own real
+// schema binds a proposed option to a business_availability_id FK -- a
+// package has no such row to bind to. Group-voting on a package is a real,
+// disclosed, bounded fast-follow, not built in this pass.
 export function extractBusinessCandidateIds(optionsResult, limit = 5) {
   return dedupeBusinessCandidates(optionsResult)
+    .filter((c) => c.type === 'business_availability')
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .slice(0, limit)
     .map((c) => c.id);

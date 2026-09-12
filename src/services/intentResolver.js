@@ -3,6 +3,7 @@ import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
 import { getMyCommunities, getPublicCommunities } from './communities';
 import { getActiveOffers, logBusinessProfileView } from './brandOffers';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, getMyBusinessAffinitySignals } from './businessFulfillment';
+import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
 import { classifyCreateRequest } from './createAssistant';
 import { recordIntentSubmission } from './intentOutcomes';
@@ -40,6 +41,7 @@ import {
   pastPlanBonus,
   getBusinessAvailabilityReasons,
   detectFriendDiscoveryIntent,
+  SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
 
 const RESULT_CAP = 4;
@@ -427,6 +429,46 @@ async function resolvePolicyOnlyBusinesses(location, partySize) {
   }));
 }
 
+// Item 68 ("Businesses could create occasion-specific offers," CLAUDE.md):
+// a business's own durable, named occasion package -- e.g. a restaurant's
+// "Birthday Package" (dessert + a group table, minimum 6 guests, available
+// Fri/Sat, $X/person), a bowling alley's "Birthday Group Package," a spa's
+// "Birthday Group Experience," a golf course's "Birthday Golf Package."
+// Only ever searched when the ask carries a real occasion -- there is no
+// meaningful "occasion package" without one, and search_occasion_packages
+// itself requires it. Distinct from resolveBusinessAvailability above: a
+// package is a standing product, not a one-time posted time-boxed slot, so
+// it's surfaced as its own real candidate type (business_occasion_package)
+// rather than folded into that tier -- CelebrateSomethingScreen's own
+// dedupeBusinessCandidates() (celebrateSomething.js) renders both
+// generically, side by side.
+async function resolveOccasionPackages(location, occasion, partySize) {
+  if (!location || !occasion) return [];
+  const rows = await searchOccasionPackages({
+    occasionType: occasion,
+    latitude: location.latitude,
+    longitude: location.longitude,
+    partySize: partySize ?? null,
+  });
+  return rows.map((row) => {
+    let score = SCORE_OCCASION_PACKAGE_FLOOR;
+    if (row.distance_miles != null && row.distance_miles < 2) score += SCORE_CLOSE_DISTANCE;
+    const detail = formatOccasionPackageDetail({
+      pricePerPerson: row.price_per_person, minGuests: row.min_guests, availableDays: row.available_days,
+    });
+    return {
+      type: 'business_occasion_package',
+      id: row.id,
+      partnerId: row.partner_id,
+      title: `🎁 ${row.partner_name} — ${row.name}`,
+      subtitle: detail,
+      category: row.category ?? null,
+      includedItems: row.included_items ?? [],
+      score,
+    };
+  });
+}
+
 // Resolves a submitted intent against every real, already-existing
 // fulfillment path Nearby has -- gatherings, communities the caller
 // already belongs to, friends/matches independently asking for the same
@@ -521,6 +563,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
     resolvePerks(category, location),
     resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise),
     resolvePolicyOnlyBusinesses(location, partySize),
+    resolveOccasionPackages(location, occasion, partySize),
   ]);
 
   const candidates = [];

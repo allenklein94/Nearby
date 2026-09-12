@@ -40,6 +40,124 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 68 ("Businesses could create occasion-specific offers") — first real increment shipped
+(2026-09-12), direct follow-up to Items 61-67's Occasion work.** User's own framing: a restaurant
+should be able to configure a real "Birthday Package" (dessert + a group table, minimum 6 guests,
+available Fri/Sat, $X/person); a bowling alley a "Birthday Group Package"; a spa a "Birthday Group
+Experience"; a golf course a "Birthday Golf Package" — Nearby's job becomes matching a real
+occasion to real local supply, "much more compelling than simply displaying advertisements."
+
+Shipped as a genuinely new, durable, named product concept — `business_occasion_packages`
+(`20261028_business_occasion_packages.sql`) — distinct from both existing occasion-adjacent
+business fields: `brand_partners.priority_occasions` (a flat "we want more of this occasion"
+appetite signal, no structure) and `business_availability`'s own `bundle_occasion`/
+`bundle_components` (a one-time posted, time-boxed slot that happens to bundle several components).
+A package has its own name, real included line items (free text, e.g. "Birthday dessert," "Group
+table"), a minimum party size, a per-person price, and which days of the week it's offered
+(`available_days smallint[]`, reusing `business_fulfillment_policies.active_days`'s own exact
+shape — 0=Sunday..6=Saturday, null means every day) — it exists independent of any specific date,
+unlike an availability posting. RLS enabled, zero client policies, every access through a
+SECURITY DEFINER RPC: `create_occasion_package`/`update_occasion_package`/
+`set_occasion_package_active` (pause/resume)/`delete_occasion_package`/`get_my_occasion_packages`
+(business-side CRUD, all owner-scoped via `profiles.managed_partner_id`) and
+`search_occasion_packages` (the consumer-facing read, mirroring `search_policy_only_businesses`'s
+own shape — requires a real occasion, hard-filters on `min_guests` vs. the caller's real party
+size, returns `available_days` for the caller to render as a "why," not a hard filter, since the
+resolver only ever has a coarse date bucket).
+
+**Matching, not just display**: a consumer picking a package (via the resolver, see below) binds
+directly to it at `'offered'` status immediately — the same "the business already explicitly
+published these exact terms" reasoning that already justifies an immediate offer for a matched
+`business_availability` posting (`preferred_availability_id`'s own precedent,
+`20260822_availability_preferred_binding.sql`). New `_match_request_to_package()` mirrors that
+function's two-part shape (a preferred-binding block plus a general scan for any OTHER real match
+within radius, so a plain `AskBusinessScreen` submission with `occasion` set — no resolver
+involved — still surfaces real package supply). `create_business_request` gained a 17th trailing
+param, `preferred_package_id_param`; `business_request_offers` gained a nullable `package_id`
+column (own real traceability, `ON DELETE SET NULL`, matching `availability_id`'s own precedent).
+The computed offer price is `price_per_person × the requester's own real party size` when both are
+known. **A real bug was caught live during verification and fixed before this was considered
+done**: the general (non-preferred) matching loop's first draft used `not exists (select 1 from
+business_request_offers where ...)` to skip any partner already in that table — but
+`_business_request_fanout()` (which always runs FIRST in `create_business_request`, before any of
+the three matchers) already inserts a `'pending'` row for every nearby partner, so that `not
+exists` guard excluded literally every real candidate and the general scan could never fire.
+Fixed to match `_match_request_to_availability`'s own correct shape exactly: always attempt the
+`INSERT ... ON CONFLICT DO UPDATE ... WHERE status = 'pending'` upgrade, and only count it as a
+genuinely new match when the partner wasn't already `'offered'` before. Caught and fixed via a
+disposable rolled-back transaction against production before being treated as done — full detail
+in the migration file's own comment at the fix site.
+
+**A second real, pre-existing, unrelated-to-this-item bug was also found and fixed in the same
+migration** (disclosed, not silently bundled, since it's the same occasion-vocabulary domain this
+item was already touching): `create_business_request`/`create_business_request_for_gathering`/
+`create_business_request_for_match` have each, since `20260912_business_request_occasion.sql`
+first introduced `occasion_param`, carried their OWN inline copy of the occasion validation list
+— and none of the three was ever updated when `20261016_celebrate_occasion_vocabulary_expansion.sql`
+widened the real column CHECK from 8 to 16 values (adding graduation/baby_shower/engagement/
+housewarming/promotion/farewell/milestone/life_event). Confirmed live before fixing: the column
+itself has accepted all 16 values since Sep 16 2026, but these three functions' own inline checks
+still rejected the 8 newer ones with "Invalid occasion" — a real, live, latent bug meaning any
+consumer flow submitting one of those 8 occasions through any of these three functions (e.g. the
+Occasion wizard's own business-options step, live since Item 61's "connect it to businesses"
+fast-follow) would have hit a hard submission failure, never previously caught since no simulator/
+device session has exercised that path live. All three fixed to the real 16-value vocabulary;
+`create_business_request` needed a DROP+CREATE (new trailing param), the other two a plain
+CREATE OR REPLACE (unchanged signatures).
+
+**Resolver + client wiring**: a new `resolveOccasionPackages()` tier in `resolveIntent()`
+(`intentResolver.js`) — only ever searched when the ask carries a real occasion — scores a match
+at the same confirmed-tier floor as `business_availability` (`SCORE_OCCASION_PACKAGE_FLOOR`,
+`intentResolverScoring.js`), since a package is a stronger, more specific declared-fit signal than
+an untargeted posting. Surfaced as its own real candidate type (`business_occasion_package`),
+never fed into `assembleExperience()`'s own bundle/component grouping (that's keyed to dinner/
+dessert-shaped categories, not "a whole package"). `celebrateSomething.js`'s
+`dedupeBusinessCandidates()` now includes packages from the flat list unconditionally (regardless
+of whether an Experience also assembled); `extractBusinessCandidateIds()` (Item 67's group-vote
+candidate list) deliberately stays filtered to `business_availability` only — `occasion_group_
+plan_options` binds to a real `business_availability_id` FK a package has no equivalent row for,
+so group-voting on a package is a disclosed, bounded fast-follow, not built here.
+`CelebrateSomethingScreen.js`'s "options" step renders a new "🎁 Occasion Packages" section
+(generic card reuse — no new JSX needed for the card itself, just a new filtered section) and its
+submit path threads `preferredPackageId` instead of `preferredAvailabilityId` for a picked package.
+
+**Business Dashboard**: a new "Occasion Packages" management section (between "Your Availability"
+and "Fulfillment Policy," same list-plus-modal shape as both) — create/edit/pause-resume/delete,
+occasion chip picker (reusing the existing `OCCASION_OPTIONS` vocabulary), a free-text
+add-one-at-a-time included-items list, minimum guests, price per person, and a `DAY_OF_WEEK_
+OPTIONS` chip picker (reusing the exact component `business_fulfillment_policies`' own Active
+Days editor already established).
+
+Deliberately NOT built in this pass, disclosed rather than assumed: gathering-/community-sourced
+business requests (`create_business_request_for_gathering`/`create_business_request_for_match`)
+are not wired to `_match_request_to_package` — occasion-vocabulary-fixed but package-matching-
+unwired, a real bounded scope boundary; group-voting on a package (see above); `business_match_
+exclusions` missed-match instrumentation for packages (the availability matcher's own bookkeeping
+table, not extended here). Pure display helpers (`formatAvailableDaysLabel`/
+`formatIncludedItemsLabel`/`formatOccasionPackageDetail`) live in a new dependency-free
+`src/utils/occasionPackageFormatting.js` (re-exported from `services/occasionPackages.js`) rather
+than the service file itself, so they stay directly unit-testable without dragging in `supabase`'s
+own react-native/AsyncStorage imports — same reasoning `intentResolverScoring.js`'s own split from
+`intentResolver.js` already established. Full Jest suite 375/375 passing (8 new tests); all seven
+touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`.
+
+Verified live against production (`enmosvippabmuqslzrox`) via disposable rolled-back transactions
+with real `SET ROLE authenticated` + `request.jwt.claims` GUC impersonation: package create/list/
+cross-owner-update-blocked/consumer-search (including the real min-guests hard-filter excluding a
+too-small party) all confirmed correct before the matching-loop bug above was found, fixed, and
+re-verified; the fixed general matching loop confirmed correct on all three cases (a genuine
+Saturday/party-of-8 match now correctly lands `'offered'` with the right `package_id`/computed
+price, a too-small party and a wrong-day request both correctly stay `'pending'`); the
+`preferred_package_id_param` binding path confirmed correct (immediate `'offered'` row, correct
+computed `offer_price`); the occasion-vocabulary fix confirmed live (`graduation` now accepted by
+`create_business_request` where it previously raised). All transactions rolled back and
+re-confirmed afterward with zero leaked rows. Not exercised in a running app (no simulator/device
+tooling this session, standing note) — next session should confirm on a real account that the new
+"Occasion Packages" dashboard section renders and saves correctly, that a package genuinely shows
+up in the Occasion wizard's "options" step with correct price/min-guests/days text, and that
+tapping "Request This Package" (via the existing generic selectable-card flow) lands on a real
+`BusinessRequestDetail` showing the matched package.
+
 **Item 67 ("Let the group vote on businesses") — fully DONE (2026-09-12), same-day direct
 follow-up to Item 66.** User's own example: Nearby finds real options (Restaurant A 7:00 PM
 $65/person / Restaurant B 7:30 PM $52/person / Restaurant C 8:00 PM $70/person), everyone votes,

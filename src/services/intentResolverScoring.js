@@ -54,6 +54,15 @@ export const SCORE_OWN_NETWORK = 6;
 // outranking a weak business match) is left completely intact.
 export const SCORE_CONFIRMED_AVAILABILITY_FLOOR = SCORE_CLOSE_DISTANCE + 1;
 
+// Item 68 ("Businesses could create occasion-specific offers," CLAUDE.md):
+// a business's own durable, named occasion package (a real, deliberate,
+// structured declaration of exactly this occasion's own terms --
+// inclusions/min guests/price) is a stronger, more specific signal of fit
+// than an untargeted business_availability posting -- scored at the same
+// confirmed-tier floor, never below it, since this is real standing supply
+// the business explicitly published for this exact occasion, not a guess.
+export const SCORE_OCCASION_PACKAGE_FLOOR = SCORE_CONFIRMED_AVAILABILITY_FLOOR;
+
 // Finding 6 (PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_2026-08-14.md): the
 // 24-tag category system is the resolver's real precision ceiling --
 // "pickleball" collapses to "Sports" with no narrowing anywhere. Expanding

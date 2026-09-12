@@ -399,7 +399,11 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const allCandidates = useMemo(() => dedupeBusinessCandidates(optionsResult), [optionsResult]);
 
   function toggleSelected(candidate) {
-    if (candidate.type !== 'business_availability') return;
+    // Item 68 (CLAUDE.md): a business_occasion_package is just as
+    // selectable as a business_availability posting -- both are real,
+    // bindable business supply, only 'gathering' (an already-happening
+    // thing, rendered as a plain tap-to-view row above) isn't.
+    if (candidate.type !== 'business_availability' && candidate.type !== 'business_occasion_package') return;
     Haptics.selectionAsync();
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -441,7 +445,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         budgetMax: budgetRange.max,
         date: dateParam,
         occasion,
-        preferredAvailabilityId: c.id,
+        // Item 68 (CLAUDE.md): a picked business_occasion_package binds via
+        // its own dedicated preferred param -- it has no business_
+        // availability row behind it, so preferredAvailabilityId would be
+        // the wrong id to send for one.
+        preferredAvailabilityId: c.type === 'business_availability' ? c.id : null,
+        preferredPackageId: c.type === 'business_occasion_package' ? c.id : null,
       }))
     );
     setSubmittingOptions(false);
@@ -950,11 +959,27 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                           .slice(0, 5)
                           .map((item) => renderOptionCard(item))}
                       </View>
-                    ) : (
-                      <Text style={styles.helperText}>
-                        Nothing live nearby right now — no worries, you can still post a request and businesses will respond.
-                      </Text>
+                    ) : null}
+                    {optionsResult.items.some((i) => i.type === 'business_occasion_package') && (
+                      // Item 68 (CLAUDE.md): a business's own durable,
+                      // named occasion package -- shown as its own section
+                      // regardless of whether an Experience also assembled,
+                      // since packages are never fed into that bundling.
+                      <View style={{ marginBottom: spacing.md }}>
+                        <Text style={styles.sublabel}>🎁 Occasion Packages</Text>
+                        {optionsResult.items
+                          .filter((i) => i.type === 'business_occasion_package')
+                          .slice(0, 5)
+                          .map((item) => renderOptionCard(item))}
+                      </View>
                     )}
+                    {!optionsResult.experience &&
+                      !optionsResult.items.some((i) => i.type === 'business_availability') &&
+                      !optionsResult.items.some((i) => i.type === 'business_occasion_package') && (
+                        <Text style={styles.helperText}>
+                          Nothing live nearby right now — no worries, you can still post a request and businesses will respond.
+                        </Text>
+                      )}
                   </>
                 )}
               </>

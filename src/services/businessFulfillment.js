@@ -154,6 +154,13 @@ export async function submitBusinessRequest({
   // explicitly picked); create-assistant's own extraction is the one place
   // this gets a best-effort guess, and even that is server-validated.
   occasion = null,
+  // Item 68 (CLAUDE.md): the specific business_occasion_package the
+  // consumer already reviewed and tapped on the resolver's own results
+  // (CelebrateSomethingScreen's "options" step) -- lets the RPC directly
+  // bind this exact package (if it's still genuinely live) instead of
+  // only ever re-deriving a match from scratch, same shape as
+  // preferredAvailabilityId above. Absent for every other entry point.
+  preferredPackageId = null,
 }) {
   const { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
@@ -178,6 +185,7 @@ export async function submitBusinessRequest({
     attributes_param: attributes,
     cuisine_param: cuisine,
     occasion_param: occasion,
+    preferred_package_id_param: preferredPackageId,
   });
   if (error) throw new Error(error.message);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
