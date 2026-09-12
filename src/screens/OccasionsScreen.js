@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getMyOccasions, addOccasion, deleteOccasion } from '../services/occasions';
+import { getMyOccasionGroupPlans } from '../services/occasionGroupPlans';
+import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -40,10 +42,20 @@ function formatDate(d) {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-export default function OccasionsScreen() {
+// Status copy for the "Group Plans" section below -- occasion_group_plans'
+// own real status column (20261020_occasion_group_plans.sql), same
+// "voting/decided/cancelled" vocabulary the RPC layer already uses.
+const GROUP_PLAN_STATUS_COPY = {
+  voting: 'Voting open',
+  decided: 'Decided',
+  cancelled: 'Cancelled',
+};
+
+export default function OccasionsScreen({ navigation }) {
   const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [occasions, setOccasions] = useState([]);
+  const [groupPlans, setGroupPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [occasionType, setOccasionType] = useState('anniversary');
@@ -56,8 +68,9 @@ export default function OccasionsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const data = await getMyOccasions();
-      setOccasions(data);
+      const [occasionsData, groupPlansData] = await Promise.all([getMyOccasions(), getMyOccasionGroupPlans()]);
+      setOccasions(occasionsData);
+      setGroupPlans(groupPlansData);
       setLoadError(false);
     } catch (e) {
       setLoadError(true);
@@ -137,6 +150,33 @@ export default function OccasionsScreen() {
             for anyone, even someone who isn't on Nearby. A connected Nearby friend's birthday is
             already handled automatically on Home, so you don't need to add it again here.
           </Text>
+
+          {groupPlans.length > 0 && (
+            <>
+              <Text style={styles.sectionLabel}>Group Plans</Text>
+              {groupPlans.map((plan) => {
+                const meta = OCCASION_OPTIONS.find((t) => t.key === plan.occasionType);
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={styles.card}
+                    onPress={() => navigation.navigate('GroupOccasionPlan', { planId: plan.id })}
+                    activeOpacity={0.8}
+                    accessibilityLabel={plan.title}
+                    accessibilityRole="button"
+                  >
+                    <Text style={{ fontSize: 22, marginRight: spacing.sm }}>{meta?.icon ?? '🗳️'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.name}>{plan.title}</Text>
+                      <Text style={styles.detail}>
+                        {GROUP_PLAN_STATUS_COPY[plan.status] ?? plan.status}{plan.isHost ? ' · Hosting' : ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
 
           {occasions.length === 0 && (
             <View style={styles.emptyState}>

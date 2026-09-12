@@ -5,6 +5,22 @@
 // discipline as surpriseMeLogic.js's own mood-to-real-params mapping.
 import { occasionLabel, CALENDAR_SAVEABLE_OCCASION_KEYS } from '../constants/businessAttributes';
 
+// The wizard's own 7 real activity types (CelebrateSomethingScreen.js's
+// 'activity' step) -- exported so occasion_group_plan_options' own
+// activity_type column (the exact same vocabulary, per the migration's own
+// CHECK constraint) can be rendered with the same icon/label everywhere a
+// group plan's proposed options show up (GroupOccasionPlanScreen.js), one
+// source of truth instead of two copies that could drift.
+export const ACTIVITY_OPTIONS = [
+  { key: 'dinner', label: 'Dinner', icon: '🍽️' },
+  { key: 'party', label: 'Party', icon: '🎉' },
+  { key: 'surprise', label: 'Surprise', icon: '🎁' },
+  { key: 'activity', label: 'Activity', icon: '🎯' },
+  { key: 'night_out', label: 'Night Out', icon: '🌃' },
+  { key: 'weekend_trip', label: 'Weekend Trip', icon: '🧳' },
+  { key: 'custom', label: 'Something Custom', icon: '💡' },
+];
+
 const ACTIVITY_ASK_PHRASE = {
   dinner: 'dinner',
   night_out: 'night out',
@@ -151,4 +167,35 @@ export function extractNameFromBirthdayTitle(title) {
   if (!title) return null;
   const match = title.match(/^(.+?)['’]s\s+birthday$/i);
   return match ? match[1].trim() : null;
+}
+
+// "Group planning for an Occasion" (CLAUDE.md, direct user follow-up):
+// decide_occasion_group_plan()'s own jsonb payload already carries every
+// real answer this wizard needs (occasion/who-for/activity/when -- the
+// group already decided all of it) -- this maps that payload onto the
+// wizard's existing initialOccasion/initialWhoFor/... route params
+// (occasionGroupPlans.js) so the wizard can skip straight to its last real
+// step (business 'options', or gathering/custom 'who_involved') instead of
+// re-asking questions that are already answered. whoFor itself isn't a
+// column on occasion_group_plans (only whoForName/whoForFriendId are) --
+// inferred the same way every other entry point into this wizard already
+// does: a real connected friend id means 'friend', a typed name with no id
+// means 'someone_else', neither means 'me'. scheduledDate is a plain date
+// (occasion_group_plans.scheduled_date has no time-of-day column, per the
+// user's own "no complicated calendars" guardrail) -- a fixed noon time is
+// only ever used downstream for its date portion (submitBusinessRequest's
+// `date` field, the optional calendar save), never displayed as a real
+// scheduled time.
+export function resolveDecidedGroupPlanParams(decided) {
+  const whoFor = decided.whoForFriendId ? 'friend' : decided.whoForName ? 'someone_else' : 'me';
+  return {
+    initialOccasion: decided.occasionType,
+    initialWhoFor: whoFor,
+    initialWhoForName: decided.whoForName ?? null,
+    initialWhoForFriendId: decided.whoForFriendId ?? null,
+    initialActivityType: decided.activityType,
+    initialWhenPreset: decided.whenPreset,
+    initialScheduledAtISO: decided.scheduledDate ? `${decided.scheduledDate}T12:00:00` : null,
+    initialPartySize: decided.partySize ?? null,
+  };
 }

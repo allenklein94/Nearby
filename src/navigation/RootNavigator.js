@@ -39,6 +39,7 @@ import RequestBusinessPartnerScreen from '../screens/RequestBusinessPartnerScree
 import AskBusinessScreen from '../screens/AskBusinessScreen';
 import BusinessRequestDetailScreen from '../screens/BusinessRequestDetailScreen';
 import GroupPlanScreen from '../screens/GroupPlanScreen';
+import GroupOccasionPlanScreen from '../screens/GroupOccasionPlanScreen';
 import DateProposalScreen from '../screens/DateProposalScreen';
 import AdminBusinessRequestsScreen from '../screens/AdminBusinessRequestsScreen';
 import AdminBusinessTierScreen from '../screens/AdminBusinessTierScreen';
@@ -563,6 +564,7 @@ export default function RootNavigator() {
             <Stack.Screen name="AskBusiness" component={AskBusinessScreen} options={{ headerShown: true, title: 'Ask a Business', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="BusinessRequestDetail" component={BusinessRequestDetailScreen} options={{ headerShown: true, title: 'Your Request', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GroupPlan" component={GroupPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="GroupOccasionPlan" component={GroupOccasionPlanScreen} options={{ headerShown: true, title: 'Group Plan', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="DateProposal" component={DateProposalScreen} options={{ headerShown: true, title: 'Plan Something Together', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessRequests" component={AdminBusinessRequestsScreen} options={{ headerShown: true, title: 'Business Requests (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminBusinessTier" component={AdminBusinessTierScreen} options={{ headerShown: true, title: 'Business Tier Switch (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

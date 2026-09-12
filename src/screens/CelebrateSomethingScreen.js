@@ -7,6 +7,7 @@ import { getMyCommunities } from '../services/communities';
 import { addOccasion } from '../services/occasions';
 import { resolveIntent } from '../services/intentResolver';
 import { submitBusinessRequest } from '../services/businessFulfillment';
+import { createOccasionGroupPlan } from '../services/occasionGroupPlans';
 import { celebrateOccasionOptions } from '../constants/businessAttributes';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
 import {
@@ -18,6 +19,7 @@ import {
   shouldOfferCalendarSave,
   buildOccasionSaveParams,
   dateWindowForWhenPreset,
+  ACTIVITY_OPTIONS,
 } from '../services/celebrateSomething';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
@@ -51,6 +53,16 @@ import { typography, spacing, radius } from '../theme';
 // actually fed anything for a business ask (visibility only matters for
 // the gathering destination), so this replaces it rather than bolting on
 // a 6th step. Every other destination keeps "who's involved" unchanged.
+//
+// "Group planning for an Occasion" follow-up (CLAUDE.md, direct user
+// request -- Sarah's 30th Birthday example): activityType === 'group_vote'
+// is a special, non-real activity type -- it means "don't decide this
+// myself," so instead of 'options'/'who_involved' the final step becomes
+// 'group_invite' (pick real friends to invite, then create a real
+// occasion_group_plans row for them to propose/vote on). Once the group
+// decides, CelebrateSomethingScreen is re-entered from
+// GroupOccasionPlanScreen with the real decided activityType already set,
+// so this branch is never hit twice for the same plan.
 function buildStepDefs(activityType) {
   const base = [
     { key: 'occasion', label: 'Occasion' },
@@ -58,11 +70,15 @@ function buildStepDefs(activityType) {
     { key: 'activity', label: 'What' },
     { key: 'when', label: 'When' },
   ];
-  base.push(
-    resolveCelebrationDestination(activityType) === 'business'
-      ? { key: 'options', label: 'Options' }
-      : { key: 'who_involved', label: 'Involve' }
-  );
+  if (activityType === 'group_vote') {
+    base.push({ key: 'group_invite', label: 'Invite' });
+  } else {
+    base.push(
+      resolveCelebrationDestination(activityType) === 'business'
+        ? { key: 'options', label: 'Options' }
+        : { key: 'who_involved', label: 'Involve' }
+    );
+  }
   return base;
 }
 
@@ -80,15 +96,12 @@ const WHO_FOR_OPTIONS = [
   { key: 'someone_else', label: 'Someone Else', icon: '✨' },
 ];
 
-const ACTIVITY_OPTIONS = [
-  { key: 'dinner', label: 'Dinner', icon: '🍽️' },
-  { key: 'party', label: 'Party', icon: '🎉' },
-  { key: 'surprise', label: 'Surprise', icon: '🎁' },
-  { key: 'activity', label: 'Activity', icon: '🎯' },
-  { key: 'night_out', label: 'Night Out', icon: '🌃' },
-  { key: 'weekend_trip', label: 'Weekend Trip', icon: '🧳' },
-  { key: 'custom', label: 'Something Custom', icon: '💡' },
-];
+// "Group planning for an Occasion" (CLAUDE.md): a real, distinct choice on
+// the same step, not one of the 7 real activity types above -- picking it
+// means "don't decide this myself," and the wizard branches to a real
+// invite step instead of asking what to do. Rendered separately below the
+// main row so it doesn't read as an 8th equivalent activity choice.
+const GROUP_VOTE_OPTION = { key: 'group_vote', label: 'Let the Group Vote', icon: '🗳️' };
 
 const WHO_INVOLVED_OPTIONS = [
   { key: 'friends', label: 'Friends', icon: '👥' },
@@ -106,9 +119,20 @@ const WHO_INVOLVED_OPTIONS = [
 // to do?" step, since that answer is never knowable in advance. Generic by
 // design, not birthday-specific -- any future deep link into this wizard
 // can use the same convention.
+// "Group planning for an Occasion" follow-up: once a group has decided
+// (GroupOccasionPlanScreen navigates back in here via
+// resolveDecidedGroupPlanParams()), occasion/who-for/activity/when are ALL
+// already real, group-decided answers -- skip straight to this activity
+// type's own real last step (business 'options', or gathering/custom
+// 'who_involved') rather than re-asking anything.
 function initialStepFor(route) {
   const hasOccasion = !!route.params?.initialOccasion;
   const hasWhoFor = !!route.params?.initialWhoFor;
+  const hasActivity = !!route.params?.initialActivityType;
+  const hasWhen = !!route.params?.initialWhenPreset;
+  if (hasOccasion && hasWhoFor && hasActivity && hasWhen) {
+    return buildStepDefs(route.params.initialActivityType).length - 1;
+  }
   if (hasOccasion && hasWhoFor) return 2; // 'activity'
   if (hasOccasion) return 1; // 'who_for'
   return 0;
@@ -128,12 +152,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [friendsLoaded, setFriendsLoaded] = useState(false);
 
-  const [activityType, setActivityType] = useState(null);
-  const [partySize, setPartySize] = useState(null);
+  const [activityType, setActivityType] = useState(route.params?.initialActivityType ?? null);
+  const [partySize, setPartySize] = useState(route.params?.initialPartySize ?? null);
 
-  const [whenPreset, setWhenPreset] = useState(null);
-  const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 60 * 60 * 1000));
+  const [whenPreset, setWhenPreset] = useState(route.params?.initialWhenPreset ?? null);
+  const [scheduledAt, setScheduledAt] = useState(() => (
+    route.params?.initialScheduledAtISO
+      ? new Date(route.params.initialScheduledAtISO)
+      : new Date(Date.now() + 60 * 60 * 1000)
+  ));
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // "Group planning for an Occasion": who to invite to propose/vote, and
+  // the in-flight state of creating the real occasion_group_plans row.
+  const [selectedInviteeIds, setSelectedInviteeIds] = useState(() => new Set());
+  const [creatingGroupPlan, setCreatingGroupPlan] = useState(false);
 
   const [whoInvolved, setWhoInvolved] = useState(null);
   const [communities, setCommunities] = useState([]);
@@ -193,6 +226,48 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     if (key === 'existing_group') ensureCommunitiesLoaded();
   }
 
+  function toggleInvitee(friendId) {
+    Haptics.selectionAsync();
+    setSelectedInviteeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(friendId)) next.delete(friendId); else next.add(friendId);
+      return next;
+    });
+  }
+
+  // Creates the real occasion_group_plans row and hands off to
+  // GroupOccasionPlanScreen -- everyone invited proposes/votes there;
+  // Nearby turns the winner back into this same wizard, pre-decided
+  // (resolveDecidedGroupPlanParams), once the host picks it.
+  async function createGroupVote() {
+    if (selectedInviteeIds.size === 0) {
+      return Alert.alert('Invite someone', 'Pick at least one friend to invite to vote.');
+    }
+    Haptics.selectionAsync();
+    setCreatingGroupPlan(true);
+    const trimmedName = whoForName.trim() || null;
+    const title = composeCelebrationTitle({ occasion, whoFor, whoForName: trimmedName });
+    if (saveToCalendar && shouldOfferCalendarSave(occasion, !!whoForFriendId)) {
+      addOccasion(buildOccasionSaveParams({ occasion, title, scheduledAt, connectedUserId: whoForFriendId })).catch(() => {});
+    }
+    try {
+      const result = await createOccasionGroupPlan({
+        occasionType: occasion,
+        title,
+        whoForName: trimmedName,
+        whoForFriendId,
+        whenPreset,
+        scheduledDate: scheduledAt.toISOString().slice(0, 10),
+        inviteeIds: Array.from(selectedInviteeIds),
+      });
+      navigation.replace('GroupOccasionPlan', { planId: result.planId });
+    } catch (e) {
+      console.error('createOccasionGroupPlan error', e);
+      Alert.alert('Something went wrong', "We couldn't create the group vote. Please try again.");
+      setCreatingGroupPlan(false);
+    }
+  }
+
   function pickWhenPreset(key) {
     Haptics.selectionAsync();
     setWhenPreset(key);
@@ -209,6 +284,9 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   useEffect(() => {
     if (stepKey === 'options' && !optionsFetched && !optionsLoading) {
       fetchOptions();
+    }
+    if (stepKey === 'group_invite') {
+      ensureFriendsLoaded();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepKey]);
@@ -592,26 +670,49 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   })}
                 </View>
 
-                <Text style={styles.sublabel}>How many people? (optional)</Text>
+                <Text style={styles.sublabel}>Not sure yet? Let the group decide together.</Text>
                 <View style={styles.chipRow}>
-                  {PARTY_SIZE_OPTIONS.map((n, i) => {
-                    const selected = partySize === n;
-                    const label = i === PARTY_SIZE_OPTIONS.length - 1 ? `${n}+` : String(n);
+                  {(() => {
+                    const selected = activityType === GROUP_VOTE_OPTION.key;
                     return (
                       <TouchableOpacity
-                        key={n}
                         style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => { Haptics.selectionAsync(); setPartySize(selected ? null : n); }}
+                        onPress={() => { Haptics.selectionAsync(); setActivityType(GROUP_VOTE_OPTION.key); setPartySize(null); }}
                         activeOpacity={0.8}
-                        accessibilityLabel={`${label} people`}
+                        accessibilityLabel={GROUP_VOTE_OPTION.label}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{GROUP_VOTE_OPTION.icon} {GROUP_VOTE_OPTION.label}</Text>
                       </TouchableOpacity>
                     );
-                  })}
+                  })()}
                 </View>
+
+                {activityType !== GROUP_VOTE_OPTION.key && (
+                  <>
+                    <Text style={styles.sublabel}>How many people? (optional)</Text>
+                    <View style={styles.chipRow}>
+                      {PARTY_SIZE_OPTIONS.map((n, i) => {
+                        const selected = partySize === n;
+                        const label = i === PARTY_SIZE_OPTIONS.length - 1 ? `${n}+` : String(n);
+                        return (
+                          <TouchableOpacity
+                            key={n}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => { Haptics.selectionAsync(); setPartySize(selected ? null : n); }}
+                            activeOpacity={0.8}
+                            accessibilityLabel={`${label} people`}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
               </>
             )}
 
@@ -775,6 +876,39 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               </>
             )}
 
+            {stepKey === 'group_invite' && (
+              <>
+                <Text style={styles.label}>Who should help decide?</Text>
+                <Text style={styles.helperText}>
+                  Invite real friends to propose ideas and vote — once you pick the winner, Nearby turns it into a real plan.
+                </Text>
+                {loadingFriends && <ActivityIndicator color={colors.primary} style={{ marginTop: spacing.md }} />}
+                {!loadingFriends && friendsLoaded && friends.length === 0 && (
+                  <Text style={styles.helperText}>You don't have any friends connected yet to invite.</Text>
+                )}
+                {!loadingFriends && friends.length > 0 && (
+                  <View style={[styles.chipRow, { marginTop: spacing.md }]}>
+                    {friends.map((f) => {
+                      const selected = selectedInviteeIds.has(f.id);
+                      return (
+                        <TouchableOpacity
+                          key={f.id}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                          onPress={() => toggleInvitee(f.id)}
+                          activeOpacity={0.8}
+                          accessibilityLabel={f.display_name}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: selected }}
+                        >
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{selected ? '✓ ' : ''}{f.display_name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </>
+            )}
+
             <View style={styles.navRow}>
               <TouchableOpacity
                 style={styles.backButton}
@@ -782,7 +916,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 activeOpacity={0.85}
                 accessibilityLabel={step === 0 ? 'Cancel' : 'Back'}
                 accessibilityRole="button"
-                disabled={submittingOptions}
+                disabled={submittingOptions || creatingGroupPlan}
               >
                 <Text style={styles.backButtonText}>{step === 0 ? 'Cancel' : 'Back'}</Text>
               </TouchableOpacity>
@@ -797,6 +931,19 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 >
                   <Text style={styles.nextButtonText}>
                     {submittingOptions ? 'Sending…' : `Ask These Businesses (${selectedIds.size}) →`}
+                  </Text>
+                </TouchableOpacity>
+              ) : stepKey === 'group_invite' ? (
+                <TouchableOpacity
+                  style={[styles.nextButton, (selectedInviteeIds.size === 0 || creatingGroupPlan) && styles.nextButtonDisabled]}
+                  onPress={createGroupVote}
+                  activeOpacity={0.85}
+                  disabled={selectedInviteeIds.size === 0 || creatingGroupPlan}
+                  accessibilityLabel={`Create Group Vote (${selectedInviteeIds.size})`}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.nextButtonText}>
+                    {creatingGroupPlan ? 'Creating…' : `Create Group Vote (${selectedInviteeIds.size}) →`}
                   </Text>
                 </TouchableOpacity>
               ) : (

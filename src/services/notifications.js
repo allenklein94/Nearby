@@ -418,6 +418,16 @@ export async function routeNotificationTap(data) {
         navigationRef.navigate('DateProposal', { matchId: data.match_id });
       }
       break;
+    // "Group planning for an Occasion" (CLAUDE.md): an invite to propose/
+    // vote, and the "it's decided" push once the host picks a winner, both
+    // land on the same real detail screen -- it already renders whatever's
+    // actually true (invited/voting/decided/cancelled) for the caller.
+    case 'occasion_group_plan_invite':
+    case 'occasion_group_plan_decided':
+      if (data.plan_id) {
+        navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
+      }
+      break;
     default:
       break;
   }

@@ -8,6 +8,7 @@ import {
   buildOccasionSaveParams,
   dateWindowForWhenPreset,
   extractNameFromBirthdayTitle,
+  resolveDecidedGroupPlanParams,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -167,5 +168,60 @@ describe('extractNameFromBirthdayTitle', () => {
     expect(extractNameFromBirthdayTitle('Family Reunion')).toBeNull();
     expect(extractNameFromBirthdayTitle(null)).toBeNull();
     expect(extractNameFromBirthdayTitle('')).toBeNull();
+  });
+});
+
+describe('resolveDecidedGroupPlanParams', () => {
+  it('infers whoFor=friend when a real connected friend id is present', () => {
+    const params = resolveDecidedGroupPlanParams({
+      occasionType: 'birthday',
+      whoForName: 'Sarah',
+      whoForFriendId: 'friend-1',
+      whenPreset: 'tonight',
+      scheduledDate: '2026-10-05',
+      activityType: 'dinner',
+      label: null,
+      partySize: 8,
+    });
+    expect(params).toEqual({
+      initialOccasion: 'birthday',
+      initialWhoFor: 'friend',
+      initialWhoForName: 'Sarah',
+      initialWhoForFriendId: 'friend-1',
+      initialActivityType: 'dinner',
+      initialWhenPreset: 'tonight',
+      initialScheduledAtISO: '2026-10-05T12:00:00',
+      initialPartySize: 8,
+    });
+  });
+
+  it('infers whoFor=someone_else for a real typed name with no connected id', () => {
+    const params = resolveDecidedGroupPlanParams({
+      occasionType: 'graduation',
+      whoForName: 'Alex',
+      whoForFriendId: null,
+      whenPreset: 'custom',
+      scheduledDate: '2026-11-01',
+      activityType: 'party',
+      label: 'Backyard party',
+      partySize: null,
+    });
+    expect(params.initialWhoFor).toBe('someone_else');
+    expect(params.initialPartySize).toBeNull();
+  });
+
+  it('infers whoFor=me when neither a name nor a friend id is present', () => {
+    const params = resolveDecidedGroupPlanParams({
+      occasionType: 'milestone',
+      whoForName: null,
+      whoForFriendId: null,
+      whenPreset: 'now',
+      scheduledDate: null,
+      activityType: 'activity',
+      label: null,
+      partySize: 3,
+    });
+    expect(params.initialWhoFor).toBe('me');
+    expect(params.initialScheduledAtISO).toBeNull();
   });
 });
