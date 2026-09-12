@@ -457,6 +457,11 @@ export async function routeNotificationTap(data) {
     // actually true (invited/voting/decided/cancelled) for the caller.
     case 'occasion_group_plan_invite':
     case 'occasion_group_plan_decided':
+    // Item 67 (CLAUDE.md, "Let the group vote on businesses"): the push
+    // sent when the activity-type vote closes on a business-destined
+    // choice ("Dinner won -- vote on where!") -- same real detail screen,
+    // which already renders whatever's true for 'voting_business' too.
+    case 'occasion_group_plan_voting_business':
       if (data.plan_id) {
         navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
       }

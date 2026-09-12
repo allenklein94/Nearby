@@ -12,9 +12,23 @@ import {
   cancelOccasionGroupPlan,
   setOccasionGroupPlanOrganizer,
   inviteMoreToOccasionGroupPlan,
+  proposeOccasionBusinessOptions,
+  decideOccasionGroupPlanBusiness,
+  skipOccasionGroupPlanBusinessVote,
+  linkOccasionGroupPlanToPlan,
 } from '../services/occasionGroupPlans';
 import { getMyFriends } from '../services/friends';
-import { ACTIVITY_OPTIONS, resolveDecidedGroupPlanParams, formatBudgetRange } from '../services/celebrateSomething';
+import { resolveIntent } from '../services/intentResolver';
+import { submitBusinessRequest } from '../services/businessFulfillment';
+import {
+  ACTIVITY_OPTIONS,
+  resolveDecidedGroupPlanParams,
+  formatBudgetRange,
+  dateWindowForWhenPreset,
+  extractBusinessCandidateIds,
+  formatBusinessOptionDetail,
+  composeCelebrationAskText,
+} from '../services/celebrateSomething';
 import { OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { WHEN_PRESETS } from '../utils/whenPresets';
 import LoadErrorState from '../components/LoadErrorState';
@@ -36,6 +50,22 @@ import { typography, spacing, radius } from '../theme';
 // stays intentionally small: no RSVP complexity beyond invited/joined/
 // declined, no elaborate invitations, no seating charts, no calendars
 // beyond the occasion's own single date.
+//
+// Item 67 (CLAUDE.md, "Let the group vote on businesses"): a SECOND,
+// optional voting round on this same screen. Once the group decides a
+// business-destined activity type (dinner/night_out/activity),
+// decideOccasionGroupPlan moves the plan to 'voting_business' instead of
+// 'decided' -- this screen then fetches real live resolveIntent()
+// candidates (the same resolver CelebrateSomethingScreen's own 'options'
+// step already calls) and proposes the top few as new, votable, real
+// business_availability options (never fabricated -- each is re-verified
+// live server-side). The whole group votes again on WHICH business, not
+// just what to do. Once the host decides the winner, "Book It" submits the
+// real bound business_request directly via the existing
+// submitBusinessRequest(preferredAvailabilityId) primitive -- which itself
+// instantly creates a real 'offered' business_request_offers row. Request
+// -> offer -> (accept ->) reservation, without ever routing back through
+// CelebrateSomethingScreen's own wizard steps a second time.
 function activityMeta(activityType) {
   return ACTIVITY_OPTIONS.find((o) => o.key === activityType) ?? { icon: '💡', label: activityType };
 }
@@ -78,6 +108,17 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [selectedNewInviteeIds, setSelectedNewInviteeIds] = useState(() => new Set());
   const [invitingMore, setInvitingMore] = useState(false);
+
+  // Item 67 ("Let the group vote on businesses"): businessOptionsLoading
+  // covers the host's device fetching real resolveIntent() candidates right
+  // after deciding a business-destined activity type; businessFetchError
+  // is a real, honest "Nearby found zero genuine options nearby" state (not
+  // a network error) -- both offer a real next step (Try Again / Skip),
+  // never a dead end. booking covers submitBusinessRequest's own real
+  // network round trip once the group's winning business is decided.
+  const [businessOptionsLoading, setBusinessOptionsLoading] = useState(false);
+  const [businessFetchError, setBusinessFetchError] = useState(false);
+  const [booking, setBooking] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -150,22 +191,126 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
   }
 
   function handleDecide(option) {
+    const destinationCopy = ['dinner', 'night_out', 'activity'].includes(option.activityType)
+      ? "This locks in the group's choice -- Nearby will find real businesses for everyone to vote on next."
+      : "This locks in the group's choice and takes you to find real options nearby.";
     Alert.alert(
       `Go with "${option.label || activityMeta(option.activityType).label}"?`,
-      "This locks in the group's choice and takes you to find real options nearby.",
+      destinationCopy,
       [
         { text: 'Never mind', style: 'cancel' },
         {
           text: 'Decide',
           onPress: async () => {
             const decided = await runAction(() => decideOccasionGroupPlan(planId, option.id));
-            if (decided) {
+            if (!decided) return;
+            // Item 67: a business-destined activity type doesn't navigate
+            // away -- it starts a second, real group vote right here on
+            // this same screen (fetchAndProposeBusinessOptions).
+            if (decided.status === 'voting_business') {
+              fetchAndProposeBusinessOptions();
+            } else {
               navigation.replace('CelebrateSomething', resolveDecidedGroupPlanParams(decided, planId));
             }
           },
         },
       ]
     );
+  }
+
+  // Item 67 ("Let the group vote on businesses"): the host's device finds
+  // real live business_availability candidates for the just-decided
+  // activity type using the exact same resolveIntent() call
+  // CelebrateSomethingScreen's own 'options' step already makes -- no
+  // second matching engine. Nearby's own top picks (never a free-for-all
+  // proposal) get stored as votable options; a genuine zero-result search
+  // shows a real empty state with a real next step, never a silent dead end.
+  async function fetchAndProposeBusinessOptions() {
+    setBusinessOptionsLoading(true);
+    setBusinessFetchError(false);
+    try {
+      const joinedCount = detail?.participants?.filter((p) => p.status === 'joined').length ?? 1;
+      const result = await resolveIntent({
+        category: null,
+        dateWindow: dateWindowForWhenPreset(detail?.whenPreset),
+        rawText: '',
+        partySize: Math.max(joinedCount, 1),
+        occasion: detail?.occasionType,
+      });
+      const ids = extractBusinessCandidateIds(result);
+      if (ids.length === 0) {
+        setBusinessFetchError(true);
+      } else {
+        await proposeOccasionBusinessOptions(planId, ids);
+      }
+    } catch (e) {
+      setBusinessFetchError(true);
+    }
+    await load();
+    setBusinessOptionsLoading(false);
+  }
+
+  function handleDecideBusiness(option) {
+    Alert.alert(
+      `Go with ${option.partnerName || 'this business'}?`,
+      "This locks in the group's choice. You'll be able to book it right after.",
+      [
+        { text: 'Never mind', style: 'cancel' },
+        { text: 'Decide', onPress: () => runAction(() => decideOccasionGroupPlanBusiness(planId, option.id)) },
+      ]
+    );
+  }
+
+  // Host-only escape hatch: falls back to the pre-Item-67 behavior (browse
+  // personally in CelebrateSomethingScreen) when Nearby found zero genuine
+  // businesses nearby, or the host would rather skip the second vote.
+  async function handleSkipBusinessVote() {
+    const decided = await runAction(() => skipOccasionGroupPlanBusinessVote(planId));
+    if (decided) {
+      navigation.replace('CelebrateSomething', resolveDecidedGroupPlanParams(decided, planId));
+    }
+  }
+
+  // Item 67's own final step: the group already picked the real business --
+  // this submits the actual bound business_request via the exact same
+  // submitBusinessRequest(preferredAvailabilityId) primitive Item 53/61
+  // already established, which itself instantly creates a real 'offered'
+  // business_request_offers row. Host-only (a business_availability posting
+  // has finite real capacity -- letting every participant independently
+  // "book" the same winning slot would create duplicate competing requests
+  // against it).
+  async function handleBookWinningBusiness(option) {
+    if (!detail) return;
+    const joinedCount = detail.participants.filter((p) => p.status === 'joined').length;
+    const whoFor = detail.whoForFriendId ? 'friend' : detail.whoForName ? 'someone_else' : 'me';
+    const askText = composeCelebrationAskText({
+      occasion: detail.occasionType, whoFor, whoForName: detail.whoForName, activityType: option.activityType,
+    });
+    setBooking(true);
+    try {
+      const result = await submitBusinessRequest({
+        text: askText,
+        partySize: Math.max(joinedCount, 1),
+        budgetMin: detail.budgetMin,
+        budgetMax: detail.budgetMax,
+        date: detail.scheduledDate,
+        occasion: detail.occasionType,
+        preferredAvailabilityId: option.businessAvailabilityId,
+      });
+      linkOccasionGroupPlanToPlan({ groupPlanId: planId, resultingBusinessRequestId: result.requestId }).catch(() => {});
+      navigation.replace('BusinessRequestDetail', {
+        requestId: result.requestId,
+        justSubmitted: true,
+        notifiedCount: result.notifiedCount,
+        duplicate: result.duplicate,
+        prefillText: askText,
+        prefillOccasion: detail.occasionType,
+        prefillPartySize: Math.max(joinedCount, 1),
+      });
+    } catch (e) {
+      Alert.alert('Something went wrong', e.message);
+    }
+    setBooking(false);
   }
 
   function handleCancel() {
@@ -320,7 +465,33 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
           </View>
         )}
 
-        {(detail.status === 'decided' || detail.status === 'fulfilled') && winningOption && (
+        {/* Item 67: a business-kind winning option (the group voted on a
+            specific real business, not just an activity type) gets its own
+            decided-card treatment -- real partner/posting/price/time, a
+            host-only "Book It" action, and (once fulfilled) a static real
+            confirmation instead of "Find More Options" -- there's exactly
+            one real request tied to this specific plan, never several. */}
+        {(detail.status === 'decided' || detail.status === 'fulfilled') && winningOption?.optionKind === 'business' && (
+          <View style={styles.decidedCard}>
+            <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? '✅ Booked!' : "🎉 It's decided!"}</Text>
+            <Text style={styles.decidedChoice}>🍽️ {winningOption.partnerName}</Text>
+            {!!winningOption.postingTitle && <Text style={styles.subheader}>{winningOption.postingTitle}</Text>}
+            {!!formatBusinessOptionDetail(winningOption) && (
+              <Text style={[styles.subheader, { marginBottom: spacing.md }]}>{formatBusinessOptionDetail(winningOption)}</Text>
+            )}
+            {detail.status === 'fulfilled' ? (
+              <Text style={styles.helperText}>Track it from your Plans tab.</Text>
+            ) : detail.isHost ? (
+              <TouchableOpacity style={styles.decideButton} onPress={() => handleBookWinningBusiness(winningOption)} disabled={booking} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Book this business">
+                <Text style={styles.decideButtonText}>{booking ? 'Booking…' : 'Book It →'}</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.helperText}>Waiting for the host to book it.</Text>
+            )}
+          </View>
+        )}
+
+        {(detail.status === 'decided' || detail.status === 'fulfilled') && winningOption && winningOption.optionKind !== 'business' && (
           <View style={styles.decidedCard}>
             <Text style={styles.decidedLabel}>{detail.status === 'fulfilled' ? '✅ Turned into a real plan!' : "🎉 It's decided!"}</Text>
             <Text style={styles.decidedChoice}>
@@ -334,6 +505,77 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
               <Text style={styles.decideButtonText}>{detail.status === 'fulfilled' ? 'Find More Options →' : 'Find Options Nearby →'}</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* Item 67: the second, real group vote round -- WHICH business, not
+            just what to do. Nearby's own picks (fetchAndProposeBusinessOptions)
+            show up as votable options exactly like the activity round above;
+            a genuine zero-result search is a real empty state with a real
+            next step (Try Again / host-only Skip), never a dead end. */}
+        {detail.status === 'voting_business' && (
+          <>
+            <Text style={styles.sectionLabel}>🍽️ Vote on Where</Text>
+            {businessOptionsLoading && (
+              <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={[styles.helperText, { marginTop: spacing.sm }]}>✨ Nearby is finding real options for the group to vote on…</Text>
+              </View>
+            )}
+            {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>{businessFetchError ? "Nearby couldn't find real businesses nearby for this." : 'No options yet.'}</Text>
+                {detail.isHost && (
+                  <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                    <TouchableOpacity style={styles.declineButton} onPress={fetchAndProposeBusinessOptions} accessibilityRole="button" accessibilityLabel="Try finding options again">
+                      <Text style={styles.declineButtonText}>Try Again</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.acceptButton} onPress={handleSkipBusinessVote} disabled={acting} accessibilityRole="button" accessibilityLabel="Skip and pick manually">
+                      <Text style={styles.acceptButtonText}>Skip — I'll Pick →</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
+            {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').map((option) => (
+              <View key={option.id} style={styles.optionCard}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.optionTitle}>{option.partnerName}{option.stillActive === false ? ' (no longer available)' : ''}</Text>
+                  {!!option.postingTitle && <Text style={styles.optionSubtitle}>{option.postingTitle}</Text>}
+                  <Text style={styles.optionSubtitle}>
+                    {[formatBusinessOptionDetail(option), `${option.voteCount} vote${option.voteCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
+                  </Text>
+                </View>
+                {detail.myStatus === 'joined' && (
+                  <TouchableOpacity
+                    style={[styles.voteButton, option.myVote && styles.voteButtonActive]}
+                    onPress={() => handleToggleVote(option)}
+                    disabled={acting}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.myVote ? 'Remove vote' : 'Vote for this'}
+                  >
+                    <Text style={[styles.voteButtonText, option.myVote && styles.voteButtonTextActive]}>{option.myVote ? '✓ Voted' : 'Vote'}</Text>
+                  </TouchableOpacity>
+                )}
+                {detail.isHost && (
+                  <TouchableOpacity
+                    style={styles.decideLink}
+                    onPress={() => handleDecideBusiness(option)}
+                    disabled={acting || option.stillActive === false}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Decide on ${option.partnerName}`}
+                  >
+                    <Text style={styles.decideLinkText}>Pick →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+            {!businessOptionsLoading && detail.isHost && detail.options.filter((o) => o.optionKind === 'business').length > 0 && (
+              <TouchableOpacity onPress={fetchAndProposeBusinessOptions} disabled={acting} accessibilityRole="button" accessibilityLabel="Find more options">
+                <Text style={[styles.inviteMoreLink, { marginTop: spacing.xs }]}>🔄 Find More Options</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         {detail.status === 'voting' && (

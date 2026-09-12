@@ -19,6 +19,7 @@ import {
   shouldOfferCalendarSave,
   buildOccasionSaveParams,
   dateWindowForWhenPreset,
+  dedupeBusinessCandidates,
   ACTIVITY_OPTIONS,
   BUDGET_RANGE_OPTIONS,
   formatBudgetRange,
@@ -392,21 +393,10 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // Every real, selectable business_availability candidate resolveIntent()
   // found -- bundles, per-component items, and (when no experience
   // assembled) the flat list, deduped by id since the same posting could
-  // otherwise appear in more than one of those buckets.
-  const allCandidates = useMemo(() => {
-    if (!optionsResult) return [];
-    const byId = new Map();
-    (optionsResult.experience?.bundles ?? []).forEach((c) => byId.set(c.id, c));
-    (optionsResult.experience?.components ?? []).forEach((comp) => {
-      comp.items.forEach((c) => { if (c.type === 'business_availability') byId.set(c.id, c); });
-    });
-    if (!optionsResult.experience) {
-      optionsResult.items
-        .filter((c) => c.type === 'business_availability')
-        .forEach((c) => byId.set(c.id, c));
-    }
-    return Array.from(byId.values());
-  }, [optionsResult]);
+  // otherwise appear in more than one of those buckets. Shared with
+  // GroupOccasionPlanScreen's own Item 67 candidate fetch --
+  // dedupeBusinessCandidates() in celebrateSomething.js.
+  const allCandidates = useMemo(() => dedupeBusinessCandidates(optionsResult), [optionsResult]);
 
   function toggleSelected(candidate) {
     if (candidate.type !== 'business_availability') return;

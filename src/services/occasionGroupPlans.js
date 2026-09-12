@@ -113,6 +113,53 @@ export async function decideOccasionGroupPlan(planId, optionId) {
   return data;
 }
 
+// Item 67 (CLAUDE.md, "Let the group vote on businesses"): when the group's
+// decided activity type is business-destined (dinner/night_out/activity),
+// decideOccasionGroupPlan above moves the plan to 'voting_business' instead
+// of 'decided' -- the host's device then fetches real live candidates via
+// resolveIntent() (celebrateSomething.js's extractBusinessCandidateIds) and
+// proposes them here. Every id is re-verified live server-side before being
+// stored as a votable option -- never trusted blindly.
+export async function proposeOccasionBusinessOptions(planId, availabilityIds) {
+  const { data, error } = await supabase.rpc('propose_occasion_business_options', {
+    plan_id_param: planId,
+    availability_ids_param: availabilityIds,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Host-only, finalizes the business round -- the winning business_
+// availability is re-verified live for real availability before the plan
+// moves to 'decided'. The client (GroupOccasionPlanScreen's "Book It")
+// still has to call the real submitBusinessRequest(preferredAvailabilityId)
+// itself right after this succeeds -- this RPC only records the group's
+// decision, since only the client has the host's own real device location
+// submitBusinessRequest needs.
+export async function decideOccasionGroupPlanBusiness(planId, optionId) {
+  const { data, error } = await supabase.rpc('decide_occasion_group_plan_business', {
+    plan_id_param: planId,
+    option_id_param: optionId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Escape hatch, host-only: when Nearby finds zero genuine businesses nearby
+// for the decided activity type (or the host just wants to browse
+// personally), falls back to exactly the pre-Item-67 behavior -- finalizes
+// on the original activity-type choice. Returns the same shape
+// decideOccasionGroupPlan returns for a non-business destination, so the
+// caller can still hand off into CelebrateSomethingScreen via
+// resolveDecidedGroupPlanParams.
+export async function skipOccasionGroupPlanBusinessVote(planId) {
+  const { data, error } = await supabase.rpc('skip_occasion_group_plan_business_vote', {
+    plan_id_param: planId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function cancelOccasionGroupPlan(planId) {
   const { error } = await supabase.rpc('cancel_occasion_group_plan', {
     plan_id_param: planId,

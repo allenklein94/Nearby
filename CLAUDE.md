@@ -40,6 +40,72 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 67 ("Let the group vote on businesses") — fully DONE (2026-09-12), same-day direct
+follow-up to Item 66.** User's own example: Nearby finds real options (Restaurant A 7:00 PM
+$65/person / Restaurant B 7:30 PM $52/person / Restaurant C 8:00 PM $70/person), everyone votes,
+Restaurant B wins → request/offer → availability → reservation → plan confirmed — "a social
+commerce loop without making it feel like commerce." Before this item, the group vote
+(`occasion_group_plans`) only ever covered WHAT TO DO (an activity_type); only the host
+personally browsed real businesses afterward and picked alone. This adds a SECOND, optional
+voting round on the same plan/options/votes tables: once the group decides a business-destined
+activity type (dinner/night_out/activity), the plan moves to a new `voting_business` status
+instead of `decided` (`20261027_occasion_group_plan_business_vote.sql`) — the host's device
+fetches real live `resolveIntent()` candidates (the exact same resolver
+`CelebrateSomethingScreen`'s own 'options' step already calls — no second matching engine) and
+`propose_occasion_business_options` stores the top few as new, votable, real
+`occasion_group_plan_options` rows (`option_kind='business'`, a real `business_availability_id`
+FK) — every id is re-verified live server-side (active, not expired, has capacity, its own
+business still active) before being stored, never trusted blindly from the client. The whole
+group votes again on WHICH business (`cast_occasion_vote`, already fully generic over any option
+id, only its status gate widened). The host decides the winner
+(`decide_occasion_group_plan_business`) — re-verified live for availability a second time right
+before finalizing, since a posting can go stale between being proposed and being decided
+(verified live: a posting that fills up after being proposed is correctly rejected at decide time
+with the plan left unchanged in `voting_business`, never partially applied). `get_occasion_group_
+plan_detail` now returns each business option's real partner name/posting title/price/start time
+via a live LEFT JOIN (never a stored snapshot, so a posting going stale between votes shows
+`stillActive: false` honestly rather than stale cached data).
+
+Client: `GroupOccasionPlanScreen.js`'s `handleDecide` branches on the decide response's new
+`status` field — a business-destined activity type doesn't navigate away, it fetches and shows a
+real "🍽️ Vote on Where" section right there (real partner/price/time per option, vote buttons,
+host-only "Pick →"), with a genuine empty state (zero real businesses found nearby) offering
+"Try Again" or a host-only "Skip — I'll Pick →" escape hatch
+(`skip_occasion_group_plan_business_vote`, host-only, falls back to exactly the pre-Item-67
+behavior — finalizes on the original activity choice and hands into CelebrateSomethingScreen's
+own solo browse). Once decided, a business-kind winner gets its own decided card (real partner/
+posting/price/time, no fabricated activity icon) with a host-only "Book It →" action
+(`handleBookWinningBusiness`) that calls the existing `submitBusinessRequest
+(preferredAvailabilityId)` primitive directly — no second trip through CelebrateSomethingScreen's
+wizard steps — which itself instantly creates a real 'offered' `business_request_offers` row
+(request → offer, in one step), then links back via the existing `linkOccasionGroupPlanToPlan` and
+lands on the real `BusinessRequestDetail` screen. Deliberately host-only (not every joined
+participant): a business_availability posting has finite real capacity, and letting several
+participants independently "book" the same winning slot would create duplicate competing
+requests against it — a disclosed, deliberate scope boundary, not an oversight. New shared pure
+helpers in `celebrateSomething.js` (`dedupeBusinessCandidates`, `extractBusinessCandidateIds`,
+`formatBusinessOptionDetail`) — `CelebrateSomethingScreen.js`'s own solo 'options' step was
+refactored to reuse `dedupeBusinessCandidates` instead of its own copy, so the two screens can't
+drift on what counts as a real selectable candidate.
+
+Verified live against production (`enmosvippabmuqslzrox`) via disposable rolled-back transactions
+before applying the migration for real: the full happy path (decide activity → propose 3 real
+postings, one at zero capacity correctly skipped → guest votes → host decides the winner → detail
+correctly shows live partner/price/time + vote counts) end to end; a non-host correctly blocked
+from proposing business options; re-deciding an already-decided plan correctly rejected; the
+`skip` escape hatch correctly falls back to the original activity-only payload shape; the
+`option_kind`/`business_availability_id` CHECK constraint correctly rejects a malformed row; and,
+in a separate follow-up transaction, a posting that goes stale (fills to zero capacity) between
+being proposed and being decided is correctly rejected at decide time with the plan left
+unchanged in `voting_business`. All transactions rolled back and re-confirmed afterward with zero
+leaked rows. Full Jest suite 367/367 passing (13 new tests for the three new pure helpers); all
+five touched/new files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised in a running app (no simulator/device tooling this session, standing note) — next
+session should confirm on a real account that the second "Vote on Where" round, its empty/skip
+states, and the host-only "Book It" action all render and behave correctly on a real screen, and
+that a tapped `occasion_group_plan_voting_business` push correctly deep-links into
+`GroupOccasionPlanScreen`.
+
 **Item 66 ("Add collaborative planning") — fully DONE (2026-09-12), same-day direct user
 follow-up to Item 65.** User's own mock for "Sarah's 30th Birthday": Organizers (Allen, John,
 Emily) shown distinctly from Guests (8 invited), Ideas with vote counts (already shipped by the

@@ -204,6 +204,58 @@ export function extractNameFromBirthdayTitle(title) {
   return match ? match[1].trim() : null;
 }
 
+// "Connect it to businesses" -- every real, selectable business_availability
+// candidate resolveIntent() found: bundles, per-component items, and (when
+// no experience assembled) the flat list, deduped by id since the same
+// posting could otherwise appear in more than one of those buckets. Shared
+// by CelebrateSomethingScreen's own solo 'options' step and, for Item 67
+// ("Let the group vote on businesses," CLAUDE.md), GroupOccasionPlanScreen's
+// real-candidates-for-the-group-to-vote-on fetch -- one dedup rule instead
+// of two copies that could drift.
+export function dedupeBusinessCandidates(optionsResult) {
+  if (!optionsResult) return [];
+  const byId = new Map();
+  (optionsResult.experience?.bundles ?? []).forEach((c) => byId.set(c.id, c));
+  (optionsResult.experience?.components ?? []).forEach((comp) => {
+    comp.items.forEach((c) => { if (c.type === 'business_availability') byId.set(c.id, c); });
+  });
+  if (!optionsResult.experience) {
+    (optionsResult.items ?? [])
+      .filter((c) => c.type === 'business_availability')
+      .forEach((c) => byId.set(c.id, c));
+  }
+  return Array.from(byId.values());
+}
+
+// Item 67: the top few real business_availability ids for the group to vote
+// on -- Nearby's own curated picks (highest-scored first), never an open
+// proposal free-for-all. `limit` mirrors propose_occasion_business_options'
+// own 5-option cap server-side (a lower client-side value is fine; a higher
+// one just gets partially accepted, never an error).
+export function extractBusinessCandidateIds(optionsResult, limit = 5) {
+  return dedupeBusinessCandidates(optionsResult)
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .slice(0, limit)
+    .map((c) => c.id);
+}
+
+// Item 67: a real, honest one-line detail string for a business option
+// being voted on -- "$65 · Fri, Sep 19 · 7:00 PM" -- built only from
+// whatever the server actually returned (get_occasion_group_plan_detail's
+// live-joined price/startsAt), same "$X" convention (no "/person" suffix)
+// AskBusinessScreen already uses for the identical field.
+export function formatBusinessOptionDetail({ price, startsAt }) {
+  const parts = [];
+  if (startsAt) {
+    const d = new Date(startsAt);
+    if (!Number.isNaN(d.getTime())) {
+      parts.push(d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
+    }
+  }
+  if (price != null) parts.push(`$${price}`);
+  return parts.join(' · ') || null;
+}
+
 // "Group planning for an Occasion" (CLAUDE.md, direct user follow-up):
 // decide_occasion_group_plan()'s own jsonb payload already carries every
 // real answer this wizard needs (occasion/who-for/activity/when -- the

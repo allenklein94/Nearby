@@ -10,6 +10,9 @@ import {
   extractNameFromBirthdayTitle,
   resolveDecidedGroupPlanParams,
   formatBudgetRange,
+  dedupeBusinessCandidates,
+  extractBusinessCandidateIds,
+  formatBusinessOptionDetail,
 } from './celebrateSomething';
 
 describe('composeCelebrationTitle', () => {
@@ -300,5 +303,64 @@ describe('formatBudgetRange', () => {
 
   it('formats a ceiling-only budget honestly, never guessing a floor', () => {
     expect(formatBudgetRange(null, 25)).toBe('Up to $25/person');
+  });
+});
+
+// Item 67 ("Let the group vote on businesses," CLAUDE.md)
+describe('dedupeBusinessCandidates', () => {
+  it('returns an empty array for no result yet', () => {
+    expect(dedupeBusinessCandidates(null)).toEqual([]);
+  });
+
+  it('dedupes bundles + component items by id when an experience was assembled', () => {
+    const result = {
+      experience: {
+        bundles: [{ id: 'a', type: 'business_availability' }],
+        components: [
+          { items: [{ id: 'b', type: 'business_availability' }, { id: 'a', type: 'business_availability' }] },
+          { items: [{ id: 'c', type: 'gathering' }] },
+        ],
+      },
+      items: [],
+    };
+    expect(dedupeBusinessCandidates(result).map((c) => c.id).sort()).toEqual(['a', 'b']);
+  });
+
+  it('falls back to the flat items list, business_availability only, when no experience was assembled', () => {
+    const result = { experience: null, items: [{ id: 'x', type: 'business_availability' }, { id: 'y', type: 'gathering' }] };
+    expect(dedupeBusinessCandidates(result).map((c) => c.id)).toEqual(['x']);
+  });
+});
+
+describe('extractBusinessCandidateIds', () => {
+  it('returns the top-scored ids, highest first, capped at the given limit', () => {
+    const result = {
+      experience: null,
+      items: [
+        { id: 'low', type: 'business_availability', score: 1 },
+        { id: 'high', type: 'business_availability', score: 9 },
+        { id: 'mid', type: 'business_availability', score: 5 },
+      ],
+    };
+    expect(extractBusinessCandidateIds(result, 2)).toEqual(['high', 'mid']);
+  });
+
+  it('returns an empty array when Nearby found nothing, never a fabricated fallback', () => {
+    expect(extractBusinessCandidateIds({ experience: null, items: [] })).toEqual([]);
+  });
+});
+
+describe('formatBusinessOptionDetail', () => {
+  it('combines a real starts-at time and price', () => {
+    const result = formatBusinessOptionDetail({ price: 52, startsAt: '2026-09-19T19:30:00Z' });
+    expect(result).toContain('$52');
+  });
+
+  it('shows price alone when no real starts-at time exists', () => {
+    expect(formatBusinessOptionDetail({ price: 65, startsAt: null })).toBe('$65');
+  });
+
+  it('honestly returns null when neither field is real, never a fabricated placeholder', () => {
+    expect(formatBusinessOptionDetail({ price: null, startsAt: null })).toBeNull();
   });
 });
