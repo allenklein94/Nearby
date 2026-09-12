@@ -1720,6 +1720,23 @@ when the `NEARBY_WEB_EXPORT_BASE_URL` env var is set — i.e. only during the do
 command above, never during a native EAS build. Do not put `baseUrl` back into `app.json` as a
 static value.
 
+## Backlog (v2 candidates — not started, do not build without a direct ask)
+
+Deliberately out of scope for "Group planning for an Occasion" (see above) per the user's own
+explicit v1 guardrail — the killer loop is Remember → Plan → Invite → Find something → Connect
+business → Do it, and these would each turn it into a "giant event-management platform" the user
+specifically said not to build yet:
+
+- Complex RSVP systems (beyond the current plain invited/joined/declined on
+  `occasion_group_plan_participants`)
+- Elaborate invitations (custom invite text/design, themed invite cards, etc.)
+- Gift registries
+- Seating charts
+- Massive event pages (a dedicated rich event-detail surface beyond `GroupOccasionPlanScreen`'s
+  current lean voting view)
+- Complicated calendars (recurring sub-events, multi-day itineraries, etc. — beyond the single
+  `scheduled_date` the occasion already has)
+
 ## Standing Conventions (Locked)
 
 These are the load-bearing rules distilled from thousands of lines of prior build history. Full
