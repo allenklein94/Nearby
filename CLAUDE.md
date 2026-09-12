@@ -40,6 +40,19 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 60 ("the CEO test," first-time-user obviousness) — IN PROGRESS, resume here.** Working
+doc: `PRODUCT_AUDIT/CEO_TEST_2026-09-12.md`. User's ask: open the app as someone who's never seen
+it, and check whether 5 questions in order (What is Nearby? / What can I do here? / How do I find
+something? / How do I meet/connect with someone? / How do I actually make something happen?) are
+each answerable from what's on screen with no chained "click here, then this opens, then there's
+a link" explanation. A research fork was launched to trace this against real screen copy/
+navigation (Login/Onboarding for Q1, tab bar + Home for Q2, Discover for Q3, People/Matches for
+Q4, Create for Q5) — if reading this after a restart and no fork result has landed, treat it as
+gone (background fork state doesn't survive a restart, same caveat as Item 59's Journey E) and
+relaunch fresh rather than wait. Once findings land: fix concrete, small copy/CTA-obviousness gaps
+directly; for anything that implies a bigger navigation/architecture change, disclose and ask
+before building (feature-freeze convention) rather than assume scope.
+
 **Item 59 ("the Thursday acceptance test," 5 end-to-end journeys) — fully DONE (2026-09-12).** All
 5 journeys traced and verified against real current code; 6 real bugs found and fixed (friend-plan
 mislabeling, 3 dating-language leaks in Chat, 1 dormant `plans.status` mapping gap), 2 real
