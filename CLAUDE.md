@@ -40,6 +40,94 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 88 ("Let multiple people organize the same occasion") — fully DONE (2026-09-13), same-day
+direct follow-up to Item 87.** User's own example: "Sarah's birthday could have Organizer: Allen,
+Co-organizers: John + Emily. Everyone can help. One person might find the restaurant, another
+invite people, another coordinate transportation, another handle decorations. You don't
+necessarily need full task-management initially, but the architecture should support multiple
+organizers."
+
+Audited the real current state first: Item 66 ("Add collaborative planning") already built a real
+co-organizer concept (`occasion_group_plan_participants.is_organizer`), but scoped to the VOTING
+phase only — the moment a group plan is decided and a real `business_requests`/gathering is
+created, that authority evaporated; only the one session that actually created the resulting row
+could do anything with it from then on, even for the far more common path (a solo "Plan for
+Someone" wizard submission with no group vote at all).
+
+Shipped a real, generic, plan-type-agnostic organizer concept hung off the already-existing
+unified `plans` object (Phase G) rather than a second, occasion-specific copy —
+`20261108_plan_organizers.sql`: a new `plan_organizers` table (RLS-enabled, zero client policies,
+every access through SECURITY DEFINER RPCs, same posture as `occasion_group_plans`), and
+`is_plan_organizer(plan_id, user_id)` — one shared predicate (host via `plans.created_by`, OR a
+real `plan_organizers` row) reused by every check below so "who can act on this plan" can never
+drift into two different definitions. Deliberately bounded to what the item's own 4 examples need,
+not full task-management: an organizer can view the plan, add/manage add-on business requests
+(the real mechanism behind "coordinate transportation"/"handle decorations" — Item 81's plan-
+timeline add-ons), invite people (Item 36), and retime/relabel plan items. Accepting a specific
+business's offer, cancelling the plan, and adding/removing organizers all stay host-only — the
+same "one real final decider" guardrail Item 66 already locked for the voting phase, now carried
+through to the real resulting plan.
+
+**Scoped to business_request-destined plans only** (the one destination with a real multi-request
+"Plan" — add-ons — to actually share authority over) — a gathering-destined occasion (a party)
+keeps its existing single-host model untouched, a real, disclosed follow-up, not silently assumed
+covered by the generic table. `create_plan_addon_request`/`invite_to_business_request`/
+`set_plan_item_time` (all unchanged signatures, safe `CREATE OR REPLACE`) now authorize via a new
+`_can_manage_business_request()` helper (owner OR an organizer of the plan behind the row's
+PRIMARY id — an add-on's own creator keeps their normal owner access too, and any organizer can
+manage ANY add-on in the plan, not just their own). New RPCs: `get_plan_organizers`/
+`add_plan_organizer`/`remove_plan_organizer` (all take a business_request id — the primary or any
+of its add-ons — and resolve the plan behind it internally, so the client never needs to know
+`plans.id`). `link_occasion_group_plan_to_plan` now also carries a decided group plan's own real
+`is_organizer=true` participants forward onto the resulting real plan the moment it's linked — a
+real integration point, not a parallel concept, so Item 66's voting-phase organizers don't lose
+their authority the moment voting ends.
+
+**A real bug was caught and fixed during live verification, not a hypothetical**: an RLS policy's
+own `USING` expression runs as the *querying* role, not the table owner — so the first draft's
+policies on `business_requests`/`business_request_offers`, which referenced `public.plans`
+directly inside their `USING` clause, were themselves silently subject to `plans`' *own* RLS
+("Users can view their own plans" — `created_by = auth.uid()` only), which a co-organizer always
+fails since they aren't the plan's creator. Confirmed live: an inline `exists (select 1 from
+plans...)` predicate evaluated false for a real, confirmed organizer, while the exact same logic
+wrapped in a new SECURITY DEFINER function (`_is_organizer_of_primary_request`/
+`_can_view_business_request_offers` — same reason `is_match_participant`/`is_group_plan_participant`
+already exist as functions rather than inline policy subqueries) correctly evaluated true. Fixed
+before ever being treated as done.
+
+Client: `BusinessRequestDetailScreen.js` (shown on both a primary's and an add-on's own screen,
+since organizing authority applies plan-wide either way) gained a "👥 Organizers" section — host +
+co-organizers, a host-only "+ Add Co-Organizer" picker reusing the same real friend/match list
+already loaded for "Invite Someone," and a host-only "Remove" per co-organizer. The pre-existing
+"Invite Someone" eligibility gate and the add-on section's own `canAddAddons` flag were both
+broadened from strictly `requester_id === me` to "me or any real organizer of this plan" — bundled
+in was a real, disclosed pre-existing gap this fix closes for free: `canAddAddons` had no ownership
+check at all before this (`request.status === 'open'` only), meaning the section was visibly
+rendered for any viewer who could load the screen at all (a match participant, a gathering-
+interest-approved attendee) even though only the true owner could ever succeed at the underlying
+RPC — now it genuinely matches who can succeed.
+
+Verified live against production (`enmosvippabmuqslzrox`) via a comprehensive disposable rolled-
+back transaction (the full migration plus a real host/organizer/stranger fixture run together,
+then rolled back) covering every boundary: a stranger is correctly blocked from adding an organizer
+or creating an add-on; the host successfully adds a real friend as co-organizer (with a real push
+queued, confirmed via `net.http_request_queue`'s decoded body); the new organizer can then view the
+primary request and its offers via the new RLS policies, call `get_plan_organizers`, create a
+Transportation add-on owned by themselves, and the host can retime that same add-on (shared
+authority confirmed both directions); removing the organizer correctly revokes their RLS access
+again; a decided group plan's own `is_organizer=true` participant is correctly carried onto the
+real plan via `link_occasion_group_plan_to_plan`. Zero leaked rows confirmed afterward (the whole
+fixture-plus-migration transaction was rolled back together). Re-confirmed live after the real
+apply: all 11 new/changed functions have exactly one overload each (no signature drift), and both
+tables' policy lists show the new organizer policies alongside every pre-existing one, untouched.
+
+Full Jest suite 455/455 passing (no pure-function changes — this is DB/RLS-plus-UI wiring); all
+three touched/new client files transform-checked clean via `@babel/core` + `babel-preset-expo`.
+Not exercised in a running app (no simulator/device tooling this session, standing note) — next
+session should confirm on a real account that the "👥 Organizers" section renders correctly for
+both host and co-organizer, that "+ Add Co-Organizer" and "Remove" work end to end, and that a
+tapped `plan_organizer_added` push correctly lands on the right `BusinessRequestDetail` screen.
+
 **Item 87 ("Add 'Upcoming' to the person's profile") — fully DONE (2026-09-13), same-day direct
 follow-up to Item 86.** User's own example: on a friend's profile, if I've saved a real occasion
 for them, show "Upcoming / 🎂 Birthday · Sept 18" — but only if appropriate to privacy settings,

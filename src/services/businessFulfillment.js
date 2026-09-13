@@ -520,6 +520,44 @@ export async function setPlanItemTime(requestId, planTime = null, planLabel = nu
 // (planAddonReadiness.js, Item 81) filters out the cancelled ones itself
 // when rendering the real chronological timeline, so a retry's own
 // audit trail still stays in the DB without lingering as a ghost row.
+// Item 88 (CLAUDE.md, "Let multiple people organize the same occasion"):
+// resolves a business_request id (the primary or any of its add-ons -- the
+// RPC itself figures out which plan is behind it) to the real host + real
+// co-organizer list. Throws for anyone who isn't the host or an already-
+// added organizer -- callers treat that as "no organizer panel to show,"
+// never a hard error banner, since plenty of legitimate viewers of this
+// screen (a match participant, a gathering-interest-approved attendee)
+// simply aren't part of the plan's organizing group.
+export async function getPlanOrganizers(requestId) {
+  const { data, error } = await supabase.rpc('get_plan_organizers', { business_request_id_param: requestId });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Host-only -- adds a real connected friend/match as a co-organizer of the
+// plan behind this request. They gain shared authority (view the plan,
+// add/manage add-ons, invite people, retime plan items) but never the
+// host's own final-decision powers (accept an offer, cancel the plan,
+// add/remove other organizers) -- same "one real final decider" guardrail
+// Item 66 already locked for the group-vote phase.
+export async function addPlanOrganizer(requestId, friendUserId) {
+  const { data, error } = await supabase.rpc('add_plan_organizer', {
+    business_request_id_param: requestId,
+    friend_user_id: friendUserId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function removePlanOrganizer(requestId, userId) {
+  const { error } = await supabase.rpc('remove_plan_organizer', {
+    business_request_id_param: requestId,
+    user_id_param: userId,
+  });
+  if (error) throw new Error(error.message);
+  return true;
+}
+
 export async function getPlanAddons(parentRequestId) {
   const { data, error } = await supabase
     .from('business_requests')

@@ -373,6 +373,12 @@ export async function routeNotificationTap(data) {
     // Same destination as its siblings above -- it's the same request
     // object, just a further state change on it.
     case 'business_reservation_confirmed':
+    // Item 88 (CLAUDE.md, "Let multiple people organize the same
+    // occasion"): a real accepted friend/match was just added as a
+    // co-organizer of this plan -- same destination as every other
+    // business_requests-shaped push, since the new "👥 Organizers" section
+    // lives right there.
+    case 'plan_organizer_added':
       if (data.request_id) {
         navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }

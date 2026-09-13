@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime } from '../services/businessFulfillment';
+import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonLabel } from '../constants/planAddons';
 import { buildPlanTimeline, summarizePlanTimelineReadiness, addonStateCopy } from '../utils/planAddonReadiness';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
@@ -240,6 +240,18 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [connections, setConnections] = useState([]);
   const [selectedInviteeIds, setSelectedInviteeIds] = useState([]);
   const [invitingSomeone, setInvitingSomeone] = useState(false);
+  // Item 88 (CLAUDE.md, "Let multiple people organize the same occasion"):
+  // null until a successful get_plan_organizers() -- the RPC itself only
+  // ever returns for someone who's genuinely authorized (host or an
+  // already-added co-organizer), so a non-null value here IS "I organize
+  // this plan," with no separate flag needed. A rejected fetch (any other
+  // viewer of this screen -- a match participant, a gathering-interest-
+  // approved attendee) just means the whole Organizers section, and the
+  // broadened Invite/add-on authority below, stay off for them.
+  const [planOrganizerInfo, setPlanOrganizerInfo] = useState(null);
+  const [showOrganizers, setShowOrganizers] = useState(false);
+  const [organizerActionBusy, setOrganizerActionBusy] = useState(false);
+  const [selectedNewOrganizerId, setSelectedNewOrganizerId] = useState(null);
   // Offer System outcome capture (CLAUDE.md, Aug 23 2026): the real "did it
   // go well?" step, asked right after a real completeBusinessReservation()
   // success -- never before, matching GatheringFeedbackModal's own "only
@@ -292,6 +304,20 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       setOffers(result.offers);
       setLoadError(false);
 
+      // Item 88: awaited (not fire-and-forget) because the Invite-Someone
+      // and add-on-authority checks just below need to know organizer
+      // status synchronously, not after a later re-render. A rejection
+      // here (any viewer who isn't the host or an already-added organizer)
+      // is expected and silent -- it just means those sections stay off.
+      let organizerInfo = null;
+      try {
+        organizerInfo = await getPlanOrganizers(requestId);
+      } catch (e) {
+        organizerInfo = null;
+      }
+      setPlanOrganizerInfo(organizerInfo);
+      const isOrganizerNow = !!organizerInfo;
+
       // Item 80: an add-on's own detail view never gets its own nested
       // "Make it special" section (no addon-of-addon) -- only a primary
       // request fetches its real add-ons.
@@ -341,7 +367,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       // plus excluding a request that's already the resulting row of a
       // confirmed group plan -- invite_to_business_request only makes
       // sense pre-confirmation.
-      if (result.request.status === 'open' && result.request.requester_id === uid && result.request.category && !result.request.group_plan_id) {
+      // Item 88: broadened from "only the requester" to "the requester OR
+      // any real co-organizer of the plan" -- "everyone can help... invite
+      // people" is one of this item's own concrete examples. Also now the
+      // one real candidate pool the host's own "+ Add Co-Organizer" picker
+      // below reuses, so it's fetched whenever the caller organizes this
+      // plan at all, not just for an open, categorized, non-merged request
+      // -- that narrower gate still independently controls whether the
+      // Invite Someone section itself renders, further down.
+      if (isOrganizerNow || (result.request.status === 'open' && result.request.requester_id === uid && result.request.category && !result.request.group_plan_id)) {
         getConnectedPeopleWithInterests()
           .then((people) => {
             setConnections(people);
@@ -437,6 +471,49 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       Alert.alert('Error', e.message);
     }
     setInvitingSomeone(false);
+  }
+
+  // Item 88 ("Let multiple people organize the same occasion," CLAUDE.md):
+  // host-only -- reuses the same `connections` list already loaded for
+  // Invite Someone above (both draw from the same real accepted-friend/
+  // active-match universe), so no second fetch is needed.
+  async function handleAddOrganizer() {
+    if (!selectedNewOrganizerId) return;
+    setOrganizerActionBusy(true);
+    try {
+      await addPlanOrganizer(requestId, selectedNewOrganizerId);
+      setSelectedNewOrganizerId(null);
+      const refreshed = await getPlanOrganizers(requestId);
+      setPlanOrganizerInfo(refreshed);
+    } catch (e) {
+      Alert.alert('Error', e.message);
+    }
+    setOrganizerActionBusy(false);
+  }
+
+  async function handleRemoveOrganizer(userId, displayName) {
+    Alert.alert(
+      'Remove co-organizer?',
+      `${displayName ?? 'This person'} will no longer be able to help manage this plan.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setOrganizerActionBusy(true);
+            try {
+              await removePlanOrganizer(requestId, userId);
+              const refreshed = await getPlanOrganizers(requestId);
+              setPlanOrganizerInfo(refreshed);
+            } catch (e) {
+              Alert.alert('Error', e.message);
+            }
+            setOrganizerActionBusy(false);
+          },
+        },
+      ]
+    );
   }
 
   // Item 81 ("One Plan can contain multiple businesses," CLAUDE.md):
@@ -693,7 +770,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     [request, offers, addons]
   );
   const planReadinessLabel = summarizePlanTimelineReadiness(planTimeline);
-  const canAddAddons = request.status === 'open';
+  // Item 88: this used to be visible to ANY viewer who could load this
+  // screen at all (including a match participant or gathering-interest-
+  // approved attendee who could never actually succeed at the underlying
+  // RPC) -- a real, disclosed pre-existing gap this item's own
+  // organizer-authority check happens to close for free. Now genuinely
+  // matches who can succeed: the requester (planOrganizerInfo resolves for
+  // them too, since is_plan_organizer treats the plan's own created_by as
+  // an implicit organizer) or a real added co-organizer.
+  const isOrganizer = !!planOrganizerInfo;
+  const canAddAddons = request.status === 'open' && isOrganizer;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -960,6 +1046,76 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             );
           })}
           </>
+        )}
+
+        {/* Item 88 ("Let multiple people organize the same occasion,"
+            CLAUDE.md): shown for both a primary and an add-on's own
+            screen -- organizing authority applies plan-wide either way.
+            planOrganizerInfo is only ever non-null for someone genuinely
+            authorized (the host, or an already-added co-organizer), so its
+            mere presence is the render gate -- no separate check needed. */}
+        {planOrganizerInfo && (
+          <View style={styles.groupPlanSection}>
+            <Text style={styles.groupPlanSectionTitle}>👥 Organizers</Text>
+            <Text style={styles.candidateText}>👑 {planOrganizerInfo.hostName ?? 'Host'} (host)</Text>
+            {planOrganizerInfo.organizers.map((o) => (
+              <View key={o.id} style={styles.organizerRow}>
+                <Text style={styles.candidateText}>🎗️ {o.displayName ?? 'Co-organizer'}</Text>
+                {planOrganizerInfo.isHost && (
+                  <TouchableOpacity
+                    onPress={() => handleRemoveOrganizer(o.id, o.displayName)}
+                    disabled={organizerActionBusy}
+                    accessibilityLabel={`Remove ${o.displayName ?? 'this person'} as a co-organizer`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.addonRemoveText}>Remove</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+
+            {planOrganizerInfo.isHost && !showOrganizers && (
+              <TouchableOpacity
+                style={styles.inviteSomeoneLink}
+                onPress={() => setShowOrganizers(true)}
+                accessibilityLabel="Add a co-organizer"
+                accessibilityRole="button"
+              >
+                <Text style={styles.inviteSomeoneLinkText}>+ Add Co-Organizer →</Text>
+              </TouchableOpacity>
+            )}
+
+            {planOrganizerInfo.isHost && showOrganizers && (
+              <>
+                <Text style={styles.helperText}>Co-organizers can help find a business, invite people, and manage add-ons like transportation or decorations -- but only you can accept an offer or cancel the plan.</Text>
+                {connections
+                  .filter((c) => !planOrganizerInfo.organizers.some((o) => o.id === c.id))
+                  .map((c) => {
+                    const selected = selectedNewOrganizerId === c.id;
+                    return (
+                      <TouchableOpacity
+                        key={c.id}
+                        style={[styles.candidateRow, selected && styles.candidateRowSelected]}
+                        onPress={() => setSelectedNewOrganizerId(selected ? null : c.id)}
+                        accessibilityLabel={`Make ${c.name ?? 'this person'} a co-organizer`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.candidateName}>{selected ? '●' : '○'} {c.name ?? 'Someone you know'}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                <TouchableOpacity
+                  style={[styles.groupPlanButton, !selectedNewOrganizerId && styles.groupPlanButtonDisabled]}
+                  onPress={handleAddOrganizer}
+                  disabled={!selectedNewOrganizerId || organizerActionBusy}
+                  accessibilityLabel="Confirm add co-organizer"
+                  accessibilityRole="button"
+                >
+                  {organizerActionBusy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.groupPlanButtonText}>Add Co-Organizer →</Text>}
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         )}
 
         {!request.addon_type && (
@@ -1269,6 +1425,10 @@ const getStyles = (colors) => StyleSheet.create({
   groupPlanButtonDisabled: { opacity: 0.5 },
   groupPlanButtonText: { color: '#fff', fontWeight: '700' },
   addonRowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // Item 88 ("Let multiple people organize the same occasion," CLAUDE.md):
+  // one line per co-organizer, name + a host-only Remove link -- same
+  // spacing/weight as an addon timeline row, no new visual language.
+  organizerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
   addonRowActions: { flexDirection: 'row', marginTop: spacing.xs, flexWrap: 'wrap' },
   addonActionText: { ...typography.caption, color: colors.primary, fontWeight: '700', marginRight: spacing.md },
   addonRemoveText: { ...typography.caption, color: colors.textTertiary, fontWeight: '700' },
