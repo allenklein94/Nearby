@@ -367,6 +367,12 @@ export async function routeNotificationTap(data) {
     // the same request object, just a different state change on it.
     case 'business_offer_withdrawn':
     case 'business_offer_received':
+    // Item 78 (CLAUDE.md, "the notification system becomes dramatically
+    // more useful"): a brand-new push -- accept_business_offer() previously
+    // only ever notified the business, never the consumer who just booked.
+    // Same destination as its siblings above -- it's the same request
+    // object, just a further state change on it.
+    case 'business_reservation_confirmed':
       if (data.request_id) {
         navigationRef.navigate('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null });
       }
@@ -462,6 +468,9 @@ export async function routeNotificationTap(data) {
     // choice ("Dinner won -- vote on where!") -- same real detail screen,
     // which already renders whatever's true for 'voting_business' too.
     case 'occasion_group_plan_voting_business':
+    // Item 78 (CLAUDE.md): "Your group hasn't finalized the plan yet" --
+    // send_occasion_group_plan_stall_nudges(), same real detail screen.
+    case 'occasion_group_plan_stalled':
       if (data.plan_id) {
         navigationRef.navigate('GroupOccasionPlan', { planId: data.plan_id });
       }

@@ -40,6 +40,83 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 78 ("The notification system becomes dramatically more useful") —
+fully DONE (2026-09-13), resumed clean after a codespace restart (no
+uncommitted work was left behind -- the restart hit before anything had
+been written to disk, confirmed via `git status`/`git stash list`/a search
+for a `.wip_*` scratch dir, all clean).** User's own 6 examples of what a
+push should read like once it has real context: "🎂 Sarah's birthday is
+next week." / "💍 Your anniversary is coming up." / "🎓 John's graduation is
+Saturday." / "🎉 Your group hasn't finalized the birthday plan yet." /
+"🍽️ A business responded to your birthday request." / "✅ Your reservation
+for Sarah's birthday is confirmed."
+
+Audited each of the 6 against real current code before writing anything:
+the first three were already fully live (`send_occasion_planning_nudges()`,
+20261022, already sends exactly this shape for all 11 occasion types).
+Closed the two real remaining gaps via
+`20261102_occasion_aware_notifications.sql`:
+
+1. **"Your group hasn't finalized the plan yet"** -- `occasion_group_plans`
+   had zero stall detection. New `send_occasion_group_plan_stall_nudges()`
+   (a new `stall_nudge_sent_at` dedup column, fire-once-ever per plan, same
+   cron-nudge shape as its siblings) notifies the HOST ONLY -- the single
+   final decider per Item 66's own "no complex RSVP, one decider" guardrail
+   -- once a plan has sat in `voting`/`voting_business` for 3+ days, or its
+   own `scheduled_date` is within 3 days and still undecided.
+2. **Occasion-aware "a business responded"/"reservation confirmed."** New
+   `_occasion_context_for_business_request()` reads the existing
+   `plans.resulting_business_request_id` -> `occasions`/
+   `occasion_group_plans.resulting_plan_id` linkage ("Occasion architecture
+   should not be a silo," 20261021) -- its first read from the notification
+   layer. Every site that sends `business_offer_received`
+   (`admin_review_business_content_screening`'s offer_response branch,
+   `post_business_availability`'s immediate-match branch,
+   `submit_business_offer`) now leads with the linked occasion's emoji/noun/
+   who-for-name when one exists, falling back to the exact previous generic
+   copy otherwise (verified byte-identical for the non-occasion case). A
+   genuinely new "✅ Reservation Confirmed!" push was added to the
+   consumer's own side of `accept_business_offer` -- it previously only
+   ever notified the BUSINESS that its offer was accepted, never the person
+   who just booked. A real, separate bug was found and fixed in the same
+   pass: `confirm_group_plan_offer`'s own final "everyone confirmed" push
+   excluded `user_id <> auth.uid()` -- correct for the earlier "someone
+   else confirmed, you should too" nudge above it, wrong here, since it
+   meant the participant whose own tap just finalized the reservation was
+   the one person who never learned it was confirmed. Per Item 69's own
+   locked privacy boundary, who_for_name is used only in these
+   consumer-facing sites -- never added to any business-facing push.
+   Emoji/noun mappings were also extracted out of
+   `send_occasion_planning_nudges()`'s own inline CASE into two new shared
+   `_occasion_emoji()`/`_occasion_noun()` helpers (one ontology, not
+   copies) -- and its anniversary emoji corrected from 💑 to 💍 to match
+   this item's own example verbatim.
+
+Verified live against production (`enmosvippabmuqslzrox`) via four
+disposable rolled-back transactions with real test data (inspecting
+`net.http_request_queue`'s actual queued push bodies, not just return
+values): the context helper resolves a real linked birthday occasion
+correctly and returns nothing for an unlinked request; all three
+`business_offer_received` sites produce the correct enriched text for an
+occasion-linked request AND the byte-identical original fallback text for a
+plain one; `accept_business_offer` sends the exact literal text from the
+item's own example, "Your reservation for Sarah's Birthday is confirmed!";
+the stall nudge fires once, sets its dedup marker, does not re-fire on a
+second run, and correctly does not fire for a fresh (<3-day-old, no
+near-term date) plan; `confirm_group_plan_offer`'s fix was verified with a
+real 2-participant group plan -- the final confirmer is now correctly
+included in the reservation-confirmed push recipients. All four
+transactions rolled back and re-confirmed afterward with zero leaked rows.
+Every touched/replaced function confirmed to keep its exact prior
+signature (`pg_get_function_identity_arguments`, single overload each,
+before and after). Full Jest suite 413/413 passing (no pure-function
+changes -- this item is DB-plus-routing only); `notifications.js`
+transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised in a running app or against a real device (no simulator/device
+tooling this session, standing note) -- next session with device access
+should confirm a real tapped `business_reservation_confirmed`/
+`occasion_group_plan_stalled` push lands on the right screen.
+
 **Item 77 ("Add an 'Occasion Hub' to Profile") — audited, deliberately NOT built as proposed, one
 small real placement fix shipped instead (2026-09-13).** The user's own framing was conditional
 throughout ("Potentially"..."I'd avoid adding another huge section if the existing Profile
