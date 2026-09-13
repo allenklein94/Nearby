@@ -40,6 +40,70 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**Item 79 ("businesses get a new demand signal") — fully DONE (2026-09-13),
+same-day direct follow-up to Item 78.** User's own examples: "14 birthday
+groups are looking for dinner this weekend." / "8 groups are looking for
+graduation celebrations." / "23 users are looking for date-night
+experiences Friday." -- consumer intent -> business supply, not business
+posts an ad -> hopes someone sees it.
+
+Audited the real current state before writing anything: "Match Radar"
+(`get_aggregated_demand_for_partner()`, live since 2026-08-15, extended
+2026-09-13 for occasion/period breakdowns) already delivers most of this
+vision -- real, anonymized, geo-scoped demand counts, already broken down
+by category/party-size/soonest-date/time-of-day, with a dominant-occasion
+footnote inside each category row, plus `notify_aggregated_demand_
+threshold()` already pushing a business the moment category demand nearby
+crosses 2. The one real, concrete gap against this item's own literal
+examples: every existing signal is CATEGORY-first -- occasion is a
+footnote ("14 people are looking for Restaurants -- mostly birthday (9 of
+14)"), never its own headline. This item's own examples are OCCASION-
+first and cross-category ("8 groups are looking for graduation
+celebrations" names no category at all) and weekend/day-qualified.
+
+Added this as a genuinely new, complementary rollup rather than touching
+Match Radar: `get_occasion_demand_for_partner()` (same real geo-eligibility
+rule as its category sibling) groups by `business_requests.occasion`
+instead, returning request_count/total_party_size/soonest_date/
+dominant_category/dominant_category_count plus a new
+`weekend_request_count` (a real count of how many open requests fall on
+the upcoming Friday-through-Sunday window -- two of the item's own three
+examples are explicitly weekend/day-qualified). A new occasion-primary
+sibling push, `notify_occasion_demand_threshold()`, fires once when real
+nearby occasion demand crosses 2 (same crossing-point-only shape as its
+category sibling) -- catches a real pattern the category trigger alone
+can't (graduation demand split across Restaurants/Photography/Venues would
+never trip the category trigger on its own).
+
+The real strategic connection the item calls for ("businesses can respond
+to that demand") is made concrete, not just displayed: the new "🎉 What
+They're Celebrating" dashboard section (client-only addition, sits right
+above Match Radar) has a "→ Create a {Occasion} Package" CTA opening the
+existing Occasion Package composer (Item 68) pre-selected to the surging
+occasion -- Match Radar's own "Turn into an offer" button opens a generic
+single-date availability posting instead, the right response to raw
+category demand but not to a recurring, named-occasion pattern; a durable,
+priced, day-of-week-scoped Occasion Package is the more apt supply-side
+answer to "N groups keep asking about graduation."
+
+Verified live against production (`enmosvippabmuqslzrox`) via disposable
+rolled-back transactions with real `SET ROLE authenticated` + `request.jwt.
+claims` impersonation (using separate single-row INSERTs, not one bulk
+multi-row INSERT, per this repo's own already-learned "AFTER ROW triggers
+in a multi-row INSERT see the whole batch at once" gotcha): the owner view
+correctly returns birthday (2 requests, correct total party size, correct
+weekend flag) and graduation (1 request) rows; a non-owner call correctly
+returns empty; the occasion-demand push fires exactly once on the second
+birthday request (the real crossing point) and correctly never fires for
+the graduation request (never reaches 2). All rolled back afterward with
+zero leaked rows. Full Jest suite 413/413 passing (no pure-function
+changes -- this item is DB-plus-dashboard-wiring only); all three touched
+files transform-checked clean via `@babel/core` + `babel-preset-expo`. Not
+exercised in a running app (no simulator/device tooling this session,
+standing note) -- next session should confirm the new section renders
+correctly above Match Radar and that "→ Create a {Occasion} Package"
+correctly opens the composer pre-selected to the right occasion.
+
 **Item 78 ("The notification system becomes dramatically more useful") —
 fully DONE (2026-09-13), resumed clean after a codespace restart (no
 uncommitted work was left behind -- the restart hit before anything had

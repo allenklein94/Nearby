@@ -384,6 +384,11 @@ export async function routeNotificationTap(data) {
     // opportunity, since the new "Demand Near You" section lives right
     // above the opportunities list on the same tab.
     case 'aggregated_demand_growing':
+    // Item 79 (CLAUDE.md, "businesses get a new demand signal"): the
+    // occasion-primary sibling of aggregated_demand_growing above -- same
+    // real "crosses 2 nearby" shape, same tab, just keyed on occasion
+    // instead of category.
+    case 'occasion_demand_growing':
       navigationRef.navigate('BusinessDashboard', { initialSection: 'requests' });
       break;
     // Community demand-generation (see CLAUDE.md's "community

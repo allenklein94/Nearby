@@ -945,6 +945,18 @@ export async function getAggregatedDemandForPartner(partnerId) {
   return data ?? [];
 }
 
+// Item 79 (CLAUDE.md, "businesses get a new demand signal"): the
+// occasion-primary sibling of getAggregatedDemandForPartner() above --
+// same real geo-scoped rollup, grouped by occasion instead of category
+// ("8 groups are looking for graduation celebrations," never a fabricated
+// count). Owner-only server-side, same convention as every other
+// business-facing RPC here.
+export async function getOccasionDemandForPartner(partnerId) {
+  const { data, error } = await supabase.rpc('get_occasion_demand_for_partner', { partner_id_param: partnerId });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function getPartnerAvgResponseTime(partnerId) {
   const { data, error } = await supabase.rpc('get_partner_avg_response_time', { partner_id_param: partnerId });
   if (error) throw new Error(error.message);

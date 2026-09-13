@@ -13,7 +13,7 @@ import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
 import { getPendingPartnershipRequestsForPartner, respondToBusinessPartnershipRequest } from '../services/businessPartnerships';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, getMyBusinessAvailability, getAggregatedDemandForPartner, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel } from '../services/occasionPackages';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
@@ -339,6 +339,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [partnershipRequests, setPartnershipRequests] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
+  // Item 79 (CLAUDE.md, "businesses get a new demand signal"): the
+  // occasion-primary sibling of aggregatedDemand above.
+  const [occasionDemand, setOccasionDemand] = useState([]);
   // Business Intelligence & Opportunity Engine, Phase 2 -- a real,
   // itemized opportunity_score computed at READ time (not frozen at
   // insert time -- see businessOpportunityScoring.js's own header comment
@@ -1328,6 +1331,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         loadPartnershipRequests(selectedPartner.id);
         loadOpportunities(selectedPartner.id);
         loadAggregatedDemand(selectedPartner.id);
+        loadOccasionDemand(selectedPartner.id);
         loadMyAvailability(selectedPartner.id);
         loadFulfillmentPolicy(selectedPartner.id);
         loadMyOccasionPackages();
@@ -1417,6 +1421,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const results = await getAggregatedDemandForPartner(partnerId);
       setAggregatedDemand(results);
+    } catch (e) {
+      // Non-fatal -- the rest of the dashboard already loaded independently.
+    }
+  }
+
+  // Item 79 (CLAUDE.md, "businesses get a new demand signal"): real,
+  // anonymized, cross-category demand grouped by occasion ("14 birthday
+  // groups are looking for dinner this weekend"), not just a footnote
+  // inside a category row. Honestly empty until real nearby volume exists.
+  async function loadOccasionDemand(partnerId) {
+    try {
+      const results = await getOccasionDemandForPartner(partnerId);
+      setOccasionDemand(results);
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
     }
@@ -3031,12 +3048,57 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </View>
                 )}
 
+                {/* Item 79 (CLAUDE.md, "businesses get a new demand
+                    signal"): the occasion-primary sibling of Match Radar
+                    below -- "consumer intent -> business supply," headlined
+                    by occasion rather than category, matching the item's
+                    own literal examples ("8 groups are looking for
+                    graduation celebrations"). Real, anonymized, geo-scoped;
+                    honestly empty until real nearby volume exists. */}
+                <Text style={styles.sectionHeader}>🎉 What They're Celebrating</Text>
+                <Text style={styles.helperText}>
+                  Real open requests nearby, grouped by occasion instead of category -- a
+                  different cut of the same real signal below, made to answer "what should
+                  I offer" rather than "who wants what."
+                </Text>
+                {occasionDemand.length === 0 ? (
+                  <Text style={styles.emptyText}>No occasion-based demand nearby yet.</Text>
+                ) : (
+                  occasionDemand.map((d) => {
+                    const emoji = OCCASION_OPTIONS.find((o) => o.key === d.occasion_type)?.icon ?? '🎉';
+                    const noun = occasionLabel(d.occasion_type);
+                    return (
+                      <View key={d.occasion_type} style={styles.gatheringRow}>
+                        <Text style={styles.offerTitle}>
+                          {emoji} {d.request_count} {d.request_count === 1 ? 'group is' : 'groups are'} planning a {noun}
+                          {Number(d.weekend_request_count) > 0 ? ' this weekend' : ''}
+                        </Text>
+                        <Text style={styles.breakdownText}>
+                          {[
+                            d.dominant_category ? `mostly looking for ${d.dominant_category} (${d.dominant_category_count} of ${d.request_count})` : null,
+                            d.total_party_size ? `${d.total_party_size} total ${Number(d.total_party_size) === 1 ? 'guest' : 'guests'}` : null,
+                            d.soonest_date ? `soonest ${new Date(d.soonest_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : null,
+                          ].filter(Boolean).join(' · ')}
+                        </Text>
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                          onPress={() => openPackageModal({ occasion_type: d.occasion_type })}
+                          accessibilityLabel={`Create a ${noun} package`}
+                          accessibilityRole="button"
+                        >
+                          <Text style={styles.smallActionButtonText}>→ Create a {noun} Package</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })
+                )}
+
                 {/* Business Intelligence & Opportunity Engine, Phase 2 --
                     "Match Radar" (spec item 13) reframe: get_aggregated_
                     demand_for_partner() already IS Match Radar (locked
                     plan's own audit finding) -- this is a real naming
                     alignment only, no new data, no new query. */}
-                <Text style={styles.sectionHeader}>📊 Match Radar</Text>
+                <Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>📊 Match Radar</Text>
                 <Text style={styles.helperText}>
                   Real open requests within reach of your business right now, grouped by
                   category -- a quantified early signal, not a review score. Categories marked
