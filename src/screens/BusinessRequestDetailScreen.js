@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
@@ -126,6 +126,20 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // so a second competing CTA would just be noise.
   const notificationReason = route.params?.notificationReason ?? null;
   const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
+  // "ok do it" (CLAUDE.md): the Occasion wizard's own real "Involve" step
+  // now precedes a business-destined ask's "Options" step -- these are
+  // that real selection carried forward, same shape
+  // GatheringConfirmationScreen's suggestedInviteeIds already established.
+  // Never auto-invited: pre-highlights + pre-checks the boxes below, but
+  // sending still requires the explicit "Send Invite" tap it already did.
+  const suggestedInviteeIds = route.params?.suggestedInviteeIds ?? null;
+  const suggestedInviteeLabel = route.params?.suggestedInviteeLabel ?? null;
+  // load() re-runs on every focus (useFocusEffect below) -- this ref
+  // makes the pre-selection below a one-time seed, not something that
+  // silently re-clobbers the user's own later edits (unchecking a
+  // suggestion, adding someone else, or closing the panel) every time
+  // they navigate away and back to this same screen.
+  const suggestionAppliedRef = useRef(false);
   const [request, setRequest] = useState(null);
   // Finding 4: the original ask's own fields, carried forward so "Try a
   // Wider Radius" can push a fresh, pre-filled AskBusiness instead of
@@ -329,7 +343,23 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       // sense pre-confirmation.
       if (result.request.status === 'open' && result.request.requester_id === uid && result.request.category && !result.request.group_plan_id) {
         getConnectedPeopleWithInterests()
-          .then((people) => setConnections(people))
+          .then((people) => {
+            setConnections(people);
+            // "ok do it" (CLAUDE.md): pre-check + auto-expand for a real
+            // wizard-suggested selection -- intersected against this
+            // request's own real connections (both draw from the same
+            // getMyFriends()/getMyMatches() universe, so this is never a
+            // stale or foreign id), never trusted blindly. Still requires
+            // the existing explicit "Send Invite" tap below.
+            if (!suggestionAppliedRef.current && suggestedInviteeIds && suggestedInviteeIds.length > 0) {
+              suggestionAppliedRef.current = true;
+              const validIds = suggestedInviteeIds.filter((id) => people.some((p) => p.id === id));
+              if (validIds.length > 0) {
+                setSelectedInviteeIds(validIds);
+                setShowInviteSomeone(true);
+              }
+            }
+          })
           .catch((e) => console.error('getConnectedPeopleWithInterests failed', e));
       } else {
         setConnections([]);
@@ -1121,9 +1151,20 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {request.status === 'open' && !isGroupPlanRequest && showInviteSomeone && (
           <View style={styles.groupPlanSection}>
             <Text style={styles.groupPlanSectionTitle}>👤 Invite Someone</Text>
+            {/* "ok do it" (CLAUDE.md): same "✨ People you may want to
+                invite" framing GatheringConfirmationScreen already uses for
+                its own suggestedInviteeIds -- one convention, not two. */}
+            {suggestedInviteeIds && suggestedInviteeIds.length > 0 && (
+              <Text style={styles.suggestedInviteeHeader}>
+                ✨ People you may want to invite{suggestedInviteeLabel ? ` — ${suggestedInviteeLabel}` : ''}
+              </Text>
+            )}
             <Text style={styles.helperText}>Bring a friend or match along. They'll have to say yes first — nobody gets added without agreeing.</Text>
-            {connections.map((c) => {
+            {[...connections]
+              .sort((a, b) => (suggestedInviteeIds?.includes(b.id) ? 1 : 0) - (suggestedInviteeIds?.includes(a.id) ? 1 : 0))
+              .map((c) => {
               const selected = selectedInviteeIds.includes(c.id);
+              const isSuggested = !!suggestedInviteeIds?.includes(c.id);
               return (
                 <TouchableOpacity
                   key={c.id}
@@ -1132,7 +1173,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   accessibilityLabel={`${selected ? 'Remove' : 'Add'} ${c.name ?? 'this person'} to the invite`}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {c.name ?? 'Someone you know'}</Text>
+                  <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {isSuggested ? '🤝 ' : ''}{c.name ?? 'Someone you know'}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -1212,6 +1253,9 @@ const getStyles = (colors) => StyleSheet.create({
   inviteSomeoneLinkText: { ...typography.body, color: colors.primary, fontWeight: '700' },
   groupPlanSection: { marginTop: spacing.lg, marginBottom: spacing.md },
   groupPlanSectionTitle: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
+  // "ok do it": same framing GatheringConfirmationScreen's own
+  // suggestedInviteeIds header already uses.
+  suggestedInviteeHeader: { ...typography.caption, color: colors.primary, fontWeight: '700', marginBottom: 2 },
   helperText: { ...typography.caption, color: colors.textSecondary, marginBottom: spacing.sm },
   uberLinkText: { ...typography.body, color: colors.primary, fontWeight: '700', marginBottom: spacing.sm },
   candidateRow: {

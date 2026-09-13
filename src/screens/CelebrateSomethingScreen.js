@@ -114,11 +114,23 @@ function buildStepDefs(occasion, activityType) {
   if (activityType === 'group_vote') {
     base.push({ key: 'group_invite', label: 'Invite' });
   } else {
-    base.push(
-      resolveCelebrationDestination(activityType) === 'business'
-        ? { key: 'options', label: 'Options' }
-        : { key: 'who_involved', label: 'Involve' }
-    );
+    // "ok do it" (CLAUDE.md, direct follow-up to the "Who to invite ->
+    // Options" flow the user asked for): "Involve" now precedes "Options"
+    // for a business-destined activity too, instead of the two being
+    // mutually exclusive. It's the same real friend-picker the gathering/
+    // custom destinations already use (WHO_INVOLVED_OPTIONS +
+    // selectedInviteeIds) -- goNext() advances to 'options' instead of
+    // calling proceedToDestination() directly when the destination is
+    // 'business', and submitSelectedBusinessRequests() carries the real
+    // selection forward as suggestedInviteeIds onto the resulting
+    // BusinessRequestDetail screen's own already-existing "Invite Someone"
+    // panel (Item 36) -- pre-highlighted, never auto-sent, same posture as
+    // GatheringConfirmationScreen's identical suggestedInviteeIds already
+    // established. No new invite mechanism, no new step type.
+    base.push({ key: 'who_involved', label: 'Involve' });
+    if (resolveCelebrationDestination(activityType) === 'business') {
+      base.push({ key: 'options', label: 'Options' });
+    }
   }
   return base;
 }
@@ -453,6 +465,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
   const stepDefs = buildStepDefs(occasion, activityType);
   const stepKey = stepDefs[step].key;
+  const destination = resolveCelebrationDestination(activityType);
 
   useEffect(() => {
     if (stepKey === 'options' && !optionsFetched && !optionsLoading) {
@@ -662,7 +675,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       linkOccasionToPlan({ occasionId: savedOccasionId, resultingBusinessRequestId: primaryRequestId }).catch(() => {});
     }
     if (succeeded.length === 1) {
-      navigation.replace('BusinessRequestDetail', {
+      const params = {
         requestId: succeeded[0].requestId,
         justSubmitted: true,
         notifiedCount: succeeded[0].notifiedCount,
@@ -672,7 +685,21 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
         prefillPartySize: partySize,
         prefillDateWindow: whenPreset === 'custom' ? PICK_DATE_KEY : whenPreset,
         prefillPickedDateISO: whenPreset === 'custom' ? scheduledAt.toISOString() : null,
-      });
+      };
+      // "ok do it" (CLAUDE.md): the real "Involve" selection made just
+      // before this step carries forward as suggested (never auto-sent)
+      // invitees on the resulting request's own "Invite Someone" panel
+      // (Item 36) -- same suggestedInviteeIds/suggestedInviteeLabel shape
+      // GatheringConfirmationScreen already established, one convention
+      // instead of two. Only threaded through the single-success path --
+      // when several businesses were asked at once, each lands
+      // independently on Plans (Item 52) with no one obvious request to
+      // attach a suggestion to.
+      if (selectedInviteeIds.size > 0) {
+        params.suggestedInviteeIds = Array.from(selectedInviteeIds);
+        params.suggestedInviteeLabel = possessiveFriendsLabel(whoForName);
+      }
+      navigation.replace('BusinessRequestDetail', params);
       return;
     }
     Alert.alert('Requests sent', `🎉 Sent ${succeeded.length} requests — track them all from your Plans tab.`);
@@ -701,6 +728,15 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
           return Alert.alert('No groups yet', "You're not a member of any active community yet — pick a different option instead.");
         }
         return Alert.alert('Pick a group', 'Choose which of your communities this is for.');
+      }
+      // "ok do it" (CLAUDE.md): for a business destination, "Involve" is
+      // no longer the wizard's final step -- "Options" still follows it,
+      // so just advance like any other step. Every other destination
+      // (gathering/custom) keeps its original behavior: this IS the final
+      // step, so hand off to the real destination screen now.
+      if (destination === 'business') {
+        Haptics.selectionAsync();
+        return setStep((s) => Math.min(s + 1, stepDefs.length - 1));
       }
       return proceedToDestination();
     }
@@ -786,6 +822,16 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
       } else if (whenPreset === 'custom') {
         params.prefillDateWindow = PICK_DATE_KEY;
         params.prefillPickedDateISO = scheduledAt.toISOString().slice(0, 10);
+      }
+      // "ok do it" (CLAUDE.md): the "Skip -- post manually" escape hatch
+      // reaches this branch too, and "Involve" already happened before it
+      // (same step order as the main submit path now) -- carry the real
+      // selection through AskBusinessScreen so it still reaches the
+      // resulting request's own "Invite Someone" panel, same as the main
+      // submit path just below.
+      if (selectedInviteeIds.size > 0) {
+        params.suggestedInviteeIds = Array.from(selectedInviteeIds);
+        params.suggestedInviteeLabel = possessiveFriendsLabel(whoForName);
       }
       navigation.navigate('AskBusiness', params);
       return;
@@ -1410,7 +1456,13 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               <>
                 <Text style={styles.label}>Who should be involved?</Text>
                 <View style={styles.chipRow}>
-                  {WHO_INVOLVED_OPTIONS.map((o) => {
+                  {/* "ok do it" (CLAUDE.md): "Existing Group" maps to a real
+                      community, which only makes sense for the gathering
+                      destination (resolveCelebrationVisibility's own
+                      community branch) -- a business_requests row has no
+                      community concept at all, so it's dropped here rather
+                      than offering a chip that would silently do nothing. */}
+                  {(destination === 'business' ? WHO_INVOLVED_OPTIONS.filter((o) => o.key !== 'existing_group') : WHO_INVOLVED_OPTIONS).map((o) => {
                     const selected = whoInvolved === o.key;
                     return (
                       <TouchableOpacity

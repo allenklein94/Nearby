@@ -143,6 +143,13 @@ export default function AskBusinessScreen({ navigation, route }) {
   // capacity) at submit time, so a posting that filled up in the interim
   // correctly falls through to nothing rather than a fabricated match.
   const matchedAvailability = route.params?.matchedAvailability ?? null;
+  // "ok do it" (CLAUDE.md): the Occasion wizard's "Skip -- post manually"
+  // escape hatch already collected a real "Involve" selection before
+  // landing here -- forwarded as-is to the resulting request's own
+  // "Invite Someone" panel, same shape submitSelectedBusinessRequests()
+  // already uses for the main submit path.
+  const suggestedInviteeIds = route.params?.suggestedInviteeIds ?? null;
+  const suggestedInviteeLabel = route.params?.suggestedInviteeLabel ?? null;
 
   const [text, setText] = useState(route.params?.prefillText ?? '');
   const [category, setCategory] = useState(route.params?.prefillCategory ?? null);
@@ -377,6 +384,8 @@ export default function AskBusinessScreen({ navigation, route }) {
         matchName,
         communityId,
         communityName,
+        suggestedInviteeIds,
+        suggestedInviteeLabel,
       });
     } catch (e) {
       Alert.alert('Something went wrong', e.message);

@@ -40,6 +40,46 @@ grow past a few hundred lines without doing this split again.
 
 ## Active / unfinished work
 
+**"ok do it" (Who to invite -> Options for a business-destined Occasion) — fully DONE
+(2026-09-13), same-day direct follow-up to Items 83-85.** Closed the one honest nuance flagged
+when the user's own "Create -> Plan for Someone -> Occasion -> Who -> What -> When -> Who to
+invite -> Options -> Business -> Plan" flow was checked against real code: for a business-destined
+activity (dinner/night out/activity), "Who to invite" (the wizard's existing `who_involved` step)
+used to be REPLACED by "Options," never shown before it. Now both render, in that order --
+`buildStepDefs()` pushes `who_involved` then, only for the business destination, also `options`;
+`goNext()`'s `who_involved` branch advances to the next step for a business destination instead of
+jumping straight to `proceedToDestination()` (every other destination keeps its original
+one-step-and-done behavior). The "Existing Group" chip is hidden for the business destination
+specifically -- a business_requests row has no community concept to attach to, so offering it
+would silently do nothing.
+
+No new invite mechanism was built -- the real friend selection this step already collects
+(`selectedInviteeIds`, already live for the gathering path since Item 71) now also carries forward
+as `suggestedInviteeIds`/`suggestedInviteeLabel` onto the resulting request's own already-existing
+"👤 Invite Someone" panel (Item 36) -- pre-checked and pre-expanded, sorted-to-top with a 🤝 badge
+(same "✨ People you may want to invite" framing `GatheringConfirmationScreen` already established
+for the gathering path, one convention instead of two), but still requires the same explicit "Send
+Invite" tap it always did -- nothing is ever auto-invited. Threaded through both real ways a
+business-destined plan can be submitted: the main "Ask These Businesses" path
+(`submitSelectedBusinessRequests`, single-success case only -- a multi-business submit lands on
+Plans with no one obvious request to attach a suggestion to, a disclosed boundary) and the
+"Skip — I'll post a general request myself" escape hatch (`proceedToDestination`'s business
+branch -> `AskBusinessScreen`, which now reads and forwards the same two params at its own submit
+time). A real bug was caught and fixed before this was considered done: `BusinessRequestDetailScreen`'s
+data-load function re-runs on every screen focus (`useFocusEffect`, this app's own established
+pattern) -- without a guard, returning to this screen after unchecking a suggested invitee or
+closing the panel would have silently re-applied the original suggestion and reopened it every
+time. Fixed with a one-time-seed ref (`suggestionAppliedRef`) so the pre-selection only ever
+applies once, never clobbering the user's own later edits.
+
+Full Jest suite 455/455 passing (no pure-function changes — this is step-sequencing plus UI/route-
+param wiring over already-tested services). All three touched files transform-checked clean via
+`@babel/core` + `babel-preset-expo`. Not exercised in a running app (no simulator/device tooling
+this session, standing note) — next session should confirm on a real account that "Involve" really
+does precede "Options" for a business-destined plan, that a real friend selected there shows up
+pre-checked and 🤝-badged on the resulting request's "Invite Someone" panel, and that revisiting
+that screen after manually changing the selection doesn't reset it.
+
 **Items 84 & 85 ("make the UI feel emotionally different" / "keep the underlying architecture
 unified") — fully DONE (2026-09-13), same-day direct follow-up to Item 83.** Paired ask: give the
 Plan-for-Someone wizard real personality ("Sarah's 30th Birthday 🎂" vs. a plain gathering's
